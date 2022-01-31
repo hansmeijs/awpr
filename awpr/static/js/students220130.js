@@ -1012,7 +1012,7 @@ function RefreshDataRowsAfterUpload(response) {
                 mod_MSTUD_dict = {is_addnew: is_addnew,
                     db_code: setting_dict.sel_depbase_code}
             } else {
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
 // --- get existing data_dict from data_rows
                 const pk_int = get_attr_from_el_int(tblRow, "data-pk");
                 const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);

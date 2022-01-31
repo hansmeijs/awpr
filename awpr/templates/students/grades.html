@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220105.js' %}"></script>
-    <script src="{% static 'js/grades220118.js' %}"></script>
+    <script src="{% static 'js/grades220130.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -38,15 +38,15 @@
                ></select>
             </div>
 
-            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
-               <input id="id_SBR_select_cluster" type="text"
-                    class="tw_200 border_none pointer_show px-2" readonly>
-            </div>
-
             <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
                 <input id="id_SBR_select_subject" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
+               <input id="id_SBR_select_cluster" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 

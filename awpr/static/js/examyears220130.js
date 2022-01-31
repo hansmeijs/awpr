@@ -754,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
             //console.log("fldName", fldName)
                 // el_input is undefined when called by submenu buttons
                 if(el_input){
-                    const tblRow = get_tablerow_selected(el_input);
+                    const tblRow = t_get_tablerow_selected(el_input);
                     selected_pk = get_attr_from_el(tblRow, "data-pk")
                     map_id = tblRow.id;
                 } else if (!is_addnew) {
@@ -1073,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("fldName", fldName)
             // el_input is undefined when called by submenu buttons
             if(el_input){
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 selected_pk = get_attr_from_el(tblRow, "data-pk")
                 map_id = tblRow.id;
             }

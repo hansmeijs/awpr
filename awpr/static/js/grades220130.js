@@ -21,10 +21,11 @@ let selected = {
 
 let school_rows = [];
 let student_rows = [];
-let subject_rows = [];
 let studsubj_rows = [];
 let grade_rows = [];
-let cluster_rows = []; // PR2021-12-03 not in use yet
+
+let subject_rows = [];
+let cluster_rows = [];
 
 let schemeitem_rows = [];
 let published_rows = [];
@@ -91,71 +92,71 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- get field_settings
     const field_settings = {
-        btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+        btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                   "segrade", "cegrade", "finalgrade", "ce_status", "note_status"],
-                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation_subject", "Subject",
+                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
                                   "Exem_SE_twolines", "Exem_CE_twolines", "Exem_FINAL_twolines", "", ""],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
                                 "input", "input", "div", "div", "div"],
-                    filter_tags: ["text", "text","text", "text", "text", "text", "text",
+                    filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
                                  "text", "text", "text","text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "075", "240",
+                    field_width: ["020", "060", "240", "060", "060", "075", "075", "240",
                                  "090", "090", "090", "020", "020"],
-                    field_align: ["c", "r", "l", "c", "c", "c", "l",
+                    field_align: ["c", "r", "l", "c", "c", "c", "c", "l",
                                  "c", "c", "c",  "c", "c"]},
 
-        btn_ep_01: { field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+        btn_ep_01: { field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                    "segrade", "se_status", "srgrade", "sr_status",
                                    "pescore", "pe_status", "pegrade",
                                     "cescore", "ce_status", "cegrade", "finalgrade",
                                    "note_status"],
-                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation_subject", "Subject",
+                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
                                    "School_exam_2lines", "", "Herkansing_SE_grade_2lines", "",
                                   "PE_score", "", "PE_grade",
                                   "CE_score", "", "CE_grade", "Final_grade_twolines",
                                   ""],
 
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
                                 "input", "div",  "input", "div",
                                 "input", "div", "input",
                                 "input", "div", "input", "div",
                                 "div"],
-                    filter_tags: ["text", "text","text", "text", "text","text", "text",
+                    filter_tags: ["text", "text","text", "text", "text","text", "text","text",
                                 "text", "text", "text", "text",
                                 "text", "text", "text",
                                 "text", "text", "text",  "text",
                                 "text"],
-                    field_width: ["020", "060", "240", "060", "060", "075", "240",
+                    field_width: ["020", "060", "240", "060", "060", "075", "075","240",
                                 "090", "020", "090", "020",
                                 "090", "020", "090",
                                 "090", "020", "090", "090",
                                  "020"],
-                    field_align: ["c", "r", "l", "c", "c", "c", "l",
+                    field_align: ["c", "r", "l", "c", "c", "c",  "c","l",
                                 "c", "c", "c", "c",
                                 "c", "c", "c",
                                 "c", "c", "c", "c",
                                 "c"]},
 
-        btn_reex:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation_subject", "Subject",
+        btn_reex:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
                                   "Re-examination_score", "", "Re-examination_grade", ""],
-                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                   "cescore", "ce_status", "cegrade", "note_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
                                 "input", "div",  "input", "div"],
-                    filter_tags: ["text", "text", "text", "text", "text", "text", "text",
+                    filter_tags: ["text", "text", "text", "text", "text", "text", "text","text",
                                 "text", "text", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "075", "240", "090", "020", "090", "020"],
-                    field_align: ["c", "r", "l", "c", "c", "c", "l",
+                    field_width: ["020", "060", "240", "060", "060", "075", "075", "240", "090", "020", "090", "020"],
+                    field_align: ["c", "r", "l", "c", "c", "c","c", "l",
                     "c", "c", "c"]},
-        btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Abbreviation_subject", "Subject",
+        btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
                                   "Third_period_score", "", "Third_period_grade", ""],
-                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name",
+                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "cluster_name","subj_code", "subj_name",
                                   "cescore", "ce_status", "cegrade", "note_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
                                     "input", "div",  "input", "div"],
-                    filter_tags: ["text", "text","text", "text", "text", "text", "text",
+                    filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
                                     "text", "text", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "075", "240", "090", "020", "090", "020"],
+                    field_width: ["020", "060", "240", "060", "060", "075", "075","240", "090", "020", "090", "020"],
                     field_align: ["c", "r", "l", "c", "c", "c", "l",
                     "c", "c", "c"]},
 
@@ -173,7 +174,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // === EVENT HANDLERS ===
 // === reset filter when ckicked on Escape button ===
         document.addEventListener("keydown", function (event) {
-            if (event.key === "Escape") { ResetFilterRows();};
+            if (event.key === "Escape") { ResetFilterRows()};
         });
 
  // freeze table header PR2021-08-03
@@ -240,15 +241,22 @@ document.addEventListener("DOMContentLoaded", function() {
         if (el_SBR_select_sector){
             el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false)};
 
-        // select_subject, select_student filters the rows
+        const add_all = true;
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if (el_SBR_select_subject){
             el_SBR_select_subject.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "subject", subject_rows, true, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "subject", subject_rows, add_all, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+
+        const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
+        if (el_SBR_select_cluster){
+            el_SBR_select_cluster.addEventListener("click",
+                function() {t_MSSSS_Open(loc, "cluster", cluster_rows, add_all, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if (el_SBR_select_student){
             el_SBR_select_student.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "student", student_rows, add_all, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if (el_SBR_select_showall){
             el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false )};
@@ -342,35 +350,34 @@ document.addEventListener("DOMContentLoaded", function() {
     //};
 
     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-        el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
+    if (el_worksheet_list){el_worksheet_list.addEventListener("change", function() {MIMP_SelectWorksheet(el_worksheet_list)}, false )};
+
     const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
-        el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
+    if (el_MIMP_checkboxhasheader){el_MIMP_checkboxhasheader.addEventListener("change", function() {MIMP_CheckboxHasheaderChanged(el_MIMP_checkboxhasheader)}, false )};
 
    const el_MIMP_examgradetype = document.getElementById("id_MIMP_examgradetype");
-        el_MIMP_examgradetype.addEventListener("change", function() {MIMP_ExamgradetypeChange(el_MIMP_examgradetype)}, false )
-
+   if (el_MIMP_examgradetype){el_MIMP_examgradetype.addEventListener("change", function() {MIMP_ExamgradetypeChange(el_MIMP_examgradetype)}, false)};
    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
-        el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
+   if (el_MIMP_btn_prev){el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false)};
    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
-        el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
+   if (el_MIMP_btn_next){el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false)};
    const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false )
+   if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false)};
    const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false )
+   if (el_MIMP_btn_upload){el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false)};
 
 // ---  MOD MESSAGE ------------------------------------
-        const el_mod_message_text = document.getElementById("id_mod_message_text");
-        //$('#id_mod_message').on('hide.bs.modal', function (e) {
-        //  ModMessageClose();
-        //})
+    const el_mod_message_text = document.getElementById("id_mod_message_text");
+    //$('#id_mod_message').on('hide.bs.modal', function (e) {
+    //  ModMessageClose();
+    //})
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
-        const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
-        if(el_MCOL_btn_save){
-            el_MCOL_btn_save.addEventListener("click", function() {
-                t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
-        };
-
+    const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
+    if(el_MCOL_btn_save){
+        el_MCOL_btn_save.addEventListener("click", function() {
+            t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
+    };
 
     if(may_view_page){
 // ---  set selected menu button active
@@ -389,6 +396,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 student_rows: {cur_dep_only: true},
                 subject_rows: {cur_dep_only: true},
+                cluster_rows: {get: true},
                 studentsubject_rows: {cur_dep_only: true},
                 grade_rows: {cur_dep_only: true}, // TODO: cur_dep
 
@@ -495,10 +503,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
-                }
+                };
                 if ("subject_rows" in response) {
                     subject_rows = response.subject_rows;
-                }
+                };
+                if ("cluster_rows" in response) {
+                    cluster_rows = response.cluster_rows;
+                };
                 if ("studentsubject_rows" in response) {
                     studsubj_rows = response.studentsubject_rows;
                     //check_validation = true;
@@ -583,14 +594,32 @@ document.addEventListener("DOMContentLoaded", function() {
         // modapprovegrade does. Make sure they have different names
         //b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
+/*
+        setting_dict.sel_subject_pk = null;
+        setting_dict.sel_subject_code = null;
+        setting_dict.sel_cluster_pk = null;
+        setting_dict.sel_cluster_code = null;
+        setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
+
         if(setting_dict.sel_subject_pk ) {
+            setting_dict.sel_cluster_pk = null;
+            setting_dict.sel_cluster_name = null;
+            setting_dict.sel_student_pk = null;
+            setting_dict.sel_student_name = null;
+
+        } else if(setting_dict.sel_cluster_pk ) {
+            setting_dict.sel_subject_pk = null;
+            setting_dict.sel_subject_code = null;
             setting_dict.sel_student_pk = null;
             setting_dict.sel_student_name = null;
         } else if(setting_dict.sel_student_pk ) {
             setting_dict.sel_subject_pk = null;
             setting_dict.sel_subject_code = null;
-        }
-
+            setting_dict.sel_cluster_pk = null;
+            setting_dict.sel_cluster_name = null;
+        };
+*/
         if(skip_upload){
         // skip_upload = true when called by DatalistDownload.
         //  - don't call DatalistDownload, otherwise it cretaed an indefinite loop
@@ -818,7 +847,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     setting_dict.sel_sector_abbrev = sel_abbrev;
                 };
             };
-        }
+        };
         // hide select level when department has no levels
         if (tblName === "level"){
             add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
@@ -833,6 +862,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }  // FillOptionsSelectLevelSector
 
 //=========  HandleShowAll  ================ PR2020-12-17
+
     function HandleShowAll() {
         //console.log("=== HandleShowAll");
 
@@ -843,10 +873,20 @@ document.addEventListener("DOMContentLoaded", function() {
         setting_dict.sel_sector_abbrev = null;
 
         setting_dict.sel_subject_pk = null;
+        setting_dict.sel_subject_code = null;
+
+        setting_dict.sel_cluster_pk = null;
+        setting_dict.sel_cluster_name = null;
+
         setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
 
         el_SBR_select_level.value = "0";
         el_SBR_select_sector.value = "0";
+
+        t_MSSSS_display_in_sbr("subject", null);
+        t_MSSSS_display_in_sbr("cluster", null);
+        t_MSSSS_display_in_sbr("student", null);
 
 // ---  upload new setting
         const selected_pk_dict = {sel_level_pk: null, sel_sector_pk: null, sel_subject_pk: null, sel_student_pk: null};
@@ -966,6 +1006,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 (!setting_dict.sel_sector_pk || data_dict.sct_id === setting_dict.sel_sector_pk) &&
                                 (!setting_dict.sel_student_pk || data_dict.student_id === setting_dict.sel_student_pk) &&
                                 (!setting_dict.sel_subject_pk || data_dict.subject_id === setting_dict.sel_subject_pk) &&
+                                (!setting_dict.sel_cluster_pk || data_dict.cluster_id === setting_dict.sel_cluster_pk) &&
                                 (setting_dict.sel_examtype !== "pe" || data_dict.has_practexam);
 
                 if(show_row){
@@ -1496,7 +1537,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
     function HandleInputChange(el_input){
         console.log(" --- HandleInputChange ---")
 
-        const tblRow = get_tablerow_selected(el_input)
+        const tblRow = t_get_tablerow_selected(el_input)
         const map_id = tblRow.id
         if (map_id){
 // ---  get selected.data_dict
@@ -1590,7 +1631,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 //========= DownloadPublished  ============= PR2020-07-31  PR2021-01-14
     function DownloadPublished(el_input) {
         //console.log( " ==== DownloadPublished ====");
-        const tblRow = get_tablerow_selected(el_input);
+        const tblRow = t_get_tablerow_selected(el_input);
         const pk_int = get_attr_from_el_int(tblRow, "data-pk");
 
         const map_dict = get_mapdict_from_datamap_by_id(published_map, tblRow.id);
@@ -1734,13 +1775,13 @@ if(j && !is_status_field){td.classList.add("border_left")};
         mod_dict = {};
         if(permit_dict.permit_approve_grade){
 
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
 
 // - get statusindex of requsr ( statusindex = 1 when auth1 etc
             // status_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
-            // b_get_statusindex_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
+            // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
             // this function gives err message when multiple found. (uses b_show_mod_message)
-            const requsr_status_index = b_get_statusindex_of_requsr(loc, permit_dict);
+            const requsr_status_index = b_get_auth_index_of_requsr(loc, permit_dict);
             if(requsr_status_index){
                 const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
                 const data_dict = get_gradedict_by_gradepk(grade_pk);
@@ -1910,7 +1951,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
             // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             if(tblRow){
                 tblName = get_attr_from_el(tblRow, "data-table")
                 selected_pk = get_attr_from_el(tblRow, "data-pk")
@@ -2122,10 +2163,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
         const is_approve_mode = (mode === "approve");
         const is_submit_mode = (mode === "submit");
 
-        // b_get_statusindex_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
+        // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
                 // status_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
         // gives err messages when multiple found.
-        const status_index = b_get_statusindex_of_requsr(loc, permit_dict);
+        const status_index = b_get_auth_index_of_requsr(loc, permit_dict);
         if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
             if(status_index){
                 // modes are 'approve' 'submit_test' 'submit_submit'
@@ -2400,7 +2441,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
             add_or_remove_class(el_ModNote_memo_icon4, cls_hide, !permit_dict.requsr_role_insp)
 
     // get tr_selected
-            let tr_selected = get_tablerow_selected(el_input)
+            let tr_selected = t_get_tablerow_selected(el_input)
 
             if(!isEmpty(grade_dict)){
                 let headertext = (grade_dict.fullname) ? grade_dict.fullname + "\n" : "";
@@ -2862,7 +2903,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 //========= get_datadict_by_el =============  PR2021-09-20
     function get_datadict_by_el(el) {
         //console.log( " ==== get_datadict_by_el ====");
-        const tblRow = get_tablerow_selected(el);
+        const tblRow = t_get_tablerow_selected(el);
         const grade_pk = get_attr_from_el_int(tblRow, "data-pk")
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(grade_rows, "id", grade_pk);
         return  found_dict;
@@ -2971,13 +3012,14 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
     }; // Filter_TableRows
 
 //========= ResetFilterRows  ====================================
-    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
-       //console.log( "===== ResetFilterRows  ========= ");
+    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20 PR2022-01-26
+        console.log( "===== ResetFilterRows  ========= ");
+        console.log( "filter_dict", filter_dict);
 
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;
 
-        filter_dict = {};
+        b_clear_dict(filter_dict)
 
         Filter_TableRows(tblBody_datatable);
 
@@ -2996,13 +3038,13 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                                 let classList = el_icon.classList;
                                 while (classList.length > 0) {
                                     classList.remove(classList.item(0));
-                                }
+                                };
                                 el_icon.classList.add("tickmark_0_0")
-                            }
-                        }
-                    }
-                }
-            }
+                            };
+                        };
+                    };
+                };
+            };
        };
         FillTblRows();
     }  // function ResetFilterRows
@@ -3027,7 +3069,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 grade_rows: {get: true}
             };
         DatalistDownload(datalist_request);
-
     }  // MSED_Response
 
 //=========  MSSSubjStud_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
@@ -3049,18 +3090,35 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             setting_dict.sel_subject_pk = sel_pk_int;
             setting_dict.sel_subject_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
             if(sel_pk_int) {
+                setting_dict.sel_cluster_pk = null;
+                setting_dict.sel_cluster_name = null;
                 setting_dict.sel_student_pk = null;
                 setting_dict.sel_student_name = null;
             };
 
             selected_pk_dict.sel_subject_pk = sel_pk_int;
             if(sel_pk_int) {selected_pk_dict.sel_student_pk = null};
+
+        } else if (mode === "cluster") {
+            setting_dict.sel_cluster_pk = sel_pk_int;
+            setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
+            if(sel_pk_int) {
+                setting_dict.sel_subject_pk = null;
+                setting_dict.sel_subject_name = null
+                setting_dict.sel_student_pk = null;
+                setting_dict.sel_student_name = null;
+            };
+            selected_pk_dict.sel_cluster_pk = sel_pk_int;
+            if(sel_pk_int) {selected_pk_dict.sel_cluster_pk = null};
+
         } else if (mode === "student") {
             setting_dict.sel_student_pk = sel_pk_int;
             setting_dict.sel_student_name = (selected_dict && selected_dict.fullname) ? selected_dict.fullname : null;
             if(sel_pk_int) {
                 setting_dict.sel_subject_pk = null;
                 setting_dict.sel_subject_name = null;
+                setting_dict.sel_cluster_pk = null;
+                setting_dict.sel_cluster_name = null
             };
 
             selected_pk_dict.sel_student_pk = sel_pk_int;
@@ -3069,8 +3127,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         console.log("setting_dict", setting_dict);
 
 // ---  upload new setting
-        const upload_dict = {selected_pk: selected_pk_dict};
-        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+        // sel_subject_pk, sel_cluster_pk and sel_student_pk are not saved in usersettings
+        //const upload_dict = {selected_pk: selected_pk_dict};
+        //b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         HandleBtnSelect(null, true)  // true = skip_upload
         // also calls: FillTblRows(), UpdateHeader()
@@ -3176,7 +3235,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         let permit_lock_rows = true;
         let permit_unlock_rows = true;
 // get tr_selected, fldName and grade_dict
-        let tr_selected = get_tablerow_selected(el_input)
+        let tr_selected = t_get_tablerow_selected(el_input)
         const fldName = get_attr_from_el(el_input, "data-field");
         //console.log("fldName", fldName) ;
 

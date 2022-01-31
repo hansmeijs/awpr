@@ -441,8 +441,6 @@ class DownloadEx3View(View):  # PR2021-10-07
                                 ('V021', ' Albertus, Dinaida L.J.'), 
                                 ('A17', ' Angela, Jean-Drianelys N.E.'),
                                 ('A06', ' Doran, Tianny L.'), 
-                                
-                                
                 """
 
         # - get arial font
@@ -842,6 +840,8 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
 
     # page_dict: {
     # ' subj_name': 'Economie',
+
+
     # ' class': '4A3',
     #   'cluster': None,
     #   'levvl': 'Praktisch Kadergerichte Leerweg',

@@ -1,6 +1,6 @@
 # PR2018-07-20
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField
+from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateField
 
 from django.contrib.postgres.fields import ArrayField
 
@@ -507,7 +507,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     scalelength = PositiveSmallIntegerField(null=True)
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
-
+    examdate = DateField(null=True)
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam possible ansewers per exam question
@@ -544,6 +544,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     scalelength = PositiveSmallIntegerField(null=True)
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
+    examdate = DateField(null=True)
 
 
 # PR2018-06-05

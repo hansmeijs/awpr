@@ -632,7 +632,7 @@
     function b_get_itemdict_from_datamap_by_el(el, data_map) {
         // function gets map_id form 'data-map_id' of tblRow, looks up 'map_id' in data_map
         let item_dict = {};
-        const tblRow = get_tablerow_selected(el);
+        const tblRow = t_get_tablerow_selected(el);
         if(tblRow){
             // was: const map_id = get_attr_from_el(tblRow, "data-table") + "_" + get_attr_from_el(tblRow, "data-pk")
             item_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
@@ -1487,13 +1487,13 @@
         };
     };  // b_clear_dict
 
-//========= b_get_statusindex_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18
-    function b_get_statusindex_of_requsr(loc, permit_dict){
+//========= b_get_auth_index_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18
+    function b_get_auth_index_of_requsr(loc, permit_dict){
         // function returns status_index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8, STATUS_04_AUTH3 = 16
 
-        //console.log( "-----  b_get_statusindex_of_requsr  -----");
+        //console.log( "-----  b_get_auth_index_of_requsr  -----");
         //console.log( "permit_dict", permit_dict);
 
         let status_index = 0, count_auth = 0;
@@ -1521,7 +1521,7 @@
         };
 
         return status_index;
-    }  // b_get_statusindex_of_requsr
+    }  // b_get_auth_index_of_requsr
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++

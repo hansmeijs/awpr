@@ -436,8 +436,8 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk):
         # when examyear_pk has value: skip other filters
         sql_list.append('AND ey.id = %(ey_id)s::INT')
         sql_keys['ey_id'] = examyear_pk
-    else:
-        sql_list.append('ORDER BY -ey.code')
+
+    sql_list.append('ORDER BY ey.id')
 
     sql = ' '.join(sql_list)
 
@@ -474,7 +474,7 @@ def create_department_rows(examyear):
         "LEFT JOIN accounts_user AS au ON (au.id = dep.modifiedby_id)",
 
         "WHERE ey.id = %(ey_id)s::INT",
-        "ORDER BY dep.sequence"]
+        "ORDER BY dep.id"]
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:
@@ -532,7 +532,9 @@ def create_level_rows(examyear, depbase, cur_dep_only):
                 sql_list.append("AND CONCAT(';', lvl.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT")
             else:
                 sql_list.append("AND FALSE")
-        sql_list.append("ORDER BY lvl.sequence")
+
+        sql_list.append("ORDER BY lvl.id")
+
         sql = ' '.join(sql_list)
 
         if logging_on:
@@ -544,17 +546,7 @@ def create_level_rows(examyear, depbase, cur_dep_only):
 
             if logging_on:
                 logger.debug('rows: ' + str(rows))
-                #logger.debug('connection.queries: ' + str(connection.queries))
-        """
-        'sql': "SELECT lvl.id, lvl.base_id, lvl.examyear_id, ey.code AS examyear_code, ey.country_id, 
-                CONCAT('level_', lvl.id::TEXT) AS mapid, lvl.name, lvl.abbrev, lvl.sequence, lvl.depbases, lvl.modifiedby_id, lvl.modifiedat, 
-                SUBSTRING(au.username, 7) AS modby_username 
-                FROM subjects_level AS lvl  
-                INNER JOIN schools_examyear AS ey ON (ey.id = lvl.examyear_id) 
-                LEFT JOIN accounts_user AS au ON (au.id = lvl.modifiedby_id) 
-                WHERE ey.id = 62::INT AND CONCAT(';', lvl.depbases::TEXT, ';') LIKE '%;1;%'::TEXT 
-                ORDER BY lvl.sequence", 'time': '0.000'}]
-        """
+
     return rows
 # --- end of create_level_rows
 
@@ -599,7 +591,8 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
             else:
                 sql_list.append("AND FALSE")
 
-        sql_list.append("ORDER BY sct.sequence")
+        sql_list.append("ORDER BY sct.id")
+
         sql = ' '.join(sql_list)
 
         if logging_on:
@@ -655,6 +648,7 @@ def create_school_rows(examyear, permit_dict, school_pk=None):
 
     # order by id necessary to make sure that lookup function on client gets the right row
     sql_list.append("ORDER BY sch.id")
+
     sql = ' '.join(sql_list)
     if logging_on:
         logger.debug('sql_keys' + str(sql_keys))

@@ -103,7 +103,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
     st_partial_exam = student.partial_exam  # get certificate, only when evening- or lexstudent
     # deprecated, use partial_exam instead. Was: st_additional_exam = student.additional_exam  # when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
-    max_score, nex_id, cesuur, nterm = None, None, None, None
+    max_score, nex_id, cesuur, nterm, examdate = None, None, None, None, None
     if is_pe:
         exam = grade_instance.pe_exam
     else:
@@ -114,6 +114,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
         nex_id = exam.nex_id
         cesuur = exam.cesuur
         nterm = exam.nterm
+        examdate = exam.examdate
 
     if logging_on:
         logger.debug(' ')
@@ -382,13 +383,14 @@ def validate_import_grade(student_dict, subj_dict, si_dict, examgradetype, grade
             # PR2015-12-27 debug: vervang komma door punt, anders wordt komma genegeerd
             # get max_score from exam
 
-            max_score, nex_id, cesuur, nterm = None, None, None, None
+            max_score, nex_id, cesuur, nterm, examdate = None, None, None, None, None
             exam_id = subj_dict.get('exam_id')
             if exam_id:
                 max_score = subj_dict.get('scalelength')
                 nex_id = subj_dict.get('nex_id')
                 cesuur = subj_dict.get('cesuur')
                 nterm = subj_dict.get('nterm')
+                examdate = subj_dict.get('examdate')
 
             input_number, err_lst = calc_final.get_score_from_inputscore(grade_str, max_score)
             if err_lst:
@@ -715,7 +717,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
             ]
         # add LEFT JOIN with  pe_exam_id when pe, with pce_exam_id when ce, else no join with exam
         if 'pe' in examgradetype or 'ce' in examgradetype:
-            sql_grade_list.extend(("exam.id AS exam_id, exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",
+            sql_grade_list.extend(("exam.id AS exam_id, exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm, exam.examdate",
                                    "FROM students_grade AS gr",
                                    "LEFT JOIN subjects_exam AS exam"))
             if 'pe' in examgradetype:
@@ -724,7 +726,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                 sql_grade_list.append("ON (exam.id = gr.ce_exam_id)")
 
         else:
-            sql_grade_list.extend(("NULL AS exam_id, NULL AS nex_id, NULL AS scalelength, NULL AS cesuur, NULL AS nterm",
+            sql_grade_list.extend(("NULL AS exam_id, NULL AS nex_id, NULL AS scalelength, NULL AS cesuur, NULL AS nterm, NULL AS examdate",
                                     "FROM students_grade AS gr"))
 
         sql_grade_list.append("WHERE gr.examperiod = %(ep)s::INT AND NOT gr.tobedeleted")
@@ -758,7 +760,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                              "sub_grade_sql.grade_id, sub_grade_sql.studsubj_id, sub_grade_sql.value,",
                              "sub_grade_sql.publ, sub_grade_sql.blocked, sub_grade_sql.auth,",
                              "sub_grade_sql.examperiod, sub_grade_sql.exam_id,",
-                             "sub_grade_sql.nex_id, sub_grade_sql.scalelength, sub_grade_sql.cesuur, sub_grade_sql.nterm",
+                             "sub_grade_sql.nex_id, sub_grade_sql.scalelength, sub_grade_sql.cesuur, sub_grade_sql.nterm, sub_grade_sql.examdate",
             "FROM students_studentsubject AS studsubj",
             "INNER JOIN sub_grade_sql ON (sub_grade_sql.studsubj_id = studsubj.id)",
             # was: "LEFT JOIN sub_grade_sql ON (sub_grade_sql.studsubj_id = studsubj.id)",
@@ -800,7 +802,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
 
             "sub_sql.ss_si_id, sub_sql.grade_id, sub_sql.studsubj_id, sub_sql.value,",  # 4
             "sub_sql.publ, sub_sql.blocked, sub_sql.auth,",  # 3
-            "sub_sql.exam_id, sub_sql.nex_id, sub_sql.scalelength, sub_sql.cesuur, sub_sql.nterm",  # 5
+            "sub_sql.exam_id, sub_sql.nex_id, sub_sql.scalelength, sub_sql.cesuur, sub_sql.nterm, sub_sql.examdate",   # 5
 
             "FROM students_student AS stud",
             "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
@@ -896,7 +898,8 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                             'nex_id': row[31],
                             'scalelength': row[32],
                             'cesuur': row[33],
-                            'nterm': row[34]
+                            'nterm': row[34],
+                            'examdate': row[35]
                         }
                     else:
                         # TODO error message when subject alreay exists (should not be possible

@@ -120,7 +120,7 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserUploadView ===============')
@@ -1354,6 +1354,9 @@ def create_user_rows(request, user_pk=None):
 
                     "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
                     "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
+
+                    "u.allowed_depbases, u.allowed_levelbases, u.allowed_schoolbases, u.allowed_subjectbases, u.allowed_clusterbases,",
+
                     "u.lang, u.modified_at AS modifiedat, mod_user.modby_username",
 
                     "FROM accounts_user AS u",
@@ -1628,7 +1631,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01
 def update_user_instance(instance, upload_dict, msg_list, request):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_user_instance  -----')
         logger.debug('instance: ' + str(instance))
@@ -1651,113 +1654,125 @@ def update_user_instance(instance, upload_dict, msg_list, request):
                 logger.debug('field: ' + str(field))
                 logger.debug('field_value: ' + str(field_value))
 
-            if field in ('username', 'last_name', 'email', 'usergroups', 'is_active'):
 # - check if this username already exists in this school, exept for this user
-                if field == 'username':
-                    new_username = field_value
-                    msg_err = v.validate_unique_username(new_username, usr_schoolbase.prefix, user_pk)
+            if field == 'username':
+                new_username = field_value
+                msg_err = v.validate_unique_username(new_username, usr_schoolbase.prefix, user_pk)
 
-                    if logging_on:
-                        logger.debug('new_username: ' + str(new_username))
-                        logger.debug('msg_err: ' + str(msg_err))
+                if logging_on:
+                    logger.debug('new_username: ' + str(new_username))
+                    logger.debug('msg_err: ' + str(msg_err))
 
-                    if msg_err:
-                        err_dict[field] = msg_err
-                        has_error = True
-                    if not has_error and new_username and new_username != instance.username:
-                        prefixed_username = usr_schoolbase.prefix + new_username
-                        instance.username = prefixed_username
-                        data_has_changed = True
+                if msg_err:
+                    err_dict[field] = msg_err
+                    has_error = True
+                if not has_error and new_username and new_username != instance.username:
+                    prefixed_username = usr_schoolbase.prefix + new_username
+                    instance.username = prefixed_username
+                    data_has_changed = True
 
 # - check if namelast is blank
-                elif field == 'last_name':
-                    new_last_name = field_value
-                    msg_err = v.validate_notblank_maxlength(new_last_name, c.MAX_LENGTH_NAME, _('The name'))
+            elif field == 'last_name':
+                new_last_name = field_value
+                msg_err = v.validate_notblank_maxlength(new_last_name, c.MAX_LENGTH_NAME, _('The name'))
 
-                    if logging_on:
-                        logger.debug('new_last_name: ' + str(new_last_name))
-                        logger.debug('msg_err: ' + str(msg_err))
+                if logging_on:
+                    logger.debug('new_last_name: ' + str(new_last_name))
+                    logger.debug('msg_err: ' + str(msg_err))
 
-                    if msg_err:
-                        err_dict[field] = msg_err
-                        has_error = True
-                    if not has_error and new_last_name and new_last_name != instance.last_name:
-                        instance.last_name = new_last_name
-                        data_has_changed = True
+                if msg_err:
+                    err_dict[field] = msg_err
+                    has_error = True
+                if not has_error and new_last_name and new_last_name != instance.last_name:
+                    instance.last_name = new_last_name
+                    data_has_changed = True
 
 # - check if this is a valid email address:
-                elif field == 'email':
-                    new_email = field_value
-                    msg_err = v.validate_email_address(new_email)
+            elif field == 'email':
+                new_email = field_value
+                msg_err = v.validate_email_address(new_email)
 
-                    if logging_on:
-                        logger.debug('new_email: ' + str(new_email))
-                        logger.debug('msg_err: ' + str(msg_err))
+                if logging_on:
+                    logger.debug('new_email: ' + str(new_email))
+                    logger.debug('msg_err: ' + str(msg_err))
 
+                if msg_err:
+                    err_dict[field] = msg_err
+                    has_error = True
+# - check if this email address already exists
+                else:
+                    msg_err = v.validate_unique_useremail(new_email, country, usr_schoolbase, user_pk)
                     if msg_err:
                         err_dict[field] = msg_err
                         has_error = True
-# - check if this email address already exists
+
+                if not has_error and new_email and new_email != instance.email:
+                    instance.email = new_email
+                    data_has_changed = True
+
+            elif field == 'usergroups':
+                # field_value is dict: {read: true}
+                usergroups_haschanged = update_usergroups(instance, field_value, True, request) # True = validate
+                if usergroups_haschanged:
+                    data_has_changed = True
+
+            elif field in ('allowed_depbases', 'allowed_schoolbases', 'allowed_levelbases', 'allowed_subjectbases', 'allowed_clusterbases'):
+                old_value = getattr(instance, field)
+                if logging_on:
+                    logger.debug('>>>>>>>>>>>>>>> field: ' + str(field))
+                    logger.debug('field_value: ' + str(field_value))
+                    logger.debug('old_value: ' + str(old_value))
+                if field_value != old_value:
+                    setattr(instance, field, field_value)
+                    data_has_changed = True
+                if logging_on:
+                    logger.debug('field_value: ' + str(field_value))
+                    logger.debug('data_has_changed: ' + str(data_has_changed))
+
+        # - sysadmins cannot remove sysadmin permission from their own account
+                """
+                if request.user.is_usergroup_admin:
+                    if permit_field in ('perm_admin', 'perm_system'):
+                        if instance == request.user:
+                            if not new_permit_bool:
+                                err_dict[field] = _("System administrators cannot remove their own 'system administrator' permission.")
+                                has_error = True
+
+                if not has_error:
+        # - validation: user cannot have perm04_auth1 and perm08_auth2 at the same time - resert other auth field
+
+                    permit_sum_has_changed = False
+                    if new_permit_bool:
+                        if new_permit_int not in saved_permit_list:
+                            saved_permit_list.append(new_permit_int)
+                            permit_sum_has_changed = True
                     else:
-                        msg_err = v.validate_unique_useremail(new_email, country, usr_schoolbase, user_pk)
-                        if msg_err:
-                            err_dict[field] = msg_err
-                            has_error = True
-
-                    if not has_error and new_email and new_email != instance.email:
-                        instance.email = new_email
-                        data_has_changed = True
-
-                elif field == 'usergroups':
-                    # field_value is dict: {read: true}
-                    usergroups_haschanged = update_usergroups(instance, field_value, True, request) # True = validate
-                    if usergroups_haschanged:
-                        data_has_changed = True
-
-            # - sysadmins cannot remove sysadmin permission from their own account
-                    """
-                    if request.user.is_usergroup_admin:
-                        if permit_field in ('perm_admin', 'perm_system'):
-                            if instance == request.user:
-                                if not new_permit_bool:
-                                    err_dict[field] = _("System administrators cannot remove their own 'system administrator' permission.")
-                                    has_error = True
-
-                    if not has_error:
-            # - validation: user cannot have perm04_auth1 and perm08_auth2 at the same time - resert other auth field
-
-                        permit_sum_has_changed = False
+                        if new_permit_int in saved_permit_list:
+                            saved_permit_list.remove(new_permit_int)
+                            permit_sum_has_changed = True
+                    if permit_sum_has_changed:
+                    # - remove value of other auth permits when auth permit is set
                         if new_permit_bool:
-                            if new_permit_int not in saved_permit_list:
-                                saved_permit_list.append(new_permit_int)
-                                permit_sum_has_changed = True
-                        else:
-                            if new_permit_int in saved_permit_list:
-                                saved_permit_list.remove(new_permit_int)
-                                permit_sum_has_changed = True
-                        if permit_sum_has_changed:
-                        # - remove value of other auth permits when auth permit is set
-                            if new_permit_bool:
-                                remove_other_auth_permits(permit_field, saved_permit_list)
+                            remove_other_auth_permits(permit_field, saved_permit_list)
 
-                            new_permit_sum = get_permit_sum_from_tuple(saved_permit_list)
+                        new_permit_sum = get_permit_sum_from_tuple(saved_permit_list)
 
-                            #logger.debug('saved_permit_list: ' + str(saved_permit_list))
-                            #logger.debug('new_permit_sum: ' + str(new_permit_sum))
+                        #logger.debug('saved_permit_list: ' + str(saved_permit_list))
+                        #logger.debug('new_permit_sum: ' + str(new_permit_sum))
 
-                            instance.permits = new_permit_sum
-                            data_has_changed = True
-                        """
-                elif field == 'is_active':
-                    new_isactive = field_value if field_value else  False
-                    # sysadmins cannot remove is_active from their own account
-                    if request.user.is_usergroup_admin and instance == request.user:
-                        if not new_isactive:
-                            err_dict[field] = _("System administrators cannot make their own account inactive.")
-                            has_error = True
-                    if not has_error and new_isactive != instance.is_active:
-                        instance.is_active = new_isactive
+                        instance.permits = new_permit_sum
                         data_has_changed = True
+                    """
+            elif field == 'is_active':
+                new_isactive = field_value if field_value else  False
+                # sysadmins cannot remove is_active from their own account
+                if request.user.is_usergroup_admin and instance == request.user:
+                    if not new_isactive:
+                        err_dict[field] = _("System administrators cannot make their own account inactive.")
+                        has_error = True
+                if not has_error and new_isactive != instance.is_active:
+                    instance.is_active = new_isactive
+                    data_has_changed = True
 
 # -  update user
         if not has_error:

@@ -184,10 +184,10 @@ def create_student_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, appe
         if student_pk:
             sql_list.append('AND st.id = %(st_id)s::INT')
             sql_keys['st_id'] = student_pk
-        else:
-            # PR2021-06-16
-            # order by id necessary to make sure that lookup function on client gets the right row
-            sql_list.append("ORDER BY st.id")
+
+        # order by id necessary to make sure that lookup function on client gets the right row
+        sql_list.append("ORDER BY st.id")
+
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
@@ -2906,6 +2906,13 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                     setattr(studsubj_instance, field, new_value)
                     save_changes = True
 
+        elif field == 'cluster_pk':
+            new_cluster = subj_mod.Cluster.objects.get_or_none(pk=new_value)
+            saved_cluster = getattr(studsubj_instance, 'cluster')
+            if new_cluster != saved_cluster:
+                setattr(studsubj_instance, 'cluster', new_cluster)
+                save_changes = True
+
         elif field == 'exemption_year':
             # TODO Validate if changing allowed
 
@@ -4686,8 +4693,8 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             sql_keys['ss_pk_list'] = studsubj_pk_list
             sql_list.append("AND studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[])")
 
-
         sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST')
+
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
@@ -4941,7 +4948,7 @@ def create_orderlist_rows(sel_examyear_code, request):
         "WHERE schbase.defaultrole = %(default_role)s::INT",
         "AND ey.code = %(ey_code_int)s::INT",
         show_sxm_only,
-        "ORDER BY LOWER(schbase.code)"
+        "ORDER BY sch.id"
         ]
     sql = ' '.join(sql_list)
 

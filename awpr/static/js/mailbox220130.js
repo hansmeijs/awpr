@@ -1461,7 +1461,7 @@ document.addEventListener('DOMContentLoaded', function() {
             mailmessage_pk = mod_MMM_dict.mailmessage_pk;
             mailbox_pk = mod_MMM_dict.mailbox_pk;
         } else if (el_input){
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             fldName = get_attr_from_el(el_input, "data-field");
             mailmessage_pk = get_attr_from_el_int(tblRow, "data-pk");
             mailbox_pk = get_attr_from_el_int(tblRow, "data-mailbox_pk");
@@ -1521,7 +1521,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // reset attachments happens in MMM_FillAttachments
 
-        const tblRow = get_tablerow_selected(el_input);
+        const tblRow = t_get_tablerow_selected(el_input);
         const tblName = get_attr_from_el(tblRow, "data-table");
         const mailmessage_pk = get_attr_from_el_int(tblRow, "data-pk");
         const mailbox_pk = get_attr_from_el_int(tblRow, "data-mailbox_pk");
@@ -1691,7 +1691,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(may_open_modal){
 
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             const tblName = get_attr_from_el(tblRow, "data-table");
             const mailmessage_pk = get_attr_from_el_int(tblRow, "data-pk");
 
@@ -2578,7 +2578,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let may_open_modal = permit_dict.permit_write_message;
         if(may_open_modal){
 
-            let tblRow = get_tablerow_selected(el_input)
+            let tblRow = t_get_tablerow_selected(el_input)
             const mailinglist_pk = get_attr_from_el_int(tblRow, "data-pk");
 
 // --- get data_dict

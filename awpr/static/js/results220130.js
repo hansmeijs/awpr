@@ -1056,7 +1056,7 @@ function RefreshDataRowsAfterUpload(response) {
                 mod_MSTUD_dict = {is_addnew: is_addnew,
                     db_code: setting_dict.sel_depbase_code}
             } else {
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 const map_dict = get_recursive_integer_lookup(tblRow);
                 mod_MSTUD_dict = deepcopy_dict(map_dict);
             }

@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_MASS_dict = {};
     let mod_MMUOC = {};
     let mod_MEX3_dict = {};
+    const mod_MSELEX_dict = {};
 
     let user_list = [];
     let examyear_map = new Map();
@@ -278,6 +279,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
 
+
+// ---  MSEX MOD SELECT CLUSTER ------------------------------
+        const el_MSELEX_header = document.getElementById("id_MSELEX_header");
+        const el_MSELEX_tblBody_select = document.getElementById("id_MSELEX_tblBody_select");
+        const el_MSELEX_btn_cancel = document.getElementById("id_MSELEX_btn_cancel");
+        const el_MSELEX_btn_save = document.getElementById("id_MSELEX_btn_save");
+        if (el_MSELEX_btn_save){
+            el_MSELEX_btn_save.addEventListener("click", function() {MSELEX_Save("update")}, false )
+        };
+        const el_MSELEX_btn_delete = document.getElementById("id_MSELEX_btn_delete");
+        if (el_MSELEX_btn_delete){
+            el_MSELEX_btn_delete.addEventListener("click", function() {MSELEX_Save("delete")}, false )
+        };
+
 // ---  MODAL CLUSTER
         const el_MCL_select_subject = document.getElementById("id_MCL_select_subject")
         if(el_MCL_select_subject){el_MCL_select_subject.addEventListener("click", function() {MCL_BtnSelectSubjectClick()}, false)};
@@ -312,8 +327,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MCL_select_class = document.getElementById("id_MCL_select_class");
         if(el_MCL_select_class){el_MCL_select_class.addEventListener("change", function() {MCL_SelectClassnameClick(el_MCL_select_class)}, false)};
-        const el_MCL_chk_nocluster = document.getElementById("id_MCL_chk_nocluster");
-        if(el_MCL_chk_nocluster){el_MCL_chk_nocluster.addEventListener("change", function() {MCL_ChkNoClusterClick(el_MCL_chk_nocluster)}, false)};
+        const el_MCL_chk_hascluster = document.getElementById("id_MCL_chk_hascluster");
+        if(el_MCL_chk_hascluster){el_MCL_chk_hascluster.addEventListener("change", function() {MCL_ChkHasClusterClick(el_MCL_chk_hascluster)}, false)};
 
         const el_MCL_btn_save = document.getElementById("id_MCL_btn_save")
         if(el_MCL_btn_save){el_MCL_btn_save.addEventListener("click", function() {MCL_Save()}, false)};
@@ -982,7 +997,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     };
-                } else if ( field_name.includes("_status")){
+                } else if (field_name.includes("_status")){
         //console.log("field_name", field_name);
                     // skip when no permit or row has no studsubj_id or when it is published
                     if(permit_dict.permit_approve_subject && permit_dict.requsr_same_school && map_dict.studsubj_id){
@@ -993,7 +1008,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         //console.log("publ_id", field_publ_id, publ_id);
                         if(!publ_id){
-                            td.addEventListener("change", function() {HandleInputChange(el)}, false)
+                            td.addEventListener("click", function() {UploadToggleStatus(el)}, false)
                             add_hover(td);
                         };
                     };
@@ -1013,9 +1028,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                     el.classList.add("input_text");
                 } else if (field_name === "cluster_name") {
-                    td.addEventListener("click", function() {MCL_Open(td)}, false)
+                    td.addEventListener("click", function() {MSELEX_Open(el)}, false)
                     td.classList.add("pointer_show");
                     add_hover(td);
+
                 } else {
                     // everyone that can view the page can open it, only permit_crud from same_school can edit PR2021-08-31
                     td.addEventListener("click", function() {MSTUDSUBJ_Open(td)}, false)
@@ -1066,6 +1082,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const field = get_attr_from_el(el_div, "data-field");
             const fld_value = (map_dict[field]) ? map_dict[field] : null;
 
+        //console.log("field", field);
+        //console.log("fld_value", fld_value);
             if(field){
                 let inner_text = null, h_ref = null, title_text = null, filter_value = null;
                 if (field === "select") {
@@ -1101,8 +1119,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 } else if (field === "examperiod"){
                     inner_text = loc.examperiod_caption[map_dict.examperiod];
+
                 } else if (field === "datepublished"){
                      inner_text = format_dateISO_vanilla (loc, map_dict.datepublished, true, false, true, false);
+
                 } else if (field === "url"){
                     h_ref = fld_value;
                 };  // if (field === "select")
@@ -1234,7 +1254,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log(" --- HandleInputChange ---")
 
 // ---  get selected.data_dict
-        const tblRow = get_tablerow_selected(el_input)
+        const tblRow = t_get_tablerow_selected(el_input)
         const data_dict = get_datadict_from_tblRow(tblRow);
 
         if (data_dict){
@@ -1318,13 +1338,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (permit_dict.permit_approve_subject){
 
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
 
 // - get statusindex of requsr ( statusindex = 1 when auth1 etc
             // status_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
-            // b_get_statusindex_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
+            // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
             // this function gives err message when multiple found. (uses b_show_mod_message)
-            const requsr_status_index = b_get_statusindex_of_requsr(loc, permit_dict);
+            const requsr_status_index = b_get_auth_index_of_requsr(loc, permit_dict);
             if(requsr_status_index){
 
                 const data_dict = get_datadict_from_tblRow(tblRow);
@@ -1438,7 +1458,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // (still) only called in brn Exemptions
         if (permit_dict.permit_crud && permit_dict.requsr_same_school){
 
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             const stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
             const studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
 
@@ -1565,7 +1585,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 new_studsubj_pk: 0
             };
 
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             HandleTblRowClicked(tblRow);
 
         console.log("selected.studsubj_dict", selected.studsubj_dict)
@@ -2466,6 +2486,8 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  MCL_Save  ================ PR2022-01-09
     function MCL_Save() {
         console.log("===== MCL_Save =====");
+        console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
+        console.log("mod_MCL_dict.student_list", mod_MCL_dict.student_list);
 
 // ---  loop through mod_MCL_dict.cluster_list
         const cluster_list = []
@@ -2492,7 +2514,9 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         if (cluster_list.length || studsubj_list.length){
-        console.log("vvvvvvvvvvvvvvv studsubj_list", studsubj_list);
+
+            console.log("studsubj_list", studsubj_list);
+
     // ---  upload changes
                 const upload_dict = {
                     subject_pk: mod_MCL_dict.subject_pk,
@@ -2650,12 +2674,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MCL_SaveSubject_in_MCL_dict  ================ PR2022-01-07
     function MCL_SaveSubject_in_MCL_dict(sel_subject_pk) {
-
         console.log("===== MCL_SaveSubject_in_MCL_dict =====");
         console.log("sel_subject_pk", sel_subject_pk);
 
 // - reset mod_MCL_dict
         b_clear_dict(mod_MCL_dict);
+
         mod_MCL_dict.subject_pk = null;
         mod_MCL_dict.subject_name = null;
         mod_MCL_dict.subject_code = null;
@@ -2818,6 +2842,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  sort dictlist by key 'sortby'
             mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
         };
+        console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
     };  // MCL_FillClusterList
 
 //=========  MCL_FillStudentList  ================ PR2022-01-06
@@ -2864,6 +2889,8 @@ document.addEventListener('DOMContentLoaded', function() {
             mod_MCL_dict.student_list.sort(b_comparator_sortby);
             mod_MCL_dict.classname_list.sort();
         };
+        console.log("mod_MCL_dict.student_list", mod_MCL_dict.student_list);
+        console.log("mod_MCL_dict.classname_list", mod_MCL_dict.classname_list);
     };  // MCL_FillStudentList
 
 //=========  MCL_FillTableStudsubj  ================ PR2022-01-06
@@ -2890,12 +2917,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // put all studsubjects of this cluster in table el_MCL_tblBody_studs_selected
             const is_selected = (!!student_dict.cluster_pk && student_dict.cluster_pk === mod_MCL_dict.sel_cluster_pk);
 
-    // filter_nocluster and filter_classname in studsubj is available
+    // include_hascluster and filter_classname in studsubj is available
             let show_row = true;
+            // when student has this cluster: put it in tblBody_studs_selected, show always
             if (is_selected){
                 show_row = true;
             } else {
-                if (mod_MCL_dict.filter_nocluster){
+                if (!mod_MCL_dict.include_hascluster){
                     show_row = (!student_dict.cluster_pk);
                 };
                 if (show_row && mod_MCL_dict.filter_classname) {
@@ -2922,8 +2950,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 td_temp.innerText = student_dict.classname;
                 td_temp.classList.add("tw_090");
             };
-
-
         };
         const selected_count = (el_MCL_tblBody_studs_selected.rows.length) ? el_MCL_tblBody_studs_selected.rows.length : 0;
         const available_count = (el_MCL_tblBody_studs_available.rows.length) ? el_MCL_tblBody_studs_available.rows.length : 0;
@@ -3003,10 +3029,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     // apply same filter same as in MCL_FillTableStudsubj
                     // add sel_cluster_pk to all available studsubjects that are shown in table Available
                     // filter: - not selected and not selected in this cluster
-                    //         - if filter_nocluster: cluster_pk is null
+                    //         - if include_hascluster: cluster_pk is null
                     //         - if filter_classname: classname = selected class
                     if ((!student_dict.cluster_pk || student_dict.cluster_pk !== mod_MCL_dict.sel_cluster_pk) &&
-                            (!mod_MCL_dict.filter_nocluster || !student_dict.cluster_pk) &&
+                            (mod_MCL_dict.include_hascluster || !student_dict.cluster_pk) &&
                             (!mod_MCL_dict.filter_classname || student_dict.classname === mod_MCL_dict.filter_classname) ) {
                         student_dict.cluster_pk = mod_MCL_dict.sel_cluster_pk;
                         student_dict.mode = "update";
@@ -3027,16 +3053,15 @@ document.addEventListener('DOMContentLoaded', function() {
         MCL_FillTableStudsubj();
     };  // MCL_SelectClassnameClick
 
-//=========  MCL_ChkNoClusterClick  ================ PR2022-01-09
-    function MCL_ChkNoClusterClick(el_checkbox) {
-        console.log("===== MCL_ChkNoClusterClick =====");
-        mod_MCL_dict.filter_nocluster = (el_checkbox.checked) ? el_checkbox.checked : false;
-        console.log("mod_MCL_dict.filter_nocluster", mod_MCL_dict.filter_nocluster);
-
+//=========  MCL_ChkHasClusterClick  ================ PR2022-01-09
+    function MCL_ChkHasClusterClick(el_checkbox) {
+        //console.log("===== MCL_ChkHasClusterClick =====");
+        mod_MCL_dict.include_hascluster = (el_checkbox.checked) ? el_checkbox.checked : false;
+        //console.log("mod_MCL_dict.include_hascluster", mod_MCL_dict.include_hascluster);
 
         MCL_FillTableStudsubj();
 
-    };  // MCL_ChkNoClusterClick
+    };  // MCL_ChkHasClusterClick
 
 
 //=========  MCL_get_next_clustername  ================ PR2022-01-18
@@ -3695,7 +3720,168 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
     };
 };  // MEX3_reset_layout_options
 
+///////////////////////////////////////
+// +++++++++ MOD SELECT CLUSTER  ++++++++++++++++ PR2022-01-27
+    function MSELEX_Open(el_input){
+        console.log(" ===  MSELEX_Open  =====") ;
+        console.log( "el_input", el_input);
 
+        b_clear_dict(mod_MSELEX_dict);
+        mod_MSELEX_dict.cluster_pk = null;
+        mod_MSELEX_dict.el_input = el_input;
+
+        el_MSELEX_header.innerText = loc.Select_cluster;
+
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school){
+            const tblRow = t_get_tablerow_selected(el_input)
+            const stud_pk_int = get_attr_from_el_int(tblRow, "data-stud_pk");
+            const studsubj_pk_int = get_attr_from_el_int(tblRow, "data-studsubj_pk");
+            const [index, found_dict, compare] = b_recursive_integer_lookup(studsubj_rows, "stud_id", stud_pk_int, "studsubj_id", studsubj_pk_int);
+            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        console.log("data_dict", data_dict);
+
+            if(!isEmpty(data_dict)){
+                mod_MSELEX_dict.mapid = data_dict.mapid;
+                mod_MSELEX_dict.student_pk = data_dict.stud_id;
+                mod_MSELEX_dict.studsubj_pk = data_dict.studsubj_id;
+                mod_MSELEX_dict.subj_pk = data_dict.subj_id;
+                mod_MSELEX_dict.cluster_pk = data_dict.cluster_id;
+                mod_MSELEX_dict.cluster_name = data_dict.cluster_id;
+        console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+// ---  fill select table
+            const row_count = MSELEX_FillSelectTable()
+
+// show delete btn, only when studsubj has cluster
+            el_MSELEX_btn_delete.innerText = loc.Remove_cluster;
+            add_or_remove_class(el_MSELEX_btn_delete, cls_hide, !mod_MSELEX_dict.cluster_pk)
+            add_or_remove_class(el_MSELEX_btn_save, cls_hide, true)
+            el_MSELEX_btn_cancel.innerText = loc.Close;
+
+
+// ---  show modal
+            $("#id_mod_select_exam").modal({backdrop: true});
+            };
+        };
+    };  // MSELEX_Open
+
+//=========  MSELEX_Save  ================ PR2021-05-22 PR2022-01-24
+    function MSELEX_Save(mode){
+        console.log(" ===  MSELEX_Save  =====") ;
+        // modes are "update" and "delete"
+        console.log( "mod_MSELEX_dict: ", mod_MSELEX_dict);
+
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school){
+            const new_cluster_pk = (mode === "update" && mod_MSELEX_dict.cluster_pk) ? mod_MSELEX_dict.cluster_pk : null;
+            const upload_dict = {
+                table: 'studsubj',
+                mode: mode,
+                cluster_pk: new_cluster_pk,
+                student_pk: mod_MSELEX_dict.student_pk,
+                studsubj_pk: mod_MSELEX_dict.studsubj_pk,
+            };
+
+        // update field before upload
+            const update_dict = {cluster_name: (mode === "update") ? mod_MSELEX_dict.cluster_name : null}
+            UpdateField(mod_MSELEX_dict.el_input, update_dict);
+
+            UploadChanges(upload_dict, urls.url_studsubj_single_update);
+
+        }  // if(permit_dict.permit_crud){
+        $("#id_mod_select_exam").modal("hide");
+    }  // MSELEX_Save
+
+//=========  MSELEX_FillSelectTable  ================ PR2022-01-27
+    function MSELEX_FillSelectTable() {
+        console.log( "===== MSELEX_FillSelectTable ========= ");
+
+        const tblBody_select = el_MSELEX_tblBody_select;
+        tblBody_select.innerText = null;
+
+        let row_count = 0, add_to_list = false;
+// ---  loop through cluster_rows
+        if(cluster_rows && cluster_rows.length){
+        console.log( "cluster_rows", cluster_rows);
+        console.log( "mod_MSELEX_dict.subj_pk", mod_MSELEX_dict.subj_pk);
+            for (let i = 0, data_dict; data_dict = cluster_rows[i]; i++) {
+            // add only when cluster has same subject as studsubj
+                const show_row = (data_dict.subject_id === mod_MSELEX_dict.subj_pk);
+        console.log( "show_row", show_row);
+                if (show_row){
+                    row_count += 1;
+                    MSELEX_FillSelectRow(data_dict, tblBody_select, -1);
+                };
+            };
+        };
+        if(!row_count){
+            let tblRow = tblBody_select.insertRow(-1);
+            let td = tblRow.insertCell(-1);
+            td.innerText = loc.No_clusters_for_this_subject;
+
+        } else if(row_count === 1){
+            let tblRow = tblBody_select.rows[0]
+            if(tblRow) {
+// ---  make first row selected
+                //tblRow.classList.add(cls_selected)
+                MSELEX_SelectItem(tblRow);
+            };
+        };
+        return row_count
+    }; // MSELEX_FillSelectTable
+
+//=========  MSELEX_FillSelectRow  ================ PR2020-10-27
+    function MSELEX_FillSelectRow(data_dict, tblBody_select, row_index) {
+        console.log( "===== MSELEX_FillSelectRow ========= ");
+        console.log( "data_dict: ", data_dict);
+
+        const cluster_pk_int = data_dict.id;
+        const code_value = (data_dict.name) ? data_dict.name : "---"
+        const is_selected_pk = (mod_MSELEX_dict.cluster_pk != null && cluster_pk_int === mod_MSELEX_dict.cluster_pk)
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(row_index);
+        tblRow.setAttribute("data-pk", cluster_pk_int);
+// ---  add EventListener to tblRow
+        tblRow.addEventListener("click", function() {MSELEX_SelectItem(tblRow)}, false )
+// ---  add hover to tblRow
+        add_hover(tblRow);
+// ---  highlight clicked row
+        if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+        let el_div = document.createElement("div");
+            el_div.innerText = code_value;
+            el_div.classList.add("tw_360", "px-4", "pointer_show" )
+        td.appendChild(el_div);
+
+    }  // MSELEX_FillSelectRow
+
+//=========  MSELEX_SelectItem  ================ PR2021-04-05
+    function MSELEX_SelectItem(tblRow) {
+        console.log( "===== MSELEX_SelectItem ========= ");
+        console.log( "tblRow", tblRow);
+// ---  deselect all highlighted rows
+        DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+        tblRow.classList.add(cls_selected)
+// ---  get pk code and value from tblRow in mod_MSELEX_dict
+        mod_MSELEX_dict.cluster_pk = get_attr_from_el_int(tblRow, "data-pk")
+
+// ---  get display value from tblRow.td.el in mod_MSELEX_dict
+        let display_txt = null;
+        const td = tblRow.cells[0];
+        if (td){
+            const el = td.children[0];
+            if (el){
+                display_txt = el.innerText;
+            };
+        };
+        mod_MSELEX_dict.cluster_name = display_txt;
+
+        MSELEX_Save("update");
+    }  // MSELEX_SelectItem
+
+
+///////////////////////////////////////
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
@@ -3763,7 +3949,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
         } else if (["has_exemption", "has_sr", "has_reex", "has_reex03"].includes(mode)){
             if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 mod_dict.map_id = tblRow.id;
                 mod_dict.stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
                 mod_dict.studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
@@ -4112,10 +4298,10 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                                         };
 
                                     }  //  if (el){
-                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                            };  // if(tblRow){
-                        //}; //  if(updated_columns.length){
-                    };  //  if(!isEmpty(update_dict))
+                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++)
+                            };  // if(tblRow)
+                        //}; // if(updated_columns.length)
+                    };  // if(!isEmpty(data_dict) && field_names)
                 };  //  if(is_deleted)
             }; // if(is_created)
         };  // if(!isEmpty(update_dict))
@@ -4424,10 +4610,10 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         const is_approve = (open_mode === "approve");
         const is_submit = (open_mode === "submit");
 
-        // b_get_statusindex_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
+        // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // status_index 1 = auth1, 2 = auth2
-        const status_index = b_get_statusindex_of_requsr(loc, permit_dict);
+        const status_index = b_get_auth_index_of_requsr(loc, permit_dict);
         //console.log("status_index", status_index);
 
         if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject) {
@@ -4486,7 +4672,6 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         }  // if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject)
     }  // MASS_Open
 
-
 //=========  MASS_Save  ================
     function MASS_Save (save_mode) {
         console.log("===  MASS_Save  =====") ;
@@ -4540,7 +4725,6 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         //    $("#id_mod_approve_studsubj").modal("hide");
         //}
     };  // MASS_Save
-
 
 //========= MASS_UpdateFromResponse ============= PR2021-07-25
     function MASS_UpdateFromResponse(response) {

@@ -830,7 +830,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 mod_MSCH_dict.islexschool = false;
 
             } else {
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
 
         // --- call HandleTblRowClicked
                 // This happened in page studsubject, dont know if it also happens here
@@ -1416,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  get selected_pk
             let tblName = null, selected_pk = null;
             // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             if(tblRow){
                 tblName = get_attr_from_el(tblRow, "data-table")
                 const pk_int = get_attr_from_el_int(tblRow, "data-pk")
@@ -1770,7 +1770,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "filter_tag", filter_tag);
 
 // --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el);
+        const tblRow = t_get_tablerow_selected(el);
         const tblName = get_attr_from_el(tblRow, "data-table")
 
 // --- reset filter row when clicked on 'Escape'

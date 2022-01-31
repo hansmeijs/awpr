@@ -148,12 +148,14 @@ EXAMPERIOD_FIRST = 1
 EXAMPERIOD_SECOND = 2
 EXAMPERIOD_THIRD = 3
 EXAMPERIOD_EXEMPTION = 4
+EXAMPERIOD_FIRST_PLUS_SECOND = 12
 
 EXAMPERIOD_CAPTION = {
     EXAMPERIOD_FIRST: _('First exam period'),
     EXAMPERIOD_SECOND: _('Second exam period'),
     EXAMPERIOD_THIRD: _('Third exam period'),
-    EXAMPERIOD_EXEMPTION: _('Exemption')
+    EXAMPERIOD_EXEMPTION: _('Exemption'),
+    EXAMPERIOD_FIRST_PLUS_SECOND: ' / '.join((str(_('First exam period')), str(_('Second exam period')) ))
 }
 EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
                         {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')},

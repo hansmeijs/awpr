@@ -282,6 +282,7 @@ urlpatterns = [
         path('upload', subject_views.ExamUploadView.as_view(), name='exam_upload_url'),
         path('approve', subject_views.ExamApproveView.as_view(), name='exam_approve_url'),
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='exam_download_exam_pdf_url'),
+        path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='exam_download_grade_exam_pdf_url'),
         path('download_exam_json/<list>/', subject_views.ExamDownloadExamJsonView.as_view(), name='exam_download_exam_json_url'),
     ])),
 

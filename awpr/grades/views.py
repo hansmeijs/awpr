@@ -722,7 +722,7 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
 # - end of submit_grade
 
 @method_decorator([login_required], name='dispatch')
-class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15
+class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01-24
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -783,6 +783,11 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15
 
                     grade_pk = upload_dict.get('grade_pk')
                     return_grades_with_exam = upload_dict.get('return_grades_with_exam', False)
+
+                    if logging_on:
+                        logger.debug('upload_dict: ' + str(upload_dict))
+                        logger.debug('examperiod_int: ' + str(examperiod_int))
+                        logger.debug('grade_pk: ' + str(grade_pk))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                     # sel_department only has value when sel_examyear and sel_school have value
@@ -898,18 +903,17 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
                     'grade_pk': 67275, 'student_pk': 9226, 'studsubj_pk': 67836, 
                     'examgradetype': 'segrade', 'segrade': '5,8'}
     """
-    # grade fields are:
-    #   pescore, cescore
-    #   segrade, srgrade,
-    #   pegrade, cegrade,
-    #   sesrgrade >> is calculated field
-    #   pecegrade >> is calculated field
-    #   finalgrade >> is calculated field
+
     err_list = []
     save_changes = False
     recalc_finalgrade = False
     must_recalc_reex_reex03 = False
+
     for field, new_value in upload_dict.items():
+
+        if logging_on:
+            logger.debug('......... field: ' + str(field))
+            logger.debug('......... new_value: ' + str(new_value))
 
         if field in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
 
@@ -918,9 +922,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
         # - check if grade is published or authorized
         # - check restrictions in schemeitem
             validated_value, err_lst = grad_val.validate_update_grade(grade_instance, field, new_value, sel_examyear, si_dict)
-
             if logging_on:
-                logger.debug('......... field: ' + str(field))
                 #logger.debug('new_value:       ' + str(new_value))
                 logger.debug('validated_value: ' + str(validated_value) + ' ' + str(type(validated_value)))
                 #logger.debug('err_list:        ' + str(err_list))
@@ -947,6 +949,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
             if logging_on:
                 logger.debug('field: ' + str(field) + ' new_value: ' + str(new_value))
                 logger.debug('saved_exam: ' + str(saved_exam) + ' ' + str(type(saved_exam)))
+
             exam = None
             if new_value:
                 exam = subj_mod.Exam.objects.get_or_none(pk=new_value)
@@ -958,6 +961,8 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
             else:
                 save_exam = (saved_exam is not None)
             if save_exam:
+                # reset result when exam_pk changes
+                setattr(grade_instance, "ce_exam_result", None)
                 setattr(grade_instance, db_field, exam)
                 save_changes = True
                 if logging_on:
@@ -980,6 +985,25 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
         elif field in ('se_status', 'pe_status', 'ce_status', 'sepublished', 'pepublished', 'cepublished'):
             pass
             # fields are updated in GradeApproveView
+
+        # - save changes in fields 'ce_exam_auth1by' and 'ce_exam_auth2by'
+        elif field == 'auth_index':
+            auth_index = upload_dict.get(field)
+            status_bool_at_index = upload_dict.get('status_bool_at_index', False)
+            fldName = 'ce_exam_auth1by' if auth_index == 1 else 'ce_exam_auth2by' if auth_index == 2 else None
+
+            if logging_on:
+                logger.debug('auth_index: ' + str(auth_index))
+                logger.debug('status_bool_at_index: ' + str(status_bool_at_index))
+                logger.debug('fldName: ' + str(fldName))
+
+            if fldName:
+                new_value = request.user if status_bool_at_index else None
+                if logging_on:
+                    logger.debug('new_value: ' + str(auth_index))
+
+                setattr(grade_instance, fldName, new_value)
+                save_changes = True
 
 # --- end of for loop ---
 
@@ -1223,7 +1247,7 @@ def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                     "GROUP BY ssn.studentsubject_id"]
         sql_ssn = ' '.join(sql_ssn_list)
 
-        sql_list = ["SELECT studsubj.id AS studsubj_id,",
+        sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id,",
                     "CONCAT('grade_', grd.id::TEXT) AS mapid,",
                     "ssn.max_note_status AS note_status",
                     "FROM students_grade AS grd",
@@ -1240,6 +1264,9 @@ def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
         if studsubj_pk:
             sql_keys['studsubj_id'] = studsubj_pk
             sql_list.append("AND studsubj.id = %(studsubj_id)s::INT")
+
+        sql_list.append('ORDER BY grd.id')
+
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
@@ -1405,7 +1432,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys))
 
-        sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.name AS cluster_name,",
+        sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
                     "CONCAT('grade_', grd.id::TEXT) AS mapid,",
                     "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                     "stud.level_id AS lvl_id, lvl.abbrev AS lvl_abbrev, stud.sector_id AS sct_id, sct.abbrev AS sct_abbrev,",
@@ -1481,6 +1508,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 sql_list.append('AND si.subject_id = %(subj_id)s::INT')
 
         sql_list.append('ORDER BY grd.id')
+
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
@@ -1577,7 +1605,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
                 "exam.examperiod, exam.examtype, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
-                "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",
+                "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm, exam.examdate",
 
                 "FROM subjects_exam AS exam",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
@@ -1592,10 +1620,11 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     sql_list = ["SELECT grd.id, CONCAT('grade_', grd.id::TEXT) AS mapid,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                 "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
-                "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
+                "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
                 "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
                 "studsubj.id AS studsubj_id,",
-                "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
+                "grd.examperiod,"
+                # "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
                 "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_published_id, grd.ce_exam_blocked,",
 
                 "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
@@ -1603,7 +1632,8 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "ce_exam.version AS ceex_version, ce_exam.amount AS ceex_amount,",
                 "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
                 "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
-                "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength, ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm,",
+                "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength,",
+                "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm, ce_exam.examdate AS ceex_examdate,",
 
                 examkeys_fields,
 
@@ -1612,7 +1642,10 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "pe_exam.version AS peex_version, pe_exam.amount AS peex_amount,",
                 "pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
                 "pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
-                "pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength, pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm",
+                "pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength,",
+                "pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm, pe_exam.examdate AS peex_examdate,",
+
+                "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr, publ.modifiedat AS ce_exam_publ_modat",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -1630,6 +1663,11 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
+                "LEFT JOIN accounts_user AS auth1 ON (auth1.id = grd.ce_exam_auth1by_id)",
+                "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.ce_exam_auth2by_id)",
+                "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
+
+
                 "WHERE ey.id = %(ey_id)s::INT",
                 "AND school.base_id = %(sb_id)s::INT",
                 "AND dep.base_id = %(depbase_id)s::INT",
@@ -1646,6 +1684,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 # show grades that are not published only when requsr_same_school PR2021-04-29
 
     sql_list.append('ORDER BY grd.id')
+
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:

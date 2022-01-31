@@ -169,7 +169,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
     dict['No_item_selected'] = _('No item selected')
 
-    dict['All'] = _('All ')
+    dict['All_'] = _('All ')
+    dict['No_'] = _('No ')
 
 # ====== PAGE UPLOAD =========================
     if 'upload' in page_list:
@@ -237,6 +238,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Edit'] = _('Edit')
         dict['pagelist'] = c.PAGE_LIST
 
+        dict['Allowed_sections'] = _('Allowed sections')
+        dict['Allowed_departments'] = _('Allowed departments')
+        dict['Allowed_schools'] = _('Allowed schools')
+        dict['Allowed_levels'] = _("Allowed learning paths")
+        dict['Allowed_subjects'] = _('Allowed subjects')
+        dict['Allowed_clusters'] = _('Allowed clusters')
 
         dict['Organization'] = TXT_Organization
         dict['Action'] = _('Action')
@@ -675,7 +682,12 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Add_cluster'] = _('Add_cluster')
         dict['Delete_cluster'] = _('Delete cluster')
+        dict['Remove_cluster'] = _('Remove cluster')
         dict['Edit_clustername'] = _('Edit cluster name')
+        dict['Select_cluster'] = _('Select cluster')
+
+        dict['No_clusters_for_this_subject'] = _("There are no clusters for this subject.")
+
         dict['Click_here_to_select_subject'] = TXT_Click_to_select_subject
         dict['You_must_select_subject_first'] = _('You must select a subject first, before you can add a cluster.')
         dict['Please_select_cluster_first'] = _('Please select a cluster first.')
@@ -805,10 +817,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
         dict['Exam'] = _("Exam")
+        dict['Select_exam'] = _("Select exam")
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
         dict['Publish_exam'] = _("Publish exam")
         dict['Submit_exam'] = _("Submit exam")
+        dict['Approve_exams'] = _("Approve exams")
 
         dict['Print_exam'] = _("Print exam")
         dict['Blanks'] = _("Blanks")
@@ -870,7 +884,37 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'key_mustbe_between_and_': _("The key must be one or more letters between 'a' and '"),
             'Exam_assignment_does_notexist': _('This exam assignment does not exist.'),
-            'Contact_divison_of_exams': _('Please contact the Division of Exams.')
+            'Contact_divison_of_exams': _('Please contact the Division of Exams.'),
+
+            'This_exam_is_submitted': _('This exam is submitted.'),
+            'This_exam_is_published': _('This exam is published.'),
+            'You_cannot_change_approval': _('You cannot change the approval.'),
+
+            'This_exam_has_no_data': _('This exam has no data.'),
+            'You_cannot_approve_the_exam': _('You cannot approve the exam.'),
+            'This_exam_has_blank_questions': _('This exam has blank questions.'),
+
+            'Approved_different_function': _('You have approved this grade already in a different function.'),
+            'You_cannot_approve_again': _('You cannot approve this grade again.')
+        }
+
+        dict['MASE_info'] = {
+            'checking_exam': pgettext_lazy('worden gecheckt', 'The exams are being checked.'),
+
+            'subheader_approve': _('Selection of the exams, that will be approved:'),
+            'subheader_submit': _('The following exams will be submitted:'),
+            'approve_0': _("Click 'Check exams' to check the selected exams before approving."),
+            'approve_1': _('After the exams are approved by the president and secretary,'),
+            'approve_2': _('the exams can be submitted by the president or secretary.'),
+
+            'submit_0': _("Click 'Check exams' to check the selected exams before submitting."),
+            'submit_1': _("If the check is OK, click 'Submit exams' to submit the selected exams."),
+            'submit_2': _("After the exams are submitted, you can change them by submitting an additional form."),
+
+            'approving_exam': _('AWP is approving the exams'),
+            'requesting_verifcode': _('AWP is sending an email with the verification code'),
+            'submitting_exams': _("AWP is submitting the exams"),
+            'submitting_exams_ok': _("The exams are succesfully submitted."),
         }
 
 # ====== PAGE GRADES ========================= PR2020-10-27

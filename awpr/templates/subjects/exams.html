@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220118.js' %}"></script>
+    <script src="{% static 'js/exams220130.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -57,15 +57,15 @@
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modselectexam.html' %}
-            {% include 'students/modapprovegrade.html' %}
+            {% include 'subjects/modapproveexam.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modstatus.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="margin_top80_left16_right32">
-                <div class="flex_container">
     <!-- content_header -->
+                <div class="flex_container">
         <!-- header_text left -->
                     <div class="flex_2 p-2">
                         <h5 id="id_header_left" class="mb-0"></h5>
@@ -92,20 +92,16 @@
     <!-- end content_header -->
 
     <!-- BUTTON GROUP -->
-        <!--
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                 <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
                 {% if not no_centralexam %}
                     <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
                 {% endif %}
             </div>
-        -->
-    <!-- end BUTTON GROUP -->
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER - LOADER -->
 
-
-    <!-- CONTENT BODY -->
+<!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
             <div id="id_tbl_container"
                 class="content_body mx-2 mt-2 pr-4">
@@ -114,7 +110,7 @@
                     <tbody id="id_tblBody_datatable"></tbody>
                 </table>
             </div>
-    <!-- END OF CONTENT BODY -->
+<!-- END OF CONTENT BODY -->
 
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
@@ -126,15 +122,14 @@
                 data-grade_approve_url="{% url 'grade_approve_url' %}"
                 data-download_published_url="{% url 'grades_download_published_url' %}"
                 data-exam_download_exam_pdf_url="{% url 'exam_download_exam_pdf_url' '-' %}"
+                data-exam_download_grade_exam_pdf_url="{% url 'exam_download_grade_exam_pdf_url' '-' %}"
                 data-exam_download_exam_json_url="{% url 'exam_download_exam_json_url' '-' %}"
 
                 data-url_studentsubjectnote_upload="{% url 'url_studentsubjectnote_upload' %}"
                 data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
                 data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
-
             >
             </div>
         {% endif %}
     </div>
-
 {% endblock %}

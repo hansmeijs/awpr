@@ -1,0 +1,75 @@
+{% load i18n %}
+{% load static %}
+
+<!-- =================== MODAL APPROVE EXAM  =================== -->
+<div class="modal" id="id_mod_approve_exam" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
+        <div class="modal-content">
+
+            <div class="modal-header tsa_bc_lightlightgrey">
+                <a href="{% url 'manual_url' 'approve' 'intro' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
+
+                <h4 id="id_MASE_header" class="modal-title mx-2" ></h4>
+                <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+
+            <div class="modal-body p-4">
+                <div id="id_MASE_select_container" class=" p-2 border_bg_message display_hide">
+
+                    <p id="id_MASE_subheader"></p>
+
+                    <div class="flex_container">
+                        <div id="id_MASE_level_container" class="flex_1 mx-2 mb-2 mt-0 ">
+                            <label for="id_MASE_level" class="mx-2">{% trans 'Level' %}:</label>
+                            <div id="id_MASE_level" class="form-control p-2"></div>
+                        </div>
+                        <div class="flex_1 mx-2 mb-2 mt-0 ">
+                            <label for="id_MASE_subject" class="mx-2">{% trans 'Subject' %}:</label>
+                            <div id="id_MASE_subject" class="form-control p-2"></div>
+                        </div>
+                        <div class="flex_1 mx-2 mb-2 mt-0">
+                            <label for="id_MASE_cluster" class="mx-2">{% trans 'Cluster' %}:</label>
+                            <div id="id_MASE_cluster" class="form-control p-2"></div>
+                        </div>
+                    </div>
+
+                    <small class="mx-3" >{% trans 'You can change the selection in de vertical grey bar on the left of the page.' %}</small>
+                </div>
+
+                <div id="id_MASE_info_container" class="mx-0 mt-2 display_hide">
+                </div>
+
+                <div id="id_MASE_loader" class="display_hide mx-4 mt-2">
+                    <div class="image_container">
+                        <img src="{% static 'img/loader.gif' %}" class="icon_24">
+
+                    </div>
+                </div>
+
+                <div id="id_MASE_info_request_verifcode" class="mx-0 mt-2 p-2 border_bg_transparent display_hide">
+                    <p>{% trans "You need a 6 digit verification code to submit the Ex form." %}</p>
+                    <p>{% trans "Click 'Request verification code' and we will send you an email with the verification code." %}</p>
+                    <p>{% trans "The verification code expires in 30 minutes." %}</p>
+                </div>
+                <div>
+                    <label for="id_MASE_input_verifcode" class="label_margin_top_m2">{% trans 'Verification code' %}:</label>
+                    <input id="id_MASE_input_verifcode" type="text" data-field="verificationcode" class="form-control"
+                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="content_subheader_left mx-1">
+                    <button id="id_MASE_btn_delete" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Remove approvals' %}</button>
+                </div>
+                <div class="content_subheader_right">
+                    <button id="id_MASE_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                    <button id="id_MASE_btn_save" class="btn btn-primary">{% trans 'Approve' %}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- =================== END MODAL APPROVE EXAM  =================== -->

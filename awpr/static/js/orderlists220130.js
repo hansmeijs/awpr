@@ -1257,7 +1257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "filter_tag", filter_tag);
 
 // --- get filter tblRow and tblBody
-        const tblRow = get_tablerow_selected(el_filter);
+        const tblRow = t_get_tablerow_selected(el_filter);
         const tblName = "orderlist"  // tblName = get_attr_from_el(tblRow, "data-table")
         console.log( "tblName", tblName);
 

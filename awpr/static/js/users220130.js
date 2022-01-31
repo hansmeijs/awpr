@@ -1,9 +1,10 @@
 // PR2020-07-30 added
 
-
+// PR2021-09-22  declare variables outside function to make them global variables
 let selected_btn = "btn_user";
 let setting_dict = {};
 let permit_dict = {};
+const field_settings = {};
 let loc = {};
 let urls = {};
 
@@ -26,24 +27,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
 
+    let mod_dict = {};
+    let mod_MUA_dict = {};
+    let mod_MUPM_dict = {};
+    const mod_MSM_dict = {};
+    let time_stamp = null; // used in mod add user
+
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_user";
     let selected_user_pk = null;
     let selected_user_dict = null;
 
     let selected_userpermit_pk = null;
     let selected_period = {};
 
-    let loc = {};  // locale_dict
-    let mod_dict = {};
-    let mod_MUA_dict = {};
-    let mod_MUPM_dict = {};
-    let time_stamp = null; // used in mod add user
-
     let user_list = [];
     let user_rows = [];
     let permit_rows = [];
+
+    let department_rows = [];
     let school_rows = [];
+    let level_rows = [];
+    let subject_rows = [];
+    let cluster_rows = [];
 
     let examyear_map = new Map();
 
@@ -66,39 +71,51 @@ document.addEventListener('DOMContentLoaded', function() {
     let columns_hidden = [];
 
 // --- get field_settings
-    const field_settings = {
-        user: { field_caption: ["", "School_code", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
+    field_settings.btn_user = {
+                    field_caption: ["", "School_code", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "last_name", "email",  "activated", "last_login", "is_active"],
                     field_tags: ["div", "div", "div", "div", "div",  "div", "div","div", "div"],
                     filter_tags: ["select", "text", "text",  "text",  "text", "text",  "toggle", "text", "toggle"],
                     field_width:  ["020", "090", "150", "150",  "180", "240",  "100", "180", "090"],
-                    field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "c"]},
-        usergroup: {
+                    field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "c"]};
+
+    field_settings.btn_usergroup = {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Commissioner_2lines", "Examinator", "Teacher",
+                                    "President", "Secretary", "Commissioner_2lines", "Examinator",
                                     "Analyze",  "System_administrator_2lines"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
-                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_teach", "group_anlz", "group_admin"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text",  "toggle", "toggle", "toggle", "toggle",
+                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_anlz", "group_admin"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text",  "toggle", "toggle", "toggle",
                                     "toggle", "toggle", "toggle",  "toggle", "toggle"],
-                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]},
-        userpermit: {
+                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", , "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c"]};
+
+    field_settings.btn_userpermit = {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Commissioner_2lines", "Examinator", "Teacher",
+                                    "President", "Secretary", "Commissioner_2lines", "Examinator",
                                     "Analyze", "System_administrator_2lines"],
                     field_names: ["select", "role", "page", "action", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4",
-                                     "group_teach", "group_anlz", "group_admin"],
+                                     "group_anlz", "group_admin"],
                     field_tags: ["div", "div", "div", "input", "div", "div",
-                                    "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "toggle","toggle",  "toggle",
+                                    "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "toggle","toggle",
                                     "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
                     field_width:  ["020", "090", "120","150", "075", "075",
-                                    "090", "090", "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l", "l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]}
-        };
+                                    "090", "090", "090", "090",  "090", "090"],
+                    field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c", "c", "c", "c"]};
+
+    field_settings.btn_allowed = {
+                    field_caption: ["", "Username", "Allowed_departments", "Allowed_schools",
+                                    "Allowed_levels", "Allowed_subjects", "Allowed_clusters"],
+                    field_names: ["select", "username", "allowed_depbases", "allowed_schoolbases",
+                                    "allowed_levelbases", "allowed_subjectbases", "allowed_clusterbases"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "text", "text", "text"],
+                    field_width:  ["032", "150", "180", "180", "180", "180", "180"],
+                    field_align: ["c", "l", "l", "l",  "l", "l", "l"]};
+
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
@@ -107,6 +124,19 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener("keydown", function (event) {
              if (event.key === "Escape") { ResetFilterRows()}
         });
+
+ // freeze table header PR2022-01-19
+        // from https://stackoverflow.com/questions/673153/html-table-with-fixed-headers
+        // borders dont translate. fixed with https://stackoverflow.com/questions/45692744/td-border-disappears-when-applying-transform-translate
+        // no luck, border still not showing
+        const el_tbl_container = document.getElementById("id_tbl_container");
+        if(el_tbl_container){
+            el_tbl_container.addEventListener("scroll",function(){
+               const scroll = this.scrollTop - 8
+               const translate = "translate(0," + scroll + "px)";
+               this.querySelector("thead").style.transform = translate;
+            });
+        }
 
 // --- BUTTON CONTAINER ------------------------------------
         const el_btn_container = document.getElementById("id_btn_container");
@@ -191,6 +221,15 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUPM_btn_submit.addEventListener("click", function() {MUPM_Save("save")}, false);
         };
 
+// ---  MOD SELECT MULTIPLE  ------------------------------
+        const el_MSM_tblbody_select = document.getElementById("id_MSM_tbody_select");
+        const el_MSM_input = document.getElementById("id_MSM_input")
+            el_MSM_input.addEventListener("keyup", function(){
+                setTimeout(function() {MSM_InputKeyup(el_MSM_input)}, 50)});
+        const el_MSM_btn_save = document.getElementById("id_MSM_btn_save")
+            el_MSM_btn_save.addEventListener("click", function() {MSM_Save()}, false )
+
+
 // ---  MODAL IMPORT ------------------------------------
     // --- create EventListener for buttons in btn_container
         const el_MIMP_btn_container = document.getElementById("id_MIMP_btn_container");
@@ -240,7 +279,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 schoolsetting: {setting_key: "import_username"},
                 locale: {page: ["page_user", "upload"]},
                 user_rows: {get: true},
-                school_rows: {get: true}
+                department_rows: {get: true},
+                school_rows: {get: true},
+                level_rows: {get: true},
+                subject_rows: {get: true},
+                cluster_rows: {get: true}
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
@@ -303,10 +346,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     refresh_permit_map(response.permit_rows) };
 
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
-                if ("school_rows" in response)  {
-                   school_rows = response.school_rows
-                };
-                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
+                if ("school_rows" in response)  {school_rows = response.school_rows};
+                if ("department_rows" in response){department_rows = response.department_rows};
+
+                if ("level_rows" in response)  {level_rows = response.level_rows};
+                if ("subject_rows" in response)  {subject_rows = response.subject_rows};
+                if ("cluster_rows" in response)  {cluster_rows = response.cluster_rows};
 
                 HandleBtnSelect(selected_btn, true);  // true = skip_upload
 
@@ -348,13 +393,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ");
+        console.log( "===== HandleBtnSelect ========= ");
 
 // ---  get  selected_btn
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
-        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
+        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_userpermit", "btn_allowed"].includes(data_btn)) ? data_btn : "btn_user"
         //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
@@ -407,16 +452,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  =================== PR2021-08-01
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn();
 
-        const field_setting = field_settings[tblName];
-        const data_rows = get_data_rows(tblName);
+        const field_setting = field_settings[selected_btn];
+        const data_rows = get_datarows_from_selectedBtn();
 
-        //console.log( "selected_btn", selected_btn);
-        //console.log( "tblName", tblName);
-        //console.log( "data_rows", data_rows);
-        //console.log( "field_setting", field_setting);
+        console.log( "selected_btn", selected_btn);
+        console.log( "tblName", tblName);
+        console.log( "data_rows", data_rows);
+        console.log( "field_setting", field_setting);
 
 // --- show columns
         set_columns_hidden();
@@ -617,6 +662,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         // attach eventlistener and hover to td, not to el. No need to add icon_class here
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
+
+                    } else if (field_name.includes("allowed")) {
+                        td.addEventListener("click", function() {MSM_Open(el)}, false)
+                        add_hover(td);
+
                     } else if (field_name === "activated") {
                         el.addEventListener("click", function() {ModConfirmOpen("user", "send_activation_email", el)}, false )
                     } else if (field_name === "is_active") {
@@ -649,8 +699,10 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01
     function UpdateField(el_div, map_dict) {
         //console.log("=========  UpdateField =========");
+        //console.log("map_dict", map_dict);
 
         const field_name = get_attr_from_el(el_div, "data-field");
+
         if(el_div && field_name){
             let inner_text = null, title_text = null, filter_value = null;
             if (field_name === "select") {
@@ -668,13 +720,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                             break;
                 }}};
+
+            } else if (field_name.includes("allowed")){
+                const [display, title] = get_allowed_display_txt(field_name, map_dict[field_name]);
+                inner_text = (display) ? display : "&nbsp";
+                title_text= (title) ? title : null;
+                filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+
             } else if (field_name === "role") {
                 const role = map_dict[field_name];
                 inner_text = (loc.role_caption && loc.role_caption[role])  ? loc.role_caption[role] : role;
                 filter_value = inner_text;
+
             } else if (field_name === "action"){
                 el_div.value = map_dict[field_name];
                 filter_value = map_dict[field_name];
+
             } else if (field_name.slice(0, 5) === "group") {
                 // map_dict[field_name] example: perm_system: true
                 const db_field = field_name.slice(6);
@@ -718,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 filter_value = inner_text;
             }
 // ---  put value in innerText and title
-            el_div.innerText = inner_text;
+            el_div.innerHTML = inner_text;
             add_or_remove_attr (el_div, "title", !!title_text, title_text);
 
 // ---  add attribute filter_value
@@ -753,7 +814,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const has_permit = (permit_dict.permit_crud_otherschool) ||
                             (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
         if(has_permit){
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             if(tblRow){
                 const tblName = get_tblName_from_mapid(tblRow.id);
                 const data_dict = get_datadict_from_mapid(tblRow.id)
@@ -802,9 +863,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
-        //console.log("=== UploadChanges");
-        //console.log("url_str: ", url_str);
-        //console.log("upload_dict: ", upload_dict);
+        console.log("=== UploadChanges");
+        console.log("url_str: ", url_str);
+        console.log("upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -869,7 +930,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         //console.log("fldName: ", fldName)
             if(el_input){
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 user_mapid = tblRow.id;
 
 // --- get existing data_dict from data_rows
@@ -1497,7 +1558,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let userpermit_pk = null, role = null, permit_page = null, permit_action = null, permit_sequence = null;
         if(el_input){
-            const tblRow = get_tablerow_selected(el_input);
+            const tblRow = t_get_tablerow_selected(el_input);
             const map_dict = get_mapdict_from_datamap_by_id(permit_map, tblRow.id);
         //console.log("map_dict", map_dict)
             if(!isEmpty(map_dict)){
@@ -1726,14 +1787,251 @@ document.addEventListener('DOMContentLoaded', function() {
         return dep_list_str;
     }  // MUPM_get_selected_depbases
 
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+// +++++++++++++++++ MODAL SELECT MULTIPLE DEPS / LEVELS/ SUBJECTS / CLUSTERS ++++++++++++++++++++++++++++++++++++++++++
+//========= MSM_Open ====================================  PR2022-01-26
+    function MSM_Open (el_input) {
+        console.log(" ===  MSM_Open  =====") ;
+
+        b_clear_dict(mod_MSM_dict)
+
+        const tblRow = t_get_tablerow_selected(el_input);
+
+        const has_permit = (permit_dict.permit_crud_otherschool || permit_dict.permit_crud_sameschool);
+
+        if(tblRow && has_permit){
+
+// --- get existing data_dict from data_rows
+            const pk_int = get_attr_from_el_int(tblRow, "data-pk")
+            const [index, found_dict, compare] = b_recursive_integer_lookup(user_rows, "id", pk_int);
+            const data_dict = (!isEmpty(found_dict)) ? found_dict : {};
+            console.log("data_dict", data_dict)
+
+            const fldName = get_attr_from_el(el_input, "data-field");
+            mod_MSM_dict.user_pk = data_dict.id;
+            mod_MSM_dict.schoolbase_pk = data_dict.schoolbase_id;
+            mod_MSM_dict.mapid = data_dict.mapid;
+            mod_MSM_dict.data_field = fldName;
+            mod_MSM_dict.data_array = data_dict[fldName]
+
+            const caption = get_allowed_caption(fldName);
+
+    // ---  set header text
+            const header_text = loc.Select + caption + ":";
+            document.getElementById("id_MSM_hdr_multiple").innerText = header_text;
+
+            el_MSM_input.value = null;
+
+    // ---  fill select table 'customer'
+            MSM_FillSelectTable(fldName, caption);
+
+    // ---  Set focus to el_MSM_input
+            //Timeout function necessary, otherwise focus wont work because of fade(300)
+            setTimeout(function (){ el_MSM_input.focus() }, 50);
+    // ---  show modal
+             $("#id_mod_select_multiple").modal({backdrop: true});
+        }
+    }; // MSM_Open
+
+//=========  MSM_Save  ================ PR2022-01-26
+    function MSM_Save() {
+        console.log("===  MSM_Save =========");
+
+        const has_permit = (permit_dict.permit_crud_otherschool || permit_dict.permit_crud_sameschool);
+
+        if(has_permit){
+
+            let new_array = [];
+            let allowed_str = ""
+            const tblBody_select = el_MSM_tblbody_select;
+            for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
+                const base_pk_int = get_attr_from_el_int(row, "data-base_pk")
+                if(base_pk_int > 0) {
+                    const is_selected = (!!get_attr_from_el_int(row, "data-selected"))
+                    if(is_selected){
+                        new_array.push(base_pk_int);
+
+                    };
+                }
+            }
+            if(new_array){
+                // PR2020-11-02 from https://www.w3schools.com/js/js_array_sort.asp
+                new_array.sort(function(a, b){return a - b});
+                allowed_str = new_array.join(";")
+            }
+            console.log( "new_array:  ", new_array)
+            console.log( "allowed_str:  ", allowed_str)
+
+    // ---  upload changes
+            // mod_MSM_dict = user_data_dict with addotional keys
+            const upload_dict = { user_pk: mod_MSM_dict.user_pk,
+                                    schoolbase_pk: mod_MSM_dict.schoolbase_pk,
+                                    mapid: mod_MSM_dict.mapid,
+                                    mode: "update"};
+            upload_dict[mod_MSM_dict.data_field] = (allowed_str) ? allowed_str : null;
+            console.log( "upload_dict:  ", upload_dict)
+            UploadChanges(upload_dict, urls.url_user_upload);
+        };
+// hide modal
+        $("#id_mod_select_multiple").modal("hide");
+    }  // MSM_Save
+
+//=========  MSM_InputKeyup  ================ PR2020-11-02
+    function MSM_InputKeyup(el_input) {
+        //console.log( "=== MSM_InputKeyup === ")
+        //console.log( "el_input.value:  ", el_input.value)
+
+        let tblBody_select = el_MSM_tblbody_select;
+
+        const new_filter = el_input.value
+        if (tblBody_select.rows.length){
+// ---  filter select rows
+            const col_index_list = [1];
+            t_Filter_SelectRows(tblBody_select, new_filter, false, false, null, col_index_list);
+        }
+    }  // MSM_InputKeyup
+
+//=========  MSM_FillSelectTable  ================ PR2022-01-26
+    function MSM_FillSelectTable(fldName, caption) {
+        console.log( "===== MSM_FillSelectTable ========= ");
+        //console.log( "lookup_table: ", lookup_table);
+
+        const data_rows = (fldName === "allowed_depbases") ? department_rows :
+                                (fldName === "allowed_schoolbases") ? school_rows :
+                                (fldName === "allowed_levelbases") ? level_rows :
+                                (fldName === "allowed_subjectbases") ? subject_rows :
+                                (fldName === "allowed_clusterbases") ? cluster_rows : null;
+
+        const display_name = (fldName === "allowed_depbases") ? "base_code" :
+                                (fldName === "allowed_schoolbases") ? "name" :
+                                (fldName === "allowed_levelbases") ? "lvlbase_code" :
+                                (fldName === "allowed_subjectbases") ? "name" :
+                                (fldName === "allowed_clusterbases") ? "name" : null;
+
+        const display_code = (fldName === "allowed_schoolbases") ? "sb_code" :
+                             (fldName === "allowed_subjectbases") ? "code" : null;
+        // cluster has no base table
+        const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
+
+        console.log( "data_rows: ", data_rows);
+        const caption_none = loc.No_ + caption;
+
+        let tblBody_select = el_MSM_tblbody_select;
+        tblBody_select.innerText = null;
+
+        let has_selected_rows = false;
+
+// --- loop through data_rows
+        if(data_rows && data_rows.length){
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                const base_pk_int = data_dict[base_pk_field];
+                const row_is_selected = (base_pk_int && mod_MSM_dict.data_array && mod_MSM_dict.data_array.includes(base_pk_int))
+                const row_index = -1;
+                MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, row_index);
+                if(row_is_selected){has_selected_rows = true}
+            };
+        };
+
+// ---  add 'all' at the beginning of the list, with id = 0, make selected if no other rows are selected
+        const data_dict = {};
+        data_dict[base_pk_field] = 0;
+        data_dict[display_name] = "<" + loc.All_ + caption + ">"
+
+        const row_is_selected = !has_selected_rows;
+        const row_index = 0;
+        MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, row_index)
+
+    }  // MSM_FillSelectTable
+
+//=========  MSM_FillSelectRow  ================ PR2022-01-26
+    function MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, row_index) {
+        console.log( "===== MSM_FillSelectRow ========= ");
+        console.log("data_dict: ", data_dict);
+
+        // cluster has no base table
+        const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
+        const base_pk_int = data_dict[base_pk_field];
+        const display_txt = ( data_dict[display_name] ) ? data_dict[display_name] : "-";
+
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(row_index);
+        tblRow.setAttribute("data-base_pk", base_pk_int);
+
+        tblRow.setAttribute("data-selected", (row_is_selected) ? "1" : "0")
+
+// ---  add EventListener to tblRow, not when 'no items' (base_pk_int is then -1
+        if (base_pk_int > -1) {
+            tblRow.addEventListener("click", function() {MSM_SelecttableClicked(tblRow)}, false )
+// ---  add hover to tblRow
+            add_hover(tblRow);
+        }
+        let td, el;
+// ---  add select td to tblRow.
+        td = tblRow.insertCell(-1);
+            td.classList.add("mx-1", "tw_032")
+
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            el = document.createElement("div");
+                el.className = (row_is_selected) ? "tickmark_2_2" : "tickmark_0_0";
+            td.appendChild(el);
+
+// ---  add td with display_code to tblRow, only if display_code has value
+        if (display_code){
+            td = tblRow.insertCell(-1);
+            td.classList.add("mx-1", "tw_075")
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            el = document.createElement("div");
+                el.innerText = ( data_dict[display_code] ) ? data_dict[display_code] : "";
+            td.appendChild(el);
+        }
+// ---  add td with display_name to tblRow
+        td = tblRow.insertCell(-1);
+            td.classList.add("mx-1", "tw_270")
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+        el = document.createElement("div");
+            el.innerText = display_txt;
+        td.appendChild(el);
+
+    }  // MSM_FillSelectRow
+
+//=========  MSM_SelecttableClicked  ================ PR2022-01-26
+    function MSM_SelecttableClicked(tblRow) {
+        console.log( "===== MSM_SelecttableClicked ========= ");
+        console.log("tblRow: ", tblRow);
+        if(tblRow) {
+            // toggle is_selected
+            const is_selected = (!get_attr_from_el_int(tblRow, "data-selected"))
+
+            tblRow.setAttribute("data-selected", (is_selected) ? "1" : "0")
+            tblRow.cells[0].children[0].className = (is_selected) ? "tickmark_2_2" : "tickmark_0_0";
+
+            // row 'all' has pk = 0
+            if(is_selected){
+                const base_pk_int = get_attr_from_el_int(tblRow, "data-base_pk");
+                const tblBody_select = tblRow.parentNode;
+                for (let i = 0, lookup_row; lookup_row = tblBody_select.rows[i]; i++) {
+                    const lookup_base_pk_int = get_attr_from_el_int(lookup_row, "data-base_pk");
+
+                    // remove tickmark on all other items when 'all' is selected
+                    // remove  tickmark on 'all' when other item is selected
+                    let remove_selected = (base_pk_int === 0) ? (lookup_base_pk_int !== 0) : (lookup_base_pk_int === 0);;
+                    if(remove_selected){
+                        lookup_row.setAttribute("data-selected", "0");
+                        lookup_row.cells[0].children[0].className = "tickmark_0_0";
+                    };
+                };
+            };
+        };
+    };  // MSM_SelecttableClicked
+
+// +++++++++++++++++ END OF MODAL SELECT MULTIPLE DEPS / LEVELS/ SUBJECTS / CLUSTERS  +++++++++++++++++++++++++++++++
 
 
 //========= HandleInputChange  ===============PR2021-03-20
     function HandleInputChange(el_input){
         //console.log(" --- HandleInputChange ---")
 
-        const tblRow = get_tablerow_selected(el_input)
+        const tblRow = t_get_tablerow_selected(el_input)
         const map_id = tblRow.id
         if (map_id){
             const map_dict = get_mapdict_from_datamap_by_id(permit_map, map_id)
@@ -1772,7 +2070,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  get selected_pk
         let selected_pk = null;
         // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
-        const tblRow = get_tablerow_selected(el_input);
+        const tblRow = t_get_tablerow_selected(el_input);
         if(tblRow){
             selected_pk = get_attr_from_el_int(tblRow, "data-pk")
         } else {
@@ -2048,12 +2346,14 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDataRows  ================ PR2021-08-01
     function RefreshDataRows(page_tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
-        //console.log("page_tblName", page_tblName);
+        console.log(" --- RefreshDataRows  ---");
+        console.log("page_tblName", page_tblName);
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
 
         if (update_rows && update_rows.length ) {
-            const field_setting = field_settings[page_tblName];
+            //const field_setting = field_settings[page_tblName];
+
+            const field_setting = field_settings[selected_btn];
             //console.log("field_setting", field_setting);
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
                 RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows);
@@ -2068,9 +2368,10 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDatarowItem  ================ PR2021-08-01
     function RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows) {
-        //console.log(" --- RefreshDatarowItem  ---");
-        //console.log("page_tblName", page_tblName);
-        //console.log("update_dict", update_dict);
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("page_tblName", page_tblName);
+        console.log("update_dict", update_dict);
+        console.log("field_setting", field_setting);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -2457,6 +2758,115 @@ function RefreshDataRowsAfterUpload(response) {
 
 //###########################################################################
 
+
+//========= get_allowed_display_txt  ====== PR2022-01-26
+    function get_allowed_display_txt(fldName, allowed_str) {
+        let display_txt = null, title_txt = null;
+
+        const data_rows = (fldName === "allowed_depbases") ? department_rows :
+                                (fldName === "allowed_schoolbases") ? school_rows :
+                                (fldName === "allowed_levelbases") ? level_rows :
+                                (fldName === "allowed_subjectbases") ? subject_rows :
+                                (fldName === "allowed_clusterbases") ? cluster_rows : null;
+        // leave field blank when table is empty (happens only in clusters)
+        let show_all_txt = false;
+
+        if (data_rows){
+            if (!allowed_str){
+                const caption = get_allowed_caption(fldName);
+
+                // dipaly 'All' when allowed_str is empty
+                show_all_txt = true
+                 display_txt = "<" + loc.All_ + caption + ">";
+            } else {
+                const allowed_arr = allowed_str.split(";");
+            console.log( "===== get_allowed_display_txt  === ");
+            console.log( "allowed_arr", allowed_arr);
+
+                if (allowed_arr && allowed_arr.length){
+
+
+                    const display_name = "name";
+
+                    const display_field = (fldName === "allowed_depbases") ? "base_code" :
+                                         (fldName === "allowed_schoolbases") ? "sb_code" :
+                                         (fldName === "allowed_levelbases") ? "lvlbase_code" :
+                                         (fldName === "allowed_subjectbases") ? "code" :
+                                         (fldName === "allowed_clusterbases") ? "name" : null;
+
+                    // cluster has no base table
+                    const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
+
+                    // first put codes in array, so they can be sorted
+
+                    let code_array = [], name_array = [];
+                    for (let i = 0, base_pk_str, data_dict; base_pk_str = allowed_arr[i]; i++) {
+
+            console.log( "base_pk_str", base_pk_str);
+
+    // --- get existing data_dict from data_rows
+                        const base_pk_int = (Number(base_pk_str)) ?  Number(base_pk_str) : null;
+                        // cannot use b_recursive_integer_lookup, it can only be used to lookup by id, not bu base_id
+                        if (data_rows){
+                            for (let j = 0, data_dict; data_dict = data_rows[j]; j++) {
+                                if (base_pk_int && base_pk_int === data_dict.base_id){
+                                    if(data_dict[display_field]){ code_array.push(data_dict[display_field]) };
+                                    if(data_dict[display_name]){ name_array.push(data_dict[display_name]) };
+                                    break;
+                                }
+                            };
+                        };
+                    };
+            console.log("code_array", code_array)
+            console.log("name_array", name_array)
+                    let value_str = "";
+                    if(code_array){
+                        code_array.sort();
+                        code_array.forEach(function (code) {
+            console.log("code", code)
+                            if (display_txt) {
+                                display_txt += ", " + code;
+                            } else {
+                                display_txt = code;
+                            }
+                        });
+                    }
+                    if(name_array){
+                        name_array.sort();
+                        name_array.forEach(function (name) {
+            console.log("name", name)
+                            if (title_txt) {
+                                title_txt += "\n" + name;
+                            } else {
+                                title_txt = name;
+                            }
+                        });
+                    }
+
+
+                };
+            console.log("display_txt", display_txt)
+            console.log("title_txt", title_txt)
+            };
+        };
+        return [display_txt, title_txt];
+    };  // get_allowed_display_txt
+
+
+
+
+//========= get_datadict_with_index_from_mapid  ====== PR2022-01-26
+    function get_allowed_caption(fldName) {
+
+        return (fldName === "allowed_depbases") ? loc.Departments.toLowerCase() :
+                (fldName === "allowed_schoolbases") ? loc.Schools.toLowerCase() :
+                (fldName === "allowed_levelbases") ? loc.Levels.toLowerCase() :
+                (fldName === "allowed_subjectbases") ? loc.Subjects.toLowerCase() :
+                (fldName === "allowed_clusterbases") ? loc.Clusters.toLowerCase() : "";
+    };
+//###########################
+
+
 //========= get_datadict_with_index_from_mapid  ====== PR2021-08-01
     function get_datadict_with_index_from_mapid(map_id) {
         //console.log( "===== get_datadict_with_index_from_mapid  === ");
@@ -2505,7 +2915,8 @@ function RefreshDataRowsAfterUpload(response) {
         // this happens when user visits page for the first time
         return  (selected_btn === "btn_user") ? "user" :
                 (selected_btn === "btn_usergroup") ? "usergroup" :
-                (selected_btn === "btn_userpermit") ? "userpermit" : null;
+                (selected_btn === "btn_userpermit") ? "userpermit" :
+                (selected_btn === "btn_allowed") ? "btn_allowed" : null;
     }
 
     function get_data_rows(tblName) {  //PR2021-08-01
@@ -2513,6 +2924,18 @@ function RefreshDataRowsAfterUpload(response) {
                 (tblName === "usergroup") ? user_rows :
                 (tblName === "user") ? user_rows : null;
     }
+
+//========= get_datarows_from_selectedBtn  ======== // PR2022-01-25
+    function get_datarows_from_selectedBtn() {
+        //console.log( " ----- get_datarows_from_selectedBtn  -----");
+        //console.log( "selected_btn", selected_btn);
+        return  (selected_btn === "btn_user") ? user_rows :
+                (selected_btn === "btn_usergroup") ? user_rows :
+                (selected_btn === "btn_userpermit") ? permit_rows :
+                (selected_btn === "btn_allowed") ? user_rows : null;
+    };
+
+
 
     function get_tblName_from_mapid(map_id) {  //PR2021-08-01
         const arr = (map_id) ? map_id.split("_") : null;

@@ -204,9 +204,10 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
     function t_MSSSS_Open (loc, tblName, data_rows, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
+        //console.log( "tblName", tblName );
         //console.log( "data_rows", data_rows, typeof data_rows );
         // tblNames are: "school", "subject", "student"
 
@@ -229,11 +230,11 @@
                 set_focus_on_el_with_timeout(el_MSSSS_input, 50);
         // ---  show modal
                  $("#id_mod_select_school_subject_student").modal({backdrop: true});
-             }
-         }
+             };
+         };
     }; // t_MSSSS_Open
 
-//=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23
+//=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26
     function t_MSSSS_Save(el_input, MSSSS_Response) {
         //console.log("===  t_MSSSS_Save =========");
         //console.log("el_input", el_input);
@@ -249,6 +250,7 @@
 // +++ get existing map_dict from data_rows
         const data_rows = (tblName === "school") ? school_rows :
                         (tblName === "subject") ? subject_rows :
+                        (tblName === "cluster") ? cluster_rows :
                         (tblName === "student") ? student_rows : null;
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
@@ -260,22 +262,27 @@
 
         console.log( "===== t_MSSSS_display_in_sbr  ========= ");
         t_MSSSS_display_in_sbr(tblName, selected_pk_int);
-        const other_tblName = (tblName === "subject") ? "student" : (tblName === "student") ? "subject" : null;
-        if (other_tblName){
+        // reset other select elements
+        if (tblName === "subject") {
+            t_MSSSS_display_in_sbr("cluster", null);
+            t_MSSSS_display_in_sbr("student", null);
+        } else if (tblName === "cluster") {
+            t_MSSSS_display_in_sbr("subject", null);
+            t_MSSSS_display_in_sbr("student", null);
+        } else if (tblName === "student") {
+            t_MSSSS_display_in_sbr("subject", null);
+            t_MSSSS_display_in_sbr("cluster", null);
+        };
 
-        console.log( "===== other_tblName t_MSSSS_display_in_sbr  ========= ");
-            t_MSSSS_display_in_sbr(other_tblName, null);
-        }
-
-        MSSSS_Response(tblName, selected_dict, selected_pk_int)
+        MSSSS_Response(tblName, selected_dict, selected_pk_int);
 // hide modal
         $("#id_mod_select_school_subject_student").modal("hide");
     }  // t_MSSSS_Save
 
 //========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23  PR2021-07-23
     function t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
-        console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
-        console.log("data_rows", data_rows, typeof data_rows);
+        //console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
+        //console.log("data_rows", data_rows, typeof data_rows);
 
 // set header text
         const label_text = loc.Select + (
@@ -313,7 +320,7 @@
                         (tblName === "subject") ? loc.Subjects.toLowerCase() :
                         (tblName === "cluster") ? loc.Clusters.toLowerCase() :
                         (tblName === "school") ? loc.Schools.toLowerCase() : "";
-        return "<" + loc.All + caption + ">";
+        return "<" + loc.All_ + caption + ">";
     }
 
     function t_MSSSS_AddAll_dict(tblName){
@@ -332,17 +339,20 @@
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
-        const pk_int = (tblName === "student") ? map_dict.id :
+        const pk_int = (tblName === "school") ? map_dict.base_id :
                     (tblName === "subject") ? map_dict.id :
-                    (tblName === "school") ? map_dict.base_id : "";
+                    (tblName === "cluster") ? map_dict.id :
+                    (tblName === "student") ? map_dict.id : "";
 
-        const code = (tblName === "student") ? map_dict.name_first_init :
+        const code = (tblName === "school") ? map_dict.sb_code :
                     (tblName === "subject") ? map_dict.code :
-                    (tblName === "school") ? map_dict.sb_code : "";
+                    (tblName === "cluster") ? map_dict.code :
+                    (tblName === "student") ? map_dict.name_first_init : "";
 
-        const name = (tblName === "student") ? map_dict.fullname :
+        const name =  (tblName === "school") ? map_dict.abbrev :
                     (tblName === "subject") ? map_dict.name :
-                    (tblName === "school") ? map_dict.abbrev : "";
+                    (tblName === "cluster") ? map_dict.name :
+                    (tblName === "student") ? map_dict.fullname  : "";
         const is_selected_row = (pk_int === selected_pk);
 
         //console.log("name", name);
@@ -354,8 +364,12 @@
             if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, loc.user_lang);
         } else if(tblName === "subject"){
-            if (name) { ob1 = name.toLowerCase()};
+            if (code) { ob1 = code.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
+        } else if(tblName === "cluster"){
+            if (code) { ob1 = code.toLowerCase()};
+            if (name) { ob2 = name.toLowerCase()};
+            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, loc.user_lang);
         } else if(tblName === "school"){
             if (code) { ob1 = code.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
@@ -384,15 +398,14 @@
 
 // --- add td to tblRow.
         let td = null, el_div = null;
-        if (["school", "subject"].includes(tblName)) {
+        if (["school", "subject", "cluster"].includes(tblName)) {
             td = tblRow.insertCell(-1);
             el_div = document.createElement("div");
                 el_div.classList.add("pointer_show")
                 el_div.innerText = code;
                 el_div.classList.add("tw_075", "px-1")
                 td.appendChild(el_div);
-
-            td.classList.add("tsa_bc_transparent")
+            td.classList.add("tsa_bc_transparent");
         };
 
 // --- add td to tblRow.
@@ -402,7 +415,7 @@
             el_div.innerText = name;
             el_div.classList.add("tw_240", "px-1")
             td.appendChild(el_div);
-        td.classList.add("tsa_bc_transparent")
+        td.classList.add("tsa_bc_transparent");
 
 // --- add second td to tblRow with icon locked, published or activated.
         if (tblName === "school") {
@@ -414,11 +427,10 @@
                 el_div.classList.add("tw_032", class_locked)
                 el_div.title = (locked) ? loc.This_school + loc.is_locked : (activated) ? loc.This_school + loc.is_activated : "";
             td.appendChild(el_div);
-        }
-
+        };
 //--------- add addEventListener
         tblRow.addEventListener("click", function() {t_MSSSS_SelectItem(MSSSS_Response, tblRow, el_input)}, false);
-    } // t_MSSSS_Create_SelectRow
+    }; // t_MSSSS_Create_SelectRow
 
 //=========  t_MSSSS_SelectItem  ================ PR2020-12-17
     function t_MSSSS_SelectItem(MSSSS_Response, tblRow, el_input) {
@@ -443,7 +455,7 @@
             el_input.setAttribute("data-name", data_name);
 
 // ---  save and close
-            t_MSSSS_Save(el_input, MSSSS_Response)
+            t_MSSSS_Save(el_input, MSSSS_Response);
         }
     }  // t_MSSSS_SelectItem
 
@@ -901,8 +913,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         }
     }  // DeselectHighlightedTblbody
 
-//========= get_tablerow_selected  =============
-    function get_tablerow_selected(el){
+//========= t_get_tablerow_selected  =============
+    function t_get_tablerow_selected(el){
         // PR2019-04-16 function 'bubbles up' till tablerow element is found
         // currentTarget refers to the element to which the event handler has been attached
         // event.target identifies the element on which the event occurred.
@@ -1401,7 +1413,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         //  modes are: 'blanks_only', 'no_blanks', 'lte', 'gte', 'lt', 'gt'
 
 // --- get filter tblRow and tblBody
-        let tblRow = get_tablerow_selected(el);
+        let tblRow = t_get_tablerow_selected(el);
         const filter_tag = get_attr_from_el(el, "data-filtertag")
         //console.log( "filter_tag ", filter_tag);
 

@@ -247,7 +247,7 @@ def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
                 sql_keys['depbase_lookup'] = ''.join( ('%;', str(sel_depbase_pk), ';%') )
                 sql_list.append("AND CONCAT(';', sj.depbases::TEXT, ';') LIKE %(depbase_lookup)s::TEXT")
 
-            sql_list.append("ORDER BY sj.id")
+        sql_list.append("ORDER BY sj.id")
 
         sql = ' '.join(sql_list)
 
@@ -264,7 +264,7 @@ def create_subject_rows(setting_dict, subject_pk, cur_dep_only=False):
 
 def create_cluster_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_cluster_pk=None):
     # --- create rows of all clusters of this examyear this department  PR2022-01-06
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
@@ -292,8 +292,9 @@ def create_cluster_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_
             if sel_cluster_pk:
                 sql_keys['cluster_id'] = sel_cluster_pk
                 sql_list.append("AND cl.id = %(cluster_id)s::INT")
-            else:
-                sql_list.append("ORDER BY cl.id")
+
+            sql_list.append("ORDER BY cl.id")
+
             sql = ' '.join(sql_list)
 
             if logging_on:
@@ -1185,6 +1186,9 @@ class ExamUploadView(View):
                 deleted_row = None
 
 # - get variables from upload_dict
+
+                # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'status_bool_at_index': True, 'exam_pk': 138}
+
                 # don't get it from usersettings, get it from upload_dict instead
                 mode = upload_dict.get('mode')
                 examyear_pk = upload_dict.get('examyear_pk')
@@ -1358,12 +1362,13 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05 PR2022
 # - end of delete_exam_instance
 
 
-def update_exam_instance(instance, upload_dict, error_list, examyear, request): #  PR2021-04-05 PR2022-01-22
-    logging_on = False  # s.LOGGING_ON
+def update_exam_instance(instance, upload_dict, error_list, examyear, request): #  PR2021-04-05 PR2022-01-24
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --------- update_exam_instance -------------')
         logger.debug('upload_dict: ' + str(upload_dict))
-
+        # upload_dict: {'table': 'exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'levelbase_pk': 13,
+        # 'exam_pk': 138, 'subject_pk': 2137, 'field': 'authby', 'auth_index': 2, 'status_bool_at_index': True}
     if instance:
         save_changes = False
         for field, new_value in upload_dict.items():
@@ -1404,7 +1409,8 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request): 
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('partex', 'assignment', 'keys', 'version', 'examperiod', 'amount', 'blanks'):
+            elif field in ('partex', 'assignment', 'keys', 'version', 'examperiod',
+                           'amount', 'blanks', 'scalelength', 'nex_id', 'cesuur', 'nterm', 'examdate' ):
                 # save None instead of  '' or 0
                 if not new_value:
                     new_value = None
@@ -1421,12 +1427,28 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request): 
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('auth1by', 'auth2by'):
-                pass
+            elif field == 'auth_index':
+                auth_index = upload_dict.get(field)
+                status_bool_at_index = upload_dict.get('status_bool_at_index', False)
+                fldName = 'auth1by' if auth_index == 1 else 'auth2by' if auth_index == 2 else None
+
+                if logging_on:
+                    logger.debug('auth_index: ' + str(auth_index))
+                    logger.debug('status_bool_at_index: ' + str(status_bool_at_index))
+                    logger.debug('fldName: ' + str(fldName))
+
+                if fldName:
+                    new_value = request.user if status_bool_at_index else None
+                    if logging_on:
+                        logger.debug('new_value: ' + str(auth_index))
+
+                    setattr(instance, fldName, new_value)
+                    save_changes = True
+
             elif field == 'published':
                 pass
 
-# - save orderhour
+# - save instance
         if save_changes:
             try:
                 instance.save(request=request)
@@ -1445,7 +1467,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request): 
 
 def create_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, exam_pk=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
 
@@ -1458,13 +1480,17 @@ def create_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, exam_pk=None)
         "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
         "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
 
-        "ex.examperiod, ex.department_id, depbase.code AS depbase_code,",
-        "ex.level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
+        "ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
+        "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
-        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.locked, ex.modifiedat,",
+        "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm, ex.examdate,",
+
+        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
-        "ey.code AS ey_code, ey.locked AS ey_locked,",
-        "au.last_name AS modby_username",
+        "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
+        "au.last_name AS modby_username,",
+
+        "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, publ.modifiedat AS publ_modat",
 
         "FROM subjects_exam AS ex",
         "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
@@ -1475,14 +1501,18 @@ def create_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, exam_pk=None)
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = ex.level_id)",
 
+        "LEFT JOIN accounts_user AS auth1 ON (auth1.id = ex.auth1by_id)",
+        "LEFT JOIN accounts_user AS auth2 ON (auth2.id = ex.auth2by_id)",
+        "LEFT JOIN schools_published AS publ ON (publ.id = ex.published_id)",
+
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
         "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT"
     ]
     if exam_pk:
         sql_keys ['ex_id'] = exam_pk
         sql_list.append('AND ex.id = %(ex_id)s::INT')
-    else:
-        sql_list.append("ORDER BY ex.id")
+
+    sql_list.append("ORDER BY ex.id")
 
     sql = ' '.join(sql_list)
     if logging_on:
@@ -1510,7 +1540,7 @@ def create_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, exam_pk=None)
 
 def calc_total():
     # --- creates possible sums of list with max_scores and occurrencies
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== calc_total ============= ')
 
@@ -3089,8 +3119,9 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
 
         if orderby_sequence:
             sql_list.append("ORDER BY sjtpbase.sequence")
-        else:
-            sql_list.append("ORDER BY sjtp.id")
+
+        sql_list.append("ORDER BY sjtp.id")
+
         sql = ' '.join(sql_list)
         if logging_on:
             logger.debug('sql: ' + str(sql))
@@ -3181,6 +3212,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
                 sql_list.append("AND FALSE")
 
         sql_list.append("ORDER BY scheme.id")
+
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
@@ -3268,8 +3300,8 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 sql_list.append('ORDER BY LOWER(scheme.name), LOWER(subj.name)')
             elif orderby_sjtpbase_sequence:
                 sql_list.append('ORDER BY sjtpbase.sequence')
-            else:
-                sql_list.append('ORDER BY si.id')
+
+            sql_list.append('ORDER BY si.id')
 
             sql = ' '.join(sql_list)
 
@@ -3431,7 +3463,6 @@ class ExamDownloadExamView(View):  # PR2021-05-06
                 if logging_on:
                     logger.debug('sel_exam_instance: ' + str(sel_exam_instance))
 
-
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
                 # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
@@ -3442,7 +3473,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
                 canvas = Canvas(buffer)
 
                 # Start writing the PDF here
-                printpdf.draw_exam(canvas, sel_exam_instance, user_lang)
+                printpdf.draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang)
                 #test_pdf(canvas)
                 # testParagraph_pdf(canvas)
 
@@ -3472,8 +3503,103 @@ class ExamDownloadExamView(View):  # PR2021-05-06
         else:
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
-
 # - end of ExamDownloadExamView
+
+@method_decorator([login_required], name='dispatch')
+class ExamDownloadGradeExamView(View):  # PR2022-01-29
+
+    def get(self, request, list):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('===== ExamDownloadGradeExamView ===== ')
+            logger.debug('list: ' + str(list) + ' ' + str(type(list)))
+
+        # function creates, Exam pdf file with answers
+
+        response = None
+        grade_pk = None
+        #try:
+
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
+
+# - reset language
+            # PR2021-05-08 debug: without activate text will not be translated
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+            # - get order_pk_list from parameter 'list
+            if list:
+                # list: 10 <class 'str'>
+                grade_pk = int(list)
+
+                #list_dict = json.loads(list)
+                #logger.debug('list_dict: ' + str(list_dict))
+
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+            if logging_on:
+                logger.debug('sel_school: ' + str(sel_school))
+                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('grade_pk: ' + str(grade_pk))
+
+            if sel_examyear and grade_pk:
+
+                sel_grade_instance = stud_mod.Grade.objects.get_or_none(
+                    pk=grade_pk,
+                    studentsubject__student__school__base_id=sel_school.base_id)
+                if logging_on:
+                    logger.debug('sel_grade_instance: ' + str(sel_grade_instance))
+
+                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+                sel_ce_exam_instance = None
+                if sel_grade_instance:
+                    sel_ce_exam_instance = sel_grade_instance.ce_exam
+                if logging_on:
+                    logger.debug('sel_ce_exam_instance: ' + str(sel_ce_exam_instance))
+
+                if sel_ce_exam_instance:
+                    # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+                    #temp_file = tempfile.TemporaryFile()
+                    # canvas = Canvas(temp_file)
+
+                    buffer = io.BytesIO()
+                    canvas = Canvas(buffer)
+
+                    # Start writing the PDF here
+                    printpdf.draw_grade_exam(canvas, sel_grade_instance, sel_ce_exam_instance, sel_examyear, user_lang)
+                    #test_pdf(canvas)
+                    # testParagraph_pdf(canvas)
+
+                    if logging_on:
+                        logger.debug('end of draw_exam')
+
+                    canvas.showPage()
+                    canvas.save()
+
+                    pdf = buffer.getvalue()
+                    # pdf_file = File(temp_file)
+
+                    # was: buffer.close()
+
+                    response = HttpResponse(content_type='application/pdf')
+                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                    #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+
+                    response.write(pdf)
+
+        #except Exception as e:
+       #     logger.error(getattr(e, 'message', str(e)))
+       #     raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of ExamDownloadGradeExamView
 
 
 
@@ -3485,8 +3611,6 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
         if logging_on:
             logger.debug('===== ExamDownloadExamJsonView ===== ')
             logger.debug('list: ' + str(list) + ' ' + str(type(list)))
-
-        exam_pk = None
 
         response = None
 
@@ -3571,79 +3695,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
         #return JsonResponse({'test': 'json'})
 
-
 # - end of ExamDownloadExamJsonView
-
-def get_assignment_keys_dict(amount, scalelength, partex, assignment, keys):
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug('----- get_assignment_keys_dict -----')
-        logger.debug('amount: ' + str(amount))
-        logger.debug('scalelength: ' + str(scalelength))
-        logger.debug('partex: ' + str(partex))
-        # partex: 1;3;30;Deelexamen 1|2;2;56;Deelexamen 2
-        logger.debug('assignment: ' + str(assignment))
-        logger.debug('keys: ' + str(keys))
-
-    # - create dict with assignments PR2021-05-08
-    assignment_keys_dict = {}
-    if amount and assignment:
-        # assignment: 1;3;30|1;;22;|2;P;5;|3;;3; # 2;2;25|1;C;22;|2;;3;
-        maxchar_maxscore_dict = {}
-        minscore_dict = {}
-        for partex in assignment.split('#'):
-            logger.debug('partex: ' + str(partex))
-            # partex: 1;3;30|1;;22;|2;P;5;|3;;3;
-            skip_item = True
-            for qa in partex.split('|'):
-                # qa: 1;C;22;
-                # skip first item, it contains partex_pk, amount and max_score
-                if skip_item:
-                    skip_item = False
-                else:
-                    qa_arr = qa.split(';')
-                    # qa_arr: ['2', 'P', '5']  q_number, max_char, max_score, min_score
-                    logger.debug('qa_arr: ' + str(qa_arr))
-                    # qa_arr: ['1;3;30']
-                    if len(qa_arr) == 4:
-                        q_number = int(qa_arr[0])
-                        max_char = qa_arr[1] if qa_arr[1] else ""
-                        max_score = qa_arr[2] if qa_arr[2] else ""
-                        min_score = qa_arr[3] if qa_arr[3] else ""
-
-                        if logging_on:
-                            logger.debug('qa_arr: ' + str(qa_arr) + ' ' + str(type(qa_arr)))
-                            logger.debug('q_number: ' + str(q_number) + ' ' + str(type(q_number)))
-                            logger.debug('max_char: ' + str(max_char) + ' ' + str(type(max_char)))
-                            logger.debug('max_score: ' + str(max_score) + ' ' + str(type(max_score)))
-                            logger.debug('min_score: ' + str(min_score) + ' ' + str(type(min_score)))
-
-                        value = max_char + max_score
-                        if value:
-                            maxchar_maxscore_dict[q_number] = value
-
-                        if min_score:
-                            minscore_dict[q_number] = min_score
-
-            keys_dict = {}
-            if keys:
-                for qa in keys.split('|'):
-                    qa_arr = qa.split(':')
-                    if len(qa_arr) > 0:
-                        keys_dict[int(qa_arr[0])] = qa_arr[1]
-            if logging_on:
-                logger.debug('keys_dict: ' + str(keys_dict) + ' ' + str(type(keys_dict)))
-
-            for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
-                if q_number in maxchar_maxscore_dict:
-                    value = maxchar_maxscore_dict.get(q_number, '')
-                    if q_number in keys_dict:
-                        value += ' - ' + keys_dict.get(q_number,'')
-                    if q_number in minscore_dict:
-                        value += ' - min:' + minscore_dict.get(q_number,'')
-                    assignment_keys_dict[q_number] = value
-
-    return assignment_keys_dict
 
 
 def get_assignment_list(sel_exam_instance):

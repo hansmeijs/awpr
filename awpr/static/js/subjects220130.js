@@ -1036,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( " ==== UploadInputChange ====");
         console.log("el_input: ", el_input);
 
-        const tblRow = get_tablerow_selected(el_input);
+        const tblRow = t_get_tablerow_selected(el_input);
         if(tblRow){
             const data_dict = get_recursive_integer_lookup(tblRow);
         console.log("data_dict: ", data_dict);
@@ -1079,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("tblName: ", tblName);
         console.log("el_input: ", el_input);
 
-        const tblRow = get_tablerow_selected(el_input);
+        const tblRow = t_get_tablerow_selected(el_input);
 
         if(tblRow){
             if (setting_dict.sel_examyear_locked){
@@ -2167,7 +2167,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // el_input is undefined when called by submenu btn 'Add new'
             if(el_input){
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 data_dict = get_recursive_integer_lookup(tblRow);
             } else {
                 data_dict = selected.subjecttype_dict;
@@ -2629,7 +2629,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(is_addnew){
                 mod_MSJTBASE_dict = {is_addnew: is_addnew}
             } else {
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 const map_dict = get_recursive_integer_lookup(tblRow);
 
                 mod_MSJTBASE_dict = deepcopy_dict(map_dict);
@@ -2771,7 +2771,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } // {is_addnew: is_addnew, db_code: setting_dict.sel_depbase_code}
 
             } else {
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 const map_dict = get_recursive_integer_lookup(tblRow);
                 mod_MSUBJ_dict = deepcopy_dict(map_dict);
 
@@ -3301,7 +3301,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let tblName = "schemeitem";
             let map_dict = {};
             if (el_input){
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 map_dict = get_recursive_integer_lookup(tblRow);
             } else {
                 // dont get the scheme from selected.schemeitem_dict, but show the select boxes.
@@ -3885,7 +3885,7 @@ document.addEventListener('DOMContentLoaded', function() {
             mod_MSI_dict = {el_input: el_input};
 
             if (el_input){
-                const tblRow = get_tablerow_selected(el_input);
+                const tblRow = t_get_tablerow_selected(el_input);
                 const data_dict = get_recursive_integer_lookup(tblRow);
                 if(!isEmpty(data_dict)) {
                     mod_MSI_dict.schemeitem_pk = data_dict.id;
