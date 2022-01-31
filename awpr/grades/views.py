@@ -1605,7 +1605,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
                 "exam.examperiod, exam.examtype, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
-                "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm, exam.examdate",
+                "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",  #, exam.examdate",
 
                 "FROM subjects_exam AS exam",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
@@ -1633,7 +1633,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
                 "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
                 "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength,",
-                "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm, ce_exam.examdate AS ceex_examdate,",
+                "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm,",  # ce_exam.examdate AS ceex_examdate,",
 
                 examkeys_fields,
 
@@ -1643,7 +1643,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
                 "pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
                 "pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength,",
-                "pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm, pe_exam.examdate AS peex_examdate,",
+                "pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm,",  # pe_exam.examdate AS peex_examdate,",
 
                 "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr, publ.modifiedat AS ce_exam_publ_modat",
 

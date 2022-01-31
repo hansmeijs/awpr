@@ -507,7 +507,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     scalelength = PositiveSmallIntegerField(null=True)
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
-    examdate = DateField(null=True)
+    # PR2022-02-31 removed to fix migrate problem: examdate = DateField(null=True)
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam possible ansewers per exam question
@@ -544,7 +544,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     scalelength = PositiveSmallIntegerField(null=True)
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
-    examdate = DateField(null=True)
+    # PR2022-02-31 removed to fix migrate problem: examdate = DateField(null=True)
 
 
 # PR2018-06-05

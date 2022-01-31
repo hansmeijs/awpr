@@ -1483,7 +1483,7 @@ def create_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, exam_pk=None)
         "ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
-        "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm, ex.examdate,",
+        "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm,",  # ex.examdate,",
 
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
