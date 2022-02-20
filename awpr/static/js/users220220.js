@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     field_settings.btn_usergroup = {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Commissioner_2lines", "Examinator",
+                                    "President", "Secretary", "Examinator", "Commissioner_2lines",
                                     "Analyze",  "System_administrator_2lines"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_anlz", "group_admin"],
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     field_settings.btn_userpermit = {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Commissioner_2lines", "Examinator",
+                                    "President", "Secretary", "Examinator", "Commissioner_2lines",
                                     "Analyze", "System_administrator_2lines"],
                     field_names: ["select", "role", "page", "action", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4",
@@ -2749,9 +2749,9 @@ function RefreshDataRowsAfterUpload(response) {
         } else if (permit_dict.requsr_role_insp) {
             columns_hidden =  ["group_auth3", "group_auth4"];
         } else if (permit_dict.requsr_role_comm) {
-            columns_hidden =  ["group_edit", "group_auth1", "group_auth2", "group_auth4", "group_anlz"];
+            columns_hidden =  ["group_edit", "group_auth1", "group_auth2", "group_auth3", "group_anlz"];
         } else if (permit_dict.requsr_role_school) {
-            columns_hidden = ["sb_code", "school_abbrev", "group_auth3", "group_anlz"];
+            columns_hidden = ["sb_code", "school_abbrev", "group_anlz"];
         }
     };  // set_columns_hidden
 

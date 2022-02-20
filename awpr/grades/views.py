@@ -10,7 +10,8 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.utils.translation import activate, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, gettext_lazy as _
 from django.views.generic import View
 
 from reportlab.pdfgen.canvas import Canvas
@@ -31,7 +32,7 @@ from subjects import models as subj_mod
 from subjects import views as subj_vw
 from grades import validators as grad_val
 from grades import calc_finalgrade as calc_final
-from  grades import calc_results as calc_res
+from grades import calc_results as calc_res
 from grades import exfiles as grade_exfiles
 
 import json # PR2018-12-03
@@ -77,7 +78,7 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
             dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
-            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+            sel_examperiod, sel_examtype, sel_subjbase_pkNIU = dl.get_selected_experiod_extype_subjbase_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
@@ -114,7 +115,7 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
 class GradeApproveView(View):  # PR2021-01-19
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GradeApproveView ============= ')
         # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
@@ -129,42 +130,11 @@ class GradeApproveView(View):  # PR2021-01-19
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
 
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_grade', req_user)
-
-            is_auth1 = 'auth1' in requsr_usergroups_list
-            is_auth2 = 'auth2' in requsr_usergroups_list
-            is_auth3 = 'auth3' in requsr_usergroups_list
-            is_auth4 = 'auth4' in requsr_usergroups_list
-
-            if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
+            permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list('page_grade', req_user)
 
             msg_dict = {}
-            has_permit = False
-            requsr_auth = None
-            status_index = None
-            # msg_err is made on client side. Here: just skip if user has no or multiple functions
-            if is_auth1 + is_auth2 + is_auth3 + is_auth4 == 1:
-                if is_auth1:
-                    requsr_auth = 'auth1'
-                    status_index = 1
-                elif is_auth2:
-                    requsr_auth = 'auth2'
-                    status_index = 2
-                elif is_auth3:
-                    requsr_auth = 'auth3'
-                    status_index = 3
-                elif is_auth4:
-                    requsr_auth = 'auth4'
-                    status_index = 4
 
-            if requsr_auth:
-                has_permit = 'permit_approve_grade' in permit_list
-
-            if logging_on:
-                logger.debug('requsr_auth: ' + str(requsr_auth))
-                logger.debug('has_permit:  ' + str(has_permit))
-
+            has_permit = 'permit_approve_grade' in permit_list
             if has_permit:
 
     # -  get user_lang
@@ -190,240 +160,249 @@ class GradeApproveView(View):  # PR2021-01-19
                     is_reset = True if mode == 'approve_reset' else False
                     is_test = True if mode in ('approve_test', 'submit_test') else False
 
-    # - get status_index (1 = President, 2 = Secretary, 3 = Commissioner, 4 = examinator
-                    # PR2021-03-27 status_index is taken from requsr_usergroups_list, not from upload_dict
-                    #  function may have changed if gradepage is not refreshed in time)
-                    #  was: status_index = upload_dict.get('status_index')
+                    status_index = upload_dict.get('status_index')
+                    if status_index:
+                        requsr_auth = 'auth' + str(status_index)
 
-                    # get status_bool_at_index from mode, not from upload_dict
-                    # was: status_bool_at_index = upload_dict.get('status_bool_at_index')
-                    status_bool_at_index = not is_reset
+                        # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-                    if logging_on:
-                        logger.debug('upload_dict' + str(upload_dict))
-                        logger.debug('mode: ' + str(mode))
-                        logger.debug('status_index: ' + str(status_index))
-                        logger.debug('status_bool_at_index: ' + str(status_bool_at_index))
+        # - get status_index (1 = President, 2 = Secretary, 3 = Commissioner, 4 = examinator
+                        # PR2021-03-27 status_index is taken from requsr_usergroups_list, not from upload_dict
+                        #  function may have changed if gradepage is not refreshed in time)
+                        #  was: status_index = upload_dict.get('status_index')
+                        # can't do it like this any more. User can have be examinator and pres/secr at the same time
+                        # back to upload_dict.get('status_bool_at_index')
 
-    # - get selected examyear, school and department from usersettings
-                    sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                            dl.get_selected_ey_school_dep_from_usersetting(request)
-                    if err_list:
-                        # TODO change to msg_list
-                        msg_dict['error'] = '<br>'.join(err_list)
-                    else:
-    # - get selected examperiod from usersetting
-                        sel_examperiod = None
-                        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                        if selected_dict:
-                            sel_examperiod = selected_dict.get(c.KEY_SEL_EXAMPERIOD)
-
-        # - get selected grade from upload_dict - only if clicked on a grade tblRow
-                        grade_pk = upload_dict.get('grade_pk')
-
-        # - if  grade_pk has value: get sel_examtype from upload_dict instead of from settings
-                        sel_subject_pk = None
-                        if grade_pk:
-                            sel_examtype = upload_dict.get('examtype')
-                            # TODO getting sel_examperiod doesnt work properly.
-                            # add this line for now to solve it for sr
-                            if sel_examtype == 'sr':
-                                sel_examperiod = c.EXAMPERIOD_FIRST
-                        else:
-
-        # - if  grade_pk has no value: get selected examperiod, examtype and subject_pk from usersettings
-                            # update usersetting if new values in upload_dict
-                            new_examtype = upload_dict.get('examtype')
-                            new_subject_pk = upload_dict.get('subject_pk')
-                            if new_examtype or new_subject_pk:
-                                new_setting_dict = {}
-                                if new_examtype:
-                                    new_setting_dict[c.KEY_SEL_EXAMTYPE] = new_examtype
-                                if new_subject_pk:
-                                    new_setting_dict[c.KEY_SEL_SUBJECT_PK] = new_subject_pk
-
-                                saved_setting_dict = req_user.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK, new_setting_dict, request)
-
-                                if logging_on:
-                                    logger.debug('new_examtype: ' + str(new_examtype))
-                                    logger.debug('new_subject_pk: ' + str(new_subject_pk))
-                                    logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
-
-                            sel_examperiodNIU, sel_examtype, sel_subject_pk = \
-                                dl.get_selected_experiod_extype_subject_from_usersetting(request)
+                        # get status_bool_at_index from mode, not from upload_dict
+                        # was: status_bool_at_index = upload_dict.get('status_bool_at_index')
+                        status_bool_at_index = not is_reset
 
                         if logging_on:
-                            logger.debug('sel_examtype:   ' + str(sel_examtype))
-                            logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                            logger.debug('upload_dict' + str(upload_dict))
+                            logger.debug('mode: ' + str(mode))
+                            logger.debug('status_index: ' + str(status_index))
+                            logger.debug('status_bool_at_index: ' + str(status_bool_at_index))
+                        """
+                        upload_dict{'table': 'grade', 'mode': 'approve_submit', 'mapid': 'grade_22432', 'field': 'se_status', 'status_index': 4, 'status_bool_at_index': True, 'examtype': 'se', 'grade_pk': 22432}
+                        """
+        # - get selected examyear, school and department from usersettings
+                        sel_examyear, sel_school, sel_department, may_edit, err_list = \
+                                dl.get_selected_ey_school_dep_from_usersetting(request)
+                        if err_list:
+                            # TODO change to msg_list
+                            msg_dict['error'] = '<br>'.join(err_list)
+                        else:
+        # - get selected examperiod from usersetting
+                            sel_examperiod = None
+                            selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                            if selected_dict:
+                                sel_examperiod = selected_dict.get(c.KEY_SEL_EXAMPERIOD)
 
-                        if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
+            # - get selected grade from upload_dict - only if clicked on a grade tblRow
+                            grade_pk = upload_dict.get('grade_pk')
 
-    # +++ get selected grade_rows
-                            crit = Q(studentsubject__student__school=sel_school) & \
-                                   Q(studentsubject__student__department=sel_department) & \
-                                   Q(examperiod=sel_examperiod)
+            # - if  grade_pk has value: get sel_examtype from upload_dict instead of from settings
+                            sel_subjbase_pk = None
                             if grade_pk:
-                                crit.add(Q(pk=grade_pk), crit.connector)
-                            elif sel_subject_pk:
-                                crit.add(Q(studentsubject__schemeitem__subject_id=sel_subject_pk), crit.connector)
-                            row_count = stud_mod.Grade.objects.filter(crit).count()
+                                sel_examtype = upload_dict.get('examtype')
+                                # TODO getting sel_examperiod doesnt work properly.
+                                # add this line for now to solve it for sr
+                                if sel_examtype == 'sr':
+                                    sel_examperiod = c.EXAMPERIOD_FIRST
+                            else:
+
+            # - if  grade_pk has no value: get selected examperiod, examtype and subject_pk from usersettings
+                                # update usersetting if new values in upload_dict
+                                new_examtype = upload_dict.get('examtype')
+                                new_subjbase_pk = upload_dict.get('subjbase_pk')
+                                if new_examtype or new_subjbase_pk:
+                                    new_setting_dict = {}
+                                    if new_examtype:
+                                        new_setting_dict[c.KEY_SEL_EXAMTYPE] = new_examtype
+                                    if new_subjbase_pk:
+                                        new_setting_dict[c.KEY_SEL_SUBJBASE_PK] = new_subjbase_pk
+
+                                    saved_setting_dict = req_user.set_usersetting_from_upload_subdict(c.KEY_SELECTED_PK, new_setting_dict, request)
+
+                                    if logging_on:
+                                        logger.debug('new_examtype: ' + str(new_examtype))
+                                        logger.debug('new_subjbase_pk: ' + str(new_subjbase_pk))
+                                        logger.debug('saved_setting_dict: ' + str(saved_setting_dict))
+
+                                sel_examperiodNIU, sel_examtype, sel_subject_pk = \
+                                    dl.get_selected_experiod_extype_subjbase_from_usersetting(request)
 
                             if logging_on:
-                                logger.debug('grade_pk:       ' + str(grade_pk))
-                                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
-                                logger.debug('row_count:      ' + str(row_count))
+                                logger.debug('sel_examtype:   ' + str(sel_examtype))
+                                logger.debug('sel_examperiod: ' + str(sel_examperiod))
 
-                            grades = stud_mod.Grade.objects.filter(crit).order_by('studentsubject__student__lastname', 'studentsubject__student__firstname')
+                            if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
 
-                            msg_dict = {'count': 0,
-                                        'already_published': 0,
-                                        'double_approved': 0,
-                                        'no_value': 0,
-                                        'committed': 0,
-                                        'saved': 0,
-                                        'reset': 0,
-                                        'already_approved_by_auth': 0,
-                                        'auth_missing': 0,
-                                        'test_is_ok': False
-                                        }
-                            if grades is not None:
+        # +++ get selected grade_rows
+                                crit = Q(studentsubject__student__school=sel_school) & \
+                                       Q(studentsubject__student__department=sel_department) & \
+                                       Q(examperiod=sel_examperiod)
+                                if grade_pk:
+                                    crit.add(Q(pk=grade_pk), crit.connector)
+                                elif sel_subjbase_pk:
+                                    crit.add(Q(studentsubject__schemeitem__subject_base_id=sel_subjbase_pk), crit.connector)
+                                row_count = stud_mod.Grade.objects.filter(crit).count()
 
-    # +++ create new published_instance.
-                                # only save it when it is not a test
-                                # file_name will be added after creating Ex-form
-                                published_instance = None
-                                if is_submit and not is_test:
-                                    now_arr = upload_dict.get('now_arr')
-                                    published_instance = create_published_instance(sel_examyear, sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request)
-
-    # +++++ loop through  grades
-                                grade_rows = []
-                                for grade in grades:
-                                    if logging_on:
-                                        logger.debug('----- grade: ' + str(grade))
-
-                                    msg_dict['count'] += 1
-                                    if is_approve:
-                                        approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_reset, msg_dict, request)
-                                    elif is_submit:
-                                        submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request)
-
-        # - add update_dict to update_wrap
-                                    if grade:
-                                        append_dict = {}
-                                        setting_dict = {}
-                                        rows = create_grade_rows(
-                                            sel_examyear_pk=sel_examyear.pk,
-                                            sel_schoolbase_pk=sel_school.base_id,
-                                            sel_depbase_pk=sel_department.base_id,
-                                            sel_examperiod=sel_examperiod,
-                                            setting_dict=setting_dict,
-                                            request=request,
-                                            append_dict=append_dict,
-                                            grade_pk=grade.pk)
-                                        if rows:
-                                            # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase not icon when refreshing this row
-                                            row = rows[0]
-                                            row.pop('note_status')
-                                            grade_rows.append(row)
-    # +++++  end of loop through  grades
-
-                                row_count = len(grade_rows)
                                 if logging_on:
-                                    logger.debug('row_count: ' + str(row_count))
+                                    logger.debug('grade_pk:       ' + str(grade_pk))
+                                    logger.debug('sel_subjbase_pk: ' + str(sel_subjbase_pk))
+                                    logger.debug('row_count:      ' + str(row_count))
 
-                                if not row_count:
-                                    msg_dict['count_text'] = str(
-                                        _("The selection contains %(val)s.") % {'val': get_grade_text(0)})
-                                    if logging_on:
-                                        logger.debug('msg_dict: ' + str(msg_dict))
-                                else:
+                                grades = stud_mod.Grade.objects.filter(crit).order_by('studentsubject__student__lastname', 'studentsubject__student__firstname')
 
+                                msg_dict = {'count': 0,
+                                            'already_published': 0,
+                                            'double_approved': 0,
+                                            'no_value': 0,
+                                            'committed': 0,
+                                            'saved': 0,
+                                            'reset': 0,
+                                            'already_approved': 0,
+                                            'auth_missing': 0,
+                                            'test_is_ok': False
+                                            }
+                                if grades is not None:
+
+        # +++ create new published_instance.
+                                    # only save it when it is not a test
+                                    # file_name will be added after creating Ex-form
+                                    published_instance = None
                                     if is_submit and not is_test:
-                                        sel_subject = subj_mod.Subject.objects.get_or_none(
-                                            pk=sel_subject_pk,
-                                            examyear=sel_examyear
-                                        )
-                                        create_ex2a(
-                                            published_instance=published_instance,
-                                            sel_examyear=sel_examyear,
-                                            sel_school=sel_school,
-                                            sel_department=sel_department,
-                                            sel_subject=sel_subject,
-                                            sel_examperiod=sel_examperiod,
-                                            sel_examtype=sel_examtype,
-                                            grade_rows=grade_rows,
-                                            request=request)
+                                        now_arr = upload_dict.get('now_arr')
+                                        published_instance = create_published_instance(sel_examyear, sel_school, sel_department, sel_examtype, sel_examperiod, sel_subject_pk, is_test, now_arr, request)
 
-                                        update_wrap['updated_published_rows'] = create_published_rows(
-                                            sel_examyear_pk=sel_examyear.pk,
-                                            sel_schoolbase_pk=sel_school.base_id,
-                                            sel_depbase_pk=sel_department.base_id,
-                                            published_pk=published_instance.pk
-                                        )
+        # +++++ loop through  grades
+                                    grade_rows = []
+                                    for grade in grades:
+                                        if logging_on:
+                                            logger.debug('----- grade: ' + str(grade))
 
-                                    update_wrap['updated_grade_rows'] = grade_rows
-
-    # - create msg_html with info of rows
-                                    if is_test:
-                                        count = msg_dict.get('count', 0)
-                                        committed = msg_dict.get('committed', 0)
-                                        no_value = msg_dict.get('no_value', 0)
-                                        already_published = msg_dict.get('already_published', 0)
-                                        auth_missing = msg_dict.get('auth_missing', 0)
-                                        already_approved_by_auth = msg_dict.get('already_approved_by_auth', 0)
-                                        double_approved = msg_dict.get('double_approved', 0)
-
-                                        msg_dict['count_text'] = _("The selection contains %(val)s.") % \
-                                                                 {'val': get_grade_text(count)}
-                                        if committed:
-                                            msg_dict['test_is_ok'] = True
-
-                                        if committed < count:
-                                            msg_dict['skip_text'] = _("The following grades will be skipped:")
-                                        if already_published:
-                                            msg_dict['already_published_text'] = _("  - %(val)s already submitted") % \
-                                                                     {'val': get_grades_are_text(already_published)}
-                                        if auth_missing:
-                                            msg_dict['auth_missing_text'] = _("  - %(val)s not completely approved") % \
-                                                                     {'val': get_grades_are_text(auth_missing)}
-                                        if no_value:
-                                            if no_value == 1:
-                                                msg_dict['no_value_text'] = _("  - 1 grade has no value")
-                                            else:
-                                                msg_dict['no_value_text'] = _("  - %(val)s grades have no value") % {'val': no_value}
-                                        if double_approved:
-                                            msg_dict['double_approved_text'] = get_approved_text(double_approved) + str(_(', in a different function'))
-
-                                        if already_approved_by_auth:
-                                            msg_dict['already_approved_by_auth_text'] = get_approved_text(already_approved_by_auth)
-
+                                        msg_dict['count'] += 1
                                         if is_approve:
-                                            if not committed:
-                                                msg_dict['saved_text'] = _("No grades will be approved.")
-                                            elif committed == 1:
-                                                msg_dict['saved_text'] = _("One grade will be approved.")
-                                            else:
-                                                msg_dict['saved_text'] = _("%(val)s grades will be approved.") % \
-                                                                     {'val': committed}
+                                            approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_reset, msg_dict, request)
                                         elif is_submit:
-                                            if is_test:
-                                                if not committed:
-                                                    msg_dict['saved_text'] = _("The Ex2A form can not be submitted.")
-                                                elif committed == 1:
-                                                    msg_dict['saved_text'] = _("One grade will be added to the Ex2A form.")
-                                                else:
-                                                    msg_dict['saved_text'] = _("%(val)s grades will be added to the Ex2A form.") % \
-                                                                         {'val': committed}
+                                            submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request)
+
+            # - add update_dict to update_wrap
+                                        if grade:
+                                            setting_dict = {}
+                                            rows = create_grade_rows(
+                                                sel_examyear_pk=sel_examyear.pk,
+                                                sel_schoolbase_pk=sel_school.base_id,
+                                                sel_depbase_pk=sel_department.base_id,
+                                                sel_examperiod=sel_examperiod,
+                                                setting_dict=setting_dict,
+                                                request=request,
+                                                grade_pk_list=[grade.pk]
+                                            )
+                                            if rows:
+                                                # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase not icon when refreshing this row
+                                                row = rows[0]
+                                                row.pop('note_status')
+                                                grade_rows.append(row)
+        # +++++  end of loop through  grades
+
+                                    row_count = len(grade_rows)
+                                    if logging_on:
+                                        logger.debug('row_count: ' + str(row_count))
+
+                                    if not row_count:
+                                        msg_dict['count_text'] = str(
+                                            _("The selection contains %(val)s.") % {'val': get_grade_text(0)})
+                                        if logging_on:
+                                            logger.debug('msg_dict: ' + str(msg_dict))
                                     else:
-                                        saved = msg_dict.get('saved', 0)
-                                        if not saved:
-                                            msg_dict['saved_text'] = _("The Ex2A form has not been submitted.")
-                                        elif saved == 1:
-                                            msg_dict['saved_text'] = _("The Ex2A has been submitted. It contains 1 grade.")
+
+                                        if is_submit and not is_test:
+                                            sel_subject = subj_mod.Subject.objects.get_or_none(
+                                                pk=sel_subject_pk,
+                                                examyear=sel_examyear
+                                            )
+                                            create_ex2a(
+                                                published_instance=published_instance,
+                                                sel_examyear=sel_examyear,
+                                                sel_school=sel_school,
+                                                sel_department=sel_department,
+                                                sel_subject=sel_subject,
+                                                sel_examperiod=sel_examperiod,
+                                                sel_examtype=sel_examtype,
+                                                grade_rows=grade_rows,
+                                                request=request)
+
+                                            update_wrap['updated_published_rows'] = create_published_rows(
+                                                sel_examyear_pk=sel_examyear.pk,
+                                                sel_schoolbase_pk=sel_school.base_id,
+                                                sel_depbase_pk=sel_department.base_id,
+                                                published_pk=published_instance.pk
+                                            )
+
+                                        update_wrap['updated_grade_rows'] = grade_rows
+
+        # - create msg_html with info of rows
+                                        if is_test:
+                                            count = msg_dict.get('count', 0)
+                                            committed = msg_dict.get('committed', 0)
+                                            no_value = msg_dict.get('no_value', 0)
+                                            already_published = msg_dict.get('already_published', 0)
+                                            auth_missing = msg_dict.get('auth_missing', 0)
+                                            already_approved = msg_dict.get('already_approved', 0)
+                                            double_approved = msg_dict.get('double_approved', 0)
+
+                                            msg_dict['count_text'] = _("The selection contains %(val)s.") % \
+                                                                     {'val': get_grade_text(count)}
+                                            if committed:
+                                                msg_dict['test_is_ok'] = True
+
+                                            if committed < count:
+                                                msg_dict['skip_text'] = _("The following grades will be skipped:")
+                                            if already_published:
+                                                msg_dict['already_published_text'] = _("  - %(val)s already submitted") % \
+                                                                         {'val': get_grades_are_text(already_published)}
+                                            if auth_missing:
+                                                msg_dict['auth_missing_text'] = _("  - %(val)s not completely approved") % \
+                                                                         {'val': get_grades_are_text(auth_missing)}
+                                            if no_value:
+                                                if no_value == 1:
+                                                    msg_dict['no_value_text'] = _("  - 1 grade has no value")
+                                                else:
+                                                    msg_dict['no_value_text'] = _("  - %(val)s grades have no value") % {'val': no_value}
+                                            if double_approved:
+                                                msg_dict['double_approved_text'] = get_approved_text(double_approved) + str(_(', in a different function'))
+
+                                            if already_approved:
+                                                msg_dict['already_approved_text'] = get_approved_text(already_approved)
+
+                                            if is_approve:
+                                                if not committed:
+                                                    msg_dict['saved_text'] = _("No grades will be approved.")
+                                                elif committed == 1:
+                                                    msg_dict['saved_text'] = _("One grade will be approved.")
+                                                else:
+                                                    msg_dict['saved_text'] = _("%(val)s grades will be approved.") % \
+                                                                         {'val': committed}
+                                            elif is_submit:
+                                                if is_test:
+                                                    if not committed:
+                                                        msg_dict['saved_text'] = _("The Ex2A form can not be submitted.")
+                                                    elif committed == 1:
+                                                        msg_dict['saved_text'] = _("One grade will be added to the Ex2A form.")
+                                                    else:
+                                                        msg_dict['saved_text'] = _("%(val)s grades will be added to the Ex2A form.") % \
+                                                                             {'val': committed}
                                         else:
-                                            msg_dict['saved_text'] = _("The Ex2A has been submitted. It contains %(val)s grades.") % \
-                                                                 {'val': saved}
+                                            saved = msg_dict.get('saved', 0)
+                                            if not saved:
+                                                msg_dict['saved_text'] = _("The Ex2A form has not been submitted.")
+                                            elif saved == 1:
+                                                msg_dict['saved_text'] = _("The Ex2A has been submitted. It contains 1 grade.")
+                                            else:
+                                                msg_dict['saved_text'] = _("The Ex2A has been submitted. It contains %(val)s grades.") % \
+                                                                     {'val': saved}
 
     # - add  msg_dict to update_wrap
             update_wrap['msg_dict'] = msg_dict
@@ -524,7 +503,6 @@ def get_grades_are_text(count):
 
 
 def get_approved_text(count):
-    msg_text = None
     if count == 1:
         msg_text = _(' - 1 grade is already approved')
     else:
@@ -534,7 +512,7 @@ def get_approved_text(count):
 
 def approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_reset, msg_dict, request):  # PR2021-01-19
     # status_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_grade -----')
         logger.debug('sel_examtype: ' + str(sel_examtype))
@@ -594,8 +572,9 @@ def approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_re
                     requsr_authby_field_already_approved = True if requsr_authby_value else False
                     if logging_on:
                         logger.debug('requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+
                     if requsr_authby_field_already_approved:
-                        msg_dict['already_approved_by_auth'] += 1
+                        msg_dict['already_approved'] += 1
                     else:
 
 # - skip if this author (like 'president') has already approved this grade
@@ -776,18 +755,14 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
 # - get upload_dict variables
                     # get examperiod and examtype from upload_dict
                     # don't get it from usersettings, get it from upload_dict instead
-                    # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+                    # was: sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_experiod_extype_subjbase_from_usersetting(request)
                     mode = upload_dict.get('mode')
-                    examperiod_int = upload_dict.get('examperiod')
-                    examgradetype = upload_dict.get('examgradetype')
 
                     grade_pk = upload_dict.get('grade_pk')
                     return_grades_with_exam = upload_dict.get('return_grades_with_exam', False)
 
                     if logging_on:
                         logger.debug('upload_dict: ' + str(upload_dict))
-                        logger.debug('examperiod_int: ' + str(examperiod_int))
-                        logger.debug('grade_pk: ' + str(grade_pk))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                     # sel_department only has value when sel_examyear and sel_school have value
@@ -804,8 +779,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
 # - get current grade
                         grade = stud_mod.Grade.objects.get_or_none(
                             id=grade_pk,
-                            studentsubject__student=student,
-                            examperiod=examperiod_int
+                            studentsubject__student=student
                         )
                     if logging_on:
                         logger.debug('student: ' + str(student))
@@ -849,7 +823,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
                                 sel_depbase_pk=sel_department.base_id,
                                 sel_examperiod=grade.examperiod,
                                 request=request,
-                                grade_pk=grade.pk
+                                grade_pk_list=[grade.pk]
                             )
                         else:
 
@@ -871,7 +845,8 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
                                 setting_dict=setting_dict,
                                 request=request,
                                 append_dict=append_dict,
-                                grade_pk=grade.pk)
+                                grade_pk_list=[grade.pk]
+                            )
                         if rows:
                             row = rows[0]
                             if row:
@@ -921,6 +896,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
         # - check if it is allowed to enter this examgradetype this examyear
         # - check if grade is published or authorized
         # - check restrictions in schemeitem
+
             validated_value, err_lst = grad_val.validate_update_grade(grade_instance, field, new_value, sel_examyear, si_dict)
             if logging_on:
                 #logger.debug('new_value:       ' + str(new_value))
@@ -1007,8 +983,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 
 # --- end of for loop ---
 
-    if logging_on:
-        logger.debug('recalc_finalgrade   : ' + str(recalc_finalgrade))
+# +++ if one of the input fields has changed: recalc calculated fields
+    if recalc_finalgrade:
+        recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, True) # True = skip_save, will be saved furthtr in this function
 
 # 5. save changes`
     if save_changes:
@@ -1029,17 +1006,17 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
             if must_recalc_reex_reex03:
     # - when field = 'segrade', 'srgrade', 'pegrade': also update and save grades in reex, reex03, if exist
                 recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
-
-            if recalc_finalgrade:
-                sql_studsubj_list, sql_student_list = \
-                    update_studsubj_and_recalc_student_result(
-                        sel_examyear, sel_school, sel_department, student)
-                if sql_studsubj_list:
-                    calc_res.save_studsubj_batch(sql_studsubj_list)
-
-                    # save calculated fields in student
-                if sql_student_list:
-                    calc_res.save_student_batch(sql_student_list)
+            # TODO add field needs_recalc to student and recalc results only when opening result page, to speed up
+            #if recalc_finalgrade:
+            #    sql_studsubj_list, sql_student_list = \
+            #        update_studsubj_and_recalc_student_result(
+            #            sel_examyear, sel_school, sel_department, student)
+            #    if sql_studsubj_list:
+            #        calc_res.save_studsubj_batch(sql_studsubj_list)
+            #
+            #    # save calculated fields in student
+            #    if sql_student_list:
+            #        calc_res.save_student_batch(sql_student_list)
 
     return err_list
 # --- end of update_grade_instance
@@ -1077,12 +1054,12 @@ def update_studsubj_and_recalc_student_result(sel_examyear, sel_school, sel_depa
 
 
 def recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict):  # PR2021-12-28 PR2022-01-05
-    # only called by update_grade_instance
+    # called by:  - update_grade_instance, - update_studsubj
     # when first examperiod:
     #  - check if there is a reex or reex03 grade: if so, recalc final grade in reex or reex03
     #  - only when first examperiod ( is filtered in update_grade_instance)
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- recalc_finalgrade_in_reex_reex03_grade_and_save -----')
         logger.debug('grade_instance: ' + str(grade_instance) + ' ep: ' + str(grade_instance.examperiod))
@@ -1101,17 +1078,20 @@ def recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict):  #
 # end of recalc_finalgrade_in_reex_reex03_grade_and_save
 
 
-def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict):  # PR2021-12-13  PR2021-12-24 PR2022-01-05
-    # called by: GradeUploadView.update_grade_instance.recalc_finalgrade_in_reex_reex03_grade_and_save
-    # and update_studsubj
+def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False):
+    # PR2021-12-13  PR2021-12-24 PR2022-01-05 PR2022-02-15
+    # called by:
+    #   - update_grade_instance.
+    #   - recalc_finalgrade_in_reex_reex03_grade_and_save
+
     # - gets input values from grade_instance
     # - calls calc_sesr_pece_final_grade to calculate sesr_grade, pece_grade, finalgrade
     # - puts se, sr, sesr, pe in reex and reex03
     # - saves the grade_instance
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- recalc_finalgrade_in_grade_and_save -------')
+        logger.debug(' >>>>>>>>>>>>> ------- recalc_finalgrade_in_grade_and_save -------')
 
     if grade_instance:
         try:
@@ -1147,6 +1127,7 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict):  # PR2021-12-1
                     se_grade = grade_first_period.segrade
                     sr_grade = grade_first_period.srgrade
                     pe_grade = grade_first_period.pegrade
+
                     # put the values of se, sr, pe in reex and reex03
                     setattr(grade_instance, 'segrade', se_grade)
                     setattr(grade_instance, 'srgrade', sr_grade)
@@ -1161,6 +1142,9 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict):  # PR2021-12-1
 # - get ce_grade always from grade_instance
             ce_grade = grade_instance.cegrade
 
+# - calc sesr pece and final grade
+            if logging_on:
+                logger.debug(' calc sesr pece and final grade ')
             sesr_grade, pece_grade, finalgrade = \
                 calc_final.calc_sesr_pece_final_grade(
                     is_ep_exemption, has_practexam, gradetype, weight_se, weight_ce,
@@ -1170,7 +1154,8 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict):  # PR2021-12-1
             setattr(grade_instance, 'pecegrade', pece_grade)
             setattr(grade_instance, 'finalgrade', finalgrade)
 
-            grade_instance.save()
+            if not skip_save:
+                grade_instance.save()
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -1250,6 +1235,7 @@ def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
         sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id,",
                     "CONCAT('grade_', grd.id::TEXT) AS mapid,",
                     "ssn.max_note_status AS note_status",
+
                     "FROM students_grade AS grd",
                     "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
                     "INNER JOIN (", sql_ssn, ") AS ssn ON (ssn.studsubj_id = studsubj.id)",
@@ -1259,7 +1245,10 @@ def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                     "WHERE sch.examyear_id = %(ey_id)s::INT",
                     "AND sch.base_id = %(sb_id)s::INT",
                     "AND dep.base_id = %(db_id)s::INT",
-                    "AND grd.examperiod = %(ex_per)s::INT"
+                    "AND grd.examperiod = %(ex_per)s::INT",
+                    "AND NOT grd.tobedeleted",
+                    "AND NOT studsubj.tobedeleted",
+                    "AND NOT st.tobedeleted"
                     ]
         if studsubj_pk:
             sql_keys['studsubj_id'] = studsubj_pk
@@ -1351,8 +1340,8 @@ def create_grade_stat_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 
 
 def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, setting_dict, request,
-                      append_dict=None, subject_pk=None, grade_pk=None, auth_dict=None):
-    # --- create grade rows of all students of this examyear / school PR2020-12-14  PR2021-12-03
+                      append_dict=None, grade_pk_list=None, auth_dict=None):
+    # --- create grade rows of all students of this examyear / school PR2020-12-14  PR2021-12-03 PR2022-02-09
 
     # note: don't forget to filter tobedeleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
@@ -1366,27 +1355,20 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
-        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
-        logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
-        logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
-        logger.debug('sel_examperiod: ' + str(sel_examperiod))
-        logger.debug('username_dict: ' + str(username_dict))
+        logger.debug('     sel_examyear_pk: ' + str(sel_examyear_pk))
+        logger.debug('     sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+        logger.debug('     sel_depbase_pk: ' + str(sel_depbase_pk))
+        logger.debug('     sel_examperiod: ' + str(sel_examperiod))
+        logger.debug('     grade_pk_list: ' + str(grade_pk_list))
 
     grade_rows = []
     try:
+        req_user = request.user
         # - only requsr of the same school can view grades that are not published, PR2021-04-29
-        requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase_pk)
+        requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase_pk)
 
         # - also commissioner .TODO: add school to commissioner permit
-        requsr_commissioner = (request.user.role == c.ROLE_016_COMM)
-
-        sel_lvlbase_pk = None
-        if c.KEY_SEL_LVLBASE_PK in setting_dict:
-            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-
-        sel_sctbase_pk = None
-        if c.KEY_SEL_SCTBASE_PK in setting_dict:
-            sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
+        requsr_commissioner = (req_user.role == c.ROLE_016_COMM)
 
     #  - add_auth_list is used in Ex form to add name of auth
         add_auth_list = True if auth_dict is not None else False
@@ -1429,15 +1411,13 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.ce_status ELSE NULL END AS ce_status,"
             ])
 
-        if logging_on:
-            logger.debug('sql_keys: ' + str(sql_keys))
-
         sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
                     "CONCAT('grade_', grd.id::TEXT) AS mapid,",
                     "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                     "stud.level_id AS lvl_id, lvl.abbrev AS lvl_abbrev, stud.sector_id AS sct_id, sct.abbrev AS sct_abbrev,",
-                    "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked, stud.tobedeleted AS stud_tobedeleted,",
+                    "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked,",
                     "school.islexschool,",
+                    "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
 
                     grades, final_grade, status,
                     "grd.examperiod,",
@@ -1459,7 +1439,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "si.is_core_subject, si.is_mvt, si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
                     "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 
-                    "subj.name AS subj_name, subjbase.code AS subj_code,",
+                    "subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
                     "NULL AS note_status", # will be filled in after downloading note_status
 
                     "FROM students_grade AS grd",
@@ -1485,27 +1465,69 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "LEFT JOIN schools_published AS ce_published ON (ce_published.id = grd.ce_published_id)",
 
                     "WHERE ey.id = %(ey_id)s::INT AND grd.examperiod = %(experiod)s::INT",
-
                     "AND school.base_id = %(sb_id)s::INT",
                     "AND dep.base_id = %(depbase_id)s::INT",
+                    "AND NOT stud.tobedeleted",
                     "AND NOT studsubj.tobedeleted",
                     "AND NOT grd.tobedeleted",
                     ]
+# --- filter on usersetting
+        sel_lvlbase_pk, sel_subjbase_pk, sel_cluster_pk, sel_student_pk = None, None, None, None
+        if setting_dict:
+            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+            sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
+            sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
+            sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
 
-        if grade_pk:
-            # when grade_pk has value: skip subject filter
-            sql_keys['grade_id'] = grade_pk
-            sql_list.append('AND grd.id = %(grade_id)s::INT')
+        if grade_pk_list:
+            # when grade_pk_list has value: skip subject filter
+            sql_keys['grade_pk_arr'] = grade_pk_list
+            sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
         else:
             if sel_lvlbase_pk:
-                sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
-                sql_keys['lvlbase_id'] = sel_lvlbase_pk
-            if sel_sctbase_pk:
-                sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
-                sql_keys['sctbase_id'] = sel_sctbase_pk
-            if subject_pk:
-                sql_keys['subj_id'] = subject_pk
-                sql_list.append('AND si.subject_id = %(subj_id)s::INT')
+                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+            if sel_subjbase_pk:
+                sql_keys['subjbase_pk'] = sel_subjbase_pk
+                sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
+
+            if sel_cluster_pk:
+                sql_keys['cluster_pk'] = sel_cluster_pk
+                sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
+
+            if sel_student_pk:
+                sql_keys['student_pk'] = sel_student_pk
+                sql_list.append("AND stud.id = %(student_pk)s::INT")
+
+# --- filter on allowed
+        if req_user.allowed_depbases:
+            if ';' in req_user.allowed_depbases:
+                sql_keys['db_arr'] = req_user.allowed_depbases.split(';')
+                sql_list.append("AND dep.base_id IN ( SELECT UNNEST(%(db_arr)s::INT[]) )")
+            else:
+                sql_keys['db_pk'] = req_user.allowed_depbases
+                sql_list.append("AND dep.base_id = %(db_pk)s::INT")
+
+        if req_user.allowed_levelbases:
+            if ';' in req_user.allowed_levelbases:
+                sql_keys['lvl_arr'] = req_user.allowed_levelbases.split(';')
+                sql_list.append("AND lvl.base_id IN ( SELECT UNNEST(%(lvl_arr)s::INT[]) )")
+            else:
+                sql_keys['db_pk'] = req_user.allowed_levelbases
+                sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
+
+        if req_user.allowed_schoolbases:
+            if ';' in req_user.allowed_schoolbases:
+                sql_keys['schb_arr'] = req_user.allowed_schoolbases.split(';')
+                sql_list.append("AND school.base_id IN ( SELECT UNNEST(%(schb_arr)s::INT[]) )")
+            else:
+                sql_keys['schb_pk'] = req_user.allowed_schoolbases
+                sql_list.append("AND school.base_id = %(schb_pk)s::INT")
+
+        acc_view.get_userfilter_subjbase(sql_keys, sql_list, sel_subjbase_pk, request)
+
+        # allowed_clusterbases are not filtered here, instead allow editing in client
 
         sql_list.append('ORDER BY grd.id')
 
@@ -1527,7 +1549,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
             #                  'pe_auth1by_id', 'pe_auth2by_id', 'pe_auth3by_id', 'pe_auth4by_id',
             #                  'ce_auth1by_id', 'ce_auth2by_id', 'ce_auth3by_id' 'ce_auth4by_id')
 
-            if logging_on:
+            if logging_on and False:
                 logger.debug('---------------- ')
             for row in grade_rows:
                 first_name = row.get('firstname')
@@ -1551,27 +1573,28 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 prefix = row.get('prefix')
                 full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
                 row['fullname'] = full_name if full_name else None
-                if logging_on:
+
+        # - add messages to all studsubj_rows, only when student_pk or studsubj_pk_list have value
+                if append_dict and grade_pk_list:
+                    for key, value in append_dict.items():
+                        row[key] = value
+
+                if logging_on and False:
                     logger.debug('..... ')
                     logger.debug('row: ' + str(row))
 
             if logging_on:
                 logger.debug('---------------- ')
-    # - add messages to student_row, only when only 1 row added (then studsubj_pk has value)
-            if grade_pk and append_dict is not None:
-                # when sel_student_pk has value there is only 1 row
-                row = grade_rows[0]
-                if row:
-                    for key, value in append_dict.items():
-                        row[key] = value
+
     except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 
     return grade_rows
 # --- end of create_grade_rows
-###########################################
 
-def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, request, grade_pk=None):
+
+def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod,
+                                    request, setting_dict=None, grade_pk_list=None):
     # --- create grade rows of all students of this examyear / school PR2020-12-14
 
     # note: don't forget to filter deleted = false!! PR2021-03-15
@@ -1582,24 +1605,31 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     #   they may not be downloaded by schools,
     #   to be 100% sure that the answers cannot be retrieved by a school.
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_with_exam_rows -----')
+        logger.debug('setting_dict: ' + str(setting_dict))
 
     # - only requsr of the same school  can view grades that are not published, PR2021-04-29
     # - also commissioner .TODO: add school to commissioner permit
-    requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase_pk)
+
+    # - only exams that are published are visible
+    # - only ce_exams that are submitted are visible for non - requsr_same_school user > not necessary
+    #       > not necessary, because only requsr_same_school can access grade_with_exam_rows
+
+    req_user = request.user
+    requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase_pk)
 
     examkeys_fields = ""
-    if request.user.role == c.ROLE_064_ADMIN:
-        examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
+    if req_user.role == c.ROLE_064_ADMIN:
+        # pe_exam not in use: was: examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
+        examkeys_fields = "ce_exam.keys AS ceex_keys,"
 
     sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk,
                 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
     # TODO
-    # - the not-published grades are only visible when requsr_same_school
 
-    sub_list = ["SELECT exam.id, ",
+    sub_list = ["SELECT exam.id, subjbase.id AS exam_subjbase_id,",
                 "CONCAT(subjbase.code,",
                 "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
                 "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
@@ -1611,23 +1641,23 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
-                # TODO set filter
-                #"WHERE exam.published IS NOT NULL"
+
+                "WHERE exam.published_id IS NOT NULL"
                 ]
     sub_exam = ' '.join(sub_list)
-
 
     sql_list = ["SELECT grd.id, CONCAT('grade_', grd.id::TEXT) AS mapid,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                 "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
                 "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-                "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
-                "studsubj.id AS studsubj_id,",
+                "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name AS subj_name,",
+                "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
                 "grd.examperiod,"
                 # "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
                 "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_published_id, grd.ce_exam_blocked,",
 
                 "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
+                "ce_exam.exam_subjbase_id AS ceex_exam_subjbase_id,",
                 "ce_exam.examperiod AS ceex_examperiod, ce_exam.examtype AS ceex_examtype,",
                 "ce_exam.version AS ceex_version, ce_exam.amount AS ceex_amount,",
                 "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
@@ -1637,23 +1667,24 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 
                 examkeys_fields,
 
-                "pe_exam.id AS peex_exam_id, pe_exam.exam_name AS peex_name,"
-                "pe_exam.examperiod AS peex_examperiod, pe_exam.examtype AS peex_examtype,",
-                "pe_exam.version AS peex_version, pe_exam.amount AS peex_amount,",
-                "pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
-                "pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
-                "pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength,",
-                "pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm,",  # pe_exam.examdate AS peex_examdate,",
+                #"pe_exam.id AS peex_exam_id, pe_exam.exam_name AS peex_name,"
+                #"pe_exam.examperiod AS peex_examperiod, pe_exam.examtype AS peex_examtype,",
+                #"pe_exam.version AS peex_version, pe_exam.amount AS peex_amount,",
+                #"pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
+                #"pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
+                #"pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength,",
+                #"pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm,",  # pe_exam.examdate AS peex_examdate,",
 
                 "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr, publ.modifiedat AS ce_exam_publ_modat",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
                 "LEFT JOIN (", sub_exam, ") AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
-                "LEFT JOIN (", sub_exam, ") AS pe_exam ON (pe_exam.id = grd.pe_exam_id)",
+                #"LEFT JOIN (", sub_exam, ") AS pe_exam ON (pe_exam.id = grd.pe_exam_id)",
 
                 "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_cluster AS cls ON (cls.id = studsubj.cluster_id)",
 
                 "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
                 "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
@@ -1667,19 +1698,47 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.ce_exam_auth2by_id)",
                 "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
 
-
                 "WHERE ey.id = %(ey_id)s::INT",
                 "AND school.base_id = %(sb_id)s::INT",
                 "AND dep.base_id = %(depbase_id)s::INT",
                 "AND si.ete_exam",
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
-
-                "AND grd.examperiod = %(experiod)s::INT"
+                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                 ]
-    if grade_pk:
-        # when grade_pk has value: skip other filters
-        sql_keys['grade_id'] = grade_pk
-        sql_list.append('AND grd.id = %(grade_id)s::INT')
+
+    if logging_on:
+        logger.debug('grade_pk_list: ' + str(grade_pk_list))
+
+    if grade_pk_list:
+        # when grade_pk_list has value: skip subject filter
+        sql_keys['grade_pk_arr'] = grade_pk_list
+        sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
+
+    elif setting_dict:
+        sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
+        if sel_examperiod in (1, 2):
+            sql_keys['ep'] = sel_examperiod
+            sql_list.append("AND grd.examperiod = %(ep)s::INT")
+
+        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+        if sel_lvlbase_pk:
+            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+        sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
+        if sel_subjbase_pk:
+            sql_keys['subjbase_pk'] = sel_subjbase_pk
+            sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
+
+        sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
+        if sel_cluster_pk:
+            sql_keys['cluster_pk'] = sel_cluster_pk
+            sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
+
+        sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
+        if sel_student_pk:
+            sql_keys['student_pk'] = sel_student_pk
+            sql_list.append("AND stud.id = %(student_pk)s::INT")
+
 
 # show grades that are not published only when requsr_same_school PR2021-04-29
 
@@ -1694,6 +1753,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
         logger.debug('sql: ' + str(sql))
+        logger.debug('grade_rows: ' + str(grade_rows))
 
 # - add full name to rows, and array of id's of auth
     if grade_rows:
@@ -1704,8 +1764,6 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
             full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
             row['fullname'] = full_name if full_name else None
 
-            if logging_on:
-                logger.debug('row: ' + str(row))
     return grade_rows
 # --- end of create_grade_with_exam_rows
 

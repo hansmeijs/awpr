@@ -7,7 +7,8 @@ from django.core.files.storage import default_storage, FileSystemStorage
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
 from django.utils.decorators import method_decorator
-from django.utils.translation import activate, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, gettext_lazy as _
 from django.views.generic import View
 
 
@@ -413,7 +414,7 @@ class DownloadEx3View(View):  # PR2021-10-07
             islexschool = sel_school.islexschool
 
 # - get selected examperiod from usersettings
-            sel_examperiod, sel_examtype_NIU, sel_subject_p_NIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+            sel_examperiod, sel_examtype_NIU, sel_subjbase_pk_NIU = dl.get_selected_experiod_extype_subjbase_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
@@ -676,22 +677,26 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                 dl.get_selected_ey_school_dep_from_usersetting(request)
 
 # - get selected examperiod, examtype, subject_pk from usersettings
-            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+            sel_examperiod, sel_examtype, sel_subjbase_pk = dl.get_selected_experiod_extype_subjbase_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
                 logger.debug('sel_school: ' + str(sel_school))
                 logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
+                logger.debug('sel_subjbase_pk: ' + str(sel_subjbase_pk))
 
-            if sel_examperiod and sel_school and sel_department and sel_subject_pk:
-                sel_subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk, examyear=sel_examyear)
+            if sel_examperiod and sel_school and sel_department and sel_subjbase_pk:
+                sel_subject = subj_mod.Subject.objects.get_or_none(
+                    base_id=sel_subjbase_pk,
+                    examyear=sel_examyear
+                )
                 if logging_on:
                     logger.debug('sel_subject: ' + str(sel_subject))
 
 # +++ get selected grade_rows
                 auth_dict = {}
-                setting_dict = {}
+                setting_dict = {c.KEY_SEL_SCTBASE_PK: {c.KEY_SEL_SUBJBASE_PK: sel_subject.base_id}}
+
                 grade_rows = gr_vw.create_grade_rows(
                     sel_examyear_pk=sel_examyear.pk,
                     sel_schoolbase_pk=sel_school.base_id,
@@ -699,7 +704,6 @@ class GradeDownloadEx2aView(View):  # PR2021-01-24
                     sel_examperiod=sel_examperiod,
                     setting_dict=setting_dict,
                     request=request,
-                    subject_pk=sel_subject_pk,
                     auth_dict=auth_dict
                     )
 

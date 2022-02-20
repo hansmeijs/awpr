@@ -681,6 +681,10 @@ aXX:hover{
   display: block;
 }
 
+.display_inline_block {
+  display: inline_block;
+}
+
 
 /*
 .cell_error tr:nth-child(even) td {

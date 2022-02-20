@@ -359,7 +359,7 @@
     background-image: url('/static/manual/studsubj_tab_subj_ok.png');
  }
 
-.img_studsubj_exclamationsign {
+.img_exclamationsign {
     background-position: -120px -40px;
     background-image: url('/static/img/notes210917.png');
     background-size: 360px 120px;
@@ -371,6 +371,17 @@
 
  }
 
+.img_lightbulb {
+    /*background-position: 0px 0px;*/
+    background-image: url('/static/manual/lightbulb.png');
+    background-size: 48px 48px;
+
+    background-repeat: no-repeat;
+    height: 40px;
+    width: 40px;
+    margin: auto;
+
+ }
 
 /* ---------------------------------------------------
     IMAGES - APPOVE SUBJECTS
@@ -502,3 +513,22 @@
     width: 797px; height: 485px; background-size: 797px 485px;}
 .img_mailbox_mailinglist_ne {background-image: url('/static/manual/mailbox_mailinglist_ne.png');}
 .img_mailbox_mailinglist_en {background-image: url('/static/manual/mailbox_mailinglist_en.png');}
+
+
+/* ---------------------------------------------------
+    IMAGES - EXAMS
+----------------------------------------------------- */
+
+.img_exams_tableA_ne, .img_exams_tableA_en {
+    width: 1220px; height: 490px; background-size: 1220px 490px;}
+.img_exams_tableA_ne {background-image: url('/static/manual/exams_tableA_ne.png');}
+.img_exams_tableA_en {background-image: url('/static/manual/exams_tableA_en.png');}
+
+.img_exams_modA_ne, .img_exams_modA_en {
+    width: 798px; height: 564px; background-size: 798px 564px;}
+.img_exams_modA_ne {background-image: url('/static/manual/exams_modA_ne.png');}
+.img_exams_modA_en {background-image: url('/static/manual/exams_modA_en.png');}
+
+.img_exams_print_result_ne_en {
+    width: 789px; height: 540px; background-size: 789px 540px;
+    background-image: url('/static/manual/exams_print_result_ne_en.png');}

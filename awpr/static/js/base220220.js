@@ -1493,32 +1493,33 @@
         // gives err messages when multiple found.
         // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8, STATUS_04_AUTH3 = 16
 
-        //console.log( "-----  b_get_auth_index_of_requsr  -----");
-        //console.log( "permit_dict", permit_dict);
+        console.log( "-----  b_get_auth_index_of_requsr  -----");
+        console.log( "permit_dict", permit_dict);
 
-        let status_index = 0, count_auth = 0;
+        let status_index = 0;
+        // key = '1' of auth1, value 1 = has permit, 0 = no permit
+        const permit_auth = {1: 0, 2: 0, 3: 0, 4: 0}
         if (permit_dict.usergroup_list){
             for (let i = 1; i < 5; i++) {
                 if (permit_dict.usergroup_list.includes("auth" + i)){
-                    count_auth += 1;
                     status_index = i;
+                    permit_auth[i] = 1;
         }}};
+        console.log( "permit_auth", permit_auth);
 
 // skip if user has no auth usergroup
-        if(count_auth){
-            if ( count_auth > 1){
-                status_index = 0;
-    // show msg error if user has multiple auth usergroups
-                const functions = (perm_auth1 && perm_auth2 && perm_auth3) ? loc.President + ", " + loc.Secretary + loc.and + loc.Commissioner :
-                                  (perm_auth1 && perm_auth2) ? loc.President + loc.and + loc.Secretary :
-                                  (perm_auth1 && perm_auth3) ? loc.President + loc.and + loc.Commissioner :
-                                  (perm_auth2 && perm_auth3) ? loc.Secretary + loc.and + loc.Examinator : "";
 
-                const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
-                            loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
-                b_show_mod_message(msg_html);
-            };
+        if ( (permit_auth[1] && permit_auth[2]) || (permit_auth[1] && permit_auth[2]) ){
+            status_index = 0;
+// show msg error if user has multiple auth usergroups
+            const functions = (permit_auth[1] && permit_auth[2]) ? loc.President + loc.and + loc.Secretary :
+                              (permit_auth[3] && permit_auth[4]) ? loc.Commissioner + loc.and + loc.Examinator : "";
+
+            const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
+                        loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
+            b_show_mod_message(msg_html);
         };
+
 
         return status_index;
     }  // b_get_auth_index_of_requsr

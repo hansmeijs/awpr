@@ -9,7 +9,8 @@ from django.forms import Form, ModelForm, CharField, PasswordInput, ChoiceField,
 from collections import OrderedDict
 
 from django.shortcuts import render
-from django.utils.translation import activate, get_language_info, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, get_language_info, gettext_lazy as _
 from django.utils.text import capfirst
 
 from awpr import constants as c

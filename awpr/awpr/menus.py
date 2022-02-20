@@ -1,7 +1,8 @@
 from django.shortcuts import render
 from django.urls import reverse_lazy
 
-from django.utils.translation import activate, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, gettext_lazy as _
 from django.utils import timezone
 
 from django.views.generic import View

@@ -1,5 +1,6 @@
 
-from django.utils.translation import pgettext_lazy, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import pgettext_lazy, gettext_lazy as _
 
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
@@ -146,10 +147,10 @@ def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_parte
     # height = top - bottom  # 275 mm
     border = [top, right, bottom, left]
     coord = [left, top]
-    lines_per_page = 30
+    lines_per_page = 29
     available_lines = lines_per_page
     number_of_columns = 5
-    row_height = 8 * mm
+    row_height = 7 * mm
 
 # create pagenumber_text
     page_count = get_page_count(number_of_columns, lines_per_page, all_partex_assignment_keys_dict)
@@ -404,7 +405,7 @@ def draw_question_row(canvas, border, coord, form_text, number_of_columns, numbe
     # coord = [left, top]
     top, right, bottom, left = border[0], border[1], border[2], border[3]
 
-    line_height = 8 * mm
+    line_height = row_height
     padding_left = 4 * mm
 
     col_width = 38*mm
@@ -1139,7 +1140,7 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
                                             if result in keys: # keys may comntain multiple characters: 'ac'
                                                 score = max_score_int
                                                 total_score += max_score_int
-                                                result += ' - ok' # Character “✓” (U + 2713)
+                                                # don't give result in PDF - to prevent cheating result += ' - ok' # Character “✓” (U + 2713)
                                             else:
                                                 score = 0
 
@@ -1352,10 +1353,10 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
     # height = top - bottom  # 275 mm
     border = [top, right, bottom, left]
     coord = [left, top]
-    lines_per_page = 30
+    lines_per_page = 29
     available_lines = lines_per_page
     number_of_columns = 5
-    row_height = 8 * mm
+    row_height = 7 * mm
 
 # create pagenumber_text
     page_count = 1 # get_page_count(number_of_columns, lines_per_page, all_result_dict)

@@ -15,7 +15,8 @@ import json
 
 # PR2018-05-05 use AUTH_USER_MODEL
 from awpr.settings import AUTH_USER_MODEL
-from django.utils.translation import ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from awpr import constants as c
 from awpr import settings as s
 from awpr.storage_backends import PrivateMediaStorage

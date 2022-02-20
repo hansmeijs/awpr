@@ -642,8 +642,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        console.log("=========  CreateTblRow =========", tblName);
-        console.log("col_hidden", col_hidden);
+        //console.log("=========  CreateTblRow =========", tblName);
+        //console.log("col_hidden", col_hidden);
 
         const field_names = field_setting.field_names;
         //const field_tags = field_setting.field_tags;

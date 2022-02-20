@@ -6,7 +6,8 @@ from django.contrib.postgres.fields import ArrayField
 
 from django.core.validators import MaxValueValidator
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from awpr.settings import AUTH_USER_MODEL
 from awpr import constants as c
@@ -357,8 +358,10 @@ class Subjecttype(sch_mod.AwpBaseModel):
     name = CharField(max_length=50)
     abbrev = CharField(max_length=20, null=True)
 
-    # has_prac / has_pws only enables the has_practexam / pws option of a schemeitem
+    # has_prac only enables the has_practexam option of a schemeitem
     has_prac = BooleanField(default=False)  # has practical exam
+
+    # schemeitem.has_pws is deprecated, use subjecttype.has_pws instead
     has_pws = BooleanField(default=False)  # has profielwerkstuk or sectorwerkstuk
 
     min_subjects = PositiveSmallIntegerField(null=True)
@@ -483,7 +486,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     level = ForeignKey(Level, related_name='+', null=True, on_delete=SET_NULL)
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
-    # examtype not in use, maybe necessary if pe_exam will be used again
+    # examtype used to store 'ete' or 'duo' exam
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, default='ce')
 
     version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
@@ -508,6 +511,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
     # PR2022-02-31 removed to fix migrate problem: examdate = DateField(null=True)
+
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam possible ansewers per exam question
@@ -581,7 +585,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
     extra_nocount_allowed = BooleanField(default=False)
 
     has_practexam = BooleanField(default=False)
-    # has_pws is deprecated, use sjtp.has_prac instead
+    # schemeitem.has_pws is deprecated, use subjecttype.has_pws instead
     # has_pws = BooleanField(default=False)
 
     is_core_subject = BooleanField(default=False)

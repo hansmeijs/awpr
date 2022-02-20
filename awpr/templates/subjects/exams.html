@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220130.js' %}"></script>
+    <script src="{% static 'js/exams220220.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -17,18 +17,10 @@
         </div>
         {% if not no_access %}
             <div id="id_SBR_container_examperiod" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Period' %}:</h6>
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
                 <select id="id_SBR_select_period" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
-            </div>
-
-            <div id="id_SBR_container_examtype" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
-                <select id="id_SBR_select_examtype" class="tw_200 border_none px-1"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-               >
-                </select>
             </div>
 
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
@@ -38,8 +30,27 @@
                ></select>
             </div>
 
+            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
+                <input id="id_SBR_select_subject" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            {% if is_requsr_same_school %}
+                <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
+                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
+                   <input id="id_SBR_select_cluster" type="text"
+                        class="tw_200 border_none pointer_show px-2" readonly>
+                </div>
+
+                <div id="id_SBR_container_student" class="tw_200 m-2 display_hide">
+                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
+                    <input id="id_SBR_select_student" type="text"
+                        class="tw_200 border_none pointer_show px-1" readonly>
+                </div>
+            {% endif %}
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
-                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
+                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all' %}</h6>
             </div>
 
         {% endif %}
@@ -93,18 +104,15 @@
 
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
-                {% if not no_centralexam %}
-                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
-                {% endif %}
+                <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
+                <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'DUO exams' %}</button>
             </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER - LOADER -->
 
 <!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
-            <div id="id_tbl_container"
-                class="content_body mx-2 mt-2 pr-4">
+            <div id="id_tbl_container" class="content_body mx-2 mt-2 pr-4">
                 <table class="table tsa_tbl">
                     <thead id="id_tblHead_datatable"></thead>
                     <tbody id="id_tblBody_datatable"></tbody>
@@ -112,22 +120,26 @@
             </div>
 <!-- END OF CONTENT BODY -->
 
+
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-exam_upload_url="{% url 'exam_upload_url' %}"
-                data-grade_upload_url="{% url 'grade_upload_url' %}"
-                data-grade_approve_url="{% url 'grade_approve_url' %}"
-                data-download_published_url="{% url 'grades_download_published_url' %}"
-                data-exam_download_exam_pdf_url="{% url 'exam_download_exam_pdf_url' '-' %}"
-                data-exam_download_grade_exam_pdf_url="{% url 'exam_download_grade_exam_pdf_url' '-' %}"
-                data-exam_download_exam_json_url="{% url 'exam_download_exam_json_url' '-' %}"
+                data-url_approve_exam="{% url 'url_approve_exam' %}"
+                data-url_publish_exam="{% url 'url_publish_exam' %}"
+                data-url_approve_grade_exam="{% url 'url_approve_grade_exam' %}"
+                data-url_submit_grade_exam="{% url 'url_submit_grade_exam' %}"
+                data-url_studsubj_send_email_exform="{% url 'url_studsubj_send_email_exform' %}"
 
-                data-url_studentsubjectnote_upload="{% url 'url_studentsubjectnote_upload' %}"
-                data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
-                data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
+                data-url_exam_download_exam_pdf="{% url 'url_exam_download_exam_pdf'  '-' %}"
+                data-url_exam_download_grade_exam_pdf="{% url 'url_exam_download_grade_exam_pdf'  '-' %}"
+                data-url_exam_download_exam_json="{% url 'url_exam_download_exam_json'  '-' %}"
+
+                data-grade_upload_url="{% url 'grade_upload_url' %}"
+
+                data-is_requsr_same_school="{{is_requsr_same_school}}"
             >
             </div>
         {% endif %}

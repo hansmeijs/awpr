@@ -13,11 +13,14 @@ from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.utils.translation import activate, pgettext_lazy, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
 from django.views.generic import View
 
 # PR2019-01-04  https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
 from django.utils.functional import Promise
+
+# PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_text
 from django.core.serializers.json import DjangoJSONEncoder
 

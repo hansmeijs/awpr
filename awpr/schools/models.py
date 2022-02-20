@@ -15,7 +15,8 @@ import json
 
 # PR2018-05-05 use AUTH_USER_MODEL
 from awpr.settings import AUTH_USER_MODEL
-from django.utils.translation import ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from awpr import constants as c
 from awpr import settings as s
 from awpr.storage_backends import PrivateMediaStorage
@@ -657,7 +658,7 @@ class Mailinglist(AwpBaseModel):
     recipients = CharField(max_length=2048, null=True, blank=True)
 
 
-def delete_instance(instance, messages, error_list, request, this_txt=None, header_txt=None):
+def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
@@ -670,8 +671,8 @@ def delete_instance(instance, messages, error_list, request, this_txt=None, head
     #   {'field': fldName, header': header_txt, 'retry': True, 'class': 'border_bg_invalid', 'msg_html': msg_html}
     #  retry: not in use yet, lets user retry again
     #  error_list is to be deprecated PR2021-10-24
-    # P2022-01-10 I think it is best to use error_list insted of msg_html.
-    # error_list doenst have 'header' and 'class', is better when tehre are multiple errors in err_list
+    # P2022-01-10 I think it is best to use error_list instead of msg_html.
+    # error_list doenst have 'header' and 'class', is better when there are multiple errors in err_list
     deleted_ok = False
 
     if instance:
@@ -680,22 +681,29 @@ def delete_instance(instance, messages, error_list, request, this_txt=None, head
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
+
             caption = this_txt if this_txt else _('This item')
-            err_tx1 = str(_('An error occurred'))
+
+            # &emsp; add 4 'hard' spaces
+            err_tx1 = '<br>'.join((
+                str(_('An error occurred')) + ':',
+                '&emsp;<i>' + str(e) + '</i>'
+            ))
+
             err_txt2 = str(_("%(cpt)s could not be deleted.") % {'cpt': caption})
 
-            error_list.append(''.join((err_tx1, ' (', str(e), ').')))
+            error_list.append(err_tx1)
             error_list.append(err_txt2)
 
             msg_html = ''.join((err_tx1, ': ', '<br><i>', str(e), '</i><br>', err_txt2))
             msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-            messages.append(msg_dict)
+            msg_list.append(msg_dict)
         else:
             instance = None
             deleted_ok = True
 
     if logging_on:
-        logger.debug('messages: ' + str(messages))
+        logger.debug('messages: ' + str(msg_list))
         logger.debug('error_list: ' + str(error_list))
         logger.debug('instance: ' + str(instance))
         logger.debug('deleted_ok: ' + str(deleted_ok))

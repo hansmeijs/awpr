@@ -8,6 +8,8 @@ from os.path import basename
 from django.core.serializers.json import DjangoJSONEncoder
 from django.template.loader import render_to_string
 from django.utils.functional import Promise
+
+# PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags
 
@@ -53,7 +55,8 @@ class LazyEncoder(DjangoJSONEncoder):
         return super(LazyEncoder, self).default(obj)
 
 # PR2018-05-06
-from django.utils.translation import activate, pgettext_lazy, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
 
 
 def home(request):
@@ -1257,7 +1260,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, request):
                     # PR2021-10-31 from https://stackoverflow.com/questions/36351318/django-email-message-as-html
                     #  email_message.content_subtype = "html"
                     """
-                    don't add boday and attachments to notification email
+                    don't add body and attachments to notification email
                     if mailattachments:
                         for mailattachment in mailattachments:
                             if mailattachment and mailattachment.file:
@@ -3750,7 +3753,7 @@ def create_school_instance(examyear, upload_dict, error_dict, request):
         name = upload_dict.get('name')
         article = upload_dict.get('article')
         depbases = upload_dict.get('depbases')
-        defaultrole = upload_dict.get('defaultrole')
+        defaultrole = upload_dict.get('defaultrole')  # default role = c.ROLE_008_SCHOOL
         if logging_on:
             logger.debug('code: ' + str(code))
             logger.debug('abbrev: ' + str(abbrev))

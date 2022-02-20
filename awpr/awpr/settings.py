@@ -2,7 +2,8 @@ import os
 
 from decouple import config, Csv  # PR2018-02-24
 
-from django.utils.translation import ugettext_lazy as _  # PR2018-04-28
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _  # PR2018-04-28
 
 import dj_database_url  # PR2018-04-29
 # PR2018-05-06 from https://simpleisbetterthancomplex.com/tips/2016/09/06/django-tip-14-messages-framework.html
@@ -243,27 +244,27 @@ LANGUAGE_CODE = 'nl'
 LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
-
+# TODO URGENT add Sentry
 # PR2021-09-17 Sentry added
 # from https://sentry.io/panta-rhei-nv/tsa/getting-started/python-django/
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
+#import sentry_sdk
+#from sentry_sdk.integrations.django import DjangoIntegration
 
-sentry_sdk.init(
-    dsn=config('SENTRY_DSN', default=''),
-    integrations=[DjangoIntegration()],
+#sentry_sdk.init(
+#    dsn=config('SENTRY_DSN', default=''),
+#    integrations=[DjangoIntegration()],
 
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
     # traces_sample_rate=1.0,
-    traces_sample_rate=config('SENTRY_SAMPLE_RATE', default=0.1, cast=float),
+#    traces_sample_rate=config('SENTRY_SAMPLE_RATE', default=0.1, cast=float),
 
     # If you wish to associate users to errors (assuming you are using
     # django.contrib.auth) you may enable sending PII data.
     # send_default_pii=True
-    send_default_pii=False
-)
+#    send_default_pii=False
+#)
 
 SENTRY_SRC = config('SENTRY_SRC', default=None)
 
@@ -377,10 +378,10 @@ MESSAGE_TAGS = {
     messages.ERROR: 'alert-danger',
 }
 
-# PR2018-05-10 PR2021-07-23: changed to 30 minutes
+# PR2018-05-10 PR2021-07-23: changed to 30 minutes PR2022-02-15: changed to 60 minutes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-SESSION_SECURITY_WARN_AFTER = 1740 # PR2021-07-23: was 3200. Time (in seconds) before the user should be warned. Default 540.
-SESSION_SECURITY_EXPIRE_AFTER = 1800 # PR2021-07-23: was 3600. Time (in seconds) before the user should be logged out. Default is 600.
+SESSION_SECURITY_WARN_AFTER = 3420 # PR2022-02-15. Time (in seconds) before the user should be warned. Default 540.
+SESSION_SECURITY_EXPIRE_AFTER = 3600 # PR2022-02-15. Time (in seconds) before the user should be logged out. Default is 600.
 
 # In global.settings.py: PR2018-07-30
 # The number of days a password reset link is valid for

@@ -1,6 +1,7 @@
 # PR2021-01-17
 from decimal import Decimal
-from django.utils.translation import ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from awpr import constants as c
 from awpr import settings as s
@@ -12,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 def calc_sesr_pece_final_grade(is_ep_exemption, has_practexam, gradetype, weight_se, weight_ce,
                                has_sr, se_grade, sr_grade, pe_grade, ce_grade):  # PR2021-12-28
-    # only called by GradeUploadView.recalc_finalgrade_in_grade_and_save
-    # this function does not save the grade_instance
-    logging_on = False  # s.LOGGING_ON
+    # called by GradeUploadView.recalc_finalgrade_in_grade_and_save and by import_studsubj_grade_from_datalist
+    # this function does not save the calculated dields
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- calc_sesr_pece_final_grade -------')
+        logger.debug(' @@@@@@@@@@@@@@ ------- calc_sesr_pece_final_grade -------')
 
     # - when second or third examperiod: get se_grade and pe_grade from first examperiod,
     # and store them in second or third examperiod
@@ -65,6 +66,11 @@ def calc_sesr_pece_final_grade(is_ep_exemption, has_practexam, gradetype, weight
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('sesr_grade: ' + str(sesr_grade))
+        logger.debug('pece_grade: ' + str(pece_grade))
+        logger.debug('finalgrade: ' + str(finalgrade))
 
     return sesr_grade, pece_grade, finalgrade
 # --- end of calc_sesr_pece_final_grade
@@ -378,8 +384,11 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
 
 
 def get_score_from_inputscore(input_value, max_score):
-    logger.debug(' ----- get_score_from_inputscore -----')
-    logger.debug('input_value: ' + str(input_value) + ' ' + str(type(input_value)))
+    # PR2022-02-09
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_score_from_inputscore -----')
+        logger.debug('input_value: ' + str(input_value) + ' ' + str(type(input_value)))
     # function converts input_value to whole number PR2021-01-18
 
 # 1. reset output variables
@@ -388,26 +397,37 @@ def get_score_from_inputscore(input_value, max_score):
 
 # 2. remove spaces before and after input_value
     imput_trim = input_value.strip() if input_value else ''
+    if logging_on:
+        logger.debug('imput_trim: ' + str(imput_trim) + ' ' + str(type(imput_trim)))
+
 # - exit if imput_trim has no value, without msg_err
     if imput_trim:
         has_error = False
-# - replace all comma's with dots
-        input_with_dots = imput_trim.replace(',', '.')
+
+# - remove all comma's and dots
+        input_no_comma = imput_trim.replace(',', '')
+        input_no_dots = input_no_comma.replace(',', '')
+        if logging_on:
+            logger.debug('input_no_dots: ' + str(input_no_dots) + ' ' + str(type(input_no_dots)))
 # cast input_with_dots to decimal, exit if not numeric
         # '', ' ' and non-numeric give InvalidOperation error
         input_number = None
         try:
-            input_number = Decimal(input_with_dots)
-        except:
+            input_number = int(input_no_dots)
+        except Exception as e:
             has_error = True
+            if logging_on:
+                logger.debug('Exception: ' + str(e))
+        if logging_on:
+            logger.debug('imput_trim: ' + str(imput_trim) + ' ' + str(type(imput_trim)))
+
+# - check if score is within range
         if not has_error:
-# - get remainder of input_number
-            # the remainder / modulus operator (%) returns the remainder after (integer) division.
-            remainder = input_number % 1
-            if remainder != 0:
+            if max_score and input_number > max_score:
                 has_error = True
-            elif max_score and input_number > max_score:
+            elif input_number < 0:
                 has_error = True
+
         if has_error:
             input_number = None
             err_list.append(str(_("Score '%(val)s' is not allowed.") % {'val': str(input_value)}))
@@ -416,7 +436,11 @@ def get_score_from_inputscore(input_value, max_score):
             else:
                 err_list.append(str(_("The score must be a whole number.")))
 
-    return input_number, err_list
+        if logging_on:
+            logger.debug('input_number: ' + str(input_number) + ' ' + str(type(input_number)))
+
+        input_str = str(input_number) if input_number is not None else None
+    return input_str, err_list
 # --- end of get_score_from_inputscore
 
 

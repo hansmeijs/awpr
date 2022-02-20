@@ -1,6 +1,17 @@
 # PR2020-09-17
 
-from django.utils.translation import pgettext_lazy, ugettext_lazy as _
+"""
+PR2022-02-14 error when usinf python manage.py makemessages -a
+    CommandError: Can't find msguniq. Make sure you have GNU gettext tools 0.15 or newer installed.
+from: https://stackoverflow.com/questions/65361621/cant-find-msguniq-make-sure-you-have-gnu-gettext-tools-0-15-or-newer-installed?noredirect=1&lq=1
+    The problem is not the Python binding of gettext, it is the gettext library itself. This is not a Python library, but a system library.
+    You can install this on a debian-like system (Debian, Ubuntu, Raspbian, and Knoppix):
+    sudo apt-get install gettext
+
+"""
+
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import pgettext_lazy, gettext_lazy as _
 from awpr import constants as c
 
 import logging
@@ -111,6 +122,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Abbreviation'] = _('Abbreviation')
     dict['Cluster'] = _('Cluster')
     dict['Clusters'] = _('Clusters')
+    dict['a_cluster'] = _('a cluster')
 
     dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
@@ -203,6 +215,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['are_supported'] = _(' are supported.')
         dict['No_worksheets'] = _('There are no worksheets.')
         dict['No_worksheets_with_data'] = _('There are no worksheets with data.')
+        dict['No_linked_columns'] = _('There are no linked columns.')
+        dict['Cannot_upload_data'] = _('You cannot upload the data.')
+        dict['No_data'] = _('There are no data.')
 
         dict['First_select_valid_excelfile'] = _('You must select a valid Excel file before you can proceed.')
 
@@ -720,7 +735,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Apply_verificationcode'] = _('Apply verificationcode')
         dict['Submit_Ex1_form'] = _('Submit Ex1 form')
 
-        dict['Preliminary_Ex1_form'] = _('Preliminary Ex1 form')
+        dict['Preliminary_Ex1_form'] = _('Preliminary Ex1')
         dict['The_preliminary_Ex1_form'] = _('The preliminary Ex1 form')
         dict['Download_Ex_form'] = _('Download Ex form')
         dict['Approve'] = _('Approve')
@@ -758,7 +773,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex-1 form to delete it.')
 
         dict['MASS_info'] = {
-            'checking_studsubj': _('The subjects of the candidates are checked'),
+            'checking_studsubj': _('AWP is checking the subjects of the candidates'),
             'subheader_approve': _('Selection of the subjects, that will be approved:'),
             'subheader_submit': _('An Ex1form with the following subjects will be submitted:'),
             'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
@@ -803,7 +818,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_examperiod'] = TXT_Select_examperiod
         dict['No_examperiods_found'] = TXT_No_examperiods_found
 
+        dict['ETE_exams'] = _("ETE exams")
+        dict['DUO_exams'] = _("DUO exams")
+
+
         dict['Exam_type'] = TXT_Exam_type
+        dict['Exam_types'] = _('Exam types')
         dict['Select_examtype'] = TXT_Select_examtype
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
@@ -813,16 +833,22 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_12ONLY
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
-        dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
-        dict['examtype_caption'] = c.EXAMTYPE_CAPTION
+        # dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
+        #dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
         dict['Exam'] = _("Exam")
         dict['Select_exam'] = _("Select exam")
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
-        dict['Publish_exam'] = _("Publish exam")
-        dict['Submit_exam'] = _("Submit exam")
+        dict['Publish_exams'] = _("Publish exams")
+        dict['Submit_exams'] = _("Submit exams")
         dict['Approve_exams'] = _("Approve exams")
+        dict['_by_'] = TXT__by_
+
+        dict['Submitted_at'] = _('Submitted at ')
+        dict['Published_at'] = _('Published at ')
+
+        dict['Apply_verificationcode'] = _('Apply verificationcode')
 
         dict['Print_exam'] = _("Print exam")
         dict['Blanks'] = _("Blanks")
@@ -859,6 +885,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Enter_total_of_maximum_scores'] = _('Enter here the total of the maximum scores of the required partial exams.')
 
+
         dict['err_list'] = {
             'Amount': _("Amount"),
             'not_allowed': _(" is not allowed."),
@@ -875,7 +902,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'This_isnota_multiplechoice_question': _('This is not a multiple choice question.'),
             'must_enter_whole_number_between_0_and_': _('You must enter a whole number between 0 and '),
             'must_enter_letter_between_a_and_': _("You must enter a letter between 'a' and '"),
-            'or_an_x_if_blank': _("or an 'x' if the answer is blank."),
+            'or_an_x_if_blank': _("or an 'x' if the answer is blank or entered multiple times."),
             'Character': pgettext_lazy('Teken', 'Character'),
             'already_exists': _('already exists.'),
             'exists_multiple_times': _('exists multiple times.'),
@@ -899,10 +926,11 @@ def get_locale_dict(table_dict, user_lang, request):
         }
 
         dict['MASE_info'] = {
-            'checking_exam': pgettext_lazy('worden gecheckt', 'The exams are being checked.'),
+            'checking_exams':_('AWP is checking the exams'),
 
             'subheader_approve': _('Selection of the exams, that will be approved:'),
             'subheader_submit': _('The following exams will be submitted:'),
+            'subheader_publish': _('The following exams will be published:'),
             'approve_0': _("Click 'Check exams' to check the selected exams before approving."),
             'approve_1': _('After the exams are approved by the president and secretary,'),
             'approve_2': _('the exams can be submitted by the president or secretary.'),
@@ -911,7 +939,12 @@ def get_locale_dict(table_dict, user_lang, request):
             'submit_1': _("If the check is OK, click 'Submit exams' to submit the selected exams."),
             'submit_2': _("After the exams are submitted, you can change them by submitting an additional form."),
 
-            'approving_exam': _('AWP is approving the exams'),
+            'verif_msg': _('You need a 6 digit verification code '),
+            'verif_submit': _('to submit the exams.'),
+            'verif_publish': _('to publish the exams.'),
+
+            'Approve_exams': _('Approve exams'),
+            'approving_exams': _('AWP is approving the exams'),
             'requesting_verifcode': _('AWP is sending an email with the verification code'),
             'submitting_exams': _("AWP is submitting the exams"),
             'submitting_exams_ok': _("The exams are succesfully submitted."),
@@ -945,6 +978,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['_of_'] = TXT__of_
 
+        dict['Preliminary_Ex2'] = _('Preliminary Ex2')
+        dict['The_preliminary_Ex2_form'] = _('The preliminary Ex2 form')
+        dict['Download_Ex_form'] = _('Download Ex form')
+
         dict['Name_ex_form'] = TXT_Name_ex_form
         dict['Date_submitted'] = TXT_Date_submitted
         dict['Download_Exform'] = TXT_Download_Exform
@@ -952,10 +989,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
 
+        dict['Submit_Ex2_form'] = _('Submit Ex2 form')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Approve_grades'] = _('Approve grades')
-        dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
-        dict['Preliminary_Ex2A_form'] = _('Preliminary Ex2A form')
+        dict['Preliminary_Ex2A'] = _('Preliminary Ex2A')
 
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')

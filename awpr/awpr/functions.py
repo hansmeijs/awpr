@@ -6,7 +6,8 @@ from random import randint
 from django.core.mail import send_mail
 from django.db import connection
 from django.template.loader import render_to_string
-from django.utils.translation import activate, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, gettext_lazy as _
 from django.utils import timezone
 
 from awpr import constants as c
@@ -26,6 +27,8 @@ logger = logging.getLogger(__name__)
 
 # PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
 from django.utils.functional import Promise
+
+# PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_text
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -105,6 +108,36 @@ def send_email_verifcode(formname, email_template, request, sel_examyear, sel_sc
         logger.error(getattr(e, 'message', str(e)))
 
     return verifcode_key, exception_str
+# - end of send_email_verifcode
+
+
+def create_verificationcode(formname, request):  # PR2022-02-04
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ----- create_verificationcode -----')
+
+    # create verification key and code, store key_code in usersetting, send key to client, set expiration to 30 minutes
+    # get random number between 1,000,000 en 1,999,999, convert to string and get last 6 characters
+    # this way you get string from '000000' thru '999999'
+    # key is sent to client, code must be entered by user
+    # key_code is stored in usersettings
+    verif_key = str(randint(1000000, 1999999))[-6:]
+    verif_code = str(randint(1000000, 1999999))[-6:]
+
+    key_code = '_'.join((verif_key, verif_code))
+
+    now = datetime.now()  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+    expirationtime = now + timedelta(seconds=1800)
+    expirationtime_iso = expirationtime.isoformat()
+
+    verification_dict = {'form': formname, 'key_code': key_code, 'expirationtime': expirationtime_iso}
+    acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, verification_dict, request)
+
+    if logging_on:
+        logger.debug('verif_key: ' + str(verif_key))
+
+    return verif_key, verif_code
+# - end of create_verificationcode
 
 
 def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8

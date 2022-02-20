@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
                     field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_exemption", "exemption_year"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "input"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
                     field_width:  ["020", "075", "180", "075", "075", "075", "075", "180", "120", "120"],
                     field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
@@ -915,7 +915,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tblName === "studsubj") {
             if (map_dict.lastname) { ob1 = map_dict.lastname.toLowerCase() };
             if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase() };
-            if (map_dict.sjtp_name) { ob3 = (map_dict.subj_name.toLowerCase()) };
+            if (map_dict.subj_code) { ob3 = (map_dict.subj_code.toLowerCase()) };
 
             tobedeleted = (map_dict.tobedeleted) ? map_dict.tobedeleted : false;
         } else if (tblName === "published") {
@@ -1650,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MSTUDSUBJ_Save  ============= PR2020-11-18
     function MSTUDSUBJ_Save(){
         console.log(" -----  MSTUDSUBJ_Save   ----")
-        //console.log( "mod_MSTUDSUBJ_dict.studsubj_dict: ", mod_MSTUDSUBJ_dict.studsubj_dict);
+        console.log( "mod_MSTUDSUBJ_dict.studsubj_dict: ", mod_MSTUDSUBJ_dict.studsubj_dict);
         //console.log( "mod_MSTUDSUBJ_dict: ", mod_MSTUDSUBJ_dict);
         //console.log("mod_MSTUDSUBJ_dict.stud_id: ", mod_MSTUDSUBJ_dict.stud_id)
 
@@ -1675,8 +1675,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         let mode = null;
                         if(ss_dict.tobedeleted){
                             mode = "delete";
-                        } else if(ss_dict.undelete){
-                            mode = "undelete";
                         } else  if(ss_dict.tobecreated){
                             mode = "create";
                         } else  if(ss_dict.tobechanged){
@@ -1825,8 +1823,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         pws_title: row_dict.pws_title,
 
                         tobecreated: false,
-                        tobedeleted: row_dict.tobedeleted,
-                        undelete: false,
+                        tobedeleted: false,
                         tobechanged: false
 
                         // PR2021-09-28 debug: dont put schemeitem info here, it changes when schemeitem_id changes
@@ -2199,13 +2196,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // in that case set tobechanged = true
                                             ss_dict.tobecreated = false;
                                             ss_dict.tobedeleted = false;
-                                            ss_dict.tobechanged = false;
-
-                                            if(!ss_dict.subj_publ_id){
-                                                ss_dict.undelete = true;
-                                            } else {
-                                                ss_dict.tobechanged = true;
-                                            };
+                                            ss_dict.tobechanged = true;
 
                            // change this schemeitem_pk if it is different from the schemeitem_pk in the selected studsubj_dict
                                         } else {
@@ -2215,7 +2206,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                             ss_dict.tobecreated = false;
                                             ss_dict.tobedeleted = false;
                                             ss_dict.tobechanged = true;
-                                            ss_dict.undelete = false;
                                         };
                                         must_validate_subjects = true;
 
@@ -2270,8 +2260,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                                     tobecreated: true,
                                     tobedeleted: false,
-                                    tobechanged: false,
-                                    undelete: false
+                                    tobechanged: false
                                 };
 
                                 must_validate_subjects = true;
@@ -2294,10 +2283,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 must_validate_subjects = true;
 
                             } else {
-                                // when undelete = true:
-                                //  - when 'tobedeleted' has already been saved, then subj_publ_id = null
-                                //  - when added again: undelete is set 'true'
-                                //  - to remove it: set undelete = false and tobedeleted = tru
 
                                 // when tobechanged = true:
                                 // - changes have been made, either schemeitem or pws title etc
@@ -2306,7 +2291,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                                 ss_map_dict.tobedeleted = true;
                                 ss_map_dict.tobechanged = false;
-                                ss_map_dict.undelete = false
                             }
 
                             must_validate_subjects = true;
@@ -2489,6 +2473,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
         console.log("mod_MCL_dict.student_list", mod_MCL_dict.student_list);
 
+        //note: cluster_upload uses subject_pk, not subjbase_pk
 // ---  loop through mod_MCL_dict.cluster_list
         const cluster_list = []
         for (let i = 0, cluster_dict; cluster_dict = mod_MCL_dict.cluster_list[i]; i++) {
@@ -2677,6 +2662,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("===== MCL_SaveSubject_in_MCL_dict =====");
         console.log("sel_subject_pk", sel_subject_pk);
 
+        //note: cluster_upload uses subject_pk, not subjbase_pk
+
 // - reset mod_MCL_dict
         b_clear_dict(mod_MCL_dict);
 
@@ -2716,7 +2703,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MCL_FillTableClusters  ================ PR2022-01-07
     function MCL_FillTableClusters() {
-        //console.log("===== MCL_FillTableClusters =====");
+        console.log("===== MCL_FillTableClusters =====");
 
 // reset mode_edit_clustername
         mod_MCL_dict.mode_edit_clustername = null;
@@ -2737,6 +2724,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             */
             // skip clusters with mode = 'delete'
+
+        console.log("data_dict", data_dict);
+
             if (data_dict.mode !== "delete"){
     // +++ insert tblRow into el_MCL_tblBody_clusters
                 const tblRow = el_MCL_tblBody_clusters.insertRow(-1);
@@ -2824,18 +2814,22 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  loop through cluster_rows
         for (let i = 0, data_dict; data_dict = cluster_rows[i]; i++) {
             /* data_dict = {
-                code: "zwi"
-                id: 209
-                name: "zwi - 1"
-                subject_id: 2132}
+                id: 293
+                name: "cav - 2"
+                subj_code: "cav"
+                subj_name: "Culturele en artistieke vorming"
+                subjbase_id: 117
+                subject_id: 117
             */
+
+        console.log("data_dict", data_dict);
     // add only clusters of this subject
             if (data_dict.subject_id === mod_MCL_dict.subject_pk){
                 mod_MCL_dict.cluster_list.push({
                     cluster_pk: data_dict.id,
                     sortby: data_dict.name,  // cluster_name
                     subject_pk: data_dict.subject_id,
-                    subject_code: data_dict.code,
+                    subject_code: data_dict.subj_code,
                     mode: null
                 });
             };
@@ -4141,7 +4135,6 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         //console.log("field_setting", field_setting);
         console.log("update_dict", update_dict);
 
-
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
 
@@ -4188,8 +4181,6 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                 if(new_tblRow){
     // --- add1 to item_count and show total in sidebar
                     selected.item_count += 1;
-                    set_sbr_itemcount_txt();
-
     // ---  scrollIntoView,
                     new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
 
@@ -4219,7 +4210,6 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                             tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
         // --- subtract 1 from item_count and show total in sidebar
                             selected.item_count -= 1;
-                            set_sbr_itemcount_txt();
                         };
                     }
                 } else {
@@ -4304,6 +4294,10 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                     };  // if(!isEmpty(data_dict) && field_names)
                 };  //  if(is_deleted)
             }; // if(is_created)
+
+    // ---  show total in sidebar
+            t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Subject, loc.Subjects, setting_dict.user_lang);
+
         };  // if(!isEmpty(update_dict))
     }  // RefreshDatarowItem
 
@@ -4745,7 +4739,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
         const count_dict = (response.approve_count_dict) ? response.approve_count_dict : {};
 
-        mod_MASS_dict.has_already_approved_by_auth = (!!count_dict.already_approved_by_auth)
+        mod_MASS_dict.has_already_approved = (!!count_dict.already_approved)
         mod_MASS_dict.submit_is_ok = (!!count_dict.saved)
         //mod_MASS_dict.has_already_published = (!!msg_dict.already_published)
         //mod_MASS_dict.has_saved = !!msg_dict.saved;
@@ -4813,7 +4807,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                 if (step === 1) {
                 // response with checked subjects
                 // msg_info_txt is in response
-                    show_delete_btn =mod_MASS_dict.has_already_approved_by_auth;
+                    show_delete_btn =mod_MASS_dict.has_already_approved;
                     if (mod_MASS_dict.test_is_ok){
                         save_btn_txt = loc.Approve_subjects;
                     };

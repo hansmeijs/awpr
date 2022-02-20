@@ -1,6 +1,7 @@
 # PR2018-05-25 PR2020-12-04
-# from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import ugettext as _
+
+#PR2022-02-13 was ugettext as _, replaced by: gettext as _
+from django.utils.translation import gettext as _
 
 USERNAME_MAX_LENGTH = 30
 USERNAME_SLICED_MAX_LENGTH = 24
@@ -162,14 +163,15 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
                         {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')},
                         {'value': EXAMPERIOD_EXEMPTION, 'caption': _('Exemption')}]
 
-EXAMPERIOD_OPTIONS_12ONLY = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
-                        {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')}]
+EXAMPERIOD_OPTIONS_12ONLY = [{'value': 12, 'caption': ''.join(('&#60', str(_('All examtypes')), '&#62'))},
+                             {'value': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
+                            {'value': EXAMPERIOD_SECOND, 'caption': _('Re-examination')}]
 
 # examgradetypes are: 'segrade', 'srgrade', 'pescore', 'pegrade', 'cescore', 'cegrade
 EXAMGRADE_OPTIONS = [
-    {'value': 'exemsegrade', 'caption': _('Exemption school exam')},
-    {'value': 'exemcegrade', 'caption': _('Exemption central exam')},
-    {'value': 'segrade', 'caption': _('School exam')},
+    {'value': 'exemsegrade', 'caption': _('Exemption - school exam grade')},
+    {'value': 'exemcegrade', 'caption': _('Exemption - central exam grade')},
+    {'value': 'segrade', 'caption': _('School exam grade')},
     {'value': 'srgrade', 'caption': _('Re-examination school exam')},
     {'value': 'pescore', 'caption': _('Practical exam score')},
     {'value': 'pegrade', 'caption': _('Practical exam grade')},
@@ -280,8 +282,13 @@ KEY_SEL_SCHOOLBASE_PK = 'sel_schoolbase_pk'
 KEY_SEL_DEPBASE_PK = 'sel_depbase_pk'
 KEY_SEL_LVLBASE_PK = 'sel_lvlbase_pk'
 KEY_SEL_SCTBASE_PK = 'sel_sctbase_pk'
+KEY_SEL_SUBJBASE_PK = 'sel_subjbase_pk'
+KEY_SEL_STUDBASE_PK = 'sel_studbase_pk'
+KEY_SEL_CLUSTER_PK = 'sel_cluster_pk'
+#TODO to be deprecated
 KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
 KEY_SEL_STUDENT_PK = 'sel_student_pk'
+
 KEY_SEL_SCHEME_PK = 'sel_scheme_pk'
 KEY_SEL_BTN = 'sel_btn'
 KEY_COLS_HIDDEN = 'cols_hidden'
@@ -485,8 +492,8 @@ USERGROUP_EDIT = 'edit'
 USERGROUP_TEACHER = 'teach'
 USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
-USERGROUP_AUTH3_COM = 'auth3'
-USERGROUP_AUTH4_EXAM = 'auth4'
+USERGROUP_AUTH3_EXAM = 'auth3'
+USERGROUP_AUTH4_COM = 'auth4'
 USERGROUP_ANALYZE = 'anlz'
 USERGROUP_ADMIN = 'admin'
 
@@ -496,8 +503,8 @@ USERGROUP_TUPLE = (
     USERGROUP_TEACHER,
     USERGROUP_AUTH1_PRES,
     USERGROUP_AUTH2_SECR,
-    USERGROUP_AUTH3_COM,
-    USERGROUP_AUTH4_EXAM,
+    USERGROUP_AUTH3_EXAM,
+    USERGROUP_AUTH4_COM,
     USERGROUP_ANALYZE,
     USERGROUP_ADMIN
 )
@@ -508,8 +515,8 @@ USERGROUP_CAPTION = {
     USERGROUP_TEACHER: _('Teacher'),
     USERGROUP_AUTH1_PRES: _('President'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
-    USERGROUP_AUTH3_COM: _('Commissioner'),
-    USERGROUP_AUTH4_EXAM: _('Examinator'),
+    USERGROUP_AUTH3_EXAM: _('Examinator'),
+    USERGROUP_AUTH4_COM: _('Commissioner'),
     USERGROUP_ANALYZE: _('Analyze'),
     USERGROUP_ADMIN: _('System administrator')
 }

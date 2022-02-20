@@ -15,14 +15,17 @@
                 </button>
             </div>
 
-
             <div class="modal-body p-4">
                 <div id="id_MASE_select_container" class=" p-2 border_bg_message display_hide">
 
                     <p id="id_MASE_subheader"></p>
 
                     <div class="flex_container">
-                        <div id="id_MASE_level_container" class="flex_1 mx-2 mb-2 mt-0 ">
+                        <div class="flex_1 mx-2 mb-2 mt-0 ">
+                            <label for="id_MASE_examperiod" class="mx-2">{% trans 'Exam type' %}:</label>
+                            <div id="id_MASE_examperiod" class="form-control p-2"></div>
+                        </div>
+                        <div class="flex_1 mx-2 mb-2 mt-0 ">
                             <label for="id_MASE_level" class="mx-2">{% trans 'Level' %}:</label>
                             <div id="id_MASE_level" class="form-control p-2"></div>
                         </div>
@@ -30,7 +33,7 @@
                             <label for="id_MASE_subject" class="mx-2">{% trans 'Subject' %}:</label>
                             <div id="id_MASE_subject" class="form-control p-2"></div>
                         </div>
-                        <div class="flex_1 mx-2 mb-2 mt-0">
+                        <div class="flex_1 mx-2 mb-2 mt-0 display_hide">
                             <label for="id_MASE_cluster" class="mx-2">{% trans 'Cluster' %}:</label>
                             <div id="id_MASE_cluster" class="form-control p-2"></div>
                         </div>
@@ -50,7 +53,7 @@
                 </div>
 
                 <div id="id_MASE_info_request_verifcode" class="mx-0 mt-2 p-2 border_bg_transparent display_hide">
-                    <p>{% trans "You need a 6 digit verification code to submit the Ex form." %}</p>
+                    <p id="id_MASE_info_request_msg1" >{% trans "You need a 6 digit verification code to submit the Ex form." %}</p>
                     <p>{% trans "Click 'Request verification code' and we will send you an email with the verification code." %}</p>
                     <p>{% trans "The verification code expires in 30 minutes." %}</p>
                 </div>

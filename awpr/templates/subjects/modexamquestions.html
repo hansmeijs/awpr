@@ -178,19 +178,23 @@
                                         <tbody id="id_MEXQ_tblBody_partex2"></tbody>
                                     </table>
                                 </div>
-                                <div class="flex_2 p-2 tab_show tab_answers display_hidexx">
-                                    <label class="mx-2 my-1">{% trans 'Avaliable partial exams' %}:</label>
-                                    <table class="tsa_tbl border_bg_message tbl_partex_h220_w_auto">
-                                        <tbody id="id_MEXQ_tblBody_partex_available"></tbody>
-                                    </table>
+                                <div id="id_MEXQ_tblBody_partex_available_container" >
+                                    <div class="flex_2 p-2 tab_show tab_answers">
+                                        <label class="mx-2 my-1">{% trans 'Avaliable partial exams' %}:</label>
+                                        <table class="tsa_tbl border_bg_message tbl_partex_h220_w_auto">
+                                            <tbody id="id_MEXQ_tblBody_partex_available"></tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                                <div class="flex_2 p-2 tab_show tab_answers display_hidexx">
-                                    <label class="mx-2 my-1">{% trans 'Partial exams taken' %}:</label>
-                                    <table class="tsa_tbl border_bg_lightblue tbl_partex_h220_w_auto">
-                                        <tbody id="id_MEXQ_tblBody_partex_taken"></tbody>
-                                    </table>
-                                    <div class="flex_1">
-                                        <button id="id_MEXQ_btn_remove_taken" class="btn btn-block btn-outline-secondary ">{% trans 'Remove partial exam' %}</button>
+                                <div id="id_MEXQ_tblBody_partex_taken_container" >
+                                    <div class="flex_2 p-2 tab_show tab_answers display_hidexx">
+                                        <label class="mx-2 my-1">{% trans 'Partial exams taken' %}:</label>
+                                        <table class="tsa_tbl border_bg_lightblue tbl_partex_h220_w_auto">
+                                            <tbody id="id_MEXQ_tblBody_partex_taken"></tbody>
+                                        </table>
+                                        <div class="flex_1">
+                                            <button id="id_MEXQ_btn_remove_taken" class="btn btn-block btn-outline-secondary ">{% trans 'Remove partial exam' %}</button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div id="id_MEXQ_col_0" class="flex_1 p-2"></div>

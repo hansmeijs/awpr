@@ -28,9 +28,13 @@ from django.template.loader import render_to_string
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+
+# PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.translation import activate, ugettext_lazy as _
+
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, gettext_lazy as _
 from django.views.generic import ListView, View, UpdateView, DeleteView, FormView
 
 from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
@@ -294,10 +298,6 @@ class UserUploadView(View):
                                 new_usergroups = c.USERGROUP_EDIT
                             else:
                                 new_usergroups = ';'.join((c.USERGROUP_EDIT, c.USERGROUP_ADMIN))
-                            # - new user gets role from defaultrole of user_schoolbase
-
-                            #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase!
-                            # new_role = user_schoolbase.defaultrole
 
                             new_user_pk, err_dict, ok_dict = \
                                 create_or_validate_user_instance(
@@ -594,7 +594,7 @@ class UserpermitUploadView(View):
                             if permit_row:
                                 updated_permit_rows.append(permit_row)
 
-            update_wrap['updated_permit_rows'] = updated_permit_rows
+                    update_wrap['updated_permit_rows'] = updated_permit_rows
 
 # F. return update_wrap
             return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -932,7 +932,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
     #  send_activation_email is called from table Users, field 'activated' when the activation link has expired.
     #  it sends an email to the user
     #  it returns a HttpResponse, with ok_msg or err-msg
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  ')
         logger.debug(' ========== send_activation_email ===============')
@@ -975,10 +975,28 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
                     'req_school': req_school,
                     'req_user': req_user,
                 })
+                if logging_on:
+                    logger.debug('user: ' + str(user))
+                    logger.debug('current_site.domain: ' + str(current_site.domain))
+                    logger.debug('urlsafe_base64_encode(force_bytes(user.pk)): ' + str(urlsafe_base64_encode(force_bytes(user.pk))))
+                    logger.debug('account_activation_token.make_token(user): ' + str(account_activation_token.make_token(user)))
+                    logger.debug('req_user: ' + str(req_user))
+
                 # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                 mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
                 if logging_on:
                     logger.debug('mail_count: ' + str(mail_count))
+
+                """
+                PR2022-02-14 after installing HP pc send_mail suddenly gives error, also on laptop. Testsite and production site are still working OK.
+                    Invalid '/' in sender domain 'https://api.mailgun.net/v3/mg.awponline.net'
+                from https://github.com/anymail/django-anymail/issues/144
+                    The most likely cause is that you've either set MAILGUN_SENDER_DOMAIN to something invalid, or that the From address has an invalid domain name.
+                    In particular / slash characters can't be used in domain names. Here's an example of an incorrect setting that will cause this problem:
+                    ANYMAIL = { "MAILGUN_SENDER_DOMAIN": "mail.example.com/myapp",  # NOT VALID
+                changing MAILGUN_SENDER_DOMAIN from 'https://api.mailgun.net/v3/mg.awponline.net' to 'mg.awponline.net'
+                    IT WORKS!
+                """
 
                 if not mail_count:
                     err_dict['msg01'] = _('An error occurred.')
@@ -1541,7 +1559,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
         now_utc = timezone.now()
 
     # - new user gets role from defaultrole of user_schoolbase
-    #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase!
+    #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase! > is done in create_school_instance
         role = user_schoolbase.defaultrole
 
     # - create new user
@@ -1629,7 +1647,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
     return new_user_pk, err_dict, ok_dict
 # - +++++++++ end of create_or_validate_user_instance ++++++++++++
 
-# === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01
+# === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01 PR2022-02-18
 def update_user_instance(instance, upload_dict, msg_list, request):
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -1806,8 +1824,8 @@ def update_user_instance(instance, upload_dict, msg_list, request):
 def update_usergroups(instance, field_dict, validate, request):
     # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
     # validate only when called by update_user_instance
-    # usergroups: {auth2: false}
-    logging_on = False  # s.LOGGING_ON
+    # usergroups: {auth2: false} dict always contains only 1 auth key
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_usergroups  -----')
         logger.debug('field_dict: ' + str(field_dict))
@@ -1824,6 +1842,7 @@ def update_usergroups(instance, field_dict, validate, request):
         logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
 
     if field_dict:
+        # field_dict =  {auth2: false} it always contains only 1 auth key
         for usergroup, new_value in field_dict.items():
             new_value = False if new_value is None else new_value
             if logging_on:
@@ -1831,16 +1850,28 @@ def update_usergroups(instance, field_dict, validate, request):
                 logger.debug('new_value: ' + str(new_value))
 
             if new_value:
+                # if commissioner: remove all other auth
+
         # - remove other 'auth' usergroups when usergroup = 'auth123' is set to True
         #   only when called by update_user_instance
+
                 if validate:
-                    # TODO check if correct
-                    auth_list = (c.USERGROUP_AUTH1_PRES, c.USERGROUP_AUTH2_SECR, c.USERGROUP_AUTH3_COM, c.USERGROUP_AUTH4_EXAM)
-                    if usergroup in auth_list:
-                        for auth in auth_list:
-                            if auth != usergroup:
-                                if auth in saved_usergroups_list:
-                                    saved_usergroups_list.remove(auth)
+                    if saved_usergroups_list:
+
+                        auth_list = (c.USERGROUP_AUTH1_PRES, c.USERGROUP_AUTH2_SECR)
+                        if usergroup in auth_list:
+                            for auth in auth_list:
+                                if auth != usergroup:
+                                    if auth in saved_usergroups_list:
+                                        saved_usergroups_list.remove(auth)
+                        # PR2022-02-17 cannot be auth3 and auth3 at the same time
+                        auth_list = (c.USERGROUP_AUTH3_EXAM, c.USERGROUP_AUTH4_COM)
+                        if usergroup in auth_list:
+                            for auth in auth_list:
+                                if auth != usergroup:
+                                    if auth in saved_usergroups_list:
+                                        saved_usergroups_list.remove(auth)
+
                 if usergroup not in saved_usergroups_list:
                     saved_usergroups_list.append(usergroup)
             else:
@@ -1908,10 +1939,10 @@ def remove_other_auth_permits(permit_field, permit_list):
         permit_list.remove(c.USERGROUP_AUTH1_PRES)
     if permit_field != "perm_auth2" and c.USERGROUP_AUTH2_SECR in permit_list:
         permit_list.remove(c.USERGROUP_AUTH2_SECR)
-    if permit_field != "perm_auth3" and c.USERGROUP_AUTH3_COM in permit_list:
-        permit_list.remove(c.USERGROUP_AUTH3_COM)
-    if permit_field != "perm_auth4" and c.USERGROUP_AUTH4_EXAM in permit_list:
-        permit_list.remove(c.USERGROUP_AUTH4_EXAM)
+    if permit_field != "perm_auth3" and c.USERGROUP_AUTH3_EXAM in permit_list:
+        permit_list.remove(c.USERGROUP_AUTH3_EXAM)
+    if permit_field != "perm_auth4" and c.USERGROUP_AUTH4_COM in permit_list:
+        permit_list.remove(c.USERGROUP_AUTH4_COM)
 
 
 def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made PR2021-01-18
@@ -2180,3 +2211,118 @@ def get_username_dict():  # PR2021-12-19
     return username_dict
 # - end of get_username_dict
 
+
+def get_userfilter_lvlbase(sql_keys, sql_list, lvlbase_pk, request, table=None):
+    # PR2022-02-09 === Not in use yet
+    #  if lvlbase_pk has value:
+    #       if arr exists:
+    #           --> filter on lvlbase_pk, only when lvlbase_pk in arr, otherwise: return no records
+    #       else:
+    #           --> filter on lvlbase_pk
+    #  if lvlbase_pk is None:
+    #       if arr exists:
+    #           --> filter on lvlbase_pk's in array
+    #       else:
+    #           --> no filter
+
+    logging_on = False  # s.LOGGING_ON
+
+    if logging_on:
+        logger.debug('----- get_userfilter_lvlbase ----- ')
+        logger.debug('lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(type(lvlbase_pk)))
+
+    req_user = request.user
+    allowed_lvlbase_arr = req_user.allowed_levelbases.split(';') if req_user.allowed_levelbases else []
+    filter_single_pk = None
+    filter_pk_arr = None
+    filter_none = False
+    if lvlbase_pk:
+        if not allowed_lvlbase_arr or str(lvlbase_pk) in allowed_lvlbase_arr:
+            filter_single_pk = lvlbase_pk
+        else:
+            filter_none = True
+    elif allowed_lvlbase_arr:
+        if len(allowed_lvlbase_arr) == 1:
+            filter_single_pk = allowed_lvlbase_arr[0]
+        else:
+            filter_pk_arr = allowed_lvlbase_arr
+
+    if logging_on:
+        logger.debug('allowed_lvlbase_arr: ' + str(allowed_lvlbase_arr) + ' ' + str(type(allowed_lvlbase_arr)))
+        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+
+    if filter_single_pk:
+        sql_keys['sjb_pk'] = filter_single_pk
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.lvlbase_id = %(sjb_pk)s::INT")
+        else:
+            sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+    elif filter_pk_arr:
+        sql_keys['sjb_arr'] = filter_pk_arr
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.lvlbase_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
+        else:
+            sql_list.append("AND subj.base_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
+    elif filter_none:
+        sql_list.append("AND FALSE")
+# - end of get_userfilter_lvlbase
+
+
+def get_userfilter_subjbase(sql_keys, sql_list, subjbase_pk, request, table=None):
+    # PR2022-02-07
+    #  if subjbase_pk has value:
+    #       if arr exists:
+    #           --> filter on subjbase_pk, only when subjbase_pk in arr, otherwise: return no records
+    #       else:
+    #           --> filter on subjbase_pk
+    #  if subjbase_pk is None:
+    #       if arr exists:
+    #           --> filter on subjbase_pk's in array
+    #       else:
+    #           --> no filter
+
+    logging_on = False  # s.LOGGING_ON
+
+    if logging_on:
+        logger.debug('----- get_userfilter_subjbase ----- ')
+        logger.debug('subjbase_pk: ' + str(subjbase_pk) + ' ' + str(type(subjbase_pk)))
+
+    req_user = request.user
+    allowed_subjbase_arr = req_user.allowed_subjectbases.split(';') if req_user.allowed_subjectbases else []
+    filter_single_pk = None
+    filter_pk_arr = None
+    filter_none = False
+    if subjbase_pk:
+        if not allowed_subjbase_arr or str(subjbase_pk) in allowed_subjbase_arr:
+            filter_single_pk = subjbase_pk
+        else:
+            filter_none = True
+    elif allowed_subjbase_arr:
+        if len(allowed_subjbase_arr) == 1:
+            filter_single_pk = allowed_subjbase_arr[0]
+        else:
+            filter_pk_arr = allowed_subjbase_arr
+
+    if logging_on:
+        logger.debug('allowed_subjbase_arr: ' + str(allowed_subjbase_arr) + ' ' + str(type(allowed_subjbase_arr)))
+        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+
+    if filter_single_pk:
+        sql_keys['sjb_pk'] = filter_single_pk
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.subjbase_id = %(sjb_pk)s::INT")
+        else:
+            sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+    elif filter_pk_arr:
+        sql_keys['sjb_arr'] = filter_pk_arr
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.subjbase_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
+        else:
+            sql_list.append("AND subj.base_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
+    elif filter_none:
+        sql_list.append("AND FALSE")
+# - end of get_userfilter_subjbase

@@ -14,7 +14,7 @@ const man_mailbox = {
                 "<p>De berichten kun je vinden in de tab <i>Ontvangen berichten</i> op de berichtenpagina. Klik op de envelop rechts boven in de titelbalk om naar deze pagina te gaan. ",
                 "Wanneer je een bericht hebt verzonden stuurt AWP een e-mail naar alle geadresseerden met de mededeling dat er een bericht voor ze is.</p>"
             ]),
-        write_paragraph_body("img_studsubj_exclamationsign",
+        write_paragraph_body("img_exclamationsign",
             ["<p>De berichtenservice is alleen voor mededelingen van algemene aard. ",
                 "Voor de communicatie met de Inspectie en het ETE over individuele kandidaten wordt er een rubriek <i>Opmerkingen</i> toegevoegd in de pagina's 'Cijfers', 'Vakken' en 'Kandidaten'. ",
                 "Deze optie is op dit moment nog niet beschikbaar.</p>"]),
@@ -170,7 +170,7 @@ const man_mailbox = {
                  "<p>The messages can be found in the <i>Received messages</i> tab on the message page. ",
                  "Click on the envelope in the upper right corner of the title bar to go to this page. ",
                  "When you have sent a message, AWP sends an email to all recipients informing them that there is a message for them.</p>"]),
-        write_paragraph_body("img_studsubj_exclamationsign",
+        write_paragraph_body("img_exclamationsign",
             ["<p>The messaging service is for communications of a general nature only. ",
              "For communication with the Inspectorate and the Division of Examinations about individual candidates, ",
              "a section <i>Remarks</i> will be added in the pages 'Grades', 'Subjects' and 'Candidates'. ",

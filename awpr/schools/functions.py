@@ -1,6 +1,7 @@
 from django.db import connection
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 # PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
 from datetime import datetime
 

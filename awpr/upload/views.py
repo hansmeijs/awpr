@@ -6,7 +6,8 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, redirect #, get_object_or_404
 from django.utils.decorators import method_decorator
-from django.utils.translation import ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import View
 
 from awpr import functions as af

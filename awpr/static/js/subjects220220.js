@@ -450,8 +450,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 if ("setting_dict" in response) {
-                    setting_dict = response.setting_dict
-                    selected_btn = (setting_dict.sel_btn)
+                    setting_dict = response.setting_dict;
+                    selected_btn = (setting_dict.sel_btn);
                     selected.scheme_pk = (setting_dict.sel_scheme_pk) ? setting_dict.sel_scheme_pk : null;
                     //console.log("selected.scheme_pk", selected.scheme_pk)
 

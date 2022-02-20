@@ -5,7 +5,8 @@ from django.db import connection
 
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
-from django.utils.translation import activate, pgettext_lazy, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
 from django.views.generic import View
 
 from awpr import constants as c
@@ -226,7 +227,7 @@ class CalcresultsView(View):  # PR2021-11-19
 
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict, log_list, sql_studsubj_list, sql_student_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -427,6 +428,9 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
             # 'noin': {'vr': {'cav': ['se']}, 'pe': {'bw': ['se', 'ce']}, 'se': ['mm1'], 'ce': ['ec'], 'h3': ['ac']}
             calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has_practexam,
                          has_exemption, has_sr, has_reex, has_reex03, exemption_year)
+            if logging_on:
+                logger.debug(' this_examperiod_dict ni: ' + str(this_examperiod_dict.get('ni')))
+                logger.debug(' this_examperiod_dict noin: ' + str(this_examperiod_dict.get('noin')))
 
 # --- calculate max values, maximum grade when comparing exemption, ep_1, ep_2, ep_3
             #  calc_max_grades stores these keys to this_examperiod_dict:
@@ -567,7 +571,7 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
     # takes in account that in 2020 there was no central exam
     #  when noinput: key is appendedd to key with 'noinput' in this_examperiod_dict
     """"""
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_noinput  --------- examperiod: ' + str(examperiod))
         logger.debug('   subj_code: ' + str(subj_code))
@@ -680,7 +684,6 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
                         if logging_on:
                             logger.debug('   ni: ' + str(this_examperiod_dict['ni']))
                             logger.debug('   noin: ' + str(this_examperiod_dict['noin']))
-
 # - end of calc_noinput
 
 

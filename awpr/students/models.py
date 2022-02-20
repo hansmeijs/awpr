@@ -332,6 +332,8 @@ class Studentsubject(sch_mod.AwpBaseModel):
     objects = CustomManager()
 
     student = ForeignKey(Student, related_name='+', on_delete=CASCADE)
+
+    # subject not in use (yet). Linked with subject.subject
     subject = ForeignKey(subj_mod.Subject, null=True, related_name='+', on_delete=PROTECT)
     schemeitem = ForeignKey(subj_mod.Schemeitem, related_name='+', on_delete=PROTECT)
 
@@ -363,6 +365,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
     # TODO add  'tobechanged', when schemeitem (=subjecttype) changes it must be submitted again
     tobechanged = BooleanField(default=False)
     tobedeleted = BooleanField(default=False)
+
     prev_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     prev_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     prev_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -449,6 +452,7 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
 
     tobechanged = BooleanField(default=False)
     tobedeleted = BooleanField(default=False)
+
     prev_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     prev_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     prev_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -621,6 +625,7 @@ class Grade(sch_mod.AwpBaseModel):
     #answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
     tobedeleted = BooleanField(default=False)
+
     # TODO deprecate?
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

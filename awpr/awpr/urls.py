@@ -252,6 +252,7 @@ urlpatterns = [
 
         path('approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
+        path('download_ex2', grade_excel.GradeDownloadEx2View.as_view(), name='url_grade_download_ex2'),
         path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
         path('download/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_published_url'),
     ])),
@@ -280,10 +281,16 @@ urlpatterns = [
     path('exams/', include([
         path('exam', subject_views.ExamListView.as_view(), name='exams_url'),
         path('upload', subject_views.ExamUploadView.as_view(), name='exam_upload_url'),
-        path('approve', subject_views.ExamApproveView.as_view(), name='exam_approve_url'),
-        path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='exam_download_exam_pdf_url'),
-        path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='exam_download_grade_exam_pdf_url'),
-        path('download_exam_json/<list>/', subject_views.ExamDownloadExamJsonView.as_view(), name='exam_download_exam_json_url'),
+        path('approve_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_approve_exam'),
+        path('publish_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_publish_exam'),
+        path('approve_grade_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_approve_grade_exam'),
+        path('submit_grade_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_submit_grade_exam'),
+
+        path('send_email_submit_exam', student_views.StudentsubjectSendEmailExformView.as_view(),  name='url_send_email_submit_exam'),
+
+        path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='url_exam_download_exam_pdf'),
+        path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='url_exam_download_grade_exam_pdf'),
+        path('download_exam_json/<list>/', subject_views.ExamDownloadExamJsonView.as_view(), name='url_exam_download_exam_json'),
     ])),
 
 # ===== IMPORT ==========================

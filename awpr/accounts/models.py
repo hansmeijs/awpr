@@ -11,7 +11,8 @@ from django.contrib.postgres.fields import ArrayField # ,JSONField
 
 from django.core.validators import RegexValidator
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from schools.models import Country, Examyear, Departmentbase, Department, Schoolbase, School
 from awpr import constants as c
 from awpr import settings as s

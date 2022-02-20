@@ -2,7 +2,8 @@
 from django.contrib.auth.decorators import login_required
 from django.db import connection
 from django.http import HttpResponse
-from django.utils.translation import activate, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import activate, gettext_lazy as _
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
@@ -158,11 +159,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows()
 # ----- subjects
                 if datalist_request.get('subject_rows'):
-                    cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
+                    skip_allowed_filter = af.get_dict_value(datalist_request, ('subject_rows', 'skip_allowed_filter'), False)
                     datalists['subject_rows'] = sj_vw.create_subject_rows(
                         setting_dict=new_setting_dict,
-                        subject_pk=None,
-                        cur_dep_only=cur_dep_only)
+                        skip_allowed_filter=skip_allowed_filter,
+                        request=request)
 # ----- clusters
                 if datalist_request.get('cluster_rows'):
                     datalists['cluster_rows'] = sj_vw.create_cluster_rows(
@@ -188,7 +189,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['exam_rows'] = sj_vw.create_exam_rows(
                         sel_examyear_pk=sel_examyear.pk,
                         sel_depbase_pk=sel_depbase.pk,
-                        append_dict={}
+                        append_dict={},
+                        setting_dict=new_setting_dict,
+                        exam_pk_list=None
                     )
 # ----- students
                 if datalist_request.get('student_rows'):
@@ -207,7 +210,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         depbase=sel_depbase,
                         requsr_same_school=requsr_same_school,
                         setting_dict=new_setting_dict,
-                        append_dict={}
+                        append_dict={},
+                        request=request
                     )
 # ----- studentsubjectnote
                 #request_item = datalist_request.get('studentsubjectnote_rows')
@@ -225,6 +229,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
                             sel_examperiod=sel_examperiod,
+                            setting_dict=new_setting_dict,
                             request=request
                         )
 # ----- grades
@@ -581,7 +586,9 @@ def download_setting(request_item_setting, messages, user_lang, request):
         logger.debug('++++++++++++  DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT  ++++++++++++++++++++++++')
         logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
 
-    for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK, c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
+    for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,
+                    c.KEY_SEL_SUBJBASE_PK, c.KEY_SEL_STUDBASE_PK, c.KEY_SEL_CLUSTER_PK,
+                    c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
         if logging_on:
             logger.debug('........... key_str: ' + str(key_str))
 
@@ -593,7 +600,6 @@ def download_setting(request_item_setting, messages, user_lang, request):
         if logging_on:
             logger.debug('     saved_pk_int: ' + str(saved_pk_int) + ' ' + str(type(saved_pk_int)))
             logger.debug('     request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
-            logger.debug('     key_str: ' + str(key_str) + ' ' + str(type(key_str)))
 
 # - if key_str exists in request_item_setting: get new request_item_pk_int from request_item_setting
         if key_str in request_item_setting:
@@ -618,7 +624,18 @@ def download_setting(request_item_setting, messages, user_lang, request):
 # --- add info to setting_dict, will be sent back to client
         if saved_pk_int:
             setting_dict[key_str] = saved_pk_int
-            if key_str == c.KEY_SEL_SUBJECT_PK:
+            # use subjectbase_pk instead of subject_pk PR2022-02-07
+            if key_str == c.KEY_SEL_SUBJBASE_PK:
+                subject = subj_mod.Subject.objects.get_or_none(
+                    base_id=saved_pk_int,
+                    examyear=sel_examyear_instance
+                )
+                if subject:
+                    setting_dict['sel_subject_code'] = subject.base.code
+                    setting_dict['sel_subject_name'] = subject.name
+
+            # TODO to be deprecated
+            elif key_str == c.KEY_SEL_SUBJECT_PK:
                 subject = subj_mod.Subject.objects.get_or_none(
                     pk=saved_pk_int
                 )
@@ -626,6 +643,17 @@ def download_setting(request_item_setting, messages, user_lang, request):
                     setting_dict['sel_subject_code'] = subject.base.code
                     setting_dict['sel_subject_name'] = subject.name
 
+            # use studentbase_pk instead of student_pk PR2022-02-07
+            elif key_str == c.KEY_SEL_STUDBASE_PK:
+                student = stud_mod.Student.objects.get_or_none(
+                    base_id=saved_pk_int,
+                    examyear=sel_examyear_instance
+                )
+                if student:
+                    setting_dict['sel_student_name'] = stud_fnc.get_full_name(student.lastname, student.firstname, student.prefix)
+                    setting_dict['sel_student_name_init'] = stud_fnc.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
+
+            # TODO to be deprecated
             elif key_str == c.KEY_SEL_STUDENT_PK:
                 student = stud_mod.Student.objects.get_or_none(
                     pk=saved_pk_int
@@ -740,6 +768,32 @@ def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def get_selected_examyear_examperiod_dep_school_from_usersetting(request):  # PR2022-01-31
+    # - get selected examyear and department from usersettings, only examyear from request.user.country
+    # used in ExamyearUploadView, OrderlistDownloadView
+    # note: examyear.code is integer '2021'
+    sel_examyear, sel_department, sel_school, sel_examperiod = None, None, None, None
+    if request.user and request.user.country:
+        selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_pk_dict:
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=request.user.country
+            )
+            sel_department = sch_mod.Department.objects.get_or_none(
+                base_id=selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK),
+                examyear=sel_examyear
+            )
+            sel_school = sch_mod.School.objects.get_or_none(
+                base_id=selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK),
+                examyear=sel_examyear
+            )
+            sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+
+    return sel_examyear, sel_department, sel_school, sel_examperiod
+# - end of get_selected_examyear_examperiod_dep_school_from_usersetting
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
     # - get selected examyear.code and scheme_p from usersettings
     # used in SchemeDownloadXlsxView
@@ -760,13 +814,13 @@ def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01-20 PR2021-10-06
-# - get selected examperiod and examtype and sel_subject_pk from usersettings
+def get_selected_experiod_extype_subjbase_from_usersetting(request):  # PR2021-01-20 PR2021-10-06 PR2022-02-07
+# - get selected examperiod and examtype and sel_subjbase_pk from usersettings
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- get_selected_experiod_extype_subject_from_usersetting ----- ' )
+        logger.debug(' ----- get_selected_experiod_extype_subjbase_from_usersetting ----- ' )
 
-    sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
+    sel_examperiod, sel_examtype, sel_subjbase_pk = None, None, None
     req_user = request.user
     if req_user:
         selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -775,12 +829,12 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
         if selected_pk_dict:
             sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
             sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
-            sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
-    return sel_examperiod, sel_examtype, sel_subject_pk
-# - end of get_selected_experiod_extype_subject_from_usersetting
+            sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+    return sel_examperiod, sel_examtype, sel_subjbase_pk
+# - end of get_selected_experiod_extype_subjbase_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-01-13 PR2021-06-14
+def get_selected_ey_school_dep_from_usersetting(request, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
     logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
@@ -857,7 +911,7 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-01-13 PR2021
                 logger.debug('sel_school: ' + str(sel_school))
 
     # - add info to msg_list, will be sent back to client
-            message_school_missing_notactivated_locked(sel_school, sel_examyear, msg_list)
+            message_school_missing_locked_notactivated(sel_school, sel_examyear, skip_check_activated, msg_list)
 
 # ===== DEPBASE =======================
             if sel_school:
@@ -907,7 +961,7 @@ def get_selected_ey_school_dep_from_usersetting(request):  # PR2021-01-13 PR2021
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-def get_selected_examyear_from_usersetting(request):  # PR2021-09-08
+def get_selected_examyear_from_usersetting(request):  # PR2021-09-08 PR2022-02-06
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
@@ -964,15 +1018,14 @@ def message_examyear_missing_notpublished_locked(sel_examyear, msg_list):  # PR2
 # - end of message_examyear_missing_notpublished_locked
 
 
-def message_school_missing_notactivated_locked(sel_school, sel_examyear,  msg_list):  # PR2021-12-04
+def message_school_missing_locked_notactivated(sel_school, sel_examyear, skip_check_activated, msg_list):  # PR2021-12-04  PR2022-02-05
     if sel_school is None:
         msg_list.append(str(_('School not found in this exam year.')))
-    else:
-        if not sel_school.activated:
-            msg_list.append(str(_('The school has not activated exam year %(ey_code)s yet.') % {'ey_code': str(sel_examyear.code)}))
-        elif sel_school.locked:
-            msg_list.append(str(_('Exam year %(ey_code)s of this school is locked.') % {'ey_code': str(sel_examyear.code)}))
-# - end of message_examyear_missing_notpublished_locked
+    elif sel_school.locked:
+        msg_list.append(str(_('Exam year %(ey_code)s of this school is locked.') % {'ey_code': str(sel_examyear.code)}))
+    elif not skip_check_activated and not sel_school.activated:
+        msg_list.append(str(_('The school has not activated exam year %(ey_code)s yet.') % {'ey_code': str(sel_examyear.code)}))
+# - end of message_school_missing_locked_notactivated
 
 
 def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18

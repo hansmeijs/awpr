@@ -1,7 +1,8 @@
 # PR2019-02-17
 
 from django.db import connection
-from django.utils.translation import pgettext_lazy, ugettext_lazy as _
+#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
+from django.utils.translation import pgettext_lazy, gettext_lazy as _
 
 from awpr import constants as c
 from awpr import functions as af
@@ -216,7 +217,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 
     # msg_err already given when id is blank or too long ( in stud_val.get_idnumber_nodots_stripped_lower)
     if idnumber_nodots:
-        msg_keys = {'cpt': _('ID-number'), 'val': idnumber_nodots, 'name': upload_fullname}
+        msg_keys = {'cpt': str(_('ID-number')), 'val': idnumber_nodots, 'name': upload_fullname}
 
 # - count how many students exist with this idnumber in this school (all departments)
         # get all students from this school with this idnumber
@@ -378,6 +379,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
             stud_scheme = student.scheme
             if logging_on:
                 logger.debug('stud_scheme: ' + str(stud_scheme))
+
     # - no student.scheme
             if stud_scheme is None:
                 dep_missing, level_missing, sector_missing, has_profiel = False, False, False, False
@@ -450,6 +452,32 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
                     logger.debug('studsubj_dict: ' + str(studsubj_dict))
                     logger.debug('msg_list: ' + str(msg_list))
 
+                """
+                studsubj_dict: {
+                    'subject_list': [113, 114, 115, 116, 118, 133, 136, 120, 157, 154], 
+                    'doubles_list': [], 
+                    'sjtp_dict': {
+                        249: {'min': 6, 'max': 6, 'name': 'Gemeenschappelijk deel', 
+                                'subj_list': [113, 114, 115, 116, 118], 'nocount_list': [], 'counts_list': []}, 
+                        296: {'min': 1, 'max': 1, 'name': 'Sectorprogramma', 
+                                'subj_list': [133, 154], 'nocount_list': [], 'counts_list': []}, 
+                        316: {'min': 1, 'max': 1, 'name': 'Stage', 
+                                'subj_list': [136], 'nocount_list': [], 'counts_list': []}, 
+                        266: {'min': 2, 'max': 2, 'name': 'Sectordeel', 
+                                'subj_list': [120], 'nocount_list': [], 'counts_list': []}, 
+                        283: {'min': 0, 'max': 1, 'name': 'Overig vak', 
+                                'subj_list': [157], 'nocount_list': [], 'counts_list': []}
+                        }, 
+                    'mand_list': [113, 115, 116, 118, 136], 
+                    'mand_subj_list': [], 
+                    'combi_list': [115, 116], 
+                    'mvt_list': [114, 120], 
+                    'wisk_list': [], 
+                    'core_list': [], 
+                    'sufficient_list': [], 
+                    'notatevlex_list': []}
+                """
+
     # ++++++++++++++++++++++++++++++++
     # - get eveninstudent or lex student
                 is_evening_or_lex_student = get_evening_or_lex_student(student)
@@ -477,12 +505,21 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
                 if logging_on:
                     logger.debug('msg_list: ' + str(msg_list))
 
+                """
+                studsubj_dictlist_with_tobedeleted: [
+                    {'mode': 'delete', 'student_pk': 3747, 'studsubj_pk': 21188, 'schemeitem_pk': 1793, 'is_extra_nocount': False, 'is_extra_counts': False, 'pws_title': None, 'pws_subjects': None}, 
+                    {'mode': 'delete', 'student_pk': 3747, 'studsubj_pk': 23033, 'schemeitem_pk': 1786, 'is_extra_nocount': False, 'is_extra_counts': False, 'pws_title': None, 'pws_subjects': None}, 
+                    {'mode': 'create', 'student_pk': 3747, 'studsubj_pk': None, 'schemeitem_pk': 2162, 'is_extra_nocount': False, 'is_extra_counts': False, 'pws_title': None, 'pws_subjects': None}, 
+                    {'mode': 'create', 'student_pk': 3747, 'studsubj_pk': None, 'schemeitem_pk': 2153, 'is_extra_nocount': False, 'is_extra_counts': False, 'pws_title': None, 'pws_subjects': None}]}
+                """
+
     # - return warning when subject is deleted or subjtype has changed
-                deleted_list, changed_list = [], []
+                deleted_list, changed_list, submitted_list = [], [], []
                 for studsubj_dict in studsubj_dictlist_with_tobedeleted:
-                    studsubj_pk = studsubj_dict.get('studsubj_id')
+                    studsubj_pk = studsubj_dict.get('studsubj_pk')
                     tobedeleted = studsubj_dict.get('tobedeleted')
                     tobechanged = studsubj_dict.get('tobechanged')
+
                     if logging_on:
                         logger.debug('............................... ')
                         logger.debug('studsubj_dict: ' + str(studsubj_dict))
@@ -490,23 +527,62 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
                         logger.debug('tobedeleted: ' + str(tobedeleted))
                         logger.debug('tobechanged: ' + str(tobechanged))
 
+                # check if subject has already been submitted
+                # PR2022-02-15 don't check on submitted studsubj or submitted grades
+                    # - this will give problems when a school wants to delete subject with submitted grades
                     if (studsubj_pk) and (tobedeleted or tobechanged):
-                        if studsubj_pk:
-                            studsubj = stud_mod.Studentsubject.objects.get_or_none(pk=studsubj_pk)
-                            if logging_on:
-                                logger.debug('studsubj: ' + str(studsubj))
-                                logger.debug('studsubj.subj_published_id: ' + str(studsubj.subj_published_id))
-                            if studsubj and studsubj.subj_published_id:
-                                sb_code = studsubj.schemeitem.subject.base.code
-                                if tobedeleted:
-                                    deleted_list.append(sb_code)
-                                elif tobechanged:
-                                    changed_list.append(sb_code)
+                        is_published = False
+
+                        #if tobedeleted:
+                        #    # check if studsubj has submitted grades
+                        #    has_error, published = validate_submitted_locked_grades(
+                        #        studsubj_pk=studsubj_pk
+                        #    )
+                        #    if published:
+                        #        is_published = True
+
+                        sb_code = '-'
+                        studsubj = stud_mod.Studentsubject.objects.get_or_none(pk=studsubj_pk)
+                        if studsubj:
+                            sb_code = studsubj.schemeitem.subject.base.code
+
+                        if tobedeleted:
+                            deleted_list.append(sb_code)
+                            # was:
+                            #if is_published:
+                            #    submitted_list.append(sb_code)
+                            #else:
+                            #    deleted_list.append(sb_code)
+                        elif tobechanged:
+                            changed_list.append(sb_code)
 
                 deleted_count = len(deleted_list)
                 changed_count = len(changed_list)
+                submitted_count = len(submitted_list)
                 if deleted_count or changed_count:
                     msg_list.append("<div class='p-2 border_bg_warning'><h6>" + str(_('ATTENTION')) + '</h6><p>')
+
+                    if submitted_count:
+                        submitted_list.sort()
+                        subj_str = ''
+                        for x in range(0, submitted_count):  # range(start_value, end_value, step), end_value is not included!
+                            if x == 0:
+                                join_str = ''
+                            elif x == (submitted_count - 1):
+                                join_str = str(_(' and '))
+                            else:
+                                join_str = ', '
+                            subj_str += ''.join((join_str, "'", submitted_list[x], "'"))
+                        if submitted_count == 1:
+                            cpt1 = _('this subject')
+                            cpt2 = _('it has submitted grades')
+                        else:
+                            cpt1 = _('these subjects')
+                            cpt2 =_('they have submitted grades')
+                        msg_list.append(
+                            str(_("You cannot delete %(cpt1)s, because  %(cpt2)s.") \
+                                % {'cpt1': cpt1, 'cpt2': cpt2}) + '</p></div>')
+
                     if deleted_count:
                         deleted_list.sort()
                         subj_str = ''
@@ -541,15 +617,6 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
                             msg_str = str(_("The character of subjects %(subj_str)s will be changed.") % {'subj_str': subj_str})
                         msg_list.append(msg_str + '<br>')
 
-                    if deleted_count + changed_count == 1:
-                        cpt1 = _('this subject')
-                        cpt2 = _('has already been submitted')
-                    else:
-                        cpt1 = _('these subjects')
-                        cpt2 =_('have already been submitted')
-                    msg_list.append(str(_("Because %(cpt1)s %(cpt2)s, you have to submit an additional Ex1 form with %(cpt1)s.") \
-                                        % {'cpt1': cpt1, 'cpt2': cpt2}) + '</p></div>')
-
         msg_html = ''.join(msg_list)
 
     except Exception as e:
@@ -582,54 +649,55 @@ def get_evening_or_lex_student(student):  # PR 2021-09-08
 ##########################
 
 
-# ========  validate_approved_or_submitted_studsubj  ======= PR2021-09-03
-
-def validate_studsubj_appr_subm_locked(student_instance):
-
+# ========  validate_submitted_locked_grades  ======= PR2021-09-03 PR2022-02-15
+def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None):
+    # PR2022-02-15 don't check on submitted studsubj, only on submitted grades
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug('----- validate_approved_or_submitted_studsubj ----- ')
-        logger.debug('student: ' + str(student_instance))
+        logger.debug('----- validate_submitted_locked_grades ----- ')
+        logger.debug('student_pk: ' + str(student_pk))
 
-    has_error, has_ey_locked, has_sch_locked, has_published, has_approved = False, False, False, False, False
-    if student_instance:
+    has_error, has_published = False, False
+
+    sql_keys = {}
+    filter_clause = None
+    if studsubj_pk:
+        sql_keys['studsubj_id'] = studsubj_pk
+        filter_clause = "AND (studsubj.id = %(studsubj_id)s::INT)"
+    elif student_pk:
+        sql_keys['st_id'] = student_pk
+        filter_clause = "AND (st.id = %(st_id)s::INT)"
+
+    if filter_clause:
         try:
-            #TODO how to handle studsubj.tobechanged and studsubj.tobedeleted?
-            sql_keys = {'st_id': student_instance.pk}
+            sql_keys = {'st_id': student_pk}
             sql_list = [
-                "SELECT studsubj.subj_auth1by_id, studsubj.subj_auth2by_id, studsubj.subj_published_id,",
-                "studsubj.tobechanged, studsubj.tobedeleted, school.locked AS sch_locked, ey.locked AS ey_locked",
-                "FROM students_studentsubject AS studsubj",
-                "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-                "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "SELECT grd.id",
 
-                "WHERE (st.id = %(st_id)s::INT)",
-                "AND (studsubj.subj_auth1by_id IS NOT NULL",
-                "OR studsubj.subj_auth2by_id IS NOT NULL",
-                "OR studsubj.subj_published_id IS NOT NULL",
-                "OR school.locked OR ey.locked)",
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+
+                "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted",
+
+                filter_clause,
+
+                "AND (grd.se_published_id IS NOT NULL OR",
+                    "grd.sr_published_id IS NOT NULL OR",
+                    "grd.pe_published_id IS NOT NULL OR",
+                    "grd.ce_published_id IS NOT NULL OR",
+                    "grd.pe_exam_published_id IS NOT NULL OR",
+                    "grd.ce_exam_published_id IS NOT NULL)",
+                "LIMIT 1",
             ]
             sql = ' '.join(sql_list)
 
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
-                rows = af.dictfetchall(cursor)
-
-            for row in rows:
-                if logging_on:
-                    logger.debug('row: ' + str(row))
-                if row.get('ey_locked', False):
-                    has_ey_locked = True
-                elif row.get('sch_locked', False):
-                    has_sch_locked = True
-                elif row.get('subj_published_id'):
+                rows = cursor.fetchall()
+                if len(rows):
                     has_published = True
-                elif row.get('subj_auth1by_id'):
-                    has_approved = True
-                elif row.get('subj_auth2by_id'):
-                    has_approved = True
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -638,9 +706,8 @@ def validate_studsubj_appr_subm_locked(student_instance):
     if logging_on:
         logger.debug('has_error: ' + str(has_error))
         logger.debug('has_published: ' + str(has_published))
-        logger.debug('has_approved: ' + str(has_approved))
-    return has_error, has_ey_locked, has_sch_locked, has_published, has_approved
-# - end of validate_approved_or_submitted_studsubj
+    return has_error, has_published
+# - end of validate_submitted_locked_grades
 
 
 # ========  validate_studentsubjects  ======= PR2021-07-24
@@ -1891,7 +1958,7 @@ def validate_studsubj_sr_allowed(si_dict):  # PR2021-12-25
     elif not si_dict.get('weight_se', 0):
         caption = _('Re-examination school exam')
         err_list.append(str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': 'SE'}))
-        err_list.append(str(_('You cannot enter a %(item)s.') % {'item': str(caption).lower()}))
+        err_list.append(str(_('You cannot enter a %(item_str)s.') % {'item_str': str(caption).lower()}))
 
     return err_list
 # --- end of validate_studsubj_sr_allowed
@@ -1911,7 +1978,7 @@ def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18
                 caption = _('Re-examination 3rd period') if field == 'has_reex03' else _('Re-examination')
                 err_list.append(
                     str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': 'CE'}))
-                err_list.append(str(_('You cannot enter a %(item)s.') % {'item': str(caption).lower()}))
+                err_list.append(str(_('You cannot enter a %(item_str)s.') % {'item_str': str(caption).lower()}))
 
     return err_list
 # --- end of validate_studsubj_add_reex_reex03_allowed
