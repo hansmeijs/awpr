@@ -1536,8 +1536,12 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 //========= t_set_sbr_itemcount_txt  ==================================== PR2021-12-20
     function t_set_sbr_itemcount_txt(loc, item_count, count_unit_sing, count_unit_plur, user_lang) {
+        console.log( "===== t_set_sbr_itemcount_txt  ========= ");
+        console.log( "item_count", item_count);
+
 // ---  show total in sidebar
         const el_SBR_item_count = document.getElementById("id_SBR_item_count");
+        console.log( "el_SBR_item_count", el_SBR_item_count);
         if (el_SBR_item_count){
             let inner_text = null;
             if (selected.item_count){
@@ -1548,6 +1552,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 inner_text = [loc.Total, count_txt, unit_txt].join(" ");
             }
             el_SBR_item_count.innerText = inner_text;
+        console.log( "inner_text", inner_text);
         };
     }; // t_set_sbr_itemcount_txt
 

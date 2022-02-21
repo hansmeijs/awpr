@@ -258,7 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
             //el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
             add_hover(el_SBR_select_showall);
         };
-        const el_SBR_item_count = document.getElementById("id_SBR_item_count");
 
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");

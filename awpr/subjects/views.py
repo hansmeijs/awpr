@@ -1217,7 +1217,8 @@ class ExamUploadView(View):
                 levelbase_pk = upload_dict.get('levelbase_pk')
 
                 exam_pk = upload_dict.get('exam_pk')
-                subjbase_pk = upload_dict.get('subjbase_pk')
+                # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
+                subject_pk = upload_dict.get('subject_pk')
 
 # - check if examyear exists and equals selected examyear from Usersetting
                 selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -1234,7 +1235,7 @@ class ExamUploadView(View):
 
 # - get subject
                     subject = subj_mod.Subject.objects.get_or_none(
-                        base_id=subjbase_pk,
+                        id=subject_pk,
                         examyear=examyear
                     )
                     if logging_on:

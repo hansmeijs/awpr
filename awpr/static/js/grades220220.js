@@ -2002,8 +2002,8 @@ if(j && !is_status_field){td.classList.add("border_left")};
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
 
-            // close modal after 5 seconds
-                setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
+            // close modal
+                $("#id_mod_confirm").modal("hide");
             };
         };
 
@@ -2023,10 +2023,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
                     if(updated_dict.deleted) {
                         const tblRow = document.getElementById(updated_dict.mapid)
                         if (tblRow){ tblRow.parentNode.removeChild(tblRow) };
-                    }
-                }
+                    };
+                };
             };
-        }
+        };
         if ("msg_err" in response || "msg_ok" in response) {
             let msg01_txt = null, msg02_txt = null, msg03_txt = null;
             if ("msg_err" in response) {

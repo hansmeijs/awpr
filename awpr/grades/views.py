@@ -1595,7 +1595,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
 
 def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod,
                                     request, setting_dict=None, grade_pk_list=None):
-    # --- create grade rows of all students of this examyear / school PR2020-12-14
+    # --- create grade rows of all students of this examyear / school PR2020-12-14 PR2022-02-20
 
     # note: don't forget to filter deleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
@@ -1617,152 +1617,152 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     # - only ce_exams that are submitted are visible for non - requsr_same_school user > not necessary
     #       > not necessary, because only requsr_same_school can access grade_with_exam_rows
 
+    grade_rows = []
+
     req_user = request.user
     requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase_pk)
+    if requsr_same_school:
+        #examkeys_fields = ""
+        #if req_user.role == c.ROLE_064_ADMIN:
+        #    # pe_exam not in use: was: examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
+        #    examkeys_fields = "ce_exam.keys AS ceex_keys,"
 
-    examkeys_fields = ""
-    if req_user.role == c.ROLE_064_ADMIN:
-        # pe_exam not in use: was: examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
-        examkeys_fields = "ce_exam.keys AS ceex_keys,"
+        sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk,
+                    'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
 
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk,
-                'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
-    # TODO
+        sub_list = ["SELECT exam.id, subjbase.id AS exam_subjbase_id,",
+                    "CONCAT(subjbase.code,",
+                    "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
+                    "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
-    sub_list = ["SELECT exam.id, subjbase.id AS exam_subjbase_id,",
-                "CONCAT(subjbase.code,",
-                "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-                "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+                    "exam.examperiod, exam.examtype, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
+                    "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",  #, exam.examdate",
 
-                "exam.examperiod, exam.examtype, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
-                "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",  #, exam.examdate",
+                    "FROM subjects_exam AS exam",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
 
-                "FROM subjects_exam AS exam",
-                "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-                "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+                    "WHERE exam.published_id IS NOT NULL"
+                    ]
+        sub_exam = ' '.join(sub_list)
 
-                "WHERE exam.published_id IS NOT NULL"
-                ]
-    sub_exam = ' '.join(sub_list)
+        sql_list = ["SELECT grd.id, CONCAT('grade_', grd.id::TEXT) AS mapid,",
+                    "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+                    "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
+                    "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+                    "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name AS subj_name,",
+                    "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
+                    "grd.examperiod,"
+                    # "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
+                    "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_published_id, grd.ce_exam_blocked,",
 
-    sql_list = ["SELECT grd.id, CONCAT('grade_', grd.id::TEXT) AS mapid,",
-                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
-                "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
-                "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-                "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name AS subj_name,",
-                "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
-                "grd.examperiod,"
-                # "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
-                "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_published_id, grd.ce_exam_blocked,",
+                    "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
+                    "ce_exam.exam_subjbase_id AS ceex_exam_subjbase_id,",
+                    "ce_exam.examperiod AS ceex_examperiod, ce_exam.examtype AS ceex_examtype,",
+                    "ce_exam.version AS ceex_version, ce_exam.amount AS ceex_amount,",
+                    "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
+                    "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
+                    "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength,",
+                    "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm,",  # ce_exam.examdate AS ceex_examdate,",
 
-                "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
-                "ce_exam.exam_subjbase_id AS ceex_exam_subjbase_id,",
-                "ce_exam.examperiod AS ceex_examperiod, ce_exam.examtype AS ceex_examtype,",
-                "ce_exam.version AS ceex_version, ce_exam.amount AS ceex_amount,",
-                "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
-                "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
-                "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength,",
-                "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm,",  # ce_exam.examdate AS ceex_examdate,",
+                    # examkeys_fields,
 
-                examkeys_fields,
+                    #"pe_exam.id AS peex_exam_id, pe_exam.exam_name AS peex_name,"
+                    #"pe_exam.examperiod AS peex_examperiod, pe_exam.examtype AS peex_examtype,",
+                    #"pe_exam.version AS peex_version, pe_exam.amount AS peex_amount,",
+                    #"pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
+                    #"pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
+                    #"pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength,",
+                    #"pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm,",  # pe_exam.examdate AS peex_examdate,",
 
-                #"pe_exam.id AS peex_exam_id, pe_exam.exam_name AS peex_name,"
-                #"pe_exam.examperiod AS peex_examperiod, pe_exam.examtype AS peex_examtype,",
-                #"pe_exam.version AS peex_version, pe_exam.amount AS peex_amount,",
-                #"pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
-                #"pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
-                #"pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength,",
-                #"pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm,",  # pe_exam.examdate AS peex_examdate,",
+                    "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr, publ.modifiedat AS ce_exam_publ_modat",
 
-                "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr, publ.modifiedat AS ce_exam_publ_modat",
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "LEFT JOIN (", sub_exam, ") AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+                    #"LEFT JOIN (", sub_exam, ") AS pe_exam ON (pe_exam.id = grd.pe_exam_id)",
 
-                "FROM students_grade AS grd",
-                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                "LEFT JOIN (", sub_exam, ") AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
-                #"LEFT JOIN (", sub_exam, ") AS pe_exam ON (pe_exam.id = grd.pe_exam_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                    "LEFT JOIN subjects_cluster AS cls ON (cls.id = studsubj.cluster_id)",
 
-                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
-                "LEFT JOIN subjects_cluster AS cls ON (cls.id = studsubj.cluster_id)",
+                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
 
-                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                    "LEFT JOIN accounts_user AS auth1 ON (auth1.id = grd.ce_exam_auth1by_id)",
+                    "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.ce_exam_auth2by_id)",
+                    "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
 
-                "LEFT JOIN accounts_user AS auth1 ON (auth1.id = grd.ce_exam_auth1by_id)",
-                "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.ce_exam_auth2by_id)",
-                "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
+                    "WHERE ey.id = %(ey_id)s::INT",
+                    "AND school.base_id = %(sb_id)s::INT",
+                    "AND dep.base_id = %(depbase_id)s::INT",
+                    "AND si.ete_exam",
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                    ]
 
-                "WHERE ey.id = %(ey_id)s::INT",
-                "AND school.base_id = %(sb_id)s::INT",
-                "AND dep.base_id = %(depbase_id)s::INT",
-                "AND si.ete_exam",
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
-                ]
+        if logging_on:
+            logger.debug('grade_pk_list: ' + str(grade_pk_list))
 
-    if logging_on:
-        logger.debug('grade_pk_list: ' + str(grade_pk_list))
+        if grade_pk_list:
+            # when grade_pk_list has value: skip subject filter
+            sql_keys['grade_pk_arr'] = grade_pk_list
+            sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
 
-    if grade_pk_list:
-        # when grade_pk_list has value: skip subject filter
-        sql_keys['grade_pk_arr'] = grade_pk_list
-        sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
+        elif setting_dict:
+            sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
+            if sel_examperiod in (1, 2):
+                sql_keys['ep'] = sel_examperiod
+                sql_list.append("AND grd.examperiod = %(ep)s::INT")
 
-    elif setting_dict:
-        sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
-        if sel_examperiod in (1, 2):
-            sql_keys['ep'] = sel_examperiod
-            sql_list.append("AND grd.examperiod = %(ep)s::INT")
+            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+            if sel_lvlbase_pk:
+                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-        if sel_lvlbase_pk:
-            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+            sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
+            if sel_subjbase_pk:
+                sql_keys['subjbase_pk'] = sel_subjbase_pk
+                sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
 
-        sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
-        if sel_subjbase_pk:
-            sql_keys['subjbase_pk'] = sel_subjbase_pk
-            sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
+            sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
+            if sel_cluster_pk:
+                sql_keys['cluster_pk'] = sel_cluster_pk
+                sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
 
-        sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
-        if sel_cluster_pk:
-            sql_keys['cluster_pk'] = sel_cluster_pk
-            sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
+            sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
+            if sel_student_pk:
+                sql_keys['student_pk'] = sel_student_pk
+                sql_list.append("AND stud.id = %(student_pk)s::INT")
 
-        sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
-        if sel_student_pk:
-            sql_keys['student_pk'] = sel_student_pk
-            sql_list.append("AND stud.id = %(student_pk)s::INT")
+    # show grades that are not published only when requsr_same_school PR2021-04-29
 
+        sql_list.append('ORDER BY grd.id')
 
-# show grades that are not published only when requsr_same_school PR2021-04-29
+        sql = ' '.join(sql_list)
 
-    sql_list.append('ORDER BY grd.id')
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            grade_rows = af.dictfetchall(cursor)
 
-    sql = ' '.join(sql_list)
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
+            logger.debug('grade_rows: ' + str(grade_rows))
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        grade_rows = af.dictfetchall(cursor)
-
-    if logging_on:
-        logger.debug('sql_keys: ' + str(sql_keys))
-        logger.debug('sql: ' + str(sql))
-        logger.debug('grade_rows: ' + str(grade_rows))
-
-# - add full name to rows, and array of id's of auth
-    if grade_rows:
-        for row in grade_rows:
-            first_name = row.get('firstname')
-            last_name = row.get('lastname')
-            prefix = row.get('prefix')
-            full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
-            row['fullname'] = full_name if full_name else None
+    # - add full name to rows, and array of id's of auth
+        if grade_rows:
+            for row in grade_rows:
+                first_name = row.get('firstname')
+                last_name = row.get('lastname')
+                prefix = row.get('prefix')
+                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+                row['fullname'] = full_name if full_name else None
 
     return grade_rows
 # --- end of create_grade_with_exam_rows

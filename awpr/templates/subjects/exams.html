@@ -16,12 +16,14 @@
             <h3>{% trans 'Exams' %}</h3>
         </div>
         {% if not no_access %}
-            <div id="id_SBR_container_examperiod" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
-                <select id="id_SBR_select_period" class="tw_200 border_none px-1"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-               ></select>
-            </div>
+            {% if not is_requsr_same_school %}
+                <div id="id_SBR_container_examperiod" class="tw_200 m-2 display_hide">
+                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
+                    <select id="id_SBR_select_period" class="tw_200 border_none px-1"
+                        autocomplete="off" ondragstart="return false;" ondrop="return false;"
+                   ></select>
+                </div>
+            {% endif %}
 
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
@@ -53,6 +55,9 @@
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all' %}</h6>
             </div>
 
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
+            </div>
         {% endif %}
     </nav>
 {% endblock %}

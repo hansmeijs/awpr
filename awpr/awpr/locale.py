@@ -837,6 +837,7 @@ def get_locale_dict(table_dict, user_lang, request):
         #dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
         dict['Exam'] = _("Exam")
+        dict['Exams'] = _("Exams")
         dict['Select_exam'] = _("Select exam")
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
