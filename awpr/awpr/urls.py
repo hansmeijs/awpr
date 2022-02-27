@@ -126,7 +126,7 @@ urlpatterns = [
     # PR2018-03-09 path is new in django2.0 See: https://docs.djangoproject.com/en/2.0/releases/2.0/#whats-new-2-0
     # path('admin/', admin.site.urls, name='admin_url'),
 
-# PR2018-03-21 PR2020-09-17
+# ===== USERS ==========================  PR2018-03-21 PR2020-09-17
     # PR2018-04-21 debug: don't forget the .as_view() with brackets in the urlpattern!!!
     path('users/', include([
         path('user', account_views.UserListView.as_view(), name='users_url'),
@@ -229,7 +229,7 @@ urlpatterns = [
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
         path('studsubj_approve_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_multiple'),
-        path('studsubj_send_email_exform', student_views.StudentsubjectSendEmailExformView.as_view(), name='url_studsubj_send_email_exform'),
+        path('studsubj_send_email_exform', student_views.SendEmailSubmitExformView.as_view(), name='url_studsubj_send_email_exform'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
@@ -239,7 +239,7 @@ urlpatterns = [
 
         path('ex3_getinfo/', grade_exfiles.GetEx3infoView.as_view(), name='url_ex3_getinfo'),
         path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download'),
-
+        path('ex3_backpage', grade_exfiles.DownloadEx3BackpageView.as_view(), name='url_ex3_backpage'),
 
         path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload')
 
@@ -250,7 +250,7 @@ urlpatterns = [
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
         path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
 
-        path('approve', grade_views.GradeApproveView.as_view(), name='grade_approve_url'),
+        path('approve', grade_views.GradeApproveView.as_view(), name='url_grade_approve'),
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
         path('download_ex2', grade_excel.GradeDownloadEx2View.as_view(), name='url_grade_download_ex2'),
         path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
@@ -281,12 +281,10 @@ urlpatterns = [
     path('exams/', include([
         path('exam', subject_views.ExamListView.as_view(), name='exams_url'),
         path('upload', subject_views.ExamUploadView.as_view(), name='exam_upload_url'),
-        path('approve_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_approve_exam'),
-        path('publish_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_publish_exam'),
-        path('approve_grade_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_approve_grade_exam'),
-        path('submit_grade_exam', subject_views.ExamApproveOrSubmitView.as_view(), name='url_submit_grade_exam'),
+        path('approve_publish_exam', subject_views.ExamApproveOrPublishView.as_view(), name='url_approve_publish_exam'),
+        path('approve_submit_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 
-        path('send_email_submit_exam', student_views.StudentsubjectSendEmailExformView.as_view(),  name='url_send_email_submit_exam'),
+        path('send_email_submit_exam', student_views.SendEmailSubmitExformView.as_view(),  name='url_send_email_submit_exam'),
 
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='url_exam_download_exam_pdf'),
         path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='url_exam_download_grade_exam_pdf'),
@@ -301,6 +299,7 @@ urlpatterns = [
         path('studentsubject_upload/', school_imports.UploadImportStudentsubjectView.as_view(), name='url_importstudentsubject_upload'),
 
         path('grade_upload/', school_imports.UploadImportGradeView.as_view(), name='url_importgrade_upload'),
+        path('dnt_upload/', school_imports.UploadImportDntView.as_view(), name='url_importdnt_upload'),
 
         path('username_upload/', school_imports.UploadImportUsernameView.as_view(), name='url_importusername_upload'),
         path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='url_importdata_upload'),

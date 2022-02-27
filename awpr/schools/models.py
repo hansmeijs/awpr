@@ -528,7 +528,7 @@ class Published(AwpBaseModel): # PR2020-12-02
     department = ForeignKey(Department, related_name='+', db_index=True, null=True, on_delete=SET_NULL)
 
     examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, null=True)
-    examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
+    examperiod = PositiveSmallIntegerField(db_index=True) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption, 12 = ce + reex
 
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     filename = CharField(max_length=255, null=True)

@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     urls.url_ex3_getinfo = get_attr_from_el(el_data, "data-url_ex3_getinfo");
     urls.url_ex3_download = get_attr_from_el(el_data, "data-url_ex3_download");
+    urls.url_ex3_backpage = get_attr_from_el(el_data, "data-url_ex3_backpage");
 
     urls.url_cluster_upload = get_attr_from_el(el_data, "data-url_cluster_upload");
 
@@ -103,8 +104,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name", "sjtp_abbrev", "subj_status"],
         captions: ["Examnumber", "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject", "Character", "Approved"]}
     columns_tobe_hidden.btn_exemption = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name", "exemption_year"],
-        captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject", "Exemption_year"]}
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"], // "exemption_year"],
+        captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject"]}  //, "Exemption_year"]}
     columns_tobe_hidden.btn_sr = {
         fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber",  "Leerweg", "SectorProfiel_twolines", "Cluster", "Subject"]}
@@ -145,14 +146,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "c", "c", "c", "c", "c", "c", "c",
                                     "c", "c"]},
         // note: exemption has no status, only exemption grades must be submitted
+        // exemption_year to be added in 2023
         btn_exemption: {field_caption: ["subj_error", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
+                                "Abbreviation_twolines", "Subject", "Exemption"],  // "Exemption_year_twolines"],
                     field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "has_exemption", "exemption_year"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
-                    field_width:  ["020", "075", "180", "075", "075", "075", "075", "180", "120", "120"],
-                    field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+                                "subj_code", "subj_name", "has_exemption"], //"exemption_year"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div"], //"div"],
+                    filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle"], //"text"],
+                    field_width:  ["020", "075", "180", "075", "075", "075", "075", "180", "120"], //"120"],
+                    field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c"]}, //"c"]},
 
         btn_sr:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_schoolexam_2lns", "", ],
@@ -188,8 +190,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         };
 
-    const tblHead_datatable = document.getElementById("id_tblHead_datatable");
-    const tblBody_datatable = document.getElementById("id_tblBody_datatable");
+        const tblHead_datatable = document.getElementById("id_tblHead_datatable");
+        const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
 // === EVENT HANDLERS ===
 // === reset filter when ckicked on Escape button ===
@@ -209,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
                const translate = "translate(0," + scroll + "px)";
                this.querySelector("thead").style.transform = translate;
             });
-        }
+        };
 
 // --- BUTTON CONTAINER ------------------------------------
         const el_btn_container = document.getElementById("id_btn_container")
@@ -219,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data_btn = get_attr_from_el(btn,"data-btn")
                 btn.addEventListener("click", function() {HandleBtnSelect(data_btn)}, false )
             };
-        }
+        };
 
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
@@ -228,15 +230,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
-        }
+        };
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
-        }
+        };
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
-        }
+        };
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
@@ -591,11 +593,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows)
-                    t_SBR_FillSelectOptionsDepartmentLevelSector("level", response.level_rows, setting_dict)
+                    t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase("lvlbase", response.level_rows, setting_dict)
                 };
                 if ("sector_rows" in response) {
                     b_fill_datamap(sector_map, response.sector_rows);
-                    t_SBR_FillSelectOptionsDepartmentLevelSector("sector", response.sector_rows, setting_dict);
+                    t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase("sctbase", response.sector_rows, setting_dict);
                 };
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
@@ -653,6 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")});
                 };
                 AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
+                AddSubmenuButton(el_submenu, loc.Ex3_backpage, function() {MEX3_Backpage()});
                 if(permit_dict.permit_crud){
                     AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, null, "id_submenu_import");
                     AddSubmenuButton(el_submenu, loc.Clusters, function() {MCL_Open()});
@@ -693,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  highlight selected button
-        highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
+        b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
         const selected_tab = selected_btn.replace("btn", "tab");
@@ -3391,6 +3394,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ END OF MODAL SIDEBAR SELECT +++++++++++++++++++++++++++++++++++
 
+// +++++++++ MOD EX3 FORM++++++++++++++++ PR2022-02-26
+    function MEX3_Backpage(){
+
+        const upload_dict = {
+            backpage: true
+        };
+
+    // convert dict to jason and add as parameter in link
+        const upload_str = JSON.stringify(upload_dict);
+        const href_str = urls.url_ex3_backpage;
+
+    console.log("href_str", href_str)
+
+        const el_MEX3_save_link = document.getElementById("id_MEX3_save_link");
+        el_MEX3_save_link.href = href_str;
+
+    console.log("el_MEX3_save_link", el_MEX3_save_link)
+
+        el_MEX3_save_link.click();
+    };
+
+
 // +++++++++ MOD EX3 FORM++++++++++++++++ PR2021-10-06
     function MEX3_Open(){
         console.log(" -----  MEX3_Open   ----")
@@ -4611,7 +4636,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
         if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject) {
             if(status_index){
-                // modes are 'approve' 'submit_test' 'submit_submit'
+                // modes are 'approve' 'submit_test' 'submit_save'
                 mod_MASS_dict = {is_approve: is_approve,
                             is_submit: is_submit,
                             status_index: status_index,
@@ -4679,7 +4704,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
             mod_MASS_dict.step += 1;
 
-            //  upload_dict.modes are: 'approve_test', 'approve_submit', 'approve_reset', 'submit_test', 'submit_submit'
+            //  upload_dict.modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
             let url_str = urls.url_studsubj_approve_multiple;
             const upload_dict = { table: "studsubj",
                                     now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
@@ -4690,7 +4715,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                     url_str = urls.url_studsubj_approve_multiple;
                     upload_dict.mode = "approve_test";
                 } else if (mod_MASS_dict.step === 2){
-                    upload_dict.mode = (mod_MASS_dict.is_reset) ? "approve_reset" : "approve_submit";
+                    upload_dict.mode = (mod_MASS_dict.is_reset) ? "approve_reset" : "approve_save";
                 }
             } else if (mod_MASS_dict.is_submit){
                 if (mod_MASS_dict.step === 0){
@@ -4699,7 +4724,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                 } else if (mod_MASS_dict.step === 2){
                     url_str = urls.url_studsubj_send_email_exform;
                 } else if (mod_MASS_dict.step === 4){
-                    upload_dict.mode = "submit_submit";
+                    upload_dict.mode = "submit_save";
                     upload_dict.verificationcode = el_MASS_input_verifcode.value
                     upload_dict.verificationkey = mod_MASS_dict.verificationkey;
                 }

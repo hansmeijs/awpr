@@ -254,7 +254,7 @@ class UserUploadView(View):
 
                                     if deleted_instance_list:
                                         updated_dict = deleted_instance_list[0]
-                                        updated_dict['mapid'] = map_id
+                                        updated_dict['mapid'] = 'user_' + str(instance.pk)
 
                                     if c.USERGROUP_ADMIN in requsr_usergroupslist and instance == req_user:
                                         err_dict['msg01'] = _("System administrators cannot delete their own account.")
@@ -348,7 +348,7 @@ class UserUploadView(View):
                                 updated_instance_list = create_user_rows(request, instance.pk)
                                 updated_dict = updated_instance_list[0] if updated_instance_list else {}
                                 updated_dict['updated'] = True
-                                updated_dict['mapid'] = map_id
+                                updated_dict['mapid'] = 'user_' + str(instance.pk)
 
     # - +++++++++ en of is update ++++++++++++
                         if updated_dict:

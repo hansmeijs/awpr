@@ -1195,12 +1195,12 @@ class StudentsubjectMultipleOccurrencesView(View):  # PR2021-09-05
 #####################################################################################
 
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectSendEmailExformView(View):  # PR2021-07-26
+class SendEmailSubmitExformView(View):  # PR2021-07-26
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= StudentsubjectSendEmailExformView ============= ')
+            logger.debug(' ============= SendEmailSubmitExformView ============= ')
 
         update_wrap = {}
         msg_list = []
@@ -1327,7 +1327,7 @@ class StudentsubjectSendEmailExformView(View):  # PR2021-07-26
     # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
-# - end of StudentsubjectSendEmailExformView
+# - end of SendEmailSubmitExformView
 
 
 #####################################################################################
@@ -1403,10 +1403,10 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
                 else:
 
-    # - get selected mode. Modes are 'approve_test', 'approve_submit', 'approve_reset', 'submit_test' 'submit_submit'
+    # - get selected mode. Modes are 'approve_test', 'approve_save', 'approve_reset', 'submit_test' 'submit_save'
                     mode = upload_dict.get('mode')
-                    is_approve = True if mode in ('approve_test', 'approve_submit', 'approve_reset') else False
-                    is_submit = True if mode in ('submit_test', 'submit_submit') else False
+                    is_approve = True if mode in ('approve_test', 'approve_save', 'approve_reset') else False
+                    is_submit = True if mode in ('submit_test', 'submit_save') else False
                     is_reset = True if mode == 'approve_reset' else False
                     is_test = True if mode in ('approve_test', 'submit_test') else False
 
@@ -1996,7 +1996,7 @@ def get_subjects_are_text(count):
 
 def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request):
     # PR2021-07-26
-    # status_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
+    # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_studsubj -----')

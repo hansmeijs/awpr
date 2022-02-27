@@ -552,7 +552,7 @@
             el.addEventListener("mouseenter", function() {add_or_remove_class (el, hover_class, true, default_class)});
             el.addEventListener("mouseleave", function() {add_or_remove_class (el, default_class, true, hover_class)});
         };
-    }  // add_hover_class
+    };  // add_hover_class
 
 //=========  add_hover  =========== PR2020-06-09
     function add_hover_image(el, hover_image, default_image) {
@@ -563,37 +563,39 @@
             if(img){
                 el.addEventListener("mouseenter", function() { img.setAttribute("src", hover_image) });
                 el.addEventListener("mouseleave", function() { img.setAttribute("src", default_image) });
-        }}
-    }  // add_hover_image
+        }};
+    };  // add_hover_image
 
 //========= set_focus_on_id_with_timeout  =========== PR2020-05-09
     function set_focus_on_id_with_timeout(id, ms) {
         if(!!id && ms){
             const el = document.getElementById(id);
             set_focus_on_el_with_timeout(el, ms);
-        }
-    }  // set_focus_on_id_with_timeout
+        };
+    }; // set_focus_on_id_with_timeout
 
 //========= set_focus_on_el_with_timeout  =========== PR2020-05-09
     function set_focus_on_el_with_timeout(el, ms) {
         if(!!el && ms){
             setTimeout(function() { el.focus() }, ms);
-        }
-    }  // set_focus_on_el_with_timeout
+        };
+    };  // set_focus_on_el_with_timeout
 
-//========= highlight_BtnSelect  ============= PR2020-02-20 PR2020-08-31
-    function highlight_BtnSelect(btn_container, selected_btn, btns_disabled){
-        //console.log( "//========= highlight_BtnSelect  ============= ")
+//========= b_highlight_BtnSelect  ============= PR2020-02-20 PR2020-08-31
+    function b_highlight_BtnSelect(btn_container, selected_btn, btns_disabled){
+        //console.log( "//========= b_highlight_BtnSelect  ============= ")
         // ---  highlight selected button
-        let btns = btn_container.children;
-        for (let i = 0, btn; btn = btns[i]; i++) {
-            const data_btn = get_attr_from_el(btn, "data-btn")
-            // highlight selected btn
-            add_or_remove_class(btn, "tsa_btn_selected", (data_btn === selected_btn) );
-            // disable btn, except when btn is selected btn
-            btn.disabled = (btns_disabled && data_btn !== selected_btn)
-        }
-    }  //  highlight_BtnSelect
+        if (btn_container){
+            const btns = btn_container.children;
+            for (let i = 0, btn; btn = btns[i]; i++) {
+                const data_btn = get_attr_from_el(btn, "data-btn");
+                // highlight selected btn
+                add_or_remove_class(btn, "tsa_btn_selected", (data_btn === selected_btn) );
+                // disable btn, except when btn is selected btn
+                btn.disabled = (btns_disabled && data_btn !== selected_btn);
+            };
+        };
+    };  //  b_highlight_BtnSelect
 
 //========= get_mapdict_from_datamap_by_tblName_pk  ============= PR2019-11-01 PR2020-08-24
     function get_mapdict_from_datamap_by_tblName_pk(data_map, tblName, pk_str) {
@@ -605,9 +607,9 @@
             // instead of: map_dict = get_mapdict_from_datamap_by_id(data_map, map_id);
         };
         // map.get returns 'undefined' if the key can't be found in the Map object.
-        if (!map_dict) {map_dict = {}}
-        return map_dict
-    }    // get_mapdict_from_datamap_by_tblName_pk
+        if (!map_dict) {map_dict = {}};
+        return map_dict;
+    };    // get_mapdict_from_datamap_by_tblName_pk
 
 //========= get_mapdict_from_datamap_by_id  ============= PR2019-09-26
     function get_mapdict_from_datamap_by_id(data_map, map_id) {
@@ -624,9 +626,9 @@
             //};
         };
         // map.get returns 'undefined' if the key can't be found in the Map object.
-        if (!map_dict) {map_dict = {}}
-        return map_dict
-    }
+        if (!map_dict) {map_dict = {}};
+        return map_dict;
+    };
 
 //========= b_get_itemdict_from_datamap_by_el  ============= PR2019-10-12 PR2020-09-13 PR2021-01-014
     function b_get_itemdict_from_datamap_by_el(el, data_map) {
@@ -636,40 +638,40 @@
         if(tblRow){
             // was: const map_id = get_attr_from_el(tblRow, "data-table") + "_" + get_attr_from_el(tblRow, "data-pk")
             item_dict = get_mapdict_from_datamap_by_id(data_map, tblRow.id);
-        }
-        return item_dict
-    }  // b_get_itemdict_from_datamap_by_el
+        };
+        return item_dict;
+    };  // b_get_itemdict_from_datamap_by_el
 
-//========= b_get_status_bool_at_index  ============= PR2021-01-15 PR2021-02-05
-    function b_get_status_bool_at_index(status_sum, index) {
+//========= b_get_auth_bool_at_index  ============= PR2021-01-15 PR2021-02-05
+    function b_get_auth_bool_at_index(status_sum, index) {
         const status_array = b_get_status_array(status_sum);
         return b_get_status_bool_at_arrayindex(status_array, index);
-    }  // b_get_status_bool_at_index
+    };  // b_get_auth_bool_at_index
 
 //========= b_get_status_bool_at_arrayindex  ============= PR2021-02-05
     function b_get_status_bool_at_arrayindex(status_array, index) {
         let status_bool = false;
         if(status_array && index < status_array.length) {
             status_bool = (status_array[index] === 1);
-        }
-        return status_bool
-    }
+        };
+        return status_bool;
+    };
 
-//========= b_set_status_bool_at_index  ============= PR2021-01-15 PR2021-02-05
-    function b_set_status_bool_at_index(status_int, index, new_value) {
-        //console.log( " ==== b_set_status_bool_at_index ====");
+//========= b_set_auth_bool_at_index  ============= PR2021-01-15 PR2021-02-05
+    function b_set_auth_bool_at_index(status_int, index, new_value) {
+        //console.log( " ==== b_set_auth_bool_at_index ====");
 
         if(status_int == null){status_int = 0};
         let new_status_sum = 0;
-        const status_array = b_get_status_array(status_int)
+        const status_array = b_get_status_array(status_int);
         if(status_array && index < status_array.length) {
     // ---  put new_value at index
             status_array[index] = (new_value) ? 1 : 0;
     // ---  convert to integer
             new_status_sum =  b_get_statussum_from_array(status_array);
-        }
+        };
         return new_status_sum
-    }  // b_set_status_bool_at_index
+    };  // b_set_auth_bool_at_index
 
 //========= b_get_statussum_from_array  =============  PR2021-02-05
     function b_get_statussum_from_array(status_array) {
@@ -679,14 +681,14 @@
             status_array.reverse();
             const arr_joined = status_array.join("");
             status_sum = parseInt(arr_joined,2);
-        }
+        };
         return status_sum;
-    }
+    };
 
 //========= b_get_status_array  ============= PR2021-01-15 PR2021-02-05
     function b_get_status_array(status_sum) {
-        //console.log( " ==== b_set_status_bool_at_index ====");
-        const array_length = 15
+        //console.log( " ==== b_set_auth_bool_at_index ====");
+        const array_length = 15;
         const leading_zeros = "0".repeat(array_length);
 
         if(status_sum == null){status_sum = 0};
@@ -700,14 +702,14 @@
 
         for (let i = 0, len = status_array_reversed.length; i < len; i++) {
             status_array_reversed[i] = Number(status_array_reversed[i]);
-        }
+        };
         // status_array_reversed = [1, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
 
-        return status_array_reversed
-    }  // b_get_status_array
+        return status_array_reversed;
+    };  // b_get_status_array
 
     function b_get_status_iconclass(publ, blocked, auth1, auth2, auth3, auth4) { //  PR2021-05-07 PR2021-12-18
-        let img_class = "diamond_0_0" // empty diamond
+        let img_class = "diamond_0_0"; // empty diamond
         if(publ){
             if (blocked){
                 img_class = "diamond_0_4";  // blue diamond: published
@@ -772,8 +774,8 @@
                             } else {
                                 img_class = "diamond_0_0"; // auth -
         }}}}}};
-        return img_class
-    }
+        return img_class;
+    };
 
     function get_status_class(status_sum) { // PR2021-01-15
         //console.log( " ==== get_status_class ====");
@@ -814,7 +816,7 @@
 
         //console.log("img_class", img_class);
         return img_class;
-    }  // get_status_class
+    };  // get_status_class
 
 //#########################################################################
 // +++++++++++++++++ DATAMAP +++++++++++++++++++++++++++++++++++++++
@@ -827,8 +829,8 @@
         if (rows && rows.length) {
             for (let i = 0, dict; dict = rows[i]; i++) {
                 data_map.set(dict.mapid, dict);
-            }
-        }
+            };
+        };
         //console.log("data_map", data_map);
         //console.log("data_map.size", data_map.size)
     };  // b_fill_datamap
@@ -847,7 +849,7 @@
                     dict_clone[key] = value;
         }}};
         return dict_clone;
-    }  // deepcopy_dict
+    };  // deepcopy_dict
 
 //=========  deepcopy_dict  ================ PR2021-05-31
 // TODO replace old one with this one
@@ -859,10 +861,10 @@
                dict_clone[key] = copy_fnc(value);
             } else {
                 dict_clone[key] = value;
-            }
+            };
         };
         return dict_clone;
-    }  // deepcopy_dict
+    };  // deepcopy_dict
 
 
 //#########################################################################
@@ -882,7 +884,7 @@
         if (a_lc < b_lc) return -1;
         if (a_lc > b_lc) return 1;
         return 0;
-    }  // b_comparator_sortby
+    };  // b_comparator_sortby
 
 // this one sorts integers, only used in mailbox.js mailinglist MML_Save - for now PR2021-10-22
     function b_comparator_sortby_integer(a, b) {
@@ -908,7 +910,7 @@
             };
         };
         return copy_JS
-    }
+    };
 
 //=========  parse_dateJS_from_dateISO ================ PR2020-07-22
     function parse_dateJS_from_dateISO(date_iso) {
@@ -920,9 +922,9 @@
         let date_JS = null;
         if (date_iso){
            date_JS =  new Date(Date.parse(date_iso));
-        }
+        };
         return  date_JS;
-    }  // parse_dateJS_from_dateISO
+    };  // parse_dateJS_from_dateISO
 
 //========= get_now_arr ========== PR2020-07-08 tsa
     function get_now_arr() {
@@ -930,7 +932,7 @@
         const now = new Date();
         const now_arr = [now.getFullYear(), now.getMonth() + 1, now.getDate(), now.getHours(), now.getMinutes()];
         return now_arr;
-    }
+    };
 
 //=========  get_now_formatted ================ PR2021-04-28 from tsa format_time_from_offset_JSvanilla PR2020-04-10
     function get_now_formatted() {
@@ -950,7 +952,7 @@
 
         return [year, "-", month_str, "-", date_str, " ", hour_str, ".", minute_str, "u"].join('');
 
-    }  // format_time_from_offset_JSvanilla
+    };  // format_time_from_offset_JSvanilla
 
 
 //#########################################################################
@@ -975,7 +977,7 @@
             integer_only = true;
             min_value = 1;
             max_value = 10000;
-        }
+        };
 
         let output_value = null, value_int = 0, value_decimal = 0, is_not_valid = false, err_msg = null;
         if(!input_value){
@@ -1014,14 +1016,14 @@
 
                                     //console.log("max_value", max_value, "multiplier", multiplier )
                                     //console.log("err_msg", err_msg )
-                                }
+                                };
                             } else if(max_value !== null) {
                                 const must_be_str = (is_percentage) ? loc.err_msg_must_be_percentage_less_than_or_equal_to : loc.err_msg_must_be_number_less_than_or_equal_to;
-                                err_msg = caption_str + " " + must_be_str + " " + max_value / multiplier + "."
-                }
+                                err_msg = caption_str + " " + must_be_str + " " + max_value / multiplier + ".";
+                };
         }}}}};
         return [output_value, err_msg];
-    }  // b_get_number_from_input
+    };  // b_get_number_from_input
 
 //========= validate_blank_unique_text  ================= PR2020-06-10
     function validate_blank_unique_text(loc, data_map, mapName, fldName, input_value, cur_pk_int, no_blank) {
@@ -1048,7 +1050,7 @@
                             break;
         }}}}};
         return msg_err;
-    }  // validate_blank_unique_text
+    };  // validate_blank_unique_text
 
 
 //######### IT WORKS !!! #################################################################
@@ -1060,7 +1062,7 @@
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
         return selected_dict;
-    }
+    };
 
 //========= b_get_mapdict_from_datarows  ================== PR2021-06-21
     // NOT IN USE PR2021-09-18
@@ -1068,7 +1070,7 @@
         const [middle_index, found_dict, compare] = b_recursive_lookup(data_rows, map_id, user_lang);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
         return selected_dict;
-    }
+    };
 
 //========= b_recursive_integer_lookup  ========== PR2020-07-14 PR2020-07-25
     function b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int){
@@ -1147,10 +1149,10 @@
                                 } else {
                                     min_index = middle_index + 1;
                                     middle_index =  Math.ceil( (min_index + max_index) / 2);
-                                }
-                            }
-                        }
-                    }
+                                };
+                            };
+                        };
+                    };
                 };  // if (i > 23)
             };  // for (let i = 0,
         };  //  if (data_rows && data_rows.length){
@@ -1257,11 +1259,11 @@
 
     //console.log( "min_index", min_index);
     //console.log( "new middle_index", middle_index);
-                                }
-                            }
+                                };
+                            };
     //console.log( "GOTO NEXT LOOP 2 : ", min_index, " - ", max_index, " >< ", middle_index);
-                        }
-                    }
+                        };
+                    };
                 };  // if (i > 23)
             };  // for (let i = 0,
         };  //  if (data_rows && data_rows.length){
@@ -1403,8 +1405,8 @@
             if(lookup_value && lookup_value === search_value){
                 lookup_dict = dict;
                 break;
-            }
-        }
+            };
+        };
         return lookup_dict;
     };  // b_lookup_dict_in_dictlist
 
@@ -1417,8 +1419,8 @@
                 lookup_index = i;
                 lookup_dict = dict;
                 break;
-            }
-        }
+            };
+        };
         return [lookup_index, lookup_dict];
     };  // b_lookup_dict_in_dictlist
 
@@ -1432,10 +1434,10 @@
                 if (item === value){
                     array.splice(i, 1);
                     break;
-                }
+                };
             };
         };
-    }  // b_remove_item_from_array
+    }; // b_remove_item_from_array
 
 // =========  b_remove_item_from_array2  === PR2021-10-20 NOT IN USE yet
     function b_remove_item_from_array2(array, item){
@@ -1445,7 +1447,7 @@
         const new_array = array.filter(e => e !== item);
 
         return new_array;
-    } // b_remove_item_from_array2
+    }; // b_remove_item_from_array2
 
 //=========  b_copy_array_noduplicates  ================ PR2021-12-16
     function b_copy_array_noduplicates(old_array, new_array){
@@ -1487,30 +1489,78 @@
         };
     };  // b_clear_dict
 
+//========= b_get_multiple_auth_index_of_requsr  ======== PR2022-02-22
+    function b_get_multiple_auth_index_of_requsr(permit_dict){
+        // function returns list of booleans, key = auth_index, val 0 = false, 1 = true
+        // USERGROUP_AUTH1_PRES, USERGROUP_AUTH2_SECR, USERGROUP_AUTH3_EXAM, USERGROUP_AUTH4_COM
+
+    //console.log( "-----  b_get_multiple_auth_index_of_requsr  -----");
+    //console.log( "permit_dict", permit_dict);
+
+        // index = 1 of auth1, value 1 = has permit, 0 = no permit
+        const permit_auth_list = [null, 0, 0, 0, 0]
+        if (permit_dict.usergroup_list){
+            for (let i = 1; i < 5; i++) {
+                if (permit_dict.usergroup_list.includes("auth" + i)){
+                    permit_auth_list[i] = 1;
+        }}};
+    //console.log( "permit_auth_list", permit_auth_list);
+        return permit_auth_list;
+    };  // b_get_multiple_auth_index_of_requsr
+
+//========= b_get_auth_index_pres_secr_of_requsr  ======== PR2022-02-24
+    function b_get_auth_index_pres_secr_of_requsr(loc, permit_dict){
+        // function returns auth_index of auth user, only pres and secr, ignores examinator an commissioner
+        // only used in exam approve
+        // gives err messages when requsr his both auth pres and auth secr
+
+        console.log( "-----  b_get_auth_index_pres_secr_of_requsr  -----");
+        console.log( "permit_dict.usergroup_list", permit_dict.usergroup_list);
+        let is_auth_1 = false, is_auth_2 = false, auth_index = 0;
+
+        if (permit_dict.usergroup_list){
+            is_auth_1 = permit_dict.usergroup_list.includes("auth1");
+            is_auth_2 = permit_dict.usergroup_list.includes("auth2");
+        };
+
+// skip if user has no auth usergroup
+        if (is_auth_1 && is_auth_2){
+// show msg error if user has multiple auth usergroups
+            const functions = loc.President + loc.and + loc.Secretary;
+            const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
+                        loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
+            b_show_mod_message(msg_html);
+        } else if (is_auth_1){
+            auth_index = 1;
+        } else if (is_auth_2){
+            auth_index = 2;
+        };
+        return auth_index;
+    };  // b_get_auth_index_pres_secr_of_requsr
+
 //========= b_get_auth_index_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18
     function b_get_auth_index_of_requsr(loc, permit_dict){
-        // function returns status_index of auth user, returns 0 when user has none or multiple auth usergroups
+        // function returns auth_index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8, STATUS_04_AUTH3 = 16
 
-        console.log( "-----  b_get_auth_index_of_requsr  -----");
-        console.log( "permit_dict", permit_dict);
+        //console.log( "-----  b_get_auth_index_of_requsr  -----");
+        //console.log( "permit_dict", permit_dict);
 
-        let status_index = 0;
+        let auth_index = 0;
         // key = '1' of auth1, value 1 = has permit, 0 = no permit
         const permit_auth = {1: 0, 2: 0, 3: 0, 4: 0}
         if (permit_dict.usergroup_list){
             for (let i = 1; i < 5; i++) {
                 if (permit_dict.usergroup_list.includes("auth" + i)){
-                    status_index = i;
+                    auth_index = i;
                     permit_auth[i] = 1;
         }}};
-        console.log( "permit_auth", permit_auth);
+        //console.log( "permit_auth", permit_auth);
 
 // skip if user has no auth usergroup
-
         if ( (permit_auth[1] && permit_auth[2]) || (permit_auth[1] && permit_auth[2]) ){
-            status_index = 0;
+            auth_index = 0;
 // show msg error if user has multiple auth usergroups
             const functions = (permit_auth[1] && permit_auth[2]) ? loc.President + loc.and + loc.Secretary :
                               (permit_auth[3] && permit_auth[4]) ? loc.Commissioner + loc.and + loc.Examinator : "";
@@ -1519,10 +1569,8 @@
                         loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
             b_show_mod_message(msg_html);
         };
-
-
-        return status_index;
-    }  // b_get_auth_index_of_requsr
+        return auth_index;
+    };  // b_get_auth_index_of_requsr
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
@@ -1553,8 +1601,8 @@
                 ModMessageClose();
             } catch (error) {
             }
-        })
-    }  // show_mod_message
+        });
+    };  // show_mod_message
 
 //========= b_render_msg_containerNEW  ================= PR2021-08-13
     function b_render_msg_containerNEW(el_msg_container, msg_list, class_list) {
@@ -1570,11 +1618,11 @@
             for (let i = 0, msg_txt ; msg_txt = msg_list[i]; i++) {
                 if (msg_txt) {
                     msg_html += "<p>" + msg_txt + "</p>";
-                }
-            }
-        }
+                };
+            };
+        };
         el_msg_container.innerHTML = msg_html;
-    }  // b_render_msg_containerNEW
+    };  // b_render_msg_containerNEW
 
 //========= b_render_msg_container  ================= PR2021-05-13
     function b_render_msg_container(id_el_msg, msg_list) {
@@ -1593,14 +1641,14 @@
                 for (let j = 0, msg; msg = msg_list[j]; j++) {
                     if(j){msg_html += "<br>"};
                     if(msg){msg_html +=msg};
-                }
-            }
+                };
+            };
         //console.log("msg_html", msg_html)
             el_msg.innerHTML = msg_html;
     // show el_msg when has_msg
-            add_or_remove_class(el_msg, cls_hide, !has_msg)
-        }
-    }  // b_render_msg_container
+            add_or_remove_class(el_msg, cls_hide, !has_msg);
+        };
+    };  // b_render_msg_container
 
 //=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01
     function b_ShowModMessages(msg_dictlist, skip_warning_messages) {
@@ -1751,7 +1799,6 @@
             processData: false,
             timeout: 60000
         });
-
     };
 
     b_UploadFile.prototype.progressHandling = function (event) {
@@ -1768,10 +1815,6 @@
         $(progress_bar_id + " .progress-bar").css("width", +percent + "%");
         $(progress_bar_id + " .status").text(percent + "%");
     };
-
-//?????????????????????????????????????????????????????????????????
-
-
 
 //#########################################################################
 // +++++++++++++++++ SVG  +++++++++++++++++++++++++++++++++++++++++++
@@ -1790,22 +1833,23 @@
         svg_html += "</text></a></svg>"
         return svg_html
     };
+
 //========= get_svg_arrow_points  =================
     function get_svg_arrow_points(height, width, indent_left, indent_right) {
         // PR2018-12-21 creates arrow shape
-        points = "0,0 " // lower left corner
+        points = "0,0 "; // lower left corner
         if (indent_right) {
-            points += (width - indent_right) + ",0 " // lower right corner
-            points += (width) + "," + (height/2) + " "  // middle right point
-            points += (width - indent_right) + "," + (height) + " " // top right corner
+            points += (width - indent_right) + ",0 "; // lower right corner
+            points += (width) + "," + (height/2) + " ";  // middle right point
+            points += (width - indent_right) + "," + (height) + " "; // top right corner
         } else {
             points += (width) + ",0 " // lower right corner
-            points += (width) + "," + (height) + " " // top right corner
+            points += (width) + "," + (height) + " "; // top right corner
         };
-        points += "0," + (height) + " " // top left corner
+        points += "0," + (height) + " "; // top left corner
         if (indent_left) {
-            points += (indent_left) + "," + (height/2)  // middle left point
+            points += (indent_left) + "," + (height/2);  // middle left point
         }
-        return points
+        return points;
     };  // get_svg_arrow_points
 

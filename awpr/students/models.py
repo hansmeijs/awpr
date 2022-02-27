@@ -354,6 +354,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
     #has_pok = BooleanField(default=False)  # proof of knowledge  (for day school)
     #has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
 
+    #  exemption_year to be added in 2023
     exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020)
     # has proof of knowledge = True when pok_validthru has value PR2021-09-07
     pok_validthru = PositiveSmallIntegerField(null=True)
@@ -606,6 +607,7 @@ class Grade(sch_mod.AwpBaseModel):
 
     # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again PR2022-01-19
     pe_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    #pe_exam_blanks = PositiveSmallIntegerField(null=True)
     pe_exam_result = CharField(max_length=2048, null=True)
     pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -613,6 +615,7 @@ class Grade(sch_mod.AwpBaseModel):
     pe_exam_blocked = BooleanField(default=False)
 
     ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
+    ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -690,6 +693,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     ce_blocked = BooleanField(default=False)
 
     pe_exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
+    #pe_exam_blanks = PositiveSmallIntegerField(null=True)
     pe_exam_result = CharField(max_length=2048, null=True)
     pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -697,6 +701,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     pe_exam_blocked = BooleanField(default=False)
 
     ce_exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
+    ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

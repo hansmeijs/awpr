@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         (page === "user") ? man_user :
                         (page === "upload") ? man_upload :
                         (page === "studsubj") ? man_studsubj :
+                        (page === "exams") ? man_exams :
                         (page === "approve") ? man_approve :
                         (page === "mailbox") ? man_mailbox : null;
         //console.log( "html_dict", html_dict);
@@ -144,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_hide_columns", "Kolommen verbergen"],
             ]),
 
-        get_dropdown_button("upload", "id_intro", "id_btn_upload_data", "Gegevens uploaden", [
+        get_dropdown_button("upload", "id_intro", "id_btn_upload", "Gegevens uploaden", [
             ["id_upload_step01", "Stap 1: Selecteer een Excel bestand"],
             ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
             ["id_enter_subjects", "Vakken van kandidaten invoeren"],
@@ -155,6 +156,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
             ["id_enter_studsubj", "Vakken van kandidaten invoeren"],
             ["id_clusters", "Clusters"],
+            ]),
+
+        get_dropdown_button("exams", "id_intro_exams", "id_btn_exams", "Examens (voormalige WOLF programma)", [
+            ["id_link_exams", "Examen koppelen aan een vak"],
+            ["id_enter_exams", "Antwoorden invoeren"],
+            ["id_download_exams", "Antwoorden downloaden"],
+            ["id_submit_exams", "Examens goedkeuren en indienen"],
             ]),
 
         get_dropdown_button("approve", "id_intro", "id_btn_approve", "Goedkeuren en indienen van Ex-formulieren", [
@@ -211,12 +219,12 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_mailbox_mailinglist", "Mailing lists"],
             ]),
         "</div>"
-        ]
+        ];
 
         const el_sidenav =  document.getElementById("id_sidenav");
-        console.log("el_sidenav", el_sidenav)
+        console.log("el_sidenav", el_sidenav);
         el_sidenav.innerHTML = sbr_list.join('');
-    }
+    };
 
     function GotoParagraph(par_id){
         console.log(" ----- GotoParagraph ----- ")
@@ -225,13 +233,14 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("el", el)
         if(el){
            el.scrollIntoView({ block: 'start',  behavior: 'smooth' })
-        }
-    }
+        };
+    };
 
     function get_dropdown_button(page, first_paragraph, btn_id, btn_txt, item_list){
         console.log(" ----- get_dropdown_button ----- ");
-        //console.log("btn_txt", btn_txt);
-        //console.log("item_list", item_list);
+        console.log("first_paragraph", first_paragraph);
+        console.log("btn_id", btn_id);
+        console.log("btn_txt", btn_txt);
         let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39, &#39" + first_paragraph + "&#39 )'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
         //let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39)'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
 
@@ -243,11 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("arr[1]", arr[1]);
             };
             html_str += "</div>"
-        }
-
-        console.log("html_str", html_str);
+        };
         return html_str;
-    }
+    };
 
 //========= write_paragraph_header  ============= PR2021-08-14
 function write_paragraph_header(par_id, dispay_txt){

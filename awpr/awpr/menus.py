@@ -218,7 +218,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         # used in page exams template to show school or admin mod exam form PR2021-05-22
         is_requsr_same_school = False
-        is_requsr_admin_or_system = (req_user.role in (c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM))
+        is_requsr_admin = req_user.role == c.ROLE_064_ADMIN
 
         # if sel_examyear and display_school:
         if sel_examyear:
@@ -319,7 +319,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             'no_access': no_access,
             'examyear_locked': examyear_locked,
             'is_requsr_same_school': is_requsr_same_school,
-            'is_requsr_admin_or_system': is_requsr_admin_or_system,
+            'is_requsr_admin': is_requsr_admin,
             'examyear_code': sel_examyear_str,
             'display_school': display_school, 'school': school_name,
             'display_department': display_department, 'department': department_name,

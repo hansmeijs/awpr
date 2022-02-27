@@ -187,11 +187,19 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- exams
                 if datalist_request.get('exam_rows'):
                     datalists['exam_rows'] = sj_vw.create_exam_rows(
+                        req_usr=request.user,
                         sel_examyear_pk=sel_examyear.pk,
                         sel_depbase_pk=sel_depbase.pk,
                         append_dict={},
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
+                    )
+# ----- ntermentable
+                if datalist_request.get('ntermentable_rows'):
+                    datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_depbase=sel_depbase,
+                        setting_dict=new_setting_dict
                     )
 # ----- students
                 if datalist_request.get('student_rows'):
@@ -321,17 +329,15 @@ def download_setting(request_item_setting, messages, user_lang, request):
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
-    # datalist_request_item 'setting' can have the follwoing keys that will be saved in usersettings:
-    #   - key 'page':       required, stored in usersetting sel_page: setting: {page: "page_grade"}
-    #   - key 'selected_pk': not required, contains all selected pk's: to be saved in usersetting key 'selected_pk' (used in different pages (like examyear, schoolbase, depbase)
-
-    # datalist_request_item 'setting' can have two key/values that will be saved in usersettings:
-    #   - key 'page', required, stored in usersetting sel_page: setting: {page: "page_grade"}
+    # datalist_request_item 'setting' can have several key/values that will be saved in usersettings:
+    #   - key 'page', required, stores selected page in usersetting key 'sel_page': sel_page = {page: "page_grade"}
+    #   - key 'sel_btn' saves selected button in usersetting key 'page_grade' = {'sel_btn' = 'btn_ep_01}
+    #   - key 'sel_depbase_pk' saves selected depbase_pk in usersetting key 'selected_pk' = {'sel_depbase_pk' = 1}
+    #   - key 'sel_examperiod' saves selected examperiod in usersetting key 'selected_pk' = {'sel_examperiod' = 1}
+    #   -  cols_hidden is stored in key 'page_grade' {"sel_btn": "btn_ep_01", "cols_hidden": ["examnumber", "lvl_abbrev", "sct_abbrev", "subj_name"]}
     #   - key 'selected_pk' saves selected values that are used in different pages (like examyear, schoolbase, depbase)
-    #       - selected_pk: {sel_examyear_pk: 1, sel_schoolbase_pk: 13 etc
-    #   - usersetting key 'sel_page' saves current page (to be opened at next login)
-    #   - usersetting key 'page_user' etc  with key 'sel_btn' is different for every page:
-    #       - sel_page: ( page: 'page_grade', page_user: {sel_btn: 'btn_userpermit' }
+    #                       - key 'selected_pk' = {sel_examyear_pk: 1, sel_schoolbase_pk: 13 etc }
+    #       selected_pk = {"sel_examyear_pk": 1, "sel_depbase_pk": 1, "sel_examtype": "reex", "sel_examperiod": 2, "sel_lvlbase_pk": 5}
     """
     # examples :
     # PR2021-12-03 grades.js: on opening page: 
@@ -697,50 +703,62 @@ def download_setting(request_item_setting, messages, user_lang, request):
     if selected_pk_dict_has_changed:
         acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
 
-# ===== PAGE SETTINGS ======================= PR2021-06-22
-# these settings can not be changed by calling download, are changes by b_UploadSettings
+# ===== PAGE SETTINGS ======================= PR2021-06-22 PR2022-02-25
+# settings 'sel_btn' can be changed by calling download, also changes by b_UploadSettings
+# settings 'cols_hidden' cannot be changed by calling downloads function
 # value of key 'sel_page' is set and retrieved in get_headerbar_param
 
     if logging_on:
-        logger.debug('...........page: ' + str(page))
+        logger.debug('++++++++++++  PAGE SETTINGS  ++++++++++++++++++++++++')
+        logger.debug('..... page: ' + str(page))
 
-    # request_item_setting: {'page': 'page_grade', 'sel_examperiod': 4}
+        # request_item_setting: {'page': 'page_exams', 'page_exams': {'sel_btn': 'btn_ntermen'}}
 
     # get page settings from usersetting
     if page:
-        page_dict = acc_view.get_usersetting_dict(page, request)
+        # get new page settings from request_item_setting
+        reqitem_page_dict = request_item_setting.get(page)
+        reqitem_sel_btn, saved_sel_btn = None, None
+        if reqitem_page_dict:
+            reqitem_sel_btn = reqitem_page_dict.get('sel_btn')
+        # get saved page settings from usersetting
+        saved_page_dict = acc_view.get_usersetting_dict(page, request)
+        if saved_page_dict is None:
+            saved_page_dict = {}
+        else:
+    # - get saved_sel_btn from  usersetting
+            saved_sel_btn = saved_page_dict.get(c.KEY_SEL_BTN)
+
         # page_dict: {'sel_btn': 'btn_studsubj', 'cols_hidden': {'published': ['examperiod'], 'studsubj': ['examnumber']}}
         if logging_on:
-            logger.debug('...........page_dict: ' + str(page_dict))
-        if page_dict is None:
-            page_dict = {}
-    # - get sel_btn from  usersetting
-        sel_btn = page_dict.get(c.KEY_SEL_BTN)
+            logger.debug('..... reqitem_page_dict: ' + str(reqitem_page_dict))
+            logger.debug('..... reqitem_sel_btn: ' + str(reqitem_sel_btn))
+            logger.debug('..... saved_page_dict: ' + str(saved_page_dict))
+            logger.debug('..... saved_sel_btn: ' + str(saved_sel_btn))
+            # saved_page_dict: {'sel_btn': 'btn_ntermen'}
 
-    # - replace by new_sel_btn, if any
-        new_sel_btn = request_item_setting.get(c.KEY_SEL_BTN)
-        if new_sel_btn and new_sel_btn != sel_btn:
-            sel_btn = new_sel_btn
-            page_dict[c.KEY_SEL_BTN] = new_sel_btn
-    # - save new_sel_btn, if changed
-            acc_view.set_usersetting_dict(page, page_dict, request)
+    # - replace by reqitem_sel_btn, if any
+        if reqitem_sel_btn and reqitem_sel_btn != saved_sel_btn:
+            saved_sel_btn = reqitem_sel_btn
+            saved_page_dict[c.KEY_SEL_BTN] = reqitem_sel_btn
+
+    # - save reqitem_sel_btn, if changed
+            acc_view.set_usersetting_dict(page, saved_page_dict, request)
 
         if logging_on:
-            logger.debug('...........sel_btn: ' + str(sel_btn))
+            logger.debug('..... saved_sel_btn: ' + str(saved_sel_btn))
 
 # - add info to setting_dict, will be sent back to client
-        if sel_btn:
-            setting_dict[c.KEY_SEL_BTN] = sel_btn
-            if logging_on:
-                logger.debug('...........setting_dict: ' + str(setting_dict))
+        if saved_sel_btn:
+            setting_dict[c.KEY_SEL_BTN] = saved_sel_btn
 
 # - add list of hidden columns PR2021-07-07 - cols_hidden cannot be changed by calling downloads function
-        cols_hidden = page_dict.get(c.KEY_COLS_HIDDEN)
+        cols_hidden = saved_page_dict.get(c.KEY_COLS_HIDDEN)
         if cols_hidden:
             setting_dict[c.KEY_COLS_HIDDEN] = cols_hidden
 
     if logging_on:
-        logger.debug('setting_dict: ' + str(setting_dict))
+        logger.debug('..... setting_dict: ' + str(setting_dict))
         logger.debug('......................... ')
 
     return setting_dict, permit_dict, sel_examyear_instance, sel_schoolbase_instance, sel_depbase_instance, \
@@ -962,13 +980,13 @@ def get_selected_ey_school_dep_from_usersetting(request, skip_check_activated=Fa
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-def get_selected_examyear_from_usersetting(request):  # PR2021-09-08 PR2022-02-06
+def get_selected_examyear_from_usersetting(request):  # PR2021-09-08 PR2022-02-26
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
     # this function gets sel_examyear, from req_user and usersetting
-    # used in publish orderlist, where no selected school or dep is needed
-    # checks if user may edit .
+    # used in publish orderlist and upload dnt, where no selected school or dep is needed
+    # checks if country is locked and if examyear is missing, notpublished or locked
 
     req_user = request.user
     sel_examyear = None

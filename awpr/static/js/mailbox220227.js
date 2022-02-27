@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  highlight selected button
-        highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
+        b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  fill datatable
         FillTblRows();

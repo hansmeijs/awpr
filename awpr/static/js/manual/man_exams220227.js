@@ -6,14 +6,14 @@ const man_exams = {
 
 /////////  NEDERLANDS //////////////////////////////
     nl: [
-        write_paragraph_header("id_intro", "Examens (voormalige WOLF programma)"),
+        write_paragraph_header("id_intro_exams", "Examens (voormalige WOLF programma)"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
                 "<p>De pagina 'Examens' vervangt het voormalige WOLF programma voor het invoeren van de antwoorden op de examenvragen van de ETE examens. </p>",
                 "<p class='pb-0'>Dit heeft een aantal voordelen:</p>",
                 "<ul class='manual_bullet mb-0'><li>Gegevens van de kandidaten en hun vakken hoeven niet opnieuw ingevoerd te worden;</li>",
-                "<li>De scores worden automatisch ingevuld bij alle vakken van de kandidaten;</li>",
+                "<li>Na het indienen van de antwoorden wordt de totaal score automatisch ingevuld bij het betreffende vak van de kandidaat;</li>",
                 "<li>Het ETE hoeft de ingevulde examens van de scholen niet te verzamelen en samen te voegen.</li></ul>",
 
                  "<p class='pb-0 pt-2'>De <b>procedure voor het invoeren van de antwoorden en het indienen</b> bij het ETE is als volgt:</p>",
@@ -21,7 +21,7 @@ const man_exams = {
                 "<li>Zodra het ETE dit heeft afgerond worden de examens 'gepubliceerd', dat wil zeggen: ze worden zichtbaar voor de scholen. AWP koppelt waar mogelijk het examen aan de vakken van de kandidaten. Alleen wanneer bij een vak meerdere examens beschikbaar zijn, dient de school het juiste examen te kiezen;</li>",
                 "<li>De school vult alle antwoorden van de vragen in. AWP controleert of het ingevulde antwoord is toegestaan;</li>",
                 "<li>Nadat de antwoorden van alle examens zijn ingevoerd, dienen ze te worden goedgekeurd en ingediend. De procedure hiervoor is hetzelfde als bij het indienen van het Ex1- en Ex2-formulier;</li>",
-                "<li>Na het indienen van de antwoorden vult AWP de totaal score in bij alle vakken van de kandidaten.</li></ul>",
+                "<li>Na het indienen van de antwoorden vult AWP de totaal score in bij het betreffende vak van de kandidaat.</li></ul>",
 
                 "<p>De pagina <i>Examens</i> bevat een tabel met alle kandidaten, hun vakken en het bijbehorende examen. ",
                 "In deze pagina kun je examens aan vakken koppelen, de antwoorden invullen, de antwoorden downloaden en de examens goedkeuren en indienen.</p>",
@@ -46,8 +46,6 @@ const man_exams = {
 
                 "Klik op de ESCAPE toets om dit filter te wissen.</li></ul>",
 
-
-
             "</div>",
         "</div>",
 
@@ -66,7 +64,6 @@ const man_exams = {
 
                 "<p><b>Examen verwijderen</b><br>Als een kandidaat niet aan het examen heeft deelgenomen kun je het examen verwijderen. ",
                 "Klik op het examen van het betreffende vak van de kandidaat. Klik in het venster dat verschijnt op <i>Examen verwijderen</i>.</p>",
-
 
             "</div>",
         "</div>",

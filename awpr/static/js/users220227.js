@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  highlight selected button
-        highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
+        b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
         b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
@@ -2027,22 +2027,23 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ END OF MODAL SELECT MULTIPLE DEPS / LEVELS/ SUBJECTS / CLUSTERS  +++++++++++++++++++++++++++++++
 
 
-//========= HandleInputChange  ===============PR2021-03-20
+//========= HandleInputChange  =============== PR2021-03-20 PR2022-02-21
     function HandleInputChange(el_input){
         //console.log(" --- HandleInputChange ---")
 
-        const tblRow = t_get_tablerow_selected(el_input)
-        const map_id = tblRow.id
-        if (map_id){
-            const map_dict = get_mapdict_from_datamap_by_id(permit_map, map_id)
-        //console.log("map_dict", map_dict)
-            const fldName = get_attr_from_el(el_input, "data-field")
-            const userpermit_pk = map_dict.id;
-            const map_value = map_dict[fldName];
+        const tblRow = t_get_tablerow_selected(el_input);
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+
+        if (pk_int){
+            const data_dict = get_datadict_from_pk("userpermit", pk_int);
+        //console.log("data_dict", data_dict)
+            const fldName = get_attr_from_el(el_input, "data-field");
+            const userpermit_pk = data_dict.id;
+            const map_value = data_dict[fldName];
             let new_value = el_input.value;
             if(fldName === "sequence"){
                  new_value = (Number(new_value)) ? Number(new_value) : 1;
-            }
+            };
 
             if(new_value !== map_value){
         // ---  create mod_dict
@@ -2050,12 +2051,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const upload_dict = {mode: "update",
                                     userpermit_pk: userpermit_pk};
                 upload_dict[fldName] = new_value;
-                //console.log("upload_dict: ", upload_dict);
+        //console.log("upload_dict: ", upload_dict);
 
         // ---  upload changes
                 UploadChanges(upload_dict, url_str);
-            }
-        }
+            };
+        };
     };  // HandleInputChange
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
@@ -2376,7 +2377,7 @@ function RefreshDataRowsAfterUpload(response) {
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
 
-            const map_id = update_dict.mapid;
+            const pk_int = update_dict.id;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
             //console.log("is_created", is_created);
@@ -2435,11 +2436,11 @@ function RefreshDataRowsAfterUpload(response) {
                 }
             } else {
 
-// --- get existing data_dict from map_id
-                const [dict, index] = get_datadict_with_index_from_mapid(map_id);
+// --- get existing data_dict
+                const [dict, index] = get_datadict_from_datarows(page_tblName, pk_int);
                 const data_dict = dict;
                 const datarow_index = index;
-
+        console.log("field_setting", field_setting);
 // ++++ deleted ++++
                 if(is_deleted){
                     // delete row from data_rows. Splice returns array of deleted rows
@@ -2478,6 +2479,8 @@ function RefreshDataRowsAfterUpload(response) {
         // ---  add field to updated_columns list
                                 updated_columns.push(col_field)
                             };
+
+        console.log("updated_columns", updated_columns);
                         };
 // ---  update fields in data_row
                         for (const [key, new_value] of Object.entries(update_dict)) {
@@ -2492,7 +2495,7 @@ function RefreshDataRowsAfterUpload(response) {
                         if(updated_columns.length || field_error_list.length){
 
 // --- get existing tblRow
-                            let tblRow = document.getElementById(map_id);
+                            let tblRow = document.getElementById(data_dict.mapid);
                             if(tblRow){
                                 // to make it perfect: move row when username have changed
                                 if (updated_columns.includes("username")){
@@ -2806,7 +2809,7 @@ function RefreshDataRowsAfterUpload(response) {
 
     // --- get existing data_dict from data_rows
                         const base_pk_int = (Number(base_pk_str)) ?  Number(base_pk_str) : null;
-                        // cannot use b_recursive_integer_lookup, it can only be used to lookup by id, not bu base_id
+                        // cannot use b_recursive_integer_lookup, it can only be used to lookup by id, not by base_id
                         if (data_rows){
                             for (let j = 0, data_dict; data_dict = data_rows[j]; j++) {
                                 if (base_pk_int && base_pk_int === data_dict.base_id){
@@ -2855,7 +2858,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 
 
-//========= get_datadict_with_index_from_mapid  ====== PR2022-01-26
+//========= get_allowed_caption  ====== PR2022-01-26
     function get_allowed_caption(fldName) {
 
         return (fldName === "allowed_depbases") ? loc.Departments.toLowerCase() :
@@ -2867,21 +2870,18 @@ function RefreshDataRowsAfterUpload(response) {
 //###########################
 
 
-//========= get_datadict_with_index_from_mapid  ====== PR2021-08-01
-    function get_datadict_with_index_from_mapid(map_id) {
-        //console.log( "===== get_datadict_with_index_from_mapid  === ");
+//========= get_datadict_from_datarows  ====== PR2021-08-01
+    function get_datadict_from_datarows(tblName, pk_int) {
+        //console.log( "===== get_datadict_from_datarows  === ");
         let data_dict = null, row_index = null;
-        if(map_id){
-            const arr = get_tblName_pk_from_mapid(map_id);
-            if(arr && arr[1] && Number(arr[1])){
-                const data_rows = get_data_rows(arr[0]) ;
-                const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", Number(arr[1]));
-                if (!isEmpty(found_dict)) {data_dict = found_dict};
-                row_index = index;
-            };
+        if(pk_int){
+            const data_rows = get_data_rows(tblName) ;
+            const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
+            if (!isEmpty(found_dict)) {data_dict = found_dict};
+            row_index = index;
         };
         return [data_dict, row_index];
-    };  // get_datadict_with_index_from_mapid
+    };  // get_datadict_from_datarows
 
 //========= get_datadict_from_mapid  ====== PR2021-08-01
     function get_datadict_from_mapid(map_id) {

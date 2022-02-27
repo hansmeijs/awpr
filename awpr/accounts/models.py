@@ -570,7 +570,6 @@ class Usersetting(Model):
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     # jsonsetting = JSONField(null=True)
 
-
 """ NOT IN USE PR2021-01-25
     @classmethod
     def get_jsonsetting(cls, key_str, user):  # PR2019-07-02

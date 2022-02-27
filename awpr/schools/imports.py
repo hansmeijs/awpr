@@ -103,7 +103,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
                             if new_setting_value is None and stored_setting_dict:
                                 new_setting_value = stored_setting_dict.get(import_key)
 
-                            if import_key is 'noheader' and new_setting_value is None:
+                            if import_key == 'noheader' and new_setting_value is None:
                                 new_setting_value = False
 
                             if new_setting_value is not None:
@@ -3650,6 +3650,128 @@ def update_hasexemption_in_studsubj_batch(tobe_updated_studsubj_pk_list, request
 # - end of update_hasexemption_in_studsubj_batch
 
 
+@method_decorator([login_required], name='dispatch')
+class UploadImportDntView(View):  # PR2022-02-26
+    # function import n-termen table
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= UploadImportDntView ============= ')
+
+        update_wrap = {}
+        msg_list = []
+        if request.user and request.user.country and request.user.schoolbase:
+
+            if request.POST['upload']:
+                upload_dict = json.loads(request.POST['upload'])
 
 
+# - Reset language
+                # PR2019-03-15 Debug: language gets lost, get request.user.lang again
+                # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_from_usersetting
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
 
+# - get permit
+                page = 'page_exams'
+                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
+                has_permit = 'permit_crud' in permit_list
+
+                if logging_on:
+                    logger.debug('permit_list: ' + str(permit_list))
+                    logger.debug('requsr_usergroups_listNIU: ' + str(requsr_usergroups_listNIU))
+                    logger.debug('has_permit: ' + str(has_permit))
+
+# - get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                #  - not requsr_same_school
+                #  - country is locked,
+                #  - examyear is not found, not published or locked
+                #  - school is not found, not activated, or locked
+                #  - department is not found, not in user allowed depbase or not in school_depbase
+                sel_examyear, may_edit, err_list = dl.get_selected_examyear_from_usersetting(request)
+                if err_list:
+                    msg_list.extend(err_list)
+
+                if not has_permit:
+                    err_html = _("You don't have permission to perform this action.")
+                    update_wrap['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
+                elif not may_edit:
+                    err_html = '<br>'.join(msg_list)
+                    update_wrap['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
+                else:
+
+# - get info from upload_dict
+                    filename = upload_dict.get('filename', '')
+                    upload_data_list = upload_dict.get('data_list')
+
+                    get_dnt_from_upload(sel_examyear, upload_data_list, request)
+
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of UploadImportDntView
+
+
+def get_dnt_from_upload(sel_examyear, upload_data_list, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_dnt_from_upload ----- ' )
+
+    if sel_examyear and upload_data_list:
+        fields = ('sty_id', 'opl_code', 'leerweg', 'ext_code', 'Tijdvak', 'nex_ID', 'Omschrijving', 'Schaallengte', 'N-term', 'AfnameVakID', 'Extra_vakcodes_tbv_Wolf', 'datum', 'begintijd', 'eindtijd')
+
+        first_row = upload_data_list[0]
+        if logging_on:
+            logger.debug('first_row : ' + str(first_row))
+
+# create list of mapped_fields, index is same as index in upload_data_list, value is fieldname of table Ntermentable
+        mapped_fields = []
+        pkfield_index = None # index of nex_ID
+        for col_index, caption in enumerate(first_row):
+            db_field = None
+            if caption and caption in fields:
+                logger.debug('col_index : ' + str(col_index) + ' caption : ' + str(caption))
+                if '-' in caption:
+                    caption = caption.replace('-', '_')
+                db_field = caption.lower()
+                if db_field == 'nex_id':
+                    pkfield_index = col_index
+            mapped_fields.append(db_field)
+        if logging_on:
+            logger.debug('mapped_fields: ' + str(mapped_fields))
+
+# loop through rows of upload_data_list
+        if pkfield_index:
+            for row_index, row in enumerate(upload_data_list):
+                # slip first row, contains field names
+                if row_index:
+                    # get nex_id:
+                    nt_instance = None
+                    nex_id = row[pkfield_index]
+                    if nex_id:
+                        # get existing row
+                        nt_instance = subj_mod.Ntermentable.objects.get_or_none(
+                            examyear=sel_examyear,
+                            nex_id=nex_id
+                        )
+                    if nt_instance is None:
+                        nt_instance = subj_mod.Ntermentable(
+                            examyear=sel_examyear,
+                            nex_id=nex_id
+                        )
+                    if nt_instance:
+                        # loop through columns of row, only the ones that are mapped
+                        for col_index, field in enumerate(mapped_fields):
+                            if field and col_index != pkfield_index:
+                                value = row[col_index]
+                                if not value:
+                                    value = None
+                                if value and field == 'datum':
+                                    arr = value.split('-')
+                                    value = '-'.join((arr[2],arr[1],arr[0]))
+                                setattr(nt_instance, field, value)
+                    nt_instance.save(request=request)
+                    if logging_on:
+                        logger.debug('nt_instance: ' + str(nt_instance))
+
+# - end of get_dnt_from_upload

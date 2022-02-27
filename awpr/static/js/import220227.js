@@ -54,8 +54,9 @@
         console.log( "===== MIMP_Open ========= ");
         //console.log( "import_table: ", import_table);
         //console.log( "loc: ", loc);
-
+        // values of import_table are:  "import_student", "import_studsubj", "import_grade", "import_username", "import_permit",
          // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
+        // note: mimp_stored.coldefs is not in use when  import_table = import_permit
 
 // reset all values of mimp to null, keep the keys.
         // was: Object.keys(mimp).forEach(function(key, index) {
@@ -148,7 +149,6 @@
         console.log( "===== MIMP_FillSelectExamgradetype ========= ");
         console.log( "mimp_stored.examgradetype: ", mimp_stored.examgradetype);
         console.log( "selected_btn: ", selected_btn);
-
 
         const el_MIMP_examgradetype = document.getElementById("id_MIMP_examgradetype")
 
@@ -2760,3 +2760,111 @@ if (show_console){
         }
         return [has_prefix, name_remainder, prefix];
     }  // i_split_prefix_from_name
+
+//####################################################################
+
+//=========   MDNT_OpenFiledialog   ======================
+    function MDNT_OpenFiledialog(el_filedialog) { // PR2022-02-26
+        //console.log(" ========== MDNT_OpenFiledialog ===========");
+        el_filedialog.click();
+    };
+
+//=========   MDNT_HandleFiledialog   ====================== PR2022-02-26
+    function MDNT_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
+        console.log(" ========== MDNT_HandleFiledialog ===========");
+
+        mimp.excel_coldefs = [];
+        mimp.linked_exc_values = {};
+        mimp.linked_awp_values = {};
+        mimp.curWorkbook = null;
+        mimp.curWorkSheets = null
+        mimp.curWorkSheet = null;
+        mimp.curWorksheetName = null;
+        mimp.curWorksheetRange = null;
+        mimp.curWorksheetData = [];
+        mimp.curNoHeader = false;
+        // mimp.sel_btn_index gets default value in MIMP_Open
+
+
+// ---  get curfiles from filedialog
+        // curfiles is list of files: PR2020-04-16
+        // curFiles[0]: {name: "tsa_import_orders.xlsx", lastModified: 1577989274259, lastModifiedDate: Thu Jan 02 2020 14:21:14 GMT-0400 (Bolivia Time) {}
+       // webkitRelativePath: "", size: 9622, type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}, length: 1}
+
+        let curFiles = el_filedialog.files; //This one doesn't work in Firefox: let curFiles = event.target.files;
+
+        console.log("curFiles", curFiles);
+// ---  validate selected file
+        let curFile = null, msg_err = null
+        if(curFiles.length === 0) {
+            msg_err = mimp_loc.First_select_valid_excelfile;
+        } else if(!is_valid_filetype(curFiles[0])) {
+            msg_err = mimp_loc.Not_valid_Excelfile + " " + mimp_loc.Only + ".xls " + mimp_loc._and_ + ".xlsx" + mimp_loc.are_supported;
+        } else {
+            curFile = curFiles[0];
+        }
+        mimp.sel_file = curFile;
+        mimp.sel_filename = (curFile) ? curFile.name : null;
+        //console.log("mimp.sel_filename: ", mimp.sel_filename);
+        //console.log("curFile", curFile);
+
+// ---  display sel_filename in elid_MDNT_filename, make btn 'outline' when filename existst
+        const el_MDNT_filename = document.getElementById("id_MDNT_filename");
+        if(el_MDNT_filename && mimp.sel_filename){el_MDNT_filename.innerText = mimp.sel_filename};
+        const el_MDNT_btn_filedialog = document.getElementById("id_MDNT_btn_filedialog");
+        add_or_remove_class(el_MDNT_btn_filedialog, "btn-outline-secondary", !!mimp.sel_filename, "btn-secondary" )
+
+// ---  display error message when error
+        let el_msg_err = document.getElementById("id_MDNT_msg_filedialog")
+        if (el_msg_err){
+            el_msg_err.innerText = msg_err;
+            show_hide_element(el_msg_err, (!!msg_err));
+        };
+
+    }  // MDNT_HandleFiledialog
+
+
+//=========   MDNT_Save   ====================== PR2022-02-26
+    function MDNT_Save(RefreshDataRowsAfterUpload, setting_dict){
+        console.log(" ========== MDNT_Save ===========");
+
+        let reader = new FileReader();
+        reader.onload = (e) => {
+            const file = e.target.result;
+            if (file){
+
+                const dnt_arr = [];
+                // This is a regular expression to identify carriagereturns and line breaks
+                const lines = file.split(/\r\n|\n/);
+                if( lines && lines.length){
+                    for (let i = 0, line; i < lines.length; i++) {
+                        line = lines[i];
+                        if (line){
+                            const cols = line.split("|");
+                            dnt_arr.push(cols);
+                        };
+                    };
+                console.log(dnt_arr);
+            // --- Upload Data
+                    const el_data = document.getElementById("id_MDNT_data");
+                    const url_str = get_attr_from_el(el_data, "data-url_importdnt_upload");
+                console.log("url_str", url_str);
+                    const upload_dict = {
+                        importtable: "dnt",
+                        sel_examyear_pk: mimp_stored.sel_examyear_pk,
+                        filename: mimp.sel_filename,
+
+                        data_list: dnt_arr
+                    };
+
+                console.log("upload_dict", upload_dict);
+                    UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload);
+                };
+            };
+        };
+
+        reader.onerror = (e) => alert(e.target.error.name);
+
+        reader.readAsText(mimp.sel_file);
+
+    }; // MDNT_Save

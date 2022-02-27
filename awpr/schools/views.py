@@ -167,9 +167,12 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
                 upload_dict = json.loads(upload_json)
                 if logging_on:
                     logger.debug('upload_dict: ' + str(upload_dict))
-                #  upload_dict: {  'mode': 'save', 'mailmessage_pk': None, 'header': 'www', 'body': 'qqq',
-                #                   'recipients: { ml': [7, 8], 'sb': [8, 9], 'us': [41, 102], 'ug': ['auth4'] },
-
+                    """
+                    upload_dict: {'mode': 'send', 'issaved': True, 'mailmessage_pk': 31, 
+                                  'header': 'DIt is een test email', 
+                                  'body': 'Dit is een test\n\nHans Meijs\nSt. Paulus Vsbo', 
+                                  'recipients': {'ml': [], 'sb': [], 'us': [1], 'ug': []}}
+                    """
 # - get  variables
                 mailmessage_pk = upload_dict.get('mailmessage_pk')
                 # mode = 'save', 'send' or 'delete'
@@ -188,7 +191,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
                     logger.debug('is_delete: ' + str(is_delete))
 
                 header = upload_dict.get('header')
-                body = upload_dict.get('body')
+                body_txt = upload_dict.get('body')
 
 # - get recipients_json from upload_dict.recipients
                 recipients_json = None
@@ -221,7 +224,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
                 deleted_ok = False
                 if is_create:
                     mailmessage_instance = create_mailmessage_instance(sel_examyear,
-                                           header, body, recipients_json, is_send, messages, request)
+                                           header, body_txt, recipients_json, is_send, messages, request)
                     if mailmessage_instance:
                         is_created = True
 
@@ -243,7 +246,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
 
 # +++ Update mailmessage, not when it is created, nor when deleted
                     elif not is_create:
-                        update_mailmessage_instance(mailmessage_instance, header, body, recipients_json, error_list, request)
+                        update_mailmessage_instance(mailmessage_instance, header, body_txt, recipients_json, error_list, request)
 
 # +++ send mailmessage, only when is_send. Sending also creates mailbox items
                     if is_send:
@@ -266,6 +269,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
                             userlist_dict=userlist_dict,
                             log_list=log_list,
                             header=header,
+                            body_txt=body_txt,
                             request=request
                         )
 
@@ -1170,7 +1174,7 @@ def create_mailbox_items(mailmessage_instance, userlist_dict, request):
 # - end of create_mailbox_items
 
 
-def send_email_message(examyear, userlist_dict, log_list, header, request):
+def send_email_message(examyear, userlist_dict, log_list, header, body_txt, request):
     logging_on = s.LOGGING_ON  # PR2021-10-30
     if logging_on:
         logger.debug(' ')
@@ -1203,7 +1207,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, request):
                     1: ['Hans Meijs', 'hansmeijs@pantarhei.cw']}, 
             """
             """
-            don't add body and attachments to notification email
+            don't add attachments to notification email
             mailattachments = sch_mod.Mailattachment.objects.filter(mailmessage=mailmessage_instance)
             """
 
@@ -1243,6 +1247,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, request):
                         'sender_name': sender_name,
                         'school_attn': school_attn,
                         'sendto_name_list': to_lastname_list,
+                        'body_txt': body_txt
 
                     }
                     body_str = render_to_string(email_template_name, msg_dict)

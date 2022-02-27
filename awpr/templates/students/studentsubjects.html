@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import220220.js' %}"></script>
-    <script src="{% static 'js/studentsubjects220220.js' %}"></script>
+    <script src="{% static 'js/import220227.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220227.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -30,15 +30,15 @@
                ></select>
             </div>
 
-            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
-               <input id="id_SBR_select_cluster" type="text"
-                    class="tw_200 border_none pointer_show px-2" readonly>
-            </div>
-
             <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
                 <input id="id_SBR_select_subject" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
+               <input id="id_SBR_select_cluster" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
@@ -157,6 +157,7 @@
                 data-url_grade_download_ex1="{% url 'url_grade_download_ex1' %}"
                 data-url_ex3_getinfo="{% url 'url_ex3_getinfo' %}"
                 data-url_ex3_download="{% url 'url_ex3_download' '-' %}"
+                data-url_ex3_backpage="{% url 'url_ex3_backpage' %}"
 
                 data-url_cluster_upload="{% url 'url_cluster_upload' %}"
 

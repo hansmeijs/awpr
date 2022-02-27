@@ -147,43 +147,43 @@ class GradeApproveView(View):  # PR2021-01-19
                     upload_dict = json.loads(upload_json)
 
                     """
-                    upload_dict{'table': 'grade', 'mode': 'approve_submit', 'mapid': 'grade_67275', 'field': 'sr_status', 
-                                'status_index': 4, 'status_bool_at_index': True, 'examtype': 'sr', 'grade_pk': 67275}
+                    upload_dict{'table': 'grade', 'mode': 'approve_save', 'mapid': 'grade_67275', 'field': 'sr_status', 
+                                'auth_index': 4, 'auth_bool_at_index': True, 'examtype': 'sr', 'grade_pk': 67275}
                     upload_dict{'table': 'grade', 'mode': 'approve_reset', 'mapid': 'grade_67275',  'field': 'sr_status', 
-                                'status_index': 4, 'status_bool_at_index': False, 'examtype': 'sr', 'grade_pk': 67275}
+                                'auth_index': 4, 'auth_bool_at_index': False, 'examtype': 'sr', 'grade_pk': 67275}
                     """
 
-    # - get selected mode. Modes are 'approve' 'submit_test' 'submit_submit', 'reset'
+    # - get selected mode. Modes are 'approve' 'submit_test' 'submit_save', 'reset'
                     mode = upload_dict.get('mode')
-                    is_approve = True if mode in ('approve_test', 'approve_submit', 'approve_reset') else False
-                    is_submit = True if mode in ('submit_test', 'submit_submit') else False
+                    is_approve = True if mode in ('approve_test', 'approve_save', 'approve_reset') else False
+                    is_submit = True if mode in ('submit_test', 'submit_save') else False
                     is_reset = True if mode == 'approve_reset' else False
                     is_test = True if mode in ('approve_test', 'submit_test') else False
 
-                    status_index = upload_dict.get('status_index')
-                    if status_index:
-                        requsr_auth = 'auth' + str(status_index)
+                    auth_index = upload_dict.get('auth_index')
+                    if auth_index:
+                        requsr_auth = 'auth' + str(auth_index)
 
                         # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-        # - get status_index (1 = President, 2 = Secretary, 3 = Commissioner, 4 = examinator
-                        # PR2021-03-27 status_index is taken from requsr_usergroups_list, not from upload_dict
+        # - get auth_index (1 = President, 2 = Secretary, 3 = Commissioner, 4 = examinator
+                        # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
                         #  function may have changed if gradepage is not refreshed in time)
-                        #  was: status_index = upload_dict.get('status_index')
+                        #  was: auth_index = upload_dict.get('auth_index')
                         # can't do it like this any more. User can have be examinator and pres/secr at the same time
-                        # back to upload_dict.get('status_bool_at_index')
+                        # back to upload_dict.get('auth_bool_at_index')
 
-                        # get status_bool_at_index from mode, not from upload_dict
-                        # was: status_bool_at_index = upload_dict.get('status_bool_at_index')
-                        status_bool_at_index = not is_reset
+                        # get auth_bool_at_index from mode, not from upload_dict
+                        # was: auth_bool_at_index = upload_dict.get('auth_bool_at_index')
+                        auth_bool_at_index = not is_reset
 
                         if logging_on:
                             logger.debug('upload_dict' + str(upload_dict))
                             logger.debug('mode: ' + str(mode))
-                            logger.debug('status_index: ' + str(status_index))
-                            logger.debug('status_bool_at_index: ' + str(status_bool_at_index))
+                            logger.debug('auth_index: ' + str(auth_index))
+                            logger.debug('auth_bool_at_index: ' + str(auth_bool_at_index))
                         """
-                        upload_dict{'table': 'grade', 'mode': 'approve_submit', 'mapid': 'grade_22432', 'field': 'se_status', 'status_index': 4, 'status_bool_at_index': True, 'examtype': 'se', 'grade_pk': 22432}
+                        upload_dict{'table': 'grade', 'mode': 'approve_save', 'mapid': 'grade_22432', 'field': 'se_status', 'auth_index': 4, 'auth_bool_at_index': True, 'examtype': 'se', 'grade_pk': 22432}
                         """
         # - get selected examyear, school and department from usersettings
                         sel_examyear, sel_school, sel_department, may_edit, err_list = \
@@ -284,7 +284,7 @@ class GradeApproveView(View):  # PR2021-01-19
 
                                         msg_dict['count'] += 1
                                         if is_approve:
-                                            approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_reset, msg_dict, request)
+                                            approve_grade(grade, sel_examtype, requsr_auth, auth_index, is_test, is_reset, msg_dict, request)
                                         elif is_submit:
                                             submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, request)
 
@@ -510,8 +510,8 @@ def get_approved_text(count):
     return msg_text
 
 
-def approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_reset, msg_dict, request):  # PR2021-01-19
-    # status_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
+def approve_grade(grade, sel_examtype, requsr_auth, auth_index, is_test, is_reset, msg_dict, request):  # PR2021-01-19
+    # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_grade -----')
@@ -608,13 +608,13 @@ def approve_grade(grade, sel_examtype, requsr_auth, status_index, is_test, is_re
                         saved_status_sum = getattr(grade, sel_examtype + '_status')
 
                         new_value_bool = True if not is_reset else False
-                        new_status_sum = af.set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
+                        new_status_sum = af.set_status_sum_by_index(saved_status_sum, auth_index, new_value_bool)
 
                         setattr(grade, sel_examtype + '_status', new_status_sum)
 
                         if logging_on:
                             logger.debug('is_reset:         ' + str(is_reset))
-                            logger.debug('status_index:     ' + str(status_index))
+                            logger.debug('auth_index:     ' + str(auth_index))
                             logger.debug('saved_status_sum: ' + str(saved_status_sum))
                             logger.debug('new_status_sum:   ' + str(new_status_sum))
 
@@ -684,14 +684,14 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
                             msg_dict['saved'] += 1
                             setattr(grade, sel_examtype + '_published', published_instance)
 
-                            status_index = 4  # c.STATUS_05_SUBMITTED # STATUS_05_SUBMITTED = 32
+                            auth_index = 4  # c.STATUS_05_SUBMITTED # STATUS_05_SUBMITTED = 32
                             saved_status_sum = getattr(grade, sel_examtype + '_status')
                             new_value_bool = True
-                            new_status_sum = af.set_status_sum_by_index(saved_status_sum, status_index, new_value_bool)
+                            new_status_sum = af.set_status_sum_by_index(saved_status_sum, auth_index, new_value_bool)
 
                             if logging_on:
                                 logger.debug('saved_status_sum: ' + str(saved_status_sum))
-                                logger.debug('status_index: ' + str(status_index))
+                                logger.debug('auth_index: ' + str(auth_index))
                                 logger.debug('new_status_sum: ' + str(new_status_sum))
                                 setattr(grade, sel_examtype + '_status', new_status_sum)
 # - save changes
@@ -965,16 +965,16 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
         # - save changes in fields 'ce_exam_auth1by' and 'ce_exam_auth2by'
         elif field == 'auth_index':
             auth_index = upload_dict.get(field)
-            status_bool_at_index = upload_dict.get('status_bool_at_index', False)
+            auth_bool_at_index = upload_dict.get('auth_bool_at_index', False)
             fldName = 'ce_exam_auth1by' if auth_index == 1 else 'ce_exam_auth2by' if auth_index == 2 else None
 
             if logging_on:
                 logger.debug('auth_index: ' + str(auth_index))
-                logger.debug('status_bool_at_index: ' + str(status_bool_at_index))
+                logger.debug('auth_bool_at_index: ' + str(auth_bool_at_index))
                 logger.debug('fldName: ' + str(fldName))
 
             if fldName:
-                new_value = request.user if status_bool_at_index else None
+                new_value = request.user if auth_bool_at_index else None
                 if logging_on:
                     logger.debug('new_value: ' + str(auth_index))
 
@@ -1605,7 +1605,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     #   they may not be downloaded by schools,
     #   to be 100% sure that the answers cannot be retrieved by a school.
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_with_exam_rows -----')
         logger.debug('setting_dict: ' + str(setting_dict))

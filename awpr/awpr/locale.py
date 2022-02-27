@@ -194,6 +194,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Upload_permissions'] = _('Upload permissions')
         dict['Upload_awpdata'] = _('Upload AWP data file')
         dict['Upload_subjects'] = _('Upload subjects')
+        dict['Upload_dnt'] = _('Upload downloadbare N-termen tabel')
 
         dict['Step'] = _('Step')
         dict['Select_grade_type'] = _('Select grade type')
@@ -793,6 +794,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Ex3'] = _('Ex3')
         dict['Ex3_form'] = _('Ex3 Proces Verbaal')
+        dict['Ex3_backpage'] = _('Ex3 back page')
         dict['Proces_verbaal_van_Toezicht'] = _('Proces-verbaal van Toezicht')
         dict['No_studenst_with_subjects'] = _('There are no candidates with subjects.')
         dict['No_studenst_examperiod_02'] = _('There are no re-examination candidates.')
@@ -836,6 +838,22 @@ def get_locale_dict(table_dict, user_lang, request):
         # dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
         #dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
+        dict['opl_code'] = _("Opl. code")
+        dict['leerweg'] = _("Leerweg")
+        dict['ext_code'] = _("Ext. code")
+        dict['tijdvak'] = _("Tijdvak")
+        dict['nex_id'] = _("nex_ID")
+
+        dict['omschrijving'] = _("Omschrijving")
+        dict['schaallengte'] = _("Schaallengte")
+        dict['n_term'] = _("N-term")
+        dict['afnamevakid'] = _("AfnameVakID")
+        dict['extra_vakcodes_tbv_wolf'] = _("Extra vakcodes tbv Wolf")
+
+        dict['datum'] = _("Datum")
+        dict['begintijd'] = _("Begintijd")
+        dict['eindtijd'] = _("Eindtijd")
+
         dict['Exam'] = _("Exam")
         dict['Exams'] = _("Exams")
         dict['Select_exam'] = _("Select exam")
@@ -845,6 +863,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit_exams'] = _("Submit exams")
         dict['Approve_exams'] = _("Approve exams")
         dict['_by_'] = TXT__by_
+        dict['Upload_ntermen'] = _("Upload N-termen tabel")
 
         dict['Submitted_at'] = _('Submitted at ')
         dict['Published_at'] = _('Published at ')
@@ -946,6 +965,11 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'Approve_exams': _('Approve exams'),
             'approving_exams': _('AWP is approving the exams'),
+
+            'need_verifcode': _('You need a 6 digit verification code '),
+            'to_publish_exams': _("to publish the exams."),
+            'to_submit_exams': _("to submit the exams."),
+
             'requesting_verifcode': _('AWP is sending an email with the verification code'),
             'submitting_exams': _("AWP is submitting the exams"),
             'submitting_exams_ok': _("The exams are succesfully submitted."),
@@ -1128,6 +1152,7 @@ def get_locale_dict(table_dict, user_lang, request):
                                'You_cannot_approve': _('You cannot approve this grade.'),
                                'Approved_different_function': _('You have approved this grade already in a different function.'),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
+                               'Commissioner_cannot_approve_se': _("As a commissioner you don't have to approve school exam grades."),
         }
 
 # ====== PAGE RESULTS ========================= PR2021-11-15

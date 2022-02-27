@@ -300,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(!selected_btn){selected_btn = "btn_orderlist"}
 
 // ---  highlight selected button
-        highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
+        b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
         b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
@@ -787,7 +787,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (mod_MPUBORD_dict.step === 1){
                 UploadChanges(upload_dict, urls.url_orderlist_request_verifcode);
             } else if (mod_MPUBORD_dict.step === 3){
-                upload_dict.mode = "submit_submit";
+                upload_dict.mode = "submit_save";
                 upload_dict.verificationcode = el_MPUBORD_input_verifcode.value
                 upload_dict.verificationkey = mod_MPUBORD_dict.verificationkey;
                 UploadChanges(upload_dict, urls.url_orderlist_publish);

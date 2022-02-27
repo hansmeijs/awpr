@@ -380,6 +380,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 # - end of DownloadPublishedFile
 
 
+
 @method_decorator([login_required], name='dispatch')
 class DownloadEx3View(View):  # PR2021-10-07
 
@@ -389,7 +390,7 @@ class DownloadEx3View(View):  # PR2021-10-07
             logger.debug(' ============= DownloadEx3View ============= ')
 
         # TODO for uloading Exs with signatures:
-        # - give each Ex3 a sequence , print under Ex3 in box
+        # - give each Ex3 a sequence, print under Ex3 in box
         # - create table mapped_ex3 with field Ex3 sequence and field with all grade_pks of that Ex3
         # when uploading: user types Ex3 number when uploading Ex3,
         # Awp links grades of that Ex3 to the uploaded file
@@ -472,7 +473,8 @@ class DownloadEx3View(View):  # PR2021-10-07
 
                 canvas.setLineWidth(0)
 
-                max_rows = 24
+                max_rows = 30  # was:  24
+                line_height = 6.73 * mm  # was:  8 * mm
 
                 for key, page_dict in ex3_dict.items():
                     student_list = page_dict.get('students', [])
@@ -491,10 +493,8 @@ class DownloadEx3View(View):  # PR2021-10-07
                             last_row_of_page_plus_one = (page_index + 1) * max_rows
                             row_range = [first_row_of_page, last_row_of_page_plus_one]
                             draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
-                                     page_dict, student_list, row_range, page_index, pages_roundup, user_lang)
+                                     page_dict, student_list, row_range, line_height, page_index, pages_roundup, user_lang)
                             canvas.showPage()
-
-                draw_Ex3backpage(canvas, sel_school, islexschool, subject_list, exform_text)
 
                 canvas.save()
                 pdf = buffer.getvalue()
@@ -648,6 +648,74 @@ class DownloadEx3View(View):  # PR2021-10-07
 
         return ex3_dict
 
+# - end of DownloadEx3View
+
+
+@method_decorator([login_required], name='dispatch')
+class DownloadEx3BackpageView(View):  # PR2022-02-26
+
+    def get(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= DownloadEx3BackpageView ============= ')
+
+        response = None
+
+        if request.user and request.user.country and request.user.schoolbase and list:
+
+            # - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+            req_user = request.user
+
+# - reset language
+            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+            islexschool = sel_school.islexschool
+
+            if sel_school:
+
+# - get exform_text from examyearsetting
+                exform_text = awpr_lib.get_library(sel_examyear, ['exform', 'ex3'])
+
+        # - get arial font
+                try:
+                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial.ttf'
+                    ttfFile = TTFont('Arial', filepath)
+                    pdfmetrics.registerFont(ttfFile)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+                buffer = io.BytesIO()
+                canvas = Canvas(buffer)
+
+                canvas.setLineWidth(0)
+
+                draw_Ex3backpage(canvas, sel_school, islexschool, exform_text)
+
+                canvas.save()
+                pdf = buffer.getvalue()
+
+                response = HttpResponse(content_type='application/pdf')
+                response['Content-Disposition'] = 'inline; filename="ex3_achterbald.pdf"'
+
+                response.write(pdf)
+
+        #except Exception as e:
+       #     logger.error(getattr(e, 'message', str(e)))
+       #     raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of DownloadEx3View
 
 
@@ -836,7 +904,7 @@ def test_pdf(canvas):
 
 
 def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
-             page_dict, student_list, row_range, page_index, pages, user_lang):
+             page_dict, student_list, row_range, line_height, page_index, pages, user_lang):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_Ex3 -----')
@@ -938,7 +1006,6 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
 
     canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
 
-    line_height = 8 * mm
     for index in range(row_range[0], row_range[1]):  # range(start_value, end_value, step), end_value is not included!
         row_data = None
         if index < len(student_list):
@@ -946,7 +1013,9 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
         draw_Ex3_row(canvas, row_data, left, right, coord, line_height, col_width_list)
 
 # - draw page footer
-    draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, user_lang)
+    # sequence is number to be added to pages to be used when uploading Ex3 forms with signatures
+    sequence = 0
+    draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, user_lang)
 
 # - end of draw_Ex3
 
@@ -1019,7 +1088,7 @@ def draw_Ex3_page_header(canvas, coord, text_list):
 # - end of draw_Ex3_page_header
 
 
-def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, user_lang):
+def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, user_lang):
     # PR2021-10-08
     footer_height = 10 * mm
     padding_left = 4 * mm
@@ -1049,6 +1118,11 @@ def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, 
     if pages > 1:
         page_txt = ' '.join(('Pagina', str(page_index + 1), 'van', str(pages)))
         canvas.drawString(right - 60 * mm, y, page_txt)
+
+    # TODO add number to pages to be used when uploading Ex3 fiorms wit h signatures
+    #canvas.drawRightString(right - 2 * mm, bottom - 4 * mm, str(sequence))
+
+
 # - end of draw_Ex3_page_footer
 
 
@@ -1172,7 +1246,7 @@ def draw_Ex3_row(canvas, row, left, right, coord, line_height, col_width_list):
 # - end of draw_Ex3_row
 
 
-def draw_Ex3backpage(canvas, sel_school, islexschool, subject_list, exform_text):
+def draw_Ex3backpage(canvas, sel_school, islexschool, exform_text):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_Ex3backpage -----')
@@ -1182,15 +1256,6 @@ def draw_Ex3backpage(canvas, sel_school, islexschool, subject_list, exform_text)
     #    logger.debug('exform_text: ' + str(exform_text))
     dots_63 = '.' * 63
     dots_45 = '.' * 45
-
-    subj_name = None
-    if len(subject_list) == 1:
-        subject = subj_mod.Subject.objects.get_or_none(pk=subject_list[0])
-        subj_name = subject.name
-    if logging_on:
-        logger.debug('subject_list: ' + str(subject_list))
-        logger.debug('len(subject_list): ' + str(len(subject_list)))
-        logger.debug('subj_name: ' + str(subj_name))
 
 # - set the corners of the rectangle
     top, right, bottom, left = 287 * mm, 200 * mm, 12 * mm, 10 * mm
@@ -1255,17 +1320,11 @@ def draw_Ex3backpage(canvas, sel_school, islexschool, subject_list, exform_text)
     text = exform_text.get('back_01', '-')
     canvas.setFillColor(colors.HexColor("#000000"))
     canvas.drawString(x, y, text)
-# - subject (blank if multiple subjects
-    x_subj = x + 122 * mm
-    if subj_name:
-        canvas.setFont('Arial', 11, leading=None)
-        canvas.setFillColor(colors.HexColor("#000080"))
-        canvas.drawString(x_subj, y, subj_name)
 
-        canvas.setFont('Times-Roman', 11, leading=None)
-        canvas.setFillColor(colors.HexColor("#000000"))
-    else:
-        canvas.drawString(x_subj, y, dots_63)
+# - blank line for subject
+    y -= line_height * 1.5
+    text = ''.join((dots_63, dots_63, dots_63))
+    canvas.drawString(x, y, text)
 
 # - voor de groep kandidaten
     y -= line_height

@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  highlight selected button
-        highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
+        b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
         //b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);

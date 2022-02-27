@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
     urls.url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
 
-    urls.url_grade_approve = get_attr_from_el(el_data, "data-grade_approve_url");
+    urls.url_grade_approve = get_attr_from_el(el_data, "data-url_grade_approve");
     urls.url_download_grade_icons = get_attr_from_el(el_data, "data-download_grade_icons_url");
     urls.url_grade_download_ex2 = get_attr_from_el(el_data, "data-url_grade_download_ex2");
     urls.url_grade_download_ex2a = get_attr_from_el(el_data, "data-url_grade_download_ex2a");
@@ -498,12 +498,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 if ("level_rows" in response) {
                     b_fill_datamap(level_map, response.level_rows);
 
-                    t_SBR_FillSelectOptionsDepartmentLevelSector("level", response.level_rows, setting_dict);
+                    t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase("lvlbase", response.level_rows, setting_dict);
                 };
                 if ("sector_rows" in response) {
                     b_fill_datamap(sector_map, response.level_rows);
                     //FillOptionsSelectLevelSector("sector", response.sector_rows);
-                    t_SBR_FillSelectOptionsDepartmentLevelSector("sector", response.sector_rows, setting_dict);
+                    t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase("sctbase", response.sector_rows, setting_dict);
                 };
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
@@ -524,13 +524,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     DownloadGradeStatusAndIcons();
                 };
 
-                //if ("student_rows" in response) { b_fill_datamap(student_map, response.student_rows) };
-                //if ("studentsubject_rows" in response) { b_fill_datamap(studentsubject_map, response.studentsubject_rows) };
-
                 if ("published_rows" in response)  {
                     published_rows = response.published_rows;
                 };
-                //if ("published_rows" in response) {b_fill_datamap(published_map, response.published_rows)};
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
                 // also calls: FillTblRows(), UpdateHeader()ect
@@ -597,7 +593,7 @@ document.addEventListener("DOMContentLoaded", function() {
         };
 
 // ---  highlight selected button
-        highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
+        b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
         // PR2021-02-08this page does not contain tab_show yet.
@@ -1778,27 +1774,43 @@ if(j && !is_status_field){td.classList.add("border_left")};
 //========= UploadToggle  ============= PR2020-07-31  PR2021-01-14
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
-        //console.log( "permit_dict", permit_dict);
+        console.log( "permit_dict", permit_dict);
         //console.log( "permit_dict.permit_approve_grade", permit_dict.permit_approve_grade);
 
         // only called by field 'se_status', 'pe_status', 'ce_status'
         mod_dict = {};
         if(permit_dict.permit_approve_grade){
 
+            const fldName = get_attr_from_el(el_input, "data-field");
             const tblRow = t_get_tablerow_selected(el_input);
 
-// - get statusindex of requsr ( statusindex = 1 when auth1 etc
-            // status_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
+// - get auth_index of requsr ( statusindex = 1 when auth1 etc
+            // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
             // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
             // this function gives err message when multiple found. (uses b_show_mod_message)
-            const requsr_status_index = b_get_auth_index_of_requsr(loc, permit_dict);
-            if(requsr_status_index){
+            // get value of highest index
+            const permit_auth_list = b_get_multiple_auth_index_of_requsr(permit_dict)
+            let requsr_auth_index = null, has_multipl_index = false;
+            if (permit_auth_list){
+                for (let i = 4, value; i > 0; i--) {
+                    if (permit_auth_list[i] === 1){
+                        if (requsr_auth_index == null){
+                            requsr_auth_index = i;
+                        } else {
+                            has_multipl_index = true
+                            break;
+                        };
+                    };
+            }};
+            console.log( "requsr_auth_index", requsr_auth_index);
+            console.log( "has_multipl_index", has_multipl_index);
+
+            if(requsr_auth_index){
                 const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
                 const data_dict = get_gradedict_by_gradepk(grade_pk);
 
                 if(!isEmpty(data_dict)){
                     const tblName = "grade";
-                    const fldName = get_attr_from_el(el_input, "data-field");
                     if(fldName in data_dict){
 
         console.log( "data_dict", data_dict);
@@ -1809,7 +1821,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
                         const examperiod = data_dict.examperiod;
 
 // give message and exit when grade is published
-                        if (is_published){
+                        if (fldName === "se_status" && requsr_auth_index === 4 ){
+                            const msg_html = loc.approve_err_list.Commissioner_cannot_approve_se;
+                            b_show_mod_message(msg_html);
+                        } else if (is_published){
                             const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_remove_approval;
                             b_show_mod_message(msg_html);
                         } else {
@@ -1839,7 +1854,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                 for (let i = 1, key_str; i < 5; i++) {
                                     key_str = examtype + "_auth" + i + "by_id";
                                     if (data_dict[key_str]){
-                                        if (requsr_status_index === i) {
+                                        if (requsr_auth_index === i) {
                                             requsr_status_bool = true;
                                         };
                                         auth_dict[i] = (!!data_dict[key_str]);
@@ -1849,7 +1864,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 // ---  toggle value of requsr_status_bool
                                 const new_requsr_status_bool = !requsr_status_bool;
    // also update value in auth_dict;
-                                auth_dict[requsr_status_index] = new_requsr_status_bool
+                                auth_dict[requsr_auth_index] = new_requsr_status_bool
 
 // give message when status_bool = true and grade already approved by this user in different function
                                 let double_approved = false;
@@ -1857,8 +1872,8 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                     for (let i = 1, key_str; i < 5; i++) {
                                         key_str = examtype + "_auth" + i + "by_id";
                                         if (data_dict[key_str]){
-                                            // skip status_index of requsr
-                                            if (requsr_status_index !== i) {
+                                            // skip auth_index of requsr
+                                            if (requsr_auth_index !== i) {
                                                 if (data_dict[key_str] === permit_dict.requsr_pk) {
                                                     double_approved = true
                                                 }
@@ -1881,16 +1896,16 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 // ---  upload changes
                                     // value of 'mode' determines if status is set to 'approved' or 'not
                                     // instead of using value of new_requsr_status_bool,
-                                    const mode = (new_requsr_status_bool) ? "approve_submit" : "approve_reset"
+                                    const mode = (new_requsr_status_bool) ? "approve_save" : "approve_reset"
                                     const upload_dict = { table: tblName,
                                                            mode: mode,
                                                            mapid: data_dict.mapid,
                                                            grade_pk: data_dict.id,
                                                            field: fldName,
                                                            examtype: examtype,
-                                                           status_index: requsr_status_index
+                                                           auth_index: requsr_auth_index
                                                            // these values will be entered on server:
-                                                           //   status_bool_at_index: new_requsr_status_bool,
+                                                           //   auth_bool_at_index: new_requsr_status_bool,
                                                            //   examperiod: data_dict.examperiod,
                                                            //   requsr_pk: permit_dict.requsr_pk,
                                                         };
@@ -2079,18 +2094,18 @@ if(j && !is_status_field){td.classList.add("border_left")};
         const is_submit_mode = (mode === "submit");
 
         // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
-                // status_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
+                // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
         // gives err messages when multiple found.
         // TODO user may be auth_examinator and auth_pers / auth_secr
-        const status_index = b_get_auth_index_of_requsr(loc, permit_dict);
+        const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
         if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
-            if(status_index){
-                // modes are 'approve' 'submit_test' 'submit_submit'
+            if(auth_index){
+                // modes are 'approve' 'submit_test' 'submit_save'
                 mod_MAG_dict = {mode: mode,
                             step: 0,
                             is_approve_mode: is_approve_mode,
                             is_submit_mode: is_submit_mode,
-                            status_index: status_index,
+                            auth_index: auth_index,
                             may_test: true,
                             test_is_ok: false,
                             submit_is_ok: false,
@@ -2114,11 +2129,12 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
                 let subject_text = null;
                 if(setting_dict.sel_subject_pk){
-                    const dict = get_mapdict_from_datamap_by_tblName_pk(subject_map, "subject", setting_dict.sel_subject_pk);
-                    subject_text =  (dict.name) ? dict.name : "---"
+                    const [middle_index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", setting_dict.sel_subject_pk);
+                    if (found_dict){ subject_text = (found_dict.name) ? found_dict.name : "---" };
+
                 } else {
                     subject_text = "<" + loc.All_subjects + ">";
-                }
+                };
                 el_MAG_subject.innerText = subject_text;
 
                 const auth_by = (!permit_dict.usergroup_list) ? null :
@@ -2142,7 +2158,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
                 $("#id_mod_approve_grade").modal({backdrop: true});
 
-            }  // if(status_index)
+            }  // if(auth_index)
         }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
     }  // MAG_Open
 
@@ -2155,16 +2171,16 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
             mod_MAG_dict.is_reset = (mode === "delete");
 
-            //  upload_modes are: 'approve_test', 'approve_submit', 'approve_reset', 'submit_test', 'submit_submit'
+            //  upload_modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
             let upload_mode = null;
             if (mod_MAG_dict.is_approve_mode){
                 if (mod_MAG_dict.is_reset) {
                     upload_mode = "approve_reset";
                 } else {
-                    upload_mode = (mod_MAG_dict.test_is_ok) ? "approve_submit" : "approve_test";
+                    upload_mode = (mod_MAG_dict.test_is_ok) ? "approve_save" : "approve_test";
                 }
             } else if (mod_MAG_dict.is_submit_mode){
-                upload_mode = (mod_MAG_dict.test_is_ok) ? "submit_submit" : "submit_test";
+                upload_mode = (mod_MAG_dict.test_is_ok) ? "submit_save" : "submit_test";
             };
 
     // ---  show loader
@@ -2180,7 +2196,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
             const upload_dict = { table: "grade",
                                    subjbase_pk: setting_dict.sel_subjbase_pk,
                                    mode: upload_mode,
-                                   status_index: mod_MAG_dict.status_index,
+                                   auth_index: mod_MAG_dict.auth_index,
                                    now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
                                    }
             //console.log("upload_dict", upload_dict);

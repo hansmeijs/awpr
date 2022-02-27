@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  highlight selected button
-        // NIU highlight_BtnSelect(document.getElementById("id_btn_container"), selected.btn)
+        // NIU b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected.btn)
 
 // ---  show only the elements that are used in this tab
         //b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected.btn);

@@ -520,7 +520,7 @@
                 // selected_pk = -1 when clicked on All
                 if(selected_pk > 0){
                     const data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
-            //console.log( "data_dict", data_dict);
+        //console.log( "data_dict", data_dict);
                     const name_field = (tblName === "student") ? "name_first_init" : "name";
                     const code_field = (tblName === "student") ? "name_first_init" : "code";
                     display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 25) ? data_dict[name_field] :
@@ -529,9 +529,6 @@
                 } else {
                     display_txt = add_all_txt;
                 };
-               // const display_txt = (!selected_pk) ? t_MSSSS_AddAll_txt(tblName) :
-               //                     (selected_name && selected_name.length < 25) ? selected_name :
-               //                     (selected_code) ? selected_code : null;
 
                 el_SBR_select.value = display_txt;
                 add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
@@ -938,14 +935,14 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     };
 
 //>>>>>>>>>>> FILL OPTIONS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-//=========  t_SBR_FillSelectOptionsDepartmentLevelSector  ================ PR2021-03-06  PR2021-05-21 PR2021-08-27
-    function t_SBR_FillSelectOptionsDepartmentLevelSector(tblName, rows, setting_dict) {
+//=========  t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase  ================ PR2021-03-06  PR2021-05-21 PR2021-08-27
+    function t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase(tblName, rows, setting_dict) {
         // used in studsubj.js
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
         const has_profiel = setting_dict.sel_dep_has_profiel;
 
-        //console.log("=== t_SBR_FillSelectOptionsDepartmentLevelSector");
+        //console.log("=== t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase");
         //console.log("tblName", tblName);
         //console.log("rows", rows);
         //console.log("loc", loc);
@@ -958,9 +955,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         const all_sectors_profielen_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profielen : (has_profiel) ? loc.All_profielen :loc.All_sectors;
         let caption_all = null;
         const all_txt = "&#60" + (
-                (tblName === "department") ? loc.All_departments :
-                (tblName === "level") ? loc.All_levels :
-                (tblName === "sector") ? all_sectors_profielen_txt : "---"
+                (tblName === "depbase") ? loc.All_departments :
+                (tblName === "lvlbase") ? loc.All_levels :
+                (tblName === "sctbase") ? all_sectors_profielen_txt : "---"
              ) + "&#62";
 
         if (has_items){
@@ -968,9 +965,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 // if only 1 level: make that the selected one
                 if (tblName === "department"){
                     setting_dict.sel_depbase_pk = rows.base_id;
-                } else if (tblName === "level"){
+                } else if (tblName === "lvlbase"){
                     setting_dict.sel_lvlbase_pk = rows.base_id;
-                } else if (tblName === "sector"){
+                } else if (tblName === "sctbase"){
                     setting_dict.sel_sctbase_pk = rows.base_id
                 }
             } else if (rows.length > 1){
@@ -985,11 +982,11 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 display_rows.push({
                     value: row.base_id,
                     caption: (tblName === "department") ?  row.base_code :
-                             (tblName === "sector") ? row.name : row.abbrev
+                             (tblName === "sctbase") ? row.name : row.abbrev
                 });
             };
-            const selected_pk = (tblName === "department") ? setting_dict.sel_depbase_pk : (tblName === "level") ? setting_dict.sel_lvlbase_pk : (tblName === "sector") ? setting_dict.sel_sctbase_pk : null;
-            const id_SBR_select = (tblName === "department") ? "id_SBR_select_department" : (tblName === "level") ? "id_SBR_select_level" : (tblName === "sector") ? "id_SBR_select_sector" : null;
+            const selected_pk = (tblName === "department") ? setting_dict.sel_depbase_pk : (tblName === "lvlbase") ? setting_dict.sel_lvlbase_pk : (tblName === "sctbase") ? setting_dict.sel_sctbase_pk : null;
+            const id_SBR_select = (tblName === "department") ? "id_SBR_select_department" : (tblName === "lvlbase") ? "id_SBR_select_level" : (tblName === "sctbase") ? "id_SBR_select_sector" : null;
             const el_SBR_select = (id_SBR_select) ? document.getElementById(id_SBR_select) : null;
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
@@ -998,23 +995,23 @@ console.log("=========   handle_table_row_clicked   ======================") ;
             //PR2022-01-08 dont put 'All profielen' etc in setting_dict > skip when caption_all has value
             if (!caption_all){
                 const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
-                if (tblName === "level"){
+                if (tblName === "lvlbase"){
                     setting_dict.sel_level_abbrev = sel_abbrev;
-                } else if (tblName === "sector"){
+                } else if (tblName === "sctbase"){
                     setting_dict.sel_sector_abbrev = sel_abbrev;
                 };
             };
         };
         // show select level and sector
-        if (tblName === "level"){
+        if (tblName === "lvlbase"){
             add_or_remove_class(document.getElementById("id_SBR_container_level"), cls_hide, !has_items);
         // set label of profiel
-         } else if (tblName === "sector"){
+         } else if (tblName === "sctbase"){
             add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
             // when label has no id the text is Sector / Profiel, set in .html file
             if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":"};
         };
-    };  // t_SBR_FillSelectOptionsDepartmentLevelSector
+    };  // t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase
 
 //========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa PR2021-07-18
     function t_FillOptionLevelSectorFromMap(tblName, pk_field, data_map, depbase_pk, selected_pk, firstoption_txt) {
@@ -1125,7 +1122,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 // ---  fill options of select box
         let option_text = "";
-        let row_count = 0
+        let row_count = 0;
 
 // --- loop through data_list
         if(data_list){
@@ -1143,36 +1140,36 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                     const item_filter = item_dict[filter_field];
                     if (item_filter && filter_value && item_filter === filter_value) {
                         show_row = true;
-                    }
-                }
+                    };
+                };
 
                 if(show_row){
-                    option_text += t_FillOptionTextNew(item_value, item_caption, selected_value)
-                    row_count += 1
-                }
-            }
-        }  //   if(!!data_list){
+                    option_text += t_FillOptionTextNew(item_value, item_caption, selected_value);
+                    row_count += 1;
+                };
+            };
+        };  //   if(!!data_list){
         let select_first_option = false;
 
 // show text "No items found" when no rows and select_text_none has value
         if (!row_count){
             if(select_text_none){
-                option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "</option>"
+                option_text = "<option value=\"\" disabled selected hidden>" + select_text_none + "</option>";
             }
         } else if (row_count === 1) {
-            select_first_option = true
+            select_first_option = true;
         } else if (row_count > 1 && select_text){
             option_text = "<option value=\"\" disabled selected hidden>" + select_text + "</option>" + option_text;
-        }
+        };
         el_select.innerHTML = option_text;
 
 // if there is only 1 option: select first option
         if (select_first_option){
-            el_select.selectedIndex = 0
-        }
+            el_select.selectedIndex = 0;
+        };
 // disable element if it has none or one rows
-        el_select.disabled = (row_count <= 1)
-    }  // t_FillOptionsFromList
+        el_select.disabled = (row_count <= 1);
+    };  // t_FillOptionsFromList
 
 //========= t_FillOptionTextNew  ============= PR2020-12-11 from tsa
     function t_FillOptionTextNew(value, caption, selected_value) {
@@ -1180,8 +1177,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         let item_text = "<option value=\"" + value + "\"";
         if (selected_value && value === selected_value) {item_text += " selected=true" };
         item_text +=  ">" + caption + "</option>";
-        return item_text
-    }  // t_FillOptionTextNew
+        return item_text;
+    };  // t_FillOptionTextNew
 
 
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1536,8 +1533,8 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 //========= t_set_sbr_itemcount_txt  ==================================== PR2021-12-20
     function t_set_sbr_itemcount_txt(loc, item_count, count_unit_sing, count_unit_plur, user_lang) {
-        console.log( "===== t_set_sbr_itemcount_txt  ========= ");
-        console.log( "item_count", item_count);
+        //console.log( "===== t_set_sbr_itemcount_txt  ========= ");
+        //console.log( "item_count", item_count);
 
 // ---  show total in sidebar
         const el_SBR_item_count = document.getElementById("id_SBR_item_count");
@@ -1552,7 +1549,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 inner_text = [loc.Total, count_txt, unit_txt].join(" ");
             }
             el_SBR_item_count.innerText = inner_text;
-        console.log( "inner_text", inner_text);
+        //console.log( "inner_text", inner_text);
         };
     }; // t_set_sbr_itemcount_txt
 

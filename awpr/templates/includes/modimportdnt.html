@@ -1,0 +1,61 @@
+{% load i18n %}
+{% load static %}
+
+<!-- =================== MODAL IMPORT DNT table  =================== -->
+    <div class="modal" id="id_mod_import_dnt" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content">
+
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 iclass="modal-title mx-2" >{% trans 'Upload N-termen tabel' %}</h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="mx-4 my-2">
+                    <div class="display_hide">
+                        <input id="id_MDNT_filedialog" type="file" name="file" class="mb-0" accept=".txt, .csv">
+                    </div>
+                    <div class="content_subheader_left mx-4">
+                        <button id="id_MDNT_btn_filedialog" class="btn btn-secondary">{% trans 'Open file' %}</button>
+                    </div>
+                    <div class="content_header">
+                        <div class="content_subheader_left mx-4 my-2">
+                            <div id="id_MDNT_filename" class="form-control pt-2"></div>
+                        </div>
+                        <div class="content_subheader_left mx-2 my-0"></div>
+                    </div>
+
+                    <div class="m-0 px-4 py-0" >
+                        <small id="id_MDNT_msg_filedialog" class="text-danger"></small>
+                    </div>
+
+
+                </div>
+
+                <div class="ta_c">
+                    <img id="id_MIMP_loader" src="{% static 'img/loader.gif' %}" height="24" width="24" class="display_hide" >
+                </div>
+                <div id="id_MIMP_msg_container" class="border_bg_transparent m-2 p-2 display_hide">
+                    <div class="content_header">
+                        <div class="content_subheader_left">
+                            <div id="id_MIMP_result_container">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer pr-4">
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MDNT_btn_save"  class="btn btn-primary" disabledXX>{% trans 'Upload' %}</button>
+                    </div>
+                </div>
+
+                <div id="id_MDNT_data" data-url_importdnt_upload="{% url 'url_importdnt_upload' %}"></div>
+
+            </div>
+        </div>
+    </div>
+
