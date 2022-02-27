@@ -552,6 +552,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
 
 
 # PR2022-02-26
+"""
 class Ntermentable(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
 
@@ -574,7 +575,7 @@ class Ntermentable(sch_mod.AwpBaseModel):
     datum = DateField(null=True)
     begintijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
     eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
-
+"""
 
 # PR2018-06-05
 class Schemeitem(sch_mod.AwpBaseModel):

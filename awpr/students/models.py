@@ -615,7 +615,7 @@ class Grade(sch_mod.AwpBaseModel):
     pe_exam_blocked = BooleanField(default=False)
 
     ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
-    ce_exam_blanks = PositiveSmallIntegerField(null=True)
+    # TODO put back: ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -701,7 +701,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     pe_exam_blocked = BooleanField(default=False)
 
     ce_exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
-    ce_exam_blanks = PositiveSmallIntegerField(null=True)
+    # TODO put back: ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

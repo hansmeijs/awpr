@@ -196,11 +196,12 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     )
 # ----- ntermentable
                 if datalist_request.get('ntermentable_rows'):
-                    datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
-                        sel_examyear_pk=sel_examyear.pk,
-                        sel_depbase=sel_depbase,
-                        setting_dict=new_setting_dict
-                    )
+                    pass
+                    #datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
+                    #    sel_examyear_pk=sel_examyear.pk,
+                    #    sel_depbase=sel_depbase,
+                    #    setting_dict=new_setting_dict
+                    #)
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'], error_dict = stud_view.create_student_rows(
