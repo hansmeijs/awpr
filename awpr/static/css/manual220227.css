@@ -287,6 +287,18 @@
     background-image: url('/static/manual/stud_upload_step2_en.png');
 }
 
+.img_upload_step2a_ne, .img_upload_step2a_en {
+    height: 194px;
+    width: 798px;
+    background-size: 798px 194px;
+}
+.img_upload_step2a_ne {
+    background-image: url('/static/manual/upload_step2a_ne.png');
+}
+.img_upload_step2a_en {
+    background-image: url('/static/manual/upload_step2a_en.png');
+}
+
 .img_upload_stud_step3_ne, .img_upload_stud_step3_en {
     height: 525px;
     width: 1138px;
@@ -317,6 +329,9 @@
 .img_upload_stud_step5_en {
     background-image: url('/static/manual/stud_upload_step5_en.png');
 }
+
+
+
 
 /* ---------------------------------------------------
     IMAGES - STUDENT SUBJECTS

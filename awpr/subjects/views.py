@@ -1207,7 +1207,6 @@ class ExamUploadView(View):
                 deleted_row = None
 
 # - get variables from upload_dict
-
                 # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
 
                 # don't get it from usersettings, get it from upload_dict instead
@@ -1255,7 +1254,8 @@ class ExamUploadView(View):
                             logger.debug('department:     ' + str(department))
                             logger.debug('level:     ' + str(level))
                         examperiod_int = upload_dict.get('examperiod')
-                        exam, msg_err = create_exam_instance(subject, department, level, examperiod_int, request)
+                        ete_exam = True
+                        exam, msg_err = create_exam_instance(subject, department, level, examperiod_int, ete_exam, request)
 
                         if exam:
                             append_dict['created'] = True
@@ -2394,7 +2394,7 @@ def add_published_exam_to_grades(exam):
 # end of add_published_exam_to_grades
 
 
-def create_exam_instance(subject, department, level, examperiod_int, request):
+def create_exam_instance(subject, department, level, examperiod_int, ete_exam, request):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_exam_instance --- ')
@@ -2413,6 +2413,7 @@ def create_exam_instance(subject, department, level, examperiod_int, request):
             department=department,
             level=level,
             examperiod=examperiod_int,
+            ete_exam=ete_exam
             # NIU (null not allowed): examtype=examtype
         )
         exam.save(request=request)
@@ -2563,7 +2564,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request): 
 
 def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
-    logging_on = False  #  s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
 
@@ -2577,9 +2578,9 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
         "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
         "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
 
-        "ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
+        "ex.ete_exam, ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-        "ex.version, ex.examtype, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
+        "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
         "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm,",  # ex.examdate,",
 
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
@@ -2644,14 +2645,71 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
                 for key, value in append_dict.items():
                     row[key] = value
 
-    #if logging_on:
-        #logger.debug('exam_rows: ' + str(exam_rows))
-
-    calc_total()
+    if logging_on:
+        logger.debug('exam_rows: ' + str(exam_rows))
 
     return exam_rows
 # --- end of create_exam_rows
 
+
+def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
+    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_duo_exam_rows ============= ')
+
+# - only show published exams when user is school
+    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
+    sql_list = [
+        "SELECT subj.id, subj.base_id AS subjbase_id,",
+        "sb.code AS subj_base_code, subj.name AS subj_name,",
+        "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev",
+
+        "FROM subjects_schemeitem AS si",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+        "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+        "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+
+        "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT",
+        "AND NOT si.ete_exam"
+    ]
+
+    if setting_dict:
+        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+        if sel_lvlbase_pk:
+            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+    sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name, lvl.id, lvl.abbrev")
+    sql_list.append("ORDER BY subj.id, lvl.id")
+
+    sql = ' '.join(sql_list)
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+        logger.debug('sql: ' + str(sql))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        duo_exam_rows = af.dictfetchall(cursor)
+
+# - add messages to first exam_row, only when exam_pk exists
+        if exam_pk_list and len(exam_pk_list) == 1 and duo_exam_rows:
+            # when exam_pk has value there is only 1 row
+            row = duo_exam_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+    if logging_on:
+        logger.debug('duo_exam_rows: ' + str(duo_exam_rows))
+
+    return duo_exam_rows
+# --- end of create_duo_exam_rows
 
 
 def create_ntermentable_rows(sel_examyear_pk, sel_depbase, setting_dict):

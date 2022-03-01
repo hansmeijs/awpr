@@ -18,7 +18,7 @@
                     <h4 id="id_MEXQ_header3" class="modal-title mx-2" ></h4>
                 </div>
                 <div class="modal-body py-0">
-                    {% if is_requsr_admin_or_system %}
+                    {% if is_requsr_admin %}
                         <div class="tab_show tab_start">
                             <div class="flex_container">
 
@@ -237,7 +237,7 @@
                 </div>
                 </div>
                 <div class="modal-footer">
-                    {% if is_requsr_admin_or_system %}
+                    {% if is_requsr_admin %}
                         <div class="flex_3">
                             <div id="id_MEXQ_btn_tab_container" class="btn-group btn-block px-2 my-2" role="group" aria-label="Choose option" >
                                 <button data-btn="tab_start" class="btn btn-secondary">{% trans 'Start' %}</button>

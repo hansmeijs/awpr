@@ -36,7 +36,7 @@ const man_home = {
             "<p class='pb-0'>Ook op de <b>filterbalk</b>, dit is de grijze verticale balk links, staan er soms knoppen waarmee je een filter kunt instellen.</p>"
             ]),
 
-        set_image_div("img_page_layout_ne"),
+        write_image("img_page_layout_ne"),
 
         write_paragraph_header("id_select_windowe", "Het selectie venster"),
         write_paragraph_body("",
@@ -50,14 +50,14 @@ const man_home = {
             "<p>Als er weinig vakken zijn is het het snelste om het vak in de lijst op te zoeken. ",
             "Maar een kandidaat opzoeken gaat over het algemeen sneller met het intypen van een paar letters.</p>"
             ]),
-        set_image_div("img_intro_select_window_ne"),
+        write_image("img_intro_select_window_ne"),
 
         write_paragraph_header("id_filterrow", "De filterregel"),
         write_paragraph_body("",
             ["<p>Als een tabel veel regels heeft is het niet handig om met de muis naar beneden te scrollen tot je de gewenste regel hebt gevonden. ",
                 "Beter is het de regels te filteren met behulp van de <b>filterregel</b>, dit is de lege regel onder de kolomnaam.</p>"
             ]),
-        set_image_div("img_intro_filterrow_ne"),
+        write_image("img_intro_filterrow_ne"),
 
         write_paragraph_body("",
             ["<p class='pb-0'>Bij <b>kolommen met tekst</b> kun je in de filterregel een of meer letters intypen, ",
@@ -125,7 +125,7 @@ const man_home = {
             "Klik op <i>OK</i> om de wijzigingen op te slaan. ",
             "AWP slaat de wijzigingen op in de <b>gebruikersinstellingen</b>, zodat je niet elke keer opnieuw de kolommen hoeft te verbergen.</p>"
             ]),
-        set_image_div("img_intro_hide_columns_ne"),
+        write_image("img_intro_hide_columns_ne"),
 
     ],
     en: [
@@ -158,9 +158,9 @@ const man_home = {
                "<p class='pb-0'>The buttons on the <b>page bar</b> allow you to go to another page.</p>",
                 "<p class='pb-0'>Below the page bar is the <b>menu bar</b>. Depending on the page and your permissions, the menu bar has different buttons with which you can perform operations.</p>" ,
                "<p class='pb-0'>Then there is a bar with one or more <b>tabs</b>. Each tab displays a table with different data.",
-            "<p class='pb-0'>The second line of the table is the <b>filter rule</b> which allows you to filter the rules of the table.",
+            "<p class='pb-0'>The second line of the table is the <b>filter row</b> which allows you to filter the rules of the table.",
             "<p class='pb-0'>Also on the <b>filter bar</b>, this is the gray vertical bar on the left, there are sometimes buttons with which you can set a filter.</p>"]),
-        set_image_div("img_page_layout_ne"),
+        write_image("img_page_layout_ne"),
 
         write_paragraph_header("id_select_windowe", "The selection window"),
         write_paragraph_body("",
@@ -174,14 +174,14 @@ const man_home = {
             "<p>If there are few subjects, the fastest is to find the subject in the list.",
             "But looking up a candidate is generally faster with typing a few letters.</p>"
             ]),
-        set_image_div("img_intro_select_window_en"),
+        write_image("img_intro_select_window_en"),
 
         write_paragraph_header("id_filterrow", "The filter row"),
         write_paragraph_body("",
             ["<p>If a table has many rows it is not useful to scroll down with the mouse until you find the desired row. ",
                  "It is better to filter the rows using the <b>filter row</b>, this is the empty row under the column name.</p>"
             ]),
-         set_image_div("img_intro_filterrow_ne"),
+         write_image("img_intro_filterrow_ne"),
 
         write_paragraph_body("",
             ["<p class='pb-0'>For <b>columns with text</b> you can type one or more letters in the filter row, ",
@@ -250,6 +250,6 @@ const man_home = {
             "Click <i>OK</i> to save the changes.",
             "AWP saves the changes in the <b>user settings</b> so you don't have to hide the columns every time.</p>"
             ]),
-        set_image_div("img_intro_hide_columns_en")
+        write_image("img_intro_hide_columns_en")
     ]
 }

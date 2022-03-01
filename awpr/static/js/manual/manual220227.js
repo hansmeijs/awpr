@@ -135,37 +135,40 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( " ===  FillSideNav  ===");
         //console.log("is_en", is_en)
 
-        const sbr_list = (!is_en) ? [
-
+        const sbr_list = (!is_en) ?
+        [
 /////////  NEDERLANDS //////////////////////////////
-        get_dropdown_button("home", "id_intro", "id_btn_intro", "Welkom bij AWP-online", [
+        get_dropdown_button("home", "id_intro", "Welkom bij AWP-online", [
             ["id_page_layout", "De lay-out van de pagina's"],
             ["id_select_windowe", "Het selectie venster"],
             ["id_filterrow", "De filterregel"],
-            ["id_hide_columns", "Kolommen verbergen"],
+            ["id_hide_columns", "Kolommen verbergen"]
             ]),
 
-        get_dropdown_button("upload", "id_intro", "id_btn_upload", "Gegevens uploaden", [
-            ["id_upload_step01", "Stap 1: Selecteer een Excel bestand"],
-            ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
-            ["id_enter_subjects", "Vakken van kandidaten invoeren"],
+        get_dropdown_button("upload", "id_intro", "Gegevens uploaden", [
+            ["id_upload_step01", "Selecteer een Excel bestand"],
+            ["id_upload_step02a", "Selecteer soort examencijfer"],
+            ["id_upload_step02", "Kolommen koppelen"],
+            ["id_upload_step03", "Gegevens koppelen"],
+            ["id_upload_step04", "Test upload"],
+            ["id_upload_step05", "Uploaden"]
             ]),
 
-        get_dropdown_button("studsubj", "id_intro", "id_btn_studsubj", "Vakken van kandidaten", [
+        get_dropdown_button("studsubj", "id_intro", "Vakken van kandidaten", [
             ["id_filter_subjects", "Vakken filteren"],
             ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
             ["id_enter_studsubj", "Vakken van kandidaten invoeren"],
             ["id_clusters", "Clusters"],
             ]),
 
-        get_dropdown_button("exams", "id_intro_exams", "id_btn_exams", "Examens (voormalige WOLF programma)", [
+        get_dropdown_button("exams", "id_intro_exams", "Examens (voormalige WOLF programma)", [
             ["id_link_exams", "Examen koppelen aan een vak"],
             ["id_enter_exams", "Antwoorden invoeren"],
             ["id_download_exams", "Antwoorden downloaden"],
             ["id_submit_exams", "Examens goedkeuren en indienen"],
             ]),
 
-        get_dropdown_button("approve", "id_intro", "id_btn_approve", "Goedkeuren en indienen van Ex-formulieren", [
+        get_dropdown_button("approve", "id_intro", "Goedkeuren en indienen van Ex-formulieren", [
             ["id_digital_signature", "De digitale handtekening"],
             ["id_approve", "Goedkeuren van vakken, scores of cijfers"],
             ["id_approve_icon", "Het goedkeurings-icoontje"],
@@ -174,36 +177,43 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_submitted_exforms", "Lijst met ingediende Ex-formulieren"],
             ]),
 
-        get_dropdown_button("mailbox", "id_intro_mailbox", "id_btn_mailbox", "Berichtenservice", [
+        get_dropdown_button("mailbox", "id_intro_mailbox", "Berichtenservice", [
             ["id_mailbox_read_message", "Berichten lezen"],
             ["id_mailbox_create_message", "Bericht aanmaken"],
             ["id_mailbox_recipients", "Geadresseerden"],
             ["id_mailbox_mailinglist", "Verzendlijsten"],
             ]),
 
-        "</div>",
+        //"</div>",
         "<div class='my-4'>.</div>"
         ] :
 
 /////////  ENGLISH //////////////////////////////
         [
-        get_dropdown_button("home", "id_intro", "id_btn_intro", "Welcome at AWP-online", [
+        get_dropdown_button("home", "id_intro", "Welcome at AWP-online", [
             ["id_page_layout", "The layout of the pages"],
             ["id_select_windowe", "The selection window"],
             ["id_filterrow", "The filter row"],
             ["id_hide_columns", "Hide columns"],
             ]),
-        get_dropdown_button("studsubj", "id_intro", "id_btn_studsubj", "Subjects of candidates", [
-            ["id_filter_subjects", "Vakken filteren"],
-            ["id_approve", "Approve courses, scores or grades"],
-            ["id_approve_icon", "The approval icon"],
-            ["id_prelim_exform", "The preliminary Ex-form"],
-            ["id_submit_exform", "Submit the Ex form"],
-            ["id_submitted_exforms", "List of submitted Ex forms"],
 
+        get_dropdown_button("upload", "id_intro", "Upload data", [
+             ["id_upload_step01", "Select an Excel file"],
+             ["id_upload_step02a", "Select type of exam grade"],
+             ["id_upload_step02", "Link columns"],
+             ["id_upload_step03", "Link data"],
+             ["id_upload_step04", "Test upload"],
+             ["id_upload_step05", "Upload"]
             ]),
 
-        get_dropdown_button("approve", "id_intro", "id_btn_approve", "Approve and submit Ex forms", [
+        get_dropdown_button("studsubj", "id_intro", "Subjects of candidates", [
+             ["id_filter_subjects", "Filter subjects"],
+             ["id_validate_subjects", "Subject composition check"],
+             ["id_enter_studsubj", "Enter subjects of candidates"],
+             ["id_clusters", "Clusters"]
+            ]),
+
+        get_dropdown_button("approve", "id_intro", "Approve and submit Ex forms", [
             ["id_digital_signature", "The digital signature"],
             ["id_approve", "Approve courses, scores or grades"],
             ["id_approve_icon", "The approval icon"],
@@ -212,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_submitted_exforms", "List of submitted Ex forms"],
             ]),
 
-        get_dropdown_button("mailbox", "id_intro", "id_btn_mailbox", "Messaging service", [
+        get_dropdown_button("mailbox", "id_intro", "Messaging service", [
             ["id_mailbox_read_message", "Read messages"],
             ["id_mailbox_create_message", "Create message"],
             ["id_mailbox_recipients", "Recipients"],
@@ -222,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         ];
 
         const el_sidenav =  document.getElementById("id_sidenav");
-        console.log("el_sidenav", el_sidenav);
+
         el_sidenav.innerHTML = sbr_list.join('');
     };
 
@@ -236,20 +246,17 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };
 
-    function get_dropdown_button(page, first_paragraph, btn_id, btn_txt, item_list){
+    function get_dropdown_button(page, first_paragraph, btn_txt, item_list){
         console.log(" ----- get_dropdown_button ----- ");
         console.log("first_paragraph", first_paragraph);
-        console.log("btn_id", btn_id);
         console.log("btn_txt", btn_txt);
-        let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39, &#39" + first_paragraph + "&#39 )'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
+        let html_str = "<button id='id_btn_" + page + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39, &#39" + first_paragraph + "&#39 )'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
         //let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39)'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
 
         if (item_list && item_list.length){
-            html_str += "<div id='" + btn_id + "_dropdown' class='dropdown-container'>";
+            html_str += "<div id='id_btn_" + page + "_dropdown' class='dropdown-container'>";
             for (let i = 0, arr; arr = item_list[i]; i++) {
                 html_str += "<p class='dropdown_item' onclick='GotoParagraph(&#39" + arr[0] + "&#39)'>" + arr[1] + "</p>";
-
-        console.log("arr[1]", arr[1]);
             };
             html_str += "</div>"
         };
@@ -279,7 +286,7 @@ function write_paragraph_body(icon_class, body_list){
 
 
 //========= image_div  ============= PR2021-08-14
-function set_image_div(img_class){
+function write_image(img_class){
     return ["<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

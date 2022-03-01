@@ -48,7 +48,7 @@ const man_users = {
                  "Klik hierop en de onderstaande pagina 'Gebruikers' wordt geopend.<p>",
             "</div>",
         "</div>",
-        set_image_div("img_users_tbl_users_ne"),
+        write_image("img_users_tbl_users_ne"),
 
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -182,10 +182,10 @@ const man_users = {
                 "<ul class='manual_bullet mb-0'><li>In the vertical gray filter bar on the left you can ",
                 "select a <b>learning path</b>, <b>sector</b> or <b>profile</b>;</li>",
                 "<li>You can also select a <b>subject</b> or <b>candidate</b>, but not both.",
-                "<li>Finally, you can filter subjects using the <b>filter rule</b>;</li></ul>",
+                "<li>Finally, you can filter subjects using the <b>filter row</b>;</li></ul>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_tab_subj_en"),
+        write_image("img_studsubj_tab_subj_en"),
 
         write_paragraph_header("id_validate_subjects", "Composition check"),
         "<div class='mfc mb-2'>",
@@ -207,7 +207,7 @@ const man_users = {
                 "In that case, the character of the subject must be corrected manually.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_mod_studsubj_en"),
+        write_image("img_studsubj_mod_studsubj_en"),
 
         write_paragraph_header("id_enter_studsubj", "Enter candidate subjects"),
         "<div class='mfc mb-2'>",
@@ -236,7 +236,7 @@ const man_users = {
                 "The 'Title of the assignment' and 'Subjects to which the assignment relates' are now also included as individual attributes of the subject 'Project'.",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_mod_studsubj_en"),
+        write_image("img_studsubj_mod_studsubj_en"),
 
         write_paragraph_header("id_clusters", "Clusters"),
         "<div class='mfc mb-2'>",
@@ -254,7 +254,7 @@ const man_users = {
             "</div>",
         "</div>",
 
-        set_image_div("img_studsubj_mod_cluster_en"),
+        write_image("img_studsubj_mod_cluster_en"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

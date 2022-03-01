@@ -293,8 +293,8 @@
         }}};
         // (value == null) equals to (value === undefined || value === null)
         if (dict == null && default_value != null) {
-            dict = default_value}
-        return dict
+            dict = default_value};
+        return dict;
     }  // get_dict_value
 
 //========= b_show_hide_selected_elements_byClass  ====  PR2020-02-19  PR2020-06-20
@@ -307,10 +307,10 @@
         if(!container_element){ container_element = document };
         let list = container_element.getElementsByClassName(container_classname);
         for (let i=0, el; el = list[i]; i++) {
-            const is_show = el.classList.contains(contains_classname)
-            show_hide_element(el, is_show)
-        }
-    }  // b_show_hide_selected_elements_byClass
+            const is_show = el.classList.contains(contains_classname);
+            show_hide_element(el, is_show);
+        };
+    };  // b_show_hide_selected_elements_byClass
 
 //========= function show_hide_element_by_id  ====  PR2019-12-13
     function show_hide_element_by_id(el_id, is_show) {
@@ -318,18 +318,18 @@
             let el = document.getElementById(el_id);
             if(el){
                 if(is_show){
-                    el.classList.remove("display_hide")
+                    el.classList.remove("display_hide");
                 } else{
-                    el.classList.add("display_hide")
+                    el.classList.add("display_hide");
     }}}};
 
 //========= show_hide_element  ====  PR2019-12-13
     function show_hide_element(el, is_show) {
         if(el){
             if(is_show){
-                el.classList.remove("display_hide")
+                el.classList.remove("display_hide");
             } else{
-                el.classList.add("display_hide")
+                el.classList.add("display_hide");
     }}};
 
 //========= set_element_class  ====  PR2019-12-13
@@ -338,9 +338,9 @@
             let el = document.getElementById(el_id);
             if(el){
                 if(is_add_class){
-                    el.classList.add(clsName)
+                    el.classList.add(clsName);
                 } else{
-                    el.classList.remove(clsName)
+                    el.classList.remove(clsName);
         }}};
     };
 
@@ -348,7 +348,7 @@
     function b_ShowTblrowError_byID(tr_id) {
         let tblRow = document.getElementById(tr_id);
         b_ShowTblrowError(tblRow);
-    }
+    };
 
 //========= b_ShowTblrowError set_element_class  ====  PR2020-04-13
     function b_ShowTblrowError(tblRow) {
@@ -356,8 +356,8 @@
         if(tblRow){
             tblRow.classList.add(cls_error);
             setTimeout(function (){ tblRow.classList.remove(cls_error); }, 2000);
-        }
-    }
+        };
+    };
 
     function ShowOkRow(tblRow ) {
         // make row green, / --- remove class 'ok' after 2 seconds
@@ -365,7 +365,7 @@
         setTimeout(function (){
             tblRow.classList.remove("tsa_tr_ok");
         }, 2000);
-    }
+    };
 
 //=========  ShowOkElement  ================ PR2019-11-27 PR2020-07-23
     function ShowOkElement(el_input, ok_class, cur_class) {
@@ -379,7 +379,7 @@
             el_input.classList.remove(ok_class);
             if(cur_class) {el_input.classList.add(cur_class)};
         }, 2000);
-    }
+    };
 
 //=========  ShowClassWithTimeout  ================ PR2020-04-26 PR2020-07-15
     function ShowClassWithTimeout(el, className, timeout) {
@@ -389,7 +389,7 @@
             el.classList.add(className);
             setTimeout(function (){el.classList.remove(className)}, timeout);
         };
-    }
+    };
 
 // ++++++++++++++++ SELECT ELEMENTS by Classname  +++++++++++++++
 
@@ -403,7 +403,7 @@
         };
         const list = select_elements_in_container_byClass(el_container, selectby_class);
         return list;
-    }  // select_elements_in_containerId_byClass
+    };  // select_elements_in_containerId_byClass
 
 //========= select_elements_in_container_byClass  ====  PR2020-10-05
     function select_elements_in_container_byClass(el_container, selectby_class) {
@@ -421,7 +421,7 @@
             };
         };
         return list;
-    }  // select_elements_in_container_byClass
+    };  // select_elements_in_container_byClass
 
 // ++++++++++++++++ ADD REMOVE CLASS / ATTRIBUTE  +++++++++++++++
 
@@ -437,13 +437,13 @@
 
          // multipe filter: document.querySelectorAll(".filter1.filter2")
         //let elements =  document.querySelectorAll("." + filter_class)
-        let elements = el_container.querySelectorAll(filter_class)
+        let elements = el_container.querySelectorAll(filter_class);
         for (let i = 0, len = elements.length; i < len; i++) {
-            add_or_remove_class (elements[i], classname, is_add)
+            add_or_remove_class (elements[i], classname, is_add);
 //console.log(elements[i])
         };
 //console.log(" --- end of add_or_remove_class_with_qsAll --- ")
-    }
+    };
 
 //========= add_or_remove_class  ========================  PR2020-06-20
     function add_or_remove_class (el, classname, is_add, default_class) {
@@ -454,9 +454,9 @@
             } else {
                 el.classList.remove(classname);
                 if (default_class){el.classList.add(default_class)};
-            }
-        }
-    }
+            };
+        };
+    };
 
 //========= add_or_remove_attr_with_qsAll  ======== PR2020-05-01
     function add_or_remove_attr_with_qsAll(el_container, filter_str, atr_name, is_add, atr_value){
@@ -470,23 +470,23 @@
 
          // multipe filter: document.querySelectorAll(".filter1.filter2")
         //let elements =  document.querySelectorAll("." + filter_str)
-        let elements = el_container.querySelectorAll(filter_str)
+        let elements = el_container.querySelectorAll(filter_str);
         for (let i = 0, len = elements.length; i < len; i++) {
-            add_or_remove_attr(elements[i], atr_name, is_add, atr_value)
+            add_or_remove_attr(elements[i], atr_name, is_add, atr_value);
     //console.log(elements[i])
         };
-    }  // add_or_remove_attr_with_qsAll
+    };  // add_or_remove_attr_with_qsAll
 
 //========= add_or_remove_attr  =========== PR2020-05-01
     function add_or_remove_attr (el, atr_name, is_add, atr_value) {
         if(!!el){
             if (is_add){
-                el.setAttribute(atr_name, atr_value)
+                el.setAttribute(atr_name, atr_value);
             } else {
-                el.removeAttribute(atr_name)
-            }
-        }
-    }  // add_or_remove_attr
+                el.removeAttribute(atr_name);
+            };
+        };
+    };  // add_or_remove_attr
 
 
 //========= function add_hover  =========== PR2021-10-28
@@ -497,16 +497,16 @@
         if(!class_0) { class_0 = "delete_0_1"};
         if(el){
             el.addEventListener("mouseenter", function(){
-                const value = get_attr_from_el_int(el, "data-filter")
+                const value = get_attr_from_el_int(el, "data-filter");
                 el.className = (value) ? class_0 : class_1;
             });
             el.addEventListener("mouseleave", function(){
-                const value = get_attr_from_el_int(el, "data-filter")
+                const value = get_attr_from_el_int(el, "data-filter");
                 el.className = (value) ? class_1 : class_0;
             });
-        }
-        el.classList.add("pointer_show")
-    }  // add_hover
+        };
+        el.classList.add("pointer_show");
+    };  // add_hover
 
 //========= function add_hover  =========== PR2020-05-20 PR2020-08-10
     function add_hover(el, hover_class, default_class) {
@@ -514,16 +514,16 @@
         if(!hover_class){hover_class = "tr_hover"};
         if(el){
             el.addEventListener("mouseenter", function(){
-                if(default_class) {el.classList.remove(default_class)}
-                el.classList.add(hover_class)
+                if(default_class) {el.classList.remove(default_class)};
+                el.classList.add(hover_class);
             });
             el.addEventListener("mouseleave", function(){
-                if(default_class) {el.classList.add(default_class)}
-                el.classList.remove(hover_class)
+                if(default_class) {el.classList.add(default_class)};
+                el.classList.remove(hover_class);
             });
-        }
-        el.classList.add("pointer_show")
-    }  // add_hover
+        };
+        el.classList.add("pointer_show");
+    };  // add_hover
 
 //=========  append_background_class ================ PR2020-09-10
     function append_background_class(el, default_class, hover_class) {
@@ -532,16 +532,16 @@
             // note: dont use on icons that will change, like 'inactive' or 'status'
             // add_hover_class will replace 'is_inactive' icon by default_class
             if (hover_class) {add_hover_class (el, hover_class, default_class)};
-        }
-    }
+        };
+    };
 
 //=========  refresh_background_class ================ PR2020-09-12
     function b_refresh_icon_class(el, img_class) {
         if (el) {
             const el_img = el.children[0];
             if (el_img){el_img.className = img_class};
-        }
-    }  // b_refresh_icon_class
+        };
+    };  // b_refresh_icon_class
 
 //========= add_hover_class  =========== PR2020-09-20
     function add_hover_class (el, hover_class, default_class) {

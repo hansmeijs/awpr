@@ -52,7 +52,7 @@ const man_approve = {
                 "Klik hierop en het goedkeuringsvenster verschijnt.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_approve_menu_ne"),
+        write_image("img_studsubj_approve_menu_ne"),
 
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -65,7 +65,7 @@ const man_approve = {
                 "Je kunt goedkeuringen weer verwijderen door op de knop <i>Goedkeuringen verwijderen</i> te klikken.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_mod_approve_ne"),
+        write_image("img_studsubj_mod_approve_ne"),
 
         write_paragraph_header("id_approve_icon", "Het goedkeurings-icoontje"),
         "<div class='mfc mb-2'>",
@@ -160,7 +160,7 @@ const man_approve = {
                 "Klik in de menubalk op <i>Ex-formulier indienen</i>. Het onderstaande venster verschijnt.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_submit_step1_ne"),
+        write_image("img_studsubj_submit_step1_ne"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -176,7 +176,7 @@ const man_approve = {
 
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_submit_step2_ne"),
+        write_image("img_studsubj_submit_step2_ne"),
 
         write_paragraph_header("id_submitted_exforms", "Lijst met ingediende Ex-formulieren"),
         "<div class='mfc mb-2'>",
@@ -186,7 +186,7 @@ const man_approve = {
                 "Je kunt ze altijd opnieeuw downloaden. Klik op de tab <i>Ingediende Ex-formulieren</i>. De lijst met Ingediende Ex-formulieren verschijnt. Klik op <i>Download</i> om het gewenste Ex-formulieren te downloaden..</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_submitted_exforms_ne"),
+        write_image("img_studsubj_submitted_exforms_ne"),
 
         "<div class='p-3 visibility_hide'>-</div>",
     ],
@@ -238,7 +238,7 @@ const man_approve = {
                  "Click this and the approval window will appear.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_approve_menu_en"),
+        write_image("img_studsubj_approve_menu_en"),
 
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
@@ -251,7 +251,7 @@ const man_approve = {
                  "You can remove approvals again by clicking the <i>Remove approvals</i> button.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_mod_approve_en"),
+        write_image("img_studsubj_mod_approve_en"),
 
         write_paragraph_header("id_approve_icon", "The approval icon"),
         "<div class='mfc mb-2'>",
@@ -345,7 +345,7 @@ const man_approve = {
                 "Click <i>Submit Ex Form</i> in the menu bar. The window below will appear.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_submit_step1_en"),
+        write_image("img_studsubj_submit_step1_en"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",
@@ -360,7 +360,7 @@ const man_approve = {
                 "The Ex1 form is now being created and saved on the server. With this, the Ex1 form has been submitted. The data is now visible to the Division Of Examinations and the Inspection Division.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_submit_step2_en"),
+        write_image("img_studsubj_submit_step2_en"),
 
         write_paragraph_header("id_submitted_exforms", "List of Ex forms submitted "),
         "<div class='mfc mb-2'>",
@@ -371,7 +371,7 @@ const man_approve = {
                  "The list of Submitted Ex Forms appears. Click on <i>Download</i> to download the desired Ex Form.</p>",
              "</div>",
          "</div>",
-        set_image_div("img_studsubj_submitted_exforms_en"),
+        write_image("img_studsubj_submitted_exforms_en"),
 
         "<div class='p-3 visibility_hide'>-</div>",
 

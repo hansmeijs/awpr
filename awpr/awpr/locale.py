@@ -859,6 +859,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_exam'] = _("Select exam")
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
+        dict['Link_DUO_exams'] = _("Link DUO exams")
         dict['Publish_exams'] = _("Publish exams")
         dict['Submit_exams'] = _("Submit exams")
         dict['Approve_exams'] = _("Approve exams")

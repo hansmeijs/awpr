@@ -49,7 +49,7 @@ const man_exams = {
             "</div>",
         "</div>",
 
-        set_image_div("img_exams_tableA_ne"),
+        write_image("img_exams_tableA_ne"),
 
         write_paragraph_header("id_link_exams", "Examen koppelen aan een vak"),
         "<div class='mfc mb-4'>",
@@ -92,7 +92,7 @@ const man_exams = {
 
             "</div>",
         "</div>",
-        set_image_div("img_exams_modA_ne"),
+        write_image("img_exams_modA_ne"),
 
         write_paragraph_header("id_download_exams", "Antwoorden downloaden"),
         "<div class='mfc mb-2'>",
@@ -112,7 +112,7 @@ const man_exams = {
             "</div>",
 
         "</div>",
-        set_image_div("img_exams_print_result_ne_en"),
+        write_image("img_exams_print_result_ne_en"),
 
 
         write_paragraph_header("id_submit_exams", "Examens goedkeuren en indienen"),
@@ -161,7 +161,7 @@ const man_exams = {
              "</div>",
         "</div>",
 
-        set_image_div("img_studsubj_mod_cluster_ne"),
+        write_image("img_studsubj_mod_cluster_ne"),
 
     ],
 
@@ -197,10 +197,10 @@ const man_exams = {
                 "<ul class='manual_bullet mb-0'><li>In the vertical gray filter bar on the left you can ",
                 "select a <b>learning path</b>, <b>sector</b> or <b>profile</b>;</li>",
                 "<li>You can also select a <b>subject</b> or <b>candidate</b>, but not both.",
-                "<li>Finally, you can filter subjects using the <b>filter rule</b>;</li></ul>",
+                "<li>Finally, you can filter subjects using the <b>filter row</b>;</li></ul>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_tab_subj_en"),
+        write_image("img_studsubj_tab_subj_en"),
 
         write_paragraph_header("id_validate_subjects", "Composition check"),
         "<div class='mfc mb-2'>",
@@ -222,7 +222,7 @@ const man_exams = {
                 "In that case, the character of the subject must be corrected manually.</p>",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_mod_studsubj_en"),
+        write_image("img_studsubj_mod_studsubj_en"),
 
         write_paragraph_header("id_enter_studsubj", "Enter candidate subjects"),
         "<div class='mfc mb-2'>",
@@ -251,7 +251,7 @@ const man_exams = {
                 "The 'Title of the assignment' and 'Subjects to which the assignment relates' are now also included as individual attributes of the subject 'Project'.",
             "</div>",
         "</div>",
-        set_image_div("img_studsubj_mod_studsubj_en"),
+        write_image("img_studsubj_mod_studsubj_en"),
 
         write_paragraph_header("id_clusters", "Clusters"),
         "<div class='mfc mb-2'>",
@@ -269,7 +269,7 @@ const man_exams = {
             "</div>",
         "</div>",
 
-        set_image_div("img_studsubj_mod_cluster_en"),
+        write_image("img_studsubj_mod_cluster_en"),
         "<div class='mfc mb-2'>",
             "<div class='mfl'><p></p></div>",
             "<div class='mfr'>",

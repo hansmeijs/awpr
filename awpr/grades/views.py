@@ -115,7 +115,7 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
 class GradeApproveView(View):  # PR2021-01-19
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GradeApproveView ============= ')
         # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
@@ -512,7 +512,7 @@ def get_approved_text(count):
 
 def approve_grade(grade, sel_examtype, requsr_auth, auth_index, is_test, is_reset, msg_dict, request):  # PR2021-01-19
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_grade -----')
         logger.debug('sel_examtype: ' + str(sel_examtype))
@@ -704,7 +704,7 @@ def submit_grade(grade, sel_examtype, is_test, published_instance, msg_dict, req
 class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01-24
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= GradeUploadView ============= ')
@@ -868,7 +868,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
                                 sel_department, student, si_dict, request):
     # --- update existing grade PR2020-12-16 PR2021-12-13 PR2021-12-25
     # add new values to update_dict (don't reset update_dict, it has values)
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_grade_instance -------')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -1024,7 +1024,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 
 def update_studsubj_and_recalc_student_result(sel_examyear, sel_school, sel_department, student):
     # PR2022-01-01
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_studsubj_and_recalc_student_result -------')
 
@@ -1059,7 +1059,7 @@ def recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict):  #
     #  - check if there is a reex or reex03 grade: if so, recalc final grade in reex or reex03
     #  - only when first examperiod ( is filtered in update_grade_instance)
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- recalc_finalgrade_in_reex_reex03_grade_and_save -----')
         logger.debug('grade_instance: ' + str(grade_instance) + ' ep: ' + str(grade_instance.examperiod))
@@ -1089,9 +1089,9 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
     # - puts se, sr, sesr, pe in reex and reex03
     # - saves the grade_instance
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' >>>>>>>>>>>>> ------- recalc_finalgrade_in_grade_and_save -------')
+        logger.debug('------- recalc_finalgrade_in_grade_and_save -------')
 
     if grade_instance:
         try:

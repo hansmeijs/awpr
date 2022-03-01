@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let mod_MSELEX_dict = {};
     const mod_MEX_dict = {};
     const mod_MASE_dict = {};
+    const mod_MDUO_dict = {};
 
     let mod_MSSS_dict = {};
     let mod_MAG_dict = {};
@@ -54,8 +55,8 @@ document.addEventListener("DOMContentLoaded", function() {
     let level_map = new Map();
     let sector_map = new Map();
 
-    let exam_map = new Map();
     let exam_rows = [];
+    let duo_exam_rows = [];
     let ntermentable_rows = [];
 
     let grade_with_exam_rows = [];
@@ -82,6 +83,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     urls.url_download_published = get_attr_from_el(el_data, "data-download_published_url");
 
+    // const columns_tobe_hidden and mod_MCOL_dict are defined in tables.js
+    //const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
+
     columns_tobe_hidden.btn_ete_exams = {
         fields: ["subj_base_code", "subj_name", "lvl_abbrev", "version",
                             "examperiod", "blanks", "status", "printpdf", "printjson"],
@@ -102,6 +106,11 @@ document.addEventListener("DOMContentLoaded", function() {
                   "omschrijving", "schaallengte", "n_term", "afnamevakid", "extra_vakcodes_tbv_wolf",
                   "datum", "begintijd", "eindtijd"]};
 
+    columns_tobe_hidden.btn_grades = {
+        fields: ["examnumber", "lvl_abbrev", "cluster_name",
+                          "subj_name",  "blanks", "printpdf"],
+        captions: ["Examnumber", "Leerweg", "Cluster",
+                                "Subject", "Blanks", "Download_PDF"]}
 // --- get field_settings
     const field_settings = {
         exam: { field_caption: ["", "Abbreviation", "Subject", "Leerweg", "Version",
@@ -116,17 +125,17 @@ document.addEventListener("DOMContentLoaded", function() {
                              "120", "075", "032", "090", "090"],
                 field_align: ["c",  "l", "l", "l", "l",
                              "l", "c", "c", "c", "c"]},
-        grades: {  field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "Abbreviation",
+        grades: {  field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "Cluster", "Abbreviation",
                                 "Subject", "Exam", "Blanks", "", "Download_PDF"],
-            field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "subj_code",
+            field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "cluster_name", "subj_code",
                           "subj_name", "ceex_name", "blanks", "status", "printpdf"],
-            field_tags: ["div", "div", "div", "div","div",
+            field_tags: ["div", "div", "div", "div", "div", "div",
                         "div", "div", "div", "div", "a"],
-            filter_tags: ["select", "text", "text",  "text", "text",
+            filter_tags: ["select", "text", "text",  "text", "text", "text",
                             "text", "text",  "text", "multitoggle", "text"],
-            field_width:  ["020", "075", "240",  "075", "075",
+            field_width:  ["020", "075", "240",  "075", "075", "090",
                             "300", "150", "075", "032", "090"],
-            field_align: ["c", "l", "l", "l", "l",
+            field_align: ["c", "l", "l", "l", "l", "l",
                          "l", "l", "c", "c","c"]},
 
         ntermen: {  field_caption: ["", "opl_code", "leerweg", "ext_code", "tijdvak", "nex_id",
@@ -146,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             "090", "075", "075"],
             field_align: ["c", "l", "l", "l", "c", "c",
                             "l", "c", "c", "c", "l",
-                            "l", "l", "l"]}
+                            "c", "c", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -257,6 +266,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
 // ---  MEX MOD EXAM ------------------------------
+        const el_MEXQ_questions = document.getElementById("id_mod_exam_questions");
         const el_MEXQ_header1 = document.getElementById("id_MEXQ_header1");
         const el_MEXQ_header2 = document.getElementById("id_MEXQ_header2");
         const el_MEXQ_header3_student = document.getElementById("id_MEXQ_header3");
@@ -401,6 +411,22 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         const el_MASE_btn_cancel = document.getElementById("id_MASE_btn_cancel");
 
+// ---  MODAL LINK DUO EXAMS ------------------------------------
+        const el_MDUO_select_level = document.getElementById("id_MDUO_select_level");
+        const el_MDUO_err_level = document.getElementById("id_MDUO_err_level");
+
+        const el_MDUO_tblBody_subjects = document.getElementById("id_MDUO_tblBody_subjects");
+        const el_MDUO_tblBody_exams = document.getElementById("id_MDUO_tblBody_exams");
+        const el_MDUO_tblBody_linked = document.getElementById("id_MDUO_tblBody_linked");
+
+        const el_MDUO_filter_subjects = document.getElementById("id_MDUO_filter_subjects");
+        const el_MDUO_filter_exams = document.getElementById("id_MDUO_filter_exams");
+        const el_MDUO_filter_linked = document.getElementById("id_MDUO_filter_linked");
+
+        const el_MDUO_show_linked_subjects = document.getElementById("id_MDUO_show_linked_subjects");
+        const el_MDUO_show_linked_exams = document.getElementById("id_MDUO_show_linked_exams");
+        const el_MDUO_btn_save = document.getElementById("id_MDUO_btn_save");
+
 // ---  MOD UPLOAD N-termen TABLE ------------------------------------
         const el_MDNT_filedialog = document.getElementById("id_MDNT_filedialog");
         if (el_MDNT_filedialog){
@@ -459,6 +485,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 exam_rows: {get: true},
+                duo_exam_rows: {get: true},
                 ntermentable_rows: {get: ntermentable_rows},
 
                 subject_rows: {etenorm_only: true, cur_dep_only: true},
@@ -503,9 +530,17 @@ document.addEventListener("DOMContentLoaded", function() {
                     must_create_submenu = true;
                 };
 
+                if ("permit_dict" in response) {
+                    permit_dict = response.permit_dict;
+                    // get_permits must come before CreateSubmenu and FiLLTbl
+                    b_get_permits_from_permitlist(permit_dict);
+                    must_update_headerbar = true;
+
+                }
                 if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
-                    selected_btn = (setting_dict.sel_btn);
+                    // set selected_btn =  btn_grades when page is used by school, then there are no tab btns
+                    selected_btn = (!permit_dict.requsr_role_admin) ? "btn_grades" : setting_dict.sel_btn;
 
                     // if sel_subject_pk has value, set sel_student_pk null
                     if (setting_dict.sel_subject_pk) {setting_dict.sel_student_pk = null;}
@@ -525,12 +560,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     must_update_headerbar = true;
                 };
 
-                if ("permit_dict" in response) {
-                    permit_dict = response.permit_dict;
-                    // get_permits must come before CreateSubmenu and FiLLTbl
-                    b_get_permits_from_permitlist(permit_dict);
-                    must_update_headerbar = true;
-                }
 
                 if(must_create_submenu){CreateSubmenu()};
 
@@ -570,6 +599,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
 
                 if ("exam_rows" in response) {exam_rows = response.exam_rows};
+                if ("duo_exam_rows" in response) {duo_exam_rows = response.duo_exam_rows};
+
                 if ("ntermentable_rows" in response) {ntermentable_rows = response.ntermentable_rows};
 
                 if ("subject_rows" in response) {subject_rows = response.subject_rows};
@@ -600,22 +631,23 @@ document.addEventListener("DOMContentLoaded", function() {
         let el_submenu = document.getElementById("id_submenu")
 
         if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
-            AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEXQ_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("exam", "delete")});
+            AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEXQ_Open()}, ["tab_show", "tab_btn_ete_exams"]);
+            AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("exam", "delete")}, ["tab_show", "tab_btn_ete_exams"]);
+            AddSubmenuButton(el_submenu, loc.Link_DUO_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
         }
         if((permit_dict.permit_approve_exam) && (permit_dict.requsr_role_admin ||permit_dict.requsr_same_school) ){
-            AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve")});
+            AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve")}, ["tab_show", "tab_btn_ete_exams"]);
         }
         if( permit_dict.permit_publish_exam && permit_dict.requsr_role_admin ){
-            AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit")});
+            AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit")}, ["tab_show", "tab_btn_ete_exams"]);
         };
          if(permit_dict.permit_submit_exam && permit_dict.requsr_same_school){
-            AddSubmenuButton(el_submenu, loc.Submit_exams, function() {MASE_Open("submit")});
+            AddSubmenuButton(el_submenu, loc.Submit_exams, function() {MASE_Open("submit")}, ["tab_show", "tab_btn_ete_exams"]);
         };
 
         if( permit_dict.requsr_role_admin ){
-            AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit")});
-            AddSubmenuButton(el_submenu, loc.Upload_ntermen, function() {MDNT_Open()}, [], "id_submenu_upload_dnt");
+            AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit")}, ["tab_show", "tab_btn_ete_exams"]);
+            AddSubmenuButton(el_submenu, loc.Upload_ntermen, function() {MDNT_Open()}, ["tab_show", "tab_btn_ntermen"], "id_submenu_upload_dnt");
         };
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_exams")}, [], "id_submenu_columns")
@@ -633,11 +665,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //###########################################################################
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
-//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14  PR2021-03-15 PR2022-01-31
+//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14  PR2021-03-15 PR2022-01-31 PR2022-02-28
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ");
-    console.log( "data_btn", data_btn);
-    //console.log( "skip_upload", skip_upload);
+        //console.log( "===== HandleBtnSelect ========= ");
+        //console.log( "data_btn", data_btn);
+        //console.log( "skip_upload", skip_upload);
+
         // function is called by MSSSS_Response, select_btn.click, DatalistDownload after response.setting_dict
         //  data_btn only inm use when requsr_role_admin
 
@@ -645,13 +678,17 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!data_btn) {data_btn = selected_btn};
 
 // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
-        const btns_allowed = ["btn_ete_exams", "btn_duo_exams", "btn_ntermen"];
-        if (data_btn && btns_allowed.includes(data_btn)) {
-            selected_btn = data_btn;
-        } else if (btns_allowed.length) {
-            selected_btn = btns_allowed[0];
+        if (!permit_dict.requsr_role_admin){
+            selected_btn = "btn_grades";
         } else {
-            selected_btn = null;
+            const btns_allowed = ["btn_ete_exams", "btn_duo_exams", "btn_ntermen"];
+            if (data_btn && btns_allowed.includes(data_btn)) {
+                selected_btn = data_btn;
+            } else if (btns_allowed.length) {
+                selected_btn = btns_allowed[0];
+            } else {
+                selected_btn = null;
+            };
         };
         setting_dict.sel_btn = selected_btn;
 
@@ -666,6 +703,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // also retrieve the tables that have been changed because of the change in examperiod
             const datalist_request = {setting: new_setting,
                     exam_rows: {get: true},
+                    duo_exam_rows: {get: true},
                     ntermentable_rows: {get: true},
                     published_rows: {get: true}
             };
@@ -677,9 +715,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
         };
 
-    console.log( "data_btn", data_btn);
 // ---  highlight selected button
         b_highlight_BtnSelect(el_btn_container, selected_btn);
+
+// ---  show only the elements that are used in this tab
+        // Note Mexq has also tab_classes. Make sure they have different names
+        b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // --- update header text - comes after MSSSS_display_in_sbr
         UpdateHeaderLeftRight();
@@ -719,6 +760,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // also retrieve the tables that have been changed because of the change in examperiod
         const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
                 published_rows: {get: true}
@@ -755,6 +797,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // also retrieve the tables that have been changed because of the change in examperiod
         const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
                 published_rows: {get: true}
@@ -861,6 +904,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (el_SBR_select_subject){
             el_SBR_select_level.value = "null";
         };
+
 // ---  upload new setting
         const selected_pk_dict = {
         sel_lvlbase_pk: null,
@@ -876,7 +920,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
-        HandleBtnSelect("grade_by_all", true) // true = skip_upload
+        HandleBtnSelect(null, true) // true = skip_upload
         // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
 
 // also retrieve the tables that have been changed because of the change in examperiod
@@ -892,6 +936,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
                 published_rows: {get: true}
@@ -922,15 +967,15 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
+        //console.log( "tblName", tblName);
 
-        console.log( "tblName", tblName);
 // --- get data_rows
         const data_rows = get_datarows_from_tblName(tblName);
-        console.log( "data_rows", data_rows);
+        //console.log( "data_rows", data_rows);
 
 // ---  get list of hidden columns
         // copy col_hidden from mod_MCOL_dict.cols_hidden
@@ -1061,10 +1106,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-23 PR2022-01-19
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        console.log("=========  CreateTblRow =========");
-        console.log("field_setting", field_setting);
-        console.log("data_dict", data_dict);
-        console.log("col_hidden", col_hidden, typeof col_hidden);
+        //console.log("=========  CreateTblRow =========");
+        //console.log("field_setting", field_setting);
+        //console.log("data_dict", data_dict);
+        //console.log("col_hidden", col_hidden, typeof col_hidden);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -1565,7 +1610,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
             if (tblName === "exam"){
                     if(permit_dict.permit_approve_exam && permit_dict.requsr_same_school && data_dict.studsubj_id){
-
 
                 // if(auth_index){
                 if(true){
@@ -2168,7 +2212,7 @@ document.addEventListener("DOMContentLoaded", function() {
         tblBody_select.innerText = null;
 
         let row_count = 0, add_to_list = false;
-// ---  loop through exam_map
+// ---  loop through exam_rows
         if(exam_rows && exam_rows.length){
             for (let i = 0, data_dict; data_dict = exam_rows[i]; i++) {
                 console.log( "data_dict: ", data_dict);
@@ -2257,6 +2301,8 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++++++++ MOD EXAM QUESTIONS ++++++++++++++++ PR2021-04-05 PR2021-05-22
     function MEXQ_Open(el_input){
         console.log(" ===  MEXQ_Open  =====") ;
+        console.log("el_mod_exam_questions", el_MEXQ_questions) ;
+        console.log("id_MEXQ_select_subject", document.getElementById("id_MEXQ_select_subject"));
 
 // - reset mod_MEX_dict
         const is_addnew = (!el_input);
@@ -2290,11 +2336,6 @@ document.addEventListener("DOMContentLoaded", function() {
             MEX_get_subject(sel_subject_pk);
             MEX_get_exam_dict_info(exam_dict);
 
-// update text in select subject div ( not when entering answers)
-            if (el_MEXQ_select_subject) {
-                el_MEXQ_select_subject.innerText = (mod_MEX_dict.subject_pk) ?
-                mod_MEX_dict.subject_name : loc.Click_here_to_select_subject;
-            };
 // update text in headertext2_subject
             MEX_set_headertext2_subject();
 
@@ -2308,33 +2349,44 @@ document.addEventListener("DOMContentLoaded", function() {
             //el_MEXQ_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc, exam_dict.modifiedat, exam_dict.modby_username) : null;
             el_MEXQ_msg_modified.innerText = f_format_last_modified_txt(loc, exam_dict.modifiedat, exam_dict.modby_username);
 
-    // ---  set input subject readOnly when existing exam, change label
-            el_MEXQ_select_subject.innerText = (mod_MEX_dict.is_addnew && !mod_MEX_dict.subject_name) ? loc.Click_here_to_select_subject :
+            // update text in select subject div ( not when entering answers)
+            // set input subject readOnly when existing exam
+            if (el_MEXQ_select_subject) {
+                el_MEXQ_select_subject.innerText = (mod_MEX_dict.is_addnew && !mod_MEX_dict.subject_name) ? loc.Click_here_to_select_subject :
                                                 (mod_MEX_dict.subject_name) ? mod_MEX_dict.subject_name : null;
-            add_or_remove_attr (el_MEXQ_select_subject, "readOnly", (!mod_MEX_dict.is_addnew), true);
-
-    // --- fill select table level
-            MEXQ_FillSelectTableLevel()
-            el_MEXQ_select_level.disabled = (!mod_MEX_dict.is_addnew || !mod_MEX_dict.subject_name);
-
+                add_or_remove_attr (el_MEXQ_select_subject, "readOnly", (!mod_MEX_dict.is_addnew), true);
+            };
+    // --- set select table level disabled
+            MEXQ_FillSelectTableLevel();
+            if (el_MEXQ_select_level){
+                el_MEXQ_select_level.disabled = (!mod_MEX_dict.is_addnew || !mod_MEX_dict.subject_name);
+            };
     // ---  set el_MEXQ_input_version
-            el_MEXQ_input_version.value = (mod_MEX_dict.version) ? mod_MEX_dict.version : null;
-
+            if (el_MEXQ_input_version){
+                el_MEXQ_input_version.value = (mod_MEX_dict.version) ? mod_MEX_dict.version : null;
+            };
     // ---  set examperiod_checkboxes
             MEX_set_examperiod_checkboxes();
 
     // ---  set el_MEXQ_has_partex_checkbox, show/hide partial exam container
-            el_MEXQ_has_partex_checkbox.checked = (mod_MEX_dict.has_partex) ? mod_MEX_dict.has_partex : false;
-            add_or_remove_class(el_MEXQ_partex1_container, cls_hide, !mod_MEX_dict.has_partex);
+            if (el_MEXQ_has_partex_checkbox){
+                el_MEXQ_has_partex_checkbox.checked = (mod_MEX_dict.has_partex) ? mod_MEX_dict.has_partex : false;
+            };
+            if (el_MEXQ_partex1_container){
+                add_or_remove_class(el_MEXQ_partex1_container, cls_hide, !mod_MEX_dict.has_partex);
+            };
             // also hide list of partex in section question, answer, keys
-            add_or_remove_class(el_MEXQ_partex2_container, cls_hide, !mod_MEX_dict.has_partex);
-
+            if (el_MEXQ_partex2_container){
+                add_or_remove_class(el_MEXQ_partex2_container, cls_hide, !mod_MEX_dict.has_partex);
+            };
     // ---  set el_MEXQ_input_amount
-            el_MEXQ_input_amount.value = (mod_MEX_dict.amount) ? mod_MEX_dict.amount : null;
-
+            if (el_MEXQ_input_amount){
+                el_MEXQ_input_amount.value = (mod_MEX_dict.amount) ? mod_MEX_dict.amount : null;
+            };
     // ---  set el_MEXQ_input_scalelength
-            el_MEXQ_input_scalelength.value = (mod_MEX_dict.scalelength) ? mod_MEX_dict.scalelength : null;
-
+            if (el_MEXQ_input_scalelength){
+                el_MEXQ_input_scalelength.value = (mod_MEX_dict.scalelength) ? mod_MEX_dict.scalelength : null;
+            };
     // ---  set header text
             let header1_text = loc.Exam, header2_text = null;
 
@@ -2344,8 +2396,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const depbase_code = (setting_dict.sel_depbase_code) ? setting_dict.sel_depbase_code : "---";
             header1_text += " " + depbase_code;
-console.log("mod_MEX_dict.examperiod", mod_MEX_dict.examperiod)
-console.log("loc.examperiod_caption", loc.examperiod_caption)
             const examperiod_caption = (loc.examperiod_caption && mod_MEX_dict.examperiod) ? loc.examperiod_caption[mod_MEX_dict.examperiod] : "---"
 
             header1_text += " " + examperiod_caption;
@@ -2354,12 +2404,12 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
             el_MEXQ_header3_student.innerText = null //  header3_text
 
     // ---  set focus to input element
-            const el_focus = (is_addnew) ? el_MEXQ_select_subject : el_MEXQ_input_amount;
+            const el_focus = (is_addnew && el_MEXQ_select_subject) ? el_MEXQ_select_subject : el_MEXQ_input_amount;
             set_focus_on_el_with_timeout(el_focus, 50);
-
-            add_or_remove_class(el_MEX_err_amount, "text-danger", false, "text-muted" )
-            el_MEX_err_amount.innerHTML = loc.err_list.amount_mustbe_between_1_and_100;
-
+            if (el_MEX_err_amount){
+                add_or_remove_class(el_MEX_err_amount, "text-danger", false, "text-muted" )
+                el_MEX_err_amount.innerHTML = loc.err_list.amount_mustbe_between_1_and_100;
+            };
     // ---  set buttons
             add_or_remove_class(el_MEX_btn_tab_container, cls_hide, mod_MEX_dict.is_permit_same_school);
             MEX_BtnTabClicked();
@@ -2508,7 +2558,7 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 
 //=========  MEX_get_subject  ================ PR2022-01-12
     function MEX_get_subject(sel_subject_pk) {
-        console.log("===== MEX_get_subject =====");
+        //console.log("===== MEX_get_subject =====");
         //console.log("sel_subject_pk", sel_subject_pk);
         // called by MEXQ_Open and by MSSSS_Response after selecting subject
 
@@ -2528,7 +2578,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
             mod_MEX_dict.subject_code = (found_dict.code) ? found_dict.code : null;
         }
     }  // MEX_get_subject
-
 
 // ------- event handlers
 //=========  MEXQ_BtnPartexClick  ================ PR2022-01-12
@@ -2823,7 +2872,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 
     };  // MEXA_PartexSelect
 
-
 //=========  MEXA_BtnRemoveTakenClick  ================ PR2022-01-20
     function MEXA_BtnRemoveTakenClick() {
         console.log("===== MEXA_BtnRemoveTakenClick =====");
@@ -2843,7 +2891,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
             MEXQ_FillPage()
         };
     };  // MEXA_BtnRemoveTakenClick
-
 
 //=========  MEX_BtnTabClicked  ================ PR2021-05-25 PR2022-01-13
     function MEX_BtnTabClicked(btn) {
@@ -2865,7 +2912,7 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 
         mod_MEX_dict.is_keys_mode = (mod_MEX_dict.sel_tab === "tab_keys");
 
-        b_show_hide_selected_elements_byClass("tab_show", tab_show);
+        b_show_hide_selected_elements_byClass("tab_show", tab_show, el_MEXQ_questions);
 
         MEXQ_show_btnpage();
 
@@ -2896,7 +2943,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
     //console.log( "mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict);
         MEXQ_FillPage()
     }  // MEX_BtnPageClicked
-
 
 // ------- fill functions
 //========= MEX_reset_mod_MEX_dict  ============= PR2022-01-21
@@ -3284,7 +3330,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
             };
         };
         if (has_selected_pk){
-        console.log( "MEXQ_FillTablePartex >>>> MEXQ_FillPage ========= ");
             MEXQ_FillPage();
         };
     };  // MEXQ_FillTablePartex
@@ -3358,19 +3403,13 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 
         const level_container = document.getElementById("id_MEXQ_level_container");
         add_or_remove_class(level_container, cls_hide, !setting_dict.sel_dep_level_req);
-
-        el_MEXQ_select_level.innerHTML = null;
-
-        if (setting_dict.sel_dep_level_req && mod_MEX_dict.subject_pk){
-            //el_MEXQ_select_level.innerText = null;
-            el_MEXQ_select_level.value = null;
-            const select_text = loc.Select_level
-            const select_text_none = loc.No_leerwegen_found;
-            const id_field = "base_id", display_field = "abbrev";
-            const selected_pk = mod_MEX_dict.lvlbase_pk;
-        //console.log( "mod_MEX_dict.lvlbase_pk", mod_MEX_dict.lvlbase_pk);
-            t_FillSelectOptions(el_MEXQ_select_level, level_map, id_field, display_field, false,
-                selected_pk, null, select_text_none, select_text)
+        if (el_MEXQ_select_level){
+            el_MEXQ_select_level.innerHTML = null;
+            if (setting_dict.sel_dep_level_req && mod_MEX_dict.subject_pk){
+                //el_MEXQ_select_level.value = null;
+                t_FillSelectOptions(el_MEXQ_select_level, level_map, "base_id", "abbrev", false,
+                    mod_MEX_dict.lvlbase_pk, null, loc.No_leerwegen_found, loc.Select_level)
+            };
         };
     } // MEXQ_FillSelectTableLevel
 
@@ -3555,12 +3594,12 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
         //console.log( "mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict);
     }; // MEXQ_FillPage
 
-
 // ------- show hide validate functions
-
 //=========  MEXQ_ShowPartexInputEls  ================ PR2022-01-12
     function MEXQ_ShowPartexInputEls(show_input_els) {
-        //console.log("===== MEXQ_ShowPartexInputEls =====");
+        console.log("===== MEXQ_ShowPartexInputEls =====");
+
+
 // ---  reset and hide input_partex_name and partex_amount
         if (!show_input_els){
             el_MEXQ_input_partex_name.value = null;
@@ -3610,10 +3649,10 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
         } else {
 // ---  check if there are multiple exams of this subject and this level
             let multiple_exams_found = false;
-        // skip when there a no other exams yet
-            if(exam_map.size){
+        // skip when there are no other exams yet
+            if(exam_rows && exam_rows.length){
         // loop through exams
-                for (const [map_id, data_dict] of exam_map.entries()) {
+                for (let i = 0, data_dict; data_dict = exam_rows[i]; i++) {
         // skip the current exam
                     if(data_dict.map_id !== mod_MEX_dict.map_id){
         // skip other levels - only when level required
@@ -3660,7 +3699,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
             };
         };
     };  // MEXQ_validate_and_disable
-
 
 //--------- input functions
 //========= MEXQ_InputKeyDown  ================== PR2021-04-07
@@ -3829,7 +3867,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 
     }; // MEXQ_InputScalelength
 
-
 //=========  MEXQ_HasPartexCheckboxChange  ================ PR2022-01-22
     function MEXQ_HasPartexCheckboxChange(el_input) {
         console.log( "===== MEXQ_HasPartexCheckboxChange  ========= ");
@@ -3932,7 +3969,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 */
         console.log("mod_MEX_dict", mod_MEX_dict)
     };  // MEXQ_PartexExamperiodCheckboxChange
-
 
 //========= MEXQ_InputChange  =============== PR2022-01-14
     function MEXQ_InputChange(el_input){
@@ -4104,12 +4140,11 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 //--------- calc functions
 //========= MEX_get_exam_dict_info  ============= PR2021-05-23 PR2022-01-21
     function MEX_get_exam_dict_info(exam_dict) {
-        console.log("===== MEX_get_exam_dict_info =====");
+        //console.log("===== MEX_get_exam_dict_info =====");
         //console.log("exam_dict", exam_dict);
         //console.log("grade_dict", grade_dict);
 
         if(exam_dict) {
-            mod_MEX_dict.exam_map_id = exam_dict.mapid;
             mod_MEX_dict.exam_pk = exam_dict.id;
             mod_MEX_dict.version = (exam_dict.version) ? exam_dict.version : null;
             // examperiod: 1 = ce, 2 = reex, 12 = ce + reex
@@ -4395,7 +4430,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
                         const exam_name = (exam_dict.ceex_name) ? exam_dict.ceex_name : "---";
 
                         // these are entered in MEX_get_exam_dict_info
-                            //mod_MEX_dict.exam_map_id = exam_dict.mapid;
                             //mod_MEX_dict.exam_pk = exam_dict.id;
                             //mod_MEX_dict.department_pk = exam_dict.department_id;
                             //const version = (exam_dict.version) ? exam_dict.version : null;
@@ -4673,6 +4707,67 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
         };  // if (partex_pk && q_number)
     };  // MEXA_InputAnswer
 
+///////////////////////////////////////
+// +++++++++ MOD DUO EXAMS ++++++++++++++++ PR2022-02-28
+    function MDUO_Open(el_input){
+        console.log(" ===  MDUO_Open  =====") ;
+        const is_permit_admin = (permit_dict.requsr_role_admin && permit_dict.permit_crud);
+        if(is_permit_admin){
+
+            b_clear_dict(mod_MDUO_dict);
+
+            mod_MDUO_dict.subject_list = [];
+            mod_MDUO_dict.exam_list = [];
+            mod_MDUO_dict.nterm_list = [];
+            //MDUO_FillDict();
+    // ---  show modal
+            //$("#id_mod_duoexams").modal({backdrop: true});
+        } ; //  if(is_permit_admin)
+
+    };  // MEXQ_Open
+
+
+//=========  MDUO_FillDict  ================ PR2022-02-28
+    function MDUO_FillDict() {
+        console.log("===== MDUO_FillDict =====");
+        //console.log("exam_dict", exam_dict);
+
+        if(subject_rows && subject_rows.length){
+    // loop through subject_rows
+            for (let i = 0, data_dict; data_dict = subject_rows[i]; i++) {
+                const dict = {
+                    base_id: data_dict.base_id,
+                    code: data_dict.code,
+                    id: data_dict.id,
+                    name: data_dict.name
+                };
+                mod_MDUO_dict.subject_list.push(dict);
+            };
+            console.log("mod_MDUO_dict", mod_MDUO_dict);
+        };
+
+        if(ntermentable_rows && ntermentable_rows.length){
+            for (let i = 0, data_dict; data_dict = ntermentable_rows[i]; i++) {
+                const dict = {
+                    id: data_dict.id,
+                    leerweg: data_dict.leerweg,
+                    n_term: data_dict.n_term,
+                    nex_id: data_dict.nex_id,
+                    omschrijving: data_dict.omschrijving,
+                    opl_code: data_dict.opl_code,
+                    sty_id: data_dict.sty_id,
+                    tijdvak: data_dict.tijdvak
+                };
+                mod_MDUO_dict.nterm_list.push(dict);
+            };
+            console.log("mod_MDUO_dict", mod_MDUO_dict);
+        };
+
+        ntermentable_rows
+
+    };  // MDUO_FillDict
+
+
 //========= MOD UPLOAD N-termen TABLE ====================================
     function MDNT_Open (open_mode ) {  // PR2022-02-25
         console.log("===  MDNT_Open  =====") ;
@@ -4870,6 +4965,7 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
             let new_setting = {page: 'page_exams'};
             const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
                 published_rows: {get: true}
@@ -5337,6 +5433,7 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
         const datalist_request = {
                 setting: new_setting,
                 exam_rows: {get: true},
+                duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 subject_rows: {etenorm_only: true, cur_dep_only: true},
                 grade_with_exam_rows: {get: true},
@@ -5355,7 +5452,6 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
     // ---  upload new setting
         if(selected_pk === -1) { selected_pk = null};
 
-
         if (tblName === "school") {
             // not enabled on this page
 
@@ -5363,18 +5459,17 @@ console.log("loc.examperiod_caption", loc.examperiod_caption)
 
 // -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
             // only when modal is open - not necessary, is only called when modal is open
-            //const el_modal = document.getElementById("id_mod_exam_questions");
-            //const modal_MEXQ_is_open = (!!el_modal && el_modal.classList.contains("show"));
+            //const modal_MEXQ_is_open = (!!el_MEXQ_questions && el_modal.classList.contains("show"));
 
             MEX_get_subject(selected_pk);
 
 // update text in select subject div ( not when entering answers)
-if (el_MEXQ_select_subject) {
-    el_MEXQ_select_subject.innerText = (mod_MEX_dict.subject_pk) ?
-    mod_MEX_dict.subject_name : loc.Click_here_to_select_subject;
-};
+            if (el_MEXQ_select_subject) {
+                el_MEXQ_select_subject.innerText = (mod_MEX_dict.subject_pk) ?
+                mod_MEX_dict.subject_name : loc.Click_here_to_select_subject;
+            };
 // also update text in header 2
-MEX_set_headertext2_subject();
+            MEX_set_headertext2_subject();
 
 
     // --- fill select table
@@ -5387,7 +5482,7 @@ MEX_set_headertext2_subject();
             b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         } else if (tblName === "student") {
-
+/*
             const selected_pk_dict = {sel_student_pk: selected_pk};
             selected_pk_dict["sel_" + tblName + "_pk"] = selected_pk;
 
@@ -5403,6 +5498,7 @@ MEX_set_headertext2_subject();
                 setting_dict.sel_subject_pk = null;
                 new_selected_btn = "grade_by_student";
             }
+*/
         }
     }  // MSSSS_Response
 
@@ -5492,7 +5588,7 @@ MEX_set_headertext2_subject();
 
 //========= get_datarows_from_tblName  ======== // PR2022-02-26
     function get_datarows_from_tblName(tblName) {
-        return (tblName === "grades") ? grade_rows :
+        return (tblName === "grades") ?  grade_with_exam_rows :
                             (tblName === "exam") ? exam_rows :
                             (tblName === "ntermen") ? ntermentable_rows : null;
     };
@@ -5507,7 +5603,7 @@ MEX_set_headertext2_subject();
         if(!is_test) {
             const datalist_request = {
                 setting: {page: "page_exams"},
-                grade_rows: {get: true}
+                grade_with_exam_rows: {get: true}
             };
             //DatalistDownload(datalist_request);
         };

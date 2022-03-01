@@ -238,7 +238,7 @@ def create_student_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, appe
 class ClusterUploadView(View):  # PR2022-01-06
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= ClusterUploadView ============= ')

@@ -477,6 +477,60 @@ class Subject_log(sch_mod.AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
+# PR2022-02-28
+class Ntermentable(sch_mod.AwpBaseModel):
+    objects = AwpModelManager()
+
+    examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
+
+    nex_id = IntegerField(db_index=True)
+
+    sty_id = PositiveSmallIntegerField(null=True)
+    opl_code = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    leerweg = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    ext_code = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    tijdvak = PositiveSmallIntegerField(null=True)
+
+    omschrijving = CharField(max_length=c.MAX_LENGTH_EMAIL_ADDRESS, null=True)
+    schaallengte = PositiveSmallIntegerField(null=True)
+    n_term = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+    afnamevakid = PositiveSmallIntegerField(null=True)
+    extra_vakcodes_tbv_wolf = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    datum = DateField(null=True)
+    begintijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+    eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+
+
+# PR2022-02-28
+class Ntermentable_log(sch_mod.AwpBaseModel):
+    objects = AwpModelManager()
+
+    ntermentable_id = IntegerField(db_index=True)
+
+    examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
+
+    nex_id = IntegerField(db_index=True)
+
+    sty_id = PositiveSmallIntegerField(null=True)
+    opl_code = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    leerweg = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    ext_code = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    tijdvak = PositiveSmallIntegerField(null=True)
+
+    omschrijving = CharField(max_length=c.MAX_LENGTH_EMAIL_ADDRESS, null=True)
+    schaallengte = PositiveSmallIntegerField(null=True)
+    n_term = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+    afnamevakid = PositiveSmallIntegerField(null=True)
+    extra_vakcodes_tbv_wolf = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    datum = DateField(null=True)
+    begintijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+    eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+
 class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam with possible answers per exam question
     objects = AwpModelManager()
@@ -484,10 +538,12 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     subject = ForeignKey(Subject, related_name='+', on_delete=PROTECT)
     department = ForeignKey(sch_mod.Department, related_name='+', on_delete=PROTECT)
     level = ForeignKey(Level, related_name='+', null=True, on_delete=SET_NULL)
+    ntermentable = ForeignKey(Ntermentable, related_name='+', null=True, on_delete=SET_NULL)
 
+    ete_exam = BooleanField(default=False)
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
-    # examtype used to store 'ete' or 'duo' exam
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, default='ce')
+
+    # deprecated. was: examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True, default='ce')
 
     version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
@@ -525,9 +581,11 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     subject_log = ForeignKey(Subject_log, related_name='+', null=True, on_delete=SET_NULL)
     department_log = ForeignKey(sch_mod.Department_log, related_name='+', null=True, on_delete=SET_NULL)
     level_log = ForeignKey(Level_log, related_name='+', null=True, on_delete=SET_NULL)
+    ntermentable_log = ForeignKey(Ntermentable_log, related_name='+', null=True, on_delete=SET_NULL)
 
+    ete_exam = BooleanField(default=False)
     examperiod = PositiveSmallIntegerField(db_index=True, default=1)
-    examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
+    # deprecated. was: examtype = CharField(max_length=c.MAX_LENGTH_10, db_index=True)
 
     version = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     has_partex = BooleanField(default=False)
@@ -550,32 +608,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
     # PR2022-02-31 removed to fix migrate problem: examdate = DateField(null=True)
 
-
-# PR2022-02-26
-"""
-class Ntermentable(sch_mod.AwpBaseModel):
-    objects = AwpModelManager()
-
-    examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
-
-    nex_id = IntegerField(db_index=True)
-
-    sty_id = PositiveSmallIntegerField(null=True)
-    opl_code = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    leerweg = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    ext_code = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-    tijdvak = PositiveSmallIntegerField(null=True)
-
-    omschrijving = CharField(max_length=c.MAX_LENGTH_EMAIL_ADDRESS, null=True)
-    schaallengte = PositiveSmallIntegerField(null=True)
-    n_term = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
-    afnamevakid = PositiveSmallIntegerField(null=True)
-    extra_vakcodes_tbv_wolf = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-
-    datum = DateField(null=True)
-    begintijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
-    eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
-"""
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 # PR2018-06-05
 class Schemeitem(sch_mod.AwpBaseModel):

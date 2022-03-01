@@ -50,7 +50,7 @@ const man_mailbox = {
             "Klik op het icoontje met het kruis om de verwijdering ongedaan te maken.</p>"
             ]),
 
-        set_image_div("img_mailbox_read_message_ne"),
+        write_image("img_mailbox_read_message_ne"),
 
         write_paragraph_header("id_mailbox_create_message", "Een bericht aanmaken"),
         write_paragraph_body("",
@@ -86,7 +86,7 @@ const man_mailbox = {
                 "Na het verzenden van de e-mails wordt er een logbestand gedownload met de namen van de geadresseerden.</p>"
 
             ]),
-        set_image_div("img_mailbox_create_message_ne"),
+        write_image("img_mailbox_create_message_ne"),
 
         write_paragraph_header("id_mailbox_recipients", "Geadresseerden"),
         write_paragraph_body("",
@@ -112,7 +112,7 @@ const man_mailbox = {
                 "<p>Als je het bericht ook naar organisaties op Sint Maarten wilt sturen, zet je een vinkje bij <i>Inclusief organisaties van Sint Maarten</i>, ",
                 "In de lijst met beschikbare organisaties worden nu ook de organisaties van Sint Maarten weergegeven.</p>"
             ]),
-        set_image_div("img_mailbox_select_items_ne"),
+        write_image("img_mailbox_select_items_ne"),
 
         write_paragraph_body("",
             ["<p><b>Alleen naar gebruikersgroep...</b><br>",
@@ -156,7 +156,7 @@ const man_mailbox = {
             "als je ook organisaties of gebruikers van Sint Maarten wilt toevoegen aan de verzendlijst. ",
             "Wanneer je het vinkje weghaalt worden alle organisaties of gebruikers van Sint Maarten van de lijst met geselecteerden verwijderd.</p>"
             ]),
-        set_image_div("img_mailbox_mailinglist_ne"),
+        write_image("img_mailbox_mailinglist_ne"),
 
         "<div class='p-3 visibility_hide'>-</div>",
     ],
@@ -196,7 +196,7 @@ const man_mailbox = {
                     "Click in the box with <i>Recipients</i>. The list of recipients of this message will be displayed. Click again and the list will close.</p>"
 
             ]),
-        set_image_div("img_mailbox_read_message_en"),
+        write_image("img_mailbox_read_message_en"),
 
         write_paragraph_header("id_mailbox_create_message", "Create a message"),
         write_paragraph_body("",
@@ -231,7 +231,7 @@ const man_mailbox = {
                 "AWP also sends an email to all recipients, informing them that they have received a message.<br>",
                 "After sending the emails, a logfile will be downloaded with the names of the recipients.</p>"
                 ]),
-        set_image_div("img_mailbox_create_message_en"),
+        write_image("img_mailbox_create_message_en"),
 
         write_paragraph_header("id_mailbox_recipients", "Recipients"),
         write_paragraph_body("",
@@ -256,7 +256,7 @@ const man_mailbox = {
                 "<p>If you also want to send the message to organizations on Curaçao, check <i>Include organizations of Curaçao</i>, ",
                 "The organizations of Curaçao are now also displayed in the list of available organizations.</p>"
             ]),
-        set_image_div("img_mailbox_select_items_en"),
+        write_image("img_mailbox_select_items_en"),
         write_paragraph_body("",
             ["<p><b>Only to user group...</b><br>",
                 "If you don't want to send the message to all users of an organization, ",
@@ -300,7 +300,7 @@ const man_mailbox = {
             "if you also want to add organizations or users of Curaçao to the mailing list. ",
             "When you uncheck the box, all organizations or users of Curaçao will be removed from the list of selected people.</p>"
             ]),
-        set_image_div("img_mailbox_mailinglist_en"),
+        write_image("img_mailbox_mailinglist_en"),
         "<div class='p-3 visibility_hide'>-</div>",
         ]
 }

@@ -281,8 +281,8 @@
 
 //========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23  PR2021-07-23
     function t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
-        //console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
-        //console.log("data_rows", data_rows, typeof data_rows);
+        console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
+        console.log("data_rows", data_rows, typeof data_rows);
 
 // set header text
         const label_text = loc.Select + (
@@ -327,15 +327,15 @@
         const add_all_text = t_MSSSS_AddAll_txt(tblName);
         return (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :
                (tblName === "subject") ? {id: -1,  code: "", name: add_all_text} :
-               (tblName === "cluster") ? {id: -1,  code: "", name: add_all_text} :
+               (tblName === "cluster") ? {id: -1,  subj_code: "", name: add_all_text} :
                (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
     }
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
-        //console.log("===== t_MSSSS_Create_SelectRow ===== ");
-        //console.log("..........tblName", tblName);
-        //console.log("map_dict", map_dict);
+        console.log("===== t_MSSSS_Create_SelectRow ===== ");
+        console.log("..........tblName", tblName);
+        console.log("map_dict", map_dict);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
@@ -346,7 +346,7 @@
 
         const code = (tblName === "school") ? map_dict.sb_code :
                     (tblName === "subject") ? map_dict.code :
-                    (tblName === "cluster") ? map_dict.code :
+                    (tblName === "cluster") ? map_dict.subj_code :
                     (tblName === "student") ? map_dict.name_first_init : "";
 
         const name =  (tblName === "school") ? map_dict.abbrev :
@@ -355,7 +355,8 @@
                     (tblName === "student") ? map_dict.fullname  : "";
         const is_selected_row = (pk_int === selected_pk);
 
-        //console.log("name", name);
+        console.log("code", code);
+        console.log("name", name);
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", row_index = -1;
@@ -1723,8 +1724,8 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02
     function t_MCOL_Open(page, skip_fields) {
         console.log(" -----  t_MCOL_Open   ----")
-        //console.log("selected_btn", selected_btn)
-        //console.log("columns_tobe_hidden", columns_tobe_hidden)
+        console.log("selected_btn", selected_btn)
+        console.log("columns_tobe_hidden", columns_tobe_hidden)
 
         mod_MCOL_dict.page = page;
         mod_MCOL_dict.skip_fields = (skip_fields) ? skip_fields : [];

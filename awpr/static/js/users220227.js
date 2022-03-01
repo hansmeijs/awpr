@@ -415,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
         b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  fill datatable
-        FillTblRows();
+        FillTblRows(skip_upload);
 
     }  // HandleBtnSelect
 
@@ -450,8 +450,8 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
     }  // HandleTblRowClicked
 
-//========= FillTblRows  =================== PR2021-08-01
-    function FillTblRows() {
+//========= FillTblRows  =================== PR2021-08-01 PR2022-02-28
+    function FillTblRows(skip_upload) {
         console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn();
 
@@ -482,7 +482,9 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // --- filter tblRow
-        // happens in Filter_TableRows
+        // set filterdict isactive after loading page (then skip_upload = true)
+        // const set_filter_isactive = skip_upload;
+        Filter_TableRows(skip_upload)
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01
@@ -536,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
+                    // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
                     //el_filter.setAttribute("data-colindex", j);
 
         // --- add EventListener to el_filter / th_filter
@@ -2174,7 +2177,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
 
-            el_confirm_msg_container.classList.add("border_bg_transparent");
+            //el_confirm_msg_container.classList.add("border_bg_transparent");
 
             const caption_save = (mode === "delete") ? loc.Yes_delete :
                             (mode === "is_active") ? ( (mod_dict.current_isactive) ? loc.Yes_make_inactive : loc.Yes_make_active ) :
@@ -2545,19 +2548,26 @@ function RefreshDataRowsAfterUpload(response) {
         //console.log( "filter_dict", filter_dict);
 
         if (!skip_filter) {
-            Filter_TableRows(tblBody_datatable);
+            Filter_TableRows();
         }
     }; // function HandleFilterKeyup
 
 
-//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
+//========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23 PR2022-02-28
     function HandleFilterToggle(el_input) {
-        //console.log( "===== HandleFilterToggle  ========= ");
+        console.log( "===== HandleFilterToggle  ========= ");
+
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+    //console.log( "col_index", col_index);
 
     // - get col_index and filter_tag from  el_input
-        const col_index = get_attr_from_el(el_input, "data-colindex")
         const filter_tag = get_attr_from_el(el_input, "data-filtertag")
         const field_name = get_attr_from_el(el_input, "data-field")
+    //console.log( "filter_tag", filter_tag);
+    //console.log( "field_name", field_name);
 
     // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
         const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
@@ -2579,18 +2589,52 @@ function RefreshDataRowsAfterUpload(response) {
             icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
         }
 
+    //console.log( "new_value", new_value);
+    //console.log( "icon_class", icon_class);
+    //console.log( "col_index", col_index);
+
     // - put new filter value in filter_dict
         filter_dict[col_index] = [filter_tag, new_value]
-        //console.log( "filter_dict", filter_dict);
+
         el_input.className = icon_class;
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows();
 
     };  // HandleFilterToggle
 
+
+
+//========= HandleFilterSetIsactive  =============== PR2022-02-28
+    function HandleFilterSetIsactive() {
+        console.log( "===== HandleFilterSetIsactive  ========= ");
+        // show active only when opening page
+// ---  set filterdict not inactive after loading page (then skip_upload = true)
+            // get col_index of inactive field
+        const el_filter_isactive = tblHead_datatable.querySelector("[data-field='is_active']");
+        if (el_filter_isactive){
+            const filter_tag = "toggle";
+            const field_name = "is_active";
+            const col_index = el_filter_isactive.parentNode.cellIndex;
+            console.log( "col_index: ", col_index);
+            filter_dict = {col_index: ["toggle", 1]}
+
+        // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+            const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+            const new_value = "1", icon_class = "inactive_0_2"
+
+        // - put new filter value in filter_dict
+            filter_dict[col_index] = [filter_tag, new_value]
+
+            el_filter_isactive.className = icon_class;
+
+        };
+    };  // HandleFilterSetIsactive
+
+
+
 //========= Filter_TableRows  ====================================
-    function Filter_TableRows() {  // PR2019-06-09 PR2020-08-31
-        //console.log( "===== Filter_TableRows=== ");
-        //console.log( "filter_dict", filter_dict);
+    function Filter_TableRows(set_filter_isactive) {  // PR2019-06-09 PR2020-08-31
+        console.log( "===== Filter_TableRows=== ");
+        console.log( "filter_dict", filter_dict);
 
         // function filters by inactive and substring of fields
         //  - iterates through cells of tblRow
@@ -2601,6 +2645,10 @@ function RefreshDataRowsAfterUpload(response) {
         //  - if col_inactive has value >= 0 and hide_inactive = true:
         //       - checks data-value of column 'inactive'.
         //       - hides row if inactive = true
+
+        if (set_filter_isactive){
+            HandleFilterSetIsactive();
+        };
 
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
@@ -2675,7 +2723,7 @@ function RefreshDataRowsAfterUpload(response) {
         filter_dict = {};
         filter_mod_employee = false;
 
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows(true);  // true = set filter isactive
 
         let filterRow = tblHead_datatable.rows[1];
         if(!!filterRow){

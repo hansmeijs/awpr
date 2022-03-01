@@ -174,7 +174,8 @@
                     } else if (item_dict.value[0] === "p") {
                         is_allowed = (!setting_dict.no_centralexam && !setting_dict.no_practexam);
                     } else if (item_dict.value[0] === "c") {
-                        is_allowed = (!setting_dict.no_centralexam);
+                        // cegrade not allowed
+                        is_allowed = (!setting_dict.no_centralexam && item_dict.value !== "cegrade");
                     };
                 } else if (selected_btn === "btn_reex" && ["reexscore", "reexgrade"].includes(item_dict.value)) {
                     is_allowed = (!setting_dict.no_centralexam);

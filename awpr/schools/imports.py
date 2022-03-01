@@ -3749,6 +3749,13 @@ def get_dnt_from_upload(sel_examyear, upload_data_list, request):
                     nt_instance = None
                     nex_id = row[pkfield_index]
                     if nex_id:
+# check if nex_id starts with last 2 digits of examyear
+                        nextid_yearstr = nex_id[:2]
+                        ey_yearstr = str(sel_examyear.code)[2:]
+                        if logging_on:
+                            logger.debug('nextid_yearstr: ' + str(nextid_yearstr))
+                            logger.debug('    ey_yearstr: ' + str(ey_yearstr))
+
                         # get existing row
                         nt_instance = subj_mod.Ntermentable.objects.get_or_none(
                             examyear=sel_examyear,
@@ -3771,7 +3778,7 @@ def get_dnt_from_upload(sel_examyear, upload_data_list, request):
                                     value = '-'.join((arr[2],arr[1],arr[0]))
                                 setattr(nt_instance, field, value)
                     nt_instance.save(request=request)
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('nt_instance: ' + str(nt_instance))
 
 # - end of get_dnt_from_upload

@@ -615,21 +615,16 @@ class Grade(sch_mod.AwpBaseModel):
     pe_exam_blocked = BooleanField(default=False)
 
     ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
-    # TODO put back: ce_exam_blanks = PositiveSmallIntegerField(null=True)
+    ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_blocked = BooleanField(default=False)
 
-    # TODO deprecated, use pe_exam and ce_exam
-    #answers = CharField(max_length=2048, null=True)
-    #blanks = PositiveSmallIntegerField(null=True) # number of blank questions
-    #answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
-
     tobedeleted = BooleanField(default=False)
 
-    # TODO deprecate?
+    # TODO deprecate
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -701,7 +696,7 @@ class Grade_log(sch_mod.AwpBaseModel):
     pe_exam_blocked = BooleanField(default=False)
 
     ce_exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
-    # TODO put back: ce_exam_blanks = PositiveSmallIntegerField(null=True)
+    ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

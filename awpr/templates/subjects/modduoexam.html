@@ -1,0 +1,120 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL LINK DUO EXAMS  =================== -->
+    <div class="modal" id="id_mod_duoexams" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl " role="document">
+
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <a href="{% url 'manual_url' 'studsubj' 'id_clusters' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
+
+                    <h4 class="modal-title mx-2" >{% trans 'Link DUO exams' %}</h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="mx-3">
+                        <label class="mx-2 my-1">{% trans 'Leerweg' %}:</label>
+
+                        <div id="id_MDUO_select_level" class="form-control pt-2 pointer_show"></div>
+
+                        <div class="mx-2 display_hide">
+                            <small id="id_MDUO_err_level" class="text-danger">{% trans 'The leerweg cannot be blank.' %}</small>
+                        </div>
+                        <div class="mx-2">
+                            <small class="text-muted">{% trans 'Select a subject and a DUO exam to link them.' %}</small>
+                            <small class="text-muted">{% trans 'Select a linked subject to remove the link.' %}</small>
+                            <small class="text-muted">{% trans "Click 'Save' to save the changes." %}</small>
+                        </div>
+
+                    </div>
+                    <div class="content_header ml-2 mr-0">
+
+
+                        <div class="flex_4 p-2 ">
+                            <h6 class="px-2">{% trans 'Subjects' %}:</h6>
+                            <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h320_w_auto">
+                                <tbody id="id_MDUO_tblBody_subjects"></tbody>
+                            </table>
+
+                            <div>
+                                <label class="label_margin_top_m2">{% trans 'Filter subjects' %}:</label>
+                                <div class="flex_container px-2">
+                                    <div class="flex_1">
+                                        <input id="id_MDUO_filter_subjects" type="text" data-field="schoolname" class="form-control"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    </div>
+                                    <div class="flex_1">
+                                        <div class="flex_box">
+                                            <div class="flex_1">
+                                                <input id="id_MDUO_show_linked_subjects" type="checkbox" class="awp_input_checkbox tw_032 mx-2">
+                                            </div>
+                                            <div class="flex_4">
+                                                <label for="id_MDUO_show_linked_subjects">{% trans 'Show linked subjects' %}</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                         </div>
+
+                        <div class="flex_4 p-2">
+                            <h6 class="px-2">{% trans 'DUO exams' %}:</h6>
+                            <table class="tableX tsa_tbl border_bg_lightblue tbl_studsubj_h320_w_auto">
+                                <tbody id="id_MDUO_tblBody_exams"></tbody>
+                            </table>
+
+                            <div>
+                                <label class="label_margin_top_m2">{% trans 'Filter DUO exams' %}:</label>
+                                <div class="flex_container px-2">
+                                    <div class="flex_1">
+                                        <input id="id_MDUO_filter_exams" type="text" data-field="schoolname" class="form-control"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    </div>
+                                    <div class="flex_1">
+                                        <div class="flex_box">
+                                            <div class="flex_1">
+                                                <input id="id_MDUO_show_linked_exams" type="checkbox" class="awp_input_checkbox tw_032 mx-2">
+                                            </div>
+                                            <div class="flex_4">
+                                                <label for="id_MDUO_show_linked_exams">{% trans 'Show linked exams' %}</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex_4 p-2">
+                            <h6 class="px-2">{% trans 'Linked subjects' %}:</h6>
+                            <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h320_w_auto">
+                                <tbody id="id_MDUO_tblBody_linked"></tbody>
+                            </table>
+
+                            <div>
+                                <label class="label_margin_top_m2">{% trans 'Filter linked subjects' %}:</label>
+                                <div class="flex_container px-2">
+                                    <div class="flex_1">
+                                        <input id="id_MDUO_filter_linked" type="text" class="form-control"
+                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MDUO_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>

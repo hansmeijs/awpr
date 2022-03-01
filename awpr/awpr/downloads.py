@@ -194,14 +194,26 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
                     )
-# ----- ntermentable
+
+
+# ----- duo_exams
+                if datalist_request.get('duo_exam_rows'):
+                    datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
+                        req_usr=request.user,
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_depbase_pk=sel_depbase.pk,
+                        append_dict={},
+                        setting_dict=new_setting_dict,
+                        exam_pk_list=None
+                    )
+
+    # ----- ntermentable
                 if datalist_request.get('ntermentable_rows'):
-                    pass
-                    #datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
-                    #    sel_examyear_pk=sel_examyear.pk,
-                    #    sel_depbase=sel_depbase,
-                    #    setting_dict=new_setting_dict
-                    #)
+                    datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_depbase=sel_depbase,
+                        setting_dict=new_setting_dict
+                    )
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'], error_dict = stud_view.create_student_rows(

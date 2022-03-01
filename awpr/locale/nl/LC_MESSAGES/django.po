@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-02-26 20:49-0400\n"
+"POT-Creation-Date: 2022-03-01 07:36-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -258,6 +258,7 @@ msgstr "Wachtwoord aanmaken"
 #: .\templates\students\modstudent.html:196
 #: .\templates\students\modstudentsubject.html:127
 #: .\templates\subjects\modapproveexam.html:71
+#: .\templates\subjects\modduoexam.html:113
 #: .\templates\subjects\modexamquestions.html:159
 #: .\templates\subjects\modexamquestions.html:261
 #: .\templates\subjects\modotherlang.html:26
@@ -427,8 +428,8 @@ msgstr "Systeembeheerders kunnen hun eigen account niet wissen."
 #: .\schools\views.py:2184 .\schools\views.py:2366 .\schools\views.py:2375
 #: .\schools\views.py:3312 .\students\views.py:228 .\students\views.py:1295
 #: .\students\views.py:2999 .\students\views.py:4289 .\students\views.py:5154
-#: .\subjects\views.py:611 .\subjects\views.py:3417 .\subjects\views.py:3530
-#: .\subjects\views.py:3580 .\subjects\views.py:4005
+#: .\subjects\views.py:611 .\subjects\views.py:3475 .\subjects\views.py:3588
+#: .\subjects\views.py:3638 .\subjects\views.py:4063
 msgid "An error occurred"
 msgstr "Er is een fout opgetreden"
 
@@ -520,7 +521,7 @@ msgid "Please enter a school."
 msgstr "De school moet ingevuld worden."
 
 #: .\accounts\views.py:1535 .\accounts\views.py:1695 .\subjects\views.py:573
-#: .\subjects\views.py:3383 .\subjects\views.py:3978
+#: .\subjects\views.py:3441 .\subjects\views.py:4036
 msgid "The name"
 msgstr "De naam"
 
@@ -551,8 +552,8 @@ msgstr "De wijzigingen zijn met succes opgeslagen."
 
 #: .\accounts\views.py:1811 .\schools\imports.py:1056 .\schools\views.py:3313
 #: .\schools\views.py:3920 .\schools\views.py:3931 .\students\views.py:4291
-#: .\subjects\views.py:735 .\subjects\views.py:3529 .\subjects\views.py:3531
-#: .\subjects\views.py:3757 .\subjects\views.py:3873 .\subjects\views.py:4212
+#: .\subjects\views.py:735 .\subjects\views.py:3587 .\subjects\views.py:3589
+#: .\subjects\views.py:3815 .\subjects\views.py:3931 .\subjects\views.py:4270
 msgid "The changes have not been saved."
 msgstr "De wijzigingen zijn niet opgeslagen."
 
@@ -712,9 +713,9 @@ msgid "Third exam period"
 msgstr "Derde tijdvak"
 
 #: .\awpr\constants.py:158 .\awpr\constants.py:164 .\awpr\constants.py:199
-#: .\awpr\constants.py:220 .\awpr\locale.py:145 .\awpr\locale.py:1067
-#: .\awpr\locale.py:1068 .\awpr\locale.py:1069 .\awpr\locale.py:1070
-#: .\awpr\locale.py:1071 .\awpr\locale.py:1072 .\grades\calc_results.py:1784
+#: .\awpr\constants.py:220 .\awpr\locale.py:145 .\awpr\locale.py:1068
+#: .\awpr\locale.py:1069 .\awpr\locale.py:1070 .\awpr\locale.py:1071
+#: .\awpr\locale.py:1072 .\awpr\locale.py:1073 .\grades\calc_results.py:1784
 #: .\grades\calc_results.py:2751 .\grades\calc_results.py:2821
 #: .\grades\validators.py:592 .\templates\students\studentsubjects.html:114
 msgid "Exemption"
@@ -831,12 +832,12 @@ msgstr "Teruggetrokken"
 msgid "Subject abbreviation"
 msgstr "Afkorting van het vak"
 
-#: .\awpr\constants.py:316 .\subjects\views.py:3291
+#: .\awpr\constants.py:316 .\subjects\views.py:3349
 msgid "Subject name"
 msgstr "Naam van het vak"
 
-#: .\awpr\constants.py:317 .\awpr\constants.py:364 .\awpr\locale.py:1274
-#: .\schools\views.py:4285 .\subjects\views.py:3293
+#: .\awpr\constants.py:317 .\awpr\constants.py:364 .\awpr\locale.py:1275
+#: .\schools\views.py:4285 .\subjects\views.py:3351
 #: .\templates\subjects\modsubject.html:31
 #: .\templates\subjects\modsubjecttypebase.html:39
 msgid "Sequence"
@@ -853,28 +854,28 @@ msgid "ID-number"
 msgstr "ID-nummer"
 
 #: .\awpr\constants.py:340 .\awpr\constants.py:375 .\awpr\locale.py:663
-#: .\awpr\locale.py:991 .\schools\imports.py:881
+#: .\awpr\locale.py:992 .\schools\imports.py:881
 #: .\templates\students\modstudent.html:19
 msgid "Last name"
 msgstr "Achternaam"
 
 #: .\awpr\constants.py:341 .\awpr\constants.py:376 .\awpr\locale.py:664
-#: .\awpr\locale.py:992 .\schools\imports.py:885
+#: .\awpr\locale.py:993 .\schools\imports.py:885
 msgid "First name"
 msgstr "Voornamen"
 
-#: .\awpr\constants.py:342 .\awpr\constants.py:377 .\awpr\locale.py:1227
+#: .\awpr\constants.py:342 .\awpr\constants.py:377 .\awpr\locale.py:1228
 #: .\schools\imports.py:889 .\templates\students\modstudent.html:29
 msgid "Prefix"
 msgstr "Voorvoegsel"
 
 #: .\awpr\constants.py:343 .\awpr\constants.py:378 .\awpr\locale.py:665
-#: .\awpr\locale.py:993 .\students\views.py:4016
+#: .\awpr\locale.py:994 .\students\views.py:4016
 #: .\templates\students\modstudent.html:34
 msgid "Gender"
 msgstr "Geslacht"
 
-#: .\awpr\constants.py:344 .\awpr\constants.py:379 .\awpr\locale.py:1221
+#: .\awpr\constants.py:344 .\awpr\constants.py:379 .\awpr\locale.py:1222
 #: .\students\views.py:4065 .\templates\students\modstudent.html:101
 msgid "Exam number"
 msgstr "Examennummer"
@@ -940,7 +941,7 @@ msgstr "Land"
 msgid "Page"
 msgstr "Pagina"
 
-#: .\awpr\constants.py:361 .\awpr\locale.py:1219 .\schools\imports.py:3482
+#: .\awpr\constants.py:361 .\awpr\locale.py:1220 .\schools\imports.py:3482
 #: .\templates\accounts\modpermit.html:20
 msgid "Organization"
 msgstr "Organisatie"
@@ -955,7 +956,7 @@ msgstr "Actie"
 msgid "User groups"
 msgstr "Gebruikersgroepen"
 
-#: .\awpr\constants.py:367 .\awpr\locale.py:1218
+#: .\awpr\constants.py:367 .\awpr\locale.py:1219
 #: .\templates\emails\publish_orderlist_email.html:8
 msgid "School code"
 msgstr "Schoolcode"
@@ -969,7 +970,7 @@ msgstr "Schoolcode"
 msgid "Name"
 msgstr "Naam"
 
-#: .\awpr\constants.py:371 .\awpr\locale.py:1253
+#: .\awpr\constants.py:371 .\awpr\locale.py:1254
 msgid "Function"
 msgstr "Functie"
 
@@ -1045,20 +1046,20 @@ msgid "Edit"
 msgstr "Wijzigen"
 
 #: .\awpr\constants.py:516 .\awpr\excel.py:372 .\awpr\excel.py:1070
-#: .\awpr\locale.py:1254 .\templates\students\modgradelist.html:33
+#: .\awpr\locale.py:1255 .\templates\students\modgradelist.html:33
 msgid "President"
 msgstr "Voorzitter"
 
 #: .\awpr\constants.py:517 .\awpr\excel.py:384 .\awpr\excel.py:1082
-#: .\awpr\locale.py:1255 .\templates\students\modgradelist.html:39
+#: .\awpr\locale.py:1256 .\templates\students\modgradelist.html:39
 msgid "Secretary"
 msgstr "Secretaris"
 
-#: .\awpr\constants.py:518 .\awpr\locale.py:1257
+#: .\awpr\constants.py:518 .\awpr\locale.py:1258
 msgid "Examinator"
 msgstr ""
 
-#: .\awpr\constants.py:519 .\awpr\locale.py:1256
+#: .\awpr\constants.py:519 .\awpr\locale.py:1257
 #: .\templates\accounts\modpermit.html:25
 msgid "Commissioner"
 msgstr "Gecommitteerde"
@@ -1078,8 +1079,8 @@ msgstr "Examenjaren"
 
 #: .\awpr\constants.py:527 .\awpr\locale.py:107 .\awpr\menus.py:48
 #: .\awpr\menus.py:50 .\templates\students\studentsubjects.html:113
-#: .\templates\subjects\subjects.html:5 .\templates\subjects\subjects.html:15
-#: .\templates\subjects\subjects.html:87
+#: .\templates\subjects\modduoexam.html:38 .\templates\subjects\subjects.html:5
+#: .\templates\subjects\subjects.html:15 .\templates\subjects\subjects.html:87
 msgid "Subjects"
 msgstr "Vakken"
 
@@ -1106,81 +1107,81 @@ msgstr "Bestellijst"
 msgid "Grades"
 msgstr "Cijfers"
 
-#: .\awpr\downloads.py:442 .\awpr\validators.py:206 .\schools\views.py:3461
+#: .\awpr\downloads.py:455 .\awpr\validators.py:206 .\schools\views.py:3461
 #: .\subjects\views.py:398 .\subjects\views.py:1066
 #, python-format
 msgid "Exam year %(exyr)s is locked."
 msgstr "Examenjaar %(exyr)s is afgesloten."
 
-#: .\awpr\downloads.py:443 .\awpr\downloads.py:497 .\awpr\locale.py:80
+#: .\awpr\downloads.py:456 .\awpr\downloads.py:510 .\awpr\locale.py:80
 #: .\awpr\validators.py:226 .\grades\views.py:751 .\students\views.py:2796
 msgid "You cannot make changes."
 msgstr "Je kunt geen wijzigingen aanbrengen."
 
-#: .\awpr\downloads.py:496
+#: .\awpr\downloads.py:509
 #, python-format
 msgid "Exam year %(exyr)s of this school is locked."
 msgstr "Examenjaar %(exyr)s van deze school is vergrendeld."
 
-#: .\awpr\downloads.py:878
+#: .\awpr\downloads.py:891
 msgid "User has no country."
 msgstr "De gebruiker heeft geen land."
 
-#: .\awpr\downloads.py:882 .\awpr\downloads.py:1000
+#: .\awpr\downloads.py:895 .\awpr\downloads.py:1013
 msgid "This country is locked."
 msgstr "Dit land is vergrendeld."
 
-#: .\awpr\downloads.py:901
+#: .\awpr\downloads.py:914
 msgid "User has no school."
 msgstr "De gebruiker heeft geen school."
 
-#: .\awpr\downloads.py:907
+#: .\awpr\downloads.py:920
 msgid "Only users of this school are allowed to make changes."
 msgstr "Alleen gebruikers van deze school mogen wijzigingen aanbrengen."
 
-#: .\awpr\downloads.py:952
+#: .\awpr\downloads.py:965
 msgid "There is no department selected."
 msgstr "Er is geen afdeling geselecteerd."
 
-#: .\awpr\downloads.py:955
+#: .\awpr\downloads.py:968
 #, python-format
 msgid "You don't have permission to view department %(val)s."
 msgstr "Je hebt geen permissie om afdeling %(val)s te bekijken."
 
-#: .\awpr\downloads.py:958
+#: .\awpr\downloads.py:971
 #, python-format
 msgid "This school does not have department %(val)s."
 msgstr "De school heeft afdeling %(val)s niet."
 
-#: .\awpr\downloads.py:969
+#: .\awpr\downloads.py:982
 #, python-format
 msgid "Department %(val)s not found in this examyear."
 msgstr "Afdeling %(val)s niet gevonden in dit examenjaar."
 
-#: .\awpr\downloads.py:1032
+#: .\awpr\downloads.py:1045
 msgid "There is no exam year selected."
 msgstr "Er is geen examenjaar geselecteerd."
 
-#: .\awpr\downloads.py:1034
+#: .\awpr\downloads.py:1047
 #, python-format
 msgid "Exam year %(ey_code)s is not published yet."
 msgstr "Examenjaar %(ey_code)s is nog niet gepubliceerd."
 
-#: .\awpr\downloads.py:1036 .\awpr\validators.py:225
+#: .\awpr\downloads.py:1049 .\awpr\validators.py:225
 #, python-format
 msgid "Exam year %(ey_code)s is locked."
 msgstr "Examenjaar %(ey_code)s is afgesloten."
 
-#: .\awpr\downloads.py:1042
+#: .\awpr\downloads.py:1055
 msgid "School not found in this exam year."
 msgstr "School niet gevonden in dit examenjaar."
 
-#: .\awpr\downloads.py:1044
+#: .\awpr\downloads.py:1057
 #, python-format
 msgid "Exam year %(ey_code)s of this school is locked."
 msgstr "Examenjaar %(ey_code)s of this school is vergrendeld."
 
-#: .\awpr\downloads.py:1046
+#: .\awpr\downloads.py:1059
 #, python-format
 msgid "The school has not activated exam year %(ey_code)s yet."
 msgstr "De school heeft examenjaar %(ey_code)s nog niet geactiveerd."
@@ -1291,12 +1292,12 @@ msgstr "Laatst gewijzigd door"
 
 #: .\awpr\excel.py:2823 .\awpr\locale.py:557 .\awpr\locale.py:682
 #: .\awpr\validators.py:520 .\awpr\validators.py:560 .\schools\functions.py:389
-#: .\subjects\views.py:4004
+#: .\subjects\views.py:4062
 msgid "Character"
 msgstr "Karakter"
 
 #: .\awpr\excel.py:2823 .\awpr\excel.py:2891 .\awpr\locale.py:122
-#: .\awpr\locale.py:1066 .\subjects\views.py:691 .\subjects\views.py:3289
+#: .\awpr\locale.py:1067 .\subjects\views.py:691 .\subjects\views.py:3347
 #: .\templates\subjects\modsubject.html:25
 #: .\templates\subjects\modsubjecttypebase.html:45
 msgid "Abbreviation"
@@ -1370,7 +1371,7 @@ msgstr "Heeft werkstuk"
 msgid "Herkansing SE allowed"
 msgstr "Herkansing SE toegestaan"
 
-#: .\awpr\excel.py:2899 .\awpr\locale.py:545 .\subjects\views.py:3841
+#: .\awpr\excel.py:2899 .\awpr\locale.py:545 .\subjects\views.py:3899
 msgid "Maximum number of re-examinations"
 msgstr "Maximaal aantal herexamens"
 
@@ -1391,11 +1392,11 @@ msgstr "Andere talen"
 msgid "AWP-online verificationcode"
 msgstr "AWP-online verificatiecode"
 
-#: .\awpr\functions.py:176 .\subjects\views.py:5102
+#: .\awpr\functions.py:176 .\subjects\views.py:5160
 msgid "The verificationcode has expired."
 msgstr "De verificatiecode is verlopen."
 
-#: .\awpr\functions.py:188 .\subjects\views.py:5114
+#: .\awpr\functions.py:188 .\subjects\views.py:5172
 msgid "The verificationcode you have entered is not correct."
 msgstr "De verificatiecode die je hebt ingevuld is niet correct."
 
@@ -1648,7 +1649,7 @@ msgstr "Examenjaar"
 #: .\awpr\locale.py:106 .\awpr\menus.py:383 .\awpr\printpdf.py:543
 #: .\awpr\validators.py:336 .\schools\functions.py:464 .\students\views.py:4446
 #: .\students\views.py:4481 .\students\views.py:4512 .\subjects\views.py:373
-#: .\subjects\views.py:3418 .\subjects\views.py:3441
+#: .\subjects\views.py:3476 .\subjects\views.py:3499
 #: .\templates\includes\modstatus.html:27
 #: .\templates\schools\orderlists.html:33 .\templates\students\grades.html:42
 #: .\templates\students\modapprovegrade.html:44
@@ -1678,7 +1679,7 @@ msgstr ""
 #: .\templates\schools\orderlists.html:19 .\templates\students\grades.html:28
 #: .\templates\students\results.html:19 .\templates\students\students.html:20
 #: .\templates\students\studentsubjects.html:20
-#: .\templates\subjects\exams.html:29
+#: .\templates\subjects\exams.html:29 .\templates\subjects\modduoexam.html:20
 #: .\templates\subjects\modexamquestions.html:38
 #: .\templates\subjects\modschemeitem.html:26
 #: .\templates\subjects\modsubjecttype.html:25
@@ -1738,11 +1739,11 @@ msgstr "Kandidaten"
 msgid "a candidate"
 msgstr "een kandidaat"
 
-#: .\awpr\locale.py:135 .\schools\views.py:4287 .\subjects\views.py:3295
+#: .\awpr\locale.py:135 .\schools\views.py:4287 .\subjects\views.py:3353
 msgid "Departments"
 msgstr "Afdelingen"
 
-#: .\awpr\locale.py:136 .\awpr\locale.py:1245
+#: .\awpr\locale.py:136 .\awpr\locale.py:1246
 msgid "Inactive"
 msgstr "Niet aktief"
 
@@ -1754,7 +1755,7 @@ msgstr "Laatst gewijzigd "
 msgid "on "
 msgstr "op "
 
-#: .\awpr\locale.py:140 .\awpr\locale.py:1267
+#: .\awpr\locale.py:140 .\awpr\locale.py:1268
 msgid " by "
 msgstr " door "
 
@@ -1824,6 +1825,7 @@ msgstr "Publiceren"
 #: .\templates\students\modcluster.html:117
 #: .\templates\students\modstudent.html:197
 #: .\templates\students\modstudentsubject.html:128
+#: .\templates\subjects\modduoexam.html:114
 #: .\templates\subjects\modexamquestions.html:262
 #: .\templates\subjects\modotherlang.html:27
 #: .\templates\subjects\modschemeitem.html:75
@@ -2271,7 +2273,7 @@ msgid "Click to send an email with an activation link."
 msgstr "Klik om een e-mail met een activerings-link te versturen."
 
 #: .\awpr\locale.py:327 .\awpr\locale.py:340 .\awpr\locale.py:613
-#: .\awpr\locale.py:1181
+#: .\awpr\locale.py:1182
 msgid "Activated"
 msgstr "Geactiveerd"
 
@@ -2296,7 +2298,7 @@ msgstr "Gepubliceerd"
 msgid "Not published"
 msgstr "Niet gepubliceerd"
 
-#: .\awpr\locale.py:338 .\awpr\locale.py:869
+#: .\awpr\locale.py:338 .\awpr\locale.py:870
 msgid "Published at "
 msgstr "Gepubliceerd op "
 
@@ -2554,7 +2556,7 @@ msgstr "Verzenddatum"
 msgid "Attn."
 msgstr "Ter attentie van"
 
-#: .\awpr\locale.py:437 .\awpr\locale.py:1087 .\awpr\locale.py:1241
+#: .\awpr\locale.py:437 .\awpr\locale.py:1088 .\awpr\locale.py:1242
 #: .\templates\includes\modnote.html:35 .\templates\includes\modnote.html:61
 msgid "Attachment"
 msgstr "Bijlage"
@@ -2765,12 +2767,12 @@ msgstr "Basiskarakter"
 msgid "Character name"
 msgstr "Naam van het karakter"
 
-#: .\awpr\locale.py:514 .\awpr\locale.py:1002
+#: .\awpr\locale.py:514 .\awpr\locale.py:1003
 msgctxt "karakter"
 msgid "Character"
 msgstr "Karakter"
 
-#: .\awpr\locale.py:517 .\awpr\locale.py:1042
+#: .\awpr\locale.py:517 .\awpr\locale.py:1043
 #: .\templates\includes\modstatus.html:43
 msgid "Grade"
 msgstr "Cijfer"
@@ -2813,7 +2815,7 @@ msgstr "Kernvak eis"
 msgid "Not at eveningschool or landsexamen"
 msgstr "Niet bij avondschool of landsexamen"
 
-#: .\awpr\locale.py:549 .\subjects\views.py:3318
+#: .\awpr\locale.py:549 .\subjects\views.py:3376
 #: .\templates\students\modstudentsubject.html:123
 #: .\templates\subjects\modschemeitem.html:70
 #: .\templates\subjects\modsubject.html:86
@@ -2834,7 +2836,7 @@ msgstr "Leerweg wissen"
 msgid "Delete sector"
 msgstr "Sector wissen"
 
-#: .\awpr\locale.py:553 .\subjects\views.py:4027
+#: .\awpr\locale.py:553 .\subjects\views.py:4085
 msgid "Delete character"
 msgstr "Karakter wissen"
 
@@ -3031,11 +3033,11 @@ msgstr "Kandidaat wissen"
 msgid "Please select a candidate first."
 msgstr "Selecteer eerst een kandidaat."
 
-#: .\awpr\locale.py:666 .\awpr\locale.py:994
+#: .\awpr\locale.py:666 .\awpr\locale.py:995
 msgid "ID number"
 msgstr "ID-nummer"
 
-#: .\awpr\locale.py:668 .\awpr\locale.py:1000
+#: .\awpr\locale.py:668 .\awpr\locale.py:1001
 msgid "Abbrev."
 msgstr "Afkorting"
 
@@ -3094,7 +3096,7 @@ msgstr ""
 msgid "The composition of the subjects is not correct"
 msgstr "De samenstelling van de vakken is niet correct"
 
-#: .\awpr\locale.py:697 .\awpr\locale.py:1075
+#: .\awpr\locale.py:697 .\awpr\locale.py:1076
 msgid "Notes"
 msgstr "Opmerkingen"
 
@@ -3201,7 +3203,7 @@ msgstr "op "
 msgid "Approve subjects"
 msgstr "Vakken goedkeuren"
 
-#: .\awpr\locale.py:736 .\awpr\locale.py:871
+#: .\awpr\locale.py:736 .\awpr\locale.py:872
 msgid "Apply verificationcode"
 msgstr "Verificatiecode aanvragen"
 
@@ -3217,18 +3219,18 @@ msgstr "Voorlopig Ex1-formulier"
 msgid "The preliminary Ex1 form"
 msgstr "Het voorlopige Ex1-formulier"
 
-#: .\awpr\locale.py:741 .\awpr\locale.py:1008 .\awpr\locale.py:1272
+#: .\awpr\locale.py:741 .\awpr\locale.py:1009 .\awpr\locale.py:1273
 msgid "Download Ex form"
 msgstr "Ex-formulier downloaden"
 
-#: .\awpr\locale.py:742 .\awpr\locale.py:1022
+#: .\awpr\locale.py:742 .\awpr\locale.py:1023
 #: .\templates\students\modapprovegrade.html:76
 #: .\templates\students\modapprovesubject.html:73
 #: .\templates\subjects\modapproveexam.html:72
 msgid "Approve"
 msgstr "Goedkeuren"
 
-#: .\awpr\locale.py:743 .\awpr\locale.py:1023
+#: .\awpr\locale.py:743 .\awpr\locale.py:1024
 msgid "Check grades"
 msgstr "Cijfers controleren"
 
@@ -3289,7 +3291,7 @@ msgstr "Dit item"
 msgid "is already published."
 msgstr "is al ingediend."
 
-#: .\awpr\locale.py:771 .\awpr\locale.py:938 .\awpr\locale.py:1150
+#: .\awpr\locale.py:771 .\awpr\locale.py:939 .\awpr\locale.py:1151
 msgid "You cannot change the approval."
 msgstr "Je kunt de goedkeuring niet wijzigen."
 
@@ -3354,7 +3356,7 @@ msgstr ""
 msgid "AWP is approving the subjects of the candidates"
 msgstr "AWP is de vakken van de kandidaten aan het goedkeuren"
 
-#: .\awpr\locale.py:789 .\awpr\locale.py:973 .\awpr\locale.py:1211
+#: .\awpr\locale.py:789 .\awpr\locale.py:974 .\awpr\locale.py:1212
 msgid "AWP is sending an email with the verification code"
 msgstr "AWP is een e-mail met de verificatiecode aan het versturen"
 
@@ -3362,7 +3364,7 @@ msgstr "AWP is een e-mail met de verificatiecode aan het versturen"
 msgid "AWP is creating the Ex1 form"
 msgstr "AWP is het Ex1-formulier aan het aanmaken"
 
-#: .\awpr\locale.py:791 .\awpr\locale.py:1037
+#: .\awpr\locale.py:791 .\awpr\locale.py:1038
 msgid "The Ex2A form is succesfully created."
 msgstr "Het Ex2A-formulier is met succes aangemaakt."
 
@@ -3394,11 +3396,11 @@ msgstr "Er zijn geen herexamenkandidaten."
 msgid "There are no re-examination candidates in the third exam period."
 msgstr "Er zijn geen herexamenkandidaten in het derde tijdvak."
 
-#: .\awpr\locale.py:802 .\awpr\locale.py:985
+#: .\awpr\locale.py:802 .\awpr\locale.py:986
 msgid "Please select one or more subjects"
 msgstr "Selecteer een of meer vakken"
 
-#: .\awpr\locale.py:803 .\awpr\locale.py:986
+#: .\awpr\locale.py:803 .\awpr\locale.py:987
 msgid "from the list of available subjects."
 msgstr "uit de lijst met beschikbare vakken."
 
@@ -3410,11 +3412,11 @@ msgstr "Je hebt geen permissie om dit vak te wijzigen."
 msgid "This exemption has already been approved."
 msgstr "Deze vrijstelling is al goedgekeurd."
 
-#: .\awpr\locale.py:807 .\awpr\locale.py:1139
+#: .\awpr\locale.py:807 .\awpr\locale.py:1140
 msgid "You have to remove the approvals first."
 msgstr "Je moet eerst de goedkeuringen verwijderen."
 
-#: .\awpr\locale.py:808 .\awpr\locale.py:809 .\awpr\locale.py:1140
+#: .\awpr\locale.py:808 .\awpr\locale.py:809 .\awpr\locale.py:1141
 msgid "Then you can change it."
 msgstr "Daarna kun je het cijfer wijzigen."
 
@@ -3422,7 +3424,7 @@ msgstr "Daarna kun je het cijfer wijzigen."
 msgid "This exemption has already been submitted."
 msgstr "Deze vrijstelling is al ingediend."
 
-#: .\awpr\locale.py:811 .\awpr\locale.py:1142
+#: .\awpr\locale.py:811 .\awpr\locale.py:1143
 msgid "You can only change it with permission of the Inspection."
 msgstr "Je kunt het alleen wijzigen met toestemming van de Inspectie."
 
@@ -3430,11 +3432,12 @@ msgstr "Je kunt het alleen wijzigen met toestemming van de Inspectie."
 msgid "This exam year is not valid."
 msgstr "Dit examenjaar is niet geldig."
 
-#: .\awpr\locale.py:823 .\templates\subjects\exams.html:114
+#: .\awpr\locale.py:823 .\templates\subjects\exams.html:115
 msgid "ETE exams"
 msgstr "ETE examens"
 
-#: .\awpr\locale.py:824 .\templates\subjects\exams.html:115
+#: .\awpr\locale.py:824 .\templates\subjects\exams.html:116
+#: .\templates\subjects\modduoexam.html:66
 msgid "DUO exams"
 msgstr "DUO examens"
 
@@ -3516,88 +3519,92 @@ msgstr "Examen toevoegen"
 msgid "Delete exam"
 msgstr "Examen wissen"
 
-#: .\awpr\locale.py:862
+#: .\awpr\locale.py:862 .\templates\subjects\modduoexam.html:12
+msgid "Link DUO exams"
+msgstr "DUO-examens koppelen"
+
+#: .\awpr\locale.py:863
 msgid "Publish exams"
 msgstr "Examens publiceren"
 
-#: .\awpr\locale.py:863
+#: .\awpr\locale.py:864
 msgid "Submit exams"
 msgstr "Examens indienen"
 
-#: .\awpr\locale.py:864 .\awpr\locale.py:966
+#: .\awpr\locale.py:865 .\awpr\locale.py:967
 msgid "Approve exams"
 msgstr "Examens goedkeuren"
 
-#: .\awpr\locale.py:866 .\templates\includes\modimportdnt.html:10
+#: .\awpr\locale.py:867 .\templates\includes\modimportdnt.html:10
 msgid "Upload N-termen tabel"
 msgstr "N-termen tabel uploaden"
 
-#: .\awpr\locale.py:868
+#: .\awpr\locale.py:869
 msgid "Submitted at "
 msgstr "Ingediend op"
 
-#: .\awpr\locale.py:873
+#: .\awpr\locale.py:874
 msgid "Print exam"
 msgstr "Examen printen"
 
-#: .\awpr\locale.py:874 .\awpr\printpdf.py:547
+#: .\awpr\locale.py:875 .\awpr\printpdf.py:547
 msgid "Blanks"
 msgstr "Niet ingevuld"
 
-#: .\awpr\locale.py:875
+#: .\awpr\locale.py:876
 msgid "Download PDF"
 msgstr "PDF downloaden"
 
-#: .\awpr\locale.py:876
+#: .\awpr\locale.py:877
 msgid "Download JSON"
 msgstr "JSON downloaden"
 
-#: .\awpr\locale.py:878
+#: .\awpr\locale.py:879
 msgid "Key"
 msgstr "Sleutel"
 
-#: .\awpr\locale.py:879 .\awpr\printpdf.py:545
+#: .\awpr\locale.py:880 .\awpr\printpdf.py:545
 msgid "Version"
 msgstr "Versie"
 
-#: .\awpr\locale.py:880
+#: .\awpr\locale.py:881
 msgid "Quest."
 msgstr "Vraag"
 
-#: .\awpr\locale.py:881
+#: .\awpr\locale.py:882
 msgid "Question"
 msgstr "Vraag"
 
-#: .\awpr\locale.py:882 .\templates\subjects\modexamquestions.html:244
+#: .\awpr\locale.py:883 .\templates\subjects\modexamquestions.html:244
 msgid "Questions"
 msgstr "Vragen"
 
-#: .\awpr\locale.py:883
+#: .\awpr\locale.py:884
 msgctxt "abbrev. of question"
 msgid "q."
 msgstr "vr."
 
-#: .\awpr\locale.py:884
+#: .\awpr\locale.py:885
 msgctxt "abbrev. of re-examination"
 msgid "re-ex"
 msgstr "her"
 
-#: .\awpr\locale.py:885
+#: .\awpr\locale.py:886
 msgctxt "abbrev. of re-examination"
 msgid "CE + re-ex"
 msgstr "CE + her"
 
-#: .\awpr\locale.py:887 .\awpr\printpdf.py:546
+#: .\awpr\locale.py:888 .\awpr\printpdf.py:546
 #: .\templates\subjects\modexamquestions.html:76
 #: .\templates\subjects\modexamquestions.html:128
 msgid "Number of questions"
 msgstr "Aantal vragen"
 
-#: .\awpr\locale.py:889 .\templates\subjects\modexamquestions.html:85
+#: .\awpr\locale.py:890 .\templates\subjects\modexamquestions.html:85
 msgid "Maximum score"
 msgstr "Maximale score"
 
-#: .\awpr\locale.py:890
+#: .\awpr\locale.py:891
 msgctxt "2 lines"
 msgid ""
 "Maximum\n"
@@ -3606,209 +3613,209 @@ msgstr ""
 "Maximale\n"
 "score"
 
-#: .\awpr\locale.py:893
+#: .\awpr\locale.py:894
 msgid "There is no exam for this subject."
 msgstr "Er is geen examen voor dit vak."
 
-#: .\awpr\locale.py:895 .\templates\subjects\modexamquestions.html:106
+#: .\awpr\locale.py:896 .\templates\subjects\modexamquestions.html:106
 msgid "Add partial exam"
 msgstr "Deelexamen toevoegen"
 
-#: .\awpr\locale.py:896 .\templates\subjects\modexamquestions.html:109
+#: .\awpr\locale.py:897 .\templates\subjects\modexamquestions.html:109
 msgid "Delete partial exam"
 msgstr "Deelexamen wissen"
 
-#: .\awpr\locale.py:897
+#: .\awpr\locale.py:898
 msgid "Edit partial exam"
 msgstr "Deelexamen wijzigen"
 
-#: .\awpr\locale.py:898
+#: .\awpr\locale.py:899
 msgid "There is no partial exam selected."
 msgstr "Er is geen deelexamen geselecteerd."
 
-#: .\awpr\locale.py:900
+#: .\awpr\locale.py:901
 msgid "The name of the partial exam cannot be blank."
 msgstr "De naam van het deelexamen moet ingevuld worden."
 
-#: .\awpr\locale.py:901
+#: .\awpr\locale.py:902
 msgid "Remove partial exams"
 msgstr "Deelexamens verwijderen"
 
-#: .\awpr\locale.py:902
+#: .\awpr\locale.py:903
 msgid "All partial exams will be removed,"
 msgstr "Alle deelexamens worden verwijderd,"
 
-#: .\awpr\locale.py:903
+#: .\awpr\locale.py:904
 msgid "except for the selected exam"
 msgstr "behalve het geselecteerde examen"
 
-#: .\awpr\locale.py:904
+#: .\awpr\locale.py:905
 msgid "Yes, remove"
 msgstr "Ja, verwijder"
 
-#: .\awpr\locale.py:906
+#: .\awpr\locale.py:907
 msgid ""
 "Enter here the total of the maximum scores of the required partial exams."
 msgstr ""
 "Vul hier het totaal van de maximum scores in van de vereiste deelexamens."
 
-#: .\awpr\locale.py:910
+#: .\awpr\locale.py:911
 msgid "Amount"
 msgstr "Aantal"
 
-#: .\awpr\locale.py:911 .\awpr\locale.py:1132
+#: .\awpr\locale.py:912 .\awpr\locale.py:1133
 msgid " is not allowed."
 msgstr " is niet toegestaan."
 
-#: .\awpr\locale.py:912
+#: .\awpr\locale.py:913
 msgid "The amount of questions cannot be blank."
 msgstr "Het aantal vragen moet ingevuld worden."
 
-#: .\awpr\locale.py:913 .\awpr\locale.py:914
+#: .\awpr\locale.py:914 .\awpr\locale.py:915
 #, python-format
 msgid "The amount of questions must be a whole number between 1 and %(max)s."
 msgstr "Het aantal vragen moet een geheel getal zijn tussen 1 en %(max)s."
 
-#: .\awpr\locale.py:916
+#: .\awpr\locale.py:917
 msgid "The maximum score cannot be blank."
 msgstr "De maximum score moet ingevuld worden."
 
-#: .\awpr\locale.py:917
+#: .\awpr\locale.py:918
 msgid "Characters ';', '#' and '|' are not allowed."
 msgstr "Tekens ';', '#' en '|' zijn niet toegestaan."
 
-#: .\awpr\locale.py:919
+#: .\awpr\locale.py:920
 msgid "Minimum score"
 msgstr "Minimale score"
 
-#: .\awpr\locale.py:920
+#: .\awpr\locale.py:921
 msgid "Minimum score must be less than or equal to "
 msgstr "De minimale score moet kleiner of gelijk zijn aan "
 
-#: .\awpr\locale.py:921
+#: .\awpr\locale.py:922
 msgid "This is a multiple choice question."
 msgstr "Dit is een meerkeuzevraag."
 
-#: .\awpr\locale.py:922
+#: .\awpr\locale.py:923
 msgid "This is not a multiple choice question."
 msgstr "Dit is geen meerkeuzevraag."
 
-#: .\awpr\locale.py:923
+#: .\awpr\locale.py:924
 msgid "You must enter a whole number between 0 and "
 msgstr "Je moet een geheel getal invullen tussen 0 en "
 
-#: .\awpr\locale.py:924
+#: .\awpr\locale.py:925
 msgid "You must enter a letter between 'a' and '"
 msgstr "Je moet een letter invullen tussen 'a' en '"
 
-#: .\awpr\locale.py:925
+#: .\awpr\locale.py:926
 msgid "or an 'x' if the answer is blank or entered multiple times."
 msgstr "of een 'x' als de vraag niet of meermalen is ingevuld."
 
-#: .\awpr\locale.py:926
+#: .\awpr\locale.py:927
 msgctxt "Teken"
 msgid "Character"
 msgstr "Teken"
 
-#: .\awpr\locale.py:927 .\schools\views.py:4138 .\subjects\views.py:3156
+#: .\awpr\locale.py:928 .\schools\views.py:4138 .\subjects\views.py:3214
 msgid "already exists."
 msgstr "komt al voor."
 
-#: .\awpr\locale.py:928
+#: .\awpr\locale.py:929
 msgid "exists multiple times."
 msgstr "komt meerdere keren voor."
 
-#: .\awpr\locale.py:929
+#: .\awpr\locale.py:930
 msgid "The character must be between B and Z or between b and z."
 msgstr "Het teken moet een letter zijn tussen B en Z of tussen b en z."
 
-#: .\awpr\locale.py:930
+#: .\awpr\locale.py:931
 msgid "The maximum score must be a whole number between 1 and 99."
 msgstr "De maximale score moet een geheel getal zijn tussen 1 en 99."
 
-#: .\awpr\locale.py:932
+#: .\awpr\locale.py:933
 msgid "The key must be one or more letters between 'a' and '"
 msgstr "De sleutel moet een of meer letters zijn tussen 'a' en '"
 
-#: .\awpr\locale.py:933
+#: .\awpr\locale.py:934
 msgid "This exam assignment does not exist."
 msgstr "Deze examenopgave bestaat niet."
 
-#: .\awpr\locale.py:934
+#: .\awpr\locale.py:935
 msgid "Please contact the Division of Exams."
 msgstr "Neem contact op met het ETE."
 
-#: .\awpr\locale.py:936
+#: .\awpr\locale.py:937
 msgid "This exam is submitted."
 msgstr "Dit examen is ingediend."
 
-#: .\awpr\locale.py:937
+#: .\awpr\locale.py:938
 msgid "This exam is published."
 msgstr "Dit examen is gepubliceerd."
 
-#: .\awpr\locale.py:940
+#: .\awpr\locale.py:941
 msgid "This exam has no data."
 msgstr "Dit examen heeft geen gegevens."
 
-#: .\awpr\locale.py:941
+#: .\awpr\locale.py:942
 msgid "You cannot approve the exam."
 msgstr "Je kunt het examen niet goedkeuren."
 
-#: .\awpr\locale.py:942
+#: .\awpr\locale.py:943
 msgid "This exam has blank questions."
 msgstr "Dit examen heeft niet ingevulde vragen."
 
-#: .\awpr\locale.py:944 .\awpr\locale.py:1153
+#: .\awpr\locale.py:945 .\awpr\locale.py:1154
 msgid "You have approved this grade already in a different function."
 msgstr "Je hebt dit cijfer al goedgekeurd in een andere functie."
 
-#: .\awpr\locale.py:945 .\awpr\locale.py:1154
+#: .\awpr\locale.py:946 .\awpr\locale.py:1155
 msgid "You cannot approve this grade again."
 msgstr "Je kunt het cijfer niet nog een keer goedkeuren."
 
-#: .\awpr\locale.py:949
+#: .\awpr\locale.py:950
 msgid "AWP is checking the exams"
 msgstr "AWP is de examens aan het controleren"
 
-#: .\awpr\locale.py:951
+#: .\awpr\locale.py:952
 msgid "Selection of the exams, that will be approved:"
 msgstr "Selectie van de examens, die worden goedgekeurd:"
 
-#: .\awpr\locale.py:952
+#: .\awpr\locale.py:953
 msgid "The following exams will be submitted:"
 msgstr "De volgende examens worden ingediend:"
 
-#: .\awpr\locale.py:953
+#: .\awpr\locale.py:954
 msgid "The following exams will be published:"
 msgstr "De volgende examens worden gepubliceerd:"
 
-#: .\awpr\locale.py:954
+#: .\awpr\locale.py:955
 msgid "Click 'Check exams' to check the selected exams before approving."
 msgstr ""
 "Klik op 'Examens controleren' om de examens te controleren voordat ze worden "
 "goedgekeurd."
 
-#: .\awpr\locale.py:955
+#: .\awpr\locale.py:956
 msgid "After the exams are approved by the president and secretary,"
 msgstr "Nadat de examens zijn goedgekeurd door de voorzitter en secretaris,"
 
-#: .\awpr\locale.py:956
+#: .\awpr\locale.py:957
 msgid "the exams can be submitted by the president or secretary."
 msgstr "kunnen de examens worden ingediend door de voorzitter of secretaris."
 
-#: .\awpr\locale.py:958
+#: .\awpr\locale.py:959
 msgid "Click 'Check exams' to check the selected exams before submitting."
 msgstr ""
 "Klik op 'Examens controleren' om de examens te controleren voordat ze worden "
 "ingediend."
 
-#: .\awpr\locale.py:959
+#: .\awpr\locale.py:960
 msgid "If the check is OK, click 'Submit exams' to submit the selected exams."
 msgstr ""
 "Als de controle goed is, klik je op 'Examens indienen' om de geselecteerde "
 "examens in te dienen."
 
-#: .\awpr\locale.py:960
+#: .\awpr\locale.py:961
 msgid ""
 "After the exams are submitted, you can change them by submitting an "
 "additional form."
@@ -3816,106 +3823,106 @@ msgstr ""
 "Nadat de examens zijn ingediend, kun je ze nog wijzigen door een aanvullend "
 "formulier in te dienen."
 
-#: .\awpr\locale.py:962 .\awpr\locale.py:969
+#: .\awpr\locale.py:963 .\awpr\locale.py:970
 msgid "You need a 6 digit verification code "
 msgstr "Je hebt een 6-cijferige verificatiecode nodig "
 
-#: .\awpr\locale.py:963 .\awpr\locale.py:971
+#: .\awpr\locale.py:964 .\awpr\locale.py:972
 msgid "to submit the exams."
 msgstr "om de examens in te dienen."
 
-#: .\awpr\locale.py:964 .\awpr\locale.py:970
+#: .\awpr\locale.py:965 .\awpr\locale.py:971
 msgid "to publish the exams."
 msgstr "om de examens te publiceren."
 
-#: .\awpr\locale.py:967
+#: .\awpr\locale.py:968
 msgid "AWP is approving the exams"
 msgstr "AWP is de examens aan het goedkeuren"
 
-#: .\awpr\locale.py:974
+#: .\awpr\locale.py:975
 msgid "AWP is submitting the exams"
 msgstr "AWP is de examens aan het indienen"
 
-#: .\awpr\locale.py:975
+#: .\awpr\locale.py:976
 msgid "The exams are succesfully submitted."
 msgstr "De examens zijn met succes ingediend."
 
-#: .\awpr\locale.py:981
+#: .\awpr\locale.py:982
 msgid "No candidate selected"
 msgstr "Er is geen kandidaten geselecteerd"
 
-#: .\awpr\locale.py:988
+#: .\awpr\locale.py:989
 msgid "Ex.#"
 msgstr "Ex.nr."
 
-#: .\awpr\locale.py:998
+#: .\awpr\locale.py:999
 msgid "All subjects and candidates"
 msgstr "Alle vakken en kandidaten"
 
-#: .\awpr\locale.py:1006
+#: .\awpr\locale.py:1007
 msgid "Preliminary Ex2"
 msgstr "Voorlopig Ex2"
 
-#: .\awpr\locale.py:1007
+#: .\awpr\locale.py:1008
 msgid "The preliminary Ex2 form"
 msgstr "Het voorlopige Ex2-formulier"
 
-#: .\awpr\locale.py:1017
+#: .\awpr\locale.py:1018
 msgid "Submit Ex2 form"
 msgstr "Ex2-formulier indienen"
 
-#: .\awpr\locale.py:1018
+#: .\awpr\locale.py:1019
 msgid "Submit Ex2A form"
 msgstr "Ex2A-formulier indienen"
 
-#: .\awpr\locale.py:1019
+#: .\awpr\locale.py:1020
 msgid "Approve grades"
 msgstr "Cijfers goedkeuren"
 
-#: .\awpr\locale.py:1020
+#: .\awpr\locale.py:1021
 msgid "Preliminary Ex2A"
 msgstr "Voorlopig Ex2A"
 
-#: .\awpr\locale.py:1027
+#: .\awpr\locale.py:1028
 msgid "The following grades will be approved:"
 msgstr "De volgende cijfers worden goedgekeurd:"
 
-#: .\awpr\locale.py:1028
+#: .\awpr\locale.py:1029
 msgid "An Ex2A form with the following grades will be submitted:"
 msgstr "Een Ex2A-formulier met de volgende cijfers wordt ingediend:"
 
-#: .\awpr\locale.py:1029
+#: .\awpr\locale.py:1030
 msgid "Click 'Check grades' to check the selected grades before approving."
 msgstr ""
 "Klik op 'Cijfers controleren' om de cijfers te controleren voordat ze worden "
 "goedgekeurd."
 
-#: .\awpr\locale.py:1030
+#: .\awpr\locale.py:1031
 msgid ""
 "After the grades are approved by the president, secretary and commissioner,"
 msgstr ""
 "Nadat de cijfers zijn goedgekeurd door de voorzitter, secretaris en "
 "gecommitteerde,"
 
-#: .\awpr\locale.py:1031
+#: .\awpr\locale.py:1032
 msgid "the Ex2A form can be submitted by the president or secretary."
 msgstr ""
 "kan het Ex2A-formulier worden ingediend door de voorzitter of secretaris."
 
-#: .\awpr\locale.py:1033
+#: .\awpr\locale.py:1034
 msgid "Click 'Check grades' to check the selected grades before submitting."
 msgstr ""
 "Klik op 'Cijfers controleren' om de cijfers te controleren voordat ze worden "
 "ingediend."
 
-#: .\awpr\locale.py:1034
+#: .\awpr\locale.py:1035
 msgid ""
 "If the check is OK, click 'Submit Ex2A form' to submit the selected grades."
 msgstr ""
 "Als de controle goed is, klik je op 'Ex2A-formulier indienen' om de "
 "geselecteerde cijfers in te dienen."
 
-#: .\awpr\locale.py:1035
+#: .\awpr\locale.py:1036
 msgid ""
 "After the grades are submitted, you can only change them with permission of "
 "the Inpsection."
@@ -3923,40 +3930,40 @@ msgstr ""
 "Nadat de cijfers zijn ingediend, kun je ze alleen nog wijzigen met "
 "toestemming van de Inspectie."
 
-#: .\awpr\locale.py:1041
+#: .\awpr\locale.py:1042
 msgid "Score"
 msgstr ""
 
-#: .\awpr\locale.py:1043
+#: .\awpr\locale.py:1044
 msgid "PE score"
 msgstr "PE score"
 
-#: .\awpr\locale.py:1044
+#: .\awpr\locale.py:1045
 msgid "CE score"
 msgstr "CE score"
 
-#: .\awpr\locale.py:1045
+#: .\awpr\locale.py:1046
 msgid "SE grade"
 msgstr "SE cijfer"
 
-#: .\awpr\locale.py:1046
+#: .\awpr\locale.py:1047
 msgid "PE grade"
 msgstr "PE cijfer"
 
-#: .\awpr\locale.py:1047
+#: .\awpr\locale.py:1048
 msgid "CE grade"
 msgstr "CE cijfer"
 
-#: .\awpr\locale.py:1048
+#: .\awpr\locale.py:1049
 msgid "PE-CE grade"
 msgstr "PE-CE cijfer"
 
-#: .\awpr\locale.py:1049 .\awpr\locale.py:1069 .\awpr\locale.py:1072
+#: .\awpr\locale.py:1050 .\awpr\locale.py:1070 .\awpr\locale.py:1073
 #: .\grades\calc_results.py:2828
 msgid "Final grade"
 msgstr "Eindcijfer"
 
-#: .\awpr\locale.py:1051
+#: .\awpr\locale.py:1052
 msgid ""
 "Herkansing\n"
 "school exam"
@@ -3965,7 +3972,7 @@ msgstr ""
 "school-\n"
 "examen"
 
-#: .\awpr\locale.py:1052
+#: .\awpr\locale.py:1053
 msgid ""
 "Re-examination\n"
 "score"
@@ -3973,71 +3980,71 @@ msgstr ""
 "Herexamen\n"
 "score"
 
-#: .\awpr\locale.py:1053
+#: .\awpr\locale.py:1054
 msgid ""
 "Re-examination\n"
 "grade"
 msgstr ""
 "Herexamen\n"
 "cijfer"
-
-#: .\awpr\locale.py:1054
-msgid ""
-"Third period\n"
-"score"
-msgstr ""
-"Derde tijdvak\n"
-"score"
 
 #: .\awpr\locale.py:1055
 msgid ""
 "Third period\n"
+"score"
+msgstr ""
+"Derde tijdvak\n"
+"score"
+
+#: .\awpr\locale.py:1056
+msgid ""
+"Third period\n"
 "grade"
 msgstr ""
 "Derde tijdvak\n"
 "cijfer"
 
-#: .\awpr\locale.py:1057
-msgid ""
-"PE-\n"
-"score"
-msgstr ""
-"PE-\n"
-"score"
-
 #: .\awpr\locale.py:1058
 msgid ""
-"CE-\n"
+"PE-\n"
 "score"
 msgstr ""
-"CE-\n"
+"PE-\n"
 "score"
 
 #: .\awpr\locale.py:1059
 msgid ""
-"SE-\n"
-"grade"
+"CE-\n"
+"score"
 msgstr ""
-"SE-\n"
-"cijfer"
+"CE-\n"
+"score"
 
 #: .\awpr\locale.py:1060
 msgid ""
-"PE-\n"
+"SE-\n"
 "grade"
 msgstr ""
-"PE-\n"
+"SE-\n"
 "cijfer"
 
 #: .\awpr\locale.py:1061
 msgid ""
+"PE-\n"
+"grade"
+msgstr ""
+"PE-\n"
+"cijfer"
+
+#: .\awpr\locale.py:1062
+msgid ""
 "CE-\n"
 "grade"
 msgstr ""
 "CE-\n"
 "cijfer"
 
-#: .\awpr\locale.py:1062
+#: .\awpr\locale.py:1063
 msgid ""
 "PE-CE\n"
 "grade"
@@ -4045,7 +4052,7 @@ msgstr ""
 "PE-CE\n"
 "cijfer"
 
-#: .\awpr\locale.py:1063
+#: .\awpr\locale.py:1064
 msgid ""
 "SE-CE\n"
 "weighing"
@@ -4053,7 +4060,7 @@ msgstr ""
 "SE-CE\n"
 "weging"
 
-#: .\awpr\locale.py:1064
+#: .\awpr\locale.py:1065
 msgid ""
 "Final\n"
 "grade"
@@ -4061,304 +4068,304 @@ msgstr ""
 "Eind-\n"
 "cijfer"
 
-#: .\awpr\locale.py:1066 .\students\validators.py:894
+#: .\awpr\locale.py:1067 .\students\validators.py:894
 #: .\students\validators.py:917
 msgid "subject"
 msgstr "vak"
 
-#: .\awpr\locale.py:1067 .\awpr\locale.py:1070
+#: .\awpr\locale.py:1068 .\awpr\locale.py:1071
 msgid "SE-grade"
 msgstr "SE-cijfer"
 
-#: .\awpr\locale.py:1068 .\awpr\locale.py:1071
+#: .\awpr\locale.py:1069 .\awpr\locale.py:1072
 msgid "CE-grade"
 msgstr "CE-cijfer"
 
-#: .\awpr\locale.py:1103
+#: .\awpr\locale.py:1104
 msgid "The exam year is locked."
 msgstr "Het examenjaar is afgesloten."
 
-#: .\awpr\locale.py:1104
+#: .\awpr\locale.py:1105
 msgid "The school data is locked."
 msgstr "De school gegevens zijn vergrendeld."
 
-#: .\awpr\locale.py:1105
+#: .\awpr\locale.py:1106
 msgid "The candidate data is locked."
 msgstr "De kandidaat gegevens zijn vergrendeld"
 
-#: .\awpr\locale.py:1106
+#: .\awpr\locale.py:1107
 msgid "This grade is locked."
 msgstr "Dit cijfer is vergrendeld."
 
-#: .\awpr\locale.py:1107
+#: .\awpr\locale.py:1108
 msgid "There are no central exams this exam year."
 msgstr "Er zijn geen centrale examens dit examenjaar."
 
-#: .\awpr\locale.py:1108
+#: .\awpr\locale.py:1109
 msgid "This exam year has no third period."
 msgstr "Dit examenjaar heeft geen derde tijdvak."
 
-#: .\awpr\locale.py:1109
+#: .\awpr\locale.py:1110
 msgid "Combination subject has no re-examination."
 msgstr "Combinatievak heeft geen herexamen."
 
-#: .\awpr\locale.py:1110
+#: .\awpr\locale.py:1111
 msgid "Exemption has no central exam this exam year."
 msgstr "Vrijstelling heeft geen centraal examen dit examenjaar"
 
-#: .\awpr\locale.py:1111
+#: .\awpr\locale.py:1112
 msgid "There are no practical exams this exam year."
 msgstr "Er zijn dit examenjaar geen praktijkexamens."
 
-#: .\awpr\locale.py:1112 .\grades\validators.py:520
+#: .\awpr\locale.py:1113 .\grades\validators.py:520
 msgid "This subject has no practical exam."
 msgstr "Dit vak heeft geen praktijkexamen."
 
-#: .\awpr\locale.py:1113
+#: .\awpr\locale.py:1114
 msgid " not allowed in combination subject."
 msgstr " niet toegestaan in combinatievak."
 
-#: .\awpr\locale.py:1114
+#: .\awpr\locale.py:1115
 msgid "Re-examination grade not allowed in combination subject."
 msgstr "Herexamen cijfer niet toegestaan in combinatievak."
 
-#: .\awpr\locale.py:1115
+#: .\awpr\locale.py:1116
 msgid "The SE weighing of this subject is zero."
 msgstr "De SE-weging voor dit vak is nul."
 
-#: .\awpr\locale.py:1116
+#: .\awpr\locale.py:1117
 msgid "This subject has no central exam."
 msgstr "Dit vak heeft geen centraal examen."
 
-#: .\awpr\locale.py:1117
+#: .\awpr\locale.py:1118
 msgid "You cannot enter a SE grade."
 msgstr "Je kunt geen SE-cijfer invoeren."
 
-#: .\awpr\locale.py:1118
+#: .\awpr\locale.py:1119
 msgid "You cannot enter a 'herkansing' of the school exam."
 msgstr "Je kunt geen herkansing van het schoolexamen invoeren."
 
-#: .\awpr\locale.py:1119
+#: .\awpr\locale.py:1120
 msgid "You cannot enter a grade of the practical exam."
 msgstr "Je kunt geen praktijkcijfer invoeren."
 
-#: .\awpr\locale.py:1120
+#: .\awpr\locale.py:1121
 msgid "You cannot enter a CE grade."
 msgstr "Je kunt geen CE-cijfer invoeren."
 
-#: .\awpr\locale.py:1121
+#: .\awpr\locale.py:1122
 msgid "You cannot enter a score of the practical exam."
 msgstr "Je kunt geen score van het praktijkexamen invoeren."
 
-#: .\awpr\locale.py:1122
+#: .\awpr\locale.py:1123
 msgid "You cannot enter a CE score."
 msgstr "Je kunt geen CE-score invoeren."
 
-#: .\awpr\locale.py:1124
+#: .\awpr\locale.py:1125
 msgid "The score must be a number."
 msgstr "De score moet een getal zijn."
 
-#: .\awpr\locale.py:1125
+#: .\awpr\locale.py:1126
 msgid "The score must be a number greater than zero."
 msgstr "De score moet een getal zijn, groter dan nul."
 
-#: .\awpr\locale.py:1126 .\grades\calc_finalgrade.py:437
+#: .\awpr\locale.py:1127 .\grades\calc_finalgrade.py:437
 msgid "The score must be a whole number."
 msgstr "De score moet een geheel getal zijn."
 
-#: .\awpr\locale.py:1128
+#: .\awpr\locale.py:1129
 msgid "The grade type has no value."
 msgstr "Het cijfertype is niet ingevuld."
 
-#: .\awpr\locale.py:1130 .\grades\calc_finalgrade.py:534
+#: .\awpr\locale.py:1131 .\grades\calc_finalgrade.py:534
 #: .\grades\validators.py:250
 msgid "Grade can only be 'g', 'v' or 'o'."
 msgstr "Cijfer kan alleen 'g', 'v' of 'o' zijn."
 
-#: .\awpr\locale.py:1133
+#: .\awpr\locale.py:1134
 msgid "The grade must be a number between 1 and 10."
 msgstr "Het cijfer moet een getal zijn tussen 1 en 10."
 
-#: .\awpr\locale.py:1134
+#: .\awpr\locale.py:1135
 msgid "The grade may only have one digit after the dot."
 msgstr "Het cijfer mag niet meer dan 1 cijfer achter de komma hebben."
 
-#: .\awpr\locale.py:1135
+#: .\awpr\locale.py:1136
 msgid "The score must be a number between 0 and "
 msgstr "De score moet een getal zijn tussen 0 en "
 
-#: .\awpr\locale.py:1137
+#: .\awpr\locale.py:1138
 msgid "You don't have permission to enter grades."
 msgstr "Je hebt geen permissie om cijfers in te voeren."
 
-#: .\awpr\locale.py:1138
+#: .\awpr\locale.py:1139
 msgid "This grade has already been approved."
 msgstr "Dit cijfer is al goedgekeurd."
 
-#: .\awpr\locale.py:1141
+#: .\awpr\locale.py:1142
 msgid "This grade has already been submitted."
 msgstr "Dit cijfer is al ingediend."
 
-#: .\awpr\locale.py:1145
+#: .\awpr\locale.py:1146
 msgid "You have the functions of "
 msgstr "Je hebt de functies "
 
-#: .\awpr\locale.py:1146
+#: .\awpr\locale.py:1147
 msgid "Only 1 function is allowed. "
 msgstr "Je mag maar 1 functie hebben. "
 
-#: .\awpr\locale.py:1147
+#: .\awpr\locale.py:1148
 msgid "You cannot approve grades."
 msgstr "Je kunt geen cijfers goedkeuren."
 
-#: .\awpr\locale.py:1148
+#: .\awpr\locale.py:1149
 msgid "You cannot submit grades."
 msgstr "Je kunt geen cijfers indienen."
 
-#: .\awpr\locale.py:1149
+#: .\awpr\locale.py:1150
 msgid "This grade is submitted."
 msgstr "Dit cijfer is ingediend."
 
-#: .\awpr\locale.py:1151
+#: .\awpr\locale.py:1152
 msgid "This grade has no value."
 msgstr "Dit cijfer is niet ingevuld."
 
-#: .\awpr\locale.py:1152
+#: .\awpr\locale.py:1153
 msgid "You cannot approve this grade."
 msgstr "Je kunt het cijfer niet goedkeuren."
 
-#: .\awpr\locale.py:1155
+#: .\awpr\locale.py:1156
 msgid "As a commissioner you don't have to approve school exam grades."
 msgstr "Als gecommitteerde hoef je geen schoolexamen-cijfers goed te keuren."
 
-#: .\awpr\locale.py:1160 .\awpr\menus.py:54 .\templates\students\results.html:5
+#: .\awpr\locale.py:1161 .\awpr\menus.py:54 .\templates\students\results.html:5
 #: .\templates\students\results.html:15 .\templates\students\results.html:83
 msgid "Results"
 msgstr "Uitslagen"
 
-#: .\awpr\locale.py:1161 .\grades\calc_results.py:2166
+#: .\awpr\locale.py:1162 .\grades\calc_results.py:2166
 #: .\grades\calc_results.py:2168 .\grades\calc_results.py:2170
 msgid "Result"
 msgstr "Uitslag"
 
-#: .\awpr\locale.py:1162
+#: .\awpr\locale.py:1163
 msgid "Preliminary grade list"
 msgstr "Voorlopige cijferlijst"
 
-#: .\awpr\locale.py:1163
+#: .\awpr\locale.py:1164
 msgid "Download grade list"
 msgstr "Cijferlijst downloaden"
 
-#: .\awpr\locale.py:1165
+#: .\awpr\locale.py:1166
 msgid "The preliminary grade list of"
 msgstr "De voorlopige cijferlijst van"
 
-#: .\awpr\locale.py:1166
+#: .\awpr\locale.py:1167
 msgid "The final grade list of"
 msgstr "De definitieve cijferlijst van"
 
-#: .\awpr\locale.py:1167
+#: .\awpr\locale.py:1168
 msgid " candidates"
 msgstr " kandidaten"
 
-#: .\awpr\locale.py:1169
+#: .\awpr\locale.py:1170
 msgid "will be downloaded."
 msgstr "wordt gedownload."
 
-#: .\awpr\locale.py:1170
+#: .\awpr\locale.py:1171
 msgid "Select a president"
 msgstr "Selecteer een voorzitter"
 
-#: .\awpr\locale.py:1171
+#: .\awpr\locale.py:1172
 msgid "Select a secretary"
 msgstr "Selecteer een secretaris"
 
-#: .\awpr\locale.py:1172
+#: .\awpr\locale.py:1173
 msgid "There is no president"
 msgstr "Er is geen voorzitter"
 
-#: .\awpr\locale.py:1173
+#: .\awpr\locale.py:1174
 msgid "There is no secretary"
 msgstr "Er is geen secretaris"
 
-#: .\awpr\locale.py:1175
+#: .\awpr\locale.py:1176
 msgid "Calculate result"
 msgstr "Bereken uitslag"
 
-#: .\awpr\locale.py:1180 .\schools\views.py:4283
+#: .\awpr\locale.py:1181 .\schools\views.py:4283
 msgid "School name"
 msgstr "Schoolnaam"
 
-#: .\awpr\locale.py:1182
+#: .\awpr\locale.py:1183
 msgid "Number of candidates"
 msgstr "Aantal kandidaten"
 
-#: .\awpr\locale.py:1183
+#: .\awpr\locale.py:1184
 msgid "Number of entered subjects"
 msgstr "Aantal toegekende vakken"
 
-#: .\awpr\locale.py:1184
+#: .\awpr\locale.py:1185
 msgid "Number of submitted subjects"
 msgstr "Aantal ingediende vakken"
 
-#: .\awpr\locale.py:1185 .\awpr\locale.py:1271
+#: .\awpr\locale.py:1186 .\awpr\locale.py:1272
 msgid "Date submitted"
 msgstr "Indieningsdatum"
 
-#: .\awpr\locale.py:1187
+#: .\awpr\locale.py:1188
 msgid "Preliminary orderlist"
 msgstr "Voorlopige bestellijst"
 
-#: .\awpr\locale.py:1188
+#: .\awpr\locale.py:1189
 msgid "The preliminary orderlist"
 msgstr "De voorlopige bestellijst"
 
-#: .\awpr\locale.py:1189
+#: .\awpr\locale.py:1190
 msgid "Download preliminary orderlist"
 msgstr "Voorlopige bestellijst downloaden"
 
-#: .\awpr\locale.py:1190
+#: .\awpr\locale.py:1191
 msgid " per school"
 msgstr ""
 
-#: .\awpr\locale.py:1192 .\awpr\locale.py:1212
+#: .\awpr\locale.py:1193 .\awpr\locale.py:1213
 #: .\templates\schools\modpublishorderlist.html:10
 msgid "Publish orderlist"
 msgstr "Bestellijst publiceren"
 
-#: .\awpr\locale.py:1194 .\templates\schools\modorderlistextra.html:10
+#: .\awpr\locale.py:1195 .\templates\schools\modorderlistextra.html:10
 msgid "Variables for extra exams"
 msgstr "Variabelen voor extra examens"
 
-#: .\awpr\locale.py:1196
+#: .\awpr\locale.py:1197
 msgid "Show totals per school only"
 msgstr "Alleen totaal examens per school weergeven"
 
-#: .\awpr\locale.py:1197
+#: .\awpr\locale.py:1198
 msgid "Show extra per school separate"
 msgstr "Extra examens per school apart weergeven"
 
-#: .\awpr\locale.py:1198
+#: .\awpr\locale.py:1199
 msgid "Don't calculate extra exams"
 msgstr "Geen extra examens berekenen"
 
-#: .\awpr\locale.py:1199
+#: .\awpr\locale.py:1200
 msgid "Create Excelfile per school"
 msgstr "Excel bestand per school aanmaken"
 
-#: .\awpr\locale.py:1200
+#: .\awpr\locale.py:1201
 msgid "Language"
 msgstr "Taal"
 
-#: .\awpr\locale.py:1201
+#: .\awpr\locale.py:1202
 msgid "Extra exams"
 msgstr "Extra examens"
 
-#: .\awpr\locale.py:1202
+#: .\awpr\locale.py:1203
 msgid "the exam bureau"
 msgstr "het examenbureau"
 
-#: .\awpr\locale.py:1205
+#: .\awpr\locale.py:1206
 msgid ""
 "When you publish the orderlist, AWP will create an Excel file with the total "
 "exams, plus an Excel file for each school."
@@ -4366,7 +4373,7 @@ msgstr ""
 "Wanneer je de bestellijst publiceert maakt AWP een Excel bestand aan met het "
 "totaal aantal examens, plus een Excel bestand voor elke school."
 
-#: .\awpr\locale.py:1206
+#: .\awpr\locale.py:1207
 msgid ""
 "AWP will send an email to each 'voorzitter' and 'secretaris' with the "
 "orderlist of their school attached."
@@ -4374,7 +4381,7 @@ msgstr ""
 "AWP stuurt een e-mail naar de voorzitter en secretaris van elke school met "
 "de bestellijst van hun school als bijlage."
 
-#: .\awpr\locale.py:1207
+#: .\awpr\locale.py:1208
 msgid ""
 "The orderlists will also be saved on the sever and can be found at the tab "
 "'Published files'"
@@ -4382,13 +4389,13 @@ msgstr ""
 "De bestellijsten worden op de server opgeslagen en zijn te vinden onder de "
 "tab 'Gepubliceerde bestanden."
 
-#: .\awpr\locale.py:1208
+#: .\awpr\locale.py:1209
 msgid "You need a 6 digit verification code to publish the orderlist."
 msgstr ""
 "Je hebt een 6-cijferige verificatiecode nodig om de bestellijst te kunnen "
 "publiceren."
 
-#: .\awpr\locale.py:1209 .\templates\students\modapprovesubject.html:58
+#: .\awpr\locale.py:1210 .\templates\students\modapprovesubject.html:58
 #: .\templates\subjects\modapproveexam.html:57
 msgid ""
 "Click 'Request verification code' and we will send you an email with the "
@@ -4397,7 +4404,7 @@ msgstr ""
 "Klik op 'Verificatiecode aanvragen', dan sturen we je een e-mail met de "
 "verificatiecode."
 
-#: .\awpr\locale.py:1210 .\templates\emails\email_send_verifcode_exam.html:12
+#: .\awpr\locale.py:1211 .\templates\emails\email_send_verifcode_exam.html:12
 #: .\templates\emails\email_send_verifcode_orderlist.html:14
 #: .\templates\emails\send_verifcode__ex1_email.html:16
 #: .\templates\students\modapprovesubject.html:59
@@ -4405,15 +4412,15 @@ msgstr ""
 msgid "The verification code expires in 30 minutes."
 msgstr "De verificatiecode blijft 30 minuten geldig."
 
-#: .\awpr\locale.py:1213
+#: .\awpr\locale.py:1214
 msgid "AWP is publishing the orderlist"
 msgstr "AWP is de bestellijst aan het publiceren."
 
-#: .\awpr\locale.py:1214
+#: .\awpr\locale.py:1215
 msgid "The orderlist is published succesfully."
 msgstr "De bestellijst is met succes gepubliceerd."
 
-#: .\awpr\locale.py:1222
+#: .\awpr\locale.py:1223
 msgid ""
 "Exam\n"
 "number"
@@ -4421,11 +4428,11 @@ msgstr ""
 "Examen-\n"
 "nummer"
 
-#: .\awpr\locale.py:1224 .\templates\students\modstudent.html:96
+#: .\awpr\locale.py:1225 .\templates\students\modstudent.html:96
 msgid "Registration number"
 msgstr "Registratienummer"
 
-#: .\awpr\locale.py:1225
+#: .\awpr\locale.py:1226
 msgid ""
 "Registration\n"
 "number"
@@ -4433,27 +4440,27 @@ msgstr ""
 "Registratie\n"
 "nummer"
 
-#: .\awpr\locale.py:1228
+#: .\awpr\locale.py:1229
 msgctxt "two lines "
 msgid "Prefix"
 msgstr ""
 "Voor-\n"
 "voegsel"
 
-#: .\awpr\locale.py:1231 .\templates\includes\modstatus.html:35
+#: .\awpr\locale.py:1232 .\templates\includes\modstatus.html:35
 #: .\templates\students\modapprovegrade.html:26
 msgid "Exam period"
 msgstr "Tijdvak"
 
-#: .\awpr\locale.py:1232
+#: .\awpr\locale.py:1233
 msgid "Select exam period"
 msgstr "Selecteer tijdvak"
 
-#: .\awpr\locale.py:1233
+#: .\awpr\locale.py:1234
 msgid "No exam periods found"
 msgstr "Geen tijdvak gevonden"
 
-#: .\awpr\locale.py:1235 .\awpr\printpdf.py:542
+#: .\awpr\locale.py:1236 .\awpr\printpdf.py:542
 #: .\templates\students\grades.html:22
 #: .\templates\students\modapprovegrade.html:30
 #: .\templates\subjects\exams.html:22
@@ -4461,57 +4468,57 @@ msgstr "Geen tijdvak gevonden"
 msgid "Exam type"
 msgstr "Soort examen"
 
-#: .\awpr\locale.py:1236
+#: .\awpr\locale.py:1237
 msgid "Select exam type"
 msgstr "Selecteer examensoort"
 
-#: .\awpr\locale.py:1237
+#: .\awpr\locale.py:1238
 msgid "No exam types found"
 msgstr "Geen examensoorten gevonden"
 
-#: .\awpr\locale.py:1239
+#: .\awpr\locale.py:1240
 msgid "All candidates"
 msgstr "Alle kandidaten"
 
-#: .\awpr\locale.py:1240
+#: .\awpr\locale.py:1241
 msgid "All subjects"
 msgstr "Alle vakken"
 
-#: .\awpr\locale.py:1243 .\templates\accounts\moduser.html:65
+#: .\awpr\locale.py:1244 .\templates\accounts\moduser.html:65
 msgid "Email address"
 msgstr "E-mail adres"
 
-#: .\awpr\locale.py:1247 .\grades\calc_results.py:352
+#: .\awpr\locale.py:1248 .\grades\calc_results.py:352
 #: .\students\validators.py:417 .\students\validators.py:1251
 #: .\students\validators.py:1313
 msgid "This candidate has no subjects."
 msgstr "Deze kandidaat heeft geen vakken."
 
-#: .\awpr\locale.py:1249
+#: .\awpr\locale.py:1250
 msgid "Click here to select a subject ..."
 msgstr "Klik hier om een vak te selecteren..."
 
-#: .\awpr\locale.py:1250
+#: .\awpr\locale.py:1251
 msgid "No subject selected."
 msgstr "Er is geen vak geselecteerd."
 
-#: .\awpr\locale.py:1259
+#: .\awpr\locale.py:1260
 msgid " of "
 msgstr " van "
 
-#: .\awpr\locale.py:1260
+#: .\awpr\locale.py:1261
 msgid "Submit"
 msgstr "Aanmelden"
 
-#: .\awpr\locale.py:1262
+#: .\awpr\locale.py:1263
 msgid "Approved by"
 msgstr "Goedgekeurd door"
 
-#: .\awpr\locale.py:1263
+#: .\awpr\locale.py:1264
 msgid "Submitted by"
 msgstr "Ingediend door"
 
-#: .\awpr\locale.py:1265 .\grades\calc_results.py:1884
+#: .\awpr\locale.py:1266 .\grades\calc_results.py:1884
 #: .\grades\calc_results.py:1888 .\grades\calc_results.py:1901
 #: .\grades\calc_results.py:1905 .\grades\calc_results.py:1973
 #: .\grades\calc_results.py:1978 .\grades\calc_results.py:1983
@@ -4522,170 +4529,170 @@ msgstr "Ingediend door"
 msgid " and "
 msgstr " en "
 
-#: .\awpr\locale.py:1266
+#: .\awpr\locale.py:1267
 msgid " or "
 msgstr " of "
 
-#: .\awpr\locale.py:1268
+#: .\awpr\locale.py:1269
 msgid " for "
 msgstr " voor "
 
-#: .\awpr\locale.py:1270
+#: .\awpr\locale.py:1271
 msgid "Name Ex form"
 msgstr "Naam Ex-formulier"
 
-#: .\awpr\locale.py:1275
+#: .\awpr\locale.py:1276
 msgctxt "2 lines"
 msgid "Sequence"
 msgstr ""
 "Volg-\n"
 "nummer"
 
-#: .\awpr\locale.py:1278
+#: .\awpr\locale.py:1279
 msgid "Mon"
 msgstr "ma"
 
-#: .\awpr\locale.py:1278
+#: .\awpr\locale.py:1279
 msgid "Tue"
 msgstr "di"
 
-#: .\awpr\locale.py:1278
+#: .\awpr\locale.py:1279
 msgid "Wed"
 msgstr "wo"
 
-#: .\awpr\locale.py:1278
+#: .\awpr\locale.py:1279
 msgid "Thu"
 msgstr "do"
 
-#: .\awpr\locale.py:1278
+#: .\awpr\locale.py:1279
 msgid "Fri"
 msgstr "vr"
 
-#: .\awpr\locale.py:1278
+#: .\awpr\locale.py:1279
 msgid "Sat"
 msgstr "za"
 
-#: .\awpr\locale.py:1278
+#: .\awpr\locale.py:1279
 msgid "Sun"
 msgstr "zo"
 
-#: .\awpr\locale.py:1279
+#: .\awpr\locale.py:1280
 msgid "Monday"
 msgstr "maandag"
 
-#: .\awpr\locale.py:1279
+#: .\awpr\locale.py:1280
 msgid "Tuesday"
 msgstr "dinsdag"
 
-#: .\awpr\locale.py:1279
+#: .\awpr\locale.py:1280
 msgid "Wednesday"
 msgstr "woensdag"
 
-#: .\awpr\locale.py:1280
+#: .\awpr\locale.py:1281
 msgid "Thursday"
 msgstr "donderdag"
 
-#: .\awpr\locale.py:1280
+#: .\awpr\locale.py:1281
 msgid "Friday"
 msgstr "vrijdag"
 
-#: .\awpr\locale.py:1280
+#: .\awpr\locale.py:1281
 msgid "Saturday"
 msgstr "zaterdag"
 
-#: .\awpr\locale.py:1280
+#: .\awpr\locale.py:1281
 msgid "Sunday"
 msgstr "zondag"
 
-#: .\awpr\locale.py:1281
+#: .\awpr\locale.py:1282
 msgid "Jan"
 msgstr "jan"
 
-#: .\awpr\locale.py:1281
+#: .\awpr\locale.py:1282
 msgid "Feb"
 msgstr "feb"
 
-#: .\awpr\locale.py:1281
+#: .\awpr\locale.py:1282
 msgid "Mar"
 msgstr "mrt"
 
-#: .\awpr\locale.py:1281
+#: .\awpr\locale.py:1282
 msgid "Apr"
 msgstr "apr"
 
-#: .\awpr\locale.py:1281 .\awpr\locale.py:1283
+#: .\awpr\locale.py:1282 .\awpr\locale.py:1284
 msgid "May"
 msgstr "mei"
 
-#: .\awpr\locale.py:1281
+#: .\awpr\locale.py:1282
 msgid "Jun"
 msgstr "juni"
 
-#: .\awpr\locale.py:1282
+#: .\awpr\locale.py:1283
 msgid "Jul"
 msgstr "juli"
 
-#: .\awpr\locale.py:1282
+#: .\awpr\locale.py:1283
 msgid "Aug"
 msgstr "aug"
 
-#: .\awpr\locale.py:1282
+#: .\awpr\locale.py:1283
 msgid "Sep"
 msgstr "sept"
 
-#: .\awpr\locale.py:1282
+#: .\awpr\locale.py:1283
 msgid "Oct"
 msgstr "okt"
 
-#: .\awpr\locale.py:1282
+#: .\awpr\locale.py:1283
 msgid "Nov"
 msgstr "nov"
 
-#: .\awpr\locale.py:1282
+#: .\awpr\locale.py:1283
 msgid "Dec"
 msgstr "dec"
 
-#: .\awpr\locale.py:1283
+#: .\awpr\locale.py:1284
 msgid "January"
 msgstr "januari"
 
-#: .\awpr\locale.py:1283
+#: .\awpr\locale.py:1284
 msgid "February"
 msgstr "februari"
 
-#: .\awpr\locale.py:1283
+#: .\awpr\locale.py:1284
 msgid "March"
 msgstr "maart"
 
-#: .\awpr\locale.py:1283
+#: .\awpr\locale.py:1284
 msgid "April"
 msgstr "april"
 
-#: .\awpr\locale.py:1283
+#: .\awpr\locale.py:1284
 msgid "June"
 msgstr "juni"
 
-#: .\awpr\locale.py:1284
+#: .\awpr\locale.py:1285
 msgid "July"
 msgstr "juli"
 
-#: .\awpr\locale.py:1284
+#: .\awpr\locale.py:1285
 msgid "August"
 msgstr "augustus"
 
-#: .\awpr\locale.py:1284
+#: .\awpr\locale.py:1285
 msgid "September"
 msgstr "september"
 
-#: .\awpr\locale.py:1284
+#: .\awpr\locale.py:1285
 msgid "October"
 msgstr "oktober"
 
-#: .\awpr\locale.py:1284
+#: .\awpr\locale.py:1285
 msgid "November"
 msgstr "November"
 
-#: .\awpr\locale.py:1284
+#: .\awpr\locale.py:1285
 msgid "December"
 msgstr "december"
 
@@ -4805,7 +4812,7 @@ msgstr "%(cpt)s '%(val)s' is te lang. Maximaal %(max)s tekens."
 #: .\awpr\validators.py:152 .\awpr\validators.py:164 .\awpr\validators.py:377
 #: .\awpr\validators.py:446 .\students\validators.py:1787
 #: .\students\validators.py:1857 .\students\validators.py:1865
-#: .\students\validators.py:1890 .\subjects\views.py:3841
+#: .\students\validators.py:1890 .\subjects\views.py:3899
 #, python-format
 msgid "%(cpt)s cannot be blank."
 msgstr "%(cpt)s moet ingevuld worden."
@@ -4918,7 +4925,7 @@ msgid "%(cpt)s '%(val)s' is too long.<br>Maximum %(max)s characters."
 msgstr "%(cpt)s '%(val)s' is te lang.<br>Maximaal %(max)s tekens."
 
 #: .\awpr\validators.py:466 .\subjects\views.py:892 .\subjects\views.py:970
-#: .\subjects\views.py:3775
+#: .\subjects\views.py:3833
 msgid "Update subject scheme"
 msgstr "Vakschema bijwerken"
 
@@ -4927,8 +4934,8 @@ msgstr "Vakschema bijwerken"
 msgid "%(cpt)s '%(val)s' already exists in this subject scheme."
 msgstr "%(cpt)s '%(val)s' komt al voor in dit vakschema."
 
-#: .\awpr\validators.py:559 .\subjects\views.py:777 .\subjects\views.py:3898
-#: .\subjects\views.py:4077
+#: .\awpr\validators.py:559 .\subjects\views.py:777 .\subjects\views.py:3956
+#: .\subjects\views.py:4135
 msgid "Update character"
 msgstr "Karakter bijwerken"
 
@@ -5082,7 +5089,7 @@ msgstr "landsexamenkandidaat"
 #: .\grades\calc_results.py:2715 .\schools\imports.py:299
 #: .\schools\imports.py:588 .\schools\imports.py:757 .\schools\imports.py:1317
 #: .\schools\imports.py:2335 .\schools\imports.py:3403 .\schools\views.py:2113
-#: .\schools\views.py:3071 .\schools\views.py:3970 .\subjects\views.py:2981
+#: .\schools\views.py:3071 .\schools\views.py:3970 .\subjects\views.py:3039
 msgid "date"
 msgstr "datum"
 
@@ -5555,17 +5562,17 @@ msgid "The changes will not be saved."
 msgstr "De wijzigingen worden niet opgeslagen."
 
 #: .\schools\imports.py:1084 .\schools\imports.py:1578
-#: .\schools\imports.py:3370 .\schools\views.py:4150 .\subjects\views.py:3168
+#: .\schools\imports.py:3370 .\schools\views.py:4150 .\subjects\views.py:3226
 msgid "blank"
 msgstr "blanco"
 
 #: .\schools\imports.py:1085 .\schools\imports.py:1579
-#: .\schools\imports.py:3374 .\schools\views.py:4151 .\subjects\views.py:3169
+#: .\schools\imports.py:3374 .\schools\views.py:4151 .\subjects\views.py:3227
 msgid "was"
 msgstr ""
 
 #: .\schools\imports.py:1103 .\schools\imports.py:1597 .\schools\views.py:4173
-#: .\subjects\views.py:3191
+#: .\subjects\views.py:3249
 #, python-format
 msgid "'%(val)s' is too long. Maximum is %(max)s characters'."
 msgstr "'%(val)s' is te lang, maximaal %(max)s tekens."
@@ -5843,7 +5850,7 @@ msgctxt "plur"
 msgid "will be skipped."
 msgstr "worden overgeslagen."
 
-#: .\schools\imports.py:2020 .\schools\views.py:4030 .\subjects\views.py:3041
+#: .\schools\imports.py:2020 .\schools\views.py:4030 .\subjects\views.py:3099
 msgid "is skipped."
 msgstr "is overgeslagen."
 
@@ -6055,8 +6062,8 @@ msgstr "is bijgewerkt."
 msgid "Error in row"
 msgstr "Fout in regel"
 
-#: .\schools\models.py:693 .\subjects\views.py:648 .\subjects\views.py:3329
-#: .\subjects\views.py:3625 .\subjects\views.py:4040
+#: .\schools\models.py:693 .\subjects\views.py:648 .\subjects\views.py:3387
+#: .\subjects\views.py:3683 .\subjects\views.py:4098
 #, python-format
 msgid "%(cpt)s could not be deleted."
 msgstr "%(cpt)s kon niet worden gewist."
@@ -6092,7 +6099,7 @@ msgstr "De lijst met geadresseerden"
 msgid "The text of this message"
 msgstr "De tekst van dit bericht"
 
-#: .\schools\views.py:610 .\schools\views.py:1392 .\subjects\views.py:3418
+#: .\schools\views.py:610 .\schools\views.py:1392 .\subjects\views.py:3476
 #, python-format
 msgid "%(cpt)s '%(val)s'could not be added."
 msgstr "%(cpt)s '%(val)s' kon niet worden toegevoegd."
@@ -6299,8 +6306,8 @@ msgstr ""
 "Er is een fout opgetreden. School '%(val)s' kon niet worden aangemaakt."
 
 #: .\schools\views.py:3920 .\schools\views.py:3931 .\subjects\views.py:734
-#: .\subjects\views.py:3528 .\subjects\views.py:3756 .\subjects\views.py:3872
-#: .\subjects\views.py:4211
+#: .\subjects\views.py:3586 .\subjects\views.py:3814 .\subjects\views.py:3930
+#: .\subjects\views.py:4269
 msgid "An error occurred: "
 msgstr "Er is een fout opgetreden: "
 
@@ -6327,33 +6334,33 @@ msgstr "De schoolgegevens zijn opgeslagen."
 msgid "Schools are looked up by the field: '%(fld)s'."
 msgstr "De scholen worden opgezocht met het veld: '%(fld)s'."
 
-#: .\schools\views.py:4031 .\subjects\views.py:3042
+#: .\schools\views.py:4031 .\subjects\views.py:3100
 msgid "Skipped."
 msgstr "Overgeslagen."
 
-#: .\schools\views.py:4042 .\subjects\views.py:3053
+#: .\schools\views.py:4042 .\subjects\views.py:3111
 #, python-format
 msgid "No value for lookup field: '%(fld)s'."
 msgstr "Het veld '%(fld)s' is niet ingevuld."
 
-#: .\schools\views.py:4047 .\schools\views.py:4060 .\subjects\views.py:3058
-#: .\subjects\views.py:3071
+#: .\schools\views.py:4047 .\schools\views.py:4060 .\subjects\views.py:3116
+#: .\subjects\views.py:3129
 #, python-format
 msgid "Value '%(val)s' is too long."
 msgstr "Waarde '%(val)s' is te lang."
 
-#: .\schools\views.py:4048 .\schools\views.py:4061 .\subjects\views.py:3059
-#: .\subjects\views.py:3072
+#: .\schools\views.py:4048 .\schools\views.py:4061 .\subjects\views.py:3117
+#: .\subjects\views.py:3130
 #, python-format
 msgid "Max %(fld)s characters."
 msgstr "Maximaal %(fld)s tekens."
 
-#: .\schools\views.py:4055 .\subjects\views.py:3066
+#: .\schools\views.py:4055 .\subjects\views.py:3124
 #, python-format
 msgid "No value for required field: '%(fld)s'."
 msgstr "Het verplichte veld '%(fld)s' is niet ingevuld."
 
-#: .\schools\views.py:4077 .\subjects\views.py:3088
+#: .\schools\views.py:4077 .\subjects\views.py:3146
 #, python-format
 msgid "%(fld)s '%(val)s' is not unique in Excel file."
 msgstr "%(fld)s '%(val)s' is niet uniek in het Excel-bestand."
@@ -6362,7 +6369,7 @@ msgstr "%(fld)s '%(val)s' is niet uniek in het Excel-bestand."
 msgid "An error occurred. The school is not added."
 msgstr "Er is een fout opgetreden. De school is niet toegevoegd."
 
-#: .\schools\views.py:4130 .\subjects\views.py:3148
+#: .\schools\views.py:4130 .\subjects\views.py:3206
 msgid "is added."
 msgstr "is toegevoegd."
 
@@ -6496,9 +6503,9 @@ msgid "The required subjects %(code)s are missing."
 msgstr "De verplichte vakken %(code)s ontbreken."
 
 #: .\students\validators.py:895 .\students\validators.py:918
-#: .\students\views.py:1984 .\subjects\views.py:4143 .\subjects\views.py:4148
-#: .\subjects\views.py:4154 .\subjects\views.py:4159 .\subjects\views.py:4165
-#: .\subjects\views.py:4170
+#: .\students\views.py:1984 .\subjects\views.py:4201 .\subjects\views.py:4206
+#: .\subjects\views.py:4212 .\subjects\views.py:4217 .\subjects\views.py:4223
+#: .\subjects\views.py:4228
 msgid "subjects"
 msgstr "vakken"
 
@@ -6940,7 +6947,7 @@ msgstr "Basiskarakter aanmaken"
 msgid "The code"
 msgstr "De code"
 
-#: .\subjects\views.py:576 .\subjects\views.py:3380
+#: .\subjects\views.py:576 .\subjects\views.py:3438
 msgid "The abbreviation"
 msgstr "De afkorting"
 
@@ -6948,7 +6955,7 @@ msgstr "De afkorting"
 msgid "The sequence"
 msgstr "Het volgnummer"
 
-#: .\subjects\views.py:612 .\subjects\views.py:4006
+#: .\subjects\views.py:612 .\subjects\views.py:4064
 #, python-format
 msgid "%(cpt)s '%(val)s' could not be created."
 msgstr "%(cpt)s '%(val)s' kon niet worden aangemaakt."
@@ -6970,7 +6977,7 @@ msgstr "Er zijn kandidaten met vakken met dit karakter."
 msgid "Update base character"
 msgstr "Basiskarakter bijwerken"
 
-#: .\subjects\views.py:712 .\subjects\views.py:3812 .\subjects\views.py:4135
+#: .\subjects\views.py:712 .\subjects\views.py:3870 .\subjects\views.py:4193
 #, python-format
 msgid "'%(val)s' is not a valid number."
 msgstr "'%(val)s' is geen geldig getal."
@@ -7136,143 +7143,143 @@ msgstr "Het examen is gekoppeld aan 1 vak van een kandidaat."
 msgid "The exams have been linked to %(count)s subjects of candidates."
 msgstr "De examens zijn gekoppeld aan %(count)s vakken van kandidaten."
 
-#: .\subjects\views.py:2452
+#: .\subjects\views.py:2453
 msgid "This exam could not be deleted."
 msgstr "Dit examen kon niet worden gewist."
 
-#: .\subjects\views.py:2559
+#: .\subjects\views.py:2560
 msgid "An error occurred. This exam could not be updated."
 msgstr "Er is een fout opgetreden. Dit examen kon niet worden aangemaakt."
 
-#: .\subjects\views.py:2981
+#: .\subjects\views.py:3039
 msgid "Import subjects"
 msgstr "Importeer vakken"
 
-#: .\subjects\views.py:2985
+#: .\subjects\views.py:3043
 msgid ""
 "There is no field given to lookup subjects. Subjects cannot be uploaded."
 msgstr ""
 "Er is geen veld geselecteerd om vakken op te zoeken. Vakken kunnen niet "
 "worden geüpload."
 
-#: .\subjects\views.py:2989
+#: .\subjects\views.py:3047
 msgid "This is a test. The subject data are not saved."
 msgstr "Dit is een test. De vakgegevens zijn niet opgeslagen."
 
-#: .\subjects\views.py:2991
+#: .\subjects\views.py:3049
 msgid "The subject data are saved."
 msgstr "De vakgegevens zijn opgeslagen."
 
-#: .\subjects\views.py:2994
+#: .\subjects\views.py:3052
 #, python-format
 msgid "Subjects are looked up by the field: '%(fld)s'."
 msgstr "De vakken worden opgezocht met het veld: '%(fld)s'."
 
-#: .\subjects\views.py:3097
+#: .\subjects\views.py:3155
 #, python-format
 msgid "Value '%(fld)s' is found multiple times."
 msgstr "Waarde '%(fld)s' komt meerdere keren voor."
 
-#: .\subjects\views.py:3105
+#: .\subjects\views.py:3163
 #, python-format
 msgid "Value '%(fld)s' is found multiple times in this exam year."
 msgstr "Waarde '%(fld)s' komt dit examenjaar meerdere keren voor."
 
-#: .\subjects\views.py:3128 .\subjects\views.py:3151
+#: .\subjects\views.py:3186 .\subjects\views.py:3209
 msgid "An error occurred. The subject is not added."
 msgstr "Er is een fout opgetreden. Het vak is niet toegevoegd."
 
-#: .\subjects\views.py:3317
+#: .\subjects\views.py:3375
 #, python-format
 msgid "Subject '%(tbl)s'"
 msgstr "Vak '%(tbl)s'"
 
-#: .\subjects\views.py:3328
+#: .\subjects\views.py:3386
 msgid "There are candidates with this subject."
 msgstr "Er zijn kandidaten met dit vak."
 
-#: .\subjects\views.py:3364 .\subjects\views.py:3420
+#: .\subjects\views.py:3422 .\subjects\views.py:3478
 msgid "Create subject"
 msgstr "Vak toevoegen"
 
-#: .\subjects\views.py:3527
+#: .\subjects\views.py:3585
 msgid "Update subject"
 msgstr "Vak bijwerken"
 
-#: .\subjects\views.py:3548
+#: .\subjects\views.py:3606
 msgid "Create subject scheme subject"
 msgstr "Vak toevoegen aan vakschema"
 
-#: .\subjects\views.py:3557
+#: .\subjects\views.py:3615
 msgid "Subject not found."
 msgstr "Vak niet gevonden."
 
-#: .\subjects\views.py:3567
+#: .\subjects\views.py:3625
 msgid "Subject type not found."
 msgstr "Vaktype niet gevonden."
 
-#: .\subjects\views.py:3581
+#: .\subjects\views.py:3639
 #, python-format
 msgid "Subject scheme subject '%(val)s' could not be created."
 msgstr "Vak '%(val)s' kon niet aan het vakschema worden toegevoegd."
 
-#: .\subjects\views.py:3609
+#: .\subjects\views.py:3667
 #, python-format
 msgid "Subject '%(tbl)s' of subject scheme '%(tbl)s'"
 msgstr "Vak '%(tbl)s' van vakschema '%(tbl)s'"
 
-#: .\subjects\views.py:3610
+#: .\subjects\views.py:3668
 msgid "Delete subject from subject scheme"
 msgstr "Vak van het vakschema verwijderen"
 
-#: .\subjects\views.py:3624
+#: .\subjects\views.py:3682
 msgid "There are candidates with subjects with this schemeitem."
 msgstr "Er zijn kandidaten met dit vak van het vakschemame."
 
-#: .\subjects\views.py:3715
+#: .\subjects\views.py:3773
 msgid "Update subject of subject scheme"
 msgstr "Vakken van vakschema bijwerken"
 
-#: .\subjects\views.py:3826
+#: .\subjects\views.py:3884
 #, python-format
 msgid "Minimum amount of subjects cannot be greater than maximum (%(val)s)."
 msgstr ""
 "Het minimaal aantal vakken kan niet groter zijn dan het maximum (%(val)s)."
 
-#: .\subjects\views.py:3837
+#: .\subjects\views.py:3895
 #, python-format
 msgid "Maximum amount of subjects cannot be fewer than minimum (%(val)s)."
 msgstr ""
 "Het maximaal aantal vakken kan niet kleiner zijn dan het minimum (%(val)s)."
 
-#: .\subjects\views.py:3843
+#: .\subjects\views.py:3901
 msgid "Maximum number of re-examinations must be a positive whole number."
 msgstr "Maximaal aantal herexamens moet een geheel getal zijn, groter dan nul."
 
-#: .\subjects\views.py:3959
+#: .\subjects\views.py:4017
 msgid "Create character"
 msgstr "Karakter aanmaken"
 
-#: .\subjects\views.py:3966
+#: .\subjects\views.py:4024
 msgid "Base character not found."
 msgstr "Basiskarakter niet gevonden."
 
-#: .\subjects\views.py:4026
+#: .\subjects\views.py:4084
 #, python-format
 msgid "Character '%(tbl)s'"
 msgstr "Karakter '%(tbl)s'"
 
-#: .\subjects\views.py:4039
+#: .\subjects\views.py:4097
 msgid "There are candidates with subjects with this character."
 msgstr "Er zijn kandidaten met dit vak met dit karakter."
 
-#: .\subjects\views.py:4142 .\subjects\views.py:4153 .\subjects\views.py:4164
+#: .\subjects\views.py:4200 .\subjects\views.py:4211 .\subjects\views.py:4222
 #, python-format
 msgid "Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s)."
 msgstr ""
 "Het minimaal aantal %(cpt)s kan niet groter zijn dan het maximum (%(val)s)."
 
-#: .\subjects\views.py:4147 .\subjects\views.py:4158 .\subjects\views.py:4169
+#: .\subjects\views.py:4205 .\subjects\views.py:4216 .\subjects\views.py:4227
 #, python-format
 msgid "Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s)."
 msgstr ""
@@ -7418,6 +7425,7 @@ msgstr ""
 #: .\templates\students\modselectex3.html:10
 #: .\templates\students\modstudentsubject.html:10
 #: .\templates\subjects\modapproveexam.html:10
+#: .\templates\subjects\modduoexam.html:10
 msgid "Open manual"
 msgstr "Handleiding openen"
 
@@ -7967,8 +7975,7 @@ msgstr "Ex3-formulier"
 
 #: .\templates\students\modselectex3.html:19
 msgid "AWP will create an Ex3 form for each selected subject."
-msgstr ""
-"AWP maakt een Ex3-formulier aan voor elk geselecteerd vak."
+msgstr "AWP maakt een Ex3-formulier aan voor elk geselecteerd vak."
 
 #: .\templates\students\modselectex3.html:24
 msgid "Select a lay-out"
@@ -8097,17 +8104,54 @@ msgstr "Bewijs van kennis"
 msgid "Show all"
 msgstr "Alles weergeven"
 
-#: .\templates\subjects\exams.html:116
+#: .\templates\subjects\exams.html:117
 msgid "N-termen tabel"
 msgstr ""
+
+#: .\templates\subjects\modduoexam.html:25
+#: .\templates\subjects\modexamquestions.html:43
+msgid "The leerweg cannot be blank."
+msgstr "De leerweg moet ingevuld worden."
+
+#: .\templates\subjects\modduoexam.html:28
+msgid "Select a subject and a DUO exam to link them."
+msgstr ""
+
+#: .\templates\subjects\modduoexam.html:29
+msgid "Select a linked subject to remove the link."
+msgstr ""
+
+#: .\templates\subjects\modduoexam.html:30
+msgid "Click 'Save' to save the changes."
+msgstr "Klik op 'Opslaan' om de wijzigingen op te slaan."
+
+#: .\templates\subjects\modduoexam.html:44
+msgid "Filter subjects"
+msgstr "Filter vakken"
+
+#: .\templates\subjects\modduoexam.html:56
+msgid "Show linked subjects"
+msgstr "Gekoppelde vakken weeergeven"
+
+#: .\templates\subjects\modduoexam.html:72
+msgid "Filter DUO exams"
+msgstr "Filter DUO-examens"
+
+#: .\templates\subjects\modduoexam.html:84
+msgid "Show linked exams"
+msgstr "Gekoppelde examens weeergeven"
+
+#: .\templates\subjects\modduoexam.html:93
+msgid "Linked subjects"
+msgstr "Gekoppelde vakken"
+
+#: .\templates\subjects\modduoexam.html:99
+msgid "Filter linked subjects"
+msgstr "Filter gekoppelde vakken"
 
 #: .\templates\subjects\modexamquestions.html:33
 msgid "The subject cannot be blank."
 msgstr "Het vak moet ingevuld worden."
-
-#: .\templates\subjects\modexamquestions.html:43
-msgid "The leerweg cannot be blank."
-msgstr "De leerweg moet ingevuld worden."
 
 #: .\templates\subjects\modexamquestions.html:47
 msgid "Version of the exam"
@@ -8300,4 +8344,3 @@ msgstr "Alle"
 #, python-format
 msgid "An error occurred. '%(fld)s' is not saved."
 msgstr "Er is een fout opgetreden. '%(fld)s' is niet opgeslagen."
-
