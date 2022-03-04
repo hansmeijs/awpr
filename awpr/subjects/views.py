@@ -248,9 +248,9 @@ def create_subject_rows(setting_dict, skip_allowed_filter, request):
         # note: don't filter on sel_subjbase_pk, must be able to change within allowed
         sel_subjbase_pk = None
 
-        # when setting allowed in serpage, all subject must be shown
+        # when setting allowed in userpage, all subject must be shown
         if not skip_allowed_filter:
-            acc_view.get_userfilter_subjbase(sql_keys, sql_list, sel_subjbase_pk, request)
+            acc_view.set_allowed_subjbase_filter(sql_keys, sql_list, sel_subjbase_pk, request)
 
         #if subject_pk:
        #     # when employee_pk has value: skip other filters
@@ -1329,6 +1329,10 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.is_role_admin and req_usr.schoolbase:
 
+# -  get user_lang
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
             permit_list = req_usr.permit_list('page_exams')
             if permit_list:
                 requsr_usergroup_list = req_usr.usergroup_list
@@ -1734,14 +1738,13 @@ def get_approve_grade_exam_rows():  #PR2022-02-24
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- get_approve_grade_exam_rows -----')
-        logger.debug('count_dict: ' + str(count_dict))
-        logger.debug('is_test: ' + str(is_test))
 
     # ATTENTION: ce_exam is linked with curacao subject, while SXM students are connected with sxm subjects.
     # therefore don't link grade
     sql_list = ["SELECT grd.id, grd.examperiod,"
                 # "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
-                "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_published_id, grd.ce_exam_blocked,",
+                "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, ",
+                "grd.ce_exam_published_id AS ce_exam_publ_id, grd.ce_exam_blocked,",
 
                 "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
 
@@ -2581,9 +2584,9 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
         "ex.ete_exam, ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
-        "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm,",  # ex.examdate,",
+        "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm,",
 
-        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
+        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id AS publ_id, ex.locked, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
         "au.last_name AS modby_username,",

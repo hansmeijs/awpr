@@ -138,13 +138,14 @@ const man_studsubj = {
                 "<li>Klik op een kandidaat in de lijst <i>Beschikbare kandidaten</i>. ",
                 "De kandidaat wordt nu toegevoegd aan de lijst <i>Kandidaten van dit cluster</i>.</li>",
                 "<li>Klik op een kandidaat in de lijst <i>Kandidaten van dit cluster</i> om de kandidaat te verwijderen.</li>",
-                "<li>Klik op <i>Alle kandidaten toevoegen</i> of <i>Alle kandidaten verwijderen</i> om alle kandidaat van de lijst toe te voegen of te verwijderen.</li>",
+                "<li>Klik op <i>Alle kandidaten toevoegen</i> of <i>Alle kandidaten verwijderen</i> om alle kandidaten van de lijst toe te voegen of te verwijderen.</li>",
                 "<li>Klik op <i>Opslaan</i> rechts onder in het venster om de wijzigingen op te slaan.</li></ul>",
 
                 "<p class='mb-0 pt-2 pb-0'><b>Alle kandidaten van een klas toevoegen</b></p>",
                 "<p class='mt-0 mb-0 pb-0'>Je kunt alle kandidaten van een klas in een keer aan een cluster toevoegen. Dit gaat als volgt:</p>",
                 "<ul class='manual_bullet mb-0'><li>Selecteer een klas in het veld <i>Filter klas</i> in het kader <i>Filter kandidaten</i>.</li>",
-                "<li>Klik vervolgens op <i>Alle kandidaten toevoegen</i> onder de lijst met beschikbare kandidaten.</li></ul>",
+                "<li>Klik vervolgens op <i>Alle kandidaten toevoegen</i> onder de lijst met beschikbare kandidaten.</li>",
+                "<li>Klik tenslotte op <i>Opslaan</i> rechts onder in het venster om de wijzigingen op te slaan.</li></ul>",
 
                 "<p class='mb-0 pt-2 pb-0'>Standaard worden in de lijst met beschikbare kandidaten alleen de kandidaten weergegeven, die nog niet tot een cluster voor dit vak behoren. ",
                 "Wanneer de lijst met beschikbare kandidaten leeg is, betekent dit dat alle kandidaten tot een cluster voor dit vak behoren.<br>",

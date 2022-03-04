@@ -88,23 +88,23 @@ document.addEventListener("DOMContentLoaded", function() {
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
     columns_tobe_hidden.all = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "subj_name"],
-        captions: ["Examnumber", "Leerweg", "Sector", "Subject"]};
+        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
+        captions: ["Examnumber", "Leerweg", "Sector", "Cluster", "Subject"]};
 
 // --- get field_settings
     const field_settings = {
         btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
-                                  "segrade", "cegrade", "finalgrade", "ce_status", "note_status"],
+                                  "segrade", "cegrade", "finalgrade", "note_status"], //  "ce_status" not in use yet PR2022-03-03
                     field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
-                                  "Exem_SE_twolines", "Exem_CE_twolines", "Exem_FINAL_twolines", "", ""],
+                                  "Exem_SE_twolines", "Exem_CE_twolines", "Exem_FINAL_twolines", ""],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
-                                "input", "input", "div", "div", "div"],
+                                "input", "input", "div", "div"],
                     filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
-                                 "text", "text", "text","text", "text"],
+                                 "text", "text", "text", "text"],
                     field_width: ["020", "060", "240", "060", "060", "075", "075", "240",
-                                 "090", "090", "090", "020", "020"],
+                                 "090", "090", "090", "020"],
                     field_align: ["c", "r", "l", "c", "c", "c", "c", "l",
-                                 "c", "c", "c",  "c", "c"]},
+                                 "c", "c", "c", "c"]},
 
         btn_ep_01: { field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                    "segrade", "se_status", "srgrade", "sr_status",
@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
                                 "input", "div",  "input", "div",
                                 "input", "div", "input",
-                                "input", "div", "input", "div",
+                                "input", "div", "div", "div",  // PR2022-03-03 entering cegrades not allowed:  set from input to div
                                 "div"],
                     filter_tags: ["text", "text","text", "text", "text","text", "text","text",
                                 "text", "text", "text", "text",
@@ -528,6 +528,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     published_rows = response.published_rows;
                 };
 
+                SBR_display_subject_cluster_student();
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
                 // also calls: FillTblRows(), UpdateHeader()ect
             },
@@ -787,7 +788,11 @@ document.addEventListener("DOMContentLoaded", function() {
         const sr_allowed = !!setting_dict.sr_allowed;
         const has_centralexam = !setting_dict.no_centralexam;
         const has_thirdperiod = !setting_dict.no_thirdperiod;
-        const examperiod = setting_dict.sel_examperiod;
+        // set examperiod = 1 when sel_examperiod -= 12 or null
+        const examperiod = ([1, 2, 3, 4].includes(setting_dict.sel_examperiod)) ? setting_dict.sel_examperiod : 1;
+
+        //console.log("loc.options_examtype", loc.options_examtype);
+        //console.log("examperiod", examperiod);
 
         if (el_SBR_select_examtype) {
 
@@ -805,6 +810,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         display_rows.push(row);
                 };
             };
+        //console.log("display_rows", display_rows);
             t_FillOptionsFromList(el_SBR_select_examtype, display_rows, "value", "caption",
                 loc.Select_examtype + "...", loc.No_examtypes_found, setting_dict.sel_examtype);
             document.getElementById("id_SBR_container_examtype").classList.remove(cls_hide);
@@ -870,7 +876,11 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  HandleShowAll  ================ PR2020-12-17
 
     function HandleShowAll() {
-        //console.log("=== HandleShowAll");
+        console.log("=== HandleShowAll");
+
+        t_SBR_show_all(FillTblRows);
+
+        return false;
 
         setting_dict.sel_level_pk = null;
         setting_dict.sel_level_abbrev = null;
@@ -944,7 +954,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
         //console.log( "field_settings", field_settings);
         //console.log( "selected_btn", selected_btn);
 
@@ -993,6 +1003,7 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         //console.log( "col_hidden", col_hidden);
 
+        console.log( "setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
@@ -1007,6 +1018,8 @@ document.addEventListener("DOMContentLoaded", function() {
             // only show rows of selected level / sector / student / subject
             // show only rows that has_practexam when sel_examtype = "pe"
                 // Note: filter of filterrow is done by Filter_TableRows
+
+
                 const show_row = (tblName === "published") ? true :
                                 (!setting_dict.sel_level_pk || data_dict.lvl_id === setting_dict.sel_level_pk) &&
                                 (!setting_dict.sel_sector_pk || data_dict.sct_id === setting_dict.sel_sector_pk) &&
@@ -1017,9 +1030,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if(show_row){
                     CreateTblRow(tblName, field_setting, data_dict, col_hidden);
-                }
+                };
           };
         };
+        Filter_TableRows();
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-22 PR2021-12-01
@@ -1754,11 +1768,12 @@ if(j && !is_status_field){td.classList.add("border_left")};
             success: function (response) {
                 console.log("response", response)
                 if ("grade_note_icon_rows" in response) {
-                    RefreshDataRows("grades", response.grade_note_icon_rows, grade_rows, true); // true = is_update
+                    const is_update = true, skip_show_ok = true;
+                    RefreshDataRows("grades", response.grade_note_icon_rows, grade_rows, is_update, skip_show_ok);
                 }
                if ("grade_stat_icon_rows" in response) {
-                    const tblName = "grades";
-                    RefreshDataRows("grades", response.grade_stat_icon_rows, grade_rows, true); // true = is_update
+                    const tblName = "grades", is_update = true;
+                    RefreshDataRows(tblName, response.grade_stat_icon_rows, grade_rows, is_update);
                 }
             },
             error: function (xhr, msg) {
@@ -1967,7 +1982,23 @@ if(j && !is_status_field){td.classList.add("border_left")};
         }  //  if(!!row_upload)
     };  // UploadChanges
 
-// +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++++++++++
+//=========  SBR_display_subject_cluster_student  ================ PR2022-03-03
+    function SBR_display_subject_cluster_student() {
+        console.log("===== SBR_display_subject_cluster_student =====");
+        let subject_code = null, subject_name = null, student_code = null, student_name = null;
+        if(setting_dict.sel_subject_pk){
+            if(setting_dict.sel_subject_code){subject_code = setting_dict.sel_subject_code};
+            if(setting_dict.sel_subject_name){subject_name = setting_dict.sel_subject_name};
+        } else if (setting_dict.sel_student_pk){
+            if(setting_dict.sel_student_name_init){student_code = setting_dict.sel_student_name_init};
+            if(setting_dict.sel_student_name){student_name = setting_dict.sel_student_name};
+        }
+        t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
+        t_MSSSS_display_in_sbr("cluster", setting_dict.sel_cluster_pk);
+        t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
+    };  // SBR_display_subject_cluster_student
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
@@ -2507,7 +2538,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 if ("grade_note_icon_rows" in response) {
                     const tblName = "grades";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
-                    RefreshDataMap(tblName, field_names, response.grade_note_icon_rows, grade_map, false);  // false = don't show green ok background
+                    //RefreshDataMap(tblName, field_names, response.grade_note_icon_rows, grade_map, false);  // false = don't show green ok background
+
+
+                    RefreshDataRows("grades", response.grade_note_icon_rows, grade_rows, true); // true = is_update
                 }
 
             },  // success: function (response) {
@@ -2731,8 +2765,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
     }  //  RefreshDataRowsAfterUploadFromExcel
 
 
-//=========  RefreshDataRows  ================ PR2020-08-16 PR2020-09-30, PR2021-05-01 PR2021-09-20
-    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
+//=========  RefreshDataRows  ================ PR2020-08-16 PR2020-09-30, PR2021-05-01 PR2021-09-20 PR2022-03-03
+    function RefreshDataRows(tblName, update_rows, data_rows, is_update, skip_show_ok) {
         console.log(" --- RefreshDataRows  ---");
         console.log("update_rows", update_rows);
         console.log("is_update", is_update);
@@ -2741,7 +2775,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[selected_btn];
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
+                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows, skip_show_ok);
             }
         } else if (!is_update) {
             // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
@@ -2750,8 +2784,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         }
     }  //  RefreshDataRows
 
-//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20
-    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03
+    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows, skip_show_ok) {
         console.log(" --- RefreshDatarowItem  ---");
         console.log("tblName", tblName);
         console.log("field_setting", field_setting);
@@ -2814,7 +2848,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                                 if(is_updated_field){
     console.log(",,,,,,,,,,,,is_updated_field", el_fldName);
                                     UpdateField(el, update_dict);
-                                    ShowOkElement(el);
+                                    if(!skip_show_ok){ShowOkElement(el)};
                                 } else if( is_err_field){
         // make field red when error and reset old value after 2 seconds
                                     reset_element_with_errorclass(el, update_dict)
@@ -2932,17 +2966,19 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //========= Filter_TableRows  ==================================== PR2020-08-17
     function Filter_TableRows(tblBody) {
-       console.log( "===== Filter_TableRows  ========= ");
-       console.log( "field_settings", field_settings);
+       //console.log( "===== Filter_TableRows  ========= ");
+       //console.log( "field_settings", field_settings);
 
-        const field_setting = field_settings[selected_btn];
-        const filter_tags = field_setting.filter_tags;
-       console.log( "filter_tags", filter_tags);
+       // const field_setting = field_settings[selected_btn];
+       // const filter_tags = field_setting.filter_tags;
+       //console.log( "filter_tags", filter_tags);
 
-        for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
-            add_or_remove_class(tblRow, cls_hide, !show_row)
-        }
+        //for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
+        //    show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+        //    add_or_remove_class(tblRow, cls_hide, !show_row)
+        //}
+        t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
+
     }; // Filter_TableRows
 
 //========= ResetFilterRows  ====================================
@@ -3008,13 +3044,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 //=========  MSSSubjStud_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
     function MSSSubjStud_Response(mode, selected_dict, sel_pk_int) {
         console.log( "===== MSSSubjStud_Response ========= ");
-        console.log( "sel_pk_int", sel_pk_int, typeof sel_pk_int);
-        console.log( "selected_dict", selected_dict);
         console.log( "mode", mode);
-        // mode = "subject" or "student"
-
-// - put new value in setting_dict
-        // happens in t_MSSSS_display_in_sbr
+        console.log( "selected_dict", selected_dict);
+        console.log( "sel_pk_int", sel_pk_int, typeof sel_pk_int);
+        // mode = "subject" or "cluster" or "student"
 
         // reset sel_student_pk when selecting sel_subject_pk and vice versa
         if(sel_pk_int === -1) { sel_pk_int = null};
@@ -3023,11 +3056,15 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if (mode === "subject") {
             setting_dict.sel_subject_pk = sel_pk_int;
             setting_dict.sel_subject_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
+
+            selected.subject_pk = setting_dict.sel_subject_pk;
+
             if(sel_pk_int) {
                 setting_dict.sel_cluster_pk = null;
                 setting_dict.sel_cluster_name = null;
                 setting_dict.sel_student_pk = null;
                 setting_dict.sel_student_name = null;
+
             };
 
             selected_pk_dict.sel_subject_pk = sel_pk_int;
@@ -3036,14 +3073,19 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         } else if (mode === "cluster") {
             setting_dict.sel_cluster_pk = sel_pk_int;
             setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
+
             if(sel_pk_int) {
                 setting_dict.sel_subject_pk = null;
                 setting_dict.sel_subject_name = null
                 setting_dict.sel_student_pk = null;
                 setting_dict.sel_student_name = null;
             };
-            selected_pk_dict.sel_cluster_pk = sel_pk_int;
-            if(sel_pk_int) {selected_pk_dict.sel_cluster_pk = null};
+    // ---  upload new setting
+            const upload_dict = {selected_pk: {
+                sel_cluster_pk: setting_dict.sel_cluster_pk,
+                sel_student_pk: null,
+                sel_subject_pk: null}};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         } else if (mode === "student") {
             setting_dict.sel_student_pk = sel_pk_int;
@@ -3054,18 +3096,17 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 setting_dict.sel_cluster_pk = null;
                 setting_dict.sel_cluster_name = null
             };
-
-            selected_pk_dict.sel_student_pk = sel_pk_int;
-            if(sel_pk_int) {selected_pk_dict.sel_subject_pk = null};
+    // ---  upload new setting
+            const upload_dict = {selected_pk: {
+                sel_student_pk: setting_dict.sel_student_pk,
+                sel_subject_pk: null,
+                sel_cluster_pk: null}};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
         console.log("setting_dict", setting_dict);
-
-// ---  upload new setting
-        // sel_subject_pk, sel_cluster_pk and sel_student_pk are not saved in usersettings
-        //const upload_dict = {selected_pk: selected_pk_dict};
-        //b_UploadSettings (upload_dict, urls.url_usersetting_upload);
-
-        HandleBtnSelect(null, true)  // true = skip_upload
+        UpdateHeader();
+        FillTblRows()
+        //HandleBtnSelect(null, true)  // true = skip_upload
         // also calls: FillTblRows(), UpdateHeader()
 
     }  // MSSSubjStud_Response

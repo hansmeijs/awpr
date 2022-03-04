@@ -30,8 +30,7 @@ def create_mailmessage_received_rows(examyear, request, mailmessage_pk=None):
         sql_keys = {'req_usr_id': request.user.pk, 'ey_code': examyear.code, 'msg_id': mailmessage_pk}
 
         filter_mailmessage_pk = 'AND msg.id = %(msg_id)s::INT' if mailmessage_pk else ''
-
-        sql_list = ["WITH att AS (SELECT att.mailmessage_id FROM schools_mailattachment AS att LIMIT 1)",
+        sql_list = ["WITH att AS (SELECT att.mailmessage_id FROM schools_mailattachment AS att GROUP BY att.mailmessage_id)",
                     "SELECT msg.id, mb.id AS mailbox_id,",
                     "CONCAT('mailmessage_', msg.id::TEXT, '_', mb.id::TEXT) AS mapid,",
                     "mb.read, mb.deleted,",

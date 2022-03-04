@@ -260,7 +260,7 @@
         //console.log("selected_name", selected_name);
         //console.log( "selected_dict", selected_dict);
 
-        console.log( "===== t_MSSSS_display_in_sbr  ========= ");
+        //console.log( "===== t_MSSSS_display_in_sbr  ========= ");
         t_MSSSS_display_in_sbr(tblName, selected_pk_int);
         // reset other select elements
         if (tblName === "subject") {
@@ -333,9 +333,9 @@
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
-        console.log("===== t_MSSSS_Create_SelectRow ===== ");
-        console.log("..........tblName", tblName);
-        console.log("map_dict", map_dict);
+        //console.log("===== t_MSSSS_Create_SelectRow ===== ");
+        //console.log("..........tblName", tblName);
+        //console.log("map_dict", map_dict);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
@@ -354,9 +354,6 @@
                     (tblName === "cluster") ? map_dict.name :
                     (tblName === "student") ? map_dict.fullname  : "";
         const is_selected_row = (pk_int === selected_pk);
-
-        console.log("code", code);
-        console.log("name", name);
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", row_index = -1;
@@ -1052,9 +1049,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 //========= t_FillSelectOptions  =======  // PR2020-09-30 PR2021-05-12
     function t_FillSelectOptions(el_select, data_map, id_field, display_field, hide_none,
                 selected_pk, selectall_text, select_text_none, select_text) {
-        //console.log( "===== t_FillSelectOptions  ===== ");
+        console.log( "===== t_FillSelectOptions  ===== ");
         // called by page exam MEXQ_FillSelectTableLevel  and page_subject SBR_Select_scheme
-        //console.log( "selected_pk", selected_pk, typeof selected_pk);
+        console.log( "selected_pk", selected_pk, typeof selected_pk);
 
 // ---  fill options of select box
         let option_text = "";
@@ -1066,7 +1063,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                 const pk_int = map_dict[id_field];
                 const display_value = (map_dict[display_field]) ?  map_dict[display_field] : "---";
 
-        //console.log( "pk_int", pk_int, typeof pk_int);
+        console.log( "map_dict", map_dict);
+        console.log( "pk_int", pk_int, typeof pk_int);
+        console.log( "display_value", display_value);
                 option_text += "<option value=\"" + pk_int + "\"";
                 if (pk_int === selected_pk) {option_text += " selected=true" };
                 option_text +=  ">" + display_value + "</option>";
@@ -1576,21 +1575,13 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 // --- PR2021-10-28 new way of filtering inactive rows: (for now: only used in mailbox - deleted)
             // - set filter inactive before other filters, inactive value is stored in tblRow, "data-inactive"
-            // - filter_dict has key 'showinactive'
-            // - 'showinactive' is a list of table names.
-            // - when tblName is in  the showinactive list: inactive items are shwon
-            // - also applies to 'deleted' rows in mailbox, then data_inactive_field has value 'deleted'
-
-        //console.log("inactive_str", inactive_str);
-            const filter_showinactive = (filter_dict && filter_dict.showinactive)
+            // - filter_dict has key 'showinactive', value is integer.
+            // values of showinactive are:  '0'; is show all, '1' is show active only, '2' is show inactive only
+            const filter_showinactive = (filter_dict && filter_dict.showinactive != null) ? filter_dict.showinactive : 1;
             const is_inactive = !!get_attr_from_el_int(tblRow, data_inactive_field);
 
-            hide_row = (!filter_showinactive && is_inactive);
-
-        //console.log( "filter_showinactive", filter_showinactive);
-        //console.log( "is_inactive", is_inactive);
-        //console.log( "hide_row", hide_row);
-
+            hide_row = (filter_showinactive === 1) ? (is_inactive) :
+                       (filter_showinactive === 2) ? (!is_inactive) : false
 
             if (!isEmpty(filter_dict)){
     // ---  loop through filter_dict key = index_str, value = filter_arr
@@ -1709,12 +1700,16 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 
 // +++++++++++++++++ MODAL SELECT COLUMNS ++++++++++++++++++++++++++++++++++++++++++ PR2021-08-18 PR2021-12-16
+
+//  columns_tobe_hidden        is a fixed array of fields that may be hidden, per page and tab, set on loading page
+
 //  setting_dict.cols_hidden   contains saved list of hidden columns, retrieved on opening page
+
 //  mod_MCOL_dict.cols_hidden  is deep copy of setting_dict.cols_hidden, fields are added / removed from this array
-//  columns_tobe_hidden        is a fixed array of fields that may be hidden, per page and tab, set on opening page
 
 // mod_MCOL_dict is only used in this script for modal. pages use columns_hidden and columns_tobe_hidden
 // mod_MCOL_dict.cols_hidden holds fields in modal before they are saved, columns_hidden holds saved fields
+
 // these function use selected_btn, columns_hidden[tblName], columns_tobe_hidden[tblName].fields;
 
 const columns_tobe_hidden = {};
@@ -1722,25 +1717,34 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
 
 
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02
-    function t_MCOL_Open(page, skip_fields) {
+    function t_MCOL_Open(page) {
         console.log(" -----  t_MCOL_Open   ----")
         console.log("selected_btn", selected_btn)
         console.log("columns_tobe_hidden", columns_tobe_hidden)
+        console.log("mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden)
 
         mod_MCOL_dict.page = page;
-        mod_MCOL_dict.skip_fields = (skip_fields) ? skip_fields : [];
         mod_MCOL_dict.selected_btn = selected_btn;
 
-        // mod_MCOL_dict.cols_hidden = setting_dict.cols_hidden, is done after DatalistDownload
+        // mod_MCOL_dict.cols_hidden is filled after loading page by b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
         mod_MCOL_dict.col_tobe_hidden_fields = [];
         mod_MCOL_dict.col_tobe_hidden_captions = [];
-        // only get values from key 'all' or key selected_btn
+        // only get values from key 'all' and key selected_btn
+        const merged_fields = [], merged_captions = [];
         for (const [key, col_tobe_hidden_dict] of Object.entries(columns_tobe_hidden)) {
             if (key === mod_MCOL_dict.selected_btn || key === 'all'){
-                mod_MCOL_dict.col_tobe_hidden_fields = col_tobe_hidden_dict.fields;
-                mod_MCOL_dict.col_tobe_hidden_captions = col_tobe_hidden_dict.captions;
+                // PR2022-03-01 extend existing array with new one
+                // was:  (doesn't add arrays)
+                //mod_MCOL_dict.col_tobe_hidden_fields = col_tobe_hidden_dict.fields;
+                //mod_MCOL_dict.col_tobe_hidden_captions = col_tobe_hidden_dict.captions;
+                // from https://stackoverflow.com/questions/1374126/how-to-extend-an-existing-javascript-array-with-another-array-without-creating
+                merged_fields.push(...col_tobe_hidden_dict.fields);
+                merged_captions.push(...col_tobe_hidden_dict.captions);
             };
         };
+        // remove dulplicates
+        b_copy_array_noduplicates(merged_fields, mod_MCOL_dict.col_tobe_hidden_fields);
+        b_copy_array_noduplicates(merged_captions, mod_MCOL_dict.col_tobe_hidden_captions);
 
         t_MCOL_FillSelectTable();
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -1954,7 +1958,7 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
 
     }  // t_SBR_filloptions_level_sector
 
-//=========  t_SBR_show_all  ================ PR2021-08-02
+//=========  t_SBR_show_all  ================ PR2021-08-02 PR2022-03-03
     function t_SBR_show_all(FillTblRows) {
         //console.log("===== t_SBR_show_all =====");
 
@@ -1967,32 +1971,45 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
         setting_dict.sel_sctbase_pk = null;
         setting_dict.sel_sector_abbrev = null;
 
+        setting_dict.sel_subject_pk = null;
+        setting_dict.sel_subject_code = null;
+        setting_dict.sel_subject_name = null;
+
+        setting_dict.sel_cluster_pk = null;
+        setting_dict.sel_cluster_name = null;
+
         setting_dict.sel_classname = null;
 
         setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
+        setting_dict.sel_student_name_init = null;
 
         const el_SBR_select_department = document.getElementById("id_SBR_select_department");
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
+        const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
+        const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         const el_SBR_select_class = document.getElementById("id_SBR_select_class");
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
 
         if (el_SBR_select_department){ el_SBR_select_department.value = null};
         if (el_SBR_select_level){ el_SBR_select_level.value = null};
         if (el_SBR_select_sector){ el_SBR_select_sector.value = null};
+        if (el_SBR_select_subject){ t_MSSSS_display_in_sbr("subject", null)};
+        if (el_SBR_select_cluster){ t_MSSSS_display_in_sbr("cluster", null) };
         if (el_SBR_select_class){ el_SBR_select_class.value = "0"};
-        if (el_SBR_select_student){ el_SBR_select_student.value = "0"};
+        if (el_SBR_select_student){t_MSSSS_display_in_sbr("student", null)};
+
 
 // ---  upload new setting
-        const selected_pk_dict = {};
-        if (el_SBR_select_department){selected_pk_dict.sel_depbase_pk = null};
-        if (el_SBR_select_level){selected_pk_dict.sel_lvlbase_pk = null};
-        if (el_SBR_select_sector){selected_pk_dict.sel_sctbase_pk = null};
-        if (el_SBR_select_class){selected_pk_dict.sel_classname = null};
-        if (el_SBR_select_student){selected_pk_dict.sel_student_pk = null};
-        const upload_dict = {selected_pk: selected_pk_dict};
-console.log("url", urls.url_usersetting_upload)
-console.log("upload_dict", upload_dict)
+        const upload_dict = {selected_pk: {
+            sel_depbase_pk: null,
+            sel_lvlbase_pk: null,
+            sel_sctbase_pk: null,
+            sel_classname: null,
+            sel_subject_pk: null,
+            sel_cluster_pk: null,
+            sel_student_pk: null}};
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         FillTblRows();

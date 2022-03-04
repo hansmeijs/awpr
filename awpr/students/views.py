@@ -238,7 +238,7 @@ def create_student_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, appe
 class ClusterUploadView(View):  # PR2022-01-06
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= ClusterUploadView ============= ')
@@ -292,7 +292,9 @@ class ClusterUploadView(View):  # PR2022-01-06
                     logger.debug('sel_school:     ' + str(sel_school))
                     logger.debug('sel_department: ' + str(sel_department))
                     logger.debug('may_edit:       ' + str(may_edit))
-                    logger.debug('sel_msg_list:       ' + str(sel_msg_list))
+                    logger.debug('sel_msg_list:   ' + str(sel_msg_list))
+                    logger.debug('cluster_list:   ' + str(cluster_list))
+                    logger.debug('studsubj_list:   ' + str(studsubj_list))
 
                 if sel_msg_list:
                     msg_list.extend(sel_msg_list)
@@ -393,12 +395,14 @@ def loop_cluster_list(sel_examyear, sel_school, sel_department, cluster_list, ma
     if logging_on:
         if logging_on:
             logger.debug(' ----- loop_cluster_list  -----')
+            logger.debug('cluster_list: ' + str(cluster_list))
 
     err_list = []
 
     for cluster_dict in cluster_list:
         if logging_on:
             logger.debug('cluster_dict: ' + str(cluster_dict))
+            # 'cluster_dict': {'cluster_pk': 'new_1', 'cluster_name': 'spdltl - 1', 'subject_pk': 220, 'mode': 'create'}
 
         # note: cluster_upload uses subject_pk, not subjbase_pk
 
@@ -419,7 +423,8 @@ def loop_cluster_list(sel_examyear, sel_school, sel_department, cluster_list, ma
 
     # +++  Create new cluster
             if is_create:
-                err_lst, new_cluster_pk = create_cluster(sel_school, sel_department, subject, cluster_dict, mapped_cluster_pk_dict, request)
+                cluster_name = cluster_dict.get('cluster_name')
+                err_lst, new_cluster_pk = create_cluster(sel_school, sel_department, subject, cluster_pk, cluster_name, mapped_cluster_pk_dict, request)
                 if err_lst:
                     err_list.extend(err_lst)
                 if new_cluster_pk:
@@ -470,6 +475,7 @@ def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- loop_studsubj_list  -----')
+        logger.debug('studsubj_list: ' + str(studsubj_list))
         logger.debug('mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
 
     err_list = []
@@ -488,6 +494,7 @@ def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
 
             if logging_on:
                 logger.debug('studsubj_dict: ' + str(studsubj_dict))
+                # studsubj_dict: {'studsubj_pk': 45092, 'cluster_pk': 'new_1'}
 
             if studsubj_pk:
                 cluster_pk = studsubj_dict.get('cluster_pk')
@@ -4717,7 +4724,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         sel_subjbase_pk = None
         if c.KEY_SEL_SUBJBASE_PK in setting_dict:
             sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
-        acc_view.get_userfilter_subjbase(sql_keys, sql_list, sel_subjbase_pk, request, 'studsubj')
+        acc_view.set_allowed_subjbase_filter(sql_keys, sql_list, sel_subjbase_pk, request, 'studsubj')
 
         # - filter on studsubj_pk_list with ANY clause
 
@@ -5006,7 +5013,7 @@ def create_orderlist_rows(sel_examyear_code, request):
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_cluster(school, department, subject, upload_dict, mapped_cluster_pk_dict, request):
+def create_cluster(school, department, subject, cluster_pk, cluster_name, mapped_cluster_pk_dict, request):
     # --- create cluster # PR2022-01-06
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -5016,7 +5023,6 @@ def create_cluster(school, department, subject, upload_dict, mapped_cluster_pk_d
     new_cluster_pk = None
     if school and department and subject:
 # - get value of 'cluster_name'
-        cluster_name = upload_dict.get('cluster_name')
         new_value = cluster_name.strip() if cluster_name else None
         if logging_on:
             logger.debug('new_value: ' + str(new_value))
@@ -5048,8 +5054,9 @@ def create_cluster(school, department, subject, upload_dict, mapped_cluster_pk_d
                     cluster.save(request=request)
 
                     if cluster and cluster.pk:
-                        mapped_cluster_pk_dict[cluster_name] = cluster.pk
                         new_cluster_pk = cluster.pk
+                        #  mapped_cluster_pk_dict: {'new_1': 296}
+                        mapped_cluster_pk_dict[cluster_pk] = new_cluster_pk
                     if logging_on:
                         logger.debug('new cluster: ' + str(cluster))
 

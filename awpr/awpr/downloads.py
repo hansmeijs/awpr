@@ -206,8 +206,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
                     )
-
-    # ----- ntermentable
+# ----- ntermentable
                 if datalist_request.get('ntermentable_rows'):
                     datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
                         sel_examyear_pk=sel_examyear.pk,

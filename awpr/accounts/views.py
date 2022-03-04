@@ -2270,15 +2270,15 @@ def get_userfilter_lvlbase(sql_keys, sql_list, lvlbase_pk, request, table=None):
 # - end of get_userfilter_lvlbase
 
 
-def get_userfilter_subjbase(sql_keys, sql_list, subjbase_pk, request, table=None):
+def set_allowed_subjbase_filter(sql_keys, sql_list, subjbase_pk, request, table=None):
     # PR2022-02-07
     #  if subjbase_pk has value:
-    #       if arr exists:
+    #       if allowed_subjectbases exists:
     #           --> filter on subjbase_pk, only when subjbase_pk in arr, otherwise: return no records
     #       else:
     #           --> filter on subjbase_pk
     #  if subjbase_pk is None:
-    #       if arr exists:
+    #       if allowed_subjectbases exists:
     #           --> filter on subjbase_pk's in array
     #       else:
     #           --> no filter
@@ -2286,7 +2286,7 @@ def get_userfilter_subjbase(sql_keys, sql_list, subjbase_pk, request, table=None
     logging_on = False  # s.LOGGING_ON
 
     if logging_on:
-        logger.debug('----- get_userfilter_subjbase ----- ')
+        logger.debug('----- set_allowed_subjbase_filter ----- ')
         logger.debug('subjbase_pk: ' + str(subjbase_pk) + ' ' + str(type(subjbase_pk)))
 
     req_user = request.user
@@ -2325,4 +2325,4 @@ def get_userfilter_subjbase(sql_keys, sql_list, subjbase_pk, request, table=None
             sql_list.append("AND subj.base_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
     elif filter_none:
         sql_list.append("AND FALSE")
-# - end of get_userfilter_subjbase
+# - end of set_allowed_subjbase_filter

@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let permit_map = new Map();
 
-    const filter_dict = {showinactive: []};
+    const filter_dict = {showinactive: false};
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
@@ -158,6 +158,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MMR_loader = document.getElementById("id_MMR_loader");
         const el_MMR_attachment_container = document.getElementById("id_MMR_attachment_container");
         const el_MMR_btn_download = document.getElementById("id_MMR_btn_download");
+        if (el_MMR_btn_download){
+            el_MMR_btn_download.addEventListener("click", function() {MMR_download()}, false);
+        };
 
 // ---  MOD MAIL MESSAGE  ------------------------------------
         const el_MMM_header = document.getElementById("id_MMM_header");
@@ -458,7 +461,9 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "field_setting", field_setting);
 
 // ---  get show_inactive - used for deleted mailbox items PR2021-10-28
-        const show_inactive = (filter_dict.showinactive) ? filter_dict.showinactive.includes(selected_btn) : false;
+        // values of showinactive are:  '0'; is show all, '1' is show active only, '2' is show inactive only
+
+        const show_inactive = (filter_dict.showinactive) ? filter_dict.showinactive : 1;
         console.log("show_inactive", show_inactive);
 
 // --- reset table
@@ -697,8 +702,11 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01
     function UpdateField(el_div, map_dict) {
         console.log("=========  UpdateField =========");
+        console.log("map_dict", map_dict);
 
         const field_name = get_attr_from_el(el_div, "data-field");
+        console.log("field_name", field_name);
+        
         if(el_div && field_name){
             let inner_text = null, title_text = null, filter_value = null;
             if (field_name === "read") {
@@ -716,6 +724,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // give value '1' when not_read, '0' when read
                 filter_value = (map_dict.has_att) ? "1" : "0";
                 el_div.className = (map_dict.has_att) ? "note_1_8" : "tickmark_0_0";
+
+        console.log("map_dict.has_att", map_dict.has_att);
 
             } else if (["sender_school_abbrev", "sender_lastname", "header", "status", "name"].includes(field_name)){
                 inner_text = (map_dict[field_name]) ? map_dict[field_name] : "\xa0";  // Non-breakable space is char 0xa0 (160 dec), needed for eventhandler
@@ -1187,16 +1197,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- PR2021-10-28 new way of filtering inactive rows( in this page 'deleted' rows):
         //  - filter_dict has key 'showinactive'
-        //  - 'showinactive' is a list of table names.
-        //  - when tblName is in  the showinactive list: inactive items are shwon
-
-        const old_filter_showinactive = (filter_dict.showinactive);
-        console.log( "old_filter_showinactive", old_filter_showinactive);
-        let new_filter_showinactive = !old_filter_showinactive;
-        console.log( "new_filter_showinactive", new_filter_showinactive);
-        filter_dict.showinactive = new_filter_showinactive;
-
+        //  - when showinactive is true: also inactive items are shown
+        // values of showinactive are:  '0'; is show all, '1' is show active only, '2' is show inactive only
+        const old_filter_showinactive = (filter_dict.showinactive) ? filter_dict.showinactive : 1;
+        filter_dict.showinactive = (!old_filter_showinactive) ? 1 : 0;
         console.log( "filter_dict", filter_dict);
+
         el_filter.className = (filter_dict.showinactive) ? "delete_0_2" : "delete_0_1";
 
         Filter_TableRows();
@@ -1227,8 +1233,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- PR2021-10-28 new way of filtering inactive rows( in this page 'deleted' rows):
         //  - filter_dict has key 'showinactive'
-        //  - 'showinactive' is a list of table names.
-        //  - when tblName is in  the showinactive list: inactive items are shwon
+        //  - when showinactive is true: also inactive items are shown
+
         const tblName = get_attr_from_el(el_filter, "data-table");
 
     // - get col_index and filter_tag from  el_filter
@@ -1383,8 +1389,9 @@ document.addEventListener('DOMContentLoaded', function() {
 //- PR2021-10-29 debug. must also reset mod_MMM_dict.filter
         mod_MMM_dict.filter = null;
 
-// - PR2021-10-28 shows inactive items when tablename is in list
-        filter_dict.showinactive = false;
+// - PR2021-10-28 shows inactive items when filter_dict.showinactive
+        // values of showinactive are:  '0'; is show all, '1' is show active only, '2' is show inactive only
+        filter_dict.showinactive = 1;
 
         Filter_TableRows();
 
@@ -3058,6 +3065,50 @@ document.addEventListener('DOMContentLoaded', function() {
             $("#id_mod_confirm").modal("hide");
         }
     }  // ModConfirmResponse
+
+
+//=========   MMR_download   ====================== PR2022-03-01
+    function MMR_download(log_list) {
+        console.log(" ========== MMR_download ===========");
+        console.log("mod_MMM_dict", mod_MMM_dict);
+
+        if (mod_MMM_dict.header || mod_MMM_dict.body) {
+            const filename = (mod_MMM_dict.header) ? mod_MMM_dict.header : loc.AWP_message;
+            const log_list = [];
+            const max_len = 90
+            if (mod_MMM_dict.body){
+                const body_list = mod_MMM_dict.body.split("\n");
+                for (let i = 0, len = body_list.length; i < len; i++) {
+                    const line = (body_list[i]) ? body_list[i] : " ";
+                    const line_len = line.length
+                    if (line_len < max_len) {
+                        log_list.push(line);
+                    } else {
+                        const word_list = line.split(" ");
+                        console.log("word_list", word_list);
+                        let total_len = 0;
+                        let total_line = "";
+                        for (let j = 0, len = word_list.length; j < len; j++) {
+                            const word = (word_list[j]) ? word_list[j] + " " : " ";
+                        console.log("word", word);
+                            if (total_line.length + word.length < max_len){
+                                total_line += word;
+                            } else {
+                                log_list.push(total_line);
+                                total_line = word;
+                            };
+                        };
+                        if (total_line){
+                            log_list.push(total_line);
+                        };
+                        console.log("total_line", total_line);
+                    };
+                };
+            };
+            printPDFlogfile(log_list, filename )
+        };
+    }; //MMR_download
+
 
 //=========   OpenLogfile   ====================== PR2021-11-02
     function OpenLogfile(log_list) {

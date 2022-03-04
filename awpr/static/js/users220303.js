@@ -75,21 +75,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_caption: ["", "School_code", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "last_name", "email",  "activated", "last_login", "is_active"],
                     field_tags: ["div", "div", "div", "div", "div",  "div", "div","div", "div"],
-                    filter_tags: ["select", "text", "text",  "text",  "text", "text",  "toggle", "text", "toggle"],
+                    filter_tags: ["select", "text", "text",  "text",  "text", "text",  "toggle", "text", "inactive"],
                     field_width:  ["020", "090", "150", "150",  "180", "240",  "100", "180", "090"],
                     field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "c"]};
 
     field_settings.btn_usergroup = {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
                                     "President", "Secretary", "Examinator", "Commissioner_2lines",
-                                    "Analyze",  "System_administrator_2lines"],
+                                    "Analyze",  "System_administrator_2lines", "Inactive"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
-                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_anlz", "group_admin"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_anlz", "group_admin", "is_active"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text", "text",  "toggle", "toggle", "toggle",
-                                    "toggle", "toggle", "toggle",  "toggle", "toggle"],
-                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", , "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c"]};
+                                    "toggle", "toggle", "toggle",  "toggle", "toggle", "inactive"],
+                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]};
+
+    field_settings.btn_allowed = {
+                    field_caption: ["", "Username", "Allowed_departments", "Allowed_schools",
+                                    "Allowed_levels", "Allowed_subjects", "Allowed_clusters", "Inactive"],
+                    field_names: ["select", "username", "allowed_depbases", "allowed_schoolbases",
+                                    "allowed_levelbases", "allowed_subjectbases", "allowed_clusterbases", "is_active"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "text", "text", "text", "inactive"],
+                    field_width:  ["032", "150", "180", "180", "180", "180", "180", "090"],
+                    field_align: ["c", "l", "l", "l",  "l", "l", "l", "c"]};
 
     field_settings.btn_userpermit = {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
@@ -106,15 +116,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "090", "090", "090", "090",  "090", "090"],
                     field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c", "c", "c", "c"]};
 
-    field_settings.btn_allowed = {
-                    field_caption: ["", "Username", "Allowed_departments", "Allowed_schools",
-                                    "Allowed_levels", "Allowed_subjects", "Allowed_clusters"],
-                    field_names: ["select", "username", "allowed_depbases", "allowed_schoolbases",
-                                    "allowed_levelbases", "allowed_subjectbases", "allowed_clusterbases"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["032", "150", "180", "180", "180", "180", "180"],
-                    field_align: ["c", "l", "l", "l",  "l", "l", "l"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -228,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() {MSM_InputKeyup(el_MSM_input)}, 50)});
         const el_MSM_btn_save = document.getElementById("id_MSM_btn_save")
             el_MSM_btn_save.addEventListener("click", function() {MSM_Save()}, false )
-
 
 // ---  MODAL IMPORT ------------------------------------
     // --- create EventListener for buttons in btn_container
@@ -376,8 +376,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if(permit_system_admin || permit_role_admin){
                 AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, null, "id_submenu_import");
             }
-            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup"]);
-            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup"]);
+            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, []);
+            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, []);
         }
         // hardcode access of system admin
         if (permit_system_admin){
@@ -394,6 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
         console.log( "===== HandleBtnSelect ========= ");
+        console.log( "skip_upload", skip_upload);
 
 // ---  get  selected_btn
         // set to default "btn_user" when there is no selected_btn
@@ -545,6 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (["text", "number"].includes(filter_tag)) {
                         el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
                         add_hover(th_filter);
+
                     } else if (["toggle", "activated"].includes(filter_tag)) {
                         // add EventListener for icon to th_filter, not el_filter
                         th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
@@ -552,6 +554,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // default empty icon necessary to set pointer_show
                         el_filter.classList.add("tickmark_0_0");
+                        add_hover(th_filter);
+
+                    } else if (filter_tag === "inactive") {
+                        // add EventListener for icon to th_filter, not el_filter
+                        th_filter.addEventListener("click", function(event){HandleFilterInactive(el_filter)});
+                        th_filter.classList.add("pointer_show");
+                        // set inactive icon
+                        const filter_showinactive = (filter_dict && filter_dict.showinactive != null) ? filter_dict.showinactive : 1;
+                        const icon_class = (filter_showinactive === 2) ? "inactive_1_3" : (filter_showinactive === 1) ? "inactive_0_2" : "inactive_0_0";
+
+                        el_filter.classList.add(icon_class);
                         add_hover(th_filter);
                     }
         // --- add other attributes
@@ -602,6 +615,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- add data attributes to tblRow
         tblRow.setAttribute("data-pk", map_dict.id);
+        if (!map_dict.is_active){
+            tblRow.setAttribute("data-inactive", "1");
+        };
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
@@ -701,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01
     function UpdateField(el_div, map_dict) {
-        //console.log("=========  UpdateField =========");
+        console.log("=========  UpdateField =========");
         //console.log("map_dict", map_dict);
 
         const field_name = get_attr_from_el(el_div, "data-field");
@@ -725,7 +741,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }}};
 
             } else if (field_name.includes("allowed")){
+
+        console.log( "map_dict", map_dict);
+        console.log( "field_name", field_name);
+        console.log( "map_dict[field_name]", map_dict[field_name]);
                 const [display, title] = get_allowed_display_txt(field_name, map_dict[field_name]);
+        console.log( "display", display);
+        console.log( "title", title);
                 inner_text = (display) ? display : "&nbsp";
                 title_text= (title) ? title : null;
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
@@ -881,8 +903,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 success: function (response) {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
-                    //console.log( "response");
-                    //console.log( response);
+
+                    console.log( "response");
+                    console.log( response);
 
                     if("msg_dictlist" in response){
                         b_ShowModMessages(response.msg_dictlist);
@@ -1242,6 +1265,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         let ob1 = "", row_index = -1;
                         if (code) { ob1 = code.toLowerCase()};
                         row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
+
 //--------- insert tblBody_select row at row_index
                         const map_id = "sel_" + tblName + "_" + base_id
                         const tblRow = tblBody_select.insertRow(row_index);
@@ -1930,7 +1954,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const base_pk_int = data_dict[base_pk_field];
                 const row_is_selected = (base_pk_int && mod_MSM_dict.data_array && mod_MSM_dict.data_array.includes(base_pk_int))
                 const row_index = -1;
-                MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, row_index);
+                MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected);
                 if(row_is_selected){has_selected_rows = true}
             };
         };
@@ -1942,12 +1966,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const row_is_selected = !has_selected_rows;
         const row_index = 0;
-        MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, row_index)
+        MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, true)  // true = insert_at_index_zero
 
     }  // MSM_FillSelectTable
 
 //=========  MSM_FillSelectRow  ================ PR2022-01-26
-    function MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, row_index) {
+    function MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name, display_code, row_is_selected, insert_at_index_zero) {
         console.log( "===== MSM_FillSelectRow ========= ");
         console.log("data_dict: ", data_dict);
 
@@ -1956,11 +1980,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const base_pk_int = data_dict[base_pk_field];
         const display_txt = ( data_dict[display_name] ) ? data_dict[display_name] : "-";
 
-// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
-        let tblRow = tblBody_select.insertRow(row_index);
-        tblRow.setAttribute("data-base_pk", base_pk_int);
+        const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
+// ---  lookup index where this row must be inserted
+        const ob1 = (data_dict.code) ? data_dict.code : "";
+        const row_index = (insert_at_index_zero) ? 0 :
+            b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, setting_dict.user_lang);
+
+// --- insert tblRow into tblBody at row_index
+        const tblRow = tblBody_select.insertRow(row_index);
+        tblRow.id = map_id
+
+        tblRow.setAttribute("data-base_pk", base_pk_int);
         tblRow.setAttribute("data-selected", (row_is_selected) ? "1" : "0")
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+        tblRow.setAttribute("data-ob1", ob1);
 
 // ---  add EventListener to tblRow, not when 'no items' (base_pk_int is then -1
         if (base_pk_int > -1) {
@@ -2350,8 +2385,10 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDataRows  ================ PR2021-08-01
     function RefreshDataRows(page_tblName, update_rows, data_rows, is_update) {
-        console.log(" --- RefreshDataRows  ---");
-        console.log("page_tblName", page_tblName);
+        //console.log(" --- RefreshDataRows  ---");
+        //console.log("page_tblName", page_tblName);
+        //console.log("update_rows", update_rows);
+        //console.log("data_rows", data_rows);
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
 
         if (update_rows && update_rows.length ) {
@@ -2373,9 +2410,9 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  RefreshDatarowItem  ================ PR2021-08-01
     function RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows) {
         console.log(" --- RefreshDatarowItem  ---");
-        console.log("page_tblName", page_tblName);
-        console.log("update_dict", update_dict);
-        console.log("field_setting", field_setting);
+        //console.log("page_tblName", page_tblName);
+        //console.log("update_dict", update_dict);
+        //console.log("field_setting", field_setting);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -2440,10 +2477,10 @@ function RefreshDataRowsAfterUpload(response) {
             } else {
 
 // --- get existing data_dict
-                const [dict, index] = get_datadict_from_datarows(page_tblName, pk_int);
-                const data_dict = dict;
+                const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
+                const data_dict = found_dict;
                 const datarow_index = index;
-        console.log("field_setting", field_setting);
+;
 // ++++ deleted ++++
                 if(is_deleted){
                     // delete row from data_rows. Splice returns array of deleted rows
@@ -2603,36 +2640,38 @@ function RefreshDataRowsAfterUpload(response) {
 
 
 
-//========= HandleFilterSetIsactive  =============== PR2022-02-28
-    function HandleFilterSetIsactive() {
-        console.log( "===== HandleFilterSetIsactive  ========= ");
+//========= HandleFilterInactive  =============== PR2022-03-03
+    function HandleFilterInactive(el_filter) {
+        console.log( "===== HandleFilterInactive  ========= ");
+        console.log( "el_filter", el_filter);
         // show active only when opening page
-// ---  set filterdict not inactive after loading page (then skip_upload = true)
-            // get col_index of inactive field
-        const el_filter_isactive = tblHead_datatable.querySelector("[data-field='is_active']");
-        if (el_filter_isactive){
-            const filter_tag = "toggle";
-            const field_name = "is_active";
-            const col_index = el_filter_isactive.parentNode.cellIndex;
-            console.log( "col_index: ", col_index);
-            filter_dict = {col_index: ["toggle", 1]}
+        const filter_showinactive = (filter_dict && filter_dict.showinactive != null) ? filter_dict.showinactive : 1;
+        console.log( "filter_dict", filter_dict);
+        console.log( "filter_showinactive", filter_showinactive, typeof filter_showinactive);
 
-        // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
-            const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
-            const new_value = "1", icon_class = "inactive_0_2"
+// - toggle filter value
+        // filter inactive '0'; is show all, '1' is show active only, '2' is show inactive only
+        // filter inactive '0'; is show active only, '1' is show all, '2' is show inactive only
+        // set to default 1 when opening page (el_filter is then undefined
+        const new_value = (!el_filter) ? 1 : (filter_showinactive === 2) ? 0 : (filter_showinactive === 1) ? 2 : (filter_showinactive === 0) ? 1 : 1;
+// - get new icon_class
+        const icon_class =  (new_value === 2) ? "inactive_1_3" : (new_value === 1) ? "inactive_0_2" : "inactive_0_0";
 
-        // - put new filter value in filter_dict
-            filter_dict[col_index] = [filter_tag, new_value]
+        console.log( "!el_filter", !el_filter);
+        console.log( "new_value", new_value);
 
-            el_filter_isactive.className = icon_class;
+    // - put new filter value in filter_dict
+        filter_dict.showinactive = new_value
+        console.log( "filter_dict", filter_dict);
+        if( el_filter ) {el_filter.className = icon_class};
+        Filter_TableRows();
 
-        };
-    };  // HandleFilterSetIsactive
+    };  // HandleFilterInactive
 
 
 
 //========= Filter_TableRows  ====================================
-    function Filter_TableRows(set_filter_isactive) {  // PR2019-06-09 PR2020-08-31
+    function Filter_TableRows(set_filter_isactive) {  // PR2019-06-09 PR2020-08-31 PR2022-03-03
         console.log( "===== Filter_TableRows=== ");
         console.log( "filter_dict", filter_dict);
 
@@ -2647,12 +2686,12 @@ function RefreshDataRowsAfterUpload(response) {
         //       - hides row if inactive = true
 
         if (set_filter_isactive){
-            HandleFilterSetIsactive();
+            HandleFilterInactive();
         };
-
+        const data_inactive_field = "data-inactive";
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            show_row = t_ShowTableRowExtended(filter_dict, tblRow, data_inactive_field);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows
@@ -2788,10 +2827,10 @@ function RefreshDataRowsAfterUpload(response) {
     }  // MSSSS_Response
 
 //###########################################################################
-//========= set_columns_hidden  ====== PR2021-04-26
+//========= set_columns_hidden  ====== PR2021-04-26 PR2022-03-03
     function set_columns_hidden() {
-        //console.log( "===== set_columns_hidden  === ");
-        //console.log( "permit_dict", permit_dict);
+        console.log( "===== set_columns_hidden  === ");
+        console.log( "permit_dict", permit_dict);
 
         if (permit_dict.requsr_role_system) {
             columns_hidden =  [];
@@ -2802,7 +2841,11 @@ function RefreshDataRowsAfterUpload(response) {
         } else if (permit_dict.requsr_role_comm) {
             columns_hidden =  ["group_edit", "group_auth1", "group_auth2", "group_auth3", "group_anlz"];
         } else if (permit_dict.requsr_role_school) {
-            columns_hidden = ["sb_code", "school_abbrev", "group_anlz"];
+
+            columns_hidden = ["sb_code", "school_abbrev", "group_anlz", "allowed_schoolbases"];
+            if (permit_dict){
+            };
+
         }
     };  // set_columns_hidden
 
@@ -2812,6 +2855,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= get_allowed_display_txt  ====== PR2022-01-26
     function get_allowed_display_txt(fldName, allowed_str) {
+        console.log( "===== get_allowed_display_txt  === ");
+        console.log( "allowed_str", allowed_str);
         let display_txt = null, title_txt = null;
 
         const data_rows = (fldName === "allowed_depbases") ? department_rows :
@@ -2819,6 +2864,7 @@ function RefreshDataRowsAfterUpload(response) {
                                 (fldName === "allowed_levelbases") ? level_rows :
                                 (fldName === "allowed_subjectbases") ? subject_rows :
                                 (fldName === "allowed_clusterbases") ? cluster_rows : null;
+        console.log( "data_rows", data_rows);
         // leave field blank when table is empty (happens only in clusters)
         let show_all_txt = false;
 
@@ -2828,15 +2874,11 @@ function RefreshDataRowsAfterUpload(response) {
 
                 // dipaly 'All' when allowed_str is empty
                 show_all_txt = true
-                 display_txt = "<" + loc.All_ + caption + ">";
+                 //display_txt = "&#60" + loc.All_ + caption + "&#62";
+                 display_txt = "&nbsp";
             } else {
                 const allowed_arr = allowed_str.split(";");
-            console.log( "===== get_allowed_display_txt  === ");
-            console.log( "allowed_arr", allowed_arr);
-
                 if (allowed_arr && allowed_arr.length){
-
-
                     const display_name = "name";
 
                     const display_field = (fldName === "allowed_depbases") ? "base_code" :
@@ -2857,10 +2899,11 @@ function RefreshDataRowsAfterUpload(response) {
 
     // --- get existing data_dict from data_rows
                         const base_pk_int = (Number(base_pk_str)) ?  Number(base_pk_str) : null;
+            console.log( "base_pk_int", base_pk_int);
                         // cannot use b_recursive_integer_lookup, it can only be used to lookup by id, not by base_id
                         if (data_rows){
                             for (let j = 0, data_dict; data_dict = data_rows[j]; j++) {
-                                if (base_pk_int && base_pk_int === data_dict.base_id){
+                                if (base_pk_int && base_pk_int === data_dict[base_pk_field]){
                                     if(data_dict[display_field]){ code_array.push(data_dict[display_field]) };
                                     if(data_dict[display_name]){ name_array.push(data_dict[display_name]) };
                                     break;
@@ -2918,19 +2961,6 @@ function RefreshDataRowsAfterUpload(response) {
 //###########################
 
 
-//========= get_datadict_from_datarows  ====== PR2021-08-01
-    function get_datadict_from_datarows(tblName, pk_int) {
-        //console.log( "===== get_datadict_from_datarows  === ");
-        let data_dict = null, row_index = null;
-        if(pk_int){
-            const data_rows = get_data_rows(tblName) ;
-            const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-            if (!isEmpty(found_dict)) {data_dict = found_dict};
-            row_index = index;
-        };
-        return [data_dict, row_index];
-    };  // get_datadict_from_datarows
-
 //========= get_datadict_from_mapid  ====== PR2021-08-01
     function get_datadict_from_mapid(map_id) {
         //console.log( "===== get_datadict_from_mapid  === ");
@@ -2944,13 +2974,13 @@ function RefreshDataRowsAfterUpload(response) {
     };  // get_datadict_from_mapid
 
     function get_datadict_from_pk(tblName, pk_int) {
-        //console.log( "===== get_datadict_from_pk  === ");
-        //console.log( "tblName", tblName);
-        //console.log( "pk_int", pk_int, typeof pk_int );
+        console.log( "===== get_datadict_from_pk  === ");
+        console.log( "tblName", tblName);
+        console.log( "pk_int", pk_int, typeof pk_int );
         let data_dict = null;
         if(tblName && pk_int){
             const data_rows = get_data_rows(tblName) ;
-        //console.log( "data_rows", data_rows, typeof data_rows );
+        console.log( "data_rows", data_rows, typeof data_rows );
             const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
             if (!isEmpty(found_dict)) {data_dict = found_dict};
 
@@ -2968,6 +2998,8 @@ function RefreshDataRowsAfterUpload(response) {
     }
 
     function get_data_rows(tblName) {  //PR2021-08-01
+        console.log( "  ----- get_data_rows -----");
+        console.log( "tblName", tblName);
         return (tblName === "userpermit") ? permit_rows :
                 (tblName === "usergroup") ? user_rows :
                 (tblName === "user") ? user_rows : null;
@@ -2975,14 +3007,13 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= get_datarows_from_selectedBtn  ======== // PR2022-01-25
     function get_datarows_from_selectedBtn() {
-        //console.log( " ----- get_datarows_from_selectedBtn  -----");
-        //console.log( "selected_btn", selected_btn);
+        console.log( " ----- get_datarows_from_selectedBtn  -----");
+        console.log( "selected_btn", selected_btn);
         return  (selected_btn === "btn_user") ? user_rows :
                 (selected_btn === "btn_usergroup") ? user_rows :
                 (selected_btn === "btn_userpermit") ? permit_rows :
                 (selected_btn === "btn_allowed") ? user_rows : null;
     };
-
 
 
     function get_tblName_from_mapid(map_id) {  //PR2021-08-01

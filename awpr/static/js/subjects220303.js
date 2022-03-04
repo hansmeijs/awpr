@@ -3288,8 +3288,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++ MOD SCHEMEITEM ++++++++++++++++ PR2021-06-22
 
     function MSI_Open(el_input){
-        //console.log(" -----  MSI_Open   ----")
-        //console.log("el_input", el_input)
+        console.log(" -----  MSI_Open   ----")
+        console.log("el_input", el_input)
         //console.log("permit_dict", permit_dict)
 
         if (permit_dict.permit_crud){
@@ -3308,6 +3308,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // was: map_dict = selected.schemeitem_dict;
 
             }
+        console.log("map_dict", map_dict)
         //console.log("map_dict", map_dict)
             const has_scheme = !isEmpty(map_dict);
             if(has_scheme) {
@@ -3317,43 +3318,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 mod_MSI_dict.sct_pk = map_dict.sector_id;
                 mod_MSI_dict.scheme_pk = map_dict.scheme_id;
                 mod_MSI_dict.scheme_name = map_dict.scheme_name;
-
+            }  // if(!isEmpty(map_dict)) {
 
     // ---  set header text
-                MSI_set_headertext();
+            MSI_set_headertext();
 
-        // ---  remove value from el_mod_employee_input
-                //MSTUD_SetElements();  // true = also_remove_values
+    // ---  remove value from el_mod_employee_input
+            //MSTUD_SetElements();  // true = also_remove_values
 
-                //document.getElementById("id_MSI_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+            //document.getElementById("id_MSI_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
 
-                //console.log("mod_MSI_dict.department_pk", mod_MSI_dict.department_pk)
-                //console.log("mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk)
-                //console.log("mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk)
+            //console.log("mod_MSI_dict.department_pk", mod_MSI_dict.department_pk)
+            //console.log("mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk)
+            //console.log("mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk)
 
-                t_FillSelectOptions(el_MSI_department, department_map, "id", "base_code", false, mod_MSI_dict.department_pk, null, loc.No_department_found, loc.Select_department);
-                el_MSI_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "id", level_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.lvl_pk);
-                el_MSI_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", "id", sector_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.sct_pk);
+            t_FillSelectOptions(el_MSI_department, department_map, "id", "base_code", false, mod_MSI_dict.department_pk, null, loc.No_department_found, loc.Select_department);
+            el_MSI_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "id", level_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.lvl_pk);
+            el_MSI_sector.innerHTML = t_FillOptionLevelSectorFromMap("sector", "id", sector_map, mod_MSI_dict.depbase_pk, mod_MSI_dict.sct_pk);
 
-                el_tblBody_subjects.innerText = null;
-                el_tblBody_schemeitems.innerText = null;
-                // hide selecrtboxes dep, lvl, sct when there is a scheme
-                //console.log("has_scheme", has_scheme)
-                add_or_remove_class(el_MSI_deplvlsct_container, cls_hide, has_scheme)
+            el_tblBody_subjects.innerText = null;
+            el_tblBody_schemeitems.innerText = null;
+            // hide selecrtboxes dep, lvl, sct when there is a scheme
+            //console.log("has_scheme", has_scheme)
+            add_or_remove_class(el_MSI_deplvlsct_container, cls_hide, has_scheme)
 
-                MSI_SetInputFields(null, false);
+            MSI_SetInputFields(null, false);
 
-                MSI_InputChange();
-        // ---  set focus to el_MSTUD_abbrev
-                //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
+            MSI_InputChange();
+    // ---  set focus to el_MSTUD_abbrev
+            //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
 
-        // ---  disable btn submit, hide delete btn when is_addnew
-               // add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
-                //const disable_btn_save = (!el_MSTUD_abbrev.value || !el_MSTUD_name.value || !el_MSTUD_sequence.value )
-                //el_MSTUD_btn_save.disabled = disable_btn_save;
+    // ---  disable btn submit, hide delete btn when is_addnew
+           // add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
+            //const disable_btn_save = (!el_MSTUD_abbrev.value || !el_MSTUD_name.value || !el_MSTUD_sequence.value )
+            //el_MSTUD_btn_save.disabled = disable_btn_save;
 
-                //MSTUD_validate_and_disable();
-            }  // if(!isEmpty(map_dict)) {
+            //MSTUD_validate_and_disable();
 
 // ---  show modal
             $("#id_mod_schemeitem").modal({backdrop: true});

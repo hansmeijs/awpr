@@ -236,6 +236,45 @@
 }
 
 
+/* ---------------------------------------------------
+    IMAGES - USER
+----------------------------------------------------- */
+
+.img_users_tbl_users_ne, .img_users_tbl_users_en {
+    width: 1278px;
+    height: 378px;
+    background-size: 1278px 378px;
+ }
+.img_users_tbl_users_ne {
+    background-image: url('/static/manual/users_tbl_users_ne.png');
+}
+.img_users_tbl_users_en {
+    background-image: url('/static/manual/users_tbl_users_en.png');
+}
+
+.img_users_tbl_usergroups_ne, .img_users_tbl_usergroups_en {
+    width: 1278px;
+    height: 400px;
+    background-size: 1278px 400px;
+ }
+.img_users_tbl_usergroups_ne {
+    background-image: url('/static/manual/users_tbl_usergroups_ne.png');
+}
+.img_users_tbl_usergroups_en {
+    background-image: url('/static/manual/users_tbl_usergroups_en.png');
+}
+
+.img_users_tbl_allowed_ne, .img_users_tbl_allowed_en {
+    width: 1278px;
+    height: 344px;
+    background-size: 1278px 344px;
+ }
+.img_users_tbl_allowed_ne {
+    background-image: url('/static/manual/users_tbl_allowed_ne.png');
+}
+.img_users_tbl_allowed_en {
+    background-image: url('/static/manual/users_tbl_allowed_en.png');
+}
 
 /* ---------------------------------------------------
     IMAGES - UPLOAD CANDIDATES
@@ -330,9 +369,6 @@
     background-image: url('/static/manual/stud_upload_step5_en.png');
 }
 
-
-
-
 /* ---------------------------------------------------
     IMAGES - STUDENT SUBJECTS
 ----------------------------------------------------- */
@@ -397,6 +433,41 @@
     margin: auto;
 
  }
+
+/* ---------------------------------------------------
+    IMAGES - EXEMPTIONS
+----------------------------------------------------- */
+
+.img_exemption_subject_set_ne, .exemption_subject_set_en {
+    height: 472px;
+    width: 1035px;
+    background-size: 1035px 472px;
+ }
+.img_exemption_subject_set_ne {
+    background-image: url('/static/manual/exemption_subject_set_ne.png');
+}
+.img_exemption_subject_set_en {
+    background-image: url('/static/manual/exemption_subject_set_en.png');
+}
+
+.img_exemption_grade_set_ne, .img_exemption_grade_set_en {
+    height: 375px;
+    width: 1022px;
+    background-size: 1022px 375px;
+ }
+.img_exemption_grade_set_ne {
+    background-image: url('/static/manual/exemption_grade_set_ne.png');
+}
+.img_exemption_grade_set_en {
+    background-image: url('/static/manual/exemption_grade_set_en.png');
+}
+
+.img_exemption_excel_ne_en {
+    height: 236px;
+    width: 635px;
+    background-size: 635px 236px;
+    background-image: url('/static/manual/exemption_excel_ne_en.png');
+}
 
 /* ---------------------------------------------------
     IMAGES - APPOVE SUBJECTS
@@ -519,10 +590,10 @@
 .img_mailbox_select_items_ne {background-image: url('/static/manual/mailbox_select_items_ne.png');}
 .img_mailbox_select_items_en {background-image: url('/static/manual/mailbox_select_items_en.png');}
 
-.img_mailbox_read_message_ne, .img_mailbox_read_message_en {
+.img_mailbox_read_message_ne_nw, .img_mailbox_read_message_en_nw {
     width: 797px; height: 682px; background-size: 797px 682px;}
-.img_mailbox_read_message_ne {background-image: url('/static/manual/mailbox_read_message_ne.png');}
-.img_mailbox_read_message_en {background-image: url('/static/manual/mailbox_read_message_en.png');}
+.img_mailbox_read_message_ne_nw {background-image: url('/static/manual/mailbox_read_message_ne_nw.png');}
+.img_mailbox_read_message_en_nw {background-image: url('/static/manual/mailbox_read_message_en_nw.png');}
 
 .img_mailbox_mailinglist_ne, .img_mailbox_mailinglist_en {
     width: 797px; height: 485px; background-size: 797px 485px;}

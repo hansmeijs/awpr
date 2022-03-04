@@ -1525,7 +1525,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 sql_keys['schb_pk'] = req_user.allowed_schoolbases
                 sql_list.append("AND school.base_id = %(schb_pk)s::INT")
 
-        acc_view.get_userfilter_subjbase(sql_keys, sql_list, sel_subjbase_pk, request)
+        acc_view.set_allowed_subjbase_filter(sql_keys, sql_list, sel_subjbase_pk, request)
 
         # allowed_clusterbases are not filtered here, instead allow editing in client
 
@@ -1635,7 +1635,7 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                     "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
                     "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
-                    "exam.examperiod, exam.examtype, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
+                    "exam.examperiod, exam.ete_exam, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
                     "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",  #, exam.examdate",
 
                     "FROM subjects_exam AS exam",
@@ -1655,11 +1655,12 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                     "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
                     "grd.examperiod,"
                     # "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
-                    "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_published_id, grd.ce_exam_blocked,",
+                    "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, ",
+                    "grd.ce_exam_published_id AS ce_exam_publ_id, grd.ce_exam_blocked,",
 
                     "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
                     "ce_exam.exam_subjbase_id AS ceex_exam_subjbase_id,",
-                    "ce_exam.examperiod AS ceex_examperiod, ce_exam.examtype AS ceex_examtype,",
+                    "ce_exam.examperiod AS ceex_examperiod, ce_exam.ete_exam AS ceex_ete_exam,",
                     "ce_exam.version AS ceex_version, ce_exam.amount AS ceex_amount,",
                     "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
                     "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
@@ -1709,36 +1710,44 @@ def create_grade_with_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
         if logging_on:
             logger.debug('grade_pk_list: ' + str(grade_pk_list))
 
+        # note: don't filter on sel_subjbase_pk, must be able to change within allowed
+        sel_subjbase_pk = None
+
+
+
         if grade_pk_list:
             # when grade_pk_list has value: skip subject filter
             sql_keys['grade_pk_arr'] = grade_pk_list
             sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
+        else:
+            # set_allowed_subjbase_filter - filters on field subj.base_id
+            acc_view.set_allowed_subjbase_filter(sql_keys, sql_list, sel_subjbase_pk, request)
 
-        elif setting_dict:
-            sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
-            if sel_examperiod in (1, 2):
-                sql_keys['ep'] = sel_examperiod
-                sql_list.append("AND grd.examperiod = %(ep)s::INT")
+            if setting_dict:
+                sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
+                if sel_examperiod in (1, 2):
+                    sql_keys['ep'] = sel_examperiod
+                    sql_list.append("AND grd.examperiod = %(ep)s::INT")
 
-            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-            if sel_lvlbase_pk:
-                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+                sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+                if sel_lvlbase_pk:
+                    sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                    sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-            sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
-            if sel_subjbase_pk:
-                sql_keys['subjbase_pk'] = sel_subjbase_pk
-                sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
+                sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
+                if sel_subjbase_pk:
+                    sql_keys['subjbase_pk'] = sel_subjbase_pk
+                    sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
 
-            sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
-            if sel_cluster_pk:
-                sql_keys['cluster_pk'] = sel_cluster_pk
-                sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
+                sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
+                if sel_cluster_pk:
+                    sql_keys['cluster_pk'] = sel_cluster_pk
+                    sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
 
-            sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
-            if sel_student_pk:
-                sql_keys['student_pk'] = sel_student_pk
-                sql_list.append("AND stud.id = %(student_pk)s::INT")
+                sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
+                if sel_student_pk:
+                    sql_keys['student_pk'] = sel_student_pk
+                    sql_list.append("AND stud.id = %(student_pk)s::INT")
 
     # show grades that are not published only when requsr_same_school PR2021-04-29
 

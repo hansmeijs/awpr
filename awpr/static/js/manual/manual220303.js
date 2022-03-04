@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         (page === "user") ? man_user :
                         (page === "upload") ? man_upload :
                         (page === "studsubj") ? man_studsubj :
+                        (page === "exemption") ? man_exemption :
                         (page === "exams") ? man_exams :
                         (page === "approve") ? man_approve :
                         (page === "mailbox") ? man_mailbox : null;
@@ -145,13 +146,11 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_hide_columns", "Kolommen verbergen"]
             ]),
 
-        get_dropdown_button("upload", "id_intro", "Gegevens uploaden", [
-            ["id_upload_step01", "Selecteer een Excel bestand"],
-            ["id_upload_step02a", "Selecteer soort examencijfer"],
-            ["id_upload_step02", "Kolommen koppelen"],
-            ["id_upload_step03", "Gegevens koppelen"],
-            ["id_upload_step04", "Test upload"],
-            ["id_upload_step05", "Uploaden"]
+        get_dropdown_button("user", "id_intro", "Gebruikers", [
+            ["id_user_login", "Inloggen"],
+            ["id_user_manage", "Gebruikersaccounts"],
+            ["id_user_permissions", "Gebruikersgroepen"],
+            ["id_user_allowed", "Toegestane secties"]
             ]),
 
         get_dropdown_button("studsubj", "id_intro", "Vakken van kandidaten", [
@@ -159,6 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
             ["id_enter_studsubj", "Vakken van kandidaten invoeren"],
             ["id_clusters", "Clusters"],
+            ]),
+
+        get_dropdown_button("exemption", "id_intro", "Vrijstellingen", [
+            ["id_exemp_set", "Vrijstellingen aanmaken"],
+            ["id_exemp_grades", "Vrijstelling cijfers invoeren"],
+            ["id_exemp_upload", "Vrijstelling cijfers uploaden"],
+            ["id_exemp_approve", "Vrijstellingen goedkeuren en indienen"]
             ]),
 
         get_dropdown_button("exams", "id_intro_exams", "Examens (voormalige WOLF programma)", [
@@ -197,6 +203,12 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_hide_columns", "Hide columns"],
             ]),
 
+        get_dropdown_button("user", "id_intro", "Users", [
+             ["id_user_login", "Login"],
+             ["id_user_manage", "User accounts"],
+             ["id_user_permissions", "Usergroups"],
+             ["id_user_allowed", "Allowed sections"]
+             ]),
         get_dropdown_button("upload", "id_intro", "Upload data", [
              ["id_upload_step01", "Select an Excel file"],
              ["id_upload_step02a", "Select type of exam grade"],
@@ -211,6 +223,13 @@ document.addEventListener('DOMContentLoaded', function() {
              ["id_validate_subjects", "Subject composition check"],
              ["id_enter_studsubj", "Enter subjects of candidates"],
              ["id_clusters", "Clusters"]
+            ]),
+
+        get_dropdown_button("exemption", "id_intro", "Exemptions", [
+             ["id_exemp_set", "Set exemptions"],
+             ["id_exemp_grades", "Enter exemption grades"],
+             ["id_exemp_upload", "Upload exemption grades"],
+             ["id_exemp_approve", "Approve and submit exemptions"]
             ]),
 
         get_dropdown_button("approve", "id_intro", "Approve and submit Ex forms", [

@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220227.js' %}"></script>
-    <script src="{% static 'js/studentsubjects220227.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220303.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -36,13 +36,13 @@
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
-            <div id="id_SBR_container_cluster" class="tw_200 m-2 display_hide">
+            <div class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
                <input id="id_SBR_select_cluster" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
-            <div id="id_SBR_container_student" class="tw_200 m-2 display_hide">
+            <div class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
                 <input id="id_SBR_select_student" type="text"
                     class="tw_200 border_none pointer_show px-1" readonly>
@@ -122,7 +122,7 @@
                         <button data-btn="btn_reex03" class="btn btn-secondary">{% trans 'Re-exam 3rd period' %}</button>
                     {% endif %}
                 {% endif %}
-                <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof_of_knowledge' %}</button>
+                <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof of knowledge' %}</button>
             </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER - LOADER -->

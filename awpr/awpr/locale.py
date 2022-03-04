@@ -455,6 +455,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Message'] = _('Message')
         dict['Messages'] = _('Messages')
+        dict['AWP_message'] = _('AWP message')
 
         dict['Select_a_user'] = _('Select a user')
 

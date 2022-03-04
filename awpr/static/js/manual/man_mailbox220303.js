@@ -29,8 +29,8 @@ const man_mailbox = {
 
             "<p><b>Een bericht openen</b><br>",
             "Klik op de titel van het bericht om het te openen. Het onderstaande venster verschijnt. ",
-            "Wanneer de tekst van het bericht groter is dan het kader waarin het staat, kun je de rechter onder hoek van het kader naar beneden slepen om het kader te vergroten.</p>",
-
+            "Wanneer de tekst van het bericht groter is dan het kader waarin het staat, kun je de rechter onder hoek van het kader naar beneden slepen om het kader te vergroten.<br>",
+            "Klik op <i>Bericht downloaden</i> links onder in het venster om de tekst van het bericht te downloaden.</p>",
             "<p><b>Bijlagen downloaden</b><br>",
             "Onder de tekst van het bericht staan de bijlagen. Klik op een bijlage om hem te downloaden. De bijlage wordt in een apart venster weergegeven. ",
             "Als je de bijlage wilt opslaan kun je in het venster met de bijlage op de rechter muisknop klikken. In het venster dat verschijnt klik je op <i>Opslaan als...</i>.</p>",
@@ -50,7 +50,7 @@ const man_mailbox = {
             "Klik op het icoontje met het kruis om de verwijdering ongedaan te maken.</p>"
             ]),
 
-        write_image("img_mailbox_read_message_ne"),
+        write_image("img_mailbox_read_message_ne_nw"),
 
         write_paragraph_header("id_mailbox_create_message", "Een bericht aanmaken"),
         write_paragraph_body("",
@@ -178,25 +178,25 @@ const man_mailbox = {
 
         write_paragraph_header("id_mailbox_read_message", "Read messages"),
         write_paragraph_body("img_envelope_0_2",
-        ["<p>When there is a new message for you, an icon with a white envelope and a red flag will appear in the top right corner of the title bar. ",
-                    "Click to open the message.<br>",
-                    "When you open a new message it will be marked as 'read'. The icon with the white envelope and the red flag disappears. ",
-                    "You can also manually mark a message as 'read'. Click on the icon with the white envelope. ",
-                    "When you click again, the message will be marked as 'not read' again.</p>",
+            ["<p>When there is a new message for you, an icon with a white envelope and a red flag will appear in the top right corner of the title bar. ",
+            "Click to open the message.<br>",
+            "When you open a new message it will be marked as 'read'. The icon with the white envelope and the red flag disappears. ",
+            "You can also manually mark a message as 'read'. Click on the icon with the white envelope. ",
+            "When you click again, the message will be marked as 'not read' again.</p>",
 
-                    "<p><b>Open a message</b><br>",
-                    "Click on the title of the message to open it. The window below will appear. ",
-                    "When the text of the message is larger than the frame it appears in, you can drag the bottom right corner of the frame down to enlarge the frame.</p>",
+            "<p><b>Open a message</b><br>",
+            "Click on the title of the message to open it. The window below will appear. ",
+            "When the text of the message is larger than the frame it appears in, you can drag the bottom right corner of the frame down to enlarge the frame.<br>",
+            "Click <i>Download Message</i> at the bottom left of the window to download the text of the message.</p>",
+            "<p><b>Download attachments</b><br>",
+            "Below the text of the message are the attachments. Click on an attachment to download it. The attachment will be displayed in a separate window. ",
+            "If you want to save the attachment, you can click the right mouse button in the attachment window. In the window that appears, click <i>Save As...</i>.</p>",
 
-                    "<p><b>Download attachments</b><br>",
-                    "Below the text of the message are the attachments. Click on an attachment to download it. The attachment will be displayed in a separate window. ",
-                    "If you want to save the attachment, you can click the right mouse button in the attachment window. In the window that appears, click <i>Save As...</i>.</p>",
-
-                    "<p><b>Show recipients</b><br>",
-                    "Click in the box with <i>Recipients</i>. The list of recipients of this message will be displayed. Click again and the list will close.</p>"
+            "<p><b>Show recipients</b><br>",
+            "Click in the box with <i>Recipients</i>. The list of recipients of this message will be displayed. Click again and the list will close.</p>"
 
             ]),
-        write_image("img_mailbox_read_message_en"),
+        write_image("img_mailbox_read_message_en_nw"),
 
         write_paragraph_header("id_mailbox_create_message", "Create a message"),
         write_paragraph_body("",

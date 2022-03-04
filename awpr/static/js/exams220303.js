@@ -17,6 +17,7 @@ let urls = {};
 const selected = {
     item_count: 0
 };
+
 let subject_rows = [];
 let cluster_rows = [];
 let student_rows = [];
@@ -1357,6 +1358,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("data_dict", data_dict);
         let className = "diamond_3_4";  // diamond_3_4 is blank img
         let title_text = null, filter_value = null;
+
         // skip when row has no exam
         const exam_exists = (tblName === "grades") ? (!!data_dict && !!data_dict.ce_exam_id) : (!!data_dict && !!data_dict.id);
         const no_data = (tblName === "exam") ? !data_dict.partex : !data_dict.ce_exam_result;
@@ -1368,7 +1370,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const field_auth1by_id = prefix + "auth1by_id" // auth1by_id or ce_exam_auth1by_id
             const field_auth2by_id = prefix + "auth2by_id"
-            const field_publ_id = prefix + "published_id"
+            const field_publ_id = prefix + "publ_id"
             const field_publ_modat = prefix + "publ_modat"
 
             const auth1by_id = (data_dict[field_auth1by_id]) ? data_dict[field_auth1by_id] : null;
@@ -1502,7 +1504,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
             // gives err messages when multiple found.
             const auth_index = b_get_auth_index_pres_secr_of_requsr(loc, permit_dict)
-            const publ_field = (tblName === "exam") ? "published_id" : "ce_exam_published_id"
+            const publ_field = (tblName === "exam") ? "publ_id" : "ce_exam_publ_id"
             const auth1by_field = (tblName === "exam") ? "auth1by_id" : "ce_exam_auth1by_id"
             const auth2by_field = (tblName === "exam") ? "auth2by_id" : "ce_exam_auth2by_id"
 
@@ -2392,8 +2394,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             if (loc.examtype_caption && mod_MEX_dict.examtype){
                 header1_text = loc.examtype_caption[mod_MEX_dict.examtype]
-            }
-
+            };
             const depbase_code = (setting_dict.sel_depbase_code) ? setting_dict.sel_depbase_code : "---";
             header1_text += " " + depbase_code;
             const examperiod_caption = (loc.examperiod_caption && mod_MEX_dict.examperiod) ? loc.examperiod_caption[mod_MEX_dict.examperiod] : "---"
@@ -2558,8 +2559,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  MEX_get_subject  ================ PR2022-01-12
     function MEX_get_subject(sel_subject_pk) {
-        //console.log("===== MEX_get_subject =====");
-        //console.log("sel_subject_pk", sel_subject_pk);
+        console.log("===== MEX_get_subject =====");
+        console.log("sel_subject_pk", sel_subject_pk);
         // called by MEXQ_Open and by MSSSS_Response after selecting subject
 
         setting_dict.sel_subject_pk = sel_subject_pk;
@@ -2570,6 +2571,9 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 // -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
         const [index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", sel_subject_pk);
+
+        console.log("subject_rows", subject_rows);
+        console.log("found_dict", found_dict);
         //console.log("found_dict", found_dict);
         if (!isEmpty(found_dict)){
             mod_MEX_dict.subject_pk = found_dict.id;
@@ -4300,7 +4304,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  MEX_set_headertext2_subject  ================ PR2022-01-12
     function MEX_set_headertext2_subject() {
-        //console.log("===== MEX_set_headertext2_subject =====");
+        console.log("===== MEX_set_headertext2_subject =====");
+        console.log("mod_MEX_dict", mod_MEX_dict);
+        console.log("mod_MEX_dict.subject_name", mod_MEX_dict.subject_name);
+        console.log("mod_MEX_dict.lvl_abbrev", mod_MEX_dict.lvl_abbrev);
 // update text in headertext2_subject
         let header2_text = null;
         if(!mod_MEX_dict.subject_pk) {
@@ -4390,7 +4397,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const [index, found_dict, compare] = b_recursive_integer_lookup(grade_with_exam_rows, "id", pk_int);
             const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
             const datarow_index = index;
-        console.log("data_dict", data_dict);
+        console.log("grade_with_exam_dict", data_dict);
 
             if(data_dict) {
             // get exam questions
@@ -4405,6 +4412,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     mod_MEX_dict.lvl_abbrev = data_dict.lvl_abbrev;
 
                     mod_MEX_dict.partex_dict = {};
+
 // ---  lookup exam_dict in exam_rows
                     const exam_pk = data_dict.ce_exam_id;
                     const [index, found_dict, compare] = b_recursive_integer_lookup(exam_rows, "id", exam_pk);
@@ -4448,6 +4456,10 @@ document.addEventListener("DOMContentLoaded", function() {
                         const depbase_code = (setting_dict.sel_depbase_code) ? setting_dict.sel_depbase_code : "---";
                         const examperiod_caption = (loc.examperiod_caption && mod_MEX_dict.examperiod) ? loc.examperiod_caption[mod_MEX_dict.examperiod] : "---"
                         const header1_text = examtype + " " + depbase_code + " " + examperiod_caption;
+
+        console.log("mod_MEX_dict", mod_MEX_dict);
+        console.log("examtype", examtype);
+        console.log("header1_text", header1_text);
 
                         el_MEXQ_header1.innerText = header1_text;
                         el_MEXQ_header3_student.innerText = fullname;
