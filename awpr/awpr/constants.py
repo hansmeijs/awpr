@@ -208,7 +208,7 @@ EXAMTYPE_OPTIONS_EXAM = [
     {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
     {'value': 'reex', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
     #{'value': 'reex03', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
-    #{'value': 'exm', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
+    #{'value': 'exemp', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
     ]
 EXAMTYPE_CAPTION = {
     'se': _('School exam'),
@@ -217,7 +217,7 @@ EXAMTYPE_CAPTION = {
     'ce': _('Central exam'),
     'reex': _('Re-examination'),
     'reex03': _('Re-examination 3rd period'),
-    'exm': _('Exemption'),
+    'exemp': _('Exemption'),
 }
 
 
@@ -285,6 +285,7 @@ KEY_SEL_SCTBASE_PK = 'sel_sctbase_pk'
 KEY_SEL_SUBJBASE_PK = 'sel_subjbase_pk'
 KEY_SEL_STUDBASE_PK = 'sel_studbase_pk'
 KEY_SEL_CLUSTER_PK = 'sel_cluster_pk'
+KEY_SEL_AUTH_INDEX = 'sel_auth_index'
 #TODO to be deprecated
 KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
 KEY_SEL_STUDENT_PK = 'sel_student_pk'

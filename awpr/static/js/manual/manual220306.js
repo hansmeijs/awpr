@@ -161,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ]),
 
         get_dropdown_button("exemption", "id_intro", "Vrijstellingen", [
+            ["id_exemp_bis_exam", "Bis-kandidaten"],
             ["id_exemp_set", "Vrijstellingen aanmaken"],
             ["id_exemp_grades", "Vrijstelling cijfers invoeren"],
             ["id_exemp_upload", "Vrijstelling cijfers uploaden"],
@@ -217,21 +218,19 @@ document.addEventListener('DOMContentLoaded', function() {
              ["id_upload_step04", "Test upload"],
              ["id_upload_step05", "Upload"]
             ]),
-
         get_dropdown_button("studsubj", "id_intro", "Subjects of candidates", [
              ["id_filter_subjects", "Filter subjects"],
              ["id_validate_subjects", "Subject composition check"],
              ["id_enter_studsubj", "Enter subjects of candidates"],
              ["id_clusters", "Clusters"]
             ]),
-
         get_dropdown_button("exemption", "id_intro", "Exemptions", [
-             ["id_exemp_set", "Set exemptions"],
-             ["id_exemp_grades", "Enter exemption grades"],
-             ["id_exemp_upload", "Upload exemption grades"],
+             ["id_exemp_bis_exam", "Bis candidates"],
+             ["id_exemp_set", "Create exemptions"],
+             ["id_exemp_grades", "Enter grade exemption"],
+             ["id_exemp_upload", "Number upload exemption"],
              ["id_exemp_approve", "Approve and submit exemptions"]
             ]),
-
         get_dropdown_button("approve", "id_intro", "Approve and submit Ex forms", [
             ["id_digital_signature", "The digital signature"],
             ["id_approve", "Approve courses, scores or grades"],

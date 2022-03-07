@@ -717,7 +717,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01
     function UpdateField(el_div, map_dict) {
-        console.log("=========  UpdateField =========");
+        //console.log("=========  UpdateField =========");
         //console.log("map_dict", map_dict);
 
         const field_name = get_attr_from_el(el_div, "data-field");
@@ -742,12 +742,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } else if (field_name.includes("allowed")){
 
-        console.log( "map_dict", map_dict);
-        console.log( "field_name", field_name);
-        console.log( "map_dict[field_name]", map_dict[field_name]);
+        //console.log( "map_dict", map_dict);
+        //console.log( "field_name", field_name);
+        //console.log( "map_dict[field_name]", map_dict[field_name]);
                 const [display, title] = get_allowed_display_txt(field_name, map_dict[field_name]);
-        console.log( "display", display);
-        console.log( "title", title);
+        //console.log( "display", display);
+        //console.log( "title", title);
                 inner_text = (display) ? display : "&nbsp";
                 title_text= (title) ? title : null;
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
@@ -802,7 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const datetimeLocalJS = (datetimeUTCiso) ? new Date(datetimeUTCiso) : null;
                 inner_text = format_datetime_from_datetimeJS(loc, datetimeLocalJS);
                 filter_value = inner_text;
-            }
+            };
 // ---  put value in innerText and title
             el_div.innerHTML = inner_text;
             add_or_remove_attr (el_div, "title", !!title_text, title_text);
@@ -811,7 +811,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("filter_value", filter_value);
             add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
 
-        }  // if(el_div && field_name){
+        };  // if(el_div && field_name){
     };  // UpdateField
 
 //=========  activationlink_is_expired  ================ PR2020-08-18
@@ -820,13 +820,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const days_valid = 7;
         if(datetime_linksent_ISO){
             const datetime_linksent_LocalJS = new Date(datetime_linksent_ISO);
-            const datetime_linkexpires_LocalJS = add_daysJS(datetime_linksent_LocalJS, days_valid)
+            const datetime_linkexpires_LocalJS = add_daysJS(datetime_linksent_LocalJS, days_valid);
             const now = new Date();
             const time_diff_in_ms = now.getTime() - datetime_linkexpires_LocalJS.getTime();
-            is_expired = (time_diff_in_ms > 0)
-        }
+            is_expired = (time_diff_in_ms > 0);
+        };
         return is_expired;
-    }
+    };
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 

@@ -58,6 +58,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['No_profiel_found'] = _("No 'profiel' found")
     dict['All_sectors_profielen'] = _("All sectors / profielen")
     dict['All_sectors_profielen'] = _("All sectors / profielen")
+    dict['All_clusters'] = _("All clusters")
 
     dict['There_is_no__'] = _('There is no ')
     dict['__selected'] = _(' selected.')
@@ -649,6 +650,13 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Add_candidate'] = _('Add candidate')
         dict['Delete_candidate'] = _('Delete candidate')
+        dict['Remove_bis_exam'] = _('Remove bis-exam')
+        dict['The_bis_exam'] = _('The bis-exam')
+
+        dict['_of_'] = TXT__of_
+        dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
+        dict['Yes_remove'] = _('Yes, remove')
+        dict['Exemptions_will_also_be_removed'] = _('The exemptions will also be removed.')
 
         dict['Please_select_candidate_first'] = _('Please select a candidate first.')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
@@ -665,6 +673,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
         dict['ID_number'] = _('ID number')
+
+        dict['Birthdate'] = _('Birthdate')
+        dict['Country_of_birth'] = _('Country of birth')
+        dict['Place_of_birth'] = _('Place of birth')
 
         dict['Abbrev'] = _('Abbrev.')
 
@@ -772,23 +784,24 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['You_cannot_change_approval'] = _('You cannot change the approval.')
 
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
-        dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex-1 form to delete it.')
+        dict['You_must_submit_additional_ex1form'] = _('You must submit an additional %(ex)s form to delete it.') % {'ex': 'Ex1'}
 
         dict['MASS_info'] = {
             'checking_studsubj': _('AWP is checking the subjects of the candidates'),
             'subheader_approve': _('Selection of the subjects, that will be approved:'),
-            'subheader_submit': _('An Ex1form with the following subjects will be submitted:'),
+            'subheader_submit': _('An %(ex)s form with the following subjects will be submitted:') % {'ex': 'Ex1'},
+
             'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
             'approve_1': _('After the subjects are approved by the president and secretary,'),
-            'approve_2': _('the Ex1 form can be submitted by the president or secretary.'),
+            'approve_2': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex1'},
 
             'submit_0': _("Click 'Check subjects' to check the selected subjects before submitting."),
-            'submit_1': _("If the check is OK, click 'Submit Ex1 form' to submit the selected subjects."),
-            'submit_2': _("After the subjects are submitted, you can change them by submitting an additional Ex1 form."),
+            'submit_1': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected subjects.") % {'ex': 'Ex1'},
+            'submit_2': _("After the subjects are submitted, you can change them by submitting an additional %(ex)s form.") % {'ex': 'Ex1'},
 
             'approving_studsubj': _('AWP is approving the subjects of the candidates'),
             'requesting_verifcode': _('AWP is sending an email with the verification code'),
-            'creating_Ex1_form': _("AWP is creating the Ex1 form"),
+            'creating_Ex1_form': _("AWP is creating the %(ex)s form") % {'ex': 'Ex1'},
             'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
         # Ex3 modal
@@ -983,9 +996,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_candidate_selected'] = _('No candidate selected')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
 
-
         dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
         dict['from_available_list'] = _('from the list of available subjects.')
+
+        dict['Please_select_examperiod'] = _('Please select an exam period in the horizontal black bar.')
+        dict['Please_select_examtype'] = _('Please select one exam type in the vertical grey bar at the left.')
 
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
@@ -1027,17 +1042,20 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),
-            'subheader_submit': _('An Ex2A form with the following grades will be submitted:'),
+            'subheader_submit_ex2': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2'},
+            'subheader_submit_ex2a': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2A'},
             'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
             'approve_1': _('After the grades are approved by the president, secretary and commissioner,'),
-            'approve_2': _('the Ex2A form can be submitted by the president or secretary.'),
+            'approve_2_ex2': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2'},
+            'approve_2_ex2a': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2A'},
 
             'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
-            'submit_1': _("If the check is OK, click 'Submit Ex2A form' to submit the selected grades."),
+            'submit_1_ex2': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected grades.") % {'ex': 'Ex2'},
+            'submit_1_ex2a': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected grades.") % {'ex': 'Ex2A'},
             'submit_2': _("After the grades are submitted, you can only change them with permission of the Inpsection."),
 
-            'submit_ok_01': _("The Ex2A form is succesfully created."),
-
+            'submit_ok_01_ex2': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2'},
+            'submit_ok_01_ex2a': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2A'},
         }
 
         dict['Score'] = _('Score')

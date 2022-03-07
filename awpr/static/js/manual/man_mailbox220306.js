@@ -103,7 +103,7 @@ const man_mailbox = {
                 "Het selecteren van verzendlijsten gaat zoals hieronder bij het versturen naar organisaties is beschreven.</p>",
 
                 "<p><b>Versturen naar organisaties</b><br>",
-                "Met organisaties worden de scholen bedoeld, maar ook het ETE, de Inspectie en de Afdeling gecommiteerden zijn een organisatie.<br>",
+                "Met organisaties worden de scholen bedoeld, maar ook het ETE en de Inspectie zijn een organisatie.<br>",
                 "Klik op <i>Verstuur naar organisaties...</i>. Het onderstaande venster <i>Selecteer organisatie</i> verschijnt. ",
                 "In de blauwe lijst links staan de geselecteerde organisaties, in de rechter lijst staan de beschikbare organisaties.<br>",
                 "Klik op een organisatie in een van de lijsten om hem naar de andere lijst te verplaatsen. ",
@@ -247,7 +247,7 @@ const man_mailbox = {
                 "Selecting mailing lists is done as described below when sending to organizations.</p>",
 
                 "<p><b>Send to organizations</b><br>",
-                "Organizations mean the schools, but Division of Examinations, the Inspectorate and the Department of Committees are also an organization.<br>",
+                "Organizations mean the schools, but the Division of Examinations and the Inspectorate are also an organization.<br>",
                 "Click on <i>Send to organizations...</i>. The <i>Select organization</i> window below will appear. ",
                 "The blue list on the left shows the selected organizations, the right list shows the available organizations.<br>",
                 "Click on an organization in one of the lists to move it to the other list. ",

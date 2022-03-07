@@ -267,10 +267,17 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_mod_approve_grade = document.getElementById("id_mod_approve_grade");
         const el_MAG_examperiod = document.getElementById("id_MAG_examperiod");
         const el_MAG_examtype = document.getElementById("id_MAG_examtype");
-        const el_MAG_level_container = document.getElementById("id_MAG_level_container");
-        const el_MAG_level = document.getElementById("id_MAG_level");
-        const el_MAG_class_cluster = document.getElementById("id_MAG_class_cluster");
+        const el_MAG_lvlbase = document.getElementById("id_MAG_lvlbase");
+        const el_MAG_cluster = document.getElementById("id_MAG_cluster");
         const el_MAG_subject = document.getElementById("id_MAG_subject");
+
+        const el_MAG_approved_by_label = document.getElementById("id_MAG_approved_by_label");
+        const el_MAG_approved_by = document.getElementById("id_MAG_approved_by");
+        const el_MAG_function = document.getElementById("id_MAG_function");
+        if (el_MAG_function){
+            el_MAG_function.addEventListener("change", function() {MAG_UploadFunction(el_MAG_function)}, false );
+        }
+
         const el_MAG_info_container = document.getElementById("id_MAG_info_container");
         const el_MAG_loader = document.getElementById("id_MAG_loader");
         const el_MAG_msg_container = document.getElementById("id_MAG_msg_container");
@@ -278,10 +285,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MAG_btn_save = document.getElementById("id_MAG_btn_save");
         const el_MAG_btn_cancel = document.getElementById("id_MAG_btn_cancel");
         if (el_MAG_btn_delete){
-            el_MAG_btn_delete.addEventListener("click", function() {MAG_Save("delete")}, false )  // true = reset
+            el_MAG_btn_delete.addEventListener("click", function() {MAG_Save("delete")}, false );  // true = reset
         }
         if (el_MAG_btn_save){
-            el_MAG_btn_save.addEventListener("click", function() {MAG_Save("save")}, false )
+            el_MAG_btn_save.addEventListener("click", function() {MAG_Save("save")}, false );
         }
 
 // ---  MOD CONFIRM ------------------------------------
@@ -291,10 +298,8 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         const el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){
-            el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()})
+            el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()});
         };
-
-
 
 
 // ---  MOD STATUS ------------------------------------
@@ -700,7 +705,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const sel_examperiod = (Number(el_select.value)) ? Number(el_select.value) : null;
         const filter_value = sel_examperiod;
 
-// --- fill seelctbox examtype with examtypes of this period
+// --- fill selectbox examtype with examtypes of this period
         t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, "value", "caption",
             loc.Select_examtype, loc.No_examtypes_found, "filter", filter_value);
 
@@ -718,8 +723,8 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  HandleSbrExamtype  ================ PR2020-12-20
     function HandleSbrExamtype(el_select) {
         console.log("=== HandleSbrExamtype");
-        //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
-        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exm"
+        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exemp"
         setting_dict.sel_examtype = el_select.value;
         const filter_value = Number(el_select.value);
         //t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, "value", "caption",
@@ -731,7 +736,8 @@ document.addEventListener("DOMContentLoaded", function() {
         setting_dict.sel_examperiod = (setting_dict.sel_examtype === "reex03") ? 3 :
                            (setting_dict.sel_examtype === "reex") ? 2 :
                            (setting_dict.sel_examtype === "reex") ? 2 :
-                           (setting_dict.sel_examtype && ["se", "sr", "pe", "ce"].includes(setting_dict.sel_examtype) ) ? 1 : null;
+                           (setting_dict.sel_examtype && ["se", "sr", "pe", "ce"].includes(setting_dict.sel_examtype) ) ? 1 :
+                           setting_dict.sel_examperiod;
 
 // ---  upload new setting
         const upload_dict = {selected_pk: {sel_examtype: setting_dict.sel_examtype,
@@ -1442,7 +1448,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                             pecegrade: true, finalgrade: true, note_status: true,
         */
 
-                // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exm"
+                // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exemp"
         // first reset shown
         const show_all_grades = (selected_btn === "grade_by_all")
         columns_shown.pescore = show_all_grades; columns_shown.cescore = show_all_grades;
@@ -1467,7 +1473,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
             columns_shown.cescore = true; columns_shown.cegrade = true; columns_shown.ce_status = true;
         } else if (sel_examtype === "reex03"){
             columns_shown.cescore = true; columns_shown.cegrade = true; columns_shown.ce_status = true;
-        } else if (sel_examtype === "exm"){
+        } else if (sel_examtype === "exemp"){
             columns_shown.segrade = true; columns_shown.se_status = true;
             columns_shown.cegrade = true; columns_shown.ce_status = true;
         }
@@ -1805,20 +1811,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
             // this function gives err message when multiple found. (uses b_show_mod_message)
             // get value of highest index
             const permit_auth_list = b_get_multiple_auth_index_of_requsr(permit_dict)
-            let requsr_auth_index = null, has_multipl_index = false;
-            if (permit_auth_list){
-                for (let i = 4, value; i > 0; i--) {
-                    if (permit_auth_list[i] === 1){
-                        if (requsr_auth_index == null){
-                            requsr_auth_index = i;
-                        } else {
-                            has_multipl_index = true
-                            break;
-                        };
-                    };
-            }};
+            const requsr_auth_index = setting_dict.sel_auth_index;
+
             console.log( "requsr_auth_index", requsr_auth_index);
-            console.log( "has_multipl_index", has_multipl_index);
 
             if(requsr_auth_index){
                 const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
@@ -1861,37 +1856,49 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                 b_show_mod_message(msg_html);
                             } else {
 
-// - get value of current requsr_status (boolean)
-// - put authby_boolean's of this grade in auth_dict
-                                // auth_dict:  {4: true}
-                                let requsr_status_bool = false;
+// - requsr_auth_value = true when requsr_auth has approved in this function
+// - auth_dict contains saved values of all auth_index
+                                // auth_dict:  {1: true, 3: true}
+                                let requsr_auth_value = false;
                                 const auth_dict = {};
                                 for (let i = 1, key_str; i < 5; i++) {
                                     key_str = examtype + "_auth" + i + "by_id";
                                     if (data_dict[key_str]){
                                         if (requsr_auth_index === i) {
-                                            requsr_status_bool = true;
+                                            requsr_auth_value = true;
                                         };
-                                        auth_dict[i] = (!!data_dict[key_str]);
+                                        auth_dict[i] = data_dict[key_str];
                                     };
                                 };
             console.log("auth_dict", auth_dict)
-// ---  toggle value of requsr_status_bool
-                                const new_requsr_status_bool = !requsr_status_bool;
-   // also update value in auth_dict;
-                                auth_dict[requsr_auth_index] = new_requsr_status_bool
+
+// ---  toggle value of requsr_auth_value
+                                const new_requsr_auth_value = !requsr_auth_value;
+   // also update requsr_pk in auth_dict;
+                                auth_dict[requsr_auth_index] = (new_requsr_auth_value) ? permit_dict.requsr_pk : null;
 
 // give message when status_bool = true and grade already approved by this user in different function
-                                let double_approved = false;
-                                if(new_requsr_status_bool){
+                                // president may also approve a examinator
+                                // secretary may alo approve as examinator
+                                const auth_index_approved_by_requsr = [];
+                                if(new_requsr_auth_value){
                                     for (let i = 1, key_str; i < 5; i++) {
                                         key_str = examtype + "_auth" + i + "by_id";
+                                        // data_dict[key_str] contains pk of auth_by
                                         if (data_dict[key_str]){
-                                            // skip auth_index of requsr
-                                            if (requsr_auth_index !== i) {
-                                                if (data_dict[key_str] === permit_dict.requsr_pk) {
+                                            if (data_dict[key_str] === permit_dict.requsr_pk) {
+                                                // president may also approve a examinator
+                                                // secretary may also approve as examinator
+                                                // examinator may also approve as secretary or president, but not both
+                                                if (requsr_auth_index === 1) {
+                                                } else  if (requsr_auth_index === 2) {
+
+                                                } else  if (requsr_auth_index === 3) {
+
+                                                }else  if (requsr_auth_index === 4) {
                                                     double_approved = true
-                                                }
+                                                };
+
                                             };
                                         };
                                     };
@@ -1910,8 +1917,8 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
                 // ---  upload changes
                                     // value of 'mode' determines if status is set to 'approved' or 'not
-                                    // instead of using value of new_requsr_status_bool,
-                                    const mode = (new_requsr_status_bool) ? "approve_save" : "approve_reset"
+                                    // instead of using value of new_requsr_auth_value,
+                                    const mode = (new_requsr_auth_value) ? "approve_save" : "approve_reset"
                                     const upload_dict = { table: tblName,
                                                            mode: mode,
                                                            mapid: data_dict.mapid,
@@ -1920,7 +1927,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                                            examtype: examtype,
                                                            auth_index: requsr_auth_index
                                                            // these values will be entered on server:
-                                                           //   auth_bool_at_index: new_requsr_status_bool,
+                                                           //   auth_bool_at_index: new_requsr_auth_value,
                                                            //   examperiod: data_dict.examperiod,
                                                            //   requsr_pk: permit_dict.requsr_pk,
                                                         };
@@ -2115,82 +2122,111 @@ if(j && !is_status_field){td.classList.add("border_left")};
 //========= MOD APPROVE GRADE ====================================
     function MAG_Open (mode ) {
         console.log("===  MAG_Open  =====") ;
-        //console.log("mode", mode) ;
-        //console.log("permit_dict", permit_dict) ;
+        console.log("mode", mode) ;
+        console.log("setting_dict", setting_dict) ;
         // mode = 'approve' or 'submit
 
         mod_MAG_dict = {}
+        if (![1,2,3].includes(setting_dict.sel_examperiod) ){
+            b_show_mod_message(loc.Please_select_examperiod);
+        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exemp"
+        } else  if (!["se", "pe", "ce", "reex", "reex03", "exemp"].includes(setting_dict.sel_examtype) ){
+            b_show_mod_message(loc.Please_select_examtype);
 
-        const is_approve_mode = (mode === "approve");
-        const is_submit_mode = (mode === "submit");
+        } else {
+            const is_approve_mode = (mode === "approve");
+            const is_submit_mode = (mode === "submit");
 
-        // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
-                // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
-        // gives err messages when multiple found.
-        // TODO user may be auth_examinator and auth_pers / auth_secr
-        const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
-        if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
-            if(auth_index){
-                // modes are 'approve' 'submit_test' 'submit_save'
-                mod_MAG_dict = {mode: mode,
-                            step: 0,
-                            is_approve_mode: is_approve_mode,
-                            is_submit_mode: is_submit_mode,
-                            auth_index: auth_index,
-                            may_test: true,
-                            test_is_ok: false,
-                            submit_is_ok: false,
-                            is_reset: false}
-                document.getElementById("id_MAG_header").innerText = (is_approve_mode) ? loc.Approve_grades : loc.Submit_Ex2A_form;
-                document.getElementById("id_MAG_subheader").innerText = (is_approve_mode) ? loc.MAG_info.subheader_approve : loc.MAG_info.subheader_submit;
+            // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
+                    // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
+            // gives err messages when multiple found.
+            // TODO user may be auth_examinator and auth_pers / auth_secr
+            const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
+            if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
+                if(auth_index){
+                    // modes are 'approve' 'submit_test' 'submit_save'
+                    mod_MAG_dict = {mode: mode,
+                                step: 0,
+                                is_approve_mode: is_approve_mode,
+                                is_submit_mode: is_submit_mode,
+                                auth_index: auth_index,
+                                may_test: true,
+                                test_is_ok: false,
+                                submit_is_ok: false,
+                                is_reset: false}
+                    document.getElementById("id_MAG_header").innerText = (is_approve_mode) ? loc.Approve_grades : loc.Submit_Ex2A_form;
+                    document.getElementById("id_MAG_subheader").innerText = (is_approve_mode) ? loc.MAG_info.subheader_approve : loc.MAG_info.subheader_submit;
 
-                el_MAG_examperiod.innerText = setting_dict.sel_examperiod_caption
-                // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exm"
-                let examtype_caption = null;
-                for (let i = 0, dict; dict = loc.options_examtype[i]; i++) {
-                    if(dict.value === setting_dict.sel_examtype) {
-                        examtype_caption = dict.caption;
-                        break;
+
+                    // sel_examperiod 4 shows "Vrijstelling" as examperiod, replace by "Eerste tijdvak"
+                    // sel_examperiod 12 shows "Eerste tijdvak / Tweede tijdvak" replace by "---"
+                    // replace by First period
+                    el_MAG_examperiod.innerText = (setting_dict.sel_examperiod === 3) ? loc.examperiod_caption[3] :
+                                    (setting_dict.sel_examperiod === 2) ? loc.examperiod_caption[2] :
+                                    ([1, 4].includes(setting_dict.sel_examperiod)) ? loc.examperiod_caption[1] : "---"
+
+                    // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exemp"
+                    let examtype_caption = null;
+                    for (let i = 0, dict; dict = loc.options_examtype[i]; i++) {
+                        if(dict.value === setting_dict.sel_examtype) {
+                            examtype_caption = dict.caption;
+                            break;
+                        }
                     }
-                }
-                el_MAG_examtype.innerText = examtype_caption
+                    el_MAG_examtype.innerText = examtype_caption
 
-                add_or_remove_class(el_MAG_level_container, cls_hide, !setting_dict.sel_dep_level_req)
-                el_MAG_level.innerText = (setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev : null;
+                    add_or_remove_class(el_MAG_lvlbase.parentNode, cls_hide, !setting_dict.sel_dep_level_req)
 
-                let subject_text = null;
-                if(setting_dict.sel_subject_pk){
-                    const [middle_index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", setting_dict.sel_subject_pk);
-                    if (found_dict){ subject_text = (found_dict.name) ? found_dict.name : "---" };
+                    const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
+                    el_MAG_lvlbase.innerText = level_abbrev;
 
-                } else {
-                    subject_text = "<" + loc.All_subjects + ">";
-                };
-                el_MAG_subject.innerText = subject_text;
+                    let subject_text = null;
+                    if(setting_dict.sel_subject_pk){
+                        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", setting_dict.sel_subject_pk);
+                        if (found_dict){ subject_text = (found_dict.name) ? found_dict.name : "---" };
 
-                const auth_by = (!permit_dict.usergroup_list) ? null :
-                                (permit_dict.usergroup_list.includes("auth1")) ? loc.President :
-                                (permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary :
-                                (permit_dict.usergroup_list.includes("auth3")) ? loc.Commissioner :
-                                (permit_dict.usergroup_list.includes("auth4")) ? loc.Examinator : null;
+                    } else {
+                        subject_text = "<" + loc.All_subjects + ">";
+                    };
+                    el_MAG_subject.innerText = subject_text;
 
-                const caption = (is_submit_mode) ? loc.Submitted_by : loc.Approved_by;
-                document.getElementById("id_MAG_approved_by_label").innerText = caption + ":";
-                document.getElementById("id_MAG_approved_by").innerText = auth_by
-                document.getElementById("id_MAG_approved_name").innerText = setting_dict.requsr_name
+                    el_MAG_cluster.innerText = (setting_dict.sel_cluster_pk) ? setting_dict.sel_cluster_name : "<" + loc.All_clusters + ">";
 
-    // ---  show info and hide loader
-                add_or_remove_class(el_MAG_info_container, cls_hide, false)
-                // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
-                add_or_remove_class(el_MAG_loader, cls_hide, true);
+                    if (el_MAG_function){
+                        el_MAG_function.value = setting_dict.auth_by;
+                    }
+                    if (el_MAG_approved_by_label){
+                        el_MAG_approved_by_label.innerText = ( (is_submit_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
+                    }
+                    if (el_MAG_approved_by){
+                        el_MAG_approved_by.innerText = permit_dict.requsr_name;
+                    }
+                    if (el_MAG_function){
+                        const auth_list = [];
+                        if (permit_dict.usergroup_list.includes("auth1")){auth_list.push({value: 1, caption: loc.President})};
+                        if (permit_dict.usergroup_list.includes("auth2")){auth_list.push({value: 2, caption: loc.Secretary})};
+                        if (permit_dict.usergroup_list.includes("auth3")){auth_list.push({value: 3, caption: loc.Examinator})};
+                        if (permit_dict.usergroup_list.includes("auth4")){auth_list.push({value: 4, caption: loc.Commissioner})};
 
-    // --- reset ok button
-                MAG_SetBtnSaveDeleteCancel();
+// --- fill selectbox examtype with examtypes of this period
+                        t_FillOptionsFromList(el_MAG_function, auth_list, "value", "caption",
+                            loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
 
-                $("#id_mod_approve_grade").modal({backdrop: true});
+                    }
 
-            }  // if(auth_index)
-        }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
+        // ---  show info and hide loader
+                    add_or_remove_class(el_MAG_info_container, cls_hide, false)
+                    // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
+                    add_or_remove_class(el_MAG_loader, cls_hide, true);
+
+        // --- reset ok button
+                    MAG_SetBtnSaveDeleteCancel();
+
+                    $("#id_mod_approve_grade").modal({backdrop: true});
+
+                }  // if(auth_index)
+            }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
+        };
     }  // MAG_Open
 
 //=========  MAG_Save  ================
@@ -2237,6 +2273,27 @@ if(j && !is_status_field){td.classList.add("border_left")};
 // hide modal
         //$("#id_mod_approve_grade").modal("hide");
     };  // MAG_Save
+
+
+//=========  MAG_UploadFunction  ================ PR2022-03-06
+    function MAG_UploadFunction (el_select) {
+        //console.log("===  MAG_UploadFunction  =====") ;
+
+// ---  upload new setting
+        setting_dict.sel_auth_index = (Number(el_select.value)) ? Number(el_select.value) : null;
+        setting_dict.sel_auth_function = (setting_dict.sel_auth_index === 1) ? loc.President :
+        (setting_dict.sel_auth_index === 2) ? loc.Secretary :
+        (setting_dict.sel_auth_index === 3) ? loc.Examinator :
+        (setting_dict.sel_auth_index === 4) ? loc.Commissioner : null;
+        //console.log( "setting_dict.sel_auth_function: ", setting_dict.sel_auth_function);
+
+        const upload_dict = {selected_pk: {sel_auth_index: setting_dict.sel_auth_index}};
+        //console.log( "upload_dict: ", upload_dict);
+
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+    }; // MAG_UploadFunction
+
 
 //=========  MAG_UpdateFromResponse  ================ PR2021-02-08
     function MAG_UpdateFromResponse (msg_dict) {

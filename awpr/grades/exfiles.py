@@ -1010,7 +1010,7 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
         row_data = None
         if index < len(student_list):
             row_data = student_list[index]
-        draw_Ex3_row(canvas, row_data, left, right, coord, line_height, col_width_list)
+        draw_Ex3_row(canvas, row_data, left, right, y_bottom, coord, line_height, col_width_list)
 
 # - draw page footer
     # sequence is number to be added to pages to be used when uploading Ex3 forms with signatures
@@ -1213,7 +1213,7 @@ def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, 
 
 
 
-def draw_Ex3_row(canvas, row, left, right, coord, line_height, col_width_list):
+def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_width_list):
 
     x = left
     y = coord[1] - line_height
@@ -1239,7 +1239,9 @@ def draw_Ex3_row(canvas, row, left, right, coord, line_height, col_width_list):
         logger.error('row: ', str(row))
 
     #canvas.line(left, y - 1.25 * mm, right, y - 1.25 * mm)
-    canvas.line(left, y, right, y)
+    # skip lines that are in the footer
+    if y > y_bottom:
+        canvas.line(left, y, right, y)
 
     coord[1] = y
     #logger.debug('end of draw_Ex2A_line:')

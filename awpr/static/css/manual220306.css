@@ -374,15 +374,14 @@
 ----------------------------------------------------- */
 
 .img_studsubj_tab_subj_ne, .img_studsubj_tab_subj_en,
-.img_studsubj_mod_studsubj_ne, .img_studsubj_mod_studsubj_en,
-.img_studsubj_tab_subj_ok {
+.img_studsubj_mod_studsubj_ne, .img_studsubj_mod_studsubj_en {
     background-repeat: no-repeat;
     margin-left: 8px;
 }
 .img_studsubj_tab_subj_ne, .img_studsubj_tab_subj_en {
-    width: 1138px;
-    height: 440px;
-    background-size: 1138px 440px;
+    width: 1118px;
+    height: 554px;
+    background-size: 1131px 554px;
  }
 .img_studsubj_tab_subj_ne {
     background-image: url('/static/manual/studsubj_tab_subj_ne.png');
@@ -402,13 +401,6 @@
 .img_studsubj_mod_studsubj_en {
     background-image: url('/static/manual/studsubj_mod_studsubj_en.png');
 }
-
-.img_studsubj_tab_subj_ok {
-    width: 969px;
-    height: 82px;
-    background-size: 969px 82px;
-    background-image: url('/static/manual/studsubj_tab_subj_ok.png');
- }
 
 .img_exclamationsign {
     background-position: -120px -40px;

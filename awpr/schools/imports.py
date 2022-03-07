@@ -379,7 +379,7 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                             logger.debug('studsubj_pk_list_of_created_exemp_grades: ' + str(studsubj_pk_list_of_created_exemp_grades))
 
     # - set has_exemption True in studsubj
-                        update_hasexemption_in_studsubj_batch(studsubj_pk_list_of_created_exemp_grades, request)
+                        updated_student_pk_list = update_hasexemption_in_studsubj_batch(studsubj_pk_list_of_created_exemp_grades, request)
 
                         updated_grade_pk_list, updated_studsubj_pk_list = update_grade_batch(tobe_updated_dict, sel_db_field, request)
                         if logging_on:
@@ -1013,7 +1013,9 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
 # - update fields, both in new and existing students
         if student:
             data_dict.pop('rowindex')
-            changes_are_saved, error_save, field_error = stud_view.update_student_instance(student, data_dict, idnumber_list, examnumber_list, messagesNIU, error_list, request, is_test)
+            changes_are_saved, error_save, field_error = \
+                stud_view.update_student_instance(student, school.examyear, school, department, data_dict, idnumber_list, examnumber_list, messagesNIU, error_list, request, is_test)
+
             append_dict = {'created': True} if is_new_student else {}
             rows, error_dictNIU = stud_view.create_student_rows(
                 sel_examyear_pk=school.examyear.pk,
@@ -3534,7 +3536,7 @@ def update_grade_batch(tobe_updated_dict, sel_db_field, request):  #PR2022-02-03
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- update_grade_batch  --------------------')
-        logger.debug('tobe_updated_dict: ' + str(tobe_updated_dict))
+        #logger.debug('tobe_updated_dict: ' + str(tobe_updated_dict))
 
     updated_grade_pk_list = []
     updated_studsubj_pk_list = []
@@ -3614,8 +3616,6 @@ def update_hasexemption_in_studsubj_batch(tobe_updated_studsubj_pk_list, request
 
     # PR2022-02-19 only for exemption: add 'has_exemption' to studsubj
     # not for reex and reex03, they must set has_reex manually first
-
-    updated_studsubj_pk_list = []
     if tobe_updated_studsubj_pk_list and request.user:
 
         try:
@@ -3627,26 +3627,38 @@ def update_hasexemption_in_studsubj_batch(tobe_updated_studsubj_pk_list, request
                 "SET has_exemption = TRUE, ",
                 "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '" , modifiedat_str, "' ",
                 "WHERE students_studentsubject.id IN ( SELECT UNNEST(%(studsubj_pk_arr)s::INT[]) ) ",
-                "RETURNING students_studentsubject.id;"
+                "AND NOT students_studentsubject.has_exemption"
+                "RETURNING students_studentsubject.student_id;"
                 ]
 
             sql = ''.join(sql_list)
             if logging_on:
                 logger.debug('sql: ' + str(sql))
 
+            updated_student_pk_list = []
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
                 rows = cursor.fetchall()
                 if rows:
                     for row in rows:
-                        updated_studsubj_pk_list.append(row[0])
+                        updated_student_pk_list.append(row[0])
+    # set bis_exam = TRUE in table students
+            sql_keys = {'student_pk_arr': updated_student_pk_list}
+            if updated_student_pk_list:
+                sql_list = [
+                    "UPDATE students_student AS stud",
+                    "SET bis_exam = TRUE, ",
+                    "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "' ",
+                    "WHERE stud.id IN ( SELECT UNNEST(%(student_pk_arr)s::INT[]) ) ",
+                    "AND NOT stud.bis_exam;",
+                ]
+                sql = ' '.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-
-        if logging_on:
-            logger.debug('updated_studsubj_pk_list: ' + str(updated_studsubj_pk_list))
-        return updated_studsubj_pk_list
 # - end of update_hasexemption_in_studsubj_batch
 
 

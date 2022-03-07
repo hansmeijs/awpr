@@ -241,6 +241,23 @@ def split_fullname(fullname): # PR2018-12-06
 
 # oooooooooooooo Functions  Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
 
+
+
+def get_firstname_prefix_lastname(last_name, first_name, prefix):  # PR2022-03-05
+
+    _full_name = last_name.strip() if last_name else ''
+
+    _prefix = prefix.strip() if prefix else ''
+    if _prefix:
+        _full_name = ' '.join((_prefix, _full_name))
+
+    _firstname = first_name.strip() if first_name else ''
+    if _firstname:
+        _full_name = ' '.join((_firstname, _full_name))
+
+    return _full_name
+# - end of get_firstname_prefix_lastname
+
 def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05  PR2021-10-07
 
     _full_name = last_name.strip() if last_name else ''
@@ -255,6 +272,7 @@ def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05  
 
     return _full_name
 # - end of get_full_name
+
 
 def get_firstname_initials(first_name):  # PR2021-07-26
     firstname_initials = ''

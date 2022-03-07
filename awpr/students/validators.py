@@ -193,6 +193,7 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
 
 
 # ########################### validate students ##############################
+
 def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, upload_fullname,
                    error_list, found_is_error=False):
     # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21  PR2021-09-22
@@ -649,10 +650,11 @@ def get_evening_or_lex_student(student):  # PR 2021-09-08
 ##########################
 
 
-# ========  validate_submitted_locked_grades  ======= PR2021-09-03 PR2022-02-15
-def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None):
+# ========  validate_submitted_locked_grades  ======= PR2021-09-03 PR2022-02-15 PR2022-03-05
+def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperiod=None):
     # PR2022-02-15 don't check on submitted studsubj, only on submitted grades
-    logging_on = False  # s.LOGGING_ON
+    # PR2022-03-05 used in remove bis_exam in student page
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- validate_submitted_locked_grades ----- ')
@@ -660,48 +662,49 @@ def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None):
 
     has_error, has_published = False, False
 
-    sql_keys = {}
-    filter_clause = None
-    if studsubj_pk:
-        sql_keys['studsubj_id'] = studsubj_pk
-        filter_clause = "AND (studsubj.id = %(studsubj_id)s::INT)"
-    elif student_pk:
-        sql_keys['st_id'] = student_pk
-        filter_clause = "AND (st.id = %(st_id)s::INT)"
+    try:
+        sql_keys = {'st_id': student_pk}
+        sql_list = [
+            "SELECT grd.id",
 
-    if filter_clause:
-        try:
-            sql_keys = {'st_id': student_pk}
-            sql_list = [
-                "SELECT grd.id",
+            "FROM students_grade AS grd",
+            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+            "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
 
-                "FROM students_grade AS grd",
-                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+            "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted",
+            "AND (grd.se_published_id IS NOT NULL OR",
+                "grd.sr_published_id IS NOT NULL OR",
+                "grd.pe_published_id IS NOT NULL OR",
+                "grd.ce_published_id IS NOT NULL OR",
+                "grd.pe_exam_published_id IS NOT NULL OR",
+                "grd.ce_exam_published_id IS NOT NULL)",
+        ]
+        if examperiod:
+            sql_keys['ep'] = examperiod
+            sql_list.append("AND (grd.examperiod = %(ep)s::INT)")
 
-                "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted",
+        if studsubj_pk:
+            sql_keys['studsubj_id'] = studsubj_pk
+            sql_list.append("AND (studsubj.id = %(studsubj_id)s::INT)")
+        elif student_pk:
+            sql_keys['st_id'] = student_pk
+            sql_list.append("AND (st.id = %(st_id)s::INT)")
 
-                filter_clause,
+        sql_list.append("LIMIT 1;")
+        sql = ' '.join(sql_list)
 
-                "AND (grd.se_published_id IS NOT NULL OR",
-                    "grd.sr_published_id IS NOT NULL OR",
-                    "grd.pe_published_id IS NOT NULL OR",
-                    "grd.ce_published_id IS NOT NULL OR",
-                    "grd.pe_exam_published_id IS NOT NULL OR",
-                    "grd.ce_exam_published_id IS NOT NULL)",
-                "LIMIT 1",
-            ]
-            sql = ' '.join(sql_list)
+        if logging_on:
+            logger.debug('sql_list: ' + str(sql_list))
 
-            with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
-                rows = cursor.fetchall()
-                if len(rows):
-                    has_published = True
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = cursor.fetchall()
+            if len(rows):
+                has_published = True
 
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-            has_error = True
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        has_error = True
 
     if logging_on:
         logger.debug('has_error: ' + str(has_error))

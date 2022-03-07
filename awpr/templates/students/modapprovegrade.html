@@ -30,13 +30,13 @@
                             <label for="id_MAG_examtype" class="mx-2 ">{% trans 'Exam type' %}:</label>
                             <div id="id_MAG_examtype" class="form-control p-2"></div>
                         </div>
-                        <div id="id_MAG_level_container" class="flex_1 m-2">
-                            <label for="id_MAG_level" class="mx-2 ">{% trans 'Level' %}:</label>
-                            <div id="id_MAG_level" class="form-control p-2"></div>
+                        <div class="flex_1 m-2">
+                            <label for="id_MAG_lvlbase" class="mx-2 ">{% trans 'Level' %}:</label>
+                            <div id="id_MAG_lvlbase" class="form-control p-2"></div>
                         </div>
                         <div class="flex_1 m-2">
-                            <label for="id_MAG_class_cluster" class="mx-2 ">{% trans 'Class / Cluster' %}:</label>
-                            <div id="id_MAG_class_cluster" class="form-control p-2"></div>
+                            <label for="id_MAG_cluster" class="mx-2 ">{% trans 'Cluster' %}:</label>
+                            <div id="id_MAG_cluster" class="form-control p-2"></div>
                         </div>
                     </div>
                     <div class="flex_container">
@@ -48,9 +48,10 @@
                             <label id="id_MAG_approved_by_label" for="id_MAG_approved_by" class="mx-2 "></label>
                             <div id="id_MAG_approved_by" class="form-control p-2"></div>
                         </div>
-                        <div class="flex_1 m-2 tab_show tab_approve display_hide">
-                            <label for="id_MAG_approved_name" class="mx-2 ">{% trans 'Name' %}:</label>
-                            <div id="id_MAG_approved_name" class="form-control p-2"></div>
+                        <div class="flex_1 m-2 tab_showX tab_approveX display_hideXX">
+                            <label for="id_MAG_function" class="mx-2 ">{% trans 'Function' %}:</label>
+                            <select id="id_MAG_function" class="form-control mb-0"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;"></select>
                         </div>
                     </div>
                 </div>

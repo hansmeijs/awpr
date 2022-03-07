@@ -775,7 +775,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function HandleSbrExamtype(el_select) {
         console.log("=== HandleSbrExamtype");
         //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
-        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exm"
+        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exemp"
         setting_dict.sel_examtype = el_select.value;
 
 // ---  upload new setting

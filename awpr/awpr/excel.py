@@ -295,12 +295,13 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
                                 subj_nondel_list = row.get('subj_nondel', [])
                                 if subj_nondel_list and field_name in subj_nondel_list:
-                                    value = 'o'
-
-                                subj_del_list = row.get('subj_del', [])
-                                if subj_del_list and field_name in subj_del_list:
                                     value = 'x'
-                                    exc_format = ex1_formats['row_align_center_red']
+                                    # PR2022-03-05 tobedeleted is deprecated. Was:
+                                    #value = 'o'
+                                #subj_del_list = row.get('subj_del', [])
+                                #if subj_del_list and field_name in subj_del_list:
+                                #    value = 'x'
+                                #    exc_format = ex1_formats['row_align_center_red']
                             else:
                                 value = row.get(field_name, '')
                             sheet.write(row_index, i, value, exc_format)

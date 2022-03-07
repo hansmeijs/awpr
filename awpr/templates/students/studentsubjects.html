@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import220227.js' %}"></script>
-    <script src="{% static 'js/studentsubjects220303.js' %}"></script>
+    <script src="{% static 'js/import220306.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220306.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -110,21 +110,17 @@
 
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_studsubj" class="btn btn-secondary ">{% trans 'Subjects' %}</button>
-                <button data-btn="btn_exemption" class="btn btn-secondary">{% trans 'Exemption' %}</button>
-
-                {% if sr_allowed %}
-                    <button data-btn="btn_sr" class="btn btn-secondary">{% trans 'Re-examination school exam' %}</button>
-                {% endif %}
+                <button data-btn="btn_exem" class="btn btn-secondary ">{% trans 'Exemptions' %}</button>
+                <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
                 {% if not no_centralexam %}
-                    <button data-btn="btn_reex" class="btn btn-secondary">{% trans 'Re-examination' %}</button>
+                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
                     {% if not no_thirdperiod %}
-                        <button data-btn="btn_reex03" class="btn btn-secondary">{% trans 'Re-exam 3rd period' %}</button>
+                        <button data-btn="btn_reex03" class="btn btn-secondary ">{% trans 'Third exam period' %}</button>
                     {% endif %}
                 {% endif %}
                 <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof of knowledge' %}</button>
             </div>
-    <!-- end BUTTON GROUP -->
+
     <!-- END OF CONTENT HEADER - LOADER -->
 
     <!-- CONTENT BODY -->

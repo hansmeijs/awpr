@@ -3,7 +3,7 @@
 // PR2021-07-23  declare variables outside function to make them global variables
 
 // selected_btn is also used in t_MCOL_Open
-let selected_btn = "btn_studsubj";
+let selected_btn = "btn_ep_01";
 
 let permit_dict = {};
 let setting_dict = {};
@@ -103,31 +103,24 @@ document.addEventListener('DOMContentLoaded', function() {
     columns_tobe_hidden.all = {
         fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber", "Leerweg", "Sector", "Cluster", "Subject"]};
-    columns_tobe_hidden.btn_studsubj = {
+    columns_tobe_hidden.btn_ep_01 = {
         fields: ["sjtp_abbrev", "subj_status"],
         captions: ["Character", "Approved"]}
-    //columns_tobe_hidden.btn_exemption = {
+    //columns_tobe_hidden.btn_exem = {
     //    fields: ["exemption_year"],
     //    captions: ["Exemption_year"]}
 
 // --- get field_settings
     const field_settings = {
-        btn_studsubj: {field_caption: ["", "subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Character",  "",
-                                "Exemption", "", "Re_examination", "", "Re_exam_3rd_2lns", "",
-                                "Proof_of_knowledge_2lns", "", ""],
+        btn_ep_01: {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
+                                "Abbreviation_twolines", "Subject", "Character",  ""],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "sjtp_abbrev", "subj_status",
                                 ],
-                    field_tags: ["div", "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div", "div", "div",
-                                "div", "div", "div"],
-
-                    filter_tags: ["", "toggle", "text", "text",  "text",  "text",
-                                "text", "text", "text", "multitoggle",
-                                 "toggle", "text", "toggle", "text", "toggle", "text", "text",
-                                 "toggle", "toggle", "toggle"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                                "div", "div", "div", "div"],
+                    filter_tags: ["", "toggle", "text", "text",  "text",  "text", "text",
+                                "text", "text", "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "075",
                                     "075", "180","090", "032",
                                     "090", "032", "090", "032", "090", "032",
@@ -138,47 +131,47 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "c", "c"]},
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
-        btn_exemption: {field_caption: ["subj_error", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
+        btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Exemption"],  // "Exemption_year_twolines"],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_exemption"], //"exemption_year"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div"], //"div"],
-                    filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle"], //"text"],
-                    field_width:  ["020", "075", "180", "075", "075", "075", "075", "180", "120"], //"120"],
-                    field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c"]}, //"c"]},
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"], //"div"],
+                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle"], //"text"],
+                    field_width:  ["020", "020", "075", "180", "075", "075", "075", "075", "180", "120"], //"120"],
+                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c"]}, //"c"]},
 
-        btn_sr:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
+        btn_sr:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_schoolexam_2lns", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_sr", "sr_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
-                    field_width:  ["020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
-        btn_reex:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+        btn_reex:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_examination", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_reex", "reex_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
-                    field_width:  ["020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
-        btn_reex03:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+        btn_reex03:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_reex03", "reex03_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
-                    field_width:  ["020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
-        btn_pok:  {field_caption: ["subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+        btn_pok:  {field_caption: ["", "subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
-                    field_names: ["subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "pok_validthru:", "pok_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "multitoggle"],
-                    field_width:  ["020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         };
 
         const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -528,7 +521,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("setting_dict" in response) {
 
-        console.log("response.setting_dict.sel_sector_abbrev: ", response.setting_dict.sel_sector_abbrev)
                     setting_dict = response.setting_dict;
                     setting_dict.skip_download_multiple_occurrences = false;
 
@@ -550,7 +542,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     selected.student_pk = (setting_dict.sel_student_pk) ? setting_dict.sel_student_pk : null;
                     selected.student_name = (setting_dict.sel_student_name) ? setting_dict.sel_student_name : null;
-
 
 // ---  check for multiple occurrences when btn = exemption, only once
                     if(!setting_dict.skip_download_multiple_occurrences){
@@ -674,16 +665,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!data_btn) {data_btn = selected_btn};
 
 // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
-        const btns_allowed = ["btn_student", "btn_exemption", "btn_sr", "btn_reex", "btn_reex03", "btn_pok"];
-        if (!setting_dict.sr_allowed) {b_remove_item_from_array(btns_allowed, "btn_sr")};
-        if (setting_dict.no_centralexam) {b_remove_item_from_array(btns_allowed, "btn_reex")};
-        if (setting_dict.no_centralexam) {b_remove_item_from_array(btns_allowed, "btn_reex03")};
-        if (setting_dict.no_thirdperiod) {b_remove_item_from_array(btns_allowed, "btn_reex03")};
-
+        const btns_allowed = ["btn_exem", "btn_ep_01", "btn_reex", "btn_reex03", "btn_pok"];
         if (data_btn && btns_allowed.includes(data_btn)) {
             selected_btn = data_btn;
         } else {
-            selected_btn = "btn_studsubj";
+            selected_btn = "btn_ep_01";
         };
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
@@ -779,18 +765,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if(data_rows && data_rows.length){
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
                 const map_id = data_dict.mapid;
-
-        console.log( "     data_dict", data_dict);
-        console.log( "     data_dict.cluster_id", data_dict.cluster_id);
-        console.log( "     setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
-                const show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
+                const bis_exam = data_dict.bis_exam;
+                // when exemption: only show students with bis_exam
+                 const show_row = ((selected_btn === "btn_exem" && data_dict.bis_exam) || (selected_btn !== "btn_exem")) &&
+                                (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
                                 (!setting_dict.sel_sctbase_pk || data_dict.sctbase_id === setting_dict.sel_sctbase_pk) &&
                                 (!setting_dict.sel_student_pk || data_dict.stud_id === setting_dict.sel_student_pk) &&
                                 (!setting_dict.sel_cluster_pk || data_dict.cluster_id === setting_dict.sel_cluster_pk) &&
                                 (!setting_dict.sel_subject_pk || data_dict.subj_id === setting_dict.sel_subject_pk);
 
                 if (show_row){
-        console.log( ">>>>>>> show_row", show_row);
                     CreateTblRow(tblName, field_setting, map_id, data_dict, col_hidden)
                 };
           };
@@ -847,10 +831,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             //const class_str = (permit_dict.permit_read_note) ? "note_0_1" : "note_0_0"
                             el_header.classList.add("note_0_1")
 
-                        } else if(field_name === "subj_error"){
+                       // } else if(field_name === "subj_error"){
                              // dont show note icon when user has no permit_read_note
                             //const class_str = (permit_dict.permit_read_note) ? "note_0_1" : "note_0_0"
-                            el_header.classList.add("note_0_0")
+                       //     el_header.classList.add("note_0_0")
                         } else {
 // --- add innerText to el_div
                             if(field_caption) {el_header.innerText = field_caption};
@@ -871,7 +855,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- add EventListener to el_filter
                     if (filter_tag === "text") {
                         el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
-                    } else if (["toggle", "multitoggle"].includes(filter_tag)) {
+                    } else if (filter_tag === "toggle") {
                         // add EventListener for icon to th_filter, not el_filter
                         th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
                         th_filter.classList.add("pointer_show", "awp_filter_toggle");
@@ -887,7 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_filter.setAttribute("autocomplete", "off");
                         el_filter.setAttribute("ondragstart", "return false;");
                         el_filter.setAttribute("ondrop", "return false;");
-                    } else if (["toggle", "multitoggle"].includes(filter_tag)) {
+                    } else if (filter_tag === "toggle") {
                         // default empty icon necessary to set pointer_show
                         append_background_class(el_filter,"tickmark_0_0");
                     }
@@ -1234,10 +1218,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if(!is_hidden){
             if (mapped_field === "lvl_abbrev") {
                 is_hidden = (!setting_dict.sel_dep_level_req);
-            } else if (mapped_field === "subj_error") {
-                is_hidden = (selected_btn !== "btn_studsubj");
+            //} else if (mapped_field === "subj_error") {
+            //    is_hidden = (selected_btn !== "btn_ep_01");
             } else if (mapped_field === "has_exemption") {
-                is_hidden = (selected_btn !== "btn_exemption");
+                is_hidden = (selected_btn !== "btn_exem");
             } else if (mapped_field === "has_reex") {
                 is_hidden = (selected_btn !== "btn_reex");
             } else if (mapped_field === "has_reex03") {
@@ -1527,6 +1511,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         RefreshDataRows("studsubj", response.updated_studsubj_rows, studsubj_rows, true)  // true = update
                     }
 
+                    if ("updated_cluster_rows" in response) {
+                        RefreshDataRows("cluster", response.updated_cluster_rows, cluster_rows, true)  // true = update
+                    }
                     add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
                     if ("studsubj_validate_html" in response) {
                          MSTUDSUBJ_Response(response)
@@ -2866,7 +2853,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         !data_dict.tobedeleted && !data_dict.st_tobedeleted){
                     mod_MCL_dict.student_list.push({
                         studsubj_pk: data_dict.studsubj_id,
-                        sortby: data_dict.fullname,  // key must have name 'sortby', b_comparator_sortby sorts by this field
+                        fullname: data_dict.fullname,  // key must have name 'sortby', b_comparator_sortby sorts by this field
+                        sortby: ([data_dict.lastname, data_dict.firstname, data_dict.prefix].join(" ")),  // key must have name 'sortby', b_comparator_sortby sorts by this field
                         subject_pk: data_dict.subj_id,
                         subject_code: data_dict.subj_code,
                         cluster_pk: data_dict.cluster_id,
@@ -2940,7 +2928,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 add_hover(tblRow)
     // - insert td into tblRow
                 const td = tblRow.insertCell(-1);
-                td.innerText = student_dict.sortby;
+                //td.innerText = student_dict.sortby;
+                td.innerText = student_dict.fullname;
                 td.classList.add("tw_240");
     // - insert td into tblRow
                 const td_temp = tblRow.insertCell(-1);
@@ -4138,6 +4127,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         console.log(" --- RefreshDataRows  ---");
         console.log("update_rows", update_rows);
         console.log("is_update", is_update);
+        console.log("tblName", tblName);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
@@ -4149,12 +4139,15 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
             // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
            data_rows = [];
-        }
-        Filter_TableRows()
+        };
+        // clusters are not table rows, skip Filter_TableRows
+        if (tblName !== "cluster"){
+            Filter_TableRows();
+        };
 
     }  //  RefreshDataRows
 
-//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
         console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
@@ -4167,25 +4160,27 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
-
-// ---  get list of hidden columns
-            // copy col_hidden from mod_MCOL_dict.cols_hidden
-            const col_hidden = [];
-            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
-
-// ---  get list of columns that are not updated because of errors
             const error_columns = [];
-            if (update_dict.err_fields){
-                // replace field 'subj_auth2by' by 'subj_status'
-                for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
-                    if (err_field && err_field.includes("_auth")){
-                        const arr = err_field.split("_");
-                        err_field = arr[0] + "_status";
+
+    // clusters are not table rows, skip col_hidden and error_columns when tblName = "cluster"
+            if (tblName !== "cluster"){
+    // ---  get list of hidden columns
+                // copy col_hidden from mod_MCOL_dict.cols_hidden
+                const col_hidden = [];
+                b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+
+    // ---  get list of columns that are not updated because of errors
+                if (update_dict.err_fields){
+                    // replace field 'subj_auth2by' by 'subj_status'
+                    for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
+                        if (err_field && err_field.includes("_auth")){
+                            const arr = err_field.split("_");
+                            err_field = arr[0] + "_status";
+                        };
+                        error_columns.push(err_field);
                     };
-                    error_columns.push(err_field);
                 };
             };
-
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
             //arr.splice(index, 0, item); will insert item into arr at the specified index
@@ -4201,18 +4196,21 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
 
-    // ---  create row in table., insert in alphabetical order
-                const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden)
+    // clusters are not table rows, skip Filter_TableRows when tblName = "cluster"
+                if (tblName !== "cluster"){
+        // ---  create row in table., insert in alphabetical order
+                    const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden)
 
-                if(new_tblRow){
-    // --- add1 to item_count and show total in sidebar
-                    selected.item_count += 1;
-    // ---  scrollIntoView,
-                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+                    if(new_tblRow){
+        // --- add1 to item_count and show total in sidebar
+                        selected.item_count += 1;
+        // ---  scrollIntoView,
+                        new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
 
-    // ---  make new row green for 2 seconds,
-                    ShowOkElement(new_tblRow);
-                }
+        // ---  make new row green for 2 seconds,
+                        ShowOkElement(new_tblRow);
+                    };
+                };
             } else {
 
 // +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
@@ -4404,7 +4402,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         }
     }; // function HandleFilterKeyup
 
-//========= HandleFilterToggle  =============== PR2021-08-21
+//========= HandleFilterToggle  =============== PR2021-08-21 PR2022-03-05
     function HandleFilterToggle(el_input) {
         console.log( "===== HandleFilterToggle  ========= ");
 
@@ -4429,14 +4427,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         console.log( "filter_value", field_name);
 
         let new_value = "0", icon_class = "tickmark_0_0"
-        if(filter_tag === "toggle") {
-            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
-    // - toggle filter value
-            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
-    // - get new icon_class
-            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
-        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
-        } else if (field_name === "subj_error"){
+        if (field_name === "subj_error"){
 // - toggle filter value
             new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
 // - get new icon_class
@@ -4460,6 +4451,17 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                             (new_value === "2") ? "diamond_2_1" :
                             (new_value === "1") ? "diamond_0_0" : "tickmark_0_0";
         console.log( "......icon_class", icon_class);
+
+        } else if (filter_tag === "toggle") {
+            // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+    // - toggle filter value
+            new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+    // - get new icon_class
+            icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+
+
+
         }
         console.log( ">>>>>>>> col_index", col_index);
     // - put new filter value in filter_dict
@@ -4952,11 +4954,11 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
 //========= DownloadGradeStatusAndIcons ============= PR2021-07-24
     function DownloadValidationStatusNotes() {
-        //console.log( " ==== DownloadGradeStatusAndIcons ====");
+        console.log( " ==== DownloadGradeStatusAndIcons ====");
         const url_str = urls.url_studsubj_validate_all;
         const upload_dict = {studsubj_validate: {get: true}};
         // TODO enable this
-        //UploadChanges(upload_dict, url_str);
+        UploadChanges(upload_dict, url_str);
      } // DownloadGradeStatusAndIcons
 
 //========= DownloadMultipleOccurrences ============= PR2021-09-05

@@ -1,7 +1,7 @@
 import json
 
 from django.db import connection
-
+from accounts import views as acc_view
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
@@ -483,7 +483,7 @@ def create_department_rows(examyear):
     return rows
 # --- end of create_department_rows
 
-def create_level_rows(examyear, depbase, cur_dep_only):
+def create_level_rows(examyear, depbase, cur_dep_only, request):
     # --- create rows of all levels of this examyear / country PR2020-12-11 PR2021-03-08  PR2021-06-24
     logging_on = False  #s.LOGGING_ON
     if logging_on:
@@ -531,6 +531,10 @@ def create_level_rows(examyear, depbase, cur_dep_only):
                 sql_list.append("AND CONCAT(';', lvl.depbases::TEXT, ';') LIKE %(depbase_pk)s::TEXT")
             else:
                 sql_list.append("AND FALSE")
+
+        acc_view.set_allowed_lvlbase_filter(sql_keys, sql_list, request)
+
+
 
         sql_list.append("ORDER BY lvl.id")
 

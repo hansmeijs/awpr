@@ -1391,12 +1391,12 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
 
 //=========  MIMP_HighlightAndDisableButtons  ================ PR2019-05-25 PR2021-04-21
     function MIMP_HighlightAndDisableButtons() {
-        //console.log("=== MIMP_HighlightAndDisableButtons ===");
+        console.log("=== MIMP_HighlightAndDisableButtons ===");
         // el_MIMP_btn_prev and el_MIMP_btn_next don't exists when user has no permission
 
-    //console.log("mimp.sel_btn_index", mimp.sel_btn_index);
+    console.log("mimp.sel_btn_index", mimp.sel_btn_index);
         const is_btn_grade = (mimp.min_btn_index === 0);
-    //console.log("is_btn_grade", is_btn_grade);
+
 
         const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
         const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
@@ -1432,7 +1432,7 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         const el_MIMP_step_text = document.getElementById("id_MIMP_step_text")
         el_MIMP_step_text.innerText = null;
 
-    //console.log("mimp.is_import_grade", mimp.is_import_grade);
+    console.log("mimp.is_import_grade", mimp.is_import_grade);
 
 // ---  disable selected button
         let step_text = null;
@@ -1468,7 +1468,6 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                     btn.disabled = idx_6_disabled;
                     step_text += loc.Upload_data;
                 }
-    //console.log("step_text", step_text);
 // ---  highlight selected button
                 const is_selected = (data_btn_index === mimp.sel_btn_index);
                 add_or_remove_class (btn, cls_btn_selected, is_selected);
@@ -1486,22 +1485,20 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         //add_or_remove_class (el_MIMP_msg_linkrequired, cls_hide, required_identifiers_are_linked);
 
 // ---  focus on next element
-        if (mimp.sel_btn === "btn_step1"){
-            if (!mimp.sel_file) {
-                if(el_filedialog){ el_filedialog.focus()};
-            } else if (!mimp.curWorksheetName) {
-                if(el_filedialog){ el_worksheet_list.focus()};
-            } else {
-                if(el_filedialog){ el_MIMP_btn_next.focus()};
-            }
-        } else if(mimp.sel_btn === "btn_step4"){
-            //const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-            //const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-            //if(el_MIMP_btn_test){ el_MIMP_btn_test.focus()};
-        }
+        let id_focus = null;
+        if (mimp.sel_btn_index === 1){
+            id_focus = (!mimp.sel_file) ? "id_MIMP_btn_filedialog" : (!mimp.curWorksheetName) ? "id_MIMP_worksheetlist" : "id_MIMP_btn_next";
+        } else if (mimp.sel_btn_index === 5){
+            id_focus = (mimp.is_tested) ? "id_MIMP_btn_next" : "id_MIMP_btn_test";
+
+        } else if (mimp.sel_btn_index === 6){
+            id_focus = (mimp.is_tested) ? "id_MIMP_btn_cancel" : "id_MIMP_btn_upload";
+        };
+        if (id_focus) { set_focus_on_id_with_timeout(id_focus, 150)};
+
         const el_MIMP_btn_cancel = document.getElementById("id_MIMP_btn_cancel");
         if(el_MIMP_btn_cancel){
-            el_MIMP_btn_cancel.innerText = (mimp.sel_btn === "btn_step5") ? mimp_loc.Close : mimp_loc.Cancel;
+            el_MIMP_btn_cancel.innerText = (mimp.sel_btn_index === 6) ? mimp_loc.Close : mimp_loc.Cancel;
         };
     }  // MIMP_HighlightAndDisableButtons
 
@@ -2463,7 +2460,8 @@ if (show_console){
         console.log("upload_dict", upload_dict);
 
 // --- reset logfile
-        mimp_logfile = []
+        mimp_logfile = [];
+        mimp.is_tested = false;
 
         const parameters = {"upload": JSON.stringify (upload_dict)};
         $.ajax({
@@ -2497,13 +2495,14 @@ if (show_console){
                 if("updated_user_rows" in response){
                     RefreshDataRowsAfterUpload(response);
                 };
-                if("result" in response){
-                    ResponseResult(response);
-                };
 
 //--------- print log file
                 if("log_list" in response){
+                    // log_list must come before result
                     mimp_logfile = response.log_list;
+                };
+                if("result" in response){
+                    ResponseResult(response);
                 };
             },
             error: function (xhr, msg) {

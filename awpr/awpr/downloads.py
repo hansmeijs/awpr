@@ -144,7 +144,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- levels
                 if datalist_request.get('level_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('level_rows', 'cur_dep_only'), False)
-                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear, sel_depbase, cur_dep_only)
+                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear, sel_depbase, cur_dep_only, request)
 # ----- sectors
                 if datalist_request.get('sector_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('sector_rows', 'cur_dep_only'), False)
@@ -568,7 +568,6 @@ def download_setting(request_item_setting, messages, user_lang, request):
 
 # - add info to setting_dict, will be sent back to client
     setting_dict[c.KEY_SEL_EXAMPERIOD] = sel_examperiod
-    setting_dict['sel_examperiod_caption'] = c.get_examperiod_caption(sel_examperiod)
 
 # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_examperiod_save:
@@ -599,10 +598,77 @@ def download_setting(request_item_setting, messages, user_lang, request):
         selected_pk_dict[c.KEY_SEL_EXAMTYPE] = sel_examtype
         selected_pk_dict_has_changed = True
 
-# ===== DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, ======================= PR2021-01-23 PR2021-03-14 PR2021-08-13
+# ===== AUTH INDEX =======================
+    if logging_on:
+        logger.debug('..... AUTH INDEX .....')
+
+# - get all auth index from usergroup_list
+    auth_index_list = []
+    sel_auth_index = None
+    if usergroup_list:
+        for ug in usergroup_list:
+            if 'auth' in ug:
+                auth_index_list.append(int(ug[4:]))
+    if logging_on:
+        logger.debug('usergroup_list: ' + str(usergroup_list))
+        logger.debug('auth_index_list: ' + str(auth_index_list))
+
+    if auth_index_list:
+        if len(auth_index_list) == 1:
+            # when user has only 1 auth: make it selected
+            sel_auth_index = auth_index_list[0]
+        else:
+# - get selected auth_index from request_item_setting
+            request_item_auth = request_item_setting.get(c.KEY_SEL_AUTH_INDEX)
+            if logging_on:
+                logger.debug('request_item_auth: ' + str(request_item_auth) + ' ' + str(type(request_item_auth)))
+# - make it the selected auth if in auth_list
+            if request_item_auth and request_item_auth in auth_index_list:
+                sel_auth_index = request_item_auth
+                if logging_on:
+                    logger.debug('make request_item_auth the selected auth: ' + str(sel_auth_index))
+
+# - get saved_auth_index from Usersetting - saved_auth_index is string!
+    saved_auth_index = None
+    saved_auth_index_str = selected_pk_dict.get(c.KEY_SEL_AUTH_INDEX)
+    if saved_auth_index_str:
+        saved_auth_index = int(saved_auth_index_str)
+    if logging_on:
+        logger.debug('get saved_auth_index: ' + str(saved_auth_index) + ' ' + str(type(saved_auth_index)))
+        logger.debug('sel_auth_index: ' + str(sel_auth_index) + ' ' + str(type(sel_auth_index)))
+
+# - make saved_auth_index the selected index if sel_auth_index is None
+    if sel_auth_index is None:
+        if saved_auth_index and saved_auth_index in auth_index_list:
+            sel_auth_index = saved_auth_index
+            if logging_on:
+                logger.debug('make saved_auth_index the selected index: ' + str(sel_auth_index))
+
+# - get first_auth_index if sel_auth_index is still None
+    if sel_auth_index is None:
+        if auth_index_list:
+            sel_auth_index = auth_index_list[0]
+            if logging_on:
+                logger.debug('get first_auth_index if still None: ' + str(sel_auth_index))
+
+# - add info to setting_dict, will be sent back to client
+    if sel_auth_index:
+        setting_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
+        setting_dict['sel_auth_function'] = c.USERGROUP_CAPTION.get('auth' + str(sel_auth_index))
+
+ # save sel_auth_index if it is different from saved_auth_index
+    if sel_auth_index != saved_auth_index:
+        selected_pk_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
+        selected_pk_dict_has_changed = True
 
     if logging_on:
-        logger.debug('++++++++++++  DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT  ++++++++++++++++++++++++')
+        logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+
+# ===== DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, =======================
+    # PR2021-01-23 PR2021-03-14 PR2021-08-13 PR2022-03-06
+
+    if logging_on:
+        logger.debug('++++++++++++  DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, CLUSTER ++++++++++++++++++++++++')
         logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
 
     for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,
@@ -701,6 +767,12 @@ def download_setting(request_item_setting, messages, user_lang, request):
                     base_id=saved_pk_int)
                 if sector:
                     setting_dict['sel_sector_abbrev'] = sector.abbrev
+
+            elif key_str == c.KEY_SEL_CLUSTER_PK:
+                cluster = subj_mod.Cluster.objects.get_or_none(
+                    id=saved_pk_int)
+                if cluster:
+                    setting_dict['sel_cluster_name'] = cluster.name
 
             elif key_str == c.KEY_SEL_SCHEME_PK:
                 scheme = subj_mod.Scheme.objects.get_or_none(pk=saved_pk_int)

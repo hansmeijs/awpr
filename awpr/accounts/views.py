@@ -641,7 +641,7 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -2013,7 +2013,7 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
 # - end of set_usersetting_dict
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2032,7 +2032,7 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
 
 def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19 PR2021-12-02
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
         logger.debug('key_str: ' + str(key_str))
@@ -2085,7 +2085,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
                 # when subkey = cols_hidden: saved_subdict_or_value is a dict
                 saved_subdict_or_value = af.get_dict_value(saved_settings_dict, (subkey,))
                 if logging_on:
-                    logger.debug('???? saved_subdict_or_value: ' + str(saved_subdict_or_value) + ' ' + str(type(saved_subdict_or_value)))
+                    logger.debug('saved_subdict_or_value: ' + str(saved_subdict_or_value) + ' ' + str(type(saved_subdict_or_value)))
 
                 # PR2021-12-02 debug: don't use 'saved_subdict_or_value is None', because get_dict_value returns {}, not None
                 if not saved_subdict_or_value:
@@ -2326,3 +2326,44 @@ def set_allowed_subjbase_filter(sql_keys, sql_list, subjbase_pk, request, table=
     elif filter_none:
         sql_list.append("AND FALSE")
 # - end of set_allowed_subjbase_filter
+
+
+def set_allowed_lvlbase_filter(sql_keys, sql_list, request):
+    # PR2022-03-04
+    #   if allowed_levelbases exists:
+    #       --> filter on lvlbase_pk's in array
+    #   else:
+    #       --> no filter
+
+    logging_on = False  # s.LOGGING_ON
+
+    if logging_on:
+        logger.debug('----- set_allowed_lvlbase_filter ----- ')
+
+    filter_single_pk = None
+    filter_pk_arr = None
+    filter_none = False
+
+    allowed_levelbase_arr = request.user.allowed_levelbases.split(';') if request.user.allowed_levelbases else []
+
+    if allowed_levelbase_arr:
+        if len(allowed_levelbase_arr) == 1:
+            filter_single_pk = allowed_levelbase_arr[0]
+        else:
+            filter_pk_arr = allowed_levelbase_arr
+
+    if logging_on:
+        logger.debug('allowed_levelbase_arr: ' + str(allowed_levelbase_arr) + ' ' + str(type(allowed_levelbase_arr)))
+        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+
+    if filter_single_pk:
+        sql_keys['lvl_pk'] = filter_single_pk
+        sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
+    elif filter_pk_arr:
+        sql_keys['lvl_arr'] = filter_pk_arr
+        sql_list.append("AND lvl.base_id IN ( SELECT UNNEST(%(lvl_arr)s::INT[]) )")
+    elif filter_none:
+        sql_list.append("AND FALSE")
+# - end of set_allowed_lvlbase_filter

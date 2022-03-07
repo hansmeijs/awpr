@@ -26,9 +26,9 @@ from awpr import functions as af
 from awpr import downloads as dl
 from awpr import library as awpr_lib
 
-from grades import views as grd_vw
+from grades import views as grd_view
 from grades import validators as grad_val
-from  grades import calc_results as calc_res
+from grades import calc_results as calc_res
 
 from subjects import models as subj_mod
 from subjects import views as subj_vw
@@ -654,7 +654,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 # +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
                             idnumber_list, examnumber_list = [], []
-                            update_student_instance(student, upload_dict, idnumber_list, examnumber_list, messages, error_list, request, False)  # skip_save = False
+                            update_student_instance(student, sel_examyear, sel_school, sel_department, upload_dict, idnumber_list, examnumber_list, messages, error_list, request, False)  # skip_save = False
 
 # - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
                     if not deleted_ok:
@@ -3048,7 +3048,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                             recalc_grade_firstperiod = True
                     if recalc_grade_firstperiod:
         # recalculate sesr, pece, final in all grade_periods
-                        grd_vw.recalc_finalgrade_in_grade_and_save(grade_firstperiod, si_dict)
+                        grd_view.recalc_finalgrade_in_grade_and_save(grade_firstperiod, si_dict)
                         grade_firstperiod.save()
 
         # - count 'exemption', 'sr', 'reex', 'reex03' records of this student an save cont in student
@@ -3190,10 +3190,10 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 # - recalculate gl_sesr, gl_pece, gl_final, gl_use_exem in studsubj record
                     if grade_instance.examperiod == c.EXAMPERIOD_FIRST:
                         # when first examperiod: also update and save grades in reex, reex03, if exist
-                        grd_vw.recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
+                        grd_view.recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
 
                 sql_studsubj_list, sql_student_list = \
-                    grd_vw.update_studsubj_and_recalc_student_result(
+                    grd_view.update_studsubj_and_recalc_student_result(
                         sel_examyear, sel_school, sel_department, studsubj_instance.student)
                 if sql_studsubj_list:
                     calc_res.save_studsubj_batch(sql_studsubj_list)
@@ -3690,7 +3690,7 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
 #======================
 
-                    grade_note_icon_rows = grd_vw.create_grade_note_icon_rows(
+                    grade_note_icon_rows = grd_view.create_grade_note_icon_rows(
                         sel_examyear_pk=sel_examyear.pk,
                         sel_schoolbase_pk=sel_school.base_id,
                         sel_depbase_pk=sel_department.base_id,
@@ -3942,7 +3942,7 @@ def create_student(school, department, upload_dict, messages, error_list, reques
 # - end of create_student
 
 #######################################################
-def update_student_instance(instance, upload_dict, idnumber_list, examnumber_list, msg_list, error_list, request, skip_save):
+def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict, idnumber_list, examnumber_list, msg_list, error_list, request, skip_save):
     # --- update existing and new instance PR2019-06-06 PR2021-07-19
 
     logging_on = s.LOGGING_ON
@@ -3956,16 +3956,18 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
     changes_are_saved = False
     save_error = False
     field_error = False
-
+    recalc_studsubj_stud_result = False
     if instance:
         student_name = ' '.join([instance.firstname, instance.lastname])
 
         save_changes = False
         update_scheme = False
         recalc_regnumber = False
+        remove_exemptions = False
 
         for field, new_value in upload_dict.items():
-            try:
+            #try:
+            if True:
     # - save changes in fields 'lastname', 'firstname'
                 if field in ['lastname', 'firstname']:
                     saved_value = getattr(instance, field)
@@ -4171,7 +4173,41 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                             recalc_regnumber = True
 
     # - save changes in field 'bis_exam'
-                elif field in ('bis_exam', 'has_dyslexie', 'iseveningstudent', 'islexstudent', 'partial_exam'):
+                elif field == 'bis_exam':
+                    saved_value = getattr(instance, field)
+                    if new_value is None:
+                        new_value = False
+                    # PR2021-08-29 debug: when importing value can be 'x'. Convert to True when not a boolean
+                    elif not isinstance(new_value, bool):
+                        new_value = True
+
+                    if new_value != saved_value:
+                        # check if student has publsihed grades when removing bis_exam
+                        has_published_exemptions = False
+                        if not new_value:
+                            has_errorNIU, has_published = stud_val.validate_submitted_locked_grades(
+                                student_pk=instance.pk,
+                                examperiod=c.EXAMPERIOD_EXEMPTION
+                            )
+                            if has_published:
+                                has_published_exemptions = True
+                                field_error = True
+                                err_txt1 = str(_('This candidate has submitted exemptions.'))
+                                err_txt2 = str(_('The bis-exam cannot be removed.'))
+                                error_list.append(' '.join((err_txt1, err_txt2)))
+                                msg_list.append({'class': "border_bg_warning", 'msg_html': '<br>'.join((err_txt1, err_txt2))})
+
+                            if logging_on:
+                                logger.debug('saved ' + str(field) + ': ' + str(saved_value) + ' ' + str(type(saved_value)))
+                                logger.debug('new   ' + str(field) + ': ' + str(new_value) + ' ' + str(type(new_value)))
+
+                        if not has_published_exemptions:
+                            setattr(instance, field, new_value)
+                            save_changes = True
+                            if new_value == False:
+                                remove_exemptions = True
+    # - save changes in other fields
+                elif field in ('has_dyslexie', 'iseveningstudent', 'islexstudent', 'partial_exam'):
                     saved_value = getattr(instance, field)
                     if new_value is None:
                         new_value = False
@@ -4187,9 +4223,9 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
                         setattr(instance, field, new_value)
                         save_changes = True
 
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
-                logger.error('field: ' + str(field) + ' new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+            #except Exception as e:
+            #    logger.error(getattr(e, 'message', str(e)))
+            #    logger.error('field: ' + str(field) + ' new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
 # --- end of for loop ---
 
@@ -4304,12 +4340,133 @@ def update_student_instance(instance, upload_dict, idnumber_list, examnumber_lis
 
                 logger.error(getattr(e, 'message', str(e)))
 
+        if instance and changes_are_saved and remove_exemptions:
+            if logging_on:
+                logger.debug(' --- remove_exemptions --- ')
+            # get exemptions of this student
+            # check for published exemptions already done above.
+            if student_has_exemptions(instance.pk):
+                recalc_studsubj_and_student = delete_exemptions(instance.pk)
+                # TODO recalc_studsubj_and_student
+
+                sql_studsubj_list, sql_student_list = \
+                    grd_view.update_studsubj_and_recalc_student_result(
+                        sel_examyear=sel_examyear,
+                        sel_school=sel_school,
+                        sel_department=sel_department,
+                        student=instance)
+                if sql_studsubj_list:
+                    calc_res.save_studsubj_batch(sql_studsubj_list)
+
+
+                #if recalc_studsubj_and_student:
+                #    calc_res.calc_student_result(examyear, department, student_dict, scheme_dict,
+                #                                 schemeitems_dict, log_list,
+                #                    sql_studsubj_list, sql_student_list)
     if logging_on:
         logger.debug('changes_are_saved: ' + str(changes_are_saved))
         logger.debug('field_error: ' + str(field_error))
         logger.debug('error_list: ' + str(error_list))
     return changes_are_saved, save_error, field_error
 # - end of update_student_instance
+
+
+def student_has_exemptions(student_pk):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --- student_has_exemptions --- ')
+
+    # check if student has exemptions
+
+    has_exemptions = False
+    if student_pk:
+        try:
+            # check if exemptions exist
+            sql_keys = {'stud_id': student_pk}
+            sql_list = [
+                "SELECT grd_id",
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                "WHERE studsubj.student_id = %(stud_id)s::INT)",
+                "AND grd.examperiod = ", str(c.EXAMPERIOD_EXEMPTION),
+                "LIMIT 1;"
+            ]
+            sql = ' '.join(sql_list)
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = cursor.fetchall()
+                has_exemptions = len(rows)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return has_exemptions
+
+
+def delete_exemptions(student_pk):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --- delete_exemptions --- ')
+
+    # check if student has exemptions
+    recalc_studsubj_and_student = False
+    if student_pk:
+        try:
+            # check if exemptions exist
+            sql_keys = {'stud_id': student_pk}
+            sql_list = [
+                "DELETE FROM students_grade AS grd",
+                "WHERE grd.examperiod = 4",
+                "AND EXISTS (SELECT * FROM students_studentsubject AS studsubj",
+                "WHERE studsubj.id = grd.studentsubject_id",
+                "AND studsubj.student_id = %(stud_id)s::INT)",
+                "RETURNING grd.id;"
+            ]
+            sql = ' '.join(sql_list)
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                # return list of updated grades, to calculate final grades
+                rows = cursor.fetchall()
+                if len(rows):
+                    recalc_studsubj_and_student = True
+
+                # TODO recalc_studsubj_and_student
+            # remove 'has_exemption' and 'exemption_year' from students_studentsubject
+            sql_list = ["UPDATE students_studentsubject AS studsubj",
+                        "SET has_exemption=False, exemption_year=NULL"
+                        "WHERE studsubj.student_id = %(stud_id)s::INT)",
+                        ]
+            sql = ' '.join(sql_list)
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+
+                for row in cursor.fetchall():
+                    logger.debug('row: ' + str(row))
+
+
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                # return list of updated grades, to calculate final grades
+
+                for row in cursor.fetchall():
+                    logger.debug('row: ' + str(row))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return recalc_studsubj_and_student
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

@@ -436,14 +436,23 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
             logger.debug('row: ' + str(row))
 
             if stud_id not in grade_dict:
-                full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
+                #full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
+                full_name = stud_fnc.get_firstname_prefix_lastname(row.get('lastname'), row.get('firstname'), row.get('prefix'))
 
                 birth_date = row.get('birthdate', '')
                 birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
 
-                birth_country = row.get('birthcountry', '') or ''
-                birth_city = row.get('birthcity') or ''
-                birth_place = ', '.join((birth_city, birth_country))
+                birth_country = row.get('birthcountry')
+                birth_city = row.get('birthcity')
+
+                birth_place = ''
+                if birth_country:
+                    if birth_city:
+                        birth_place = ', '.join((birth_city, birth_country))
+                    else:
+                        birth_place = birth_country
+                elif birth_city:
+                    birth_place = birth_city
 
                 grade_dict[stud_id] = {
                     'country': row.get('country'),

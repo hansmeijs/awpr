@@ -405,12 +405,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 scheme_rows: {cur_dep_only: false},
                 subject_rows: {get: true},
                 schemeitem_rows: {get: true},
-                subjecttype_rows: {cur_dep_only: false},
+                subjecttype_rows: {get: true},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
-                level_rows: {cur_dep_only: false},
-                sector_rows: {cur_dep_only: false}
+                level_rows: {get: true},
+                sector_rows: {get: true}
             };
 
         DatalistDownload(datalist_request);
