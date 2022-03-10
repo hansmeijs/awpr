@@ -802,7 +802,7 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
 
                 if sel_examyear and sel_school and sel_department:
                     # - get text from examyearsetting
-                    settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex2'])
+                    library = awpr_lib.get_library(sel_examyear, ['exform', 'ex2'])
 
                     # +++ create Ex2_xlsx
                     save_to_disk = False
@@ -813,7 +813,7 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
                         examyear=sel_examyear,
                         school=sel_school,
                         department=sel_department,
-                        settings=settings,
+                        library=library,
                         save_to_disk=save_to_disk,
                         request=request,
                         user_lang=user_lang)
@@ -828,7 +828,7 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
 # - end of GradeDownloadEx2View
 
 
-def create_Ex2_xlsx(published_instance, examyear, school, department, settings, save_to_disk, request, user_lang):
+def create_Ex2_xlsx(published_instance, examyear, school, department, library, save_to_disk, request, user_lang):
     # PR2022-02-17
     # called by GradeDownloadEx2View
     logging_on = s.LOGGING_ON
@@ -851,6 +851,9 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
 
     # +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
     ex2_rows_dict, grades_auth_dict = create_ex2_rows_dict(examyear, school, department, save_to_disk, published_instance)
+    if logging_on:
+        logger.debug('ex2_rows_dict: ' + str(ex2_rows_dict))
+        logger.debug('grades_auth_dict: ' + str(grades_auth_dict))
     """
     ex2_rows_dict: {
         6: {'lvl_name': 'Praktisch Basisgerichte Leerweg', 'students': 
@@ -859,9 +862,15 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
                     'grades': {115: '5,5', 133: '4,4', 157: '-', 120: '-', 154: '-', 136: 'v', 114: '5,5', 113: '-', 116: '5,5', 118: '-'}}, 
                 3773: {'idnumber': '2002010704', 'examnumber': '2127', 'classname': 'B4B', 'lvl_abbrev': 'PBL', 'sct_abbrev': 'tech', 'fullname': 'BouwM, Nathan Leon Tadeus ', 
                 'grades': {113: '-', 121: '-', 122: '-', 118: '-', 116: '5,5', 114: '5,5', 153: '5,5', 117: '4,5', 136: 'o', 115: '5,5'}}, 
-
-    grades_auth_dict: {'auth1': [147], 'auth2': [], 
-                    'auth3': {115: [], 133: [], 157: [], 120: [], 154: [], 136: [], 114: [], 113: [], 116: []
+                    
+    grades_auth_dict: {'auth1': ['Monique Beek'], 'auth2': ['Hans2'], 
+                    'auth3': {'Hans Meijs': {121: {'class': ['4A1', '4VA2', '4VA1', '4V3'], 'cluster': []}, 
+                                             136: {'class': ['4A1', '4V1', '4V2', '4VA2'], 'cluster': []}, 
+    file_dir: cur/2022/CUR01/exfiles
+    file_name: Ex2 CUR01 Ancilla Domini Vsbo  2022-03-09 15u24.xlsx             
+                    
+                    
+                    
     """
 
     # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
@@ -885,7 +894,7 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
 
     response = None
 
-    if settings and ex2_rows_dict:
+    if library and ex2_rows_dict:
 
         # PR2021-07-28 changed to file_dir = 'published/'
         # this one gives path: awpmedia / awpmedia / media / private / published
@@ -960,21 +969,21 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
             sheet.set_column(i, i, width)
 
 # --- title row
-        sheet.write(0, 0, settings['minond'], bold_format)
-        sheet.write(1, 0, settings['title'], bold_format)
+        sheet.write(0, 0, library['minond'], bold_format)
+        sheet.write(1, 0, library['title'], bold_format)
 
         lb_rgl01_key = 'lex_lb_rgl01' if school.islexschool else 'eex_lb_rgl01'
         lb_rgl02_key = 'lex_lb_rgl02' if school.islexschool else 'eex_lb_rgl02'
-        sheet.write(2, 0, settings[lb_rgl01_key], bold_format)
-        sheet.write(3, 0, settings[lb_rgl02_key], bold_format)
+        sheet.write(2, 0, library[lb_rgl01_key], bold_format)
+        sheet.write(3, 0, library[lb_rgl02_key], bold_format)
 
-        sheet.write(5, 0, settings['submit_before'], bold_format)
+        sheet.write(5, 0, library['submit_before'], bold_format)
         lb_ex_key = 'lex' if school.islexschool else 'eex'
-        lb_ex_key_str = ' '.join((settings[lb_ex_key], department.abbrev, settings['in_examyear'], examyear_str))
+        lb_ex_key_str = ' '.join((library[lb_ex_key], department.abbrev, library['in_examyear'], examyear_str))
 
         sheet.write(6, 0, lb_ex_key_str, bold_format)
         lb_school_key = 'school' if school.islexschool else 'school'
-        sheet.write(7, 0, settings[lb_school_key], bold_format)
+        sheet.write(7, 0, library[lb_school_key], bold_format)
         sheet.write(7, 2, school.name, bold_blue)
 
 # - put Ex2 in right upper corner
@@ -1053,14 +1062,16 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
         row_index += 2
         first_footnote_row = row_index
         for i in range(1, 9):
-            if school.islexschool and 'lex_footnote0' + str(i) in settings:
+            if school.islexschool and 'lex_footnote0' + str(i) in library:
                 key = 'lex_footnote0' + str(i)
             else:
                 key = 'footnote0' + str(i)
-            if key in settings:
-                value = settings.get(key)
+            if key in library:
+                value = library.get(key)
                 if value:
                     sheet.write(row_index + i - 1, 0, value, bold_format)
+
+
 
 # ---  digitally signed by
         auth_row = first_footnote_row
@@ -1069,7 +1080,10 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
             auth_row += 2
      # - President
             sheet.write(auth_row, first_subject_column, str(_('President')) + ':')
-            auth1_list = ex2_rows_dict.get('auth1')
+            auth1_list = grades_auth_dict.get('auth1')
+            if logging_on:
+                logger.debug('auth1_list: ' + str(auth1_list))
+
             if auth1_list:
                 for auth1_pk in auth1_list:
                     auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
@@ -1081,7 +1095,10 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
             auth_row += 1
     # - Secretary
             sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
-            auth2_list = ex2_rows_dict.get('auth2')
+            auth2_list = grades_auth_dict.get('auth2')
+            if logging_on:
+                logger.debug('auth2_list: ' + str(auth2_list))
+
             if auth2_list:
                 for auth2_pk in auth2_list:
                     auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
@@ -1110,24 +1127,24 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, settings, 
             sheet.set_column(i, i, width)
 
 # --- title row
-        sheet.write(0, 0, settings['minond'], bold_format)
-        sheet.write(1, 0, settings['title'], bold_format)
+        sheet.write(0, 0, library['minond'], bold_format)
+        sheet.write(1, 0, library['title'], bold_format)
 
         lb_ex_key = 'lex' if school.islexschool else 'eex'
-        lb_ex_key_str = ' '.join((settings[lb_ex_key], department.abbrev, settings['in_examyear'], examyear_str))
+        lb_ex_key_str = ' '.join((library[lb_ex_key], department.abbrev, library['in_examyear'], examyear_str))
         sheet.write(3, 0, lb_ex_key_str, bold_format)
 
         lb_school_key = 'school' if school.islexschool else 'school'
-        sheet.write(5, 0, settings[lb_school_key], bold_format)
+        sheet.write(5, 0, library[lb_school_key], bold_format)
         sheet.write(5, 1, school.name, bold_blue)
 
         backpage01_key = 'backpage01_lex' if school.islexschool else 'backpage01_eex'
-        sheet.write(7, 0, settings[backpage01_key], bold_format)
-        sheet.write(8, 0, settings['backpage02'], bold_format)
+        sheet.write(7, 0, library[backpage01_key], bold_format)
+        sheet.write(8, 0, library['backpage02'], bold_format)
 
 # ---  auth header row
         row_index = 10
-        field_captions = (settings['backheader01'], settings['backheader02'], settings['backheader03'], settings['backheader04'], settings['backheader05'])
+        field_captions = (library['backheader01'], library['backheader02'], library['backheader03'], library['backheader04'], library['backheader05'])
 
         if logging_on:
             logger.debug('field_captions: ' + str(field_captions))
@@ -1347,9 +1364,9 @@ def create_ex2_format_dict(book, sheet, school, department, subject_pk_list, sub
 
 
 def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_instance, lvlbase_pk=None):
-    # PR2022-02-17
+    # PR2022-02-17 PR2022-03-09
     # this function is only called by create_ex2_xlsx
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex2_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
@@ -1377,7 +1394,7 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
                 "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
                 "si.subject_id, cluster.name AS clustername,",
                 "grd.segrade, grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id,",
-                "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, auth3.last_name AS auth3_usr",
+                "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, auth3.last_name AS auth3_usr, auth4.last_name AS auth4_usr",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -1390,6 +1407,7 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
                 "LEFT JOIN accounts_user AS auth1 ON (auth1.id = grd.se_auth1by_id)",
                 "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.se_auth2by_id)",
                 "LEFT JOIN accounts_user AS auth3 ON (auth3.id = grd.se_auth3by_id)",
+                "LEFT JOIN accounts_user AS auth4 ON (auth4.id = grd.se_auth4by_id)",
 
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
                 "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
@@ -1423,10 +1441,11 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
     # logger.debug('connection.queries: ' + str(connection.queries))
 
     ex2_rows_dict = {}
-    grades_auth_dict = {'auth1': [], 'auth2': [], 'auth3': {}}
+    grades_auth_dict = {'auth1': [], 'auth2': [], 'auth3': {}, 'auth4': {}}
     grades_auth1_list = grades_auth_dict.get('auth1')
     grades_auth2_list = grades_auth_dict.get('auth2')
     grades_auth3_dict = grades_auth_dict.get('auth3')
+    grades_auth4_dict = grades_auth_dict.get('auth4')
 
     for row in rows:
 
@@ -1486,7 +1505,6 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
 
             auth3_usr = row.get('auth3_usr')
             if auth3_usr:
-
                 if auth3_usr not in grades_auth3_dict:
                     grades_auth3_dict[auth3_usr] = {}
                 grades_auth3_usr = grades_auth3_dict[auth3_usr]
@@ -1505,6 +1523,27 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
                     grades_auth3_cluster = grades_auth3_usr[subject_pk].get('cluster')
                     if clustername not in grades_auth3_cluster:
                         grades_auth3_cluster.append(clustername)
+
+            auth4_usr = row.get('auth4_usr')
+            if auth4_usr:
+                if auth4_usr not in grades_auth4_dict:
+                    grades_auth4_dict[auth4_usr] = {}
+                grades_auth4_usr = grades_auth4_dict[auth4_usr]
+
+                if subject_pk not in grades_auth4_usr:
+                    grades_auth4_usr[subject_pk] = {'class': [], 'cluster': []}
+
+                classname = row.get('classname')
+                if classname:
+                    grades_auth4_class = grades_auth4_usr[subject_pk].get('class')
+                    if classname not in grades_auth4_class:
+                        grades_auth4_class.append(classname)
+
+                clustername = row.get('clustername')
+                if clustername:
+                    grades_auth4_cluster = grades_auth4_usr[subject_pk].get('cluster')
+                    if clustername not in grades_auth4_cluster:
+                        grades_auth4_cluster.append(clustername)
 
     if logging_on:
         logger.debug('-----------------------------------------------')

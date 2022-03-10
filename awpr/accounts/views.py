@@ -1864,13 +1864,14 @@ def update_usergroups(instance, field_dict, validate, request):
                                 if auth != usergroup:
                                     if auth in saved_usergroups_list:
                                         saved_usergroups_list.remove(auth)
-                        # PR2022-02-17 cannot be auth3 and auth3 at the same time
-                        auth_list = (c.USERGROUP_AUTH3_EXAM, c.USERGROUP_AUTH4_COM)
-                        if usergroup in auth_list:
-                            for auth in auth_list:
-                                if auth != usergroup:
-                                    if auth in saved_usergroups_list:
-                                        saved_usergroups_list.remove(auth)
+                        # PR2022-03-08 yes, user can be auth3 and auth4 at the same time
+                        # was: # PR2022-02-17 cannot be auth3 and auth4 at the same time
+                        #auth_list = (c.USERGROUP_AUTH3_EXAM, c.USERGROUP_AUTH4_COM)
+                        #if usergroup in auth_list:
+                        #    for auth in auth_list:
+                        #        if auth != usergroup:
+                        #            if auth in saved_usergroups_list:
+                        #                saved_usergroups_list.remove(auth)
 
                 if usergroup not in saved_usergroups_list:
                     saved_usergroups_list.append(usergroup)
@@ -2011,6 +2012,7 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
     if logging_on:
         logger.error('setting_dict: ', str(setting_dict))
 # - end of set_usersetting_dict
+
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
     logging_on = s.LOGGING_ON

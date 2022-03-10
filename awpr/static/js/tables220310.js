@@ -204,10 +204,10 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
     function t_MSSSS_Open (loc, tblName, data_rows, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
-        //console.log( "tblName", tblName );
+        console.log( "tblName", tblName );
         //console.log( "data_rows", data_rows, typeof data_rows );
         // tblNames are: "school", "subject", "student"
 
@@ -243,6 +243,7 @@
         const tblName = get_attr_from_el(el_input, "data-table");
 
         // Note: when tblName = school: pk_int = schoolbase_pk
+        // Note: when tblName = subject: pk_int = subject_pk
         const selected_pk_int = get_attr_from_el_int(el_input, "data-pk");
         const selected_code = get_attr_from_el(el_input, "data-code");
         const selected_name = get_attr_from_el(el_input, "data-name");
@@ -281,8 +282,8 @@
 
 //========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23  PR2021-07-23
     function t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
-        console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
-        console.log("data_rows", data_rows, typeof data_rows);
+        //console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
+        //console.log("data_rows", data_rows, typeof data_rows);
 
 // set header text
         const label_text = loc.Select + (
@@ -1538,7 +1539,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
 
 // ---  show total in sidebar
         const el_SBR_item_count = document.getElementById("id_SBR_item_count");
-        console.log( "el_SBR_item_count", el_SBR_item_count);
+
         if (el_SBR_item_count){
             let inner_text = null;
             if (selected.item_count){
@@ -1557,6 +1558,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
     function t_ShowTableRowExtended(filter_dict, tblRow, data_inactive_field) {
         //console.log( "===== t_ShowTableRowExtended  ========= ");
         //console.log( "filter_dict", filter_dict);
+        //console.log( "filter_dict", filter_dict);
         // filter_dict = {2: ["text", "r", ""], 4: ["text", "y", ""] }
         //  filter_row = [empty × 2, "acu - rif", empty, "agata mm"]
 
@@ -1574,14 +1576,16 @@ console.log("=========   handle_table_row_clicked   ======================") ;
         if (tblRow){
 
 // --- PR2021-10-28 new way of filtering inactive rows: (for now: only used in mailbox - deleted)
-            // - set filter inactive before other filters, inactive value is stored in tblRow, "data-inactive"
+            // - set filter inactive before other filters, inactive value is stored in tblRow, "data-inactive", skio when data_inactive_field is null
             // - filter_dict has key 'showinactive', value is integer.
             // values of showinactive are:  '0'; is show all, '1' is show active only, '2' is show inactive only
-            const filter_showinactive = (filter_dict && filter_dict.showinactive != null) ? filter_dict.showinactive : 1;
-            const is_inactive = !!get_attr_from_el_int(tblRow, data_inactive_field);
+            if (data_inactive_field){
+                const filter_showinactive = (filter_dict && filter_dict.showinactive != null) ? filter_dict.showinactive : 1;
+                const is_inactive = !!get_attr_from_el_int(tblRow, data_inactive_field);
 
-            hide_row = (filter_showinactive === 1) ? (is_inactive) :
-                       (filter_showinactive === 2) ? (!is_inactive) : false
+                hide_row = (filter_showinactive === 1) ? (is_inactive) :
+                           (filter_showinactive === 2) ? (!is_inactive) : false
+            };
 
             if (!isEmpty(filter_dict)){
     // ---  loop through filter_dict key = index_str, value = filter_arr

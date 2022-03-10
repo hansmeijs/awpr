@@ -105,10 +105,10 @@ a:hover {
 .awp_bg_yellow {
     background-color: #ffd01c !important; /* tsa yellow  PR2021-06-20 */
 }
-
 .awp_bg_offwhite {
     background-color: #ededed ; /* Wix background light grey ##ededed RGB 237-237-237  PR2021-06-10 */
 }
+
 /* change the brand and text color */
 .navbar-custom .navbar-brand,
 .navbar-custom .navbar-text {

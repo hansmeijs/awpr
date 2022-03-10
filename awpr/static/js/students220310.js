@@ -757,6 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (field_name === "bis_exam") {
                     el_div.className = (data_dict.bis_exam) ? "tickmark_2_2" : "tickmark_0_0";
                     filter_value = (data_dict.bis_exam) ? "1" : "0";
+
                 } else if (["lvlbase_id", "sctbase_id"].includes(field_name)){
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     let abbrev = null;
@@ -768,10 +769,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_div.innerText = (abbrev) ? abbrev : "\n";
                     filter_value = (abbrev) ? abbrev.toLowerCase() : null;
 
-
                 } else if (field_name === "birthdate"){
-                    const date_JS = parse_dateJS_from_dateISO(data_dict.birthdate);
-                    const date_formatted = format_dateJS_vanilla (loc, date_JS, true, false, false, false);
+                    // PR2022-03-09 debug: date_JS gives birthdate one day before birthdat, becasue of timezone
+                    // data_dict.birthdate 2004-05-30 becomes date_JS = Sat May 29 2004 20:00:00 GMT-0400 (Venezuela Time)
+                    // use format_date_from_dateISO instead
+                    // was:
+                    // const date_JS = parse_dateJS_from_dateISO(data_dict.birthdate);
+                    // const date_formatted = format_dateJS_vanilla (loc, date_JS, true, false, false, false);
+
+                    const date_formatted = format_date_from_dateISO(loc, data_dict.birthdate);
 
                     el_div.innerText = (date_formatted) ? date_formatted : "\n";
                     filter_value = date_formatted;

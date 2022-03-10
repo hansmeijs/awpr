@@ -68,7 +68,7 @@
 
 //========= b_UploadSettings  ============= PR2019-10-09
     function b_UploadSettings (upload_dict, url_str) {
-        console.log("=== b_UploadSettings");
+        console.log("=== b_UploadSettings ===");
         console.log("url_str", url_str);
         console.log("upload_dict", upload_dict);
 
@@ -583,7 +583,11 @@
 
 //========= b_highlight_BtnSelect  ============= PR2020-02-20 PR2020-08-31
     function b_highlight_BtnSelect(btn_container, selected_btn, btns_disabled){
-        //console.log( "//========= b_highlight_BtnSelect  ============= ")
+        console.log( "//========= b_highlight_BtnSelect  ============= ")
+        console.log( "btn_container", btn_container)
+        console.log( "selected_btn", selected_btn)
+        console.log( "btns_disabled", btns_disabled)
+
         // ---  highlight selected button
         if (btn_container){
             const btns = btn_container.children;
@@ -712,9 +716,9 @@
         let img_class = "diamond_0_0"; // empty diamond
         if(publ){
             if (blocked){
-                img_class = "diamond_0_4";  // blue diamond: published
-            } else {
                 img_class = "diamond_2_4";  // orange diamond: published after blocked by Inspection
+            } else {
+                img_class = "diamond_0_4";  // blue diamond: published
             }
         } else {
             if (blocked){
@@ -918,6 +922,13 @@
         // function creates date in local timezone.
         // date_iso = '2020-07-22T12:03:52.842Z'
         // date_JS = Wed Jul 22 2020 08:03:52 GMT-0400 (Bolivia Time)
+
+        // PR2022-03-09 debug: dont use this one for dates.
+        // date_JS gives birthdate one day before birthdat, becasue of timezone
+        // data_dict.birthdate 2004-05-30 becomes date_JS = Sat May 29 2004 20:00:00 GMT-0400 (Venezuela Time)
+        // use format_date_from_dateISO instead
+        // was:
+        // const date_JS = parse_dateJS_from_dateISO(data_dict.birthdate);
 
         let date_JS = null;
         if (date_iso){
@@ -1571,6 +1582,16 @@
         };
         return auth_index;
     };  // b_get_auth_index_of_requsr
+
+
+//========= b_get_function_of_auth_index  ======== // PR2022-03-07
+    function b_get_function_of_auth_index(loc, auth_index){
+        return (auth_index === 1) ? loc.President :
+                (auth_index === 2) ? loc.Secretary :
+                (auth_index === 3) ? loc.Examinator :
+                (auth_index === 4) ? loc.Commissioner : "-";
+
+    };  // b_get_function_of_auth_index
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++

@@ -31,28 +31,34 @@
                             <div id="id_MAG_examtype" class="form-control p-2"></div>
                         </div>
                         <div class="flex_1 m-2">
-                            <label for="id_MAG_lvlbase" class="mx-2 ">{% trans 'Level' %}:</label>
-                            <div id="id_MAG_lvlbase" class="form-control p-2"></div>
-                        </div>
-                        <div class="flex_1 m-2">
-                            <label for="id_MAG_cluster" class="mx-2 ">{% trans 'Cluster' %}:</label>
-                            <div id="id_MAG_cluster" class="form-control p-2"></div>
-                        </div>
-                    </div>
-                    <div class="flex_container">
-                        <div class="flex_1 m-2">
-                            <label for="id_MAG_subject" class="mx-2">{% trans 'Subject' %}:</label>
-                            <div id="id_MAG_subject" class="form-control p-2"></div>
-                        </div>
-                        <div class="flex_1 m-2 tab_showX tab_approveX display_hideX">
                             <label id="id_MAG_approved_by_label" for="id_MAG_approved_by" class="mx-2 "></label>
                             <div id="id_MAG_approved_by" class="form-control p-2"></div>
                         </div>
-                        <div class="flex_1 m-2 tab_showX tab_approveX display_hideXX">
-                            <label for="id_MAG_function" class="mx-2 ">{% trans 'Function' %}:</label>
-                            <select id="id_MAG_function" class="form-control mb-0"
+                        <div class="flex_1 m-2">
+                            <label for="id_MAG_auth_index" class="mx-2 ">{% trans 'Function' %}:</label>
+                            <select id="id_MAG_auth_index" class="form-control mb-0"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;"></select>
                         </div>
+                    </div>
+                    <div id="id_MAG_subj_lvl_cls_container">
+                        <div class="flex_container">
+                            <div class="flex_1 m-2">
+                                <label for="id_MAG_subject" class="mx-2">{% trans 'Subject' %}:</label>
+                                <div id="id_MAG_subject" class="form-control p-2"></div>
+                            </div>
+
+                            <div class="flex_1 m-2">
+                                <label for="id_MAG_lvlbase" class="mx-2 ">{% trans 'Level' %}:</label>
+                                <div id="id_MAG_lvlbase" class="form-control p-2"></div>
+                            </div>
+                            <div class="flex_1 m-2">
+                                <label for="id_MAG_cluster" class="mx-2 ">{% trans 'Cluster' %}:</label>
+                                <div id="id_MAG_cluster" class="form-control p-2"></div>
+                            </div>
+                        </div>
+
+                        <small class="mx-4 text-muted">{% trans 'The exam period and other information can be changed in the vertical grey bar of the page.' %}</small>
+
                     </div>
                 </div>
 

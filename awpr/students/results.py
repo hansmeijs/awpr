@@ -95,6 +95,30 @@ class ResultListView(View):  # PR2021-11-15
 
 
 @method_decorator([login_required], name='dispatch')
+class ArchivesListView(View):  # PR2022-03-09
+
+    def get(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' =====  ArchivesListView ===== ')
+
+# -  get user_lang
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get headerbar parameters
+        page = 'page_archive'
+        params = awpr_menu.get_headerbar_param(request, page)
+
+# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
+        #         # PR2021-06-22 moved to get_headerbar_param
+
+        return render(request, 'archives.html', params)
+# - ens of ArchivesListView
+
+
+
+@method_decorator([login_required], name='dispatch')
 class GetPresSecrView(View):  # PR2021-11-19
 
     def post(self, request):

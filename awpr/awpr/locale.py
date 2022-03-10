@@ -789,7 +789,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['MASS_info'] = {
             'checking_studsubj': _('AWP is checking the subjects of the candidates'),
             'subheader_approve': _('Selection of the subjects, that will be approved:'),
-            'subheader_submit': _('An %(ex)s form with the following subjects will be submitted:') % {'ex': 'Ex1'},
+            'subheader_submit_ex1': _('An %(ex)s form with the following subjects will be submitted:') % {'ex': 'Ex1'},
 
             'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
             'approve_1': _('After the subjects are approved by the president and secretary,'),
@@ -957,6 +957,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'This_exam_has_blank_questions': _('This exam has blank questions.'),
 
             'Approved_different_function': _('You have approved this grade already in a different function.'),
+            'Approved_in_function_of': _('You have already approved this grade as '),
             'You_cannot_approve_again': _('You cannot approve this grade again.')
         }
 
@@ -964,7 +965,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'checking_exams':_('AWP is checking the exams'),
 
             'subheader_approve': _('Selection of the exams, that will be approved:'),
-            'subheader_submit': _('The following exams will be submitted:'),
+            'subheader_submit_exam': _('The following exams will be submitted:'),
             'subheader_publish': _('The following exams will be published:'),
             'approve_0': _("Click 'Check exams' to check the selected exams before approving."),
             'approve_1': _('After the exams are approved by the president and secretary,'),
@@ -1171,6 +1172,7 @@ def get_locale_dict(table_dict, user_lang, request):
                                'This_grade_has_no_value': _('This grade has no value.'),
                                'You_cannot_approve': _('You cannot approve this grade.'),
                                'Approved_different_function': _('You have approved this grade already in a different function.'),
+                               'Approved_in_function_of': _('You have already approved this grade as '),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
                                'Commissioner_cannot_approve_se': _("As a commissioner you don't have to approve school exam grades."),
         }
@@ -1194,7 +1196,18 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Calc_result'] = _('Calculate result')
 
-# ====== PAGE ORDERLIST =========================
+    # ====== PAGE ARCHIVE ========================= PR2022-03-09
+    if 'page_archive' in page_list:
+        dict['Name_ex_form'] = TXT_Name_ex_form
+        dict['Exam_period'] = TXT_Exam_period
+        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+        dict['Date_submitted'] = TXT_Date_submitted
+        dict['Download_Exform'] = TXT_Download_Exform
+
+        dict['File_not_found'] = _('This file has not been found.')
+
+
+    # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
         dict['School_code'] = TXT_School_code
         dict['School_name'] = _('School name')

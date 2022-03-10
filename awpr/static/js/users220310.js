@@ -400,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
-        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_userpermit", "btn_allowed"].includes(data_btn)) ? data_btn : "btn_user"
+        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_allowed", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
         //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
@@ -2688,7 +2688,8 @@ function RefreshDataRowsAfterUpload(response) {
         if (set_filter_isactive){
             HandleFilterInactive();
         };
-        const data_inactive_field = "data-inactive";
+
+        const data_inactive_field = (selected_btn !== "btn_userpermit") ? "data-inactive" : null;
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
             show_row = t_ShowTableRowExtended(filter_dict, tblRow, data_inactive_field);
@@ -2998,8 +2999,8 @@ function RefreshDataRowsAfterUpload(response) {
     }
 
     function get_data_rows(tblName) {  //PR2021-08-01
-        console.log( "  ----- get_data_rows -----");
-        console.log( "tblName", tblName);
+        //console.log( "  ----- get_data_rows -----");
+        //console.log( "tblName", tblName);
         return (tblName === "userpermit") ? permit_rows :
                 (tblName === "usergroup") ? user_rows :
                 (tblName === "user") ? user_rows : null;
@@ -3007,8 +3008,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= get_datarows_from_selectedBtn  ======== // PR2022-01-25
     function get_datarows_from_selectedBtn() {
-        console.log( " ----- get_datarows_from_selectedBtn  -----");
-        console.log( "selected_btn", selected_btn);
+        //console.log( " ----- get_datarows_from_selectedBtn  -----");
+        //console.log( "selected_btn", selected_btn);
         return  (selected_btn === "btn_user") ? user_rows :
                 (selected_btn === "btn_usergroup") ? user_rows :
                 (selected_btn === "btn_userpermit") ? permit_rows :

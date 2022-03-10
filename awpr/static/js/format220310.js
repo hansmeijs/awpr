@@ -65,6 +65,35 @@
         const datetimeJS = parse_dateJS_from_dateISO(datetimeISO);
         return format_datetime_from_datetimeJS(loc, datetimeJS, hide_weekday, hide_year, hide_time, hide_suffix);
     };
+
+
+//=========  format_date_from_dateISO ================ PR2022-03-09
+    function format_date_from_dateISO(loc, date_iso) {
+        //console.log( "===== format_date_from_dateISO  ========= ");
+        // PR2022-03-09 debug: date_JS gives birthdate one day before birthdat, becasue of timezone
+        // data_dict.birthdate 2004-05-30 becomes date_JS = Sat May 29 2004 20:00:00 GMT-0400 (Venezuela Time)
+        // use format_date_from_dateISO instead
+
+        "use strict";
+        let date_formatted = "";
+        if(date_iso){
+            const arr = date_iso.split("-");
+
+            const year_str = (arr[0]) ? arr[0].toString() : "";
+            const month_int = (Number(arr[1])) ? Number(arr[1]) : null;
+            const month_str = (month_int && loc.months_abbrev[month_int]) ? loc.months_abbrev[month_int] : "";
+            // convert date to number to remove leading 0: '06' becomes '6'
+            const date_int = (Number(arr[2])) ? Number(arr[2]) : null;
+            const date_str = (date_int) ? date_int.toString() : "";
+            if (loc.user_lang === "en") {
+                date_formatted = [month_str, " ", date_str, ", ", year_str].join("");
+            } else {
+                date_formatted = [date_str, month_str, year_str].join(" ");
+            };
+        }
+        return date_formatted
+    }  // format_date_from_dateISO
+
 //=========  format_datetime_from_datetimeJS ================ PR2020-07-22  PR2020-10-04
     function format_datetime_from_datetimeJS(loc, datetimeJS, hide_weekday, hide_year, hide_time, hide_suffix) {
         //console.log( "===== format_datetime_from_datetimeJS  ========= ");

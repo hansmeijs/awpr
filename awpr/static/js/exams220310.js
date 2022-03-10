@@ -658,7 +658,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         //}
         //if (permit.submit_grade){
-        //    AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit")});
+        //    AddSubmenuButton(el_submenu, loc.Submit_Ex_form, function() {MAG_Open("submit")});
         //};
         el_submenu.classList.remove(cls_hide);
 
@@ -4823,7 +4823,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 const function_str = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1")) ? loc.President :
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary :
-                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Commissioner : "-";
+                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Examinator :
+                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4")) ? loc.Commissioner : "-";
 
                 let header_txt = (mod_MASE_dict.is_approve) ? loc.Approve_exams :
                                  (mod_MASE_dict.permit_admin) ? loc.Publish_exams :
@@ -4833,7 +4834,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 el_MASE_subheader.innerText = (mod_MASE_dict.is_approve) ? loc.MASE_info.subheader_approve :
                                  (mod_MASE_dict.permit_admin) ? loc.MASE_info.subheader_publish :
-                                 (mod_MASE_dict.permit_same_school) ? loc.MASE_info.subheader_submit : null;
+                                 (mod_MASE_dict.permit_same_school) ? loc.MASE_info.subheader_submit_exam : null;
 
                 if (el_MASE_level){
                     add_or_remove_class(el_MASE_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req)

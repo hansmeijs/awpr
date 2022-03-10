@@ -54,6 +54,13 @@
                             {{ user.username_sliced }}
                         </a>
                         <div class="dropdown-menu" aria-labelledby="userMenu">
+                            {% if auth_list and False %}
+                                {% for auth in auth_list %}
+                                    <button id="{{ auth.usergroup }}" class="dropdown-item {{ auth.color_class }}">{{ auth.function }}</button>
+                                {% endfor %}
+                                <div class="dropdown-divider"></div>
+
+                            {% endif %}
                             {% if 'permit_userpage' in permit_list %}
                                 <a class="dropdown-item" href="{% url 'users_url' %}" >{% trans 'Users' %}</a>
                                 <div class="dropdown-divider"></div>

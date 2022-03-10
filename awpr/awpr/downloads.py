@@ -333,6 +333,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -672,8 +673,8 @@ def download_setting(request_item_setting, messages, user_lang, request):
         logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
 
     for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,
-                    c.KEY_SEL_SUBJBASE_PK, c.KEY_SEL_STUDBASE_PK, c.KEY_SEL_CLUSTER_PK,
-                    c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
+                    c.KEY_SEL_STUDBASE_PK, c.KEY_SEL_CLUSTER_PK, c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
+
         if logging_on:
             logger.debug('........... key_str: ' + str(key_str))
 
@@ -709,18 +710,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
 # --- add info to setting_dict, will be sent back to client
         if saved_pk_int:
             setting_dict[key_str] = saved_pk_int
-            # use subjectbase_pk instead of subject_pk PR2022-02-07
-            if key_str == c.KEY_SEL_SUBJBASE_PK:
-                subject = subj_mod.Subject.objects.get_or_none(
-                    base_id=saved_pk_int,
-                    examyear=sel_examyear_instance
-                )
-                if subject:
-                    setting_dict['sel_subject_code'] = subject.base.code
-                    setting_dict['sel_subject_name'] = subject.name
-
-            # TODO to be deprecated
-            elif key_str == c.KEY_SEL_SUBJECT_PK:
+            if key_str == c.KEY_SEL_SUBJECT_PK:
                 subject = subj_mod.Subject.objects.get_or_none(
                     pk=saved_pk_int
                 )
@@ -917,13 +907,13 @@ def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def get_selected_experiod_extype_subjbase_from_usersetting(request):  # PR2021-01-20 PR2021-10-06 PR2022-02-07
-# - get selected examperiod and examtype and sel_subjbase_pk from usersettings
+def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01-20 PR2021-10-06 PR2022-03-08
+# - get selected examperiod and examtype and sel_subject_pk from usersettings
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- get_selected_experiod_extype_subjbase_from_usersetting ----- ' )
+        logger.debug(' ----- get_selected_experiod_extype_subject_from_usersetting ----- ' )
 
-    sel_examperiod, sel_examtype, sel_subjbase_pk = None, None, None
+    sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
     req_user = request.user
     if req_user:
         selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
@@ -932,9 +922,9 @@ def get_selected_experiod_extype_subjbase_from_usersetting(request):  # PR2021-0
         if selected_pk_dict:
             sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
             sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
-            sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
-    return sel_examperiod, sel_examtype, sel_subjbase_pk
-# - end of get_selected_experiod_extype_subjbase_from_usersetting
+            sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+    return sel_examperiod, sel_examtype, sel_subject_pk
+# - end of get_selected_experiod_extype_subject_from_usersetting
 
 
 def get_selected_ey_school_dep_from_usersetting(request, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05

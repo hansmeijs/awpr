@@ -627,7 +627,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
     no_order = BooleanField(default=False)
 
-    # delete exam from schemitem, is linked to grade
+    # delete exam from schemeitem, is linked to grade
     # exam = ForeignKey(Exam, related_name='+', null=True, on_delete=SET_NULL)
 
     gradetype = PositiveSmallIntegerField(default=1)
@@ -665,6 +665,13 @@ class Schemeitem(sch_mod.AwpBaseModel):
     # TODO remove, not in use
     no_thirdperiod = BooleanField(default=False)
     no_exemption_ce = BooleanField(default=False)
+
+    # TODO
+    # PR2022-03-09 to skip ce in calc endgrade when exemption has no ce
+    # contains array of examyears with no ce for this subject
+    # best way: calc endgrade based on info of that examyear
+    #no_ce_years = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
 
     #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
     #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28

@@ -34,12 +34,12 @@ pos_y = 18
 
 MENUS_ITEMS = {
     c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
-                      'page_result'], #  'page_report', 'page_analysis'],
+                      'page_result', 'page_archive'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
-                     'page_result'],  #, 'page_report', 'page_analysis'],
-    c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result'],  #,'page_report', 'page_analysis'],
-    c.ROLE_016_COMM: ['page_school', 'page_student', 'page_grade', 'page_result'],
-    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_report']
+                     'page_result', 'page_archive'],  #, 'page_report', 'page_analysis'],
+    c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],
+    c.ROLE_016_COMM: ['page_school', 'page_student', 'page_grade', 'page_result', 'page_archive'],
+    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_archive'] # 'page_report',
 }
 
 MENUS_DICT = {
@@ -52,8 +52,9 @@ MENUS_DICT = {
     'page_exams': {'caption': _('Exams'), 'href': 'exams_url', 'width': 130},
     'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
     'page_result': {'caption': _('Results'), 'href': 'results_url', 'width': 120},
-    'page_report': {'caption': _('Reports'), 'href': 'subjects_url', 'width': 120},
-    'page_analysis': {'caption':  _('Analysis'), 'href': 'subjects_url', 'width': 90}
+    'page_report': {'caption': _('Reports'), 'href': 'url_archive', 'width': 120},
+    'page_archive': {'caption': _('Archive'), 'href': 'url_archive', 'width': 90},
+    'page_analysis': {'caption':  _('Analysis'), 'href': 'url_archive', 'width': 90}
 }
 
 
@@ -97,7 +98,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logging_on = False # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('===== get_headerbar_param ===== ' + str(sel_page))
 
@@ -132,7 +133,20 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         else:
             _class_bg_color = 'awp_bg_blue'
 
+        sel_auth_index = af.get_dict_value(acc_view.get_usersetting_dict, (c.KEY_SELECTED_PK, c.KEY_SEL_AUTH_INDEX))
+
         permit_list, usergroup_list = acc_view.get_userpermit_list(sel_page, req_user)
+        auth_list = []
+        for usergroup in usergroup_list:
+            if 'auth' in usergroup:
+                if logging_on:
+                    logger.debug('usergroup:           ' + str(usergroup))
+                    logger.debug('usergroup[4:]:           ' + str(usergroup[4:]))
+                    logger.debug('sel_auth_index:           ' + str(sel_auth_index))
+                function = c.USERGROUP_CAPTION.get(usergroup)
+                color_class = 'awp_color_grey' if sel_auth_index and usergroup[4:] != str(sel_auth_index) else 'awp_color_black'
+                if function:
+                    auth_list.append({'id': 'id_' + usergroup, 'function': function, 'color_class': color_class})
 
 # - PR2021-06-28 debug. Add permit 'permit_userpage' if role = system,
         # to prevent you from locking out when no permits yet
@@ -150,6 +164,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             logger.debug('req_user.role:  ' + str(req_user.role))
             logger.debug('permit_list:    ' + str(permit_list))
             logger.debug('usergroup_list: ' + str(usergroup_list))
+            logger.debug('auth_list: ' + str(auth_list))
 
 # +++ display examyear -------- PR2020-11-17 PR2020-12-24 PR2021-06-14
     # - get selected examyear from Usersetting
@@ -320,6 +335,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             'examyear_locked': examyear_locked,
             'is_requsr_same_school': is_requsr_same_school,
             'is_requsr_admin': is_requsr_admin,
+            'auth_list': auth_list,
             'examyear_code': sel_examyear_str,
             'display_school': display_school, 'school': school_name,
             'display_department': display_department, 'department': department_name,
@@ -364,7 +380,6 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
     #logger.debug('page_href: ' + str(page_href))
     return page_href
 
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 def set_menu_items(sel_page, _class_bg_color, request):
     # function is called by get_headerbar_param, creates template tags menu_items and submenus
@@ -437,6 +452,7 @@ def set_menu_items(sel_page, _class_bg_color, request):
 
     return menu_item_tags
 
+
 def menubutton_has_view_permit(request, menubutton):
     # PR2018-12-23 submenus are only visible when user_role and user_permit have view_permit
     # !!! this does not block user from viewing page via url !!!
@@ -445,6 +461,7 @@ def menubutton_has_view_permit(request, menubutton):
 
     has_permit = has_view_permit(request, viewpermit)
     return has_permit
+
 
 def has_view_permit(request, viewpermits):
     # Function checks if user role and permits are in the list of VIEW_PERMITS  # PR2018-12-23

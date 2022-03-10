@@ -250,7 +250,12 @@ urlpatterns = [
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
         path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
 
+        path('approve_single', grade_views.GradeApproveSingleView.as_view(), name='url_grade_approve_single'),
         path('approve', grade_views.GradeApproveView.as_view(), name='url_grade_approve'),
+
+        path('submit_ex2', grade_views.GradeSubmitEx2View.as_view(), name='url_grade_submit_ex2'),
+        path('submit_ex2a', grade_views.GradeSubmitEx2View.as_view(), name='url_grade_submit_ex2a'),
+
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
         path('download_ex2', grade_excel.GradeDownloadEx2View.as_view(), name='url_grade_download_ex2'),
         path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
@@ -267,6 +272,15 @@ urlpatterns = [
 
     ])),
 
+# ===== ARCHIVES ========================== PR2022-03-09
+    path('archives/', include([
+        path('archive', student_results.ArchivesListView.as_view(), name='url_archive'),
+
+        #path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
+        #path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
+
+
+    ])),
 # ===== ORDERLISTS ========================== PR2021-04-04
     path('orderlists/', include([
         path('orderlist', student_views.OrderlistsListView.as_view(), name='orderlists_url'),

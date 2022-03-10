@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if ("messages" in response) {
                     b_ShowModMessages(response.messages);
-                }
+                };
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  {
                     school_rows = response.school_rows;
@@ -589,13 +589,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
-                }
+                };
                 if ("subject_rows" in response) {
                     subject_rows = response.subject_rows;
-                }
+                };
                 if ("cluster_rows" in response) {
                     cluster_rows = response.cluster_rows;
-                }
+                };
 
                 if ("studentsubject_rows" in response) {
                     studsubj_rows = response.studentsubject_rows;
@@ -612,8 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (check_validation) {
                     DownloadValidationStatusNotes();
-                }
-
+                };
 
             },
             error: function (xhr, msg) {
@@ -4675,12 +4674,13 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
                 const function_str = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1")) ? loc.President :
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary :
-                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Commissioner : "-";
+                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Examinator :
+                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4")) ? loc.Commissioner : "-";
 
                 let header_txt = (is_approve) ? loc.Approve_subjects : loc.Submit_Ex1_form;
                 header_txt += loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")"
                 el_MASS_header.innerText = header_txt;
-                el_MASS_subheader.innerText = (is_approve) ? loc.MASS_info.subheader_approve : loc.MASS_info.subheader_submit;
+                el_MASS_subheader.innerText = (is_approve) ? loc.MASS_info.subheader_approve : loc.MASS_info.subheader_submit_ex1;
 
                 add_or_remove_class(el_MASS_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req)
                 el_MASS_level.innerText = (setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev : null;
