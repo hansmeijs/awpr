@@ -726,6 +726,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_classes'] = _('There are no classes')
         dict['has_candidates'] = _('has candidates.')
         dict['cluster_willbe_removed'] = _('The cluster will be removed from these candidates.')
+        dict['click_add_cluster01'] = _("First, click the 'Add cluster' button below.")
+        dict['click_add_cluster02'] = _("Then, select candidates from the 'Available candidates' list.")
+        dict['click_add_cluster03'] = _("Finally, click 'Save'.")
 
         dict['mandatory_subject'] = _('mandatory subject')
         dict['combination_subject'] = _('combination subject')
@@ -816,13 +819,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
         dict['from_available_list'] = _('from the list of available subjects.')
 
+        dict['Please_select_examperiod'] = _('Please select the correct examperiod in the horizontal black bar.')
+
         dict['No_permission'] = _("You don't have permission to edit this subject.")
         dict['Exemption_is_auth'] = _("This exemption has already been approved.")
         dict['needs_approvals_removed'] = _("You have to remove the approvals first.")
         dict['Then_you_can_change_it'] = _("Then you can change it.")
         dict['Then_you_can_change_it'] = _("Then you can change it.")
         dict['Exemption_submitted'] = _("This exemption has already been submitted.")
-        dict['need_permission_inspection'] = _("You can only change it with permission of the Inspection.")
+        dict['need_permission_inspection'] = _("You can only change it with permission of the Inspectorate.")
 
         dict['Examyear_not_valid'] = _("This exam year is not valid.")
         dict['Exemption_year'] = _("Exemption year")
@@ -889,6 +894,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Blanks'] = _("Blanks")
         dict['Download_PDF'] = _("Download PDF")
         dict['Download_JSON'] = _("Download JSON")
+        dict['JSON_will_be_downloaded'] = _("The JSON file with exam results will be downloaded.")
+        dict['Yes_download'] = _("Yes, download")
 
         dict['Key'] = _("Key")
         dict['Version'] = _("Version")
@@ -1034,6 +1041,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Submit_Ex2_form'] = _('Submit Ex2 form')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
+        dict['Approve_grade'] = _('Approve grade')
         dict['Approve_grades'] = _('Approve grades')
         dict['Preliminary_Ex2A'] = _('Preliminary Ex2A')
 
@@ -1050,6 +1058,10 @@ def get_locale_dict(table_dict, user_lang, request):
             'approve_2_ex2': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2'},
             'approve_2_ex2a': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2A'},
 
+            'commissioner_cannot_approve_exem': _("As a commissioner you don't have to approve %(et)s grades.") \
+                                                % {'et': str(_('Exemption')).lower()},
+            'commissioner_cannot_approve_se': _("As a commissioner you don't have to approve %(et)s grades.") \
+                                              % {'et': str(_('School exam')).lower()},
             'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
             'submit_1_ex2': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected grades.") % {'ex': 'Ex2'},
             'submit_1_ex2a': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected grades.") % {'ex': 'Ex2A'},
@@ -1160,7 +1172,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'needs_approvals_removed': _('You have to remove the approvals first.'),
             'Then_you_can_change_it': _('Then you can change it.'),
             'grade_submitted': _('This grade has already been submitted.'),
-            'need_permission_inspection': _('You can only change it with permission of the Inspection.')
+            'need_permission_inspection': _('You can only change it with permission of the Inspectorate.')
         }
 
         dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
@@ -1171,6 +1183,9 @@ def get_locale_dict(table_dict, user_lang, request):
                                'You_cannot_change_approval': _('You cannot change the approval.'),
                                'This_grade_has_no_value': _('This grade has no value.'),
                                'You_cannot_approve': _('You cannot approve this grade.'),
+                               'No_cluster_permission': _("You don't have permission to approve grades of this cluster."),
+                               'Warning': _('WARNING'),
+                               'Need_permission_of_inspectorate': _('It is only allowed to submit grades without value with the prior approval of the Inspectorate.'),
                                'Approved_different_function': _('You have approved this grade already in a different function.'),
                                'Approved_in_function_of': _('You have already approved this grade as '),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),

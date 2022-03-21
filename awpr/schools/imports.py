@@ -116,8 +116,8 @@ class UploadImportSettingView(View):   # PR2020-12-05
 
         # get updated stored_setting from database, return to page to update mimp_stored
                     request_item_setting = {'setting_key': setting_key}
-                    update_wrap['schoolsetting_dict'] = sch_fnc.get_schoolsetting(
-                        request_item_setting, sel_examyear, sel_schoolbase, sel_depbase)
+                    update_wrap['schoolsetting_dict'] = sch_fnc.get_schoolsettings(
+                        request, request_item_setting, sel_examyear, sel_schoolbase, sel_depbase)
 
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of UploadImportSettingView
@@ -374,12 +374,12 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                     if tobe_updated_dict and not is_test:
 
 # --- if examperiod is exemption: check for empty grades. create exemption_grade when empty and put pk back in tobe_updated_dict
-                        studsubj_pk_list_of_created_exemp_grades = create_exemption_grades(sel_examperiod, tobe_updated_dict, request)
+                        studsubj_pk_list_of_created_exem_grades = create_exemption_grades(sel_examperiod, tobe_updated_dict, request)
                         if logging_on:
-                            logger.debug('studsubj_pk_list_of_created_exemp_grades: ' + str(studsubj_pk_list_of_created_exemp_grades))
+                            logger.debug('studsubj_pk_list_of_created_exem_grades: ' + str(studsubj_pk_list_of_created_exem_grades))
 
     # - set has_exemption True in studsubj
-                        updated_student_pk_list = update_hasexemption_in_studsubj_batch(studsubj_pk_list_of_created_exemp_grades, request)
+                        updated_student_pk_list = update_hasexemption_in_studsubj_batch(studsubj_pk_list_of_created_exem_grades, request)
 
                         updated_grade_pk_list, updated_studsubj_pk_list = update_grade_batch(tobe_updated_dict, sel_db_field, request)
                         if logging_on:
@@ -428,7 +428,7 @@ def create_exemption_grades(sel_examperiod, tobe_updated_dict, request):  # PR20
     tobe_updated_dict: { 21180: {'grade_pk': None, 'studsubj_pk': 21180, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': 'NULL'}, {'grade_pk': None, 'studsubj_pk': 21181, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': "'6'"}, {'grade_pk': None, 'studsubj_pk': 21182, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': "'6'"}, {'grade_pk': None, 'studsubj_pk': 21186, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': 'NULL'}, {'grade_pk': None, 'studsubj_pk': 21187, 'output_str': "'v'", 'sesr_grade': "'v'", 'pece_grade': 'NULL', 'finalgrade': "'v'"}, {'grade_pk': None, 'studsubj_pk': 21340, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': 'NULL'}, {'grade_pk': None, 'studsubj_pk': 21341, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': "'6'"}, {'grade_pk': None, 'studsubj_pk': 21342, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': "'6'"}, {'grade_pk': None, 'studsubj_pk': 21343, 'output_str': "'4.5'", 'sesr_grade': "'4.5'", 'pece_grade': 'NULL', 'finalgrade': "'5'"}, {'grade_pk': None, 'studsubj_pk': 21347, 'output_str': "'o'", 'sesr_grade': "'o'", 'pece_grade': 'NULL', 'finalgrade': "'o'"}, {'grade_pk': None, 'studsubj_pk': 21348, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': "'6'"}, {'grade_pk': None, 'studsubj_pk': 21190, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': 'NULL'}, {'grade_pk': None, 'studsubj_pk': 21191, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': "'6'"}, {'grade_pk': None, 'studsubj_pk': 21192, 'output_str': "'5.5'", 'sesr_grade': "'5.5'", 'pece_grade': 'NULL', 'finalgrade': "'6'"}, {'grade_pk': None, 'studsubj_pk': 21193, 'output_str': "'3.8'", 'sesr_grade': "'3.8'", 'pece_grade': 'NULL', 'finalgrade': "'4'"}, 
     """
 
-    studsubj_pk_list_of_created_exemp_grades = []
+    studsubj_pk_list_of_created_exem_grades = []
 
     if sel_examperiod == c.EXAMPERIOD_EXEMPTION:
 
@@ -483,27 +483,27 @@ def create_exemption_grades(sel_examperiod, tobe_updated_dict, request):  # PR20
                             for row in rows:
                                 grade_pk = row[0]
                                 studsubj_pk = row[1]
-                        # -  put studsubj_pk in studsubj_pk_list_of_created_exemp_grades,
+                        # -  put studsubj_pk in studsubj_pk_list_of_created_exem_grades,
                         #    this is needed to set has_exemption = True in studsubj
-                                studsubj_pk_list_of_created_exemp_grades.append(studsubj_pk)
+                                studsubj_pk_list_of_created_exem_grades.append(studsubj_pk)
                         # - put grade_pk back in tobe_updated_dict, so be used in update_grade_batch
                                 tobe_updated_row = tobe_updated_dict[studsubj_pk]
                                 if tobe_updated_row:
                                     tobe_updated_row['grade_pk'] = grade_pk
-                                studsubj_pk_list_of_created_exemp_grades.append(studsubj_pk)
+                                studsubj_pk_list_of_created_exem_grades.append(studsubj_pk)
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
-        logger.debug('studsubj_pk_list_of_created_exemp_grades: ' + str(studsubj_pk_list_of_created_exemp_grades))
+        logger.debug('studsubj_pk_list_of_created_exem_grades: ' + str(studsubj_pk_list_of_created_exem_grades))
 
-    return studsubj_pk_list_of_created_exemp_grades
+    return studsubj_pk_list_of_created_exem_grades
 # - end of create_exemption_grades
 
 @method_decorator([login_required], name='dispatch')
 class UploadImportStudentsubjectView(View):  # PR2021-07-20
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
@@ -575,7 +575,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                     updated_rows = []
                     log_list = []
 
-                    count_total, count_existing, count_new, count_error, count_bisexam = 0, 0, 0, 0, 0
+                    count_total, count_existing, count_new, count_error, count_bisexam, count_pws_has_changed = 0, 0, 0, 0, 0, 0
 
                     if lookup_field and data_list and sel_school and sel_department:
 
@@ -638,7 +638,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                             if has_values:
 
     # - upload studentsubject
-                                studsubj_rows, is_existing, is_new_student, has_error = \
+                                studsubj_rows, has_error, pws_has_changed = \
                                     upload_studentsubject_from_datalist(
                                         data_dict=data_dict,
                                         school=sel_school,
@@ -655,20 +655,29 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                                     updated_rows.extend(studsubj_rows)
 
                                 count_total += 1
-                                if is_existing:
-                                    count_existing += 1
-                                if is_new_student:
-                                    count_new += 1
                                 if has_error:
                                     count_error += 1
+                                else:
+                                    count_new += 1
+                                if pws_has_changed:
+                                    count_pws_has_changed += 1
+                                # count_existing not in use
                                 # if has_error:
                                 #   count_bisexam += 1
 # +++++ end of loop through data_list
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # - return html with number of students, existing, new and erros
+                    result_html = create_result_html(
+                        is_test=is_test,
+                        count_total=count_total,
+                        count_existing=count_existing,
+                        count_new=count_new,
+                        count_error=count_error,
+                        count_pws_has_changed=count_pws_has_changed
+                    )
                     update_dict = { 'is_test': is_test,
                                     'table': 'studsubj',
-                                    'result': create_result_html(is_test, count_total, count_existing, count_new, count_error),
+                                    'result': result_html,
                                     'log_list': log_list}
                     # was: if not is_test and updated_rows:
                     #    update_dict['updated_studsubj_rows'] = updated_rows
@@ -833,9 +842,16 @@ class UploadImportStudentView(View):  # PR2020-12-05 PR2021-02-23  PR2021-07-17
 # +++++ end of loop through data_list
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         # - return html with number of students, existing, new and erros
+                    result_html = create_result_html(
+                        is_test=is_test,
+                        count_total=count_total,
+                        count_error=count_error,
+                        count_new=count_new,
+                        count_existing=count_existing
+                    )
                     update_dict = { 'is_test': is_test,
                                     'table': 'student',
-                                    'result': create_result_html(is_test, count_total, count_existing, count_new, count_error),
+                                    'result': result_html,
                                     'log_list': log_list}
 
                     if not is_test and updated_rows:
@@ -1018,9 +1034,9 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
 
             append_dict = {'created': True} if is_new_student else {}
             rows, error_dictNIU = stud_view.create_student_rows(
-                sel_examyear_pk=school.examyear.pk,
-                sel_schoolbase_pk=school.base_id,
-                sel_depbase_pk=department.base_id,
+                sel_examyear=school.examyear,
+                sel_schoolbase=school.base,
+                sel_depbase=department.base,
                 append_dict=append_dict,
                 student_pk=student.pk)
 
@@ -1274,7 +1290,7 @@ class UploadImportUsernameView(View):  # PR2021-08-04
             # to prevent you from locking out when no permits yet
                 if request.user.role == c.ROLE_128_SYSTEM:
                     has_permit = True
-                elif request.user.role == c.ROLE_064_ADMIN:
+                else:
                     has_permit = 'permit_userpage' in permit_list
 
                 if logging_on:
@@ -1373,9 +1389,17 @@ class UploadImportUsernameView(View):  # PR2021-08-04
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         # - return html with number of students, existing, new and erros
+                    result_html = create_result_html(
+                        is_test=is_test,
+                        count_total=count_total,
+                        count_error=count_error,
+                        count_new=count_new,
+                        count_existing=count_existing,
+                        is_user=True
+                    )
                     update_dict = { 'is_test': is_test,
                                     'table': 'user',
-                                    'result': create_result_html(is_test, count_total, count_existing, count_new, count_error, True),
+                                    'result': result_html,
                                     'log_list': log_list}
                     if not is_test and updated_rows:
                         update_dict['updated_user_rows'] = updated_rows
@@ -1384,9 +1408,9 @@ class UploadImportUsernameView(View):  # PR2021-08-04
 # - end of UploadImportUsernameView
 
 
-# ========  upload_username_from_datalist  ======= # PR2021-08-04
+# ========  upload_username_from_datalist  ======= # PR2021-08-04 PR2022-03-19
 def upload_username_from_datalist(data_dict, double_username_list, double_email_list, log_list, is_test, user_lang, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_username_from_datalist  --------------------')
         logger.debug('data_dict: ' + str(data_dict))
@@ -1406,14 +1430,20 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
     email = data_dict.get('email', '')
     function = data_dict.get('function')
     function_first_letter_lc = function[0].lower() if function else None
-    usergroups = ''
+    usergroups = 'read'
     if function_first_letter_lc:
-        if function_first_letter_lc == 'v':
-            usergroups = 'admin;auth1;edit;read'
-        elif function_first_letter_lc == 's':
-            usergroups = 'admin;auth2;edit;read'
-        else:
-            usergroups = 'admin;edit;read'
+        if function_first_letter_lc in ('v', 'p'): # 'Voorzitter', 'President'
+            usergroups = 'auth1;read'
+        elif function_first_letter_lc == 's': # 'Secretaris', 'Secretary'
+            usergroups = 'auth2;read'
+        elif function_first_letter_lc == 'e':  # 'Examinator', 'Examiner'
+            usergroups = 'auth3;read'
+        elif function_first_letter_lc in ('g', 'c'): # 'Gecommitteerde', 'Commissioner', 'Corrector'
+            usergroups = 'auth4;read'
+
+# - when school uploads users: get school_code from req_user instead of from data_dict
+    if request.user.is_role_school:
+        school_code = request.user.schoolbase.code
 
     if logging_on:
         logger.debug('schoolcode: ' + str(school_code))
@@ -1433,18 +1463,16 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
         has_error = True
 
     if not has_error:
-        has_email_error = stud_val.validate_double_schoolcode_email_in_uploadfile(school_code, email, double_email_list, error_list)
-        if not has_error:
 # - validate length of fields school_code and username
-            msg_err = stud_val.validate_length(_('The school code'), school_code, c.MAX_LENGTH_SCHOOLCODE, False)
-            if msg_err:
-                has_error = True
-                error_list.append(str(msg_err))
+        msg_err = stud_val.validate_length(_('The school code'), school_code, c.MAX_LENGTH_SCHOOLCODE, False)
+        if msg_err:
+            has_error = True
+            error_list.append(str(msg_err))
 
-            msg_err = stud_val.validate_length(_('The username'), username_with_underscore, c.USERNAME_SLICED_MAX_LENGTH, False)
-            if msg_err:
-                has_error = True
-                error_list.append(str(msg_err))
+        msg_err = stud_val.validate_length(_('The username'), username_with_underscore, c.USERNAME_SLICED_MAX_LENGTH, False)
+        if msg_err:
+            has_error = True
+            error_list.append(str(msg_err))
 
     if logging_on:
         logger.debug('error_list: ' + str(error_list))
@@ -1837,7 +1865,9 @@ def get_birthdate_iso(birthdate_str, dateformat, error_list):
     return birthdate_iso
 
 
-def create_result_html(is_test, count_total, count_existing, count_new, count_error, is_user=False):  # PR2021-06-18 PR2021-08-05
+def create_result_html(is_test, count_total, count_error,
+                       count_new=0, count_existing=0, is_user=False, count_pws_has_changed=0):
+    # PR2021-06-18 PR2021-08-05 PR2022-03-18
     # function returns an html string with number of students, existing, new and erros
     title = _('Test results') if is_test else _('Upload results')
 
@@ -1861,6 +1891,7 @@ def create_result_html(is_test, count_total, count_existing, count_new, count_er
                                            'cnd': caption_plur if count_new > 1 else caption_sing,
                                            'nw': txt_plur if count_new > 1 else txt_sing}),
                                     "</li>"))
+
         if count_existing:
             # dont show msg 'changes have been saved; when uploading user, user upload doesnt save changes
             if is_user:
@@ -1889,6 +1920,16 @@ def create_result_html(is_test, count_total, count_existing, count_new, count_er
                                            'cnd': caption_plur if count_error > 1 else caption_sing,
                                            'skip': txt_plur if count_error > 1 else txt_sing}),
                                     '</li>'))
+        if count_pws_has_changed:
+            have_txt = _('has') if count_pws_has_changed == 1 else _('have')
+            willbe_txt = pgettext_lazy('singular', 'will be') if is_test == 1 else _('has been')
+            txt = _('%(have)s assignment info that %(willbe)s changed') % {'have': have_txt, 'willbe': willbe_txt }
+            result_html += ''.join(("<li>",
+                                    str(_("%(count)s %(cnd)s %(nw)s.")
+                                        % {'count': count_pws_has_changed,
+                                           'cnd': caption_plur if count_pws_has_changed > 1 else caption_sing,
+                                           'nw': txt}),
+                                    "</li>"))
         result_html += "</ul>"
         result_html += ' '.join(( '<p>', str(_("Click")),
                                         "<a href='#' class='awp_href' onclick='MIMP_OpenLogfile()'>",
@@ -1897,6 +1938,7 @@ def create_result_html(is_test, count_total, count_existing, count_new, count_er
                                         str(_("to download the logfile with the details.")),
                                         "</p>"
                                         ))
+
     else:
         result_html += ''.join(("<p class='pb-0'>",
                                 str(_('The uploaded file has no %(cnd)s.') % {'cnd': caption_plur }),
@@ -2397,7 +2439,7 @@ def get_mapped_subjectbase_code_dict(department):  # PR2021-02-27 PR2021-07-21
     return code_dict
 
 
-def get_students_dict_with_subjbase_pk_list(school, department, double_entrieslist):  # PR2021-07-21
+def get_students_dict_with_subjbase_pk_list(school, department, double_entrieslist):  # PR2021-07-21 PR2022-03-17
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- get_students_dict_with_subjbase_pk_list  --------------------')
@@ -2414,11 +2456,12 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_entriesli
 
    # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
     sql_keys = {'sch_id': school.pk, 'dep_id': department.pk}
-    sql_studsubj_list = ["SELECT studsubj.student_id, subj.base_id AS subjbase_id, subjbase.code AS subjbase_code",
+    sql_studsubj_list = ["SELECT studsubj.student_id, subj.base_id AS subjbase_id, subjbase.code AS subjbase_code, sjtp.has_pws",
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+        "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
         # "WHERE subj.examyear_id = %(ey_id)s::INT AND NOT studsubj.tobedeleted"]
         "WHERE NOT studsubj.tobedeleted"]
     sub_sql = ' '.join(sql_studsubj_list)
@@ -2426,7 +2469,7 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_entriesli
 
     sql_list = ["WITH sub_sql AS (" + sub_sql + ")",
         "SELECT stud.idnumber, stud.id AS stud_id, stud.lastname, stud.firstname, stud.prefix, ",
-        "sub_sql.subjbase_id, sub_sql.subjbase_code",
+        "sub_sql.subjbase_id, sub_sql.subjbase_code, sub_sql.has_pws",
         "FROM students_student AS stud",
         "LEFT JOIN sub_sql ON (sub_sql.student_id = stud.id)",
         "WHERE stud.school_id = %(sch_id)s::INT AND stud.department_id = %(dep_id)s::INT"]
@@ -2442,7 +2485,7 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_entriesli
             logger.debug('............................................')
 
         for row in rows:
-            # row: ('2003031202', 9240, 'Albertus', 'Lyanne Stephany', None, 372, 'ne')
+            # row: ('2003031202', 9240, 'Albertus', 'Lyanne Stephany', None, 372, 'ne', False)
 
 # - get student_id, add as key to student_dict if it does not exists yet
             id_number = row[0]
@@ -2462,12 +2505,21 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_entriesli
 
                 subjectbase_pk = row[5]
                 subjectbase_code = row[6] if row[6] else '-'
+                has_pws = row[7] if row[7] else False
+
+                if has_pws:
+                    if 'has_pws_subjbase_pk' not in student_dict:
+                        student_dict['has_pws_subjbase_pk'] = subjectbase_pk
+                    else:
+                        # when multiple subjects with has_pws found: set has_pws_subjbase_pk = None
+                        student_dict['has_pws_subjbase_pk'] = None
+
                 if subjectbase_pk not in student_dict:
                     student_dict[subjectbase_pk] = subjectbase_code
 
     if logging_on:
         logger.debug('subjectbase_pk_dict: ' + str(subjectbase_pk_dict))
-        # {'2003031202': {'stud_id': 9240, 372: 'ne', 373: 'en', 374: 'mm1', 375: 'lo', 376: 'cav', 377: 'pa', 380: 'wk', 392: 'ac', 395: 'stg', 414: 'ec'},
+        # {'2003031202': {'stud_id': 9240, 'has_pws_subjbase_pk': 123, 372: 'ne', 373: 'en', 374: 'mm1', 375: 'lo', 376: 'cav', 377: 'pa', 380: 'wk', 392: 'ac', 395: 'stg', 414: 'ec', False]},
 
     return subjectbase_pk_dict
 # - end of get_students_dict_with_subjbase_pk_list
@@ -2497,7 +2549,7 @@ def get_stud_subj_schemeitem_dict(sel_examyear, sel_department): # PR2021-12-12
 ############################
 
 
-def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21
+def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21 PR2022-03-17
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- map_subjectbase_pk_to_schemeitem_pk  --------------------')
@@ -2505,7 +2557,7 @@ def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21
         logger.debug('department.base' + str(department.base))
     # function creates a dict per scheme of subjects with the lowest sequence
     # All subjects appear once, the one with the lowest sequence is added
-    # output:       schemeitem_dict: { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code] }, ... }
+    # output:       schemeitem_dict: { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code, has_pws] }, ... }
 
     schemeitem_dict = {}
 
@@ -2536,8 +2588,10 @@ def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21
             # a schemeitem_subject can only occur once in the subject_dict
             subjectbase_pk = row.get('subjbase_id')
             subject_code = row.get('subj_code')
+            sjtp_has_pws = row.get('sjtp_has_pws', False)
+            has_pws_subjbase_pk = subjectbase_pk if sjtp_has_pws else None
             if subjectbase_pk and subjectbase_pk not in scheme_dict:
-                scheme_dict[subjectbase_pk] = [schemeitem_id, subject_code]
+                scheme_dict[subjectbase_pk] = [schemeitem_id, subject_code, has_pws_subjbase_pk]
     if logging_on:
         logger.debug('schemeitem_dict' + str(schemeitem_dict))
 
@@ -2549,16 +2603,16 @@ def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21
     mapped_subjectbase_pk_dict = { scheme_id: { subjectbase_pk: [ schemeitem_id, subject_code ] } }
     
     mapped_subjectbase_pk_dict: {
-    255: {429: [10199, 'sp'], 422: [10190, 'ne'], 423: [10191, 'en'], 424: [10192, 'mm1'], 427: [10195, 'pa'], 
-            425: [10193, 'lo'], 426: [10194, 'cav'], 430: [10196, 'wk'], 432: [10197, 'bi'], 433: [10198, 'mm12'], 
-            440: [10188, 'zwi'], 439: [10187, 'uv'], 445: [10189, 'stg']}, 
-    250: {422: [10116, 'ne'], 423: [10117, 'en'], 426: [10120, 'cav'], 429: [10131, 'sp'], 
-            427: [10121, 'pa'], 424: [10118, 'mm1'], 425: [10119, 'lo'], 431: [10123, 'nask1'], 430: [10122, 'wk'], 
-            462: [10130, 'ict'], 445: [10129, 'stg']}, 
-    249: {429: [10113, 'sp'], 427: [10102, 'pa'], 422: [10097, 'ne'], 423: [10098, 'en'], 424: [10099, 'mm1'], 425: [10100, 'lo'], 
-            426: [10101, 'cav'], 432: [10106, 'bi'], 430: [10104, 'wk'], 433: [10114, 'mm12'], 
-            464: [10112, 'ec'], 431: [10105, 'nask1'], 443: [10110, 'nask2'], 439: [10108, 'uv'], 
-            440: [10109, 'zwi'], 444: [10111, 'sws']}}
+    255: {429: [10199, 'sp', False], 422: [10190, 'ne', False], 423: [10191, 'en', False], 424: [10192, 'mm1', False], 427: [10195, 'pa', False], 
+            425: [10193, 'lo', False], 426: [10194, 'cav', False], 430: [10196, 'wk', False], 432: [10197, 'bi', False], 433: [10198, 'mm12', False], 
+            440: [10188, 'zwi', False], 439: [10187, 'uv', False], 445: [10189, 'stg', False]}, 
+    250: {422: [10116, 'ne', False], 423: [10117, 'en', False], 426: [10120, 'cav', False], 429: [10131, 'sp', False], 
+            427: [10121, 'pa', False], 424: [10118, 'mm1', False], 425: [10119, 'lo', False], 431: [10123, 'nask1', False], 430: [10122, 'wk', False], 
+            462: [10130, 'ict', False], 445: [10129, 'stg', False]}, 
+    249: {429: [10113, 'sp', False], 427: [10102, 'pa', False], 422: [10097, 'ne', False], 423: [10098, 'en', False], 424: [10099, 'mm1', False], 425: [10100, 'lo', False], 
+            426: [10101, 'cav', False], 432: [10106, 'bi', False], 430: [10104, 'wk', False]', False], 433: [10114, 'mm12', False], 
+            464: [10112, 'ec', False], 431: [10105, 'nask1', False], 443: [10110, 'nask2', False], 439: [10108, 'uv', False], 
+            440: [10109, 'zwi', False], 444: [10111, 'sws', False]}}
     """
 
 
@@ -2596,10 +2650,11 @@ def count_subjectbase_in_scheme(department):  # PR2021-02-27
 
 def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                                         double_entrieslist, mapped_subjectbase_pk_dict, students_dict_with_subjbase_pk_list,
-                                        log_list, request):  # PR2021-07-21 PR2021-08-12
+                                        log_list, request):  # PR2021-07-21 PR2021-08-12 PR2022-03-17
 
     logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug('----------------- upload_studentsubject_from_datalist  --------------------')
         logger.debug('data_dict: ' + str(data_dict))
 
@@ -2613,23 +2668,17 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
     """
 
     caption = _('This subject')
-    caption_plural = _('This subject')
     this_subject_is_added_str = str(_("%(cpt)s will be added") % {'cpt': caption}) \
         if is_test else str(_("%(cpt)s is added") % {'cpt': caption})
     not_added_str = str(_("%(cpt)s will not be added.") % {'cpt': caption}) \
         if is_test else str(_("%(cpt)s is not added.") % {'cpt': caption})
 
-    not_added_plural_str = str(pgettext_lazy('plural', "%(cpt)s will not be added.") % {'cpt': caption_plural}) \
-        if is_test else str(pgettext_lazy('plural', "%(cpt)s are not added.") % {'cpt': caption_plural})
-
     has_error = False
+    pws_has_changed = False
     error_list = []
     studsubj_rows = []
 
     lookup_field_caption = af.get_dict_value(c.CAPTIONS, ('student', 'idnumber'), '')
-    lookup_field_capitalized = '-'
-    if lookup_field_caption:
-        lookup_field_capitalized = lookup_field_caption.capitalize()
 
 # - validate idnumber
     id_number = data_dict.get('idnumber')
@@ -2652,21 +2701,30 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
         logger.debug('has_error: ' + str(has_error))
 
     student = None
+    has_pws_subjbase_pk = None
+    has_multiple_pws_subjects = False
     if not has_error:
 
 # - lookup student in students_dict_with_subjbase_pk_list ( list only contains students of this dep, doubles in uploadlist are filtered out
         if id_number_nodots in students_dict_with_subjbase_pk_list:
             student_dict = students_dict_with_subjbase_pk_list.get(id_number_nodots)
+            # False: has_pws = False
+            # {'2003031202': {'stud_id': 9240, has_pws': False, 372: 'ne', 373: 'en', 374: 'mm1', 375: 'lo', 376: 'cav', 377: 'pa', 380: 'wk', 392: 'ac', 395: 'stg', 414: 'ec', False]},
 
             if logging_on:
                 logger.debug('student_dict: ' + str(student_dict))
 
             student_pk = student_dict.get('stud_id')
-            if logging_on:
-                logger.debug('student_pk: ' + str(student_pk))
-
             if student_pk:
                 student = stud_mod.Student.objects.get_or_none(pk=student_pk, school=school, department=department)
+
+            if 'has_pws_subjbase_pk' in student_dict:
+                value = student_dict.get('has_pws_subjbase_pk')
+                if value:
+                    has_pws_subjbase_pk = value
+                else:
+                    # if has_pws_subjbase_pk exists in student_dict and its value = None means: student has mote than one subject with pws
+                    has_multiple_pws_subjects = True
 
         if logging_on:
             logger.debug('student: ' + str(student))
@@ -2696,8 +2754,10 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
     if not has_error:
         log_list.append(id_number_nodots + '  ' + student.fullname + ' ' + str(student.scheme))
 
-        # mapped_subjectbase_pk_dict = { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code] }, ... }
-        # mapped_subjectbase_pk_dict: {249: {140: [2070, 'sp'], 133: [2054, 'ne'],
+        import_pws_title_or_subjects = ('pws_title' in data_dict or 'pws_subjects' in data_dict)
+
+        # mapped_subjectbase_pk_dict = { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code, has_pws] }, ... }
+        # mapped_subjectbase_pk_dict: {249: {140: [2070, 'sp', False], 133: [2054, 'ne', False],
         scheme_dict = {}
         student_scheme_pk = student.scheme_id
         if student_scheme_pk in mapped_subjectbase_pk_dict:
@@ -2721,8 +2781,9 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
             # subjects: {'133': 'ne', '134': 'en', '136': 'lo', '137': 'cav', '138': 'pa', '140': 'sp', '143': 'bi', '175': 'ec'}
             subjects = data_dict.get('subjects')
             if logging_on:
-                logger.debug('..... subjects: ' + str(subjects))
-                logger.debug('..... student_subjbase_pk_dict: ' + str(student_subjbase_pk_dict))
+                logger.debug('      subjects: ' + str(subjects))
+                logger.debug('      student_subjbase_pk_dict: ' + str(student_subjbase_pk_dict))
+
             if subjects:
                 has_created_studsubj = False
 
@@ -2735,42 +2796,58 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                     # mapped_subjectbase_pk_dict = { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code] }, ... }
                     # mapped_subjectbase_pk_dict: {249: {140: [2070, 'sp'], 133: [2054, 'ne'],
 
-# - skip if student already has this subject
+# - skip if student already has this subject, except when also importing pws title
                     # student_subjbase_pk_dict = {subjectbase_pk: subject_code, ...}
                     if upload_subjectBasePk in student_subjbase_pk_dict:
-                        log_str = ' '.join( (caption_txt, not_added_str, str(_("This candidate already has this subject."))))
+                        log_str = ''.join((caption_txt, not_added_str, ' ', str(_("This candidate already has this subject."))))
                         log_list.append(log_str)
                         if logging_on:
                             logger.debug('..... ' + str(log_str))
 
 # - skip if this subject is not found in scheme
-                    # scheme_dict = { subjectbase_pk: [schemeitem_id, subject_code] }
-                    # scheme_dict = {140: [2070, 'sp'], 133: [2054, 'ne'], ...}
+                    # scheme_dict = { subjectbase_pk: [schemeitem_id, subject_code, has_pws] }
+                    # scheme_dict = {140: [2070, 'sp', False], 133: [2054, 'ne', False], ...}
                     elif upload_subjectBasePk not in scheme_dict:
-                        log_str = ' '.join((caption_txt, not_added_str, str(_("This subject does not occur in this subject scheme."))))
+                        log_str = ''.join((caption_txt, not_added_str, ' ', str(_("The subject does not occur in this subject scheme."))))
                         log_list.append(log_str)
                         if logging_on:
                             logger.debug('..... ' + str(log_str))
                     else:
 
 # - add subject when student does not have this subject and subject is found in scheme:
-                        # scheme_dict = { subjectbase_pk: [schemeitem_id, subject_code] }
-                        # scheme_dict = {140: [2070, 'sp'], 133: [2054, 'ne'], ...}
+                        # scheme_dict = { subjectbase_pk: [schemeitem_id, subject_code, has_pws] }
+                        # scheme_dict = {140: [2070, 'sp', 135], 133: [2054, 'ne', None], ...}
                         schemeitem_list = scheme_dict.get(upload_subjectBasePk)
                         if schemeitem_list:
                             schemeitem_pk = schemeitem_list[0]
+                            schemeitem_has_pws_subjbase_pk = schemeitem_list[2]
+
+                            if schemeitem_has_pws_subjbase_pk and not has_multiple_pws_subjects:
+                                # has_pws_subjbase_pk has value when 1 subject with psw found
+                                # has_pws_subjbase_pk is None and has_multiple_pws_subjects = True when multiple found
+                                if has_pws_subjbase_pk is None:
+                                    has_pws_subjbase_pk = schemeitem_has_pws_subjbase_pk
+                                elif has_pws_subjbase_pk != schemeitem_has_pws_subjbase_pk:
+                                    has_pws_subjbase_pk = None
+                                    has_multiple_pws_subjects = True
 
         # - get schemeitem and upload_subjecttype
 # if so. or no upload subjecttype given, add subject to student
-                            schemeitem = subj_mod.Schemeitem.objects.get_or_none(
-                                pk=schemeitem_pk)
+                            schemeitem = subj_mod.Schemeitem.objects.get_or_none(pk=schemeitem_pk)
 
         # - check if lookup subjecttype is the same as the upload subjecttype
                             if schemeitem:
             # - add studentsubject  - schemeitem_pk is the subject with the lowest subjecttype sequence
                                 messages = []
                                 err_list = []
-                                studsubj = stud_view.create_studsubj(student, schemeitem, messages, err_list, request, is_test)
+                                studsubj = stud_view.create_studsubj(
+                                    student=student,
+                                    schemeitem=schemeitem,
+                                    messages=messages,
+                                    error_list=err_list,
+                                    request=request,
+                                    skip_save=is_test)
+
                                 if studsubj:
                                     has_created_studsubj = True
                                     log_str = ''.join((caption_txt, this_subject_is_added_str, ' ',
@@ -2779,14 +2856,15 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                                     log_list.append(log_str)
                                     if logging_on:
                                         logger.debug('..... ' + str(log_str))
+
                                 elif err_list:
-                                    log_list.append(' '.join((caption_txt, ' '.join(err_list))))
+                                    log_list.append(''.join((caption_txt, ''.join(err_list))))
                                     if logging_on:
                                         logger.debug('..... ' + str(err_list))
 
 # +++ end of loop through subjects of data_list ++++++++++++++++++++++++++++++++++++++
 
-# - when studsubjects are adde to student: add rows to studsubj_rows
+# - when studsubjects are added to student: add rows to studsubj_rows
                 # PR2021-08-13 to prevent timeout error: download studentsubject_rows in separate ajax call
                 if has_created_studsubj:
                     pass
@@ -2805,99 +2883,83 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                 else:
                     has_error = True
                     caption_txt = c.STRING_SPACE_05 + (c.STRING_SPACE_10)[:8]
-                    log_str = ' '.join(
-                        (caption_txt, str(_("No subjects are added."))))
+                    log_str = ''.join((caption_txt, str(_("No subjects are added."))))
                     log_list.append(log_str)
                     if logging_on:
                         logger.debug('..... ' + str(log_str))
 
 # +++ end of loop ++++++++++++++++++++++++++++++++++++++
 
-        # TODO move to grade upload
-        """
-        # +++ add pws_title pws_subjects ++++++++++++++++++++++++++++++++++++++
-        # - add pws_title and pws_subjects
-        if 'pws_title' in data_dict or 'pws_subjects' in data_dict:
 
+# +++ add pws_title pws_subjects ++++++++++++++++++++++++++++++++++++++
+        if import_pws_title_or_subjects:
+
+            caption_txt = c.STRING_SPACE_05 + (c.STRING_SPACE_10)[:8]
             upload_pws_title = data_dict.get('pws_title')
             upload_pws_subjects = data_dict.get('pws_subjects')
 
-            caption_txt = ''
-            not_added_single_plural = not_added_str
-            if upload_pws_title:
-                if upload_pws_subjects:
-                    caption_txt = str(_('Assignment title and -subjects'))
-                    not_added_single_plural = not_added_plural_str
-                else:
-                    caption_txt = str(_('Assignment title'))
-            elif upload_pws_subjects:
-                caption_txt = str(_('Assignment subjects'))
-                not_added_single_plural = not_added_plural_str
+            not_added_str = str(_("Assignment info will not be added.")) \
+                if is_test else str(_("Assignment info is not added."))
 
-            studsubj, lookup_pws_title, lookup_pws_subjects = None, None, None
-            studsubj_with_pws_found = False
-            multiple_studsubj_with_pws_found = False
+            logger.debug('-----------> has_pws_subjbase_pk: ' + str(has_pws_subjbase_pk))
+            logger.debug('-----------> has_multiple_pws_subjects: ' + str(has_multiple_pws_subjects))
+            logger.debug('-----------> upload_pws_title: ' + str(upload_pws_title))
+            logger.debug('-----------> upload_pws_subjects: ' + str(upload_pws_subjects))
 
-        # - get student_subjects with subjecttype has_pws = True
-            # check if there is none or multiple
-            studsubjects = stud_mod.Studentsubject.objects.filter(
-                    student=student,
-                    schemeitem__subjecttype__has_pws=True)
-            if studsubjects:
-                for studsubj in studsubjects:
-                    if not studsubj_with_pws_found:
-                        lookup_pws_title = studsubj.pws_title
-                        lookup_pws_subjects = studsubj.pws_subjects
-                        studsubj_with_pws_found = True
-                    else:
-                        multiple_studsubj_with_pws_found = True
-                        studsubj = None
-                        lookup_pws_title = None
-                        lookup_pws_subjects = None
-            if not studsubj_with_pws_found:
-                log_list.append(''.join( (caption_txt, not_added_single_plural, '\n', str(_('Candidate has no subject with assignment.')))))
-            elif multiple_studsubj_with_pws_found:
-                log_list.append(''.join( (caption_txt, not_added_single_plural, '\n', str(_('Candidate has multiple subjects with assignment.')))))
+            if has_multiple_pws_subjects:
+                log_list.append(''.join( (caption_txt, not_added_str)))
+                log_list.append(''.join( (caption_txt, str(_('Candidate has multiple subjects with assignment.')))))
+            elif has_pws_subjbase_pk is None:
+                log_list.append(''.join( (caption_txt, not_added_str)))
+                log_list.append(''.join( (caption_txt, str(_('Candidate has no subject with assignment.')))))
             else:
-                # only save if value has changed, skip if upload_pws has no value
-                save_studsubj = False
-                if upload_pws_title and upload_pws_title != lookup_pws_title:
-                    studsubj.pws_title = lookup_pws_title
-                    save_studsubj = True
-                if upload_pws_subjects and upload_pws_subjects != lookup_pws_subjects:
-                    studsubj.pws_subjects = lookup_pws_subjects
-                    save_studsubj = True
-                if not is_test and save_studsubj:
-                    studsubj.save(request=request)
-                # add field_dict to studsubj_dict
-                   # studsubj_dict[field] = field_dict
+                # - get student_subjects with subjecttype has_pws = True
+                # check if there is none or multiple
+                studsubj = stud_mod.Studentsubject.objects.get_or_none(
+                    student=student,
+                    schemeitem__subject__base_id=has_pws_subjbase_pk)
+                logger.debug('-----------> studsubj: ' + str(studsubj))
+
+                if not studsubj:
+                    if is_test:
+                        log_list.append(''.join((caption_txt, str(_("Assignment info will be added.")))))
+                    else:
+                       log_list.append(''.join((caption_txt, str(_("Assignment info is not added.")),
+                                                     str(_("Subject could not be found.")))))
+                else:
+                    saved_pws_title = studsubj.pws_title
+                    saved_pws_subjects = studsubj.pws_subjects
+                    logger.debug('-----------> saved_pws_title: ' + str(saved_pws_title))
+                    logger.debug('-----------> saved_pws_subjects: ' + str(saved_pws_subjects))
+
+                    # only save if value has changed, skip if upload_pws has no value
+                    pws_has_changed = False
+                    if upload_pws_title and upload_pws_title != saved_pws_title:
+                        studsubj.pws_title = upload_pws_title
+                        pws_has_changed = True
+
+                    if upload_pws_subjects and upload_pws_subjects != saved_pws_subjects:
+                        studsubj.pws_subjects = upload_pws_subjects
+                        pws_has_changed = True
+
+                    logger.debug('-----------> pws_has_changed: ' + str(pws_has_changed))
+            # is is_test and sws is a new subject it is not saved yet
+                    if not pws_has_changed:
+                        if is_test:
+                            log_list.append(''.join((caption_txt, str(_("Assignment info will stay the same.")))))
+                        else:
+                            log_list.append(''.join( (caption_txt, str(_("Assignment info is not changed.")))))
+                    else:
+                        if is_test:
+                            log_list.append(''.join( (caption_txt, str(_("Assignment info will be added.")))))
+                        else:
+                            studsubj.save(request=request)
+                            log_list.append(''.join( (caption_txt, str(_("Assignment info is added.")))))
+                        # add field_dict to studsubj_dict
+                           # studsubj_dict[field] = field_dict
         # +++ end of add pws_title pws_subjects ++++++++++++++++++++++++++++++++++++++
-        """
 
-# - dont save data when it is a test run
-        if not is_test:
-
-    # - get scheme and update in student, also remove if necessary
-            new_scheme = subj_mod.Scheme.objects.get_or_none(
-                department=student.department,
-                level=student.level,
-                sector=student.sector)
-            setattr(student, 'scheme', new_scheme)
-
-            try:
-                student.save(request=request)
-                #studsubj_dict['id']['pk'] = student.pk
-                #studsubj_dict['id']['ppk'] = student.company.pk
-            except Exception as e:
-# - give error msg when creating student failed
-                error_str = str(_("An error occurred. The student data is not saved."))
-                # TODO
-                code_text = '---'
-                log_list.append(" ".join((code_text, error_str)))
-                #studsubj_dict['row_error'] = error_str
-
-    is_existing, is_new_student= False, False
-    return studsubj_rows, is_existing, is_new_student, has_error
+    return studsubj_rows, has_error, pws_has_changed
 # --- end of upload_studentsubject_from_datalist
 
 
@@ -3000,6 +3062,7 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
             has_error = True
             log_list.append(_("Candidate with ID-number '%(val)s' is not found.") % {'val': id_number_nodots})
 
+    caption_txt = c.STRING_SPACE_05 + (c.STRING_SPACE_10)[:8]
     if has_error:
         count_dict['stud_not_found'] += 1
     else:
@@ -3016,7 +3079,6 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
             count_dict['stud_with_error'] += 1
 
             log_list.append(id_number_nodots + '  ' + stud_name)
-            caption_txt = c.STRING_SPACE_05 + (c.STRING_SPACE_10)[:8]
             log_list.append(' '.join((caption_txt, str(_("The subject scheme of this candidate is not found.")))))
 
             lvl_id = saved_student_dict.get('lvl_id')
@@ -3035,6 +3097,7 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
             log_list.append(''.join((caption_txt, str(not_added_txt))))
 
     if not has_error:
+
         log_list.append(id_number_nodots + '  ' + stud_name + ' ' + schm_name)
 
         # - use list of subjectbase_pk's of this student - to speed up search
@@ -3078,14 +3141,14 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
             if logging_on:
                 logger.debug('upload_subjects_dict: ' + str(upload_subjects_dict))
 
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             has_notfound_subjects, has_subjects_with_error, has_grades_with_error, has_changed_values = False, False, False, False
 
 # ++++++++  loop through upload_subjects_dict of upload_data_dict
             for sjbase_pk_str, grade_arr in upload_subjects_dict.items():
 
                 subject_not_found, subject_has_error, grade_has_error, value_has_changed = \
-                    import_studsubj_grade_from_datalist(examperiod, examgradetype, saved_student_dict, scheme_dict,
+                    import_studsubj_grade_from_datalist(request, examperiod, examgradetype, saved_student_dict, scheme_dict,
                                         sjbase_pk_str, grade_arr, tobe_updated_dict, log_list, is_test)
                 if subject_not_found:
                     has_notfound_subjects = True
@@ -3106,7 +3169,7 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
             if has_changed_values:
                 count_dict['changed_values'] += 1
 
-        # +++ end of loop ++++++++++++++++++++++++++++++++++++++
+# +++ end of loop ++++++++++++++++++++++++++++++++++++++
 
         """
         # - dont save data when it is a test run
@@ -3134,10 +3197,10 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
 # --- end of get_tobe_updated_gradelist_from_datalist
 
 
-def import_studsubj_grade_from_datalist(examperiod, examgradetype, saved_student_dict, scheme_dict,
+def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, saved_student_dict, scheme_dict,
                             sjbase_pk_str, grade_arr, tobe_updated_dict, log_list, is_test):
     # PR2021-12-10 PR2022-01-04 PR2022-02-09 PR2022-02-19
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- import_studsubj_grade_from_datalist ----- ')
         logger.debug('       examperiod: ' + str(examperiod) + ' ' + str(type(examperiod)))
@@ -3177,17 +3240,18 @@ def import_studsubj_grade_from_datalist(examperiod, examgradetype, saved_student
     """
     saved_student_dict: {
         'stud_id': 9240, 'name': 'Albertus, Lyanne S.', 'schm_id': 560, 'schm_name': 'Vsbo - PBL - ec', 
-        'lvl_id': 119, 'sct_id': 265, 'iseveningstudent': False, 'islexstudent': False, 'partial_exam': False, 
+        'lvl_id': 119, 'sct_id': 265, 'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4,
+        'iseveningstudent': False, 'islexstudent': False, 'partial_exam': False, 
         'isdayschool': False, 'iseveningschool': False, 'islexschool': False, 
         'egt': 'segrade', 'ep': 1, 
-        372: {'sjb_id': 372, 'sjb_code': 'ne', 'is_extra_nocount': False, 'is_extra_counts': False, 
+        372: {'sjb_id': 372, 'sjb_code': 'ne', cluster_id: 300, 'is_extra_nocount': False, 'is_extra_counts': False, 
                 'has_exemption': False, 'has_sr': False, 'has_reex': False, 'has_reex03': False, 
                 'ss_si_id': 9815, 'gr_id': 67380, 'ss_id': 67920, 'val': '6.4', 
                 'pescore': None, 'cescore': None, 'segrade': '4,7', 'srgrade': None, 'pegrade': None, 'cegrade': None, 
                 'publ': False, 'bl': False, 'auth': False, 
                 'exam_id': None, 'nex_id': None, 'scalelength': None, 'cesuur': None, 'nterm': None}, 
 
-    saved_subj_dict: {'sjb_id': 372, 'sjb_code': 'ne', 'is_extra_nocount': False, 'is_extra_counts': False, 
+    saved_subj_dict: {'sjb_id': 372, 'sjb_code': 'ne', cluster_id: 300, 'is_extra_nocount': False, 'is_extra_counts': False, 
                     'has_exemption': False, 'has_sr': False, 'has_reex': False, 'has_reex03': False, 
                     'ss_si_id': 9815, 'gr_id': 67380, 'ss_id': 67920, 'val': '5.6', 
                     'publ': False, 'bl': False, 'auth': False, 
@@ -3235,21 +3299,59 @@ def import_studsubj_grade_from_datalist(examperiod, examgradetype, saved_student
 
         else:
 
-# - validate import grade
-            output_str, err_list, exemption_grade_tobe_created = \
-                grade_val.validate_import_grade(
-                    student_dict=saved_student_dict,
-                    subj_dict=saved_studsubj_dict,
-                    si_dict=si_dict,
-                    examperiod=examperiod,
-                    examgradetype=examgradetype,
-                    grade_str=grade_str,
-                    is_test=is_test)
+# - check if req_user is allowed to import this grade
+            err_list = []
+# - check if school department and level are allowed
+            if request.user.allowed_schoolbases:
+                allowed_schoolbase_pk_arr = request.user.allowed_schoolbases.split(';')
+                schoolbase_pk = saved_student_dict.get('schoolbase_id')
+                if not schoolbase_pk or not str(schoolbase_pk) in allowed_schoolbase_pk_arr:
+                    err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This school').lower()}))
+            if not err_list and request.user.allowed_depbases:
+                allowed_depbase_pk_arr = request.user.allowed_depbases.split(';')
+                depbase_pk = saved_student_dict.get('depbase_id')
+                if not depbase_pk or not str(depbase_pk) in allowed_depbase_pk_arr:
+                    err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This department').lower()}))
+            if not err_list and request.user.allowed_levelbases:
+                allowed_lvlbase_pk_arr = request.user.allowed_levelbases.split(';')
+                lvlbase_pk = saved_student_dict.get('lvlbase_id')
+                if not lvlbase_pk or not str(lvlbase_pk) in allowed_lvlbase_pk_arr:
+                    err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('this level')}))
+            if not err_list and request.user.allowed_subjectbases:
+                allowed_subjbase_pk_arr = request.user.allowed_subjectbases.split(';')
+                subjbase_pk = saved_studsubj_dict.get('sjb_id')
+                if not subjbase_pk or not str(subjbase_pk) in allowed_subjbase_pk_arr:
+                    err_list.append(str( _("You don't have permission to upload %(cpt)s.") % {'cpt': _('this subject')}))
+            if not err_list and request.user.allowed_clusterbases:
+                allowed_cluster_pk_arr = request.user.allowed_clusterbases.split(';')
+                cluster_pk = saved_studsubj_dict.get('cluster_id')
+                if not cluster_pk or not str(cluster_pk) in allowed_cluster_pk_arr:
+                    err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This cluster').lower()}))
 
-            if logging_on:
-                logger.debug('..... output_str: ' + str(output_str))
-                logger.debug('..... err_list: ' + str(err_list))
-                logger.debug('..... exemption_grade_tobe_created: ' + str(exemption_grade_tobe_created))
+# - validate import grade
+            exemption_grade_tobe_created = False
+            output_str = None
+            if not err_list:
+                outpt_str, err_lst, exemp_grade_tobe_created = \
+                    grade_val.validate_import_grade(
+                        student_dict=saved_student_dict,
+                        subj_dict=saved_studsubj_dict,
+                        si_dict=si_dict,
+                        examperiod=examperiod,
+                        examgradetype=examgradetype,
+                        grade_str=grade_str,
+                        is_test=is_test
+                    )
+                if err_lst:
+                    err_list.extend(err_lst)
+                exemption_grade_tobe_created = exemp_grade_tobe_created
+                if outpt_str:
+                    output_str = outpt_str
+
+                if logging_on:
+                    logger.debug('..... output_str: ' + str(output_str))
+                    logger.debug('..... err_list: ' + str(err_list))
+                    logger.debug('..... exemption_grade_tobe_created: ' + str(exemption_grade_tobe_created))
 
 # - write msg_err when error to logfile
             if err_list:
@@ -3364,16 +3466,14 @@ def import_studsubj_grade_from_datalist(examperiod, examgradetype, saved_student
                         'finalgrade': sql_finalgrade_str}
 
 # - when value_has_changed: update calculated fields
-# - write 'cav 8,3 (was: <blank>)' to logfile
-                # was: grade_str_spaces = (grade_str + c.STRING_SPACE_10)[:6]
-                    output_nz = output_str.replace('.', ',') if output_str else ''
-                    output_spaces = (output_nz + c.STRING_SPACE_10)[:6]
+                output_nz = output_str.replace('.', ',') if output_str else ''
+                output_spaces = (output_nz + c.STRING_SPACE_10)[:6]
 
-                    blank_str = ''.join(('<', str(_('blank')), '>'))
-                    saved_value_nz = (saved_value.replace('.', ',') if saved_value else blank_str) + c.STRING_SPACE_10
+                blank_str = ''.join(('<', str(_('blank')), '>'))
+                saved_value_nz = (saved_value.replace('.', ',') if saved_value else blank_str) + c.STRING_SPACE_10
 
-                    has_changed_str = '' if not value_has_changed else ''.join((' (', str(_('has changed')), ')'))
-                    log_list.append(''.join((caption_txt, output_spaces, str(_('was')), ': ', saved_value_nz[:8], has_changed_str)))
+                has_changed_str = '' if not value_has_changed else ''.join((' (', str(_('has changed')), ')'))
+                log_list.append(''.join((caption_txt, output_spaces, str(_('was')), ': ', saved_value_nz[:8], has_changed_str)))
 
     return subject_not_found, subject_has_error, grade_has_error, value_has_changed
 # --- end of import_studsubj_grade_from_datalist

@@ -119,7 +119,7 @@ class OrderlistsListView(View): # PR2021-07-04
 
 
 #/////////////////////////////////////////////////////////////////
-def create_student_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, append_dict,
+def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
                         student_pk=None, sel_lvlbase_pk=None, sel_sctbase_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
     # - show only students that are not tobedeleted
@@ -129,106 +129,108 @@ def create_student_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, appe
 
     student_rows = []
     error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
-    try:
 
-        if logging_on:
-            logger.debug(' ----- create_student_rows -----')
-            logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
-            logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
-            logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
-            logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
-            logger.debug('sel_sctbase_pk: ' + str(sel_sctbase_pk))
+    if sel_examyear and sel_schoolbase and sel_depbase:
+        try:
 
-        sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
-        sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
-            "sch.locked AS s_locked, ey.locked AS ey_locked, ",
-            "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
-            "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id, "
-            "dep.abbrev AS dep_abbrev, db.code AS db_code,",
-            "dep.level_req AS lvl_req, lvl.abbrev AS lvl_abbrev,",
-            "dep.sector_req AS sct_req, sct.abbrev AS sct_abbrev, scheme.name AS scheme_name,",
-            "dep.has_profiel AS dep_has_profiel, sct.abbrev AS sct_abbrev,",
-            "CONCAT('student_', st.id::TEXT) AS mapid,",
+            if logging_on:
+                logger.debug(' ----- create_student_rows -----')
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                logger.debug('sel_depbase: ' + str(sel_depbase))
+                logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                logger.debug('sel_sctbase_pk: ' + str(sel_sctbase_pk))
 
-            "CONCAT_WS (' ', st.prefix, CONCAT(st.lastname, ','), st.firstname) AS fullname,",
-            "st.lastname, st.firstname, st.prefix, st.gender,",
-            "st.idnumber, st.birthdate, st.birthcountry, st.birthcity,",
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
+            sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
+                "sch.locked AS s_locked, ey.locked AS ey_locked, ",
+                "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
+                "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id, "
+                "dep.abbrev AS dep_abbrev, db.code AS db_code,",
+                "dep.level_req AS lvl_req, lvl.abbrev AS lvl_abbrev,",
+                "dep.sector_req AS sct_req, sct.abbrev AS sct_abbrev, scheme.name AS scheme_name,",
+                "dep.has_profiel AS dep_has_profiel, sct.abbrev AS sct_abbrev,",
+                "CONCAT('student_', st.id::TEXT) AS mapid,",
 
-            "st.classname, st.examnumber, st.regnumber, st.diplomanumber, st.gradelistnumber,",
-            "st.has_dyslexie, st.iseveningstudent, st.islexstudent,",
-            "st.bis_exam, st.partial_exam,",
+                "CONCAT_WS (' ', st.prefix, CONCAT(st.lastname, ','), st.firstname) AS fullname,",
+                "st.lastname, st.firstname, st.prefix, st.gender,",
+                "st.idnumber, st.birthdate, st.birthcountry, st.birthcity,",
 
-            "st.linked, st.notlinked, st.sr_count, st.reex_count, st.reex03_count, st.withdrawn,",
-            "st.grade_ce_avg, st.grade_combi_avg, st.grade_final_avg,",
+                "st.classname, st.examnumber, st.regnumber, st.diplomanumber, st.gradelistnumber,",
+                "st.has_dyslexie, st.iseveningstudent, st.islexstudent,",
+                "st.bis_exam, st.partial_exam,",
 
-            "st.result, st.result_status, st.result_info, st.tobedeleted,",
+                "st.linked, st.notlinked, st.sr_count, st.reex_count, st.reex03_count, st.withdrawn,",
+                "st.grade_ce_avg, st.grade_combi_avg, st.grade_final_avg,",
 
-            "st.modifiedby_id, st.modifiedat,",
-            "SUBSTRING(au.username, 7) AS modby_username",
+                "st.result, st.result_status, st.result_info, st.tobedeleted,",
 
-            "FROM students_student AS st",
-            "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
-            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-            "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
-            "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
-            "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
-            "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
-            "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
-            "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
-            "WHERE sch.base_id = %(sb_id)s::INT",
-                    "AND sch.examyear_id = %(ey_id)s::INT",
-                    "AND dep.base_id = %(db_id)s::INT",
-                    "AND NOT st.tobedeleted"]
+                "st.modifiedby_id, st.modifiedat,",
+                "SUBSTRING(au.username, 7) AS modby_username",
 
-        if sel_lvlbase_pk:
-            sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
-            sql_keys['lvlbase_id'] = sel_lvlbase_pk
-        if sel_sctbase_pk:
-            sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
-            sql_keys['sctbase_id'] = sel_sctbase_pk
+                "FROM students_student AS st",
+                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+                "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
+                "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
+                "WHERE sch.base_id = %(sb_id)s::INT",
+                        "AND sch.examyear_id = %(ey_id)s::INT",
+                        "AND dep.base_id = %(db_id)s::INT",
+                        "AND NOT st.tobedeleted"]
 
-        if student_pk:
-            sql_list.append('AND st.id = %(st_id)s::INT')
-            sql_keys['st_id'] = student_pk
+            if sel_lvlbase_pk:
+                sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
+                sql_keys['lvlbase_id'] = sel_lvlbase_pk
+            if sel_sctbase_pk:
+                sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
+                sql_keys['sctbase_id'] = sel_sctbase_pk
 
-        # order by id necessary to make sure that lookup function on client gets the right row
-        sql_list.append("ORDER BY st.id")
+            if student_pk:
+                sql_list.append('AND st.id = %(st_id)s::INT')
+                sql_keys['st_id'] = student_pk
 
-        sql = ' '.join(sql_list)
+            # order by id necessary to make sure that lookup function on client gets the right row
+            sql_list.append("ORDER BY st.id")
 
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-            student_rows = af.dictfetchall(cursor)
+            sql = ' '.join(sql_list)
 
-        if logging_on and False:
-            logger.debug('student_rows: ' + str(student_rows))
-            # logger.debug('connection.queries: ' + str(connection.queries))
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                student_rows = af.dictfetchall(cursor)
 
-    # - add lastname_firstname_initials to rows
-        if student_rows:
-            for row in student_rows:
-                first_name = row.get('firstname')
-                last_name = row.get('lastname')
-                prefix = row.get('prefix')
-                row['name_first_init'] = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+            if logging_on and False:
+                logger.debug('student_rows: ' + str(student_rows))
+                # logger.debug('connection.queries: ' + str(connection.queries))
 
-        # - add messages to student_row
-        if student_pk and student_rows:
-            # when student_pk has value there is only 1 row
-            row = student_rows[0]
-            if row:
-                for key, value in append_dict.items():
-                    row[key] = value
+        # - add lastname_firstname_initials to rows
+            if student_rows:
+                for row in student_rows:
+                    first_name = row.get('firstname')
+                    last_name = row.get('lastname')
+                    prefix = row.get('prefix')
+                    row['name_first_init'] = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
 
-    except Exception as e:
-        # - return msg_err when instance not created
-        logger.error(getattr(e, 'message', str(e)))
-        # &emsp; add 4 'hard' spaces
-        msg_html = '<br>'.join((
-            str(_('An error occurred')) + ':',
-            '&emsp;<i>' + str(e) + '</i>'
-        ))
-        error_dict['nonfield_download'] = msg_html
+            # - add messages to student_row
+            if student_pk and student_rows:
+                # when student_pk has value there is only 1 row
+                row = student_rows[0]
+                if row:
+                    for key, value in append_dict.items():
+                        row[key] = value
+
+        except Exception as e:
+            # - return msg_err when instance not created
+            logger.error(getattr(e, 'message', str(e)))
+            # &emsp; add 4 'hard' spaces
+            msg_html = '<br>'.join((
+                str(_('An error occurred')) + ':',
+                '&emsp;<i>' + str(e) + '</i>'
+            ))
+            error_dict['nonfield_download'] = msg_html
 
     return student_rows, error_dict
 # --- end of create_student_rows
@@ -299,6 +301,8 @@ class ClusterUploadView(View):  # PR2022-01-06
                 if sel_msg_list:
                     msg_list.extend(sel_msg_list)
                 else:
+                    sel_schoolbase = sel_school.base if sel_school else None
+                    sel_depbase = sel_department.base if sel_department else None
 
                     mapped_cluster_pk_dict = {}
 
@@ -327,20 +331,21 @@ class ClusterUploadView(View):  # PR2022-01-06
                             logger.debug('updated_cluster_pk_list: ' + str(updated_cluster_pk_list))
                             logger.debug('mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
 
+
                         updated_cluster_rows = []
                         if updated_cluster_pk_list:
                             updated_cluster_rows = sj_vw.create_cluster_rows(
-                                sel_examyear_pk=sel_examyear.pk,
-                                sel_schoolbase_pk=sel_school.base_id,
-                                sel_depbase_pk=sel_department.base_id,
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_schoolbase,
+                                sel_depbase=sel_depbase,
                                 cluster_pk_list=updated_cluster_pk_list
                             )
 
                         if created_cluster_pk_list:
                             created_cluster_rows = sj_vw.create_cluster_rows(
-                                sel_examyear_pk=sel_examyear.pk,
-                                sel_schoolbase_pk=sel_school.base_id,
-                                sel_depbase_pk=sel_department.base_id,
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_schoolbase,
+                                sel_depbase=sel_depbase,
                                 cluster_pk_list=created_cluster_pk_list,
                                 add_field_created=True
                             )
@@ -366,8 +371,8 @@ class ClusterUploadView(View):  # PR2022-01-06
                         if studsubj_pk_list:
                             rows = create_studentsubject_rows(
                                 examyear=sel_examyear,
-                                schoolbase=sel_school.base,
-                                depbase=sel_department.base,
+                                schoolbase=sel_schoolbase,
+                                depbase=sel_depbase,
                                 requsr_same_school=True,  # check for same_school is included in may_edit
                                 setting_dict={},
                                 append_dict=append_dict,
@@ -430,9 +435,9 @@ def loop_cluster_list(sel_examyear, sel_school, sel_department, cluster_list, ma
                 if new_cluster_pk:
                     created_cluster_pk_list.append(new_cluster_pk)
                 if logging_on:
-                    logger.debug('new_cluster_pk: ' + str(new_cluster_pk))
-                    logger.debug('updated_cluster_pk_list: ' + str(updated_cluster_pk_list))
-                    logger.debug('mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
+                    logger.debug('     new_cluster_pk: ' + str(new_cluster_pk))
+                    logger.debug('     updated_cluster_pk_list: ' + str(updated_cluster_pk_list))
+                    logger.debug('     mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
 
     # +++  or get existing cluster
             # filter out 'new_1', should not happen
@@ -660,9 +665,9 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                     if not deleted_ok:
                         student_pk = student.pk if student else None
                         updated_rows, error_dictNIU = create_student_rows(
-                            sel_examyear_pk=sel_school.examyear.pk,
-                            sel_schoolbase_pk=sel_school.base_id,
-                            sel_depbase_pk=sel_department.base_id,
+                            sel_examyear=sel_school.examyear,
+                            sel_schoolbase=sel_school.base,
+                            sel_depbase=sel_department.base,
                             append_dict=append_dict,
                             student_pk=student_pk)
 
@@ -855,9 +860,9 @@ class StudentLinkStudentView(View):  # PR2021-09-06
                             #TODO this is not used, check if can be removed
                             student_pk = cur_student.pk if cur_student else None
                             updated_rows, error_dictNIU = create_student_rows(
-                                sel_examyear_pk=sel_school.examyear.pk,
-                                sel_schoolbase_pk=sel_school.base_id,
-                                sel_depbase_pk=sel_department.base_id,
+                                sel_examyear=sel_school.examyear,
+                                sel_schoolbase=sel_school.base,
+                                sel_depbase=sel_department.base,
                                 append_dict=append_dict,
                                 student_pk=student_pk)
 
@@ -1210,14 +1215,14 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
             logger.debug(' ============= SendEmailSubmitExformView ============= ')
 
         update_wrap = {}
-        msg_list = []
+
         class_str = 'border_bg_transparent'
 
-        # -  get user_lang
+# -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-        # - get upload_dict from request.POST
+# - get upload_dict from request.POST
         upload_json = request.POST.get('upload', None)
         if upload_json:
             upload_dict = json.loads(upload_json)
@@ -1235,7 +1240,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
                     if 'auth1' in req_usr.usergroup_list or 'auth2' in req_usr.usergroup_list:
                         if mode == 'publish_exam':
                             has_permit = 'permit_publish_exam' in permit_list
-                        elif mode == 'publish_grade_exam':
+                        elif mode in ('publish_grade_exam'):
                             has_permit = 'permit_submit_exam' in permit_list
                         else:
                             has_permit = 'permit_approve_subject' in permit_list
@@ -1249,7 +1254,6 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
                 logger.debug('has_permit: ' + str(has_permit))
 
             if has_permit:
-
                 if mode == 'publish_exam':
                     formname = 'exam'
                     sel_school, sel_department = None, None
@@ -1298,7 +1302,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
 
                         if not mail_count:
                             class_str = 'border_bg_invalid'
-                            msg_list +=  ("<p class='pb-2'>",
+                            msg_list += ("<p class='pb-2'>",
                                                str(_('An error occurred')),
                                                str(_('The email has not been sent.')), '</p>')
                         else:
@@ -4881,7 +4885,17 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         sel_subjbase_pk = None
         if c.KEY_SEL_SUBJBASE_PK in setting_dict:
             sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
-        acc_view.set_allowed_subjbase_filter(sql_keys, sql_list, sel_subjbase_pk, request, 'studsubj')
+
+        acc_view.get_userfilter_allowed_subjbase(
+            request = request,
+            sql_keys = sql_keys,
+            sql_list = sql_list,
+            subjbase_pk = sel_subjbase_pk,
+            skip_allowed_filter = False,
+            table='studsubj'
+        )
+
+
 
         # - filter on studsubj_pk_list with ANY clause
 

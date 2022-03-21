@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from django.db import connection
 
+from accounts import views as acc_view
 from awpr import constants as c
 from awpr import settings as s
 from grades import calc_finalgrade as calc_final
@@ -19,7 +20,7 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25
     err_list = []
     if grade_instance:
         # note: don't check on blocked:
-        #   se_blocked etc is True when Inspection has blocked the subject from gradelist, until it is changed
+        #   se_blocked etc is True when Inspectorate has blocked the subject from gradelist, until it is changed
         #   when blocked is set True, published_id  and all auth_id will be erased, so the school can submit the grade again
 
         is_publ, is_auth = False, False
@@ -53,7 +54,7 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25
 
             if is_publ:
                 err_list.append(str(_('%(cpt)s is already submitted.') % {'cpt': caption}))
-                err_list.append(str(_('You must ask the Inspection permission to make changes.')))
+                err_list.append(str(_('You must ask the Inspectorate permission to make changes.')))
             elif is_auth:
                 err_list.append(str(_('%(cpt)s is already authorized.') % {'cpt': caption}))
                 err_list.append(str(_('You must first undo the authorization before you can make changes.')))
@@ -187,7 +188,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
 
 # - check if:
     #  - grade is already authorized, published or blocked
-    #   se_blocked etc is True when Inspection has blocked the subject from gradelist, until it is changed
+    #   se_blocked etc is True when Inspectorate has blocked the subject from gradelist, until it is changed
     #   when blocked is set True, published_id  and all auth_id will be erased, so the school can submit the grade again
     if not error_list:
         # examtype = 'se', 'sr', 'pe', 'ce'
@@ -627,7 +628,7 @@ def validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field):  # PR
 # - function checks
 # if:
     #  - grade is already authorized, published or blocked
-    #   se_blocked etc is True when Inspection has blocked the subject from gradelist, until it is changed
+    #   se_blocked etc is True when Inspectorate has blocked the subject from gradelist, until it is changed
     #   when blocked is set True, published_id  and all auth_id will be erased, so the school can submit the grade again
 
     #  Note: 'se' and 'pe' don't have to be checked, because they have no 'is_se_cand" or 'is_pe_cand"
@@ -717,7 +718,7 @@ def validate_grade_published(subj_dict, this_item_cpt):  # PR2021-12-11 PR2021-1
     if logging_on:
         logger.debug(' ----- validate_grade_published ----- ')
 
-    #   se_blocked etc is True when Inspection has blocked the subject from gradelist, until it is changed
+    #   se_blocked etc is True when Inspectorate has blocked the subject from gradelist, until it is changed
     #   when blocked is set True, published_id  and all auth_id will be erased, so the school can submit the grade again
     err_list = []
 
@@ -746,8 +747,9 @@ def validate_grade_published(subj_dict, this_item_cpt):  # PR2021-12-11 PR2021-1
 
 
 def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetype, double_entrieslist,
-                                student_id=None, studsubj_id=None):  # PR2021-12-10  PR2021-12-15 PR2022-01-04 PR2022-02-09
-    logging_on = False  # s.LOGGING_ON
+                                student_id=None, studsubj_id=None):
+    # PR2021-12-10  PR2021-12-15 PR2022-01-04 PR2022-02-09 PR2022-03-19
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- get_student_subj_grade_dict  --------------------')
         logger.debug('double_entrieslist: ' + str(double_entrieslist))
@@ -806,7 +808,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
             sql_grade_list.append("AND gr.studentsubject_id = %(studsubj_id)s::INT")
         sub_grade_sql = ' '.join(sql_grade_list)
 
-        if logging_on:
+        if logging_on and False:
             with connection.cursor() as cursor:
                 cursor.execute(sub_grade_sql, sql_keys)
                 rows = cursor.fetchall()
@@ -821,6 +823,8 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                              "SELECT studsubj.id AS studsubj_id, studsubj.student_id, subj.base_id AS sjb_id, subjbase.code AS sjb_code,",
                              "studsubj.schemeitem_id AS ss_si_id,",  # studsubj.schemeitem_id
 
+                             "studsubj.cluster_id,",
+
                              "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
                              "studsubj.has_exemption, studsubj.has_sr,",
                              "studsubj.has_reex, studsubj.has_reex03,",
@@ -832,9 +836,11 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                              "sub_grade_sql.publ, sub_grade_sql.blocked, sub_grade_sql.auth,",
                              "sub_grade_sql.examperiod, sub_grade_sql.exam_id,",
                              "sub_grade_sql.nex_id, sub_grade_sql.scalelength, sub_grade_sql.cesuur, sub_grade_sql.nterm",  #, sub_grade_sql.examdate",
+
             "FROM students_studentsubject AS studsubj",
+
             "LEFT JOIN sub_grade_sql ON (sub_grade_sql.studsubj_id = studsubj.id)",
-            # was "INNER JOIN sub_grade_sql ON (sub_grade_sql.studsubj_id = studsubj.id)",
+
             "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
             "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
             "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
@@ -848,7 +854,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
             sql_studsubj_list.append("AND studsubj.id = %(studsubj_id)s::INT")
         sub_sql = ' '.join(sql_studsubj_list)
 
-        if logging_on:
+        if logging_on and False:
             with connection.cursor() as cursor:
                 cursor.execute(sub_sql, sql_keys)
                 rows = cursor.fetchall()
@@ -863,10 +869,12 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
             "SELECT stud.idnumber, stud.id, stud.lastname, stud.firstname, stud.prefix,", # 5
             "stud.scheme_id, schm.name, stud.level_id, stud.sector_id,", # 4
 
+            "school.base_id, dep.base_id, lvl.base_id,", # 3
+
             "stud.iseveningstudent, stud.islexstudent, stud.partial_exam,",  # 4
             "school.isdayschool, school.iseveningschool, school.islexschool,",  # 3
 
-            "sub_sql.sjb_id, sub_sql.sjb_code,",  # 2
+            "sub_sql.sjb_id, sub_sql.sjb_code, sub_sql.cluster_id,",  # 3
             "sub_sql.is_extra_nocount, sub_sql.is_extra_counts,",  # 2
             "sub_sql.has_exemption, sub_sql.has_sr, sub_sql.has_reex, sub_sql.has_reex03,",  # 4
 
@@ -879,6 +887,8 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
 
             "FROM students_student AS stud",
             "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
             "LEFT JOIN subjects_scheme AS schm ON (schm.id = stud.scheme_id)",
             "LEFT JOIN sub_sql ON (sub_sql.student_id = stud.id)",
             "WHERE stud.school_id = %(sch_id)s::INT AND stud.department_id = %(dep_id)s::INT"]
@@ -892,14 +902,6 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             grade_rows = cursor.fetchall()
-
-        if logging_on:
-            logger.debug('............###########....................')
-            logger.debug('sql: ' + str(sql))
-            logger.debug('............###########....................')
-            for row in grade_rows:
-                logger.debug('row: ' + str(row))
-            logger.debug('............###########....................')
 
         if grade_rows:
             for row in grade_rows:
@@ -927,13 +929,17 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                             'lvl_id': row[7],
                             'sct_id': row[8],
 
-                            'iseveningstudent': row[9],
-                            'islexstudent': row[10],
-                            'partial_exam': row[11],
+                            'schoolbase_id': row[9],
+                            'depbase_id': row[10],
+                            'lvlbase_id': row[11],
 
-                            'isdayschool': row[12],
-                            'iseveningschool': row[13],
-                            'islexschool': row[14],
+                            'iseveningstudent': row[12],
+                            'islexstudent': row[13],
+                            'partial_exam': row[14],
+
+                            'isdayschool': row[15],
+                            'iseveningschool': row[16],
+                            'islexschool': row[17],
 
                             'egt': examgradetype,
                             'ep': sel_examperiod
@@ -946,49 +952,49 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                     # therefore the schemeitem_subject with the lowest sequence will be added
                     # a schemeitem_subject can only occur once in the subject_dict
 
-                    subjectbase_pk = row[15]
+                    subjectbase_pk = row[18]
                     if subjectbase_pk not in student_dict:
-                        student_dict[subjectbase_pk] = {
+                        subjbase_dict = {
                             'sjb_id': subjectbase_pk,
-                            'sjb_code': row[16],
+                            'sjb_code': row[19],
+                            'cluster_id': row[20],
 
-                            'is_extra_nocount': row[17],
-                            'is_extra_counts': row[18],
-                            'has_exemption': row[19],
-                            'has_sr': row[20],
-                            'has_reex': row[21],
-                            'has_reex03': row[22],
+                            'is_extra_nocount': row[21],
+                            'is_extra_counts': row[22],
+                            'has_exemption': row[23],
+                            'has_sr': row[24],
+                            'has_reex': row[25],
+                            'has_reex03': row[26],
 
-                            'ss_si_id': row[23],   # studsubj.schemeitem_id
-                            'gr_id': row[24],
-                            'ss_id': row[25],
-                            'val': row[26],
+                            'ss_si_id': row[27],   # studsubj.schemeitem_id
+                            'gr_id': row[28],
+                            'ss_id': row[29],
+                            'val': row[30],
 
-                            'pescore': row[27],
-                            'cescore': row[28],
-                            'segrade': row[29],
-                            'srgrade': row[30],
-                            'pegrade': row[31],
-                            'cegrade': row[32],
+                            'pescore': row[31],
+                            'cescore': row[32],
+                            'segrade': row[33],
+                            'srgrade': row[34],
+                            'pegrade': row[35],
+                            'cegrade': row[36],
 
-                            'publ': row[33],
-                            'bl': row[34],
-                            'auth': row[35],
+                            'publ': row[37],
+                            'bl': row[38],
+                            'auth': row[39],
 
-                            'exam_id': row[36],
-                            'nex_id': row[37],
-                            'scalelength': row[38],
-                            'cesuur': row[39],
-                            'nterm': row[40],
+                            'exam_id': row[40],
+                            'nex_id': row[41],
+                            'scalelength': row[42],
+                            'cesuur': row[43],
+                            'nterm': row[44],
                             # 'examdate': row[41]
                         }
+                        student_dict[subjectbase_pk] = subjbase_dict
+                        if logging_on:
+                            logger.debug('subjbase_dict: ' + str(subjbase_dict))
                     else:
                         # TODO error message when subject alreay exists (should not be possible
                         pass
-
-    if logging_on:
-        for id_nr, st_dict in student_subj_grade_dict.items():
-            logger.debug( str(id_nr) + ': ' +  str(st_dict))
 
     """
      2003012406: {'st_id': 9340, 'idnr': '2003012406', 'name': 'Weyman, Natisha F.', 'schm_id': 555, 'lvl_id': 117, 'sct_id': 266, 'egt': 'segrade', 'ep': 1, 

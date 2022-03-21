@@ -208,7 +208,7 @@ EXAMTYPE_OPTIONS_EXAM = [
     {'value': 'ce', 'filter': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
     {'value': 'reex', 'filter': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
     #{'value': 'reex03', 'filter': EXAMPERIOD_THIRD, 'caption': _('Re-examination 3rd period')},
-    #{'value': 'exemp', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
+    #{'value': 'exem', 'filter': EXAMPERIOD_EXEMPTION, 'caption': _('School- / Central exam')}
     ]
 EXAMTYPE_CAPTION = {
     'se': _('School exam'),
@@ -217,7 +217,7 @@ EXAMTYPE_CAPTION = {
     'ce': _('Central exam'),
     'reex': _('Re-examination'),
     'reex03': _('Re-examination 3rd period'),
-    'exemp': _('Exemption'),
+    'exem': _('Exemption'),
 }
 
 
@@ -246,7 +246,10 @@ STATUS_01_AUTH1 = 2
 STATUS_02_AUTH2 = 4
 STATUS_03_AUTH3 = 8
 STATUS_04_AUTH4 = 16
-STATUS_05_SUBMITTED = 32
+STATUS_05_PUBLISHED = 32
+STATUS_06_BLOCKED = 64
+
+"""
 STATUS_06_REQUEST = 64
 STATUS_07_WARNING = 128
 STATUS_08_REJECTED = 256
@@ -258,7 +261,7 @@ STATUS_12_EDIT_ANSWERED = 4096
 STATUS_13_APPROVED = 8192
 STATUS_14_LOCKED = 16384
 
-"""
+
 # PR2021-01-014 from https://stackoverflow.com/questions/509211/understanding-slice-notation
 # list[start:stop:step] # start through not past stop, by step
 #status_str = bin(status_int)[-1:1:-1]  # status 31 becomes '11111', first char is STATUS_001_CREATED
@@ -321,9 +324,8 @@ KEY_COLDEF = {
     KEY_IMPORT_STUDENTSUBJECT:
         [# PR2021-08-11 NOT IN USE: {  'awpColdef': 'examnumber', 'caption': _('Exam number')},
             {'awpColdef': 'idnumber', 'caption': _('ID-number'), 'linkrequired': True, 'unique': True},
-            # TODO pws_title and pws_subjects must be in upload_grades
-            #{'awpColdef': 'pws_title', 'caption': _('Title assignment')},
-            #{'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
+            {'awpColdef': 'pws_title', 'caption': _('Title assignment')},
+            {'awpColdef': 'pws_subjects', 'caption': _('Subjects assignment')},
 
             # PR2021-08-11 NOT IN USE:
             # to be used for tabular upload :
@@ -480,7 +482,7 @@ def get_role_options(request):
     _role_options = [
         {'value': ROLE_008_SCHOOL, 'caption': _('School')},
         {'value': ROLE_016_COMM, 'caption': _('Commissioners')},
-        {'value': ROLE_032_INSP, 'caption': _('Inspection')},
+        {'value': ROLE_032_INSP, 'caption': _('Inspectorate')},
         {'value': ROLE_064_ADMIN, 'caption': ETE_DEX},
         {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
     ]

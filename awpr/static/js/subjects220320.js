@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 locale: {page: ["page_subject"]},
 
                 scheme_rows: {cur_dep_only: false},
-                subject_rows: {get: true},
+                subject_rows: {skip_allowed_filter: true},
                 schemeitem_rows: {get: true},
                 subjecttype_rows: {get: true},
                 examyear_rows: {get: true},
@@ -482,10 +482,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 // TODO remove response.msg_list
                 if("msg_list" in response){
-                    b_ShowModMessages(response.msg_list);
+                    b_show_mod_message_dictlist(response.msg_list);
                 }
                 if ("messages" in response) {
-                    b_ShowModMessages(response.messages);
+                    b_show_mod_message_dictlist(response.messages);
                 }
                 if ("subjecttype_rows" in response) {subjecttype_rows = response.subjecttype_rows};
                 if ("subjecttypebase_rows" in response) {subjecttypebase_rows = response.subjecttypebase_rows};
@@ -1084,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(tblRow){
             if (setting_dict.sel_examyear_locked){
                 const msg_html = loc.This_examyear + loc.is_locked + "<br>" + loc.You_cannot_make_changes
-                b_ShowModMessages([{class: "border_bg_warning", msg_html: msg_html}]);
+                b_show_mod_message_dictlist([{class: "border_bg_warning", msg_html: msg_html}]);
             } else {
                 const data_dict = get_recursive_integer_lookup(tblRow);
                 console.log("data_dict: ", data_dict);
@@ -1161,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
 
                     if("messages" in response){
-                        b_ShowModMessages(response.messages);
+                        b_show_mod_message_dictlist(response.messages);
                     };
 
                     if ("updated_subject_rows" in response) {
@@ -1243,8 +1243,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if(error_list && error_list.length){
 
     // - show modal messages
-                // TODO cannot show error_list in b_ShowModMessages.Already shown by response.messages
-                b_ShowModMessages(error_list);
+                // TODO cannot show error_list in b_show_mod_message_dictlist.Already shown by response.messages
+                b_show_mod_message_dictlist(error_list);
 
                 // TODO error_list is list of strings, not a dict with 'field
     // - add fields with error in updated_columns, to put old value back in field
@@ -3915,7 +3915,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( " ==== MOL_Save ====");
         if (setting_dict.sel_examyear_locked){
             const msg_html = loc.This_examyear + loc.is_locked + "<br>" + loc.You_cannot_make_changes
-            b_ShowModMessages([{class: "border_bg_warning", msg_html: msg_html}]);
+            b_show_mod_message_dictlist([{class: "border_bg_warning", msg_html: msg_html}]);
         } else {
 
             const fldName = "otherlang"

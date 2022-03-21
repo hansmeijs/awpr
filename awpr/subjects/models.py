@@ -559,6 +559,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     locked = BooleanField(default=False)
 
@@ -599,6 +600,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     status = PositiveSmallIntegerField(default=0)
     auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     locked = BooleanField(default=False)
 
@@ -661,17 +663,17 @@ class Schemeitem(sch_mod.AwpBaseModel):
     # deleted: no_reex = BooleanField(default=False)
 
     # TODO to be deprecated, moved to scheme
-    max_reex = PositiveSmallIntegerField(default=1)
+    #max_reex = PositiveSmallIntegerField(default=1)
     # TODO remove, not in use
-    no_thirdperiod = BooleanField(default=False)
-    no_exemption_ce = BooleanField(default=False)
+    #no_thirdperiod = BooleanField(default=False)
+    #no_exemption_ce = BooleanField(default=False)
 
     # TODO
     # PR2022-03-09 to skip ce in calc endgrade when exemption has no ce
     # contains array of examyears with no ce for this subject
     # best way: calc endgrade based on info of that examyear
-    #no_ce_years = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
+    no_ce_years = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    thumb_rule = BooleanField(default=False)
 
     #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
     #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
@@ -792,9 +794,12 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     rule_gradesuff_notatevlex = BooleanField(default=False)  # PR2021-11-23 rule_grade_sufficient not at evening or lex school
 
     sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
-    max_reex = PositiveSmallIntegerField(default=1)
-    no_thirdperiod = BooleanField(default=False)
-    no_exemption_ce = BooleanField(default=False)
+    #max_reex = PositiveSmallIntegerField(default=1)
+    #no_thirdperiod = BooleanField(default=False)
+    #no_exemption_ce = BooleanField(default=False)
+
+    no_ce_years = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+    thumb_rule = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

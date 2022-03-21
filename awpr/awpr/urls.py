@@ -250,7 +250,6 @@ urlpatterns = [
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
         path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
 
-        path('approve_single', grade_views.GradeApproveSingleView.as_view(), name='url_grade_approve_single'),
         path('approve', grade_views.GradeApproveView.as_view(), name='url_grade_approve'),
 
         path('submit_ex2', grade_views.GradeSubmitEx2View.as_view(), name='url_grade_submit_ex2'),
@@ -279,8 +278,8 @@ urlpatterns = [
         #path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
         #path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
 
-
     ])),
+
 # ===== ORDERLISTS ========================== PR2021-04-04
     path('orderlists/', include([
         path('orderlist', student_views.OrderlistsListView.as_view(), name='orderlists_url'),
@@ -302,7 +301,7 @@ urlpatterns = [
 
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='url_exam_download_exam_pdf'),
         path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='url_exam_download_grade_exam_pdf'),
-        path('download_exam_json/<list>/', subject_views.ExamDownloadExamJsonView.as_view(), name='url_exam_download_exam_json'),
+        path('download_exam_json', subject_views.ExamDownloadExamJsonView.as_view(), name='url_exam_download_exam_json'),
     ])),
 
 # ===== IMPORT ==========================

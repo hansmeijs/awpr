@@ -597,7 +597,7 @@ def copy_schemes_from_prev_examyear(request, prev_examyear,
 
 
 def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list):
-    # copy schemeitems from previous examyear PR2021-04-25 PR2021-08-06
+    # copy schemeitems from previous examyear PR2021-04-25 PR2021-08-06 PR2022-03-11
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_schemeitems_from_prev_examyear -------')
@@ -647,6 +647,7 @@ def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, 
                     gradetype=prev_si.gradetype,
                     weight_se=prev_si.weight_se,
                     weight_ce=prev_si.weight_ce,
+                    multiplier=prev_si.multiplier,
 
                     is_mandatory=prev_si.is_mandatory,
                     is_mand_subj=prev_si.is_mand_subj,
@@ -664,9 +665,11 @@ def copy_schemeitems_from_prev_examyear(request, prev_examyear, mapped_schemes, 
                     rule_gradesuff_notatevlex=prev_si.rule_gradesuff_notatevlex,
 
                     sr_allowed=prev_si.sr_allowed,
-                    max_reex=prev_si.max_reex,
-                    no_thirdperiod=prev_si.no_thirdperiod,
-                    no_exemption_ce=prev_si.no_exemption_ce,
+                    #max_reex=prev_si.max_reex,
+                    #no_thirdperiod=prev_si.no_thirdperiod,
+                    #no_exemption_ce=prev_si.no_exemption_ce,
+                    no_ce_years=prev_si.no_ce_years,
+                    thumb_rule=prev_si.thumb_rule,
 
                     modifiedby_id=modifiedby_id,
                     modifiedat=modifiedat
@@ -859,7 +862,8 @@ def get_department(old_examyear, new_examyear):
 
 
 # ===============================
-def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):  # PR2020-04-17 PR2020-12-28  PR2021-01-12
+def get_schoolsettings(request, request_item_setting, sel_examyear, sel_schoolbase, sel_depbase):
+    # PR2020-04-17 PR2020-12-28  PR2021-01-12 PR2022-03-19
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_schoolsetting ---------------- ')
@@ -902,7 +906,7 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
                                   'sel_depbase_code': sel_depbase_code,
                                   'sel_school_pk': sel_school_pk,
                                   'sel_school_name': sel_school_name}
-            schoolsetting_dict[setting_key] = get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase)
+            schoolsetting_dict[setting_key] = get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, sel_depbase)
         else:
             schoolsetting_dict[setting_key] = sel_schoolbase.get_schoolsetting_dict(setting_key)
 
@@ -913,8 +917,8 @@ def get_schoolsetting(request_item_setting, sel_examyear, sel_schoolbase, sel_de
 
 
 # ===============================
-def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-08-01
-    logging_on = False  # s.LOGGING_ON
+def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-08-01
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
         logger.debug('setting_key: ' + str(setting_key))
@@ -1014,7 +1018,15 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
         if logging_on:
             logger.debug('stored_coldef: ' + str(stored_coldef))
             logger.debug('default_coldef_list: ' + str(default_coldef_list))
+        """
+        KEY_IMPORT_USERNAME default_coldef_list: [
+            {'awpColdef': 'schoolcode', 'caption': 'Schoolcode', 'linkrequired': True}, 
+            {'awpColdef': 'username', 'caption': 'Gebruikersnaam', 'linkrequired': True}, 
+            {'awpColdef': 'last_name', 'caption': 'Naam', 'linkrequired': True},
+             {'awpColdef': 'email', 'caption': 'Email', 'linkrequired': True}, 
+             {'awpColdef': 'function', 'caption': 'Functie'}]
 
+        """
         if default_coldef_list:
             for dict in default_coldef_list:
                 awpColdef = dict.get('awpColdef')
@@ -1027,6 +1039,9 @@ def get_stored_coldefs_dict(setting_key, sel_examyear, sel_schoolbase, sel_depba
                     add_to_list = is_sector_req and not has_profiel
                 elif awpColdef == 'profiel':
                     add_to_list = is_sector_req and has_profiel
+                elif awpColdef == 'schoolcode':
+                    # only occurs in KEY_IMPORT_USERNAME: skip schoolcode when school wants to import users
+                    add_to_list = not request.user.is_role_school
                 else:
                     add_to_list = True
 

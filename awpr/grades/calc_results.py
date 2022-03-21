@@ -201,9 +201,9 @@ class CalcresultsView(View):  # PR2021-11-19
                     if sql_student_list:
                         save_student_batch(sql_student_list)
                         update_wrap['updated_student_rows'], error_dict = stud_view.create_student_rows(
-                            sel_examyear_pk=sel_examyear.pk,
-                            sel_schoolbase_pk=sel_school.base_id,
-                            sel_depbase_pk=sel_department.base_id,
+                            sel_examyear=sel_examyear,
+                            sel_schoolbase=sel_school.base,
+                            sel_depbase=sel_department.base,
                             append_dict={})
 
                         if error_dict:
@@ -2278,7 +2278,6 @@ def save_studsubj_batch(sql_studsubj_list):  # PR2022-01-03
         with connection.cursor() as cursor:
             cursor.execute(sql)
             rows = cursor.fetchall()
-        logger.debug(',,,,,,,,,,,,,,,,,: ' + str(rows))
 
         if logging_on:
             if rows:
@@ -2622,7 +2621,7 @@ def get_schemeitems_dict(examyear, department):  # PR2021-11-19
         "si.ete_exam, si.gradetype, si.weight_se, si.weight_ce, si.multiplier, si.is_mandatory, si.is_combi,",
         "si.extra_count_allowed, si.extra_nocount_allowed, si.has_practexam,",
         "si.is_core_subject, si.is_mvt, si.is_wisk,",
-        "si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
+        "si.sr_allowed, si.no_ce_years, si,thumb_rule,",
 
         "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 

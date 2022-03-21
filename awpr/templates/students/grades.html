@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import220306.js' %}"></script>
-    <script src="{% static 'js/grades220310.js' %}"></script>
+    <script src="{% static 'js/import220320.js' %}"></script>
+    <script src="{% static 'js/grades220320.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -18,7 +18,7 @@
         </div>
         {% if not no_access %}
 
-            <div id="id_SBR_container_examtype" class="tw_200 m-2">
+            <div id="id_SBR_container_examtype" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
                 <select id="id_SBR_select_examtype" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
@@ -135,7 +135,6 @@
                     data-grade_upload_url="{% url 'grade_upload_url' %}"
 
                     data-url_grade_approve="{% url 'url_grade_approve' %}"
-                    data-url_grade_approve_single="{% url 'url_grade_approve_single' %}"
                     data-url_grade_submit_ex2="{% url 'url_grade_submit_ex2' %}"
                     data-url_grade_submit_ex2a="{% url 'url_grade_submit_ex2a' %}"
 

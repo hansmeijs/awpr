@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("messages" in response) {
                     console.log("response.messages", response.messages)
-                    b_ShowModMessages(response.messages);
+                    b_show_mod_message_dictlist(response.messages);
                 };
                 if ("examyear_rows" in response) {
                     const tblName = "examyear";
@@ -701,7 +701,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if ("messages" in response) {
                         console.log("response.messages", response.messages)
-                        b_ShowModMessages(response.messages);
+                        b_show_mod_message_dictlist(response.messages);
                     }
                     if ("log_list" in response) {
                        OpenLogfile(response.log_list);
@@ -742,7 +742,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("has_permit", has_permit)
         console.log("msg_no_permit", msg_no_permit)
         if(msg_no_permit){
-             b_show_mod_message(msg_no_permit)
+             b_show_mod_message_html(msg_no_permit)
         } else {
 
             //console.log("permit_dict", permit_dict)
@@ -1064,7 +1064,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(!permit_dict.permit_crud){
             const msh_html = "<div class='p-2 border_bg_invalid'>" + loc.msg_info.nopermit[1] + "</div>";
-            b_show_mod_message(msh_html, loc.Edit_examyear);
+            b_show_mod_message_html(msh_html, loc.Edit_examyear);
         } else {
             let selected_pk = null, map_id = null;
             const fldName = get_attr_from_el(el_input, "data-field");

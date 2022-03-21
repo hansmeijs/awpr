@@ -105,8 +105,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- get school settings (includes import settings)
                 request_item_schoolsetting = datalist_request.get('schoolsetting')
                 if request_item_schoolsetting:
-                    datalists['schoolsetting_dict'] = sch_fnc.get_schoolsetting(
-                        request_item_schoolsetting, sel_examyear, sel_schoolbase, sel_depbase)
+                    datalists['schoolsetting_dict'] = sch_fnc.get_schoolsettings(
+                        request, request_item_schoolsetting, sel_examyear, sel_schoolbase, sel_depbase)
                 if logging_on:
                     logger.debug('request_item_schoolsetting: ' + str(request_item_schoolsetting) + ' ' + str(type(request_item_schoolsetting)))
 
@@ -137,7 +137,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk)
 # ----- schools
                 if datalist_request.get('school_rows'):
-                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict)
+                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict, request)
 # ----- departments
                 if datalist_request.get('department_rows'):
                     datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
@@ -159,17 +159,21 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows()
 # ----- subjects
                 if datalist_request.get('subject_rows'):
+                    cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
                     skip_allowed_filter = af.get_dict_value(datalist_request, ('subject_rows', 'skip_allowed_filter'), False)
                     datalists['subject_rows'] = sj_vw.create_subject_rows(
                         setting_dict=new_setting_dict,
                         skip_allowed_filter=skip_allowed_filter,
+                        cur_dep_only=cur_dep_only,
                         request=request)
 # ----- clusters
                 if datalist_request.get('cluster_rows'):
+                    cur_dep_only = af.get_dict_value(datalist_request, ('cluster_rows', 'cur_dep_only'), False)
                     datalists['cluster_rows'] = sj_vw.create_cluster_rows(
-                        sel_examyear_pk=sel_examyear.pk,
-                        sel_schoolbase_pk=sel_schoolbase.pk,
-                        sel_depbase_pk=sel_depbase.pk)
+                        sel_examyear=sel_examyear,
+                        sel_schoolbase=sel_schoolbase,
+                        sel_depbase=sel_depbase,
+                        cur_dep_only=cur_dep_only)
 # ----- schemes
                 if datalist_request.get('scheme_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('scheme_rows', 'cur_dep_only'), False)
@@ -194,8 +198,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
                     )
-
-
 # ----- duo_exams
                 if datalist_request.get('duo_exam_rows'):
                     datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
@@ -216,9 +218,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- students
                 if datalist_request.get('student_rows'):
                     datalists['student_rows'], error_dict = stud_view.create_student_rows(
-                        sel_examyear_pk= sel_examyear.pk,
-                        sel_schoolbase_pk=sel_schoolbase.pk,
-                        sel_depbase_pk=sel_depbase.pk,
+                        sel_examyear= sel_examyear,
+                        sel_schoolbase=sel_schoolbase,
+                        sel_depbase=sel_depbase,
                         append_dict={})
                     if error_dict:
                         datalists['messages'] = [error_dict]
@@ -245,7 +247,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- grade_with_exam_rows
                 if datalist_request.get('grade_with_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
-                        datalists['grade_with_exam_rows'] = gr_vw.create_grade_with_exam_rows(
+                        datalists['grade_with_exam_rows'] = gr_vw.create_grade_with_ete_exam_rows(
                             sel_examyear_pk=sel_examyear.pk,
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
@@ -494,6 +496,8 @@ def download_setting(request_item_setting, messages, user_lang, request):
         setting_dict['sel_school_pk'] = sel_school.pk
         setting_dict['sel_school_name'] = sel_school.name
         setting_dict['sel_school_abbrev'] = sel_school.abbrev
+        setting_dict['sel_school_depbases'] = sel_school.depbases
+
         if sel_school.activated:
             setting_dict['sel_school_activated'] = True
         if sel_school.isdayschool:
@@ -528,6 +532,19 @@ def download_setting(request_item_setting, messages, user_lang, request):
     may_select_department = (page not in ('page_examyear',) and allowed_depbases_len > 1)
     permit_dict['may_select_department'] = may_select_department
     permit_dict['display_department'] = (page not in ('page_examyear',))
+
+    # get_sel_depbase_instance has already filter requser_allowed_databases
+    # now remove depbases from requser_allowed_databases when not in allowed_databases
+    requsr_allowed_depbases = permit_dict.get('requsr_allowed_depbases')
+    if allowed_depbases and requsr_allowed_depbases:
+        new_arr = []
+        for item in requsr_allowed_depbases:
+            if item in  allowed_depbases:
+                new_arr.append(item)
+        if new_arr:
+            permit_dict['requsr_allowed_depbases'] = new_arr
+        else:
+            permit_dict.pop('requsr_allowed_depbases')
 
     if logging_on:
         logger.debug('allowed_depbases: ' + str(allowed_depbases) )
@@ -843,7 +860,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08
     # - get selected examyear.code and examperiod from usersettings, only examyear from request.user.country
-    # used in ExamyearUploadView, OrderlistDownloadView
+    # used in ExamyearUploadView, OrderlistDownloadView, ExamDownloadExamJsonView
     # note: examyear.code is integer '2021'
     sel_examyear, sel_examperiod = None, None
     req_user = request.user
@@ -927,7 +944,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
+def get_selected_ey_school_dep_from_usersetting(request, commissioner_may_edit=False, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
     logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
@@ -976,7 +993,9 @@ def get_selected_ey_school_dep_from_usersetting(request, skip_check_activated=Fa
         else:
             # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
             # used on entering students and grades. Schools can only enter grades of their own school
-            requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk)
+            # PR2022-03-13 debug: also commissioners are allowed to make changes: add c.ROLE_016_COMM
+            requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk) or \
+                                 (commissioner_may_edit and req_user.role == c.ROLE_016_COMM)
             if not requsr_same_school:
                 msg_list.append(str(_('Only users of this school are allowed to make changes.')))
 
@@ -1172,8 +1191,34 @@ def create_permit_dict(req_user):
                     #key_str = 'usergroup_' + usergroup
                     #permit_dict[key_str] = True
 
+# add  allowed_depbases etc to permit_dict
+        get_requsr_allowed(req_user, permit_dict)
+
+
 # ===== SCHOOL =======================
 # - roles higher than school may select other schools PR2021-04-23
         permit_dict['may_select_school'] = (req_user.role > c.ROLE_008_SCHOOL)
 
     return permit_dict
+
+def get_requsr_allowed(req_user, permit_dict):
+    # PR2022-03-18
+    if req_user.allowed_depbases:
+        # PR2021-05-04 warning. if depbases contains ';2;3;',
+        # it will give error:  invalid literal for int() with base 10: ''
+        allowed_depbases_arr = req_user.allowed_depbases.split(';') if req_user.allowed_depbases else []
+        permit_dict['requsr_allowed_depbases'] = list(map(int, allowed_depbases_arr))
+    if req_user.allowed_levelbases:
+        allowed_levelbases_arr = req_user.allowed_levelbases.split(';') if req_user.allowed_levelbases else []
+        permit_dict['requsr_allowed_levelbases'] = list(map(int, allowed_levelbases_arr))
+    if req_user.allowed_schoolbases:
+        allowed_schoolbases_arr = req_user.allowed_schoolbases.split(';') if req_user.allowed_schoolbases else []
+        permit_dict['requsr_allowed_schoolbases'] = list(map(int, allowed_schoolbases_arr))
+    if req_user.allowed_subjectbases:
+        allowed_subjectbases_arr = req_user.allowed_subjectbases.split(';') if req_user.allowed_subjectbases else []
+        permit_dict['requsr_allowed_subjectbases'] = list(map(int, allowed_subjectbases_arr))
+    if req_user.allowed_clusterbases:
+        # note: allowed_clusterbases contains allowed_cluster_pk, cluster does not have base
+        allowed_clusterbases_arr = req_user.allowed_clusterbases.split(';') if req_user.allowed_clusterbases else []
+        permit_dict['requsr_allowed_clusters'] = list(map(int, allowed_clusterbases_arr))
+

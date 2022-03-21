@@ -204,10 +204,10 @@
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
     function t_MSSSS_Open (loc, tblName, data_rows, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
-        console.log( "tblName", tblName );
+        //console.log( "tblName", tblName );
         //console.log( "data_rows", data_rows, typeof data_rows );
         // tblNames are: "school", "subject", "student"
 
@@ -1611,7 +1611,7 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                                 const cell_value = get_attr_from_el(el, "data-filter")
             //console.log( "cell_value", cell_value)
                                 if (filter_tag === "toggle"){
-                                    // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+                                    // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                     if (filter_value === "2"){
                                         // only show rows without tickmark
                                          if (cell_value === "1") { hide_row = true };

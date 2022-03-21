@@ -68,9 +68,9 @@
 
 //========= b_UploadSettings  ============= PR2019-10-09
     function b_UploadSettings (upload_dict, url_str) {
-        console.log("=== b_UploadSettings ===");
-        console.log("url_str", url_str);
-        console.log("upload_dict", upload_dict);
+        //console.log("=== b_UploadSettings ===");
+        //console.log("url_str", url_str);
+        //console.log("upload_dict", upload_dict);
 
         if(!!upload_dict) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -92,9 +92,9 @@
 
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
-        //console.log(" --- UpdateHeaderbar ---" )
-        //console.log("setting_dict", setting_dict )
-        //console.log("permit_dict", permit_dict )
+        console.log(" --- UpdateHeaderbar ---" )
+        console.log("setting_dict", setting_dict )
+        console.log("permit_dict", permit_dict )
 
         const cls_hide = "display_hide";
 
@@ -583,10 +583,10 @@
 
 //========= b_highlight_BtnSelect  ============= PR2020-02-20 PR2020-08-31
     function b_highlight_BtnSelect(btn_container, selected_btn, btns_disabled){
-        console.log( "//========= b_highlight_BtnSelect  ============= ")
-        console.log( "btn_container", btn_container)
-        console.log( "selected_btn", selected_btn)
-        console.log( "btns_disabled", btns_disabled)
+        //console.log( "//========= b_highlight_BtnSelect  ============= ")
+        //console.log( "btn_container", btn_container)
+        //console.log( "selected_btn", selected_btn)
+        //console.log( "btns_disabled", btns_disabled)
 
         // ---  highlight selected button
         if (btn_container){
@@ -716,13 +716,13 @@
         let img_class = "diamond_0_0"; // empty diamond
         if(publ){
             if (blocked){
-                img_class = "diamond_2_4";  // orange diamond: published after blocked by Inspection
+                img_class = "diamond_2_4";  // orange diamond: published after blocked by Inspectorate
             } else {
                 img_class = "diamond_0_4";  // blue diamond: published
             }
         } else {
             if (blocked){
-                img_class = "diamond_1_4";  // red diamond: blocked by Inspection, published is removed to enable correction
+                img_class = "diamond_1_4";  // red diamond: blocked by Inspectorate, published is removed to enable correction
             } else {
                 if (auth1){
                     if (auth2){
@@ -1540,7 +1540,7 @@
             const functions = loc.President + loc.and + loc.Secretary;
             const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
                         loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
-            b_show_mod_message(msg_html);
+            b_show_mod_message_html(msg_html);
         } else if (is_auth_1){
             auth_index = 1;
         } else if (is_auth_2){
@@ -1578,7 +1578,7 @@
 
             const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
                         loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
-            b_show_mod_message(msg_html);
+            b_show_mod_message_html(msg_html);
         };
         return auth_index;
     };  // b_get_auth_index_of_requsr
@@ -1595,7 +1595,7 @@
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
-    function b_show_mod_message(msg_html, header_text, ModMessageClose){  // PR2021-01-26 PR2021-03-25 PR2021-07-03
+    function b_show_mod_message_html(msg_html, header_text, ModMessageClose){  // PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
 
         const el_msg_header = document.getElementById("id_mod_message_header");
@@ -1625,55 +1625,9 @@
         });
     };  // show_mod_message
 
-//========= b_render_msg_containerNEW  ================= PR2021-08-13
-    function b_render_msg_containerNEW(el_msg_container, msg_list, class_list) {
-        // used for el_confirm_msg_container
-        el_msg_container.className = "p-3";
-
-        if (class_list && class_list.length) {
-            // The new spread operator makes it even easier to apply multiple CSS classes as array:
-            el_msg_container.classList.add(...class_list);
-        }
-        let msg_html = "";
-        if (msg_list && msg_list.length){
-            for (let i = 0, msg_txt ; msg_txt = msg_list[i]; i++) {
-                if (msg_txt) {
-                    msg_html += "<p>" + msg_txt + "</p>";
-                };
-            };
-        };
-        el_msg_container.innerHTML = msg_html;
-    };  // b_render_msg_containerNEW
-
-//========= b_render_msg_container  ================= PR2021-05-13
-    function b_render_msg_container(id_el_msg, msg_list) {
-        //console.log( "===== b_render_msg_container -----")
-        //console.log( "id_el_msg", id_el_msg)
-        //console.log( "msg_list", msg_list)
-          // only used in subjects.js MSJT_validate_and_disable and MSUBJ_validate_and_disable
-        const el_msg = document.getElementById(id_el_msg);
-        //console.log("el_msg", el_msg)
-        if (el_msg){
-            const has_msg = (!!msg_list && !!msg_list.length)
-        //console.log("has_msg", has_msg)
-    // put msg in el_msg
-            let msg_html = ""
-            if (has_msg){
-                for (let j = 0, msg; msg = msg_list[j]; j++) {
-                    if(j){msg_html += "<br>"};
-                    if(msg){msg_html +=msg};
-                };
-            };
-        //console.log("msg_html", msg_html)
-            el_msg.innerHTML = msg_html;
-    // show el_msg when has_msg
-            add_or_remove_class(el_msg, cls_hide, !has_msg);
-        };
-    };  // b_render_msg_container
-
-//=========  b_ShowModMessages  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01
-    function b_ShowModMessages(msg_dictlist, skip_warning_messages) {
-        //console.log("==== b_ShowModMessages  ======")
+//=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01
+    function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
+        //console.log("==== b_show_mod_message_dictlist  ======")
         //console.log.log("msg_dictlist", msg_dictlist)
         //console.log.log("skip_warning_messages", skip_warning_messages)
 
@@ -1732,7 +1686,54 @@
             };
         }; // if(el_container)
         skip_warning_messages = false;
-    };  // b_ShowModMessages
+    };  // b_show_mod_message_dictlist
+
+
+//========= b_render_msg_containerNEW  ================= PR2021-08-13
+    function b_render_msg_containerNEW(el_msg_container, msg_list, class_list) {
+        // used for el_confirm_msg_container
+        el_msg_container.className = "p-3";
+
+        if (class_list && class_list.length) {
+            // The new spread operator makes it even easier to apply multiple CSS classes as array:
+            el_msg_container.classList.add(...class_list);
+        }
+        let msg_html = "";
+        if (msg_list && msg_list.length){
+            for (let i = 0, msg_txt ; msg_txt = msg_list[i]; i++) {
+                if (msg_txt) {
+                    msg_html += "<p>" + msg_txt + "</p>";
+                };
+            };
+        };
+        el_msg_container.innerHTML = msg_html;
+    };  // b_render_msg_containerNEW
+
+//========= b_render_msg_container  ================= PR2021-05-13
+    function b_render_msg_container(id_el_msg, msg_list) {
+        //console.log( "===== b_render_msg_container -----")
+        //console.log( "id_el_msg", id_el_msg)
+        //console.log( "msg_list", msg_list)
+          // only used in subjects.js MSJT_validate_and_disable and MSUBJ_validate_and_disable
+        const el_msg = document.getElementById(id_el_msg);
+        //console.log("el_msg", el_msg)
+        if (el_msg){
+            const has_msg = (!!msg_list && !!msg_list.length)
+        //console.log("has_msg", has_msg)
+    // put msg in el_msg
+            let msg_html = ""
+            if (has_msg){
+                for (let j = 0, msg; msg = msg_list[j]; j++) {
+                    if(j){msg_html += "<br>"};
+                    if(msg){msg_html +=msg};
+                };
+            };
+        //console.log("msg_html", msg_html)
+            el_msg.innerHTML = msg_html;
+    // show el_msg when has_msg
+            add_or_remove_class(el_msg, cls_hide, !has_msg);
+        };
+    };  // b_render_msg_container
 
 //?????????????????????????????????????????????????????????????????
 

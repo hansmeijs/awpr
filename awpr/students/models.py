@@ -572,7 +572,7 @@ class Grade(sch_mod.AwpBaseModel):
     pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
-    #   se_blocked etc is True when Inspection has blocked the subject from gradelist, until it is changed
+    #   se_blocked etc is True when Inspectorate has blocked the subject from gradelist, until it is changed
     #   when blocked is set True, published_id  and all auth_id will be erased, so the school can submit the grade again
 
     se_status = PositiveSmallIntegerField(default=0)

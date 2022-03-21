@@ -82,8 +82,8 @@ def update_library(examyear, request):
         ('ex2', 'footnote05', 'vóór aanvang van de centrale examens inzenden naar de Onderwijs Inspectie'),
         ('ex2', 'footnote06', 'en een digitale versie naar het ETE.'),
         ('ex2', 'lex_footnote06', ''),
-        ('ex2', 'backpage01_eex', 'Handtekening van de examinatoren voor akkoord cijfers schoolonderzoek als aan ommezijde vermeld.'),
-        ('ex2', 'backpage01_lex', 'Handtekening van de examinatoren voor akkoord cijfers commissie-examen (CIE) als aan ommezijde vermeld.'),
+        ('ex2', 'backpage01_eex', 'Digitale handtekening van de examinatoren voor akkoord cijfers schoolonderzoek als aan ommezijde vermeld.'),
+        ('ex2', 'backpage01_lex', 'Digitale handtekening van de examinatoren voor akkoord cijfers commissie-examen (CIE) als aan ommezijde vermeld.'),
         ('ex2', 'backpage02', 'Ieder voorzover het zijn kandidaten betreft'),
 
         ('ex2', 'backheader01', 'Naam Examinator'),

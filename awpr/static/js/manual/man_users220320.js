@@ -68,7 +68,7 @@ const man_user = {
              "Nog een keer klikken en alle accounts worden weergegeven. Nog een keer klikken en alleen de actieve accounts worden weergegeven.</p>",
         ]),
 
-        write_paragraph_header("id_user_permissions", "Gebruikersgroepen"),
+        write_paragraph_header("id_user_usergroups", "Gebruikersgroepen"),
         write_paragraph_body("",[
             "<p>Klik in de pagina <i>Gebruikers</i> in de horizontale zwarte balk op de tab <i>Gebruikersgroepen</i>. ",
             "Er verschijnt een lijst met de gebruikers en de gebruikersgroepen waartoe de gebruiker behoort. ",
@@ -102,12 +102,11 @@ const man_user = {
         write_image("img_users_tbl_usergroups_ne"),
 
         write_paragraph_header("id_user_allowed", "Toegestane secties"),
-
         write_paragraph_body("",[
             "<p>Een gebruiker heeft standaard toegang tot alle gegevens van alle kandidaten. Dat is niet altijd gewenst. ",
             "In AWP is het mogelijk voor elke gebruiker beperkingen in te stellen welke informatie hij/zij kan inzien en wijzigen. ",
             "Dit gaat door middel van de 'Toegestane secties'. ",
-            "<p class='mb-0 pb-0'>De perkingen kunnen op de volgende niveaus worden ingesteld:</p>",
+            "<p class='mb-0 pb-0'>De beperkingen kunnen op de volgende niveaus worden ingesteld:</p>",
             "<ul class='manual_bullet'><li><b>Toegestane afdelingen</b>. De gebruiker kan alleen de opgegeven afdelingen (Vsbo, Havo, Vwo) inzien.</li>",
             "<li><b>Toegestane leerwegen</b>. De gebruiker kan alleen de opgegeven leerwegen inzien.</li>",
             "<li><b>Toegestane vakken</b>. De gebruiker kan alleen de opgegeven vakken inzien.</li>",
@@ -130,6 +129,78 @@ const man_user = {
              "<li>Wanneer er geen restricties zijn blijft de kolom leeg.</li></ul></p>",
         ]),
         write_image("img_users_tbl_allowed_ne"),
+
+        write_paragraph_header("id_user_examiners", "Examinatoren en gecommitteerden"),
+        write_paragraph_body("",[
+            "<p>Ook de examinatoren en gecommitteerden zullen voortaan hun digitale handtekening moeten zetten. ",
+            "In deze paragraaf wordt aangegeven hoe dit in zijn werk gaat.</p>",
+
+            "<h5 class='mx-2 mb-0 pb-0'>Accounts aanmaken voor de examinatoren en gecommitteerden</h4>",
+            "<p>Alle examinatoren en gecommitteerden krijgen een gebruikersaccount. ",
+            "Ze kunnen worden aangemaakt door een gebruiker met systeembeheerder permissie. Doorloop de volgende drie stappen:</p>",
+
+            "<p class='mb-0 pb-0'><b>Stap 1: Gebruikersaccounts voor examinatoren en gecommitteerden aanmaken</b><br>",
+            "<ul class='manual_bullet'><li>Ga naar de pagina <i>Gebruikers</i> en klik in de menubalk op <i>Gebruiker toevoegen</i>.</li>",
+            "<li>In het venster <i>Gebruiker toevoegen</i> vul je de gebruikersnaam en de volledige naam in. ",
+            "De gebruikersnaam wordt gebruikt voor het inloggen, de volledige naam wordt weergegeven op de Ex-formulieren.</li>",
+            "<li>Vul tenslotte het e-mail adres in en klik op <i>Gebruikersaccount aanmaken</i>. ",
+            "AWP stuurt nu een e-mail met een link naar het opgegeven e-mail adres.</li>",
+            "<li>De gebruiker moet op de link in die e-mail klikken om een wachtwoord in te vullen en de account te activeren.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Stap 2: Gebruikersgroepen toewijzen</b><br>",
+            "<ul class='manual_bullet'><li>Klik in de horizontale zwarte balk op de tab <i>Gebruikersgroepen</i> ",
+            "en zet in de kolom <i>Examinator</i> of <i>Gecommitteerde</i> een vinkje achter de naam van de gebruiker.</li>",
+            "<li>Als de examinator ook cijfers invoert zet je ook een vinkje in de kolom <i>Wijzigen</i>.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Stap 3: Toegestane secties instellen</b><br>",
+            "De examinator en gecommiteerden kunnen nu alle vakken van alle kandidaten goedkeuren. ",
+            "Dat is niet altijd gewenst. ",
+            "In de tab <i>Toegestane secties</i> kun je als volgt beperkingen instellen welke vakken hij/zij kan goedkeuren:",
+            "<ul class='manual_bullet'><li>Klik in de horizontale zwarte balk op de tab <i>Toegestane secties</i></li>",
+            "<li>Klik in de regel van  een gebruiker op een van de kolommen <i>Toegestane afdelingen, - leerwegen, - vakken of - clusters</i>.</li>",
+            "<li>Selecteer in het venster dat verschijnt een of meerdere items of klik op <i>Alle ... </i>.</li>",
+            "<li>Klik op <i>Opslaan</i></ul>",
+        ]),
+        write_paragraph_body("img_lightbulb",
+            ["<p><b>Gebruikersnamen uploaden</b><br>",
+                "In plaats van de accounts een voor een aan te maken, kun je ze ook importeren vanuit een Excel bestand. ",
+                "Klik in de menubalk op <i>Gebruikersnamen uploaden</i> en doorloop de stappen. ",
+                "Na het uploaden stuurt AWP <span class='man_underline'>niet</span> automatsich een e-mail met een activeringslink. ",
+                "Klik bij elke gebruiker in de kolom <i>Geactiveerd</i> om de activerings e-mail te versturen.</p>",
+            ]),
+        write_paragraph_body("",
+            ["<h5 class='mx-2 mb-0 pb-0'>Scores en cijfers goedkeuren</h4>",
+            "<p class='mb-0 pb-0'>Alle schoolexamen cijfers dienen digitaal goedgekeurd te worden door de voorzitter, secretaris en examinator. ",
+            "De scores van het centraal examen dienen tevens door de gecommitteerde te worden goedgekeurd.<br>",
+            "Doorloop de volgende stappen om de scores of cijfers goed te keuren:</p>",
+
+            "<p class='mb-0 pb-0'><b>Stap 1: Selecteer de goed te keuren kandidaten en vakken</b></p>",
+            "<ul class='manual_bullet'><li>Open de pagina <i>Cijfers</i> door in de lichtblauwe paginabalk op de knop <i>Cijfers</i> te klikken.</li>",
+            "<li>Desgewenst kun je in de verticale grijze balk links een filter instellen van de cijfers die je wilt goedkeuren.</li>",
+            "<li>Klik op <i>Alles van dit tijdvak weergeven</i> onder in de verticale grijze balk links ",
+            "als je in een keer alle cijfers, waar je toestemming voor hebt, wilt goedkeuren.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Stap 2: Controleer de goed te keuren cijfers</b></p>",
+            "<ul class='manual_bullet mb-0 pb-0'><li>Klik in de horizontale grijze menubalk op de knop <i>Cijfers goedkeuren</i>. Het venster <i>Cijfers goedkeuren</i> wordt geopend.</li>",
+            "<li>In het kader is aangegeven welk filter is ingesteld. In het veld <i>Functie</i> staat in welke hoedanigheid je de cijfers goedkeurt. ",
+            "Als je zowel examinator als voorzitter / secretaris bent, kun je in dit veld selecteren in welke hoedanigheid je de cijfers goedkeurt.</li>",
+            "<li>Klik op <i>Cijfers controleren</i>. AWP controleert de cijfers en geeft de resultaten weer in een apart kader.</li></ul>",
+        ]),
+        write_paragraph_body("img_exclamationsign",
+            ["<p>Het filter op de toegestane vakken en clusters wordt (nog) niet weergegeven in het grijze kader. ",
+                "In het resultaat van de controle is wel rekening gehouden met de toegestane vakken en clusters.</p>",
+            ]),
+        write_paragraph_body("",
+            ["<p class='mb-0 pb-0'><b>Stap 3: Cijfers goedkeuren of goedkeuringen wissen</b></p>",
+            "<ul class='manual_bullet'><li>Klik op <i>Cijfers goedkeuren</i>. De cijfers worden nu goedgekeurd. De ruit achter het cijfer geeft de status van de goedkeuring weer. ",
+            "Ga met de muis boven de ruit staan om te zien wie het cijfer heeft goedgekeurd.</li>",
+            "<li>Klik op <i>Goedkeuringen verwijderen</i>. De goedkeuring van de geselcteerde cijfers wordt verwijderd.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Stap 4: Individuele cijfers goedkeuren of goedkeuringen wissen</b></p>",
+            "<ul class='manual_bullet'><li>Klik op de ruit achter een cijfer om het cijfer goed te keuren of de goedkeuring te verwijderen.</li></ul>",
+
+        ]),
+
 
         "<div class='p-3 visibility_hide'>-</div>",
     ],
@@ -196,7 +267,7 @@ const man_user = {
              "<p><b>Show inactive user accounts</b><br>In the <i>Inactive</i> column, click on the icon with the eye under 'Inactive'. Now only the inactive active accounts are shown. ",
              "Click again and all accounts will be displayed. Click again and only the active accounts will be displayed.</p>",
         ]),
-        write_paragraph_header("id_user_permissions", "Usergroups"),
+        write_paragraph_header("id_user_usergroups", "Usergroups"),
         write_paragraph_body("",[
             "<p>On the <i>Users</i> page, click in the horizontal black bar on the <i>User groups</i> tab. ",
             "A list of the users and user groups to which the user belongs will appear. ",

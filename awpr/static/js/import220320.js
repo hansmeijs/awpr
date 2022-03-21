@@ -67,6 +67,7 @@
 
         // step 2 is to choose examgradetype
         mimp.is_import_grade = (import_table === "import_grade")
+        mimp.is_import_username = (import_table === "import_username")
 
         mimp.examgradetype = (mimp_stored.examgradetype) ? mimp_stored.examgradetype : null;
         mimp_loc = loc;
@@ -146,9 +147,9 @@
 
 //=========   MIMP_FillSelectExamgradetype  =====  PR2021-12-06
     function MIMP_FillSelectExamgradetype(){
-        console.log( "===== MIMP_FillSelectExamgradetype ========= ");
-        console.log( "mimp_stored.examgradetype: ", mimp_stored.examgradetype);
-        console.log( "selected_btn: ", selected_btn);
+        //console.log( "===== MIMP_FillSelectExamgradetype ========= ");
+        //console.log( "mimp_stored.examgradetype: ", mimp_stored.examgradetype);
+        //console.log( "selected_btn: ", selected_btn);
 
         const el_MIMP_examgradetype = document.getElementById("id_MIMP_examgradetype")
 
@@ -193,7 +194,7 @@
             };
         };
 
-        console.log ("sel_examgradetype", sel_examgradetype);
+        //console.log ("sel_examgradetype", sel_examgradetype);
         // reset sel_examgradetype when not in option list
         if (!sel_examgradetype_found){ sel_examgradetype = null};
         if (row_count === 1 && !sel_examgradetype && first_examgradetype){
@@ -203,14 +204,13 @@
             UploadImportSetting ("examgradetype");
 
             MIMP_HighlightAndDisableButtons();
-            MIMP_SetHeaderText()
+            MIMP_SetHeaderText();
 
-        }
+        };
         t_FillOptionsFromList(el_MIMP_examgradetype, option_list, "value", "caption",
                                 loc.Select_examgradetype + "...", loc.No_examgradetypes_found,
-                                sel_examgradetype)
-
-    }  // MIMP_FillSelectExamgradetype
+                                sel_examgradetype);
+    };  // MIMP_FillSelectExamgradetype
 
 //=========   MIMP_show_elements  =====  PR2021-12-05
     function MIMP_show_elements(){
@@ -220,12 +220,12 @@
         add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, true);
 
         const el_MIMP_msg_container = document.getElementById("id_MIMP_msg_container");
-        add_or_remove_class(el_MIMP_msg_container, cls_hide, true)
+        add_or_remove_class(el_MIMP_msg_container, cls_hide, true);
 
 // show msg "You don't have to link the subjects yet." only when importing studsubjects
         show_hide_element_by_id("id_MIMP_msg_dontlinksubjects", (["import_studsubj", "import_grade"].includes(mimp.import_table)));
 
-    }
+    };
 
 //=========   MIMP_Save   ======================
     function MIMP_Save(mode, RefreshDataRowsAfterUpload, setting_dict){
@@ -255,7 +255,7 @@
         add_or_remove_class(document.getElementById("id_MIMP_loader"), cls_hide, false)
         add_or_remove_class(document.getElementById("id_MIMP_msg_container"), cls_hide, true)
 
-    }  // MIMP_Save
+    };  // MIMP_Save
 
 //####################################################################
 
@@ -399,7 +399,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========   upload_studentsubjects   ======================
     function upload_studentsubjects_crosstab(mode, RefreshDataRowsAfterUpload) {
-        //console.log(" ========== upload_studentsubjects_crosstab ===========");
+        console.log(" ========== upload_studentsubjects_crosstab ===========");
 /*
 upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1,
             'sel_depbase_code': 'Vsbo', 'sel_school_abbrev': 'ATC',
@@ -532,7 +532,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========   upload_student   ======================
     function upload_student(mode, RefreshDataRowsAfterUpload) {
-        //console.log(" ========== upload_student ===========");
+        console.log(" ========== upload_student ===========");
 
         const is_test_upload = (mode === "test")
         let rowLength = 0, colLength = 0;
@@ -672,7 +672,7 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 if(!dict_list || !dict_list.length){
                     $("#id_mod_import").modal("hide");
                     const msg_dictlist = [{'header': mimp.header_text, 'class': 'border_bg_invalid', 'msg_html': mimp_loc.No_data_found}];
-                    b_ShowModMessages(msg_dictlist);
+                    b_show_mod_message_dictlist(msg_dictlist);
                 } else {
 // --- Upload Data
                     const el_data = document.getElementById("id_MIMP_data");
@@ -937,8 +937,8 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
 
 //=========   MIMP_OpenLogfile   ====================== PR2021-07-17
     function MIMP_OpenLogfile() {
-        //console.log(" ========== MIMP_OpenLogfile ===========");
-        //console.log("mimp_stored", mimp_stored);
+        console.log(" ========== MIMP_OpenLogfile ===========");
+        console.log("mimp_stored", mimp_stored);
 
             if (!!mimp_logfile && mimp_logfile.length) {
                 const today = new Date();
@@ -1303,15 +1303,22 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
 //=========  MIMP_btnPrevNextClicked  ================ PR2020-12-05  PR2021-12-05 PR2022-02-14
     function MIMP_btnPrevNextClicked(prev_next) {
         //console.log("=== MIMP_btnPrevNextClicked ===", prev_next);
-    //console.log("mimp.sel_btn_index: " + mimp.sel_btn_index, typeof mimp.sel_btn_index);
+        //console.log("mimp.sel_btn_index: " + mimp.sel_btn_index, typeof mimp.sel_btn_index);
 
     // get btn_index
         let btn_index = (mimp.sel_btn_index) ? mimp.sel_btn_index : 1;
 
         // skip step 2 when not is_import_grade
+        // skip step 4 when not is_import_username
         let step = 1;
-        if (!mimp.is_import_grade){
-            if (prev_next === "next" && btn_index === 1 || prev_next === "prev" && btn_index === 3 ){ step = 2 };
+        if (prev_next === "next"){
+            if ( (btn_index === 1 && !mimp.is_import_grade) || (btn_index === 3 && mimp.is_import_username) ){
+                step = 2;
+            };
+        } else if (prev_next === "prev"){
+            if ( (btn_index === 3 && !mimp.is_import_grade) || (btn_index === 5 && mimp.is_import_username) ){
+                step = 2;
+            };
         };
     //console.log("step: ", step, typeof step);
         if (prev_next === "prev"){ step = step * -1 };
@@ -1329,9 +1336,9 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         MIMP_btnSelectClicked(null, btn_index);
     }  // MIMP_btnPrevNextClicked
 
-//=========  MIMP_btnSelectClicked  ================ PR2020-12-05  PR2021-12-05
+//=========  MIMP_btnSelectClicked  ================ PR2020-12-05  PR2021-12-05 PR2022-03-19
     function MIMP_btnSelectClicked(btn, btn_index_int) {
-        //console.log("=== MIMP_btnSelectClicked ===");
+        console.log("=== MIMP_btnSelectClicked ===");
         // get btn_index from btn if called bij eventhandler, from btn_index_int otherwise
         if (btn){
             btn_index_int = get_attr_from_el_int(btn, "data-btn_index")
@@ -1384,10 +1391,9 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                     };
                 };
             };
-
             document.getElementById("id_MIMP_header").innerText = header_text;
         };
-    }  // MIMP_SetHeaderText
+    };  // MIMP_SetHeaderText
 
 //=========  MIMP_HighlightAndDisableButtons  ================ PR2019-05-25 PR2021-04-21
     function MIMP_HighlightAndDisableButtons() {
@@ -1395,8 +1401,7 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         // el_MIMP_btn_prev and el_MIMP_btn_next don't exists when user has no permission
 
     console.log("mimp.sel_btn_index", mimp.sel_btn_index);
-        const is_btn_grade = (mimp.min_btn_index === 0);
-
+        //const is_btn_grade = (mimp.min_btn_index === 0);
 
         const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
         const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
@@ -1411,7 +1416,7 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         const no_excel_data = !(mimp.curWorksheetData && mimp.curWorksheetData.length);
 
 // ---  check if selected unique field is linked to an excel column
-        const not_all_required_fields_are_linked = !MIMP_RequredFieldsAreLinked();
+        const not_all_required_fields_are_linked = !MIMP_RequiredFieldsAreLinked();
 
         const idx_2_disabled = (no_worksheet_with_data);
         const idx_3_disabled = (no_worksheet_with_data || (mimp.is_import_grade && no_gradetype_selected));
@@ -1432,8 +1437,6 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         const el_MIMP_step_text = document.getElementById("id_MIMP_step_text")
         el_MIMP_step_text.innerText = null;
 
-    console.log("mimp.is_import_grade", mimp.is_import_grade);
-
 // ---  disable selected button
         let step_text = null;
         let step_index = 0;
@@ -1441,33 +1444,43 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         if(!!el_btn_container){
             let btns = el_btn_container.children;
             for (let i = 0, btn; btn = btns[i]; i++) {
-                const data_btn_index = get_attr_from_el_int(btn, "data-btn_index")
-                step_index += (!mimp.is_import_grade && data_btn_index === 2) ? 0 : 1;
-                step_text = [loc.Step, " ", step_index.toString(), ": "].join("");
+                const data_btn_index = get_attr_from_el_int(btn, "data-btn_index");
 
+                let step = 1,  step_header = null;
                 if (data_btn_index === 1){
                     // button step 1 is always enabled
                     btn.disabled = false;
-                    step_text += loc.Select_file;
+                    step_header = loc.Select_file;
                 } else if (data_btn_index === 2){
-                    add_or_remove_class(btn, cls_hide, !mimp.is_import_grade)
+                    add_or_remove_class(btn, cls_hide, !mimp.is_import_grade);
                     if (mimp.is_import_grade){
                         btn.disabled = idx_2_disabled;
-                        step_text += loc.Select_grade_type;
+                        step_header = loc.Select_grade_type;
+                    } else {
+                        step = 0;
                     };
                 } else if (data_btn_index === 3){
                     btn.disabled = idx_3_disabled;
-                    step_text += loc.Link_colums;
+                    step_header = loc.Link_colums;
                 } else if (data_btn_index === 4){
-                    btn.disabled = idx_4_disabled;
-                    step_text += loc.Link_data;
+                    add_or_remove_class(btn, cls_hide, mimp.is_import_username);
+                    if (!mimp.is_import_username){
+                        btn.disabled = idx_4_disabled;
+                        step_header = loc.Link_data;
+                    } else {
+                        step = 0;
+                    };
                 } else if (data_btn_index === 5){
                     btn.disabled = idx_5_disabled;
-                    step_text += loc.Test_upload;
+                    step_header = loc.Test_upload;
                 } else if (data_btn_index === 6){
                     btn.disabled = idx_6_disabled;
-                    step_text += loc.Upload_data;
+                    step_header = loc.Upload_data;
                 }
+                step_index += step;
+
+                step_text = [loc.Step, " ", step_index.toString(), ": ", step_header].join("");
+
 // ---  highlight selected button
                 const is_selected = (data_btn_index === mimp.sel_btn_index);
                 add_or_remove_class (btn, cls_btn_selected, is_selected);
@@ -1477,7 +1490,7 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                 if(is_selected){
                     el_MIMP_step_text.innerText = step_text;
                 };
-            }
+            };
         };
 
 // ---  make el_MIMP_msg_linkrequired visible
@@ -1500,12 +1513,13 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         if(el_MIMP_btn_cancel){
             el_MIMP_btn_cancel.innerText = (mimp.sel_btn_index === 6) ? mimp_loc.Close : mimp_loc.Cancel;
         };
-    }  // MIMP_HighlightAndDisableButtons
+    };  // MIMP_HighlightAndDisableButtons
 
-//========= MIMP_RequredFieldsAreLinked  ==================================== PR2020-12-06 PR2021-04-21 PR2021-08-01
-    function MIMP_RequredFieldsAreLinked() {
-        //console.log("=== MIMP_RequredFieldsAreLinked ===");
+//========= MIMP_RequiredFieldsAreLinked  ==================================== PR2020-12-06 PR2021-04-21 PR2021-08-01
+    function MIMP_RequiredFieldsAreLinked() {
+        //console.log("=== MIMP_RequiredFieldsAreLinked ===");
         //console.log("mimp_stored.coldefs", mimp_stored.coldefs);
+        //console.log("mimp", mimp);
 
         let has_unlinked_fields = false, unique_field_caption = "";
         const unlinked_fields_list = [],  linkrequired_fieldlist = [];
@@ -1521,7 +1535,7 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                         unlinked_fields_list.push(stored_row.caption);
             }}};
         }  // if(mimp_stored.coldefs) {
-        //console.log("mimp_stored.coldefs", mimp_stored.coldefs);
+        console.log("mimp_stored.coldefs", mimp_stored.coldefs);
 
         // get list of has_unlinked_fields, get all linkrequired_fields is no unlinked_fields
         const field_list = (has_unlinked_fields) ? unlinked_fields_list : linkrequired_fieldlist;
@@ -1532,28 +1546,28 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
             for (let i = 0, fldName; fldName = field_list[i]; i++) {
                 if (i){ field_names += (i === list_length - 1) ? mimp_loc._and_ : ", "};
                 field_names += "'" + fldName + "'"
-            }
+            };
             msg_text = (list_length > 1) ? mimp_loc.link_The_columns : mimp_loc.link_The_column;
 
             msg_text += field_names;
             msg_text += (has_unlinked_fields) ? (list_length > 1) ? mimp_loc.link_mustbelinked_plural_zijn : mimp_loc.link_mustbelinked_single_zijn
                             : (list_length > 1) ? mimp_loc.link_mustbelinked_plural_worden : mimp_loc.link_mustbelinked_single_worden;
-        }
+        };
         const el_MIMP_msg_linkrequired = document.getElementById("id_MIMP_msg_linkrequired")
         el_MIMP_msg_linkrequired.innerText = msg_text;
         add_or_remove_class(el_MIMP_msg_linkrequired, "text-danger", has_unlinked_fields)
 
         return !has_unlinked_fields;
-    }  // MIMP_RequredFieldsAreLinked
+    };  // MIMP_RequiredFieldsAreLinked
 
 //=========  FillExcelValueLists  ================ PR2020-12-26 PR2021-02-23
     function FillExcelValueLists(link_same_names){
-        console.log("===== FillExcelValueLists  =====");
-        console.log("mimp_stored", mimp_stored);
-        console.log("mimp.excel_coldefs", mimp.excel_coldefs);
-        console.log("mimp.awp_coldefs", mimp.awp_coldefs);
-        console.log("mimp.import_table", mimp.import_table);
-        console.log("mimp", mimp);
+        //console.log("===== FillExcelValueLists  =====");
+        //console.log("mimp_stored", mimp_stored);
+        //console.log("mimp.excel_coldefs", mimp.excel_coldefs);
+        //console.log("mimp.awp_coldefs", mimp.awp_coldefs);
+        //console.log("mimp.import_table", mimp.import_table);
+        //console.log("mimp", mimp);
 
         // function is called by MIMP_GetWorkbook, MIMP_SelectWorksheet, MIMP_CheckboxHasheaderChanged, LinkColumns, UnlinkColumns
 
@@ -1574,15 +1588,15 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         const awp_colNames_list = awp_colNames_dict[mimp.import_table];
         // awp_colNames_list ['subject']
 
-        console.log("awp_colNames_dict", awp_colNames_dict);
-        console.log("awp_colNames_list", awp_colNames_list);
-        console.log("mimp.import_table", mimp.import_table);
+        //console.log("awp_colNames_dict", awp_colNames_dict);
+        //console.log("awp_colNames_list", awp_colNames_list);
+        //console.log("mimp.import_table", mimp.import_table);
 // skip when import_table = import_studsubj and is_crosstab, fill lists by .... instead
 
         if(awp_colNames_list && awp_colNames_list.length){
             for (let x = 0, awpColdef; awpColdef = awp_colNames_list[x]; x++) {
                 // awpColdef = 'subject'
-        console.log("awpColdef", awpColdef);
+        //console.log("awpColdef", awpColdef);
 
     // ---  skip when awpColdef not linked
                     // lookup excel_coldef_row with awpColdef in it, the awpColdef is not linked when no row found
@@ -1625,39 +1639,37 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
     // ---  convert the excel_value_list to a dict_list, add linked awpBasePk and awpValue to exc_dict
                             const dict_list = convert_excelvaluelist_to_dictlist(
                                         excColIndex, excColdef, awpColdef, excel_value_list, link_same_names);
-                            mimp.linked_exc_values[awpColdef] = dict_list
-                        }  // if (excel_value_list.length){
-                    }  // if(excel_coldef_row){
-                }  //  if (mimp.import_table !== "import_studsubj" && is_crosstab)
+                            mimp.linked_exc_values[awpColdef] = dict_list;
+                        };  // if (excel_value_list.length){
+                    };  // if(excel_coldef_row){
+                };  //  if (mimp.import_table !== "import_studsubj" && is_crosstab)
+            };  //  for (let x = 0, awp_colName; awp_colName = awp_col_names[x]; x++)
+        };  // if(awp_col_names.length){
 
-            }  //  for (let x = 0, awp_colName; awp_colName = awp_col_names[x]; x++)
-        }  // if(awp_col_names.length){
-
-        console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
-        console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
-    }  // FillExcelValueLists
+        //console.log("mimp.linked_exc_values", deepcopy_dict(mimp.linked_exc_values));
+        //console.log("mimp.linked_awp_values", deepcopy_dict(mimp.linked_awp_values));
+    };  // FillExcelValueLists
 
 //=========  create_mimp_linked_values_list  ================   PR2021-02-28
     function create_mimp_linked_values_list(awpColdef, excel_value_list){
-        console.log("@@@@@@@@@@@ ================ create_mimp_linked_values_list  ========= ");
-        console.log("awpColdef", awpColdef);
-        console.log("excel_value_list", excel_value_list);
+        //console.log("================ create_mimp_linked_values_list  ========= ");
+        //console.log("awpColdef", awpColdef);
+        //console.log("excel_value_list", excel_value_list);
 
 // --- create new_awpDict_list
-        const new_awpDict_list = []
+        const new_awpDict_list = [];
         const stored_awp_coldefs = mimp_stored[awpColdef];
         // stored_awp_coldefs = [{awpBasePk: 42, awpValue: "zwi", excValue: "leerweg"},... ]
         if(stored_awp_coldefs){
-        console.log("#### stored_awp_coldefs", stored_awp_coldefs);
             for (let i = 0, dict; dict = stored_awp_coldefs[i]; i++) {
                 const sortby = (dict.awpValue) ? dict.awpValue.toLowerCase() : "zzzzz";
                 const row_id = get_AEL_rowId(awpColdef, "awp", i); // row_id: id_tr_subject_awp_2
                 const new_awpDict = {awpBasePk: dict.awpBasePk, awpValue: dict.awpValue, rowId: row_id, sortby: sortby}
                 if(dict.excValue) {new_awpDict.excValue = dict.excValue};
                 new_awpDict_list.push(new_awpDict);
-            }
+            };
             if(new_awpDict_list.length){new_awpDict_list.sort(b_comparator_sortby)}
-        }
+        };
 
         //new_awpDict_list = [ {awpBasePk: 39, awpValue: "adm&co", excColIndex: 5, excValue: "adm&co", sortby: "adm&co", rowId: "id_tr_subject_awp_21"}, ...]
         const new_excDict_list = [];
@@ -1700,20 +1712,20 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                                 awpDict.excValue = new_excDict.excValue;
                                 awpDict.excColIndex = new_excDict.excColIndex;
                                 break;
-                            }
-                        }
-                    }  // for (let x = 0, awpDict; awpDict = new_awpDict_list[x]; x++)
+                            };
+                        };
+                    };  // for (let x = 0, awpDict; awpDict = new_awpDict_list[x]; x++)
                     new_excDict_list.push(new_excDict)
-                }
-            }  // for (let j = 0, excel_value; excel_value = excel_value_list[j]; j++)
+                };
+            };  // for (let j = 0, excel_value; excel_value = excel_value_list[j]; j++)
 
-        }  //   if(excel_value_list)
+        };  //   if(excel_value_list)
         mimp.linked_exc_values[awpColdef] = new_excDict_list
         mimp.linked_awp_values[awpColdef] = new_awpDict_list;
-    console.log("============ mimp.linked_exc_values[awpColdef]", new_excDict_list);
-    console.log("============ mimp.linked_awp_values[awpColdef] ", new_awpDict_list);
-    console.log("-----------------------------------------------------------------");
-    }  // create_mimp_linked_values_list
+    //console.log("============ mimp.linked_exc_values[awpColdef]", new_excDict_list);
+    //console.log("============ mimp.linked_awp_values[awpColdef] ", new_awpDict_list);
+    //console.log("-----------------------------------------------------------------");
+    };  // create_mimp_linked_values_list
 
 //=========  get_unlinked_excel_coldefs  ================   PR2021-02-25
     function get_unlinked_excel_coldefs(){
@@ -1745,7 +1757,7 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
             };
         };
         return excel_value_list;
-    }  // get_unlinked_excel_coldefs
+    };  // get_unlinked_excel_coldefs
 
 //=========  get_excel_valuelist_from_tablecolumn  ================  PR2021-02-24
     function get_excel_valuelist_from_tablecolumn(excColIndex_list){
@@ -1768,13 +1780,13 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                 for (let j = 0, excColIndex; excColIndex = excColIndex_list[j]; j++) {
                     const value = data_row[excColIndex];
                     if (value && !excel_value_list.includes(value)) {
-                        excel_value_list.push(value)
-                    }
-                }
+                        excel_value_list.push(value);
+                    };
+                };
             };
-        }
+        };
         //console.log("excel_value_list", excel_value_list);
-        const excel_value_dictlist = []
+        const excel_value_dictlist = [];
         if (excel_value_list.length){
 
         //console.log("excel_value_list", excel_value_list);
@@ -1791,13 +1803,13 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                     const value_lc = value.toString().toLowerCase();
         //console.log("............value_lc", value_lc);
                     excel_value_dictlist.push( {excColdef: value, sortby: value_lc} )
-                }
+                };
             };
         //console.log("excel_value_dictlist", excel_value_dictlist);
         //console.log(".............................................");
-        }
+        };
         return excel_value_dictlist;
-    }  // get_excel_valuelist_from_tablecolumn
+    };  // get_excel_valuelist_from_tablecolumn
 
 //=========  convert_excelvaluelist_to_dictlist  ================  PR2021-02-24
     function convert_excelvaluelist_to_dictlist(excColIndex, excColdef, awpColdef, excel_value_list, link_same_names){
@@ -1812,8 +1824,6 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         for (let j = 0, excel_value_dict; excel_value_dict = excel_value_list[j]; j++) {
             const excel_value = excel_value_dict.excColdef;
             const exc_dict = {excColIndex: j, excValue: excel_value}
-        //console.log("%%%%%%%%%%%%%%%%% excel_value", excel_value);
-        //console.log("%%%%%%%%%%%%%%%% exc_dict", exc_dict);
 
 // ---  lookup excel_value in mimp_stored awpColdef
             if(mimp_stored[awpColdef]){
@@ -1843,13 +1853,13 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                             // also add to awp_dict
                                 if(excColdef){ awp_dict.excColdef = excColdef }
                                 awp_dict.excValue = excel_value
-                            }
-                        }
-                    }  // if (awp_dict){
-                }  // for (let x = 0, awp_dict; awp_dict = mimp_stored[awpColdef][x]; x++)
-            }  // if(mimp_stored[awpColdef]){
+                            };
+                        };
+                    };  // if (awp_dict){
+                };  // for (let x = 0, awp_dict; awp_dict = mimp_stored[awpColdef][x]; x++)
+            };  // if(mimp_stored[awpColdef]){
             dict_list.push(exc_dict)
-        }  // for (let j = 0, excel_value; excel_value = excel_value_list[j]; j++)
+        };  // for (let j = 0, excel_value; excel_value = excel_value_list[j]; j++)
 // ---  add the dict_list to mimp.linked_exc_values
         // mimp.linked_exc_values = { sector: [ {excColIndex: 0, excValue: "CM"},
         //                                      {excColIndex: 1, excValue: "EM"},
@@ -1872,21 +1882,21 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         if (awpValue && excValue ) {
 
             // PR2021-08-10 debug: when value is integer toLowerCase() gives error, convert to string first
-            let awp_val_stripped = awpValue.toString().toLowerCase()
+            let awp_val_stripped = awpValue.toString().toLowerCase();
             awp_val_stripped = awp_val_stripped.replaceAll("&", "");
             awp_val_stripped = awp_val_stripped.replaceAll(" ", "");
             awp_val_stripped = awp_val_stripped.replaceAll("-", "");
 
-            let exc_val_stripped = excValue.toString().toLowerCase()
+            let exc_val_stripped = excValue.toString().toLowerCase();
             exc_val_stripped = exc_val_stripped.replaceAll("&", "");
             exc_val_stripped = exc_val_stripped.replaceAll(" ", "");
             exc_val_stripped = exc_val_stripped.replaceAll("-", "");
 
 // ---  add to exc_dict when stripped values are the same
-            is_same_val_stripped = (awp_val_stripped && exc_val_stripped && awp_val_stripped === exc_val_stripped)
-        }
+            is_same_val_stripped = (awp_val_stripped && exc_val_stripped && awp_val_stripped === exc_val_stripped);
+        };
         return is_same_val_stripped;
-    }  // same_awp_exc_values
+    };  // same_awp_exc_values
 
 //========= Fill_AEL_Tables  ====================================
     function Fill_AEL_Tables(JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
@@ -1900,9 +1910,9 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         if(mimp_stored.tablelist){
             for (let i = 0, tbodyTblName; tbodyTblName = mimp_stored.tablelist[i]; i++) {
                 Fill_AEL_Table(tbodyTblName, JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId)
-            }
-        }
-    }  // Fill_AEL_Tables
+            };
+        };
+    };  // Fill_AEL_Tables
 
 //========= Fill_AEL_Table  ==================================== PR2020-12-29
     function Fill_AEL_Table(tbodyTblName, JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId) {
@@ -1921,14 +1931,14 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         const show_console = false;  //  (tbodyTblName === "level");
 
 // ---  reset tables
-        const el_tbody_awp = document.getElementById("id_MIMP_tbody_" + tbodyTblName + "_awp")
-        const el_tbody_exc = document.getElementById("id_MIMP_tbody_" + tbodyTblName + "_exc")
-        const el_tbody_lnk = document.getElementById("id_MIMP_tbody_" + tbodyTblName + "_lnk")
+        const el_tbody_awp = document.getElementById("id_MIMP_tbody_" + tbodyTblName + "_awp");
+        const el_tbody_exc = document.getElementById("id_MIMP_tbody_" + tbodyTblName + "_exc");
+        const el_tbody_lnk = document.getElementById("id_MIMP_tbody_" + tbodyTblName + "_lnk");
 
         if (el_tbody_awp && el_tbody_exc && el_tbody_lnk){
-            el_tbody_awp.innerText = null
-            el_tbody_exc.innerText = null
-            el_tbody_lnk.innerText = null
+            el_tbody_awp.innerText = null;
+            el_tbody_exc.innerText = null;
+            el_tbody_lnk.innerText = null;
 
     // ---  show or hide tables
             // tbodyTblName gets value from mimp_stored.tablelist
@@ -1943,13 +1953,13 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
                     // lookup awpColdef 'department' etc in mimp_stored.coldefs. If it exists: show table 'department' etc.
                     const lookup_row = get_arrayRow_by_keyValue(mimp_stored.coldefs, "awpColdef", tbodyTblName);
                     // check if it is a linked column by checking if 'excColdef' exists in row
-                    show_table = (!!lookup_row && "excColdef" in lookup_row) ;
+                    show_table = (!!lookup_row && "excColdef" in lookup_row);
 
                 } else if(["import_studsubj", "import_grade"].includes(mimp.import_table)){
                     // PR2021-08-11 NIU. Was: show_table = (["subject", "subjecttype"].includes(tbodyTblName));
                     show_table = (tbodyTblName === "subject");
-                }
-            }
+                };
+            };
             // el_container is used to map values, like in  id_MIMP_container_sector
             const el_container = document.getElementById("id_MIMP_container_" + tbodyTblName);
             if(el_container) {add_or_remove_class(el_container, cls_hide, !show_table)};
@@ -2020,7 +2030,7 @@ if (show_console){console.log("===> row_is_linked row.excValue", row.excValue)};
                                     row_is_linked = !!row.awpBasePk;
 if (show_console){console.log("===> row_is_linked row.awpBasePk", row.awpBasePk)};
                                 };
-                            }
+                            };
                             const row_cls = (row_is_linked) ? cls_tbl_td_linked : cls_tbl_td_unlinked;
                             const cls_width = (row_is_linked) ? "tsa_tw_50perc" : "tsa_tw_100perc";
                             const row_awpBasePk = (row.awpBasePk) ? row.awpBasePk : null;
@@ -2029,7 +2039,7 @@ if (show_console){console.log("===> row_is_linked row.awpBasePk", row.awpBasePk)
                             // PR2020-12-27 debug: must use (!!j); (j) will return 0 instead of false;
                             // skip linked excel row, linked row is already added by key 'awp'
                             //const skip_linked_exc_row = (is_tbl_coldef) ? !!j && row_is_linked : (!!j && !!row_awpBasePk);
-                            const skip_linked_exc_row = (key === "exc" && row_is_linked)
+                            const skip_linked_exc_row = (key === "exc" && row_is_linked);
 
                             const awpCaption = (is_tbl_coldef) ? row.caption : row.awpValue;
                             const excCaption = (is_tbl_coldef) ? row.excColdef : row.excValue;
@@ -2076,7 +2086,7 @@ if (show_console){
             // --- append td with row.caption
                                     // row {awpKey: 2, caption: "PKL", excValue: "Omar TEST"}
                                     let td_first = tblRow.insertCell(-1);
-                                    td_first.classList.add(row_cls)
+                                    td_first.classList.add(row_cls);
                                     const text = (key === "awp") ? awpCaption : excCaption;
                                     td_first.innerText = text;
 
@@ -2084,39 +2094,39 @@ if (show_console){
                                     if (show_justLinked) {
                                         //td_first.classList.add(cls_just_linked_unlinked)
                                         //setTimeout(function (){ td_first.classList.remove(cls_just_linked_unlinked)}, 1000);
-                                        ShowClassWithTimeout(td_first, cls_just_linked_unlinked, 1000) ;
+                                        ShowClassWithTimeout(td_first, cls_just_linked_unlinked, 1000);
                                     }
 
             // --- if linked row: also append td with excValue
                                     if (row_is_linked) {
                                         let td_second = tblRow.insertCell(-1);
-                                        td_second.classList.add(row_cls)
+                                        td_second.classList.add(row_cls);
                                         td_second.innerText = excCaption;
 
             // --- if new appended row: highlight row for 1 second
                                         if (show_justLinked) {
                                            //td_second.classList.add(cls_just_linked_unlinked)
                                            //setTimeout(function (){  td_second.classList.remove(cls_just_linked_unlinked)  }, 1000);
-                                           ShowClassWithTimeout(td_second, cls_just_linked_unlinked, 1000) ;
-                                        }
-                                    }
+                                           ShowClassWithTimeout(td_second, cls_just_linked_unlinked, 1000);
+                                        };
+                                    };
             // --- add mouseenter/mouseleave EventListener to tblRow
                                     const cls_linked_hover = (row_is_linked) ? "tsa_td_linked_hover" : "tsa_td_unlinked_hover";
                                         // cannot use pseudo class :hover, because all td's must change color, hover doesn't change children
                                     tblRow.addEventListener("mouseenter", function(event) {
                                         for (let i = 0, td; td = tblRow.children[i]; i++) {
-                                            td.classList.add(cls_linked_hover)
+                                            td.classList.add(cls_linked_hover);
                                     }});
                                     tblRow.addEventListener("mouseleave", function() {
                                         for (let i = 0, td; td = tblRow.children[i]; i++) {
-                                            td.classList.remove(cls_linked_hover)
+                                            td.classList.remove(cls_linked_hover);
                                     }});
-                            } //  if(!skip_linked_exc_row)
+                            }; //  if(!skip_linked_exc_row)
                         };  // for (let i = 0, row ; row = items[i]; i++)
                     };  // if(items){
-                }  // for (let j = 0; j < 2; j++)
-            }  // if(show_table)
-        }  // if (el_tbody_awp && el_tbody_exc && el_tbody_lnk)
+                };  // for (let j = 0; j < 2; j++)
+            };  // if(show_table)
+        };  // if (el_tbody_awp && el_tbody_exc && el_tbody_lnk)
      }; // Fill_AEL_Table()
 
 //=========   Handle_AEL_row_clicked   ======================
@@ -2140,7 +2150,7 @@ if (show_console){
             let row_other_id = null, row_other_key = null;
 
 // ---  check if clicked row is already selected
-            const tr_is_not_yet_selected = (!get_attr_from_el(tr_selected, "data-selected", false))
+            const tr_is_not_yet_selected = (!get_attr_from_el(tr_selected, "data-selected", false));
 
         //console.log("tbodyAEL", tbodyAEL) ;
         //console.log("tbodyTblName", tbodyTblName) ;
@@ -2155,7 +2165,7 @@ if (show_console){
                 if(tr_is_not_yet_selected && row === tr_selected){
                     row.setAttribute("data-selected", true);
                     for (let i = 0, td; td = row.children[i]; i++) {
-                        td.classList.add(cls_selected)
+                        td.classList.add(cls_selected);
                         td.classList.remove(cls_linked_unlinked_hover)};
                 } else {
 // ---  remove data-selected and class selected from all other rows in this table, also this row if already selected
@@ -2163,16 +2173,16 @@ if (show_console){
                     for (let i = 0, td; td = row.children[i]; i++) {
                         td.classList.remove(cls_selected);
                         td.classList.remove(cls_linked_unlinked_hover)};
-                }
-            }
+                };
+            };
 // ---  only if clicked on tsa or exc row:
             if (["awp", "exc"].includes(tbodyAEL)) {
 // ---  if clicked row was not yet selected: check if other table has also selected row, if so: link
                 if(tr_is_not_yet_selected) {
 // ---  check if other table has also selected row, if so: link
                     const other_tbodyAEL = (tbodyAEL === "awp") ? "exc" : "awp";
-                    const id_tbody_other = "id_MIMP_tbody_" + tbodyTblName + "_" + other_tbodyAEL
-                    let table_body_other = document.getElementById(id_tbody_other)
+                    const id_tbody_other = "id_MIMP_tbody_" + tbodyTblName + "_" + other_tbodyAEL;
+                    let table_body_other = document.getElementById(id_tbody_other);
     //console.log("tbodyTblName", tbodyTblName)
     //console.log("id_tbody_other", id_tbody_other)
 // ---  loop through rows of other table
@@ -2201,15 +2211,15 @@ if (show_console){
                         setTimeout(function () {
                             LinkColumns(tbodyTblName, tbodyAEL, row_clicked_id, row_other_id, row_clicked_key, row_other_key);
                         }, 250);
-                    }
-                }
+                    };
+                };
             } else if (tr_is_not_yet_selected) {
 // ---  unlink tr_selected  with delay of 250ms (to show selected Tsa and Excel row)
                 setTimeout(function () {
                     UnlinkColumns(tbodyTblName, tbodyAEL, row_clicked_id, row_clicked_key);
                     }, 250);
-            }
-       }  // if(!!event.currentTarget) {
+            };
+       };  // if(!!event.currentTarget) {
     };  // Handle_AEL_row_clicked
 
 //========= LinkColumns  ===================================== PR2020-12-29
@@ -2300,7 +2310,7 @@ if (show_console){
         // excel_row =  {index: 8, excColdef: "geboorte_land", awpColdef: "birthcountry", awpCaption: "Geboorteland"}
         if (!!awp_row && !!awp_row[exc_key]) {
 // ---  look up excColdef in excel_coldefs
-            excel_row = get_arrayRow_by_keyValue (excel_rows, exc_key, awp_row[exc_key])
+            excel_row = get_arrayRow_by_keyValue (excel_rows, exc_key, awp_row[exc_key]);
 
         //console.log("awp_row", awp_row);
         //console.log("excel_row", excel_row);
@@ -2365,8 +2375,8 @@ if (show_console){
                 for (let i = 0, row; row = awp_rows[i]; i++) {
                     if(row.awpColdef && row.excColdef){
                         linked_row[row.awpColdef] = row.excColdef;
-                    }
-                }
+                    };
+                };
             };
             // upload_dict = { importtable: "student", coldef: {code: "abbrev", name: "name"} }
             upload_dict.coldef = linked_row;
@@ -2379,8 +2389,8 @@ if (show_console){
                     // row = {awpBasePk: 5, awpValue: "e&m", excColIndex: 1, excValue: "EM"}
                     if(!!row.excValue && !!row.awpBasePk){
                         linked_values[row.excValue] = row.awpBasePk;
-                    }
-                }
+                    };
+                };
             };
             // also upload when linked_values is empty, to delete existing links from database
             // linked_values = {CM: 4, EM: 5}
@@ -2434,7 +2444,7 @@ if (show_console){
                 import_table = "import_permit";
             } else if("import_username" in schoolsetting_dict ){
                 import_table = "import_username";
-            }
+            };
         };
 
         const import_table_dict = schoolsetting_dict[import_table];
@@ -2479,7 +2489,7 @@ if (show_console){
                 if("subject_list" in response){
                     const subject_list = response.subject_list;
                     FillDataTableAfterUpload(subject_list, worksheet_range);
-                }
+                };
 
                 if("updated_student_rows" in response){
                     RefreshDataRowsAfterUpload(response);

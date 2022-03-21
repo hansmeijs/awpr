@@ -23,7 +23,7 @@ const man_exemption = {
              "<li>Als ook beide CE-cijfers hetzelfde zijn worden de cijfers van het examen gebruikt bij de berekening van de uitslag.</li></ul></p>",
         ]),
 
-        write_paragraph_header("id_exemp_bis_exam", "Bis-kandidaten"),
+        write_paragraph_header("id_exem_bis_exam", "Bis-kandidaten"),
         write_paragraph_body("",
         ["<p><b>Bis-kandidaten</b> zijn kandidaten die dit jaar opnieuw examen doen.<br>",
         "Ga naar de pagina <i>Kandidaten</i> en klik in de kolom <i>Bis-kandidaat</i> om de kandidaat als bis-kandidaat aan te merken.<br>",
@@ -31,7 +31,7 @@ const man_exemption = {
         "Als je klikt op 'Ja, verwijder' wordt het bis-examen verwijderd. Eventuele vrijstellingen worden dan gewist.</p>",
         ]),
 
-        write_paragraph_header("id_exemp_set", "Vrijstellingen aanmaken"),
+        write_paragraph_header("id_exem_set", "Vrijstellingen aanmaken"),
         write_paragraph_body("",
         ["<p class='mb-0 pb-0'>Het <b>aanmaken van een vrijstelling</b> bij vakken waarvoor de kandidaat een vrijstelling heeft gaat als volgt:</p>",
             "<ul class='manual_bullet mb-0 pb-2'><li>Ga naar de pagina <i>Vakken</i> en klik in de zwarte horizontale balk op de tab <i>Vrijstelling</i>.</li>",
@@ -41,7 +41,7 @@ const man_exemption = {
         ]),
         write_image("img_exemption_subject_set_ne"),
 
-        write_paragraph_header("id_exemp_grades", "Vrijstelling cijfers invoeren"),
+        write_paragraph_header("id_exem_grades", "Vrijstelling cijfers invoeren"),
         write_paragraph_body("",
         ["<p class='mb-0 pb-0'>Het <b>invoeren van vrijstelling cijfers </b> gaat als volgt:</p>",
         "<ul class='manual_bullet mb-0 pb-2'><li>Ga naar de pagina <i>Cijfers</i> en klik in de zwarte horizontale balk op de tab <i>Vrijstellingen</i>.</li>",
@@ -58,7 +58,7 @@ const man_exemption = {
         ]),
         write_image("img_exemption_grade_set_ne"),
 
-        write_paragraph_header("id_exemp_upload", "Vrijstelling cijfers uploaden"),
+        write_paragraph_header("id_exem_upload", "Vrijstelling cijfers uploaden"),
         write_paragraph_body("",
         ["<p>Het uploaden van vrijstelling cijfers is omschreven in de paragraaf <i>Gegevens uploaden</i>.<br>",
          "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>hier</a> om naar de handleiding hiervan te gaan.</p>",
@@ -78,7 +78,7 @@ const man_exemption = {
         ]),
         write_image("img_exemption_excel_ne_en"),
 
-        write_paragraph_header("id_exemp_approve", "Vrijstellingen goedkeuren en indienen"),
+        write_paragraph_header("id_exem_approve", "Vrijstellingen goedkeuren en indienen"),
         write_paragraph_body("",
         ["<p>Op dit moment hoeven vrijstellingen niet goedgekeurd en ingediend te worden.<br>",
         "Mogelijk gaat in de toekomst de procedure voor het goedkeuren en indienen van schoolexamens cijfers ook gelden voor vrijstellingen.</p>",
@@ -106,7 +106,7 @@ en:  [
              "<li>If both CE grades are the same, the grades of the exam will be used in the calculation of the result.</li></ul></p>",
         ]),
 
-        write_paragraph_header("id_exemp_bis_exam", "Bis-candidates"),
+        write_paragraph_header("id_exem_bis_exam", "Bis-candidates"),
         write_paragraph_body("",
         ["<p><b>Bis candidates</b> are candidates who will retake the exam this year.<br>",
         "Go to the <i>Candidates</i> page and click in the <i>Bis-candidate</i> column to set the candidate as a bis-candidate.<br>",
@@ -114,7 +114,7 @@ en:  [
         "If you click on 'Yes, delete' the bis exam will be deleted. Any exemptions will then be deleted.</p>",
         ]),
 
-        write_paragraph_header("id_exemp_set", "Create exemptions"),
+        write_paragraph_header("id_exem_set", "Create exemptions"),
         write_paragraph_body("",
         ["<p class='mb-0 pb-0'>The <b>create an exemption</b> for subjects for which the candidate has an exemption is done as follows:</p>",
             "<ul class='manual_bullet mb-0 pb-2'><li>Go to the page <i>Course</i> and click in the black horizontal bar on the tab <i>Exemption</i>.< /li>",
@@ -123,7 +123,7 @@ en:  [
         ]),
         write_image("img_exemption_subject_set_en"),
 
-        write_paragraph_header("id_exemp_grades", "Enter exemption grades"),
+        write_paragraph_header("id_exem_grades", "Enter exemption grades"),
         write_paragraph_body("",
         ["<p class='mb-0 pb-0'>The <b>entry of exemption grades </b> is done as follows:</p>",
         "<ul class='manual_bullet mb-0 pb-2'><li>Go to the <i>Grades</i> page and click the <i>Exemptions</i> tab in the black horizontal bar.< /li>",
@@ -141,7 +141,7 @@ en:  [
         ]),
         write_image("img_exemption_grade_set_en"),
 
-        write_paragraph_header("id_exemp_upload", "Uploading exemption grades"),
+        write_paragraph_header("id_exem_upload", "Uploading exemption grades"),
         write_paragraph_body("",
         ["<p>The upload of exemption grades is described in the section <i>Upload data</i>.<br>",
          "Click <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>here</a> to go to the manual for this.</p>",
@@ -161,7 +161,7 @@ en:  [
         ]),
         write_image("img_exemption_excel_ne_en"),
 
-        write_paragraph_header("id_exemp_approve", "Approve and submit exemptions"),
+        write_paragraph_header("id_exem_approve", "Approve and submit exemptions"),
         write_paragraph_body("",
         ["<p>At this time, exemptions do not need to be approved and submitted.<br>",
         "The procedure for approving and submitting school exam grades may also apply to exemptions in the future.</p>",

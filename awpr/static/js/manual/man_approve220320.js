@@ -357,7 +357,7 @@ const man_approve = {
                 "Click <i>Request Verification Code</i>. AWP will now send an email with the verification code to the user's email address.",
                 "The verification code will remain valid for 30 minutes. If the verification code has expired, you can request a new one.</p>",
                 "<p>Enter the verification code and click <i>Submit Ex1 Form</i>.",
-                "The Ex1 form is now being created and saved on the server. With this, the Ex1 form has been submitted. The data is now visible to the Division Of Examinations and the Inspection Division.</p>",
+                "The Ex1 form is now being created and saved on the server. With this, the Ex1 form has been submitted. The data is now visible to the Division Of Examinations and the Inspectorate Division.</p>",
             "</div>",
         "</div>",
         write_image("img_studsubj_submit_step2_en"),

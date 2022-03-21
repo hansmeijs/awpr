@@ -3519,6 +3519,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                             school_rows = sch_dicts.create_school_rows(
                                 examyear=examyear,
                                 permit_dict=permit_dict,
+                                request=request,
                                 school_pk=school.pk
                             )
                             if school_rows:

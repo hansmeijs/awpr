@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 student_rows: {cur_dep_only: true},
                 subject_rows: {cur_dep_only: true},
-                cluster_rows: {get: true},
+                cluster_rows: {cur_dep_only: true},
                 studentsubject_rows: {cur_dep_only: true},
 
                 published_rows: {get: true}
@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 if ("messages" in response) {
-                    b_ShowModMessages(response.messages);
+                    b_show_mod_message_dictlist(response.messages);
                 };
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
                 if ("school_rows" in response)  {
@@ -658,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14 PR2021-08-07 PR2022-01-05
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ", data_btn);
+        console.log( "===== HandleBtnSelect ========= ", data_btn);
 
 // ---  get data_btn from selected_btn when null;
         if (!data_btn) {data_btn = selected_btn};
@@ -671,9 +671,20 @@ document.addEventListener('DOMContentLoaded', function() {
             selected_btn = "btn_ep_01";
         };
 
+// --- check if sel_examperiod corresponds with selected_btn. If not: update sel_examperiod
+        const new_sel_examperiod = (selected_btn === "btn_exem" && setting_dict.sel_examperiod !== 4) ? 4 :
+                                   (selected_btn === "btn_ep_01" && setting_dict.sel_examperiod !== 1) ? 1 :
+                                   (selected_btn === "btn_reex" && setting_dict.sel_examperiod !== 2) ? 2 :
+                                   (selected_btn === "btn_reex03" && setting_dict.sel_examperiod !== 3) ? 3 :
+                                   (selected_btn === "btn_pok" && setting_dict.sel_examperiod !== 1) ? 1 : null
+
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
-        if(!skip_upload){
+        if(!skip_upload || new_sel_examperiod){
             const upload_dict = {page_studsubj: {sel_btn: selected_btn}};
+            if (new_sel_examperiod) {
+                setting_dict.sel_examperiod = new_sel_examperiod;
+                upload_dict.selected_pk = {sel_examperiod: new_sel_examperiod};
+            };
             b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
@@ -990,10 +1001,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if(permit_dict.permit_approve_subject && permit_dict.requsr_same_school && map_dict.studsubj_id){
                         // examtype = 'subj', 'exem', 'sr', 'reex', 'reex03', 'pok'
                         const examtype = field_name.replace("_status", "");
-                        const field_publ_id = examtype + "_published_id" // subj_published_id
-                        const publ_id = (map_dict[field_publ_id]) ? map_dict[field_publ_id] : null;
+                        const field_published_id = examtype + "_published_id" // subj_published_id
+                        const published_id = (map_dict[field_published_id]) ? map_dict[field_published_id] : null;
 
-                        if(!publ_id){
+                        if(!published_id){
                             td.addEventListener("click", function() {UploadToggleStatus(el)}, false)
                             add_hover(td);
                         };
@@ -1149,20 +1160,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const field_auth1by_id = examtype + "_auth1by_id" // subj_auth1by_id
                 const field_auth2by_id = examtype + "_auth2by_id" // subj_auth2by_id
-                const field_publ_id = examtype + "_published_id" // subj_published_id
+                const field_published_id = examtype + "_published_id" // subj_published_id
                 const field_publ_modat = examtype + "_publ_modat" // subj_publ_modat
 
                 const auth1by_id = (map_dict[field_auth1by_id]) ? map_dict[field_auth1by_id] : null;
                 const auth2by_id = (map_dict[field_auth2by_id]) ? map_dict[field_auth2by_id] : null;
-                const publ_id = (map_dict[field_publ_id]) ? map_dict[field_publ_id] : null;
+                const published_id = (map_dict[field_published_id]) ? map_dict[field_published_id] : null;
 
-                const class_str = (publ_id) ? "diamond_0_4" :
+                const class_str = (published_id) ? "diamond_0_4" :
                                   (auth1by_id && auth2by_id) ? "diamond_3_3" :
                                   (auth1by_id) ? "diamond_2_1" :
                                   (auth2by_id) ? "diamond_1_2" : "diamond_0_0"; // diamond_0_0 is outlined diamond
                 // filter_values are: '0'; is show all, 1: not approved, 2: auth1 approved, 3: auth2 approved, 4: auth1+2 approved, 5: submitted,   TODO '6': tobedeleted '7': locked
 
-                filter_value = (publ_id) ? "5" :
+                filter_value = (published_id) ? "5" :
                                   (auth1by_id && auth2by_id) ? "4" :
                                   (auth2by_id ) ? "3" :
                                   (auth1by_id) ? "2" : "1"; // diamond_0_0 is outlined diamond
@@ -1173,7 +1184,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const field_auth2by = examtype + "_auth2by" // subj_auth2by
                 const field_published = examtype + "_published" // subj_published
 
-                if (publ_id){
+                if (published_id){
                     const modified_dateJS = parse_dateJS_from_dateISO(map_dict[field_publ_modat]);
                     title_text = loc.Submitted_at + ":\n" + format_datetime_from_datetimeJS(loc, modified_dateJS)
 
@@ -1251,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const has_permit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
             if (!has_permit){
         // show message no permission
-                b_show_mod_message(loc.No_permission);
+                b_show_mod_message_html(loc.No_permission);
         // put back old value  in el_input
                 el_input.value = old_value;
 
@@ -1268,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                                       loc.Exemption_is_auth + "<br>" + loc.needs_approvals_removed+ "<br>" + loc.Then_you_can_change_it;
 
             // show message
-                    b_show_mod_message(msg_html);
+                    b_show_mod_message_html(msg_html);
             // put back old value  in el_input
                     el_input.value = old_value;
                 } else {
@@ -1291,7 +1302,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (not_valid){
             // ---  show modal MESSAGE
                             mod_dict = {el_focus: el_input}
-                            b_show_mod_message(loc.Examyear_not_valid, null, ModMessageClose);
+                            b_show_mod_message_html(loc.Examyear_not_valid, null, ModMessageClose);
         // make field red when error and reset old value after 2 seconds
                             reset_element_with_errorclass(el_input, data_dict)
                         } else {
@@ -1329,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // - get statusindex of requsr ( statusindex = 1 when auth1 etc
             // status_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
             // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
-            // this function gives err message when multiple found. (uses b_show_mod_message)
+            // this function gives err message when multiple found. (uses b_show_mod_message_html)
             const requsr_status_index = b_get_auth_index_of_requsr(loc, permit_dict);
             if(requsr_status_index){
 
@@ -1357,7 +1368,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         loc.is_already_published
                                         ].join(" ");
                         const msg_html = caption + "<br>" + loc.You_cannot_change_approval;
-                        b_show_mod_message(msg_html);
+                        b_show_mod_message_html(msg_html);
                     } else {
 
 // get auth index of requsr, null when multiple found
@@ -1496,7 +1507,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
 
                     if ("msg_html" in response) {
-                        b_show_mod_message(response.msg_html)
+                        b_show_mod_message_html(response.msg_html)
                     }
                     if ("validate_studsubj_list" in response) {
                         ResponseValidationAll(response.validate_studsubj_list)
@@ -1525,7 +1536,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     //if ( "updated_studsubj_approve_rows" in response){
 
                     if ("messages" in response){
-                        b_ShowModMessages(response.messages);
+                        b_show_mod_message_dictlist(response.messages);
                         $("#id_mod_studentsubject").modal("hide");
                     };
 
@@ -1682,7 +1693,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     pws_subjects: ss_dict.pws_subjects
                                 };
 
-                            // PR2021-0930 debug: when deleting went wrong subj_publ_id still has value (see MSTUDSUBJ_AddRemoveSubject)
+                            // PR2021-0930 debug: when deleting went wrong subj_published_id still has value (see MSTUDSUBJ_AddRemoveSubject)
                             // in that case set tobechanged = true and set tobedeleted = false
                             if (ss_dict.tobechanged){
                                 studsubj_dict.tobedeleted = false;
@@ -2525,7 +2536,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } else if (!mod_MCL_dict.subject_pk){
             // no subject selected - give msg
-            b_show_mod_message("<div class='p-2'>" + loc.You_must_select_subject_first + "</div>", header_txt);
+            b_show_mod_message_html("<div class='p-2'>" + loc.You_must_select_subject_first + "</div>", header_txt);
 
         } else if (mode === "add"){
             // increase id_new with 1
@@ -2556,7 +2567,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if(!cluster_dict && mod_MCL_dict.mode_edit_clustername !== "create"){
                 // no cluster selected - give msg - not when is_create
-                b_show_mod_message("<div class='p-2'>" + loc.No_cluster_selected + "</div>", header_txt);
+                b_show_mod_message_html("<div class='p-2'>" + loc.No_cluster_selected + "</div>", header_txt);
             } else if (mode === "update"){
                 // changes will be put in mod_MCL_dict when clicked on OK btn
                 mod_MCL_dict.mode_edit_clustername = "update";
@@ -2581,7 +2592,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const new_cluster_name = el_MCL_input_cluster_name.value
                 if (!new_cluster_name){
                     const msh_html = "<div class='p-2'>" + loc.Clustername_cannot_be_blank + "</div>";
-                    b_show_mod_message(msh_html);
+                    b_show_mod_message_html(msh_html);
 
                 } else {
 
@@ -2589,7 +2600,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (mod_MCL_dict.mode_edit_clustername === "update"){
                 // change clustername
                         cluster_dict.sortby = new_cluster_name;
-                        cluster_dict.mode = "update";
+                        // PR2022-03-11 tel Lionel Mongen: cluster not saving when name is changed before saving
+                        // solved by : don't set mode = update when mode = create
+                        if (cluster_dict.mode !== "create"){
+                            cluster_dict.mode = "update";
+                        };
                     };
                     mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
                     MCL_FillTableClusters();
@@ -2701,7 +2716,7 @@ document.addEventListener('DOMContentLoaded', function() {
         el_MCL_tblBody_clusters.innerHTML = null;
 
     // show only clusters of this subject - is filtered in MCL_FillClusterList
-
+        let row_count = 0
 // ---  loop through mod_MCL_dict.cluster_list
         for (let i = 0, data_dict; data_dict = mod_MCL_dict.cluster_list[i]; i++) {
             /* cluster_dict = {
@@ -2717,6 +2732,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("data_dict", data_dict);
 
             if (data_dict.mode !== "delete"){
+                row_count += 1;
     // +++ insert tblRow into el_MCL_tblBody_clusters
                 const tblRow = el_MCL_tblBody_clusters.insertRow(-1);
                 tblRow.setAttribute("data-cluster_pk", data_dict.cluster_pk)
@@ -2736,6 +2752,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (mod_MCL_dict.sel_cluster_pk && mod_MCL_dict.sel_cluster_pk === data_dict.cluster_pk){
                     add_or_remove_class(tblRow, "bg_selected_blue", true);
         }}};
+        // add msg when no clusters
+        if (!row_count && mod_MCL_dict.subject_pk){
+            el_MCL_tblBody_clusters.innerHTML = ["<p>", loc.click_add_cluster01, "<br>",
+                        loc.click_add_cluster02, "<br>", loc.click_add_cluster03, "</p>"].join("")
+    // +++ insert tblRow into el_MCL_tblBody_clusters
+    /*
+                let tblRow = el_MCL_tblBody_clusters.insertRow(-1);
+                let td = tblRow.insertCell(-1);
+                td.innerText = loc.click_add_cluster_below;
+                td.classList.add("tw_240");
+                tblRow = el_MCL_tblBody_clusters.insertRow(-1);
+                td = tblRow.insertCell(-1);
+                td.innerText = loc.click_add_cluster_below;
+                td.classList.add("tw_240")
+                */
+        };
     };  // MCL_FillTableClusters
 
 //=========  MCL_ClusterSelect  ================ PR2022-01-07
@@ -2960,7 +2992,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!is_selected && !mod_MCL_dict.sel_cluster_pk){
             // no cluster selected - give msg - not when is_create
-            b_show_mod_message("<div class='p-2'>" + loc.Please_select_cluster_first + "</div>");
+            b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_cluster_first + "</div>");
         } else {
     // ---  lookup studsubj in mod_MCL_dict.student_list
             for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
@@ -2999,7 +3031,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!mod_MCL_dict.sel_cluster_pk){
             // no cluster selected - give msg - not when is_create
-            b_show_mod_message("<div class='p-2'>" + loc.Please_select_cluster_first + "</div>");
+            b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_cluster_first + "</div>");
         } else {
 
             if (mode === "remove") {
@@ -3084,7 +3116,17 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         };
         const next_number = max_number + 1;
-        const next_cluster_name = mod_MCL_dict.subject_code + " - " + next_number;
+
+        let subject_code = mod_MCL_dict.subject_code;
+        if (setting_dict.sel_school_depbases ){
+            const depbase_arr = setting_dict.sel_school_depbases.split(";");
+            if (depbase_arr && depbase_arr.length > 1){
+                if(setting_dict.sel_depbase_code){
+                    subject_code += " " + setting_dict.sel_depbase_code.toLowerCase();
+                };
+            };
+        };
+        const next_cluster_name = subject_code + " - " + next_number;
         return next_cluster_name;
     };  // MCL_get_next_clustername
 
@@ -3409,46 +3451,51 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++ MOD EX3 FORM++++++++++++++++ PR2021-10-06
     function MEX3_Open(){
         console.log(" -----  MEX3_Open   ----")
+            console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
         mod_MEX3_dict = {};
+        //PR2022-03-15 debug tel Richard Westerink: gives 'Ex3 Exemption'
+        if (![1,2,3].includes(setting_dict.sel_examperiod)){
+            b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_examperiod + "</div>");
 
-        console.log("level_map", level_map)
-// ---  fill select level or hide
-        if (setting_dict.sel_dep_level_req){
-            // HTML code "&#60" = "<" HTML code "&#62" = ">";
-            const first_item = ["&#60", loc.All_levels, "&#62"].join("");
-            el_MEX3_select_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "base_id", level_map,
-                setting_dict.sel_depbase_pk, null, first_item);
-        }
-// hide option 'level' when havo/vwo
-        if(el_MEX3_layout_option_level){
-            add_or_remove_class(el_MEX3_layout_option_level, cls_hide, !setting_dict.sel_dep_level_req);
-        }
-        if(el_MEX3_select_layout){
-            const select_size = (setting_dict.sel_dep_level_req) ? "4" : "3";
-            el_MEX3_select_layout.setAttribute("size", select_size);
-        }
-// hide element 'select_level' when havo/vwo
-        add_or_remove_class(el_MEX3_select_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
+        } else {
+            console.log("level_map", level_map)
+    // ---  fill select level or hide
+            if (setting_dict.sel_dep_level_req){
+                // HTML code "&#60" = "<" HTML code "&#62" = ">";
+                const first_item = ["&#60", loc.All_levels, "&#62"].join("");
+                el_MEX3_select_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "base_id", level_map,
+                    setting_dict.sel_depbase_pk, null, first_item);
+            }
+    // hide option 'level' when havo/vwo
+            if(el_MEX3_layout_option_level){
+                add_or_remove_class(el_MEX3_layout_option_level, cls_hide, !setting_dict.sel_dep_level_req);
+            }
+            if(el_MEX3_select_layout){
+                const select_size = (setting_dict.sel_dep_level_req) ? "4" : "3";
+                el_MEX3_select_layout.setAttribute("size", select_size);
+            }
+    // hide element 'select_level' when havo/vwo
+            add_or_remove_class(el_MEX3_select_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
 
-// - set header text
-        el_id_MEX3_hdr.innerText = [loc.Ex3, loc.Proces_verbaal_van_Toezicht].join("  -  ");
+    // - set header text
+            el_id_MEX3_hdr.innerText = [loc.Ex3, loc.Proces_verbaal_van_Toezicht].join("  -  ");
 
-// ---  reset layout options
-        MEX3_reset_layout_options();
+    // ---  reset layout options
+            MEX3_reset_layout_options();
 
-// ---  reset tblBody available and selected
-        el_MEX3_tblBody_available.innerText = null;
-        el_MEX3_tblBody_selected.innerText = null;
+    // ---  reset tblBody available and selected
+            el_MEX3_tblBody_available.innerText = null;
+            el_MEX3_tblBody_selected.innerText = null;
 
-// ---  disable save btn
-        el_MEX3_btn_save.disabled = true;
+    // ---  disable save btn
+            el_MEX3_btn_save.disabled = true;
 
-// ---  get info from server
-        MEX3_getinfo_from_server()
+    // ---  get info from server
+            MEX3_getinfo_from_server()
 
-// ---  show modal
-        $("#id_mod_selectex3").modal({backdrop: true});
-
+    // ---  show modal
+            $("#id_mod_selectex3").modal({backdrop: true});
+        };
     };  // MEX3_Open
 
 //========= MEX3_Save  ============= PR2021-10-07

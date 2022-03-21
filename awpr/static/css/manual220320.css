@@ -4,7 +4,8 @@
  /* Fixed sidenav, full height */
 .man_sidenav {
   height: 100%;
-  width: 200px;
+  /*width: 200px; */
+  width: 210px;
   position: fixed;
   z-index: 1;
   top: 48px;
@@ -37,7 +38,8 @@
 /* Dropdown container (hidden by default). Optional: add a lighter background color and some left padding to change the design of the dropdown content */
 .dropdown-container {
   display: none;
-  background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+  /*background-color: #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+  background-color: #555e65; /* dark grey RGB 85-94-101 */
   padding-left: 8px;
 }
 .dropdown-btn:hover {
@@ -48,6 +50,7 @@
 .dropdown_item {
   padding: 4px 8px 4px 16px;
   font-size: 16px;
+  background-color: #6285b1; /* HeaderBackColor lighter shade of Schema Blauw donkerblauw */
   color: #f1f1f1;
   cursor: pointer;
 }

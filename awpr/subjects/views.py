@@ -207,18 +207,28 @@ class SubjectListView(View):
         return render(request, html_page, params)
 
 
-def create_subject_rows(setting_dict, skip_allowed_filter, request):
+def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07
+    # skip_allowed_filter is used in userpage: when setting 'allowed_', all subjects must be shown
     logging_on = False  # s.LOGGING_ON
 
-    sel_examyear_pk = af.get_dict_value(setting_dict, ('sel_examyear_pk',))
-    sel_depbase_pk = af.get_dict_value(setting_dict, ('sel_depbase_pk',))
+    sel_examyear_pk = setting_dict.get('sel_examyear_pk')
 
     if logging_on:
         logger.debug(' =============== create_subject_rows ============= ')
         logger.debug('setting_dict: ' + str(setting_dict) + ' ' + str(type(setting_dict)))
-        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
-        logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
+        logger.debug('skip_allowed_filter: ' + str(skip_allowed_filter))
+        logger.debug('cur_dep_only: ' + str(cur_dep_only))
+
+    """
+    setting_dict: {'user_lang': 'nl', 'sel_page': 'page_grade', 
+    'sel_schoolbase_pk': 16, 'sel_schoolbase_code': 'CUR16', 'requsr_same_school': True, 
+    'sel_examyear_pk': 1, 'sel_examyear_code': 2022, 'sel_examyear_published': True, 
+    'no_practexam': True, 'sel_school_pk': 15, 'sel_school_name': 'Kolegio Alejandro Paula - KAP', 'sel_school_abbrev': 'KAP', 'sel_school_activated': True, 
+    'sel_depbase_pk': 3, 'sel_depbase_code': 'Vwo', 'sel_department_pk': 6, 'sel_dep_level_req': False, 'sel_dep_has_profiel': True, 
+    'sel_examperiod': 1, 'sel_examtype': 'se', 'sel_examtype_caption': 'Schoolexamen', 
+    'cols_hidden': ['examnumber', 'sct_abbrev', 'cluster_name', 'subj_name']} <class 'dict'>
+    """
 
     # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
     # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)
@@ -230,27 +240,77 @@ def create_subject_rows(setting_dict, skip_allowed_filter, request):
     subject_rows = []
     if sel_examyear_pk:
         sql_keys = {'ey_id': sel_examyear_pk}
-        sql_list = ["SELECT subj.id, subj.base_id, subj.examyear_id,",
+
+        sub_sql_list = [ "SELECT si.subject_id",
+            "FROM subjects_schemeitem AS si",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+            "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+            "INNER JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
+
+            "WHERE dep.examyear_id = %(ey_id)s::INT"
+            ]
+
+        sel_depbase_pk = None
+        if cur_dep_only:
+            sel_depbase_pk = setting_dict.get('sel_depbase_pk')
+        acc_view.get_userfilter_allowed_depbase(
+            request = request,
+            sql_keys = sql_keys,
+            sql_list = sub_sql_list,
+            depbase_pk = sel_depbase_pk
+        )
+
+        sel_lvlbase_pk, sel_subjbase_pk = None, None
+        if not skip_allowed_filter:
+            sel_lvlbase_pk = setting_dict.get('sel_lvlbase_pk')
+        acc_view.get_userfilter_allowed_lvlbase(
+            request=request,
+            sql_keys=sql_keys,
+            sql_list=sub_sql_list,
+            lvlbase_pk=sel_lvlbase_pk,
+            skip_allowed_filter=False
+        )
+
+        # note: don't filter on sel_subjbase_pk, must be able to change within allowed
+        sel_subjbase_pk = None
+        # when setting 'allowed_' in userpage, all subjects must be shown
+        if not skip_allowed_filter:
+            acc_view.get_userfilter_allowed_subjbase(
+                request=request,
+                sql_keys=sql_keys,
+                sql_list=sub_sql_list,
+                subjbase_pk=sel_subjbase_pk,
+                skip_allowed_filter=False
+            )
+
+        sub_sql_list.append("GROUP BY si.subject_id")
+
+        sub_sql = ' '.join(sub_sql_list)
+
+        if logging_on:
+            logger.debug('sub_sql: ' + str(sub_sql))
+
+        user_line, user_join = '', ''
+        if request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
+            user_line = "subj.modifiedby_id, subj.modifiedat, SUBSTRING(au.username, 7) AS modby_username,"
+            user_join = "LEFT JOIN accounts_user AS au ON (au.id = subj.modifiedby_id)"
+
+        sql_list = [
+            "SELECT subj.id, subj.base_id, subj.examyear_id,",
             "CONCAT('subject_', subj.id::TEXT) AS mapid,",
             "subj.name, sb.code, subj.sequence, subj.depbases, subj.addedbyschool,",
-            "subj.modifiedby_id, subj.modifiedat,",
-            "ey.code AS examyear_code,",
-            "SUBSTRING(au.username, 7) AS modby_username",
+            user_line,
+            "ey.code AS examyear_code",
     
             "FROM subjects_subject AS subj",
             "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
             "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
-            "LEFT JOIN accounts_user AS au ON (au.id = subj.modifiedby_id)",
-            
-            "WHERE subj.examyear_id = %(ey_id)s::INT"
+            user_join,
+            "INNER JOIN (", sub_sql ,  ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
             ]
 
-        # note: don't filter on sel_subjbase_pk, must be able to change within allowed
-        sel_subjbase_pk = None
-
-        # when setting allowed in userpage, all subject must be shown
-        if not skip_allowed_filter:
-            acc_view.set_allowed_subjbase_filter(sql_keys, sql_list, sel_subjbase_pk, request)
 
         #if subject_pk:
        #     # when employee_pk has value: skip other filters
@@ -266,6 +326,7 @@ def create_subject_rows(setting_dict, skip_allowed_filter, request):
         sql = ' '.join(sql_list)
 
         if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
             logger.debug('sql: ' + str(sql))
 
         with connection.cursor() as cursor:
@@ -276,23 +337,25 @@ def create_subject_rows(setting_dict, skip_allowed_filter, request):
 # --- end of create_subject_rows
 
 
-def create_cluster_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, cluster_pk_list=None, add_field_created=False):
+def create_cluster_rows(sel_examyear, sel_schoolbase, sel_depbase,
+                        cur_dep_only, cluster_pk_list=None, add_field_created=False):
     # --- create rows of all clusters of this examyear this department  PR2022-01-06
     logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
-        logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
-        logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk) + ' ' + str(type(sel_schoolbase_pk)))
+        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug('sel_schoolbase: ' + str(sel_schoolbase) + ' ' + str(type(sel_schoolbase)))
+        logger.debug('sel_depbase: ' + str(sel_depbase) + ' ' + str(type(sel_depbase)))
         logger.debug('add_field_created: ' + str(add_field_created))
         logger.debug('cluster_pk_list: ' + str(cluster_pk_list))
 
     cluster_rows = []
-    if sel_examyear_pk and sel_schoolbase_pk and sel_depbase_pk:
+    if sel_examyear and sel_schoolbase and sel_depbase:
         try:
             add_field_created_str = ", TRUE AS created" if add_field_created else ''
 
-            sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
             sql_list = ["SELECT cl.id, cl.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
                         "subjbase.code AS subj_code, subj.name AS subj_name",
                         add_field_created_str,
@@ -304,13 +367,16 @@ def create_cluster_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, clus
 
                         "WHERE subj.examyear_id = %(ey_id)s::INT",
                         "AND sch.examyear_id = %(ey_id)s::INT",
-                        "AND sch.base_id = %(sb_id)s::INT",
-                        "AND dep.base_id = %(db_id)s::INT",
+                        "AND sch.base_id = %(sb_id)s::INT"
                         ]
 
             if cluster_pk_list:
                 sql_keys['cluster_pk_arr'] = cluster_pk_list
                 sql_list.append("AND cl.id IN ( SELECT UNNEST( %(cluster_pk_arr)s::INT[]))")
+
+            if cur_dep_only:
+                sql_keys['db_id'] = sel_depbase.pk
+                sql_list.append("AND dep.base_id = %(db_id)s::INT")
 
             sql_list.append("ORDER BY cl.id")
 
@@ -431,8 +497,10 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                         updated_rows = create_subject_rows(
                             setting_dict=setting_dict,
                             skip_allowed_filter=True,
+                            cur_dep_only=False,
                             request=request
                         )
+
         # - add messages to subject_row (there is only 1 subject_row
                     if updated_rows:
                         row = updated_rows[0]
@@ -1516,7 +1584,7 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-01-31
+class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -1526,7 +1594,6 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-01-31
 
 # function sets auth and publish of exam records
         update_wrap = {}
-        requsr_auth = None
         msg_html = None
 
 # - get permit
@@ -1536,36 +1603,11 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-01-31
         #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
         # only if country/examyear/school/student not locked, examyear is published and school is activated
 
-        has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
 
-            permit_list = req_usr.permit_list('page_exams')
-            if permit_list:
-                requsr_usergroup_list = req_usr.usergroup_list
-                # msg_err is made on client side. Here: just skip if user has no or multiple functions
-
-                is_auth1 = 'auth1' in requsr_usergroup_list
-                is_auth2 = 'auth2' in requsr_usergroup_list
-                if is_auth1 + is_auth2 == 1:
-                    if is_auth1:
-                        requsr_auth = 'auth1'
-                    elif is_auth2:
-                        requsr_auth = 'auth2'
-                if requsr_auth:
-                    has_permit = 'permit_approve_exam' in permit_list
-
-# - check if user is admin or school
-                    is_role_admin = req_usr.is_role_admin
-                    is_role_same_school = req_usr.is_role_school
-                if logging_on:
-                    logger.debug('permit_list: ' + str(permit_list))
-                    logger.debug('has_permit: ' + str(has_permit))
-
-        if has_permit:
-
 # -  get user_lang
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
             activate(user_lang)
 
 # - get upload_dict from request.POST
@@ -1573,159 +1615,157 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-01-31
             if upload_json:
                 upload_dict = json.loads(upload_json)
 
-# ----- get selected examyear and department from usersettings. Sel_school will be retrieved from req_usr.schoolbase
-                msg_list = []
-                sel_examyear, sel_department, sel_schoolNIU, sel_examperiod = \
-                    dl.get_selected_examyear_examperiod_dep_school_from_usersetting(request)
-                dl.message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
+# - get selected mode. Modes are 'approve_test', 'approve_save', 'approve_reset',
+                # 'submit_test' 'submit_save' ,
+                # publish_exam submit_grade_exam
+                mode = upload_dict.get('mode')
+                is_approve = True if 'approve_' in mode else False
+                is_submit = True if 'submit_' in mode else False
+                is_reset = True if '_reset' in mode else False
+                is_test = True if '_test' in mode else False
 
-                if msg_list:
-                    msg_html = ''.join(("<div class='p-2 border_bg_warning'>", '<br>'.join(msg_list), '</>'))
-                else:
-# - get selected mode. Modes are 'approve_test', 'approve_save', 'approve_reset', 'submit_test' 'submit_save' , 'publish_test' 'publish_submit'
-                    mode = upload_dict.get('mode')
-                    is_approve = True if 'approve_' in mode else False
-                    is_submit = True if 'submit_' in mode else False
-                    is_reset = True if '_reset' in mode else False
-                    is_test = True if '_test' in mode else False
+                permit_list = req_usr.permit_list('page_exams')
 
-                    sel_school = sch_mod.School.objects.get_or_none(
-                        examyear=sel_examyear,
-                        base=req_usr.schoolbase
-                    )
+                # msg_err is made on client side. Here: just skip if user has no or multiple functions
+                is_auth1, is_auth2, requsr_auth = False, False, None
+                if req_usr.usergroup_list:
+                    is_auth1 = 'auth1' in req_usr.usergroup_list
+                    is_auth2 = 'auth2' in req_usr.usergroup_list
+                    if is_auth1 + is_auth2 == 1:
+                        if is_auth1:
+                            requsr_auth = 'auth1'
+                        elif is_auth2:
+                            requsr_auth = 'auth2'
+
+                has_permit = requsr_auth and  'permit_approve_exam' in permit_list
+
+# - check if user is is_role_same_school > happens after sel_school is retrieved
 
 
-# - check if user is admin or same_school
-                    is_role_admin = req_usr.is_role_admin
-                    is_role_same_school = req_usr.is_role_school and sel_school and req_usr.schoolbase and req_usr.schoolbase.pk == sel_school.base_id
+                if logging_on:
+                    logger.debug('permit_list: ' + str(permit_list))
+                    logger.debug('has_permit: ' + str(has_permit))
 
-                    if logging_on:
-                        logger.debug('upload_dict' + str(upload_dict))
-                        logger.debug('mode: ' + str(mode))
-                        logger.debug('is_approve: ' + str(is_approve))
-                        logger.debug('is_test: ' + str(is_test))
-                        logger.debug('sel_examyear: ' + str(sel_examyear))
-                        logger.debug('sel_department: ' + str(sel_department))
-                        logger.debug('sel_school: ' + str(sel_school))
-                        logger.debug('sel_examperiod: ' + str(sel_examperiod))
-                        logger.debug('req_usr.schoolbase: ' + str(req_usr.schoolbase))
-                        logger.debug('is_role_admin: ' + str(is_role_admin))
-                        logger.debug('is_role_same_school: ' + str(is_role_same_school))
+                if has_permit:
 
-# - when mode = submit_submit: check verificationcode.
-                    verification_is_ok = True
-                    if (is_submit) and not is_test:
-                        verification_is_ok, verif_msg_html = check_verifcode_local(upload_dict, request)
-                        if verif_msg_html:
-                            msg_html = verif_msg_html
+    # ----- get selected examyear and department from usersettings. Sel_school will be retrieved from req_usr.schoolbase
+                    msg_list = []
+                    sel_examyear, sel_department, sel_schoolNIU, sel_examperiod = \
+                        dl.get_selected_examyear_examperiod_dep_school_from_usersetting(request)
+                    dl.message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
+
+                    if msg_list:
+                        msg_html = ''.join(("<div class='p-2 border_bg_warning'>", '<br>'.join(msg_list), '</>'))
+                    else:
+
+                        sel_school = sch_mod.School.objects.get_or_none(
+                            examyear=sel_examyear,
+                            base=req_usr.schoolbase
+                        )
+
+    # - check if user is same_school
+                        is_role_same_school = req_usr.is_role_school and sel_school and req_usr.schoolbase and req_usr.schoolbase.pk == sel_school.base_id
+
+                        if logging_on:
+                            logger.debug('upload_dict' + str(upload_dict))
+                            logger.debug('mode: ' + str(mode))
+                            logger.debug('is_approve: ' + str(is_approve))
+                            logger.debug('is_test: ' + str(is_test))
+                            logger.debug('sel_examyear: ' + str(sel_examyear))
+                            logger.debug('sel_school: ' + str(sel_school))
+                            logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                            logger.debug('req_usr.schoolbase: ' + str(req_usr.schoolbase))
+                            logger.debug('is_role_same_school: ' + str(is_role_same_school))
+
+    # - when mode = submit_submit: check verificationcode.
+                        verification_is_ok = True
+                        if (is_submit) and not is_test:
+                            verification_is_ok, verif_msg_html = check_verifcode_local(upload_dict, request)
+                            if verif_msg_html:
+                                msg_html = verif_msg_html
+                            if verification_is_ok:
+                                update_wrap['verification_is_ok'] = True
+
                         if verification_is_ok:
-                            update_wrap['verification_is_ok'] = True
+                            # also filter on sel_lvlbase_pk, sel_subject_pk when is_submit
+                            sel_lvlbase_pk, sel_subject_pk = None, None
+                            selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                            if selected_dict:
+                                sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
+                                sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
+                            if logging_on:
+                                logger.debug('selected_dict: ' + str(selected_dict))
 
-                    if verification_is_ok:
-                        # also filter on sel_lvlbase_pk, sel_subject_pk when is_submit
-                        sel_lvlbase_pk, sel_subject_pk = None, None
-                        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                        if selected_dict:
-                            sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
-                            sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
-                        if logging_on:
-                            logger.debug('selected_dict: ' + str(selected_dict))
+    # +++ get selected grade_exam_rows
+                            sel_examperiod = sel_examperiod if sel_examperiod in (1, 2) else None
+                            # exclude published rows??
+                            # when published_id has value it means that admin has published the exam, so it is visible for the schools.
+                            # submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
 
-# +++ get selected grade_exam_rows
-                        sel_examperiod = sel_examperiod if sel_examperiod in (1, 2) else None
-                        # exclude published rows??
-                        # when published_id has value it means that admin has published the exam, so it is visible for the schools.
-                        # submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
+                            grade_exam_rows = get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_examperiod, request)
 
-                        crit = Q(subject__examyear=sel_examyear) & \
-                               Q(department=sel_department)
+                            if logging_on:
+                                logger.debug('sel_examperiod:  ' + str(sel_examperiod))
+                                logger.debug('sel_department:  ' + str(sel_department))
+                                logger.debug('sel_lvlbase_pk:   ' + str(sel_lvlbase_pk))
+                                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
 
-                        if sel_examperiod in (1, 2):
-                            crit.add(Q(examperiod=sel_examperiod) | Q(examperiod=12), crit.connector)
+                                row_count = len(grade_exam_rows)
+                                logger.debug('row_count:      ' + str(row_count))
 
-                        if sel_lvlbase_pk:
-                            crit.add(Q(level__base_id=sel_lvlbase_pk), crit.connector)
-                        if sel_subject_pk:
-                            crit.add(Q(subject_id=sel_subject_pk), crit.connector)
+                            updated_exam_pk_list = []
+                            count_dict = {}
+                            if grade_exam_rows:
+                                # +++ create new published_instance. Only save it when it is not a test
+                                # file_name will be added after creating Ex-form
+                                published_instance = None
+                                published_instance_pk = None
+                                if is_submit and not is_test:
+                                    now_arr = upload_dict.get('now_arr')
+                                    published_instance = create_grade_exam_submitted_instance(
+                                        sel_school=sel_school,
+                                        department=sel_department,
+                                        examperiod=1,
+                                        now_arr=now_arr,
+                                        request=request)  # PR2021-07-27
+                                    if published_instance:
+                                        published_instance_pk = published_instance.pk
 
-                        exams = subj_mod.Exam.objects.filter(crit).order_by('subject__base__code')
+                                    if logging_on:
+                                        logger.debug('published_instance_pk' + str(published_instance_pk))
 
-                        if logging_on:
-                            logger.debug('sel_examperiod:  ' + str(sel_examperiod))
-                            logger.debug('sel_department:  ' + str(sel_department))
-                            logger.debug('sel_lvlbase_pk:   ' + str(sel_lvlbase_pk))
-                            logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
-
-                            row_count = subj_mod.Exam.objects.filter(crit).count()
-                            logger.debug('row_count:      ' + str(row_count))
-
-                        updated_exam_pk_list = []
-                        count_dict = {'count': 0,
-                                    'already_published': 0,
-                                    'has_blanks': 0,
-                                    'double_approved': 0,
-                                    'committed': 0,
-                                    'saved': 0,
-                                    'saved_error': 0,
-                                    'reset': 0,
-                                    'already_approved': 0,
-                                    'auth_missing': 0,
-                                    'test_is_ok': False,
-                                    'updated_grd_count': 0
-                                    }
-                        if exams is not None:
-
-                            # +++ create new published_instance. Only save it when it is not a test
-                            # file_name will be added after creating Ex-form
-                            published_instance = None
-                            published_instance_pk = None
-                            if is_submit and not is_test:
-                                now_arr = upload_dict.get('now_arr')
-                                published_instance = XXXcreate_exam_published_instance(
-                                    sel_school=sel_school,
-                                    sel_department=sel_department,
-                                    sel_examperiod=1,
-                                    now_arr=now_arr,
-                                    request=request)  # PR2021-07-27
-                                if published_instance:
-                                    published_instance_pk = published_instance.pk
-
-                                if logging_on:
-                                    logger.debug('published_instance_pk' + str(published_instance_pk))
-
-# +++++ loop through exams
-                            if exams:
-                                for exam in exams:
+    # +++++ loop through exams
+                                for grade_exam in grade_exam_rows:
                                     if is_approve:
-                                        approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_pk_list, request)
+                                        approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_pk_list, request)
                                     elif is_submit:
-                                        submit_grade_exam(exam, is_test, published_instance, count_dict, request)
+                                        submit_grade_exam(grade_exam, is_test, published_instance, count_dict, request)
 
                                 # - add rows to exam_rows, to be sent back to page
                                     # to increase speed, dont create return rows but refresh page after finishing this request
 
-                        # +++++  end of loop through  exams
-                                update_wrap['approve_count_dict'] = count_dict
+                            # +++++  end of loop through  exams
+                                    update_wrap['approve_count_dict'] = count_dict
 
-# - create msg_html with info of rows
-                        msg_html = create_exam_approve_msg_list(count_dict, requsr_auth, is_approve, is_test)
-        # get updated_rows
-                        if not is_test and updated_exam_pk_list:
-                            rows = create_exam_rows(
-                                req_usr=req_usr,
-                                sel_examyear_pk=sel_examyear.pk,
-                                sel_depbase_pk=sel_department.base_id,
-                                append_dict={},
-                                exam_pk_list=updated_exam_pk_list)
-                            if rows:
-                                update_wrap['updated_exam_rows'] = rows
+    # - create msg_html with info of rows
+                            msg_html = create_exam_approve_msg_list(count_dict, requsr_auth, is_approve, is_test)
+            # get updated_rows
+                            if not is_test and updated_exam_pk_list:
+                                rows = create_exam_rows(
+                                    req_usr=req_usr,
+                                    sel_examyear_pk=sel_examyear.pk,
+                                    sel_depbase_pk=sel_department.base_id,
+                                    append_dict={},
+                                    exam_pk_list=updated_exam_pk_list)
+                                if rows:
+                                    update_wrap['updated_exam_rows'] = rows
 
-                            # +++++ create Ex1 form
+                                # +++++ create Ex1 form
 
-                        if is_test:
-                            committed = count_dict.get('committed', 0)
-                            if committed:
-                                update_wrap['test_is_ok'] = True
+                            if is_test:
+                                committed = count_dict.get('committed', 0)
+                                if committed:
+                                    update_wrap['test_is_ok'] = True
 
 # - add  msg_html to update_wrap
         update_wrap['approve_msg_html'] = msg_html
@@ -1733,42 +1773,6 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-01-31
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamApproveOrSubmitGradeExamView
 
-
-def get_approve_grade_exam_rows():  #PR2022-02-24
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug('  ----- get_approve_grade_exam_rows -----')
-
-    # ATTENTION: ce_exam is linked with curacao subject, while SXM students are connected with sxm subjects.
-    # therefore don't link grade
-    sql_list = ["SELECT grd.id, grd.examperiod,"
-                # "grd.pe_exam_id, grd.pe_exam_result, grd.pe_exam_auth1by_id, grd.pe_exam_auth2by_id, grd.pe_exam_published_id, grd.pe_exam_blocked,",
-                "grd.ce_exam_id, grd.ce_exam_result, grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, ",
-                "grd.ce_exam_published_id AS ce_exam_publ_id, grd.ce_exam_blocked,",
-
-                "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
-
-                "FROM students_grade AS grd",
-                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                "INNER JOIN subjects_subject AS si_subj ON (si_subj.id = si.subject_id)",
-
-                "INNER JOIN subjects_exam AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
-
-                "INNER JOIN subjects_subject AS exam_subj ON (subj.id = exam.subject_id)",
-
-                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
-
-                "WHERE ey.id = %(ey_id)s::INT",
-                "AND school.base_id = %(sb_id)s::INT",
-                "AND dep.base_id = %(depbase_id)s::INT",
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
-                ]
-
-# end of get_approve_grade_exam_rows
 
 def create_exam_approve_msg_list(count_dict, requsr_auth, is_approve, is_test, is_grade_exam=False):
     logging_on = False  # s.LOGGING_ON
@@ -2088,6 +2092,198 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 # - end of approve_exam
 
 
+def get_approve_grade_exam_rows(examyear, school, department, examperiod, request):  #PR2022-03-11
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ----- get_approve_grade_exam_rows -----')
+
+    # ATTENTION: ce_exam is linked with curacao subject, while SXM students are connected with sxm subjects.
+    # therefore don't link grade
+
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'experiod': examperiod}
+    sql_list = ["SELECT grd.id AS grade_id, grd.examperiod, grd.ce_exam_blanks, grd.ce_exam_result,",
+                "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id,",
+                "grd.ce_exam_published_id, grd.ce_exam_blocked,",
+
+                "depbase.code AS dep_code, lvlbase.code AS lvl_code,",
+                "ce_exam.id AS ceex_exam_id, ce_exam.amount AS ceex_exam_amount, subjbase.code AS ceex_subj_code, subjbase.code AS ceex_subj_code",
+
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+                "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                "LEFT JOIN subjects_exam AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "WHERE stud.school_id = %(sch_id)s::INT",
+                "AND stud.department_id = %(dep_id)s::INT",
+                "AND grd.examperiod = %(experiod)s::INT",
+                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                ]
+
+    # --- filter on usersetting
+    sel_lvlbase_pk, sel_sctbase_pk, sel_subjbase_pk, sel_cluster_pk, sel_student_pk = None, None, None, None, None
+    selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+    if selected_pk_dict:
+        sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+        sel_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+        sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+        sel_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+        sel_student_pk = selected_pk_dict.get(c.KEY_SEL_STUDENT_PK)
+
+    if sel_lvlbase_pk:
+        sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+        sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+    if sel_subjbase_pk:
+        sql_keys['subjbase_pk'] = sel_subjbase_pk
+        sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
+
+    if sel_cluster_pk:
+        sql_keys['cluster_pk'] = sel_cluster_pk
+        sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
+
+    sql = ' '.join(sql_list)
+
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        grade_exam_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('len grade_exam_row: ' + str(len(grade_exam_rows)))
+
+    return grade_exam_rows
+# end of get_approve_grade_exam_rows
+
+
+def approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_pk_list, request):
+    # PR2022-03-11
+    # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- approve_grade_exam -----')
+        logger.debug('requsr_auth:  ' + str(requsr_auth))
+        logger.debug('is_reset:     ' + str(is_reset))
+
+    if grade_exam:
+        req_user = request.user
+
+        af.add_one_to_count_dict(count_dict, 'count')
+
+# - skip if this studsubj is already published
+        is_published = True if grade_exam.get('ce_exam_published_id') else False
+        if logging_on:
+            logger.debug('is_published:    ' + str(is_published))
+
+        if is_published:
+            af.add_one_to_count_dict(count_dict, 'already_published')
+        else:
+            no_exam = True if grade_exam.get('ceex_exam_id') else False
+            no_questions = True if grade_exam.get('ceex_exam_amount') else False
+            has_blank_questions = True if grade_exam.get('ce_exam_blanks') else False
+
+            if logging_on:
+                logger.debug('     no_exam: ' + str(no_exam))
+                logger.debug('     no_questions:      ' + str(no_questions))
+                logger.debug('     has_blank_questions:      ' + str(has_blank_questions))
+
+            # dont skip this when is_reset
+            if not is_reset and (no_questions or has_blank_questions):
+                af.add_one_to_count_dict(count_dict, 'has_blanks')
+            else:
+                requsr_authby_field = 'ce_exam_' + requsr_auth + 'by_id'
+
+    # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
+                auth1by = grade_exam.get('ce_exam_auth1by_id')
+                auth2by = grade_exam.get('ce_exam_auth2by_id')
+                if logging_on:
+                    logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
+                    logger.debug('auth1by:      ' + str(auth1by))
+                    logger.debug('auth2by:      ' + str(auth2by))
+                    logger.debug('grade_exam:      ' + str(grade_exam))
+
+                save_changes = False
+
+                has_old_authby_value = True if grade_exam.get(requsr_authby_field) else False
+
+    # - remove authby when is_reset
+                if is_reset:
+                    if has_old_authby_value:
+                        # setattr(exam, requsr_authby_field, None)
+                        af.add_one_to_count_dict(count_dict, 'reset')
+                        save_changes = True
+                        #if exam.pk not in updated_exam_pk_list:
+                        #    updated_exam_pk_list.append(exam.pk)
+                else:
+
+    # - skip if this exam is already approved
+                    requsr_authby_field_already_approved = has_old_authby_value
+                    if logging_on:
+                        logger.debug('requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+
+                    if requsr_authby_field_already_approved:
+                        af.add_one_to_count_dict(count_dict, 'already_approved')
+                    else:
+
+    # - skip if this author (like 'president') has already approved this studsubj
+            # under a different permit (like 'secretary' or 'commissioner')
+
+                        double_approved = False
+                        if requsr_auth == 'auth1':
+                            double_approved = True if auth2by and auth2by == req_user else False
+                        elif requsr_auth == 'auth2':
+                            double_approved = True if auth1by and auth1by == req_user else False
+
+                        if double_approved:
+                            af.add_one_to_count_dict(count_dict, 'double_approved')
+                        else:
+                            #setattr(exam, requsr_authby_field, req_user)
+
+                            save_changes = True
+                            if logging_on:
+                                logger.debug('save_changes: ' + str(save_changes))
+
+                        if logging_on:
+                            logger.debug('     double_approved: ' + str(double_approved))
+                            logger.debug('     requsr_authby_field_already_approved:    ' + str(requsr_authby_field_already_approved))
+                            logger.debug('     auth1by:     ' + str(auth1by))
+                            logger.debug('     auth2by:     ' + str(auth2by))
+    # - set value of requsr_authby_field
+                if save_changes:
+                    grade_pk = grade_exam.get('grade_id')
+                    if grade_pk not in updated_exam_pk_list:
+                        updated_exam_pk_list.append(grade_pk)
+
+                    if is_test:
+                        af.add_one_to_count_dict(count_dict, 'committed')
+                    else:
+    # - save changes
+                        try:
+                            #exam.save(request=request)
+                            af.add_one_to_count_dict(count_dict, 'saved')
+                        except Exception as e:
+                            logger.error(getattr(e, 'message', str(e)))
+                            af.add_one_to_count_dict(count_dict, 'saved_error')
+
+    if logging_on:
+        logger.debug('count_dict: ' + str(count_dict))
+# - end of approve_grade_exam
+
+
 def publish_exam(exam, is_test, published_instance, count_dict, request):  # PR2022-02-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -2305,6 +2501,75 @@ def create_exam_published_instance(exam, now_arr, request):  # PR2022-02-23
 
     return published_instance
 # - end of create_exam_published_instance
+
+
+def create_grade_exam_submitted_instance(sel_school, department, examperiod, now_arr, request):  # PR2022-03-11
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- create_grade_exam_submitted_instance -----')
+        logger.debug('request.user: ' + str(request.user))
+
+    # create new published_instance and save it when it is not a test (this function is only called when it is not a test)
+    # filename is added after creating file in create_ex1_xlsx
+
+    depbase_code = department.base.code
+    lvlbase_code = ''
+    #if exam.level:
+    #    lvlbase_code = exam.level.base.code
+
+    # examtype used to store 'ete' or 'duo' exam
+
+    # to be used when submitting Ex4 form
+    examtype_caption = ''
+    exform = 'Exam'
+    published_instance = None
+
+    if examperiod in (1, 2):
+        if examperiod == 1:
+            examtype_caption = 'ce'
+        elif examperiod == 2:
+            examtype_caption = 'her'
+
+
+        today_date = af.get_date_from_arr(now_arr)
+
+        year_str = str(now_arr[0])
+        month_str = ("00" + str(now_arr[1]))[-2:]
+        date_str = ("00" + str(now_arr[2]))[-2:]
+        hour_str = ("00" + str(now_arr[3]))[-2:]
+        minute_str = ("00" +str( now_arr[4]))[-2:]
+        now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
+
+        file_name = ' '.join((exform, examtype_caption, depbase_code, lvlbase_code + now_formatted))
+        # if total file_name is still too long: cut off
+        if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
+            file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
+
+        published_instance = sch_mod.Published.objects.create(
+            school=None,
+            department=department,
+            examtype=examtype_caption,
+            examperiod=examperiod,
+            name=file_name,
+            datepublished=today_date,
+            modifiedat=timezone.now,
+            modifiedby=request.user
+        )
+        # Note: filefield 'file' gets value on creating Ex form
+
+        published_instance.filename = file_name + '.pdf'
+        # PR2021-09-06 debug: request.user is not saved in instance.save, don't know why
+        published_instance.save(request=request)
+
+        if logging_on:
+            logger.debug(' request.user: ' + str(request.user))
+            logger.debug('published_instance.saved: ' + str(published_instance))
+            logger.debug('published_instance.pk: ' + str(published_instance.pk))
+            logger.debug('published_instance.modifiedby: ' + str(published_instance.modifiedby))
+
+    return published_instance
+# - end of create_grade_exam_submitted_instance
 
 
 def add_published_exam_to_grades(exam):
@@ -2586,7 +2851,7 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
         "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm,",
 
-        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id AS publ_id, ex.locked, ex.modifiedat,",
+        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
         "au.last_name AS modby_username,",
@@ -2657,7 +2922,7 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
 
 def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
 
@@ -3788,7 +4053,7 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
                          "rule_core_sufficient", "rule_core_notatevlex",
 
                          'ete_exam', 'otherlang',
-                         'sr_allowed', 'max_reex', 'no_thirdperiod', 'no_exemption_ce'):
+                         'sr_allowed', 'no_ce_years', 'thumb_rule'):
 
                 saved_value = getattr(instance, field)
                 if logging_on:
@@ -4332,6 +4597,7 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
             sql_list.append("AND scheme.id = %(scheme_pk)s::INT")
 
         elif cur_dep_only:
+            # TODO improve code
             depbase_lookup = None
             if depbase:
                 department = sch_mod.Department.objects.get_or_none(examyear=examyear, base=depbase)
@@ -4489,7 +4755,7 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
 
                 "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
-                "si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce,",
+                "si.sr_allowed AS si_sr_allowed, si.no_ce_years, si.thumb_rule,",
 
                 "si.modifiedby_id, si.modifiedat,",
                 "SUBSTRING(au.username, 7) AS modby_username",
@@ -4599,9 +4865,7 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
                 "si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
                 "si.has_practexam, si.is_core_subject, si.is_mvt, si.is_wisk,",
 
-                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
-
-                "si.sr_allowed, si.max_reex, si.no_thirdperiod, si.no_exemption_ce",
+                "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex, si.sr_allowed AS si_sr_allowed, si.no_ce_years, si.thumb_rule",
 
                 "FROM subjects_schemeitem AS si",
                 "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
@@ -4652,6 +4916,7 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
 
 
 ###################
+
 @method_decorator([login_required], name='dispatch')
 class ExamDownloadExamView(View):  # PR2021-05-06
 
@@ -4740,6 +5005,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of ExamDownloadExamView
+
 
 @method_decorator([login_required], name='dispatch')
 class ExamDownloadGradeExamView(View):  # PR2022-01-29
@@ -4838,51 +5104,325 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
 # - end of ExamDownloadGradeExamView
 
 
-
 @method_decorator([login_required], name='dispatch')
 class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
-    def get(self, request, list):
+    def get(self, request):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('===== ExamDownloadExamJsonView ===== ')
-            logger.debug('list: ' + str(list) + ' ' + str(type(list)))
+
+        def get_exam_partex_dict_from_instance(sel_exam_instance):
+            # this function converts the saved 'partex' into a dict
+            exam_partex = getattr(sel_exam_instance, 'partex')
+            exam_partex_dict = {}
+            if exam_partex:
+                exam_partex_arr = exam_partex.split('#')
+
+                for exam_partex_arr_item in exam_partex_arr:
+                    partex_arr = exam_partex_arr_item.split(';')
+                    if len(partex_arr):
+                        partex_pk_int = int(partex_arr[0])
+                        exam_partex_dict[partex_pk_int] = {
+                            'pk': partex_pk_int,
+                            'tijdvak': int(partex_arr[1]),
+                            'aantal vragen': int(partex_arr[2]),
+                            'schaallengte': int(partex_arr[3]),
+                            'naam': partex_arr[4]
+                        }
+            return exam_partex_dict
+
+        def get_exam_assignment_dict(sel_exam_instance):  # PR2022-03-16
+            # this function converts the saved 'assignment' into a dict
+            assignment_dict = {}
+            assignment = getattr(sel_exam_instance, 'assignment')
+            if assignment:
+                assignment_array = assignment.split('#')
+                for assign_partex in assignment_array:
+                    assign_partex_arr = assign_partex.split('|')
+                    assign_partex_info = assign_partex_arr[0]
+                    assign_partex_info_arr = assign_partex_info.split(';')
+                    assign_partex_pk = int(assign_partex_info_arr[0]) if assign_partex_info_arr[0] else None
+
+                    """
+                    assign_partex_arr: ['1;4;48', '1;;20;', '2;;15;', '3;;8;', '4;;5;'] <class 'list'>
+                    assign_partex_info: '1;4;48'
+                    assign_partex_info_arr: ['1', '4', '48']
+                    assign_partex_pk: 1 <class 'int'>
+                    """
+
+                    partex_dict = {}
+                    for i, qa in enumerate(assign_partex_arr):
+                        # skip first item, assign_partex_arr[0] already retrieved above
+                        if i:
+                            qa_arr = qa.split(';')
+
+                            if len(qa_arr) == 4:
+                                # qa_arr: ['1', 'C', '', ''] <class 'list'>
+                                #       | q_number ; max_char ; max_score ; min_score |
+                                q_nr = int(qa_arr[0])
+                                partex_dict[q_nr] = {
+                                    'max_char': qa_arr[1] if qa_arr[1] else '',
+                                    'max_score': int(qa_arr[2]) if qa_arr[2] else '',
+                                    'min_score': int(qa_arr[3]) if qa_arr[3] else ''
+                                }
+
+                    assignment_dict[assign_partex_pk] = partex_dict
+                    """
+                    assignment_dict: {1: {1: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 
+                                          2: {'max_char': 'C', 'max_score': '', 'min_score': ''},  
+                    """
+            return assignment_dict
+
+        def get_exam_keys_dict(sel_exam_instance):  # PR2022-03-16
+            # this function converts the saved 'keys' into a dict
+            keys_dict = {}
+            keys = getattr(sel_exam_instance, 'keys')
+            if keys:
+                for keys_partex in keys.split('#'):
+                    keys_partex_arr = keys_partex.split('|')
+                    keys_partex_pk = int(keys_partex_arr[0]) if keys_partex_arr[0] else None
+                    if keys_partex_pk:
+                        for i, qk in enumerate(keys_partex_arr):
+                            if i:
+                                qk_arr = qk.split(';')
+                                if len(qk_arr) == 2:
+                                    qk_nr = int(qk_arr[0])
+                                    if keys_partex_pk not in keys_dict:
+                                        keys_dict[keys_partex_pk] = {}
+                                    keys_dict[keys_partex_pk][qk_nr] = qk_arr[1] if qk_arr[1] else ''
+            """
+            keys_dict: {
+                1: {1: 'a', 2: 'ab', 3: 'c', 4: 'b', 6: 'c', 7: 'a'}, 
+                2: {1: 'b', 2: 'bd', 3: 'a', 4: 'c', 5: 'b', 8: 'c'}, 
+                3: {2: 'd', 4: 'c', 5: 'b', 6: 'a', 7: 'c', 9: 'a', 10: 'a'}, 
+                4: {2: 'c', 4: 'b', 5: 'c', 6: 'b', 7: 'c', 9: 'b'}, 
+                5: {1: 'c', 2: 'c', 4: 'c', 6: 'c', 7: 'c'}, 
+                6: {1: 'a', 2: 'd', 4: 'a', 6: 'b', 8: 'c'}
+            }
+            """
+            return keys_dict
+
+        def get_exam_result_dict(grade_instance):  # PR2022-03-16
+            # this function converts the saved 'ce_exam_result' into a dict
+            logging_on = False  # s.LOGGING_ON
+            exam_result_dict = {}
+            exam_result = getattr(grade_instance, 'ce_exam_result')
+            if exam_result:
+
+                if logging_on:
+                    logger.debug(' ')
+                    logger.debug(' ----- get_exam_result_dict -----')
+                    logger.debug('grade.ce_exam_result: ' + str(grade_instance.ce_exam_result))
+                """
+                school_code: CUR01
+                grade.ce_exam_result: 0;35#2|1;b|2;x|3;d|4;a|5;x|6;2|7;1|8;b|9;1#4|1;0|2;a|3;1|4;c|5;b|6;a|7;b|8;1|9;a|10;0#6|1;b|2;a|3;1|4;a|5;1|6;x|7;1|8;a|9;2|10;1#7|1;5|2;2|3;1#8|1;12#9|1;15#10|1;5
+                """
+
+                exam_result_array = exam_result.split('#')
+                if logging_on:
+                    logger.debug('exam_result_array: ' + str(exam_result_array))
+                """
+                result_array: ['0;35', '2|1;b|2;x|3;d|4;a|5;x|6;2|7;1|8;b|9;1', '4|1;0|2;a|3;1|4;c|5;b|6;a|7;b|8;1|9;a|10;0', '6|1;b|2;a|3;1|4;a|5;1|6;x|7;1|8;a|9;2|10;1', '7|1;5|2;2|3;1', '8|1;12', '9|1;15', '10|1;5']
+                """
+                for i, exam_result_str in enumerate(exam_result_array):
+                    if logging_on:
+                        logger.debug('exam_result_str: ' + str(exam_result_str))
+                    if not i:
+                        result_info_arr = exam_result_str.split(';')
+                        result_info_blanks = int(result_info_arr[0]) if result_info_arr[0] else None
+                        result_info_amount = int(result_info_arr[1]) if result_info_arr[1] else None
+                        if logging_on:
+                            logger.debug('result_info_blanks: ' + str(result_info_blanks) + ' ' + str(type(result_info_blanks)))
+                            logger.debug('result_info_amount: ' + str(result_info_amount) + ' ' + str(type(result_info_amount)))
+                        exam_result_dict['blanks'] = result_info_blanks
+                        exam_result_dict['amount'] = result_info_amount
+                    else:
+                        """
+                        exam_result_str = '2|1;b|2;x|3;d|4;a|5;x|6;2|7;1|8;b|9;1',
+                        """
+                        result_arr = exam_result_str.split('|')
+                        partex_pk = int(result_arr[0]) if result_arr[0] else None
+
+                        if logging_on:
+                            logger.debug('result_arr: ' + str(result_arr))
+                            logger.debug('partex_pk: ' + str(partex_pk))
+                        """
+                        result_arr: ['2', '1;b', '2;x', '3;d', '4;a', '5;x', '6;2', '7;1', '8;b', '9;1']
+                        partex_pk: 2
+                        """
+                        partex_dict = {}
+                        for i, qa in enumerate(result_arr):
+                            if logging_on:
+                                logger.debug('qa: ' + str(qa))
+                            """
+                            qa: 2;x
+                            """
+                            # skip first item, result_arr[0] already retrieved above
+                            if i:
+                                qa_arr = qa.split(';')
+                                q_nr = int(qa_arr[0])
+                                value = qa_arr[1]
+                                partex_dict[q_nr] = value
+
+                        exam_result_dict[partex_pk] = partex_dict
+            if logging_on:
+                logger.debug('>>> exam_result_dict: ' + str(exam_result_dict) + ' ' + str(type(exam_result_dict)))
+
+            """
+            exam_result_dict: {
+                2: {1: 'b', 2: 'x', 3: 'd', 4: 'a', 5: 'x', 6: '2', 7: '1', 8: 'b', 9: '1'}, 
+                4: {1: '0', 2: 'a', 3: '1', 4: 'c', 5: 'b', 6: 'a', 7: 'b', 8: '1', 9: 'a', 10: '0'}, 
+                6: {1: 'b', 2: 'a', 3: '1', 4: 'a', 5: '1', 6: 'x', 7: '1', 8: 'a', 9: '2', 10: '1'}, 
+                7: {1: '5', 2: '2', 3: '1'}, 8: {1: '12'}, 9: {1: '15'}, 10: {1: '5'}}
+            """
+            return exam_result_dict
+
+        def get_answers_list(sel_exam_instance, exam_partex_dict, exam_assignment_dict, exam_keys_dict):
+            # - create dict with answers PR2021-05-08  PR2021-05-24 PR2022-03-16
+
+            logging_on = s.LOGGING_ON
+
+            answer_list = []
+            grades = stud_mod.Grade.objects.filter(ce_exam=sel_exam_instance)
+
+            if grades:
+                for grade in grades:
+                    exam_result_dict = get_exam_result_dict(grade)
+
+                    school_code = grade.studentsubject.student.school.base.code
+
+                    """
+                    exam_result_dict: {
+                        'blanks': 0, 'amount': 35, 
+                        2: {1: 'b', 2: 'x', 3: 'd', 4: 'a', 5: 'x', 6: '2', 7: '1', 8: 'b', 9: '1'}, 
+                        4: {1: '0', 2: 'a', 3: '1', 4: 'c', 5: 'b', 6: 'a', 7: 'b', 8: '1', 9: 'a', 10: '0'}, 
+                        6: {1: 'b', 2: 'a', 3: '1', 4: 'a', 5: '1', 6: 'x', 7: '1', 8: 'a', 9: '2', 10: '1'}, 
+                        7: {1: '5', 2: '2', 3: '1'}, 8: {1: '12'}, 9: {1: '15'}, 10: {1: '5'}}
+                    """
+
+
+                    if exam_result_dict:
+                        result_dict = {}
+                        score_dict = {}
+
+                        school_code = grade.studentsubject.student.school.base.code
+
+                        if logging_on:
+                            logger.debug(' ----- get_answers_list -----')
+                            logger.debug('exam_result_dict: ' + str(exam_result_dict))
+                        """
+                        exam_partex_dict: {1: {'pk': 1, 'tijdvak': 1, 'aantal vragen': 44, 'maximum score': 61, 'naam': 'Deelexamen 1'}}
+                        """
+                        for partex_pk, partex_dict in exam_partex_dict.items():
+                            partex_assignment_dict = exam_assignment_dict.get(partex_pk)
+                            partex_keys_dict = exam_keys_dict.get(partex_pk)
+                            partex_amount = partex_dict.get('aantal vragen')
+                            if logging_on:
+                                logger.debug('............ ')
+                                logger.debug('partex_amount: ' + str(partex_amount) + ' ' + str(type(partex_amount)))
+
+                            # lookup partex_pk in exam_result_dict
+                            # only the partex that the stuednet has dome are in exam_result_dict
+                            partex_result_dict = exam_result_dict.get(partex_pk)
+                            if logging_on:
+                                logger.debug('partex_result_dict: ' + str(partex_result_dict))
+
+                            """
+                            partex_result_dict: {1: 'b', 2: 'x', 3: 'd', 4: 'a', 5: 'x', 6: '2', 7: '1', 8: 'b', 9: '1'} 
+                            partex_result_dict: {1: '5', 2: '2', 3: '1'}
+                            """
+                            a_list = []
+                            score_list = []
+                            if partex_result_dict:
+                                for q_number in range(1, partex_amount + 1):  # range(start_value, end_value, step), end_value is not included!
+                                    value_int = 0
+                                    score_int = 0
+                                    if q_number in partex_result_dict:
+                                        value_str = partex_result_dict.get(q_number)
+                                        if value_str:
+                                            is_multiple_choice = True if not value_str.isnumeric() else False
+                                            if is_multiple_choice:
+                                                value_lc = value_str.lower()
+                                                if value_lc == 'x':
+                                                    value_int = -1
+                                                else:
+                                                    asc_code = ord(value_lc)
+                                                    value_int = asc_code - 96
+
+                                                    if logging_on:
+                                                        logger.debug('value_lc: ' + str(value_lc) + ' ' + str(type(value_lc)))
+                                                        logger.debug('asc_code: ' + str(asc_code) + ' ' + str(type(asc_code)))
+                                                        logger.debug('value_int: ' + str(value_int) + ' ' + str(type(value_int)))
+
+                                            # check if answer is correct
+                                                    # partex_keys_dict: {1: 'a', 2: 'd', 4: 'a', 6: 'b', 8: 'c'} <class 'dict'>
+                                                    keys = partex_keys_dict.get(q_number)
+                                                    if logging_on:
+                                                        logger.debug('..... partex_keys_dict: ' + str(partex_keys_dict))
+                                                        logger.debug('..... keys: ' + str(keys) + ' ' + str(type(keys)))
+                                                        logger.debug('..... partex_assignment_dict: ' + str(partex_assignment_dict))
+
+                                                    if keys and value_lc in keys:
+                                                        # lookup score in partex_assignment_dict
+                                                        # partex_assignment_dict: {1: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 2: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 3: {'max_char': '', 'max_score': 1, 'min_score': ''}, 4: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 5: {'max_char': '', 'max_score': 1, 'min_score': ''}, 6: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 7: {'max_char': '', 'max_score': 1, 'min_score': ''}, 8: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 9: {'max_char': '', 'max_score': 2, 'min_score': ''}, 10: {'max_char': '', 'max_score': 1, 'min_score': ''}}
+                                                        max_score = None
+                                                        q_assignment = partex_assignment_dict.get(q_number)
+                                                        if q_assignment:
+                                                            max_score = q_assignment.get('max_score')
+                                                        if logging_on:
+                                                            logger.debug('..... q_assignment: ' + str(q_assignment) + ' ' + str(type(q_assignment)))
+                                                            logger.debug('..... max_score: ' + str(max_score) + ' ' + str(type(max_score)))
+                                                        score_int = max_score if max_score else 1
+                                            else:
+                                                value_int = int(value_str)
+                                                score_int = value_int
+                                    a_list.append(value_int)
+                                    score_list.append(score_int)
+                            if logging_on:
+                                logger.debug( '..... a_list: ' + str(a_list) + ' ' + str(type(a_list)))
+                                logger.debug('..... score_list: ' + str(score_list) + ' ' + str(type(score_list)))
+
+                            if a_list:
+                                result_dict[partex_pk] = a_list
+                            if score_list:
+                                score_dict[partex_pk] = score_list
+
+                        if logging_on:
+                            logger.debug('result_dict: ' + str(result_dict) + ' ' + str(type(result_dict)))
+                        """
+                        result_dict: {
+                            '2': [2, -1, 4, 1, -1, 2, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '4': [0, 1, 1, 3, 2, 1, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '6': [2, 1, 1, 1, 1, -1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '7': [5, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '8': [12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '9': [15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '10': [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]} <class 'dict'>
+    
+                        """
+                        answer_list.append({'school': school_code, 'responses': result_dict, 'score': score_dict} )
+
+            return answer_list
+
+        # - end of get_answers_list
 
         response = None
-
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
 
-            # - get exam_pk from parameter 'list'
-            if list:
-                # list: 10 <class 'str'>
-                exam_pk = int(list)
-            exam_pk = None
 # - reset language
             user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
-# - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, requsr_same_schoolNIU = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
-
-# - get selected examperiod, examtype, subject_pk from usersettings
-            sel_examperiod, sel_examtype, sel_subject_pkNIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+# - get selected examyear and examperiod from usersettings
+            sel_examyear, sel_examperiod = dl.get_selected_examyear_examperiod_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('exam_pk: ' + str(exam_pk))
 
             if sel_examperiod:
                 examenlijst = []
 
-                # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
                 crit = Q(subject__examyear=sel_examyear)
                 # - exclude this subject base in case it is an existing subject
-                if exam_pk:
+                exam_pk = 28
+                if sel_examperiod in (1, 2):
+                    crit.add(Q(examperiod=sel_examperiod), crit.connector)
                     crit.add(Q(pk=exam_pk), crit.connector)
                 exam_instances = subj_mod.Exam.objects.filter(crit)
 
@@ -4890,22 +5430,62 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                     for exam_instance in exam_instances:
                         exam_dict = {}
                         subject = exam_instance.subject
-                        examyear = subject.examyear
+
+                        exam_partex_dict = get_exam_partex_dict_from_instance(exam_instance)
+                        if logging_on:
+                            logger.debug(' ----- get_assignment_list -----')
+                            logger.debug('exam_partex_dict: ' + str(exam_partex_dict))
+                        """
+                        exam_partex_dict: {1: {'pk': 1, 'tijdvak': 1, 'aantal vragen': 44, 'maximum score': 61, 'naam': 'Deelexamen 1'}}
+                        """
+
+                        exam_assignment_dict = get_exam_assignment_dict(exam_instance)
+                        if logging_on:
+                            logger.debug('assignment_dict: ' + str(exam_assignment_dict))
+                        """
+                        exam_assignment_dict: {1: {1: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 
+                                              2: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 
+                        """
+
+                        exam_keys_dict = get_exam_keys_dict(exam_instance)
+                        if logging_on:
+                            logger.debug('exam_keys_dict: ' + str(exam_keys_dict))
+                        """
+                        exam_keys_dict: {
+                            1: {1: 'a', 2: 'ab', 3: 'c', 4: 'b', 6: 'c', 7: 'a'}, 
+                            2: {1: 'b', 2: 'bd', 3: 'a', 4: 'c', 5: 'b', 8: 'c'}, 
+                            3: {2: 'd', 4: 'c', 5: 'b', 6: 'a', 7: 'c', 9: 'a', 10: 'a'}, 
+                            4: {2: 'c', 4: 'b', 5: 'c', 6: 'b', 7: 'c', 9: 'b'}, 
+                            5: {1: 'c', 2: 'c', 4: 'c', 6: 'c', 7: 'c'}, 
+                            6: {1: 'a', 2: 'd', 4: 'a', 6: 'b', 8: 'c'}
+                        }
+                        """
+
+                        assignment_list, partex_count, partex_schaallengte = \
+                            get_assignment_list(exam_partex_dict, exam_assignment_dict, exam_keys_dict)
+                        answers_list = get_answers_list(exam_instance, exam_partex_dict, exam_assignment_dict, exam_keys_dict)
 
                         exam_dict['code'] = subject.base.code
                         exam_dict['vak'] = subject.name
 
                 # - create string with department abbrev
                         exam_dict['afdeling'] = exam_instance.department.base.code
+                        if exam_instance.version:
+                            exam_dict['versie'] = exam_instance.version
 
                 # - create string with level abbrevs
                         if exam_instance.level:
                             exam_dict['leerweg'] = exam_instance.level.abbrev
 
-                        exam_dict['examensoort'] = c.get_examtype_caption(exam_instance.examtype)
+                        #exam_dict['examensoort'] = "---"  # c.get_examtype_caption(exam_instance.examtype)
                         exam_dict['aantal vragen'] = exam_instance.amount if exam_instance.amount else 0
-                        exam_dict['opgaven'] = get_assignment_list(exam_instance)
-                        exam_dict['kandidaten'] = get_answers_list(exam_instance)
+
+                # - when there is only 1 partex: use max_score of partex, use scalelength otherwise
+                        exam_dict['schaallengte'] = partex_schaallengte if partex_count == 1 \
+                            else exam_instance.scalelength if exam_instance.scalelength else None
+
+                        exam_dict['deelexamens'] = assignment_list
+                        exam_dict['kandidaten'] = answers_list
 
                         examenlijst.append(exam_dict)
 
@@ -4934,131 +5514,200 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 # - end of ExamDownloadExamJsonView
 
 
-def get_assignment_list(sel_exam_instance):
-    # - create list with assignments PR2021-05-08  PR2021-05-24
+def get_assignment_list(exam_partex_dict, exam_assignment_dict, exam_keys_dict):
+    # - create list with assignments PR2021-05-08 PR2021-05-24 PR2022-03-15
 
-    amount = getattr(sel_exam_instance, 'amount')
+    logging_on = False  # s.LOGGING_ON
 
-    assignment_list = []
+    """        
+    exam.partex: 1;1;3;0;Praktijkexamen onderdeel A#2;1;8;9;Minitoets 1 ROOD onderdeel A#3;1;8;9;Minitoets 1 BLAUW onderdeel A#4;1;4;0;Praktijkexamen onderdeel B#5;1;6;7;Minitoets 2 ROOD onderdeel B#6;1;6;7;Minitoets 2 BLAUW onderdeel B#7;1;8;8;Minitoets 3 ROOD onderdeel C#8;1;8;8;Minitoets 3 BLAUW onderdeel C#9;1;6;6;Minitoets 4 BLAUW onderdeel D#10;1;6;6;Minitoets 4 ROOD onderdeel D
 
-    if amount:
-        assignment_dict = {}
-        assignment = getattr(sel_exam_instance, 'assignment')
-        if assignment:
-            for qa in assignment.split('|'):
-                qa_arr = qa.split(':')
-                if len(qa_arr) > 0:
-                    if qa_arr[1]:
-                        q_nr = int(qa_arr[0])
-                        value_list = qa_arr[1].split(';')
-                        assignment_dict[q_nr] = {
-                            'max_score': value_list[0] if value_list[0] else '',
-                            'max_char': value_list[1] if value_list[1] else '',
-                            'min_score': value_list[2] if value_list[2] else ''
-                        }
+    format of exam.partex is:
+        partex are divided by "#"
+            each item of partex contains: partex_pk ; partex_examperiod ; partex_amount ; max_score ; partex_name #
 
-        keys_dict = {}
-        keys = getattr(sel_exam_instance, 'keys')
-        if keys:
-            for qk in keys.split('|'):
-                qk_arr = qk.split(':')
-                if len(qk_arr) > 0:
-                    if qk_arr[1]:
-                        qk_nr = int(qk_arr[0])
-                        value_list = qk_arr[1].split(';')
-                        keys_dict[qk_nr] = {
-                            'keys': value_list[0] if value_list[0] else ''
-                        }
+    exam_partex_dict: {1: {'pk': 1, 'tijdvak': 2, 'aantal vragen': 4, 'maximum score': 48, 'naam': 'praktijkexamen onderdeel A'}, 
+                       2: {'pk': 2, 'tijdvak': 2, 'aantal vragen': 1, 'maximum score': 27, 'naam': 'Praktijkexamen onderdeel B'}, 
+                       3: {'pk': 3, 'tijdvak': 2, 'aantal vragen': 5, 'maximum score': 57, 'naam': 'Praktijkexamen onderdeel C'}}
+    """
 
-        for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
-            if q_number in assignment_dict:
-                exam_dict = {'nr': q_number}
-                max_score = af.get_dict_value(assignment_dict, (q_number, 'max_score'), '')
+    return_dict = {}
+
+    """
+    grade_dict.ce_exam_result = "1;3;0|1;;;|2;;;|3;;4;#2;2;4|1;C;;|2;D;3;"
+    format of ce_exam_result_str is:
+     - partal exams are separated with #
+     - partex = "2;2;4|1;C;;|2;D;3;"
+     first array between | contains partex info (blanks;total_amount), others contain answers info
+     #  | partex_pk |
+        | q_number ; char ; score ; blank |
+    """
+
+    """
+    exam.assignment: 1;4;24|1;;10;|2;;4;|3;;4;|4;;6;#2;9;9|1;D;;|2;D;;|3;;1;|4;;1;|5;D;;|6;D;;|7;;1;|8;D;;|9;C;;#3;9;9|1;D;;|2;D;;|3;;1;|4;;1;|5;D;;|6;D;;|7;;1;|8;D;;|9;C;;#4;4;28|1;;6;|2;;6;|3;;6;|4;;10;#5;9;10|1;D;;|2;;1;|3;D;;|4;;2;|5;D;;|6;;1;|7;D;;|8;D;;|9;D;;#6;9;10|1;D;;|2;;1;|3;D;;|4;;2;|5;D;;|6;;1;|7;D;;|8;D;;|9;D;;#7;3;20|1;;10;|2;;6;|3;;4;#8;9;9|1;D;;|2;;1;|3;;1;|4;;1;|5;D;;|6;;1;|7;D;;|8;D;;|9;D;;#9;9;9|1;D;;|2;;1;|3;;1;|4;;1;|5;D;;|6;;1;|7;D;;|8;D;;|9;D;;#10;2;16|1;;10;|2;;6;#11;10;10|1;;1;|2;;1;|3;D;;|4;;1;|5;D;;|6;;1;|7;D;;|8;D;;|9;D;;|10;;1;#12;10;10|1;;1;|2;;1;|3;D;;|4;;1;|5;D;;|6;;1;|7;D;;|8;D;;|9;D;;|10;;1;
+
+    format of assignment_str is:
+        partex are divided by "#"
+            first item of partex contains partex info: partex_pk ; partex_amount ; max_score |
+            other items =  | q_number ; max_char ; max_score ; min_score |
+
+    format of keys_str is:
+        partex are divided by "#"
+            first item of partex contains partex_pk
+            other items =  | q_number ; keys |
+    """
+
+    partex_count = 0
+    partex_schaallengte = None
+
+    for partex_pk, partex_dict in exam_partex_dict.items():
+        partex_assignment_dict = exam_assignment_dict.get(partex_pk)
+        partex_keys_dict = exam_keys_dict.get(partex_pk)
+        partex_amount = partex_dict.get('aantal vragen')
+
+        partex_count += 1
+        partex_schaallengte = partex_dict.get('schaallengte') if partex_count == 1 else None
+
+        partex_assignment_list = []
+        if logging_on and False:
+            logger.debug('---------------- partex_pk: ' + str(partex_pk) + ' ' + str(type(partex_pk)))
+            logger.debug('partex_amount: ' + str(partex_amount) + ' ' + str(type(partex_amount)))
+            logger.debug('partex_dict: ' + str(partex_dict) + ' ' + str(type(partex_dict)))
+
+            logger.debug('partex_keys_dict: ' + str(partex_keys_dict) + ' ' + str(type(partex_keys_dict)))
+        if logging_on:
+            logger.debug('---------------- partex_count: ' + str(partex_count) + ' ' + str(type(partex_count)))
+            logger.debug('---------------- partex_schaallengte: ' + str(partex_schaallengte) + ' ' + str(type(partex_schaallengte)))
+        """
+        partex_pk: 1 <class 'int'>
+        partex_dict: {'pk': 1, 'tijdvak': 1, 'aantal vragen': 44, 'maximum score': 61, 'naam': 'Deelexamen 1'} <class 'dict'>
+        partex_assignment_dict: {1: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 2: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 3: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 4: {'max_char': '', 'max_score': 1, 'min_score': ''}, 5: {'max_char': '', 'max_score': 2, 'min_score': ''}, 6: {'max_char': '', 'max_score': 2, 'min_score': ''}, 7: {'max_char': '', 'max_score': 1, 'min_score': ''}, 8: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 9: {'max_char': '', 'max_score': 2, 'min_score': ''}, 10: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 11: {'max_char': '', 'max_score': 2, 'min_score': ''}, 12: {'max_char': '', 'max_score': 2, 'min_score': ''}, 13: {'max_char': '', 'max_score': 2, 'min_score': ''}, 14: {'max_char': '', 'max_score': 1, 'min_score': ''}, 15: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 16: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 17: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 18: {'max_char': '', 'max_score': 2, 'min_score': ''}, 19: {'max_char': '', 'max_score': 2, 'min_score': ''}, 20: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 21: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 22: {'max_char': '', 'max_score': 1, 'min_score': ''}, 23: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 24: {'max_char': '', 'max_score': 2, 'min_score': ''}, 25: {'max_char': '', 'max_score': 1, 'min_score': ''}, 26: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 27: {'max_char': '', 'max_score': 1, 'min_score': ''}, 28: {'max_char': '', 'max_score': 2, 'min_score': ''}, 29: {'max_char': '', 'max_score': 1, 'min_score': ''}, 30: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 31: {'max_char': '', 'max_score': 2, 'min_score': ''}, 32: {'max_char': '', 'max_score': 2, 'min_score': ''}, 33: {'max_char': '', 'max_score': 2, 'min_score': ''}, 34: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 35: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 36: {'max_char': '', 'max_score': 2, 'min_score': ''}, 37: {'max_char': '', 'max_score': 1, 'min_score': ''}, 38: {'max_char': '', 'max_score': 2, 'min_score': ''}, 39: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 40: {'max_char': '', 'max_score': 2, 'min_score': ''}, 41: {'max_char': '', 'max_score': 1, 'min_score': ''}, 42: {'max_char': '', 'max_score': 1, 'min_score': ''}, 43: {'max_char': 'D', 'max_score': '', 'min_score': ''}, 44: {'max_char': '', 'max_score': 2, 'min_score': ''}} <class 'dict'>
+        partex_keys_dict: {1: 'a', 2: 'ab', 3: 'c', 4: 'b', 6: 'c', 7: 'a'}
+
+        """
+        for q_number in range(1, partex_amount + 1):  # range(start_value, end_value, step), end_value is not included!
+            q_dict = {'nr': q_number}
+            if logging_on:
+                logger.debug('      q_number: ' + str(q_number) + ' ' + str(type(q_number)))
+
+            if q_number in partex_assignment_dict:
+                max_score = af.get_dict_value(partex_assignment_dict, (q_number, 'max_score'), '')
                 max_score_int = int(max_score) if max_score else 0
-                max_char = af.get_dict_value(assignment_dict, (q_number, 'max_char'), '')
+                max_char = af.get_dict_value(partex_assignment_dict, (q_number, 'max_char'), '')
                 is_multiple_choice = True if max_char else False
 
                 if is_multiple_choice:
+                    # alternatives = number of choices: max_char = C --> alternatives = 3
                     asc_code = ord(max_char.lower())
                     alternatives = asc_code - 96
-
-                    keys = af.get_dict_value(keys_dict, (q_number, 'keys'), '')
-                    logger.debug('keys: ' + str(keys) + ' ' + str(type(keys)))
-                    key_list = list(keys)
-                    logger.debug('key_list: ' + str(key_list) + ' ' + str(type(key_list)))
-                    key_int_list = []
-                    for key_str in key_list:
-                        logger.debug('key_str: ' + str(key_str) + ' ' + str(type(key_str)))
-                        asc_code = ord(key_str.lower())
-                        logger.debug('asc_code: ' + str(asc_code) + ' ' + str(type(asc_code)))
-                        key_int = asc_code - 96
-
+                    if logging_on:
                         logger.debug('alternatives: ' + str(alternatives) + ' ' + str(type(alternatives)))
-                        if key_int < 1 or key_int > alternatives:
-                            key_int = -1
-                        logger.debug('key_int: ' + str(key_int) + ' ' + str(type(key_int)))
-                        key_int_list.append(key_int)
-                        logger.debug('key_int_list: ' + str(key_int_list) + ' ' + str(type(key_int_list)))
 
-                    exam_dict['opgavetype'] = 'Meerkeuze'
-                    exam_dict['alternatieven'] = alternatives
-                    exam_dict['sleutel'] = key_int_list
+                    q_dict['opgavetype'] = 'Meerkeuze'
+                    q_dict['alternatieven'] = alternatives
+                    q_dict['maximum score'] = max_score_int if max_score_int else 1
+
+                    if partex_keys_dict:
+                        keys_str = partex_keys_dict.get(q_number)
+                        if logging_on:
+                            logger.debug( '             keys_str: ' + str(keys_str) + ' ' + str(type(keys_str)))
+
+                        if keys_str:
+                            key_list = list(keys_str)
+                            if logging_on:
+                                logger.debug('key_list: ' + str(key_list) + ' ' + str(type(key_list)))
+
+                            key_int_list = []
+                            for key_str in key_list:
+                                if logging_on:
+                                    logger.debug('key_str: ' + str(key_str) + ' ' + str(type(key_str)))
+
+                                asc_code = ord(key_str.lower())
+                                if logging_on:
+                                    logger.debug('asc_code: ' + str(asc_code) + ' ' + str(type(asc_code)))
+
+                                key_int = asc_code - 96
+                                if key_int < 1 or key_int > alternatives:
+                                    key_int = -1
+                                if logging_on:
+                                    logger.debug('key_int: ' + str(key_int) + ' ' + str(type(key_int)))
+                                key_int_list.append(key_int)
+                                if logging_on:
+                                    logger.debug('key_int_list: ' + str(key_int_list) + ' ' + str(type(key_int_list)))
+
+                            q_dict['sleutel'] = key_int_list
                 else:
-                    exam_dict['opgavetype'] = 'Open'
-                    exam_dict['maximum score'] = max_score_int
+                    q_dict['opgavetype'] = 'Open'
+                    q_dict['maximum score'] = max_score_int
 
-                assignment_list.append(exam_dict)
+            partex_assignment_list.append(q_dict)
+            if logging_on:
+                logger.debug('partex_assignment_list: ' + str(partex_assignment_list) + ' ' + str(type(partex_assignment_list)))
+            """
+            partex_assignment_list: [{'nr': 1, 'opgavetype': 'Meerkeuze', 'alternatieven': 3, 'sleutel': [2]}, 
+                                     {'nr': 2, 'opgavetype': 'Meerkeuze', 'alternatieven': 3, 'sleutel': [3]}, 
+                                     {'nr': 3, 'opgavetype': 'Meerkeuze', 'alternatieven': 3, 'sleutel': [3]}, 
+                                     {'nr': 4, 'opgavetype': 'Open', 'maximum score': 1}, 
+            """
+            partex_dict['opgaven'] = partex_assignment_list
 
-    return assignment_list
+        return_dict[partex_pk] = partex_dict
+        #assignment_list.append(partex_dict)
+        """
+        return_dict: { 
+            1: {'pk': 1, 'tijdvak': 1, 'aantal vragen': 44, 'maximum score': 61, 'naam': 'Deelexamen 1', 
+                'opgaven': [
+                    {'nr': 1, 'opgavetype': 'Meerkeuze', 'alternatieven': 3, 'sleutel': [2]}, 
+                    {'nr': 2, 'opgavetype': 'Meerkeuze', 'alternatieven': 3, 'sleutel': [3]}, 
+                    {'nr': 3, 'opgavetype': 'Meerkeuze', 'alternatieven': 3, 'sleutel': [3]}, 
+                    {'nr': 4, 'opgavetype': 'Open', 'maximum score': 1}, 
+                    {'nr': 5, 'opgavetype': 'Open', 'maximum score': 2}, 
+        """
+
+    return return_dict, partex_count, partex_schaallengte
+# - end of get_assignment_list
 
 
-def get_answers_list(sel_exam_instance):
-    # - create dict with answers PR2021-05-08  PR2021-05-24
+def get_ce_examresult_rows():
+    #PR2022-03-15
+    # TODO replace Grade.objects.filter(ce_exam=sel_exam_instance) in get_answers_list
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_ce_examresult_rows -----')
 
-    answer_dict = {}
-    answer_list = []
+    examyear_pk, school_pk, department_pk, examperiod = None, None, None, None
+    sql_keys = {'ey_id': examyear_pk, 'sch_id': school_pk, 'dep_id': department_pk, 'experiod': examperiod}
+    sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
+                "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
+                "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name",
 
-    amount = getattr(sel_exam_instance, 'amount')
-    if amount:
-        grades = stud_mod.Grade.objects.filter(exam=sel_exam_instance)
-        if grades:
-            for grade in grades:
-                if grade.answers:
-                    school_code = grade.studentsubject.student.school.base.code
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
 
-                    a_dict = {}
-                    for qa in grade.answers.split('|'):
-                        qa_arr = qa.split(':')
-                        if len(qa_arr) > 0:
-                            if qa_arr[1]:
-                                q_nr = int(qa_arr[0])
-                                value_str = qa_arr[1]
-                                a_dict[q_nr] = value_str
-                    logger.debug('a_dict: ' + str(a_dict) + ' ' + str(type(a_dict)))
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
 
-                    a_list = []
-                    for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
-                        value_int = 0
-                        if q_number in a_dict:
-                            value_str = a_dict.get(q_number)
-                            if value_str:
-                                is_multiple_choice = True if not value_str.isnumeric() else False
-                                if is_multiple_choice:
-                                    value_lc = value_str.lower()
-                                    if value_lc == 'x':
-                                        value_int = -1
-                                    else:
-                                        logger.debug('value_str: ' + str(value_str) + ' ' + str(type(value_str)))
-                                        asc_code = ord(value_lc)
-                                        logger.debug('asc_code: ' + str(asc_code) + ' ' + str(type(asc_code)))
-                                        value_int = asc_code - 96
-                                else:
-                                    value_int = int(value_str)
-                        a_list.append(value_int)
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                    answer_list.append({'school': school_code, 'responses': a_list} )
+                "WHERE ey.id = %(ey_id)s::INT",
+                "AND school.id = %(sch_id)s::INT",
+                "AND dep.id = %(dep_id)s::INT",
+                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                "AND grd.examperiod = %(experiod)s::INT",
 
-    return answer_list
+                "ORDER BY LOWER(subj.name), LOWER(stud.lastname), LOWER(stud.firstname)"
+                ]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        grade_rows = af.dictfetchall(cursor)
+# - end of get_ce_examresult_rows
 
 
 def get_department_codes(sel_exam_instance, examyear):
@@ -5338,6 +5987,7 @@ def create_subjectbase_dictlist(examyear):  # PR2021-08-20
 
 
 # /////////////////////////////////////////////////////////////////
+
 def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk=None):  # PR2021-08-19 PR2021-09-24
     logging_on = s.LOGGING_ON
     if logging_on:

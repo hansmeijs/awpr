@@ -674,9 +674,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if(error_list && error_list.length){
     // - show modal messages
-                // TODO cannot show error_list in b_ShowModMessages.Already shown by response.messages
+                // TODO cannot show error_list in b_show_mod_message_dictlist.Already shown by response.messages
 
-                b_ShowModMessages(error_list);
+                b_show_mod_message_dictlist(error_list);
 
     // - add fields with error in field_error_list, to put old value back in field
                 for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {

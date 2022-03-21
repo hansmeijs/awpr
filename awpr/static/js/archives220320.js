@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if (!skip_messages && "messages" in response) {
-                    b_ShowModMessages(response.messages);
+                    b_show_mod_message_dictlist(response.messages);
                 }
                 if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
                 if ("school_rows" in response)  {
@@ -339,19 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- loop through data_rows
         if(data_rows && data_rows.length){
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-
-        // --- set SBR_filter
-        // Note: filter of filterrow is done by Filter_TableRows
-                let show_row = true;
-                if (show_row && setting_dict.sel_lvlbase_pk){
-                    show_row = (setting_dict.sel_lvlbase_pk === data_dict.lvlbase_id);
-                }
-                if (show_row && setting_dict.sel_sctbase_pk){
-                    show_row = (setting_dict.sel_sctbase_pk === data_dict.sctbase_id);
-                }
-                if(show_row){
-                    CreateTblRow(tblName, field_setting, data_dict, col_hidden);
-                };
+                CreateTblRow(tblName, field_setting, data_dict, col_hidden);
             };
         };
 // --- filter tblRows
@@ -459,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
         console.log("=========  CreateTblRow =========", tblName);
-        //console.log("data_dict", data_dict);
+        console.log("data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -609,7 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
 
                     if("messages" in response){
-                        b_ShowModMessages(response.messages);
+                        b_show_mod_message_dictlist(response.messages);
                     }
 
 

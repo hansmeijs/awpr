@@ -8,6 +8,7 @@ const man_home = {
         write_paragraph_body("",
             ["<p>Welkom bij de geheel vernieuwde online versie van AWP. Het invoeren en verwerken van examengegevens wordt nu nog eenvoudiger.</p>",
                 "<p>Maar zoals met alle nieuwe programma's zal de nieuwe opzet even wennen zijn. ",
+                "Begin daarom op tijd met het aanmaken van accounts en het invoeren van gegevens. ",
                 "We adviseren je dringend om de handleiding goed door te nemen voor je aan de slag gaat.</p>",
                 "<p>Op deze pagina vind je veel handige tips voor het gebruik van AWP-online. ",
                 "Ze maken het opzoeken van informatie een stuk makkelijker. Neem even de tijd ze door te lezen. Dat bespaart straks veel tijd en ergernis.</p>",
@@ -17,7 +18,7 @@ const man_home = {
                 "<p>Namens het Expertisecentrum voor Toetsen & Examens wensen we je veel succes in het gebruik van AWP-online.</p>"
             ]),
 
-        write_paragraph_header("id_page_layout", "De lay-out van de pagina's"),
+        write_paragraph_header("id_page_layout", "De pagina lay-out"),
         write_paragraph_body("",
             [            "<p class='pb-0'>Bovenaan de pagina is de <b>titelbalk</b> met de volgende knoppen:</p>",
                 "<ul class='manual_bullet mb-0'><li>het <i>AWP logo</i>. Klik hierop om naar de startpagina te gaan;</li>",
@@ -134,6 +135,7 @@ const man_home = {
         write_paragraph_body("",
             ["<p>Welcome at the completely renewed online version of AWP. Entering and processing exam data just got easier.</p>",
             "<p>But as with all new programs, the new setup will take some time getting used to. ",
+            "Therefore, start on time with creating accounts and entering data. ",
             "We strongly advise you to read the manual carefully before you get started.</p>",
             "<p>On this page you will find many useful tips for using AWP-online. ",
             "They make looking up information a lot easier. Take a moment to read them. That will save a lot of time and aggravation.</p>",
@@ -143,7 +145,7 @@ const man_home = {
             "<p>On behalf of the Division of Examinations, we wish you good luck in using AWP-online.</p>",
             ]),
 
-        write_paragraph_header("id_page_layout", "The layout of the pages"),
+        write_paragraph_header("id_page_layout", "The page layout"),
         write_paragraph_body("",
             ["<p class='pb-0'>At the top of the page is the <b>title bar</b> with the following buttons:</p>",
                 "<ul class='manual_bullet mb-0'><li>the <i>AWP logo</i>. Click this to go to the homepage;</li>",

@@ -124,7 +124,7 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserUploadView ===============')
@@ -641,7 +641,7 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -932,7 +932,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
     #  send_activation_email is called from table Users, field 'activated' when the activation link has expired.
     #  it sends an email to the user
     #  it returns a HttpResponse, with ok_msg or err-msg
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ')
         logger.debug(' ========== send_activation_email ===============')
@@ -1649,7 +1649,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01 PR2022-02-18
 def update_user_instance(instance, upload_dict, msg_list, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_user_instance  -----')
         logger.debug('instance: ' + str(instance))
@@ -1825,7 +1825,7 @@ def update_usergroups(instance, field_dict, validate, request):
     # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
     # validate only when called by update_user_instance
     # usergroups: {auth2: false} dict always contains only 1 auth key
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_usergroups  -----')
         logger.debug('field_dict: ' + str(field_dict))
@@ -2015,7 +2015,7 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
 
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -2034,7 +2034,7 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
 
 def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19 PR2021-12-02
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
         logger.debug('key_str: ' + str(key_str))
@@ -2213,9 +2213,121 @@ def get_username_dict():  # PR2021-12-19
     return username_dict
 # - end of get_username_dict
 
+def get_userfilter_allowed_depbase(request, sql_keys, sql_list, depbase_pk=None, skip_allowed_filter=False):
+    # PR2022-03-14
 
-def get_userfilter_lvlbase(sql_keys, sql_list, lvlbase_pk, request, table=None):
-    # PR2022-02-09 === Not in use yet
+    #  if depbase_pk has value:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on depbase_pk_pk, only when depbase_pk_pk in arr, otherwise: return no records
+    #       else:
+    #           --> filter on depbase_pk_pk
+    #  if depbase_pk_pk is None:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on depbase_pk_pk's in array
+    #       else:
+    #           --> no filter
+
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_userfilter_allowed_depbase ----- ')
+        logger.debug('depbase_pk: ' + str(depbase_pk) + ' ' + str(type(depbase_pk)))
+
+    filter_single_pk, filter_pk_arr, filter_none = None, None, False
+
+    allowed_depbase_arr = request.user.allowed_depbases.split(';') if request.user.allowed_depbases else []
+
+    if depbase_pk:
+        if not allowed_depbase_arr or str(depbase_pk) in allowed_depbase_arr or skip_allowed_filter:
+            filter_single_pk = depbase_pk
+        else:
+            filter_none = True
+
+    elif allowed_depbase_arr and not skip_allowed_filter:
+        if len(allowed_depbase_arr) == 1:
+            filter_single_pk = allowed_depbase_arr[0]
+        else:
+            filter_pk_arr = allowed_depbase_arr
+
+    if logging_on:
+        logger.debug('allowed_depbase_arr: ' + str(allowed_depbase_arr) + ' ' + str(type(allowed_depbase_arr)))
+        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+
+    if filter_single_pk:
+        sql_keys['dep_pk'] = filter_single_pk
+        sql_list.append("AND dep.base_id = %(dep_pk)s::INT")
+
+    elif filter_pk_arr:
+        sql_keys['dep_arr'] = filter_pk_arr
+        sql_list.append("AND dep.base_id IN (SELECT UNNEST(%(dep_arr)s::INT[]) )")
+
+    elif filter_none:
+        sql_list.append("AND FALSE")
+# - end of get_userfilter_allowed_depbase
+
+
+
+def get_userfilter_allowed_schoolbase(request, sql_keys, sql_list, schoolbase_pk=None, skip_allowed_filter=False, table=None):
+    # PR2022-03-13
+    #  if schoolbase_pk has value:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on schoolbase_pk_pk, only when schoolbase_pk_pk in arr, otherwise: return no records
+    #       else:
+    #           --> filter on schoolbase_pk_pk
+    #  if schoolbase_pk_pk is None:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on schoolbase_pk_pk's in array
+    #       else:
+    #           --> no filter
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_userfilter_allowed_schoolbase_pk ----- ')
+        logger.debug('schoolbase_pk: ' + str(schoolbase_pk) + ' ' + str(type(schoolbase_pk)))
+
+    filter_single_pk, filter_pk_arr, filter_none = None, None, False
+
+    allowed_schoolbase_pk_arr = request.user.allowed_schoolbases.split(';') if request.user.allowed_schoolbases else []
+
+    if schoolbase_pk:
+        if not allowed_schoolbase_pk_arr or str(schoolbase_pk) in allowed_schoolbase_pk_arr or skip_allowed_filter:
+            filter_single_pk = schoolbase_pk
+        else:
+            filter_none = True
+
+    elif allowed_schoolbase_pk_arr and not skip_allowed_filter:
+        if len(allowed_schoolbase_pk_arr) == 1:
+            filter_single_pk = allowed_schoolbase_pk_arr[0]
+        else:
+            filter_pk_arr = allowed_schoolbase_pk_arr
+
+    if logging_on:
+        logger.debug('allowed_schoolbase_pk_arr: ' + str(allowed_schoolbase_pk_arr) + ' ' + str(type(allowed_schoolbase_pk_arr)))
+        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+
+    if filter_single_pk:
+        sql_keys['sb_pk'] = filter_single_pk
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.schoolbase_id = %(sb_pk)s::INT")
+        else:
+            sql_list.append("AND school.base_id = %(sb_pk)s::INT")
+    elif filter_pk_arr:
+        sql_keys['sb_arr'] = filter_pk_arr
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.schoolbase_id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
+        else:
+            sql_list.append("AND school.base_id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
+    elif filter_none:
+        sql_list.append("AND FALSE")
+# - end of get_userfilter_allowed_schoolbase
+
+
+def get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, lvlbase_pk=None, skip_allowed_filter=False):
+    # PR2022-03-12
     #  if lvlbase_pk has value:
     #       if arr exists:
     #           --> filter on lvlbase_pk, only when lvlbase_pk in arr, otherwise: return no records
@@ -2228,80 +2340,76 @@ def get_userfilter_lvlbase(sql_keys, sql_list, lvlbase_pk, request, table=None):
     #           --> no filter
 
     logging_on = False  # s.LOGGING_ON
-
     if logging_on:
-        logger.debug('----- get_userfilter_lvlbase ----- ')
+        logger.debug('----- get_userfilter_allowed_lvlbase ----- ')
         logger.debug('lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(type(lvlbase_pk)))
 
-    req_user = request.user
-    allowed_lvlbase_arr = req_user.allowed_levelbases.split(';') if req_user.allowed_levelbases else []
-    filter_single_pk = None
-    filter_pk_arr = None
-    filter_none = False
+    filter_single_pk, filter_pk_arr, filter_none = None, None, False
+
+    allowed_levelbase_arr = request.user.allowed_levelbases.split(';') if request.user.allowed_levelbases else []
+
     if lvlbase_pk:
-        if not allowed_lvlbase_arr or str(lvlbase_pk) in allowed_lvlbase_arr:
+        if not allowed_levelbase_arr or str(lvlbase_pk) in allowed_levelbase_arr or skip_allowed_filter:
             filter_single_pk = lvlbase_pk
         else:
             filter_none = True
-    elif allowed_lvlbase_arr:
-        if len(allowed_lvlbase_arr) == 1:
-            filter_single_pk = allowed_lvlbase_arr[0]
+
+    elif allowed_levelbase_arr and not skip_allowed_filter:
+        if len(allowed_levelbase_arr) == 1:
+            filter_single_pk = allowed_levelbase_arr[0]
         else:
-            filter_pk_arr = allowed_lvlbase_arr
+            filter_pk_arr = allowed_levelbase_arr
 
     if logging_on:
-        logger.debug('allowed_lvlbase_arr: ' + str(allowed_lvlbase_arr) + ' ' + str(type(allowed_lvlbase_arr)))
+        logger.debug('allowed_levelbase_arr: ' + str(allowed_levelbase_arr) + ' ' + str(type(allowed_levelbase_arr)))
         logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
         logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
         logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
 
     if filter_single_pk:
-        sql_keys['sjb_pk'] = filter_single_pk
-        if table == 'studsubj':
-            sql_list.append("AND studsubj.lvlbase_id = %(sjb_pk)s::INT")
-        else:
-            sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+        sql_keys['lvl_pk'] = filter_single_pk
+        sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
+
     elif filter_pk_arr:
-        sql_keys['sjb_arr'] = filter_pk_arr
-        if table == 'studsubj':
-            sql_list.append("AND studsubj.lvlbase_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
-        else:
-            sql_list.append("AND subj.base_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
+        sql_keys['lvl_arr'] = filter_pk_arr
+        sql_list.append("AND lvl.base_id IN ( SELECT UNNEST(%(lvl_arr)s::INT[]) )")
+
     elif filter_none:
         sql_list.append("AND FALSE")
-# - end of get_userfilter_lvlbase
+# - end of get_userfilter_allowed_lvlbase
 
+def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=None, skip_allowed_filter=False, table=None):
+    # PR2022-03-13
+    # this function adds allowed_subjectbases filter to sql, or filters single subjbase_pk
 
-def set_allowed_subjbase_filter(sql_keys, sql_list, subjbase_pk, request, table=None):
-    # PR2022-02-07
-    #  if subjbase_pk has value:
-    #       if allowed_subjectbases exists:
-    #           --> filter on subjbase_pk, only when subjbase_pk in arr, otherwise: return no records
+    #  if subjectbase_pk has value:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on subjectbase_pk_pk, only when subjectbase_pk_pk in arr, otherwise: return no records
     #       else:
-    #           --> filter on subjbase_pk
-    #  if subjbase_pk is None:
-    #       if allowed_subjectbases exists:
-    #           --> filter on subjbase_pk's in array
+    #           --> filter on subjectbase_pk_pk
+    #  if subjectbase_pk_pk is None:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on subjectbase_pk_pk's in array
     #       else:
     #           --> no filter
 
     logging_on = False  # s.LOGGING_ON
 
     if logging_on:
-        logger.debug('----- set_allowed_subjbase_filter ----- ')
+        logger.debug('----- get_userfilter_allowed_subjbase ----- ')
         logger.debug('subjbase_pk: ' + str(subjbase_pk) + ' ' + str(type(subjbase_pk)))
 
-    req_user = request.user
-    allowed_subjbase_arr = req_user.allowed_subjectbases.split(';') if req_user.allowed_subjectbases else []
-    filter_single_pk = None
-    filter_pk_arr = None
-    filter_none = False
+    filter_single_pk, filter_pk_arr, filter_none = None, None, False
+
+    allowed_subjbase_arr = request.user.allowed_subjectbases.split(';') if request.user.allowed_subjectbases else []
+
     if subjbase_pk:
-        if not allowed_subjbase_arr or str(subjbase_pk) in allowed_subjbase_arr:
+        if not allowed_subjbase_arr or str(subjbase_pk) in allowed_subjbase_arr or skip_allowed_filter:
             filter_single_pk = subjbase_pk
         else:
             filter_none = True
-    elif allowed_subjbase_arr:
+
+    elif allowed_subjbase_arr and not skip_allowed_filter:
         if len(allowed_subjbase_arr) == 1:
             filter_single_pk = allowed_subjbase_arr[0]
         else:
@@ -2319,53 +2427,75 @@ def set_allowed_subjbase_filter(sql_keys, sql_list, subjbase_pk, request, table=
             sql_list.append("AND studsubj.subjbase_id = %(sjb_pk)s::INT")
         else:
             sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+
     elif filter_pk_arr:
         sql_keys['sjb_arr'] = filter_pk_arr
         if table == 'studsubj':
             sql_list.append("AND studsubj.subjbase_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
         else:
             sql_list.append("AND subj.base_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
+
     elif filter_none:
         sql_list.append("AND FALSE")
-# - end of set_allowed_subjbase_filter
+# - end of get_userfilter_allowed_subjbase
 
 
-def set_allowed_lvlbase_filter(sql_keys, sql_list, request):
-    # PR2022-03-04
-    #   if allowed_levelbases exists:
-    #       --> filter on lvlbase_pk's in array
-    #   else:
-    #       --> no filter
+def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None, skip_allowed_filter=False):
+    # PR2022-03-18
+    # this function adds allowed_cluster filter to sql, or filters single cluster_pk
 
-    logging_on = False  # s.LOGGING_ON
+    #  if cluster_pk has value:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on cluster_pk, only when cluster_pk in arr, otherwise: return no records
+    #       else:
+    #           --> filter on cluster_pk
+    #  if cluster_pk is None:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on cluster_pk's in array
+    #       else:
+    #           --> no filter
+
+    logging_on = s.LOGGING_ON
 
     if logging_on:
-        logger.debug('----- set_allowed_lvlbase_filter ----- ')
+        logger.debug('----- get_userfilter_allowed_cluster ----- ')
+        logger.debug('cluster_pk: ' + str(cluster_pk) + ' ' + str(type(cluster_pk)))
 
-    filter_single_pk = None
-    filter_pk_arr = None
-    filter_none = False
+    filter_single_pk, filter_pk_arr, filter_none = None, None, False
 
-    allowed_levelbase_arr = request.user.allowed_levelbases.split(';') if request.user.allowed_levelbases else []
+    allowed_cluster_arr = request.user.allowed_clusterbases.split(';') if request.user.allowed_clusterbases else []
 
-    if allowed_levelbase_arr:
-        if len(allowed_levelbase_arr) == 1:
-            filter_single_pk = allowed_levelbase_arr[0]
+    if cluster_pk:
+        if not allowed_cluster_arr or str(cluster_pk) in allowed_cluster_arr or skip_allowed_filter:
+            filter_single_pk = cluster_pk
         else:
-            filter_pk_arr = allowed_levelbase_arr
+            filter_none = True
+
+    elif allowed_cluster_arr and not skip_allowed_filter:
+        if len(allowed_cluster_arr) == 1:
+            filter_single_pk = allowed_cluster_arr[0]
+        else:
+            filter_pk_arr = allowed_cluster_arr
 
     if logging_on:
-        logger.debug('allowed_levelbase_arr: ' + str(allowed_levelbase_arr) + ' ' + str(type(allowed_levelbase_arr)))
+        logger.debug('allowed_cluster_arr: ' + str(allowed_cluster_arr) + ' ' + str(type(allowed_cluster_arr)))
         logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
         logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
         logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
 
     if filter_single_pk:
-        sql_keys['lvl_pk'] = filter_single_pk
-        sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
+        sql_keys['cls_pk'] = filter_single_pk
+        sql_list.append("AND studsubj.cluster_id = %(cls_pk)s::INT")
+
     elif filter_pk_arr:
-        sql_keys['lvl_arr'] = filter_pk_arr
-        sql_list.append("AND lvl.base_id IN ( SELECT UNNEST(%(lvl_arr)s::INT[]) )")
+        sql_keys['cls_arr'] = filter_pk_arr
+        sql_list.append("AND studsubj.cluster_id IN ( SELECT UNNEST(%(cls_arr)s::INT[]) )")
+
     elif filter_none:
         sql_list.append("AND FALSE")
-# - end of set_allowed_lvlbase_filter
+# - end of get_userfilter_allowed_cluster
+
+
+
+
+

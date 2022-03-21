@@ -532,9 +532,12 @@ def create_level_rows(examyear, depbase, cur_dep_only, request):
             else:
                 sql_list.append("AND FALSE")
 
-        acc_view.set_allowed_lvlbase_filter(sql_keys, sql_list, request)
-
-
+        acc_view.get_userfilter_allowed_lvlbase(
+            request=request,
+            sql_keys=sql_keys,
+            sql_list=sql_list,
+            lvlbase_pk=None
+        )
 
         sql_list.append("ORDER BY lvl.id")
 
@@ -611,9 +614,9 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
 # --- end of create_sector_rows
 
 
-def create_school_rows(examyear, permit_dict, school_pk=None):
-    # --- create rows of all schools of this examyear / country PR2020-09-18 PR2021-04-23
-    logging_on = False  #s.LOGGING_ON
+def create_school_rows(examyear, permit_dict, request, skip_allowed_filter=False, school_pk=None):
+    # --- create rows of all schools of this examyear / country PR2020-09-18 PR2021-04-23 PR2022-03-13
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_school_rows ============= ')
         logger.debug('permit_dict: ' + str(permit_dict))
@@ -623,34 +626,39 @@ def create_school_rows(examyear, permit_dict, school_pk=None):
 
     sql_keys = {'ey_id': examyear.pk, 'max_role': requsr_role}
 
+    sql_list = ["SELECT school.id, school.base_id, school.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
+        "CONCAT('school_', school.id::TEXT) AS mapid, sb.defaultrole,",
+        "school.name, school.abbrev, school.article, sb.code AS sb_code, school.depbases, school.otherlang,",
+        "school.isdayschool, school.iseveningschool, school.islexschool, school.activated, school.activatedat, school.locked, school.lockedat,",
+        "school.modifiedby_id, school.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
 
-    sql_list = ["SELECT sch.id, sch.base_id, sch.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
-        "CONCAT('school_', sch.id::TEXT) AS mapid, sb.defaultrole,",
-        "sch.name, sch.abbrev, sch.article, sb.code AS sb_code, sch.depbases, sch.otherlang,",
-        "sch.isdayschool, sch.iseveningschool, sch.islexschool, sch.activated, sch.activatedat, sch.locked, sch.lockedat,",
-        "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
-
-        "FROM schools_school AS sch",
-        "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+        "FROM schools_school AS school",
+        "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
         "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
-        "LEFT JOIN accounts_user AS au ON (au.id = sch.modifiedby_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = school.modifiedby_id)",
 
         "WHERE ey.id = %(ey_id)s::INT",
         "AND sb.defaultrole <= %(max_role)s::INT"]
 
+    schoolbase_pk = None
     if school_pk:
         # school_pk has only a value after update
         # then one row is retrieved,  to put new values on page
-        sql_list.append('AND sch.id = %(sch_id)s::INT')
+        sql_list.append('AND school.id = %(sch_id)s::INT')
         sql_keys['sch_id'] = school_pk
     elif requsr_role <= c.ROLE_008_SCHOOL:
-        # schools can olny view their own school
-        sql_keys['sb_id'] = requsr_schoolbase_pk
-        sql_list.append("AND sb.id = %(sb_id)s::INT")
+        # schools can only view their own school
+        schoolbase_pk = requsr_schoolbase_pk
 
+    acc_view.get_userfilter_allowed_schoolbase(
+        request=request,
+        sql_keys=sql_keys,
+        sql_list=sql_list,
+        schoolbase_pk=schoolbase_pk,
+        skip_allowed_filter=skip_allowed_filter)
     # order by id necessary to make sure that lookup function on client gets the right row
-    sql_list.append("ORDER BY sch.id")
+    sql_list.append("ORDER BY school.id")
 
     sql = ' '.join(sql_list)
     if logging_on:

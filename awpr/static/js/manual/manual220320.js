@@ -39,18 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 })  // document.addEventListener('DOMContentLoaded', function()
 
-//========= HandleDropdownClicked  ============= PR2021-07-30
-    function btn_click(page){
-        console.log( "===== HandleDropdownClicked  ========= ");
-        DeselectAll();
-        SelectBtn(el);
-
-        const el_id = el.id  // "id_btn_intro"
-        const btn_page = (el_id) ? el_id.slice(7) : null;
-        console.log (".... btn_page", btn_page)
-        LoadPage(btn_page);
-      };  // HandleDropdownClicked
-
 
 //========= LoadPage  ============= PR2021-07-30 PR2021-10-30
     function LoadPage(page, data_paragraph){
@@ -59,12 +47,16 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "data_paragraph", data_paragraph);
         console.log( "user_lang", user_lang);
 
+        const el_btn = document.getElementById("id_btn_" + page)
+        console.log( "el_btn", el_btn);
+
         const is_en = (user_lang === "en");
         console.log( "is_en", is_en);
         const html_dict = (page === "home") ? man_home :
                         (page === "user") ? man_user :
                         (page === "upload") ? man_upload :
                         (page === "studsubj") ? man_studsubj :
+                        (page === "cluster") ? man_cluster :
                         (page === "exemption") ? man_exemption :
                         (page === "exams") ? man_exams :
                         (page === "approve") ? man_approve :
@@ -140,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
         [
 /////////  NEDERLANDS //////////////////////////////
         get_dropdown_button("home", "id_intro", "Welkom bij AWP-online", [
-            ["id_page_layout", "De lay-out van de pagina's"],
+            ["id_page_layout", "De pagina lay-out"],
             ["id_select_windowe", "Het selectie venster"],
             ["id_filterrow", "De filterregel"],
             ["id_hide_columns", "Kolommen verbergen"]
@@ -149,23 +141,38 @@ document.addEventListener('DOMContentLoaded', function() {
         get_dropdown_button("user", "id_intro", "Gebruikers", [
             ["id_user_login", "Inloggen"],
             ["id_user_manage", "Gebruikersaccounts"],
-            ["id_user_permissions", "Gebruikersgroepen"],
-            ["id_user_allowed", "Toegestane secties"]
+            ["id_user_usergroups", "Gebruikersgroepen"],
+            ["id_user_allowed", "Toegestane secties"],
+            ["id_user_examiners", "Examinatoren en gecommitteerden"],
+            ]),
+
+        get_dropdown_button("upload", "id_intro", "Gegevens uploaden", [
+             ["id_upload_step01", "Selecteer een Excel bestand"],
+             ["id_upload_step02a", "Selecteer het soort examencijfer"],
+             ["id_upload_step02", "Kolommen koppelen"],
+             ["id_upload_step03", "Gegevens koppelen"],
+             ["id_upload_step04", "Test upload"],
+             ["id_upload_step05", "Uploaden"]
             ]),
 
         get_dropdown_button("studsubj", "id_intro", "Vakken van kandidaten", [
             ["id_filter_subjects", "Vakken filteren"],
             ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
-            ["id_enter_studsubj", "Vakken van kandidaten invoeren"],
-            ["id_clusters", "Clusters"],
+            ["id_enter_studsubj", "Vakken invoeren"],
+            ["id_pws_title_subjects", "Titel en vakken van het werkstuk"]
+            ]),
+
+        get_dropdown_button("cluster", "id_intro", "Clusters", [
+            ["id_cluster_add_delete", "Clusters toevoegen of wissen"],
+            ["id_cluster_student", "Kandidaten toevoegen of verwijderen"]
             ]),
 
         get_dropdown_button("exemption", "id_intro", "Vrijstellingen", [
-            ["id_exemp_bis_exam", "Bis-kandidaten"],
-            ["id_exemp_set", "Vrijstellingen aanmaken"],
-            ["id_exemp_grades", "Vrijstelling cijfers invoeren"],
-            ["id_exemp_upload", "Vrijstelling cijfers uploaden"],
-            ["id_exemp_approve", "Vrijstellingen goedkeuren en indienen"]
+            ["id_exem_bis_exam", "Bis-kandidaten"],
+            ["id_exem_set", "Vrijstellingen aanmaken"],
+            ["id_exem_grades", "Vrijstelling cijfers invoeren"],
+            ["id_exem_upload", "Vrijstelling cijfers uploaden"],
+            ["id_exem_approve", "Vrijstellingen goedkeuren en indienen"]
             ]),
 
         get_dropdown_button("exams", "id_intro_exams", "Examens (voormalige WOLF programma)", [
@@ -198,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
 /////////  ENGLISH //////////////////////////////
         [
         get_dropdown_button("home", "id_intro", "Welcome at AWP-online", [
-            ["id_page_layout", "The layout of the pages"],
+            ["id_page_layout", "The page layout"],
             ["id_select_windowe", "The selection window"],
             ["id_filterrow", "The filter row"],
             ["id_hide_columns", "Hide columns"],
@@ -207,9 +214,11 @@ document.addEventListener('DOMContentLoaded', function() {
         get_dropdown_button("user", "id_intro", "Users", [
              ["id_user_login", "Login"],
              ["id_user_manage", "User accounts"],
-             ["id_user_permissions", "Usergroups"],
-             ["id_user_allowed", "Allowed sections"]
+             ["id_user_usergroups", "Usergroups"],
+             ["id_user_allowed", "Allowed sections"],
+             ["id_user_examiners", "Examiners en commissioners"],
              ]),
+
         get_dropdown_button("upload", "id_intro", "Upload data", [
              ["id_upload_step01", "Select an Excel file"],
              ["id_upload_step02a", "Select type of exam grade"],
@@ -218,18 +227,24 @@ document.addEventListener('DOMContentLoaded', function() {
              ["id_upload_step04", "Test upload"],
              ["id_upload_step05", "Upload"]
             ]),
+
         get_dropdown_button("studsubj", "id_intro", "Subjects of candidates", [
              ["id_filter_subjects", "Filter subjects"],
              ["id_validate_subjects", "Subject composition check"],
-             ["id_enter_studsubj", "Enter subjects of candidates"],
-             ["id_clusters", "Clusters"]
+             ["id_enter_studsubj", "Entering subjects"],
+                ["id_pws_title_subjects", "Title and subjects of the assignment"]
+            ]),
+
+        get_dropdown_button("cluster", "id_intro", "Clusters", [
+            ["id_cluster_add_delete", "Clusters toevoegen of wissen"],
+            ["id_cluster_student", "Kandidaten toevoegen of verwijderen"]
             ]),
         get_dropdown_button("exemption", "id_intro", "Exemptions", [
-             ["id_exemp_bis_exam", "Bis candidates"],
-             ["id_exemp_set", "Create exemptions"],
-             ["id_exemp_grades", "Enter grade exemption"],
-             ["id_exemp_upload", "Number upload exemption"],
-             ["id_exemp_approve", "Approve and submit exemptions"]
+             ["id_exem_bis_exam", "Bis candidates"],
+             ["id_exem_set", "Create exemptions"],
+             ["id_exem_grades", "Enter grade exemption"],
+             ["id_exem_upload", "Number upload exemption"],
+             ["id_exem_approve", "Approve and submit exemptions"]
             ]),
         get_dropdown_button("approve", "id_intro", "Approve and submit Ex forms", [
             ["id_digital_signature", "The digital signature"],
@@ -286,9 +301,9 @@ function write_paragraph_header(par_id, dispay_txt){
     return [
          "<div id='" + par_id + "' class='pb-3 visibility_hide'>-</div>",
         "<div class='mfc mt-4'>",
-            "<div class='mfl'></div>",
+            "<div class='mfl mr-2'></div>",
             "<div class='mfr'>",
-                "<h4  class='px-2'>", dispay_txt, "</h4>",
+                "<h4 class='px-2'>", dispay_txt, "</h4>",
             "</div>",
         "</div>"
         ].join("");
@@ -297,7 +312,7 @@ function write_paragraph_header(par_id, dispay_txt){
 //========= write_paragraph_body  ============= PR2021-11-02
 function write_paragraph_body(icon_class, body_list){
     const icon_class_str = (icon_class) ? " class='" + icon_class + "'" : "";
-    return "<div class='mfc'><div class='mfl mt-2'><div" + icon_class_str +
+    return "<div class='mfc'><div class='mfl mt-2 mr-2'><div" + icon_class_str +
             "></div></div><div class='mfr'>" +
             (body_list).join("") + "</div></div>"
 };
@@ -306,9 +321,9 @@ function write_paragraph_body(icon_class, body_list){
 //========= image_div  ============= PR2021-08-14
 function write_image(img_class){
     return ["<div class='mfc mb-2'>",
-            "<div class='mfl'><p></p></div>",
+            "<div class='mfl mr-2'><p></p></div>",
             "<div class='mfr'>",
-                "<div class='", img_class, "'></div>",
+                "<div class='ml-2 mt-2", img_class, "'></div>",
             "</div>",
         "</div>"
         ].join("");

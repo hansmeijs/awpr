@@ -168,7 +168,7 @@ def validate_unique_examyear(country, examyear_int, request):
             code=examyear_int).exists()
         if examyear_exists:
             caption = _('This exam year')
-            msg_err = _('%(caption)s already exists.') % {'caption': caption}
+            msg_err = _('%(cpt)s already exists.') % {'cpt': caption}
     return msg_err
 
 

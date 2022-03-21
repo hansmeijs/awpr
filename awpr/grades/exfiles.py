@@ -180,7 +180,7 @@ class GetEx3infoView(View):  # PR2021-10-06
 
         logging_on = False  # s.LOGGING_ON
         if logging_on:
-            logger.debug(' ----- create_grade_with_exam_rows -----')
+            logger.debug(' ----- get_subject_rows -----')
 
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
 
@@ -241,7 +241,7 @@ class GetEx3infoView(View):  # PR2021-10-06
 
         logging_on = False  # s.LOGGING_ON
         if logging_on:
-            logger.debug(' ----- create_grade_with_exam_rows -----')
+            logger.debug(' ----- get_grade_rows -----')
 
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'experiod': examperiod}
         sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
@@ -543,7 +543,7 @@ class DownloadEx3View(View):  # PR2021-10-07
 
         logging_on = False  # s.LOGGING_ON
         if logging_on:
-            logger.debug(' ----- create_grade_with_exam_rows -----')
+            logger.debug(' ----- get_ex3_grade_rows -----')
             logger.debug('upload_dict: ' + str(upload_dict))
 
         # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}

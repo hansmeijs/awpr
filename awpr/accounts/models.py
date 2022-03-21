@@ -221,13 +221,12 @@ class User(AbstractUser):
         return _has_permit
 
 
-
     # PR2018-05-30 list of permits that user can be assigned to:
     # - System users can only have permits: 'Admin' and 'Read'
     # - System users can add all roles: 'System', Insp', School', but other roles olny with 'Admin' and 'Read' permit
 
-    # - Inspection and School users can only add their own role
-    # - Inspection and School users can have all permits: 'Admin', 'Auth',  'Write' and 'Read'
+    # - Inspectorate and School users can only add their own role
+    # - Inspectorate and School users can have all permits: 'Admin', 'Auth',  'Write' and 'Read'
 
     # PR2018-07-31 debug. 'def': This is a method, not a @property. Property gave error: 'list' object is not callable
     # see: https://www.b-list.org/weblog/2006/aug/18/django-tips-using-properties-models-and-managers/?utm_medium=twitter&utm_source=twitterfeed

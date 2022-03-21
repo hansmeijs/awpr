@@ -587,7 +587,7 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
     # TODO find a way to include tobedeleted in Ex form
 
     published_pk = published_instance.pk if published_instance else None
-    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'publ_id': published_pk}
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'published_id': published_pk}
 
     sql_studsubj_agg_list = [
         "SELECT studsubj.student_id,",
@@ -604,8 +604,8 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
     if save_to_disk:
         # when submitting an Ex1 form published_instance is already saved, therefore published_instance.pk has a value
         # filter on published_instance.pk, so only subjects of this submit will ne added to Ex1 form
-        # was: sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(publ_id)s::INT")
-        sql_studsubj_agg_list.append("WHERE studsubj.subj_published_id = %(publ_id)s::INT")
+        # was: sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(published_id)s::INT")
+        sql_studsubj_agg_list.append("WHERE studsubj.subj_published_id = %(published_id)s::INT")
 
     sql_studsubj_agg_list.append("GROUP BY studsubj.student_id")
 
@@ -849,10 +849,9 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
         logger.debug('subject_pk_list: ' + str(subject_pk_list))
         logger.debug('subject_code_list: ' + str(subject_code_list))
 
-    # +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
+# +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
     ex2_rows_dict, grades_auth_dict = create_ex2_rows_dict(examyear, school, department, save_to_disk, published_instance)
     if logging_on:
-        logger.debug('ex2_rows_dict: ' + str(ex2_rows_dict))
         logger.debug('grades_auth_dict: ' + str(grades_auth_dict))
     """
     ex2_rows_dict: {
@@ -868,9 +867,7 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
                                              136: {'class': ['4A1', '4V1', '4V2', '4VA2'], 'cluster': []}, 
     file_dir: cur/2022/CUR01/exfiles
     file_name: Ex2 CUR01 Ancilla Domini Vsbo  2022-03-09 15u24.xlsx             
-                    
-                    
-                    
+               
     """
 
     # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
@@ -957,8 +954,8 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
         bold_format = ex2_formats.get('bold_format')
         bold_blue = ex2_formats.get('bold_blue')
         normal_blue = ex2_formats.get('normal_blue')
+        row_align_center_red = ex2_formats.get('row_align_center_red')
         th_merge = ex2_formats.get('th_merge')
-        th_exists = ex2_formats.get('th_exists')
         th_prelim = ex2_formats.get('th_prelim')
         totalrow_merge = ex2_formats.get('totalrow_merge')
         col_count = len(ex2_formats['field_width'])
@@ -1021,10 +1018,10 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
                     sheet.write(row_index, i, field_caption, ex2_formats['header_formats'][i])
 
 # ---  student rows
-                for key, student_dict in students_dict.items():
-                    grades_dict = student_dict.get('grades')
+                for key, stud_dict in students_dict.items():
+                    grades_dict = stud_dict.get('grades')
                     """
-                    student_dict: {
+                    stud_dict: {
                         idnumber': '2002111708', 'examnumber': '2101', 'classname': 'B4A', 'lvl_abbrev': 'PBL', 'sct_abbrev': 'ec', 'fullname': 'Ahoua, Ahoua Bryan Blanchard ', 
                         'grades': {115: '5,5', 133: '4,4', 157: '-', 120: '-', 154: '-', 136: 'v', 114: '5,5', 113: '-', 116: '5,5', 118: '-'}}
                         
@@ -1039,9 +1036,10 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
                         if isinstance(field_name, int):
                             # in subject column 'field_name' is subject_id
                             value = grades_dict.get(field_name)
-
+                            if value == 'x':
+                                exc_format = row_align_center_red
                         else:
-                            value = student_dict.get(field_name, '')
+                            value = stud_dict.get(field_name, '')
                             if logging_on and False:
                                 logger.debug('field_name: ' + str(field_name))
                                 logger.debug('value: ' + str(value))
@@ -1071,8 +1069,6 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
                 if value:
                     sheet.write(row_index + i - 1, 0, value, bold_format)
 
-
-
 # ---  digitally signed by
         auth_row = first_footnote_row
         if save_to_disk:
@@ -1083,12 +1079,13 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
             auth1_list = grades_auth_dict.get('auth1')
             if logging_on:
                 logger.debug('auth1_list: ' + str(auth1_list))
-
+            # auth1_list: ['Monique Beek', 'Hans Meijs']
             if auth1_list:
-                for auth1_pk in auth1_list:
-                    auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
+                for auth1 in auth1_list:
+                    if logging_on:
+                        logger.debug('auth1: ' + str(auth1) + ' ' + str(type(auth1)))
                     if auth1:
-                        sheet.write(auth_row, first_subject_column + 4, auth1.last_name, normal_blue)
+                        sheet.write(auth_row, first_subject_column + 4, auth1, normal_blue)
                         auth_row += 1
             else:
                 auth_row += 1
@@ -1100,10 +1097,11 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
                 logger.debug('auth2_list: ' + str(auth2_list))
 
             if auth2_list:
-                for auth2_pk in auth2_list:
-                    auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
+                for auth2 in auth2_list:
+                    if logging_on:
+                        logger.debug('auth2: ' + str(auth2) + ' ' + str(type(auth2)))
                     if auth2:
-                        sheet.write(auth_row, first_subject_column + 4, auth2.last_name, normal_blue)
+                        sheet.write(auth_row, first_subject_column + 4, auth2, normal_blue)
                         auth_row += 1
             else:
                 auth_row += 1
@@ -1122,7 +1120,7 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
         sheet = book.add_worksheet(str(_('Handtekeningen')))
 
 # --- set column width
-        field_width = (40, 40, 20, 20, 30)
+        field_width = (40, 40, 40, 40)
         for i, width in enumerate(field_width):
             sheet.set_column(i, i, width)
 
@@ -1144,7 +1142,7 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
 
 # ---  auth header row
         row_index = 10
-        field_captions = (library['backheader01'], library['backheader02'], library['backheader03'], library['backheader04'], library['backheader05'])
+        field_captions = (library['backheader01'], library['backheader02'], library['backheader03'], library['backheader04'])  # , library['backheader05'])
 
         if logging_on:
             logger.debug('field_captions: ' + str(field_captions))
@@ -1261,7 +1259,7 @@ def create_ex2_format_dict(book, sheet, school, department, subject_pk_list, sub
         {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
     # for deleted subjects in Ex2
     row_align_center_red = book.add_format(
-        {'font_size': 8, 'font_color': 'red', 'align': 'center', 'valign': 'vcenter', 'border': True})
+        {'font_size': 8, 'font_color': 'red', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True})
 
     totalrow_align_center = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
     totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
@@ -1385,7 +1383,7 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
     # - exclude deleted studsubj
 
     published_pk = published_instance.pk if published_instance else None
-    sql_keys = {'ey_id': examyear.pk, 'ep': c.EXAMPERIOD_FIRST, 'sch_id': school.pk, 'dep_id': department.pk, 'publ_id': published_pk}
+    sql_keys = {'ey_id': examyear.pk, 'ep': c.EXAMPERIOD_FIRST, 'sch_id': school.pk, 'dep_id': department.pk, 'published_id': published_pk}
 
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
@@ -1418,10 +1416,10 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
     if save_to_disk:
         # when submitting an Ex2 form published_instance is already saved, therefore published_instance.pk has a value
         # filter on published_instance.pk, so only subjects of this submit will ne added to Ex2 form
-        # was: sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(publ_id)s::INT")
+        # was: sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(published_id)s::INT")
 
-        sql_keys['publ_id'] = published_pk
-        sql_list.append("AND grd.se_published_id = %(publ_id)s::INT")
+        sql_keys['published_id'] = published_pk
+        sql_list.append("AND grd.se_published_id = %(published_id)s::INT")
 
     if lvlbase_pk:
         sql_keys['lvlbase_id'] = lvlbase_pk
@@ -1492,7 +1490,7 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
 
             if subject_pk not in level_student_grades_dict:
                 se_grade = row.get('segrade')
-                se_grade_comma = se_grade.replace('.', ',') if se_grade else '-'
+                se_grade_comma = se_grade.replace('.', ',') if se_grade else 'x'
                 level_student_grades_dict[subject_pk] = se_grade_comma
 
             auth1_usr = row.get('auth1_usr')

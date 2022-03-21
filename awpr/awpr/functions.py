@@ -205,6 +205,16 @@ def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8
 
 ############################################################
 # also for permits
+
+
+def add_one_to_count_dict(msg_dict, key):  # PR2022-02-27
+    if key in msg_dict:
+        msg_dict[key] += 1
+    else:
+        msg_dict[key] = 1
+# - end of def add_one_to_count_dict(msg_dict, key):
+
+
 def get_status_list_from_status_sum(status_sum):  # PR2021-01-15
     # status_sum:                            117
     # bin:                             0b1110101
@@ -270,6 +280,23 @@ def set_status_sum_by_index(status_sum, index, new_value_bool):  # PR2021-01-15
 # --- end of set_status_sum_by_index
 
 
+def get_status_sum(auth1, auth2, auth3, auth4, publ, blocked):
+    # PR2022-03-20
+    status_sum = 0
+    if auth1:
+        status_sum += c.STATUS_01_AUTH1
+    if auth2:
+        status_sum += c.STATUS_02_AUTH2
+    if auth3:
+        status_sum += c.STATUS_03_AUTH3
+    if auth4:
+        status_sum += c.STATUS_04_AUTH4
+    if publ:
+        status_sum += c.STATUS_05_PUBLISHED
+    if blocked:
+        status_sum += c.STATUS_06_BLOCKED
+    return status_sum
+# - end of get_status_sum
 
 #################################################################
 # ---------- Date functions ---------------
@@ -782,7 +809,11 @@ def get_sel_schoolbase_instance(request, request_item_schoolbase_pk=None):  # PR
 # --- end of get_sel_schoolbase_instance
 
 
-def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):  # PR2020-12-26 PR2021-05-07 PR2021-08-13
+def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):
+    # PR2020-12-26 PR2021-05-07 PR2021-08-13
+    # PR2022-03-12 code works ok: it returns
+    #  - combination of allowed_depbases from user and school and
+    #  - request_item_depbase_pk or saved depbase_pk or first allowed depbase_pk
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
@@ -851,6 +882,7 @@ def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):
                 sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=a_depbase_pk)
                 if sel_depbase_instance is not None:
                     save_sel_depbase = True
+
     if logging_on:
         logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
         logger.debug('save_sel_depbase: ' + str(save_sel_depbase))

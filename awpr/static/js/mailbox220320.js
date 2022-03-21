@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
 
                 if ("messages" in response) {
-                    b_ShowModMessages(response.messages);
+                    b_show_mod_message_dictlist(response.messages);
                 }
 
                 if ("mailmessage_draft_rows" in response) {mailmessage_draft_rows = response.mailmessage_draft_rows};
@@ -783,7 +783,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
                     let refresh_page = false;
                     if("msg_dictlist" in response){
-                        b_ShowModMessages(response.msg_dictlist);
+                        b_show_mod_message_dictlist(response.msg_dictlist);
                     }
 
                     const mode = get_dict_value(response, ["mode"]);
@@ -1065,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if(error_list && error_list.length){
     // - show modal messages
-                b_ShowModMessages(error_list);
+                b_show_mod_message_dictlist(error_list);
 
     // - add fields with error in field_error_list, to put old value back in field
                 //for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
@@ -2251,7 +2251,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(filesize_exceeded){
                  const msg_html = ["<div class='border_bg_invalid'><p>", loc.Attachment_too_large, "<br>",
                                    loc.Maximum_size_is, (max_file_size_Mb), " Mb.", "</p></div>"].join('');
-                b_show_mod_message(msg_html, loc.Upload_attachment)
+                b_show_mod_message_html(msg_html, loc.Upload_attachment)
 
             } else {
                 el_MMM_loader.classList.remove(cls_hide);
@@ -2340,7 +2340,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         el_MMM_loader.classList.add(cls_hide);
         if ("messages" in response) {
-            b_ShowModMessages(response.messages);
+            b_show_mod_message_dictlist(response.messages);
         }
         if (response && "updated_mailattachment_row" in response) {
             const row = response.updated_mailattachment_row;
@@ -2399,7 +2399,7 @@ document.addEventListener('DOMContentLoaded', function() {
                  const msg_html = ["<div class='border_bg_warning'><p>",
                                     loc.There_are_no_, caption_plural_lc, "</p></div>"
                                   ].join('');
-                b_show_mod_message(msg_html, loc.Select + " " + caption_sing_lc)
+                b_show_mod_message_html(msg_html, loc.Select + " " + caption_sing_lc)
 
             } else {
 
