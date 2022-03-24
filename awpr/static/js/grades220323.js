@@ -72,8 +72,8 @@ document.addEventListener("DOMContentLoaded", function() {
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
-    urls.url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
-    urls.url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
+    urls.url_subject_upload = get_attr_from_el(el_data, "data-url_subject_upload");
+    urls.url_grade_upload = get_attr_from_el(el_data, "data-url_grade_upload");
 
     urls.url_grade_approve = get_attr_from_el(el_data, "data-url_grade_approve");
     urls.url_grade_approve_single = get_attr_from_el(el_data, "data-url_grade_approve_single");

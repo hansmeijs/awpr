@@ -357,6 +357,7 @@ def create_cluster_rows(sel_examyear, sel_schoolbase, sel_depbase,
 
             sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
             sql_list = ["SELECT cl.id, cl.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
+                        "dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
                         "subjbase.code AS subj_code, subj.name AS subj_name",
                         add_field_created_str,
                         "FROM subjects_cluster AS cl",
@@ -364,6 +365,7 @@ def create_cluster_rows(sel_examyear, sel_schoolbase, sel_depbase,
                         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
                         "INNER JOIN schools_school AS sch ON (sch.id = cl.school_id)",
                         "INNER JOIN schools_department AS dep ON (dep.id = cl.department_id)",
+                        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
                         "WHERE subj.examyear_id = %(ey_id)s::INT",
                         "AND sch.examyear_id = %(ey_id)s::INT",
@@ -1230,8 +1232,8 @@ class ExamListView(View):  # PR2021-04-04
         return render(request, 'exams.html', params)
 # - end of ExamListView
 
-# ============= ExamUploadView ============= PR2021-04-04
 
+# ============= ExamUploadView ============= PR2021-04-04
 @method_decorator([login_required], name='dispatch')
 class ExamUploadView(View):
 
@@ -1371,6 +1373,141 @@ class ExamUploadView(View):
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamUploadView
+
+
+
+# ============= ExamCopyView ============= PR2022-03-23
+@method_decorator([login_required], name='dispatch')
+class ExamCopyView(View):
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExamCopyView ============= ')
+
+        req_usr = request.user
+        update_wrap = {}
+        err_html = ''
+
+# - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - add edit permit
+        has_permit = False
+        if req_usr and req_usr.country:
+            permit_list = req_usr.permit_list('page_exams')
+            if permit_list:
+                has_permit = 'permit_crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if not has_permit:
+            err_html = str(_("You don't have permission to perform this action."))
+        else:
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                error_list = []
+                append_dict = {}
+
+# - get variables from upload_dict
+                # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
+
+                # don't get it from usersettings, get it from upload_dict instead
+                mode = upload_dict.get('mode')
+                if mode == 'copy':
+                    examyear_pk = upload_dict.get('examyear_pk')
+                    exam_pk = upload_dict.get('exam_pk')
+                    # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
+                    subject_pk = upload_dict.get('subject_pk')
+
+    # - check if examyear exists and equals selected examyear from Usersetting
+                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                    if examyear_pk == selected_examyear_pk:
+                        examyear = sch_mod.Examyear.objects.get_or_none(
+                            id=examyear_pk,
+                            country=req_usr.country
+                        )
+                        # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
+                        if examyear and not examyear.locked:
+        # - get subject
+                            subject = subj_mod.Subject.objects.get_or_none(
+                                id=subject_pk,
+                                examyear=examyear
+                            )
+                            if logging_on:
+                                logger.debug('subject:     ' + str(subject))
+
+                            if subject:
+        # - else: get existing exam instance
+                                exam = subj_mod.Exam.objects.get_or_none(
+                                    id=exam_pk,
+                                    subject=subject
+                                )
+                                if logging_on:
+                                    logger.debug('exam: ' + str(exam))
+                                if exam:
+                                    copy_txt = pgettext_lazy('noun', 'copy')
+                                    new_version = ' - '.join((exam.version, str(copy_txt))) if exam.version else str(copy_txt)
+                                    new_exam = None
+                                    try:
+                                        new_exam = subj_mod.Exam(
+                                            subject=exam.subject,
+                                            department=exam.department,
+                                            level=exam.level,
+                                            ntermentable=exam.ntermentable,
+                                            ete_exam=exam.ete_exam,
+                                            examperiod=exam.examperiod,
+                                            version=new_version,
+                                            has_partex=exam.has_partex,
+                                            partex=exam.partex,
+                                            amount=exam.amount,
+                                            blanks=exam.blanks,
+                                            assignment=exam.assignment,
+                                            keys=exam.keys,
+                                            status=0,
+                                            #auth1by, auth1by, auth1by, published, locked
+                                            nex_id=exam.nex_id,
+                                            scalelength=exam.scalelength,
+                                            cesuur=exam.cesuur,
+                                            nterm=exam.nterm
+                                        )
+                                        new_exam.save(request=request)
+                                        if logging_on:
+                                            logger.debug('new_exam: ' + str(new_exam))
+
+                                    except Exception as e:
+                                        # - create error when exam is  not created
+                                        logger.error(getattr(e, 'message', str(e)))
+                                        err_html = ' '.join((str(_('An error occurred.')), str(_('This exam could not be copied.'))))
+
+                # 6. create list of updated exam
+                                    if new_exam:
+                                        updated_exam_rows = create_exam_rows(
+                                            req_usr=req_usr,
+                                            sel_examyear_pk=new_exam.department.examyear.pk,
+                                            sel_depbase_pk=new_exam.department.base.pk,
+                                            append_dict={'created': True},
+                                            exam_pk_list=[new_exam.pk]
+                                        )
+
+                                        if updated_exam_rows:
+                                            update_wrap['updated_exam_rows'] = updated_exam_rows
+        if err_html:
+            update_wrap['err_html'] = err_html
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of ExamCopyView
+
 
 @method_decorator([login_required], name='dispatch')
 class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
@@ -1557,7 +1694,7 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
                                 update_wrap['approve_count_dict'] = count_dict
 
 # - create msg_html with info of rows
-                        msg_html = create_exam_approve_msg_list(count_dict, requsr_auth, is_approve, is_test)
+                        msg_html = create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
         # get updated_rows
                         if not is_test and updated_exam_pk_list:
                             rows = create_exam_rows(
@@ -1748,7 +1885,7 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11
                                     update_wrap['approve_count_dict'] = count_dict
 
     # - create msg_html with info of rows
-                            msg_html = create_exam_approve_msg_list(count_dict, requsr_auth, is_approve, is_test)
+                            msg_html = create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
             # get updated_rows
                             if not is_test and updated_exam_pk_list:
                                 rows = create_exam_rows(
@@ -1774,7 +1911,7 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11
 # --- end of ExamApproveOrSubmitGradeExamView
 
 
-def create_exam_approve_msg_list(count_dict, requsr_auth, is_approve, is_test, is_grade_exam=False):
+def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test, is_grade_exam=False):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- create_exam_approve_msg_list -----')
@@ -1828,6 +1965,9 @@ def create_exam_approve_msg_list(count_dict, requsr_auth, is_approve, is_test, i
     def get_have_has_been_txt(count):
         return str(pgettext_lazy('singular', 'has been') if count == 1 else pgettext_lazy('plural', 'have been'))
 
+# -  get user_lang
+    user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+    activate(user_lang)
 
     show_warning_msg = False
     show_msg_first_approve_by_pres_secr = False
@@ -2832,7 +2972,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request): 
 
 def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
 

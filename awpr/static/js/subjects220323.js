@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
-    urls.url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
+    urls.url_subject_upload = get_attr_from_el(el_data, "data-url_subject_upload");
     urls.url_subject_import = get_attr_from_el(el_data, "data-subject_import_url");
     urls.url_subjecttype_upload = get_attr_from_el(el_data, "data-subjecttype_upload_url");
     urls.url_subjecttypebase_upload = get_attr_from_el(el_data, "data-subjecttypebase_upload_url");

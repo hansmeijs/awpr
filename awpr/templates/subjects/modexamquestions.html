@@ -72,21 +72,26 @@
                                         </div>
                                     </div>
 
-                                    <div id="id_MEXQ_input_amount_container" class="m-2">
-                                        <label class="mx-2 my-1">{% trans 'Number of questions' %}:</label>
-                                        <input id="id_MEXQ_input_amount" type="text" class="form-control"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                        <div class="mx-2">
-                                            <small id="id_MEXQ_err_amount" class="text-danger"></small>
+                                    <div class="flex_container">
+                                        <div class="flex_1">
+                                            <div class="m-2">
+                                                <label class="mx-2 my-1">{% trans 'Number of questions' %}:</label>
+                                                <input id="id_MEXQ_input_amount" type="text" class="form-control"
+                                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                                <div class="mx-2">
+                                                    <small id="id_MEXQ_err_amount" class="text-danger"></small>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    <div id="id_MEXQ_input_scalelength_container" class="m-2">
-                                        <label class="mx-2 my-1">{% trans 'Maximum score' %}:</label>
-                                        <input id="id_MEXQ_input_scalelength" type="text" class="form-control"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                        <div class="mx-2">
-                                            <small id="id_MEXQ_err_scalelength" class="text-danger"></small>
+                                        <div class="flex_1">
+                                            <div class="m-2">
+                                                <label class="mx-2 my-1">{% trans 'Maximum score' %}:</label>
+                                                <input id="id_MEXQ_input_scalelength" type="text" class="form-control" readOnly
+                                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                                <div class="mx-2">
+                                                    <small class="text-muted">{% trans 'AWP calculates the maximum score.' %}</small>
+                                                </div>
+                                           </div>
                                         </div>
                                     </div>
 
@@ -134,7 +139,8 @@
                                                 </div>
                                             </div>
 
-                                            <div id="id_MEXQ_partex_period_container">
+ <!--
+                                            <div id="id_MEXQ_partex_period_container display_hide">
                                                 <div class="flex_container pt-2">
                                                     <div class="flex_1">
                                                         <span>
@@ -150,7 +156,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-
+-->
                                             <div class="flex_container pt-2">
                                                 <div class="flex_1 pr-1">
                                                     <button id="id_MEXQ_btn_partex_save" class="btn btn-block btn-outline-secondary">{% trans 'OK' %}</button>
@@ -172,31 +178,13 @@
 
                             <div class="flex_3 flex_container">
 
-                                <div id="id_MEXQ_partex2_container" class="flex_2 p-2 tab_show tab_assign tab_keys display_hide">
+                                <div id="id_MEXQ_partex2_container" class="flex_2 p-2 tab_show tab_assign tab_keys tab_answers display_hide">
                                     <label class="mx-2 my-1">{% trans 'Partial exams' %}:</label>
-                                    <table class="tsa_tbl border_bg_transparent tbl_partex_h220_w_auto">
+                                    <table class="tsa_tbl border_bg_transparent tbl_partex_h280_w_auto">
                                         <tbody id="id_MEXQ_tblBody_partex2"></tbody>
                                     </table>
                                 </div>
-                                <div id="id_MEXQ_tblBody_partex_available_container" >
-                                    <div class="flex_2 p-2 tab_show tab_answers">
-                                        <label class="mx-2 my-1">{% trans 'Avaliable partial exams' %}:</label>
-                                        <table class="tsa_tbl border_bg_message tbl_partex_h220_w_auto">
-                                            <tbody id="id_MEXQ_tblBody_partex_available"></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div id="id_MEXQ_tblBody_partex_taken_container" >
-                                    <div class="flex_2 p-2 tab_show tab_answers display_hidexx">
-                                        <label class="mx-2 my-1">{% trans 'Partial exams taken' %}:</label>
-                                        <table class="tsa_tbl border_bg_lightblue tbl_partex_h220_w_auto">
-                                            <tbody id="id_MEXQ_tblBody_partex_taken"></tbody>
-                                        </table>
-                                        <div class="flex_1">
-                                            <button id="id_MEXQ_btn_remove_taken" class="btn btn-block btn-outline-secondary ">{% trans 'Remove partial exam' %}</button>
-                                        </div>
-                                    </div>
-                                </div>
+
                                 <div id="id_MEXQ_col_0" class="flex_1 p-2"></div>
                                 <div id="id_MEXQ_col_1" class="flex_1 p-2"></div>
                                 <div id="id_MEXQ_col_2" class="flex_1 p-2"></div>

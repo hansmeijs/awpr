@@ -69,13 +69,14 @@ document.addEventListener("DOMContentLoaded", function() {
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
-    urls.url_subject_upload = get_attr_from_el(el_data, "data-subject_upload_url");
-    urls.url_exam_upload = get_attr_from_el(el_data, "data-exam_upload_url");
+    urls.url_subject_upload = get_attr_from_el(el_data, "data-url_subject_upload");
+    urls.url_exam_upload = get_attr_from_el(el_data, "data-url_exam_upload");
+    urls.url_exam_copy = get_attr_from_el(el_data, "data-url_exam_copy");
     urls.url_approve_publish_exam = get_attr_from_el(el_data, "data-url_approve_publish_exam");
     urls.url_approve_submit_grade_exam = get_attr_from_el(el_data, "data-url_approve_submit_grade_exam");
     urls.url_send_email_submit_exam = get_attr_from_el(el_data, "data-url_send_email_submit_exam");
 
-    urls.url_grade_upload = get_attr_from_el(el_data, "data-grade_upload_url");
+    urls.url_grade_upload = get_attr_from_el(el_data, "data-url_grade_upload");
 
     urls.url_exam_download_exam_pdf = get_attr_from_el(el_data, "data-url_exam_download_exam_pdf");
     urls.url_exam_download_grade_exam_pdf = get_attr_from_el(el_data, "data-url_exam_download_grade_exam_pdf");
@@ -88,13 +89,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
     columns_tobe_hidden.btn_ete_exams = {
         fields: ["subj_base_code", "subj_name", "lvl_abbrev", "version",
-                            "examperiod", "blanks", "status", "printpdf", "printjson"],
+                            "examperiod", "blanks", "status", "printpdf"],
         captions: ["Abbreviation", "Subject", "Leerweg", "Version",
                                 "Exam_type", "Blanks", "", "Download_PDF", "Download_JSON"]}
 
     columns_tobe_hidden.btn_duo_exams = {
         fields: ["subj_base_code", "subj_name", "lvl_abbrev", "version",
-                            "examperiod", "blanks", "status", "printpdf", "printjson"],
+                            "examperiod", "blanks", "status", "printpdf"],
         captions: ["Abbreviation", "Subject", "Leerweg", "Version",
                                 "Exam_type", "Blanks", "", "Download_PDF", "Download_JSON"]}
 
@@ -116,15 +117,13 @@ document.addEventListener("DOMContentLoaded", function() {
         exam: { field_caption: ["", "Abbreviation", "Subject", "Leerweg", "Version",
                                 "Exam_type", "Blanks", "", "Download_PDF", "Download_JSON"],
                 field_names: ["select", "subj_base_code", "subj_name", "lvl_abbrev", "version",
-                            "examperiod", "blanks", "status", "printpdf", "printjson"],
+                            "examperiod", "blanks", "status", "printpdf"],
                 field_tags: ["div", "div", "div", "div", "div",
-                            "div","div", "div", "a", "a"],
+                            "div","div", "div", "a"],
                 filter_tags: ["text",  "text", "text", "text", "text",
-                              "text", "text", "multitoggle", "text", "text"],
-                field_width: ["020", "100", "240", "120", "120",
-                             "120", "075", "032", "090", "090"],
-                field_align: ["c",  "l", "l", "l", "l",
-                             "l", "c", "c", "c", "c"]},
+                              "text", "text", "multitoggle", "text"],
+                field_width: ["020", "100", "240", "120", "120", "120", "075", "032", "090"],
+                field_align: ["c",  "l", "l", "l", "l","l", "c", "c", "c"]},
         grades: {  field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "Cluster", "Abbreviation",
                                 "Subject", "Exam", "Blanks", "", "Download_PDF"],
             field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "cluster_name", "subj_code",
@@ -300,7 +299,6 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MEXQ_has_partex_checkbox.addEventListener("change", function() {MEXQ_HasPartexCheckboxChange(el_MEXQ_has_partex_checkbox)}, false );
         };
 
-        const el_MEXQ_input_amount_container = document.getElementById("id_MEXQ_input_amount_container");
         const el_MEXQ_input_amount = document.getElementById("id_MEXQ_input_amount");
         if (el_MEXQ_input_amount){
             el_MEXQ_input_amount.addEventListener("keyup", function(){
@@ -308,12 +306,7 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         const el_MEX_err_amount = document.getElementById("id_MEXQ_err_amount");
 
-        const el_MEXQ_input_scalelength_container = document.getElementById("id_MEXQ_input_scalelength_container");
         const el_MEXQ_input_scalelength = document.getElementById("id_MEXQ_input_scalelength");
-        if (el_MEXQ_input_scalelength){
-            el_MEXQ_input_scalelength.addEventListener("change", function() {MEXQ_InputScalelength(el_MEXQ_input_scalelength)}, false );
-        };
-        const el_MEXQ_err_scalelength = document.getElementById("id_MEXQ_err_scalelength");
 
         const el_MEX_btn_tab_container = document.getElementById("id_MEXQ_btn_tab_container");
         if (el_MEX_btn_tab_container){
@@ -341,10 +334,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // id_MEXQ_tblBody_partex2 is list of partex in tab questions, keys, minscore
         const el_MEXQ_tblBody_partex2 = document.getElementById("id_MEXQ_tblBody_partex2");
-        const el_MEXQ_tblBody_partex_available = document.getElementById("id_MEXQ_tblBody_partex_available");
-        const el_MEXQ_tblBody_partex_taken = document.getElementById("id_MEXQ_tblBody_partex_taken");
-        const el_MEXQ_btn_remove_taken = document.getElementById("id_MEXQ_btn_remove_taken");
-        if(el_MEXQ_btn_remove_taken){el_MEXQ_btn_remove_taken.addEventListener("click", function() {MEXA_BtnRemoveTakenClick()}, false)};
 
         const el_MEXQ_btngroup_add_partex = document.getElementById("id_MEXQ_btngroup_add_partex");
 
@@ -361,18 +350,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MEXQ_err_partex_name = document.getElementById("id_MEXQ_err_partex_name");
         const el_MEXQ_input_partex_amount = document.getElementById("id_MEXQ_partex_amount");
         const el_MEXQ_err_partex_amount = document.getElementById("id_MEXQ_err_partex_amount");
-
-        const el_MEXQ_partex_period_container = document.getElementById("id_MEXQ_partex_period_container");
-
-        const el_MEXQ_partex_period1_checkbox = document.getElementById("id_MEXQ_partex_period1_checkbox");
-        if (el_MEXQ_partex_period1_checkbox){
-            el_MEXQ_partex_period1_checkbox.addEventListener("change", function() {MEXQ_PartexExamperiodCheckboxChange("ce", el_MEXQ_partex_period1_checkbox)}, false );
-        };
-
-        const el_MEXQ_partex_period2_checkbox = document.getElementById("id_MEXQ_partex_period2_checkbox");
-        if (el_MEXQ_partex_period2_checkbox){
-            el_MEXQ_partex_period2_checkbox.addEventListener("change", function() {MEXQ_PartexExamperiodCheckboxChange("reex", el_MEXQ_partex_period2_checkbox)}, false );
-        };
 
         const el_MEXQ_btn_partex_cancel = document.getElementById("id_MEXQ_btn_partex_cancel");
         if(el_MEXQ_btn_partex_cancel){el_MEXQ_btn_partex_cancel.addEventListener("click", function() {MEXQ_BtnPartexClick("cancel")}, false)};
@@ -638,6 +615,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
             AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEXQ_Open()}, ["tab_show", "tab_btn_ete_exams"]);
             AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("exam", "delete")}, ["tab_show", "tab_btn_ete_exams"]);
+            AddSubmenuButton(el_submenu, loc.Copy_exam, function() {ModConfirmOpen("exam", "copy")}, ["tab_show", "tab_btn_ete_exams"]);
             AddSubmenuButton(el_submenu, loc.Link_DUO_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
         }
         if((permit_dict.permit_approve_exam) && (permit_dict.requsr_role_admin) ){
@@ -1754,13 +1732,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
                 RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
-            }
+            };
         } else if (!is_update) {
             // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
             // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
            data_rows = [];
-        }
-    }  //  RefreshDataRows
+        };
+    };  //  RefreshDataRows
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2022-01-23
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
@@ -1814,14 +1792,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 if(new_tblRow){
     // --- add1 to item_count and show total in sidebar
                     selected.item_count += 1;
-                    set_sbr_itemcount_txt();
+
+    // ---  show total in sidebar
+                    t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Exam, loc.Exams, setting_dict.user_lang);
 
     // ---  scrollIntoView,
-                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
+                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
 
     // ---  make new row green for 2 seconds,
                     ShowOkElement(new_tblRow);
-                }
+                };
             } else {
 
 // +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
@@ -1845,7 +1825,8 @@ document.addEventListener("DOMContentLoaded", function() {
                             tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
         // --- subtract 1 from item_count and show total in sidebar
                             selected.item_count -= 1;
-                            set_sbr_itemcount_txt();
+    // ---  show total in sidebar
+                            t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Exam, loc.Exams, setting_dict.user_lang);
                         };
                     }
                 } else {
@@ -1886,10 +1867,15 @@ document.addEventListener("DOMContentLoaded", function() {
                             };
                         };
 
-        // fields 'assignment', 'partex' and 'ce_exam_result' are not in fieldlist. Check for changes and make whole row green when changed
-                        const other_fieldnames = ["assignment", "partex", "ce_exam_result"]
-                        for (let i = 1, col_field, old_value, new_value; col_field = other_fieldnames[i]; i++) {
+        // fields 'amount', 'assignment', 'partex' and 'ce_exam_result' are not in fieldlist. Check for changes and make whole row green when changed
+                        const other_fieldnames = ["amount", "scalelength", "assignment", "partex", "ce_exam_result"]
+        console.log("other_fieldnames", other_fieldnames);
+                        for (let i = 0, col_field, old_value, new_value; col_field = other_fieldnames[i]; i++) {
+
+        console.log("col_field", col_field);
                             if (col_field in data_dict && col_field in update_dict){
+        console.log("data_dict[col_field]", data_dict[col_field])
+        console.log("update_dict[col_field]", update_dict[col_field])
                                 if (data_dict[col_field] !== update_dict[col_field] ) {
         // ---  update field in data_row
                                     data_dict[col_field] = update_dict[col_field];
@@ -2410,10 +2396,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // ---  set focus to input element
             const el_focus = (is_addnew && el_MEXQ_select_subject) ? el_MEXQ_select_subject : el_MEXQ_input_amount;
             set_focus_on_el_with_timeout(el_focus, 50);
-            if (el_MEX_err_amount){
-                add_or_remove_class(el_MEX_err_amount, "text-danger", false, "text-muted" )
-                el_MEX_err_amount.innerHTML = loc.err_list.amount_mustbe_between_1_and_100;
-            };
+
     // ---  set buttons
             add_or_remove_class(el_MEX_btn_tab_container, cls_hide, mod_MEX_dict.is_permit_same_school);
             MEX_BtnTabClicked();
@@ -2435,15 +2418,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     };  // MEXQ_Open
 
-//========= MEX_set_examperiod_checkboxes  ============= PR2022-01-23
+//========= MEX_set_examperiod_checkboxes  ============= PR2022-01-23 PR22-03-23
     function MEX_set_examperiod_checkboxes() {
-    // ---  set el_MEXQ_input_examperiod, default = 1, values can be 1 (1st period) , 2 (2nd period) or 12 (1st + 2nd period)
-        if (el_MEXQ_examperiod1_checkbox) {
-            el_MEXQ_examperiod1_checkbox.checked = ([1, 12].includes(mod_MEX_dict.examperiod));
-        };
-        if (el_MEXQ_examperiod2_checkbox) {
-            el_MEXQ_examperiod2_checkbox.checked = ([2, 12].includes(mod_MEX_dict.examperiod));
-        };
+    // ---  set el_MEXQ_input_examperiod, default = 1, values can be 1 (1st period) , 2 (2nd period)
+        el_MEXQ_examperiod1_checkbox.checked = (mod_MEX_dict.examperiod === 1);
+        el_MEXQ_examperiod2_checkbox.checked = (mod_MEX_dict.examperiod === 2);
     }  // MEX_set_examperiod_checkboxes
 
 //========= MEX_Save  ============= PR2021-05-24
@@ -2619,8 +2598,6 @@ document.addEventListener("DOMContentLoaded", function() {
             MEXQ_ShowPartexInputEls(true);
             el_MEXQ_input_partex_name.value = new_partex_name;
 
-            MEXQ_show_partex_examperiod_checkboxes();
-
     // ---  set focus to input element
             set_focus_on_el_with_timeout(el_MEXQ_input_partex_name, 50);
 
@@ -2641,14 +2618,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 if(sel_partex_dict){
                     el_MEXQ_input_partex_name.value = sel_partex_dict.name;
                     el_MEXQ_input_partex_amount.value = sel_partex_dict.amount;
-
-        console.log(",,,,,,,,,,,,,,,,, sel_partex_dict.examperiod", sel_partex_dict.examperiod, typeof sel_partex_dict.examperiod);
-                    el_MEXQ_partex_period1_checkbox.checked = (sel_partex_dict.examperiod === 1)
-                    el_MEXQ_partex_period2_checkbox.checked = (sel_partex_dict.examperiod === 2)
-        console.log(",,,,,,,,,,,,,,,,, el_MEXQ_partex_period1_checkbox", el_MEXQ_partex_period1_checkbox);
-        console.log(",,,,,,,,,,,,,,,,, el_MEXQ_partex_period2_checkbox", el_MEXQ_partex_period2_checkbox);
                 };
-                MEXQ_show_partex_examperiod_checkboxes(sel_partex_dict.examperiod);
 
         // - show partex_input_elements
                 MEXQ_ShowPartexInputEls(true);
@@ -2661,6 +2631,9 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("delete", mode);
                 delete mod_MEX_dict.partex_dict[sel_partex_pk];
                 mod_MEX_dict.sel_partex_pk = null;
+
+ // recalc amount and max score
+                MEXQ_calc_amount_maxscore();
 
         console.log("mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict);
         // - hide partex_input_elements
@@ -2676,8 +2649,7 @@ document.addEventListener("DOMContentLoaded", function() {
             } else if (mode === "save"){
                 const new_partex_name = el_MEXQ_input_partex_name.value
                 const new_partex_amount = (Number(el_MEXQ_input_partex_amount.value)) ? Number(el_MEXQ_input_partex_amount.value) : null;
-                const new_examperiod = (el_MEXQ_partex_period1_checkbox.checked) ? 1 :
-                                      (el_MEXQ_partex_period2_checkbox.checked) ? 2 : null
+                const new_examperiod = (el_MEXQ_examperiod2_checkbox.checked) ? 2 : 1;
 
         console.log("new_examperiod", new_examperiod);
                 if (!new_partex_name){
@@ -2729,13 +2701,12 @@ document.addEventListener("DOMContentLoaded", function() {
                         sel_partex_dict.mode = "update";
                     };
 
-        console.log("mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict);
+ // recalc amount and max score
+                    MEXQ_calc_amount_maxscore();
 
  // reset input elements
                     el_MEXQ_input_partex_name.value = null
                     el_MEXQ_input_partex_amount.value = null;
-                    el_MEXQ_partex_period1_checkbox.checked = false;
-                    el_MEXQ_partex_period2_checkbox.checked = false;
 
     // - hide partex_input_elements
                     MEXQ_ShowPartexInputEls(false);
@@ -2750,25 +2721,7 @@ document.addEventListener("DOMContentLoaded", function() {
         };
     };  // MEXQ_BtnPartexClick
 
-//=========  MEXQ_show_partex_examperiod_checkboxes  ================ PR2022-01-22
-    function MEXQ_show_partex_examperiod_checkboxes(partex_examperiod_value) {
-        console.log("===== MEXQ_show_partex_examperiod_checkboxes =====");
-        console.log("partex_examperiod_value", partex_examperiod_value);
 
-        // hide partex checkboxes when exam.examperiod = 1 or 2
-
-        // when examperiod = 12: get checked from partex_examperiod_value, set period2_checkbox false when null
-        // when examperiod = 1, partex_period is always 1, when examperiod = 2, partex_period is always 2
-
-        const is_examperiod_reex = (mod_MEX_dict.examperiod === 12)
-                                        ? (partex_examperiod_value) ? (partex_examperiod_value === 2) : false
-                                        : (mod_MEX_dict.examperiod === 2);
-
-        el_MEXQ_partex_period1_checkbox.checked = !is_examperiod_reex;
-        el_MEXQ_partex_period2_checkbox.checked = is_examperiod_reex;
-
-        //add_or_remove_class(el_MEXQ_partex_period_container, cls_hide, mod_MEX_dict.examperiod !== 12);
-    };
 
 //=========  MEXQ_remove_excessive_items_from_assignment_dict  ================ PR2022-01-16
     function MEXQ_remove_excessive_items_from_assignment_dict(partex_pk, partex_amount) {
@@ -2848,64 +2801,29 @@ document.addEventListener("DOMContentLoaded", function() {
         const partex_pk = get_attr_from_el_int(tblRow, "data-pk");
         const partex_dict = mod_MEX_dict.partex_dict[partex_pk];
 
-        let partex_taken = get_attr_from_el_int(tblRow, "data-partex_taken")
-
-// +++ only toggle partex_taken when clicked om table partex_available, use btn remove to remove
-        if (!partex_taken){
-    // toggle partex_taken (values are 1 or 0)
-            partex_taken = 1;
-    // put partex_taken back in tblRow
-            tblRow.setAttribute("data-partex_taken", partex_taken)
-    // put partex_taken in partex_dict
-            partex_dict.partex_taken = partex_taken
-    // refresh tables
-            MEXA_FillTablePartex();
-
-        } else {
-
-// +++ make tblRow selected  when clicked on table partex_taken
-            mod_MEX_dict.sel_partex_pk = (partex_pk) ? partex_pk : null;
+// +++ make tblRow selected
+        mod_MEX_dict.sel_partex_pk = (partex_pk) ? partex_pk : null;
 
 // ---  highlight selected partex, deselect others
-            const tblBody = el_MEXQ_tblBody_partex_taken;
-            for (let i = 0, tblRow; tblRow = tblBody.rows[i]; i++) {
-                const data_pk = get_attr_from_el_int(tblRow,"data-pk")
-                const is_selected = (mod_MEX_dict.sel_partex_pk && data_pk === mod_MEX_dict.sel_partex_pk)
-                add_or_remove_class(tblRow, "bg_selected_blue",is_selected )
-            };
+        const tblBody = el_MEXQ_tblBody_partex2;
+        for (let i = 0, tblRow; tblRow = tblBody.rows[i]; i++) {
+            const data_pk = get_attr_from_el_int(tblRow,"data-pk")
+            const is_selected = (mod_MEX_dict.sel_partex_pk && data_pk === mod_MEX_dict.sel_partex_pk)
+            add_or_remove_class(tblRow, "bg_selected_blue",is_selected )
+        };
 
 // - hide partex_input_elements
-            MEX_SetPages();
-            // only show btn_pge when there are multiple pages
-            MEXQ_show_btnpage();
-            MEX_BtnPageClicked();
-            MEXQ_FillPage();
+        MEX_SetPages();
+        // only show btn_pge when there are multiple pages
+        MEXQ_show_btnpage();
+        MEX_BtnPageClicked();
+        MEXQ_FillPage();
 
-            console.log("mod_MEX_dict", mod_MEX_dict);
-        }
+        console.log("mod_MEX_dict", mod_MEX_dict);
+
 // - hide partex_input_elements
 
     };  // MEXA_PartexSelect
-
-//=========  MEXA_BtnRemoveTakenClick  ================ PR2022-01-20
-    function MEXA_BtnRemoveTakenClick() {
-        console.log("===== MEXA_BtnRemoveTakenClick =====");
-
-        const partex_pk = mod_MEX_dict.sel_partex_pk;
-        if (!partex_pk){
-            b_show_mod_message_html("<div class='p-2'>" + loc.No_partex_selected + "</div>");
-        } else {
-            const partex_dict = mod_MEX_dict.partex_dict[partex_pk];
-            console.log("partex_pk", partex_pk);
-            partex_dict.partex_taken = 0;
-
-            console.log("partex_dict", partex_dict);
-            mod_MEX_dict.sel_partex_pk = null;
-
-            MEXA_FillTablePartex();
-            MEXQ_FillPage()
-        };
-    };  // MEXA_BtnRemoveTakenClick
 
 //=========  MEX_BtnTabClicked  ================ PR2021-05-25 PR2022-01-13
     function MEX_BtnTabClicked(btn) {
@@ -3349,46 +3267,24 @@ document.addEventListener("DOMContentLoaded", function() {
         };
     };  // MEXQ_FillTablePartex
 
-//=========  MEXA_FillTablePartex  ================ PR2022-01-07
+//=========  MEXA_FillTablePartex  ================ PR2022-01-07 PR2022-03-23
     function MEXA_FillTablePartex() {
-        //console.log("===== MEXA_FillTablePartex =====");
-        //console.log("mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict);
+        console.log("===== MEXA_FillTablePartex =====");
+        console.log("mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict);
 
-        el_MEXQ_tblBody_partex_available.innerHTML = null;
-        el_MEXQ_tblBody_partex_taken.innerHTML = null;
+        const tblBody = el_MEXQ_tblBody_partex2;
+        tblBody.innerHTML = null;
 
-/*
-                // ---  reset highlighted partex
-                        // el_MEXQ_tblBody_partex1 does not exist in MEXA, put that one last in list
-                        const tblBody = el_MEXQ_tblBody_partex_taken;
-                        for (let i = 0, tblRow; tblRow = tblBody.rows[i]; i++) {
-                            const data_pk = get_attr_from_el_int(tblRow,"data-pk")
-                    console.log("data_pk", data_pk);
-                            const is_selected = (partex_dict.sel_partex_pk && data_pk === partex_dict.sel_partex_pk)
-                    console.log("is_selected", is_selected);
-                            add_or_remove_class(tblRow, "bg_selected_blue",is_selected )
-                        };
-*/
-
-
-        //let has_selected_pk = false;
-
+        let has_selected_pk = false;
+        let selected_tblRow = null;
 // ---  loop through mod_MEX_dict.partex_dict
         for (const p_dict of Object.values(mod_MEX_dict.partex_dict)) {
-            const partex_pk = p_dict.pk;
             const partex_name = p_dict.name;
-            const partex_taken = (p_dict.partex_taken) ? p_dict.partex_taken : 0;
-
-            const is_selected = (mod_MEX_dict.sel_partex_pk && mod_MEX_dict.sel_partex_pk === partex_pk);
-
-            const tblBody = (p_dict.partex_taken) ? el_MEXQ_tblBody_partex_taken : el_MEXQ_tblBody_partex_available;
-
             const row_index = b_recursive_tblRow_lookup(tblBody, p_dict.name, "", "", false, setting_dict.user_lang);
 
 // +++ insert tblRow into tblBody1
             const tblRow = tblBody.insertRow(row_index);
-            tblRow.setAttribute("data-pk", partex_pk);
-            tblRow.setAttribute("data-partex_taken", partex_taken);
+            tblRow.setAttribute("data-pk", p_dict.pk);
 
 // - add data-sortby attribute to tblRow, for ordering new rows
             tblRow.setAttribute("data-ob1", p_dict.name);
@@ -3402,13 +3298,31 @@ document.addEventListener("DOMContentLoaded", function() {
             td.innerText = p_dict.name;
             td.classList.add("tw_280")
 
+        console.log("mod_MEX_dict.sel_partex_pk", mod_MEX_dict.sel_partex_pk);
+        console.log("p_dict.pk", p_dict.pk);
 // ---  highlight selected partex
-            if (is_selected){
-                //has_selected_pk = true;
+            if (mod_MEX_dict.sel_partex_pk && mod_MEX_dict.sel_partex_pk === p_dict.pk){
+                has_selected_pk = true;
                 tblRow.classList.add("bg_selected_blue");
+                selected_tblRow = tblRow
             };
         };
-        //console.log(",,,,,,,, mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict);
+
+        if(!has_selected_pk && tblBody){
+            const firstRow = tblBody.rows[0];
+    console.log("firstRow", firstRow);
+            if (firstRow){
+                has_selected_pk = true;
+                mod_MEX_dict.sel_partex_pk = get_attr_from_el_int(firstRow, "data-pk");
+                firstRow.classList.add("bg_selected_blue")
+                selected_tblRow = firstRow
+            };
+        };
+        console.log("has_selected_pk", has_selected_pk);
+        if (selected_tblRow){
+            MEXA_PartexSelect(selected_tblRow, true)
+        };
+
     };  // MEXA_FillTablePartex
 
 //========= MEXQ_FillSelectTableLevel  ============= PR2021-05-07 PR202-01-15
@@ -3610,17 +3524,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }; // MEXQ_FillPage
 
 // ------- show hide validate functions
-//=========  MEXQ_ShowPartexInputEls  ================ PR2022-01-12
+//=========  MEXQ_ShowPartexInputEls  ================ PR2022-01-12 PR2022-03-23
     function MEXQ_ShowPartexInputEls(show_input_els) {
         console.log("===== MEXQ_ShowPartexInputEls =====");
-
-
 // ---  reset and hide input_partex_name and partex_amount
         if (!show_input_els){
             el_MEXQ_input_partex_name.value = null;
             el_MEXQ_input_partex_amount.value = null;
-            el_MEXQ_partex_period1_checkbox.checked = false;
-            el_MEXQ_partex_period2_checkbox.checked = false;
         }
         add_or_remove_class(el_MEXQ_btngroup_add_partex, cls_hide, show_input_els)
         add_or_remove_class(el_MEXQ_group_partex_name, cls_hide, !show_input_els)
@@ -3689,16 +3599,13 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  disable partex checkbox when no subject or no level
         el_MEXQ_has_partex_checkbox.disabled = (is_locked || no_subject || no_level);
 
-// --- set message scalelength when has_partex
-        el_MEXQ_err_scalelength.innerText = (show_input_scalelength) ? loc.Enter_total_of_maximum_scores : null;
-        add_or_remove_class(el_MEXQ_err_scalelength, "text-danger", false, "text-muted");
-
-        // when has_partex: show el_MEXQ_input_scalelength, otherwise: show amount
-        add_or_remove_class(el_MEXQ_input_amount_container, cls_hide, show_input_scalelength);
-        add_or_remove_class(el_MEXQ_input_scalelength_container, cls_hide, !show_input_scalelength);
-
         el_MEXQ_input_amount.disabled = (is_locked || no_subject || no_level);
         el_MEXQ_input_scalelength.disabled = (is_locked || no_subject || no_level);
+
+        const msg_txt = (mod_MEX_dict.has_partex) ? loc.Awp_calculates_amount : loc.err_list.amount_mustbe_between_1_and_100;
+        add_or_remove_class(el_MEX_err_amount, "text-danger", false, "text-muted" )
+        el_MEX_err_amount.innerHTML = msg_txt;
+        add_or_remove_attr(el_MEXQ_input_amount, "readOnly", mod_MEX_dict.has_partex, true);
 
 // ---  disable save button on error
         el_MEXQ_btn_save.disabled = disable_save_btn;
@@ -3832,55 +3739,13 @@ document.addEventListener("DOMContentLoaded", function() {
                             MEX_BtnPageClicked();
                         };
                     };
-
-                }
+                };
             };
-        }
+        };
 
 // ---  disable save button when not all required fields have value
         MEXQ_validate_and_disable();
     }; // MEXQ_InputAmount
-
-//=========  MEXQ_InputScalelength  ================ PR2022-01-18
-    function MEXQ_InputScalelength(el_input) {
-        console.log( "===== MEXQ_InputScalelength  ========= ");
-        const new_value = el_input.value;
-        console.log( "new_value", new_value, typeof new_value);
-        // InputScalelength is only used when has_partex
-        let new_number = null, msg_err = "", has_error = false;
-        if (!new_value){
-            has_error = true;
-            msg_err = loc.err_list.Max_score_cannot_be_blank + "<br>";
-        } else {
-            new_number = Number(new_value);
-            // the remainder / modulus operator (%) returns the remainder after (integer) division.
-            if(!new_number || (new_number % 1) || (new_number < 1) || (new_number > 250) ) {
-                has_error = true;
-                msg_err = loc.Maximum_score + " '" + new_value + "' " + loc.err_list.not_allowed + "<br>";
-            };
-        };
-
-        console.log( "msg_err", msg_err, typeof msg_err);
-        add_or_remove_class(el_MEXQ_err_scalelength, "text-danger", has_error, "text-muted" )
-        //if (has_error && !mod_MEX_dict.has_partex) { msg_err += loc.err_list.amount_mustbe_between_1_and_250};
-        el_MEXQ_err_scalelength.innerHTML = msg_err;
-        console.log( "el_MEXQ_err_scalelength", el_MEXQ_err_scalelength);
-
-        if (has_error) {
-            el_input.value = (mod_MEX_dict.scalelength) ? mod_MEX_dict.scalelength : null;
-            set_focus_on_el_with_timeout(el_input, 50)
-        } else if (new_number) {
-            mod_MEX_dict.scalelength = new_number;
-            //MEX_SetPages();
-            // only show btn_pge when there are multiple pages
-            //MEXQ_show_btnpage();
-            //MEX_BtnPageClicked();
-        }
-
-// ---  disable save button when not all required fields have value
-        //MEXQ_validate_and_disable();
-
-    }; // MEXQ_InputScalelength
 
 //=========  MEXQ_HasPartexCheckboxChange  ================ PR2022-01-22
     function MEXQ_HasPartexCheckboxChange(el_input) {
@@ -3909,6 +3774,12 @@ document.addEventListener("DOMContentLoaded", function() {
         MEXQ_ShowPartexInputEls(false);
 // ---  disable buttons and input elements when not all required fields have value
         MEXQ_validate_and_disable();
+
+            const msg_txt = (mod_MEX_dict.has_partex) ? loc.Awp_calculates_amount : loc.err_list.amount_mustbe_between_1_and_100;
+            add_or_remove_class(el_MEX_err_amount, "text-danger", false, "text-muted" )
+            el_MEX_err_amount.innerHTML = msg_txt;
+            add_or_remove_attr(el_MEXQ_input_amount, "readOnly", mod_MEX_dict.has_partex, true);
+
     }; // MEXQ_HasPartexCheckboxChange
 
 //=========  MEXQ_ExamperiodCheckboxChange  ================ PR2022-01-14
@@ -3920,70 +3791,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const other_checkbox = (is_reex) ? el_MEXQ_examperiod1_checkbox : el_MEXQ_examperiod2_checkbox;
 
-        if (mod_MEX_dict.has_partex){
-            if (!el_input.checked){
+        // only ce or reex are allowed, not both
+        other_checkbox.checked = (!el_input.checked);
+        mod_MEX_dict.examperiod = (is_reex) ? (el_input.checked) ? 2 : 1
+                                            : (el_input.checked) ? 1 : 2;
 
-// check if there are partex of other examperiod when removing examperiod - confirm, delete partex with other examperiod
-                if (is_reex) {
-                    if (!other_checkbox.checked){
-                        // period 1 or period 2 must be checked > set period 1 checked true
-                        other_checkbox.checked = true;
-                    };
-                    mod_MEX_dict.examperiod = 1;
-                } else {
-                    if (!other_checkbox.checked){
-                        // period 1 or period 2 must be checked > set period 1 checkd again
-                        el_input.checked = true;
-                    } else {
-                        mod_MEX_dict.examperiod = 2;
-                    };
-                 };
-            } else {
-                if (is_reex) {
-                    mod_MEX_dict.examperiod = (other_checkbox.checked) ? 12 : 2;
-                } else {
-                    mod_MEX_dict.examperiod = (other_checkbox.checked) ? 12 : 1;
-                };
-            };
-
-
-        } else {
-            // when not has_partex: only ce or reex are allowed, not both
-            other_checkbox.checked = (!el_input.checked);
-            mod_MEX_dict.examperiod = (is_reex) ? (el_input.checked) ? 2 : 1
-                                                : (el_input.checked) ? 1 : 2;
-
-        };
-        MEXQ_show_partex_examperiod_checkboxes();
     };  // MEXQ_ExamperiodCheckboxChange
-
-//=========  MEXQ_PartexExamperiodCheckboxChange  ================ PR2022-01-21
-    function MEXQ_PartexExamperiodCheckboxChange(mode, el_input) {
-        console.log( "===== MEXQ_PartexExamperiodCheckboxChange  ========= ");
-        console.log( "mod_MEX_dict", mod_MEX_dict);
-        // values of mode are 'ce', 'reex',
-
-        const other_checkbox = (mode === "ce") ? el_MEXQ_partex_period2_checkbox : el_MEXQ_partex_period1_checkbox;
-
-        if (mod_MEX_dict.examperiod === 12){
-            other_checkbox.checked = (!el_input.checked);
-        } else if (mod_MEX_dict.examperiod === 2){
-            el_input.checked = (mode !== "ce");
-            other_checkbox.checked = (mode === "ce");
-        } else  {
-            el_input.checked = (mode === "ce");
-            other_checkbox.checked = (mode !== "ce");
-        };
-        /*
-        console.log("mod_MEX_dict.sel_partex_pk", mod_MEX_dict.sel_partex_pk)
-        if (mod_MEX_dict.sel_partex_pk){
-            const sel_partex_dict = mod_MEX_dict.partex_dict[mod_MEX_dict.sel_partex_pk];
-            sel_partex_dict.examperiod = (mode === "ce" && el_MEXQ_partex_period1_checkbox.checked) ? 1 :
-                                (mode === "reex" && el_MEXQ_partex_period2_checkbox.checked) ? 2 : null
-        }
-*/
-        console.log("mod_MEX_dict", mod_MEX_dict)
-    };  // MEXQ_PartexExamperiodCheckboxChange
 
 //========= MEXQ_InputChange  =============== PR2022-01-14
     function MEXQ_InputChange(el_input){
@@ -3998,7 +3811,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= MEXQ_InputQuestion  ===============PR2020-08-16 PR2021-03-25 PR2022-01-14
     function MEXQ_InputQuestion(el_input){
-        //console.log("--- MEXQ_InputQuestion ---")
+        console.log("--- MEXQ_InputQuestion ---")
         //console.log("el_input.id: ", el_input.id)
         // el_input.id = el_input.id:  idMEXq_1_1
         //const q_number_str = (el_input.id) ? el_input.id[10] : null;
@@ -4148,7 +3961,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     };
                 };  // if (!is_multiple_choice)
             };
-        } ; //  if (q_number){
+            MEXQ_calc_amount_maxscore()
+        } ; //  if (q_number)
     };  // MEXQ_InputQuestion
 
 
@@ -4365,11 +4179,48 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }  // MEX_goto_next
 
+//=========  MEXQ_CalcScalelength  ================ PR2022-03-23
+    //TODO calc
+    function MEXQ_CalcScalelength(el_input) {
+        console.log( "===== MEXQ_CalcScalelength  ========= ");
+        const new_value = el_input.value;
+        console.log( "new_value", new_value, typeof new_value);
+        // InputScalelength is only used when has_partex
+        let new_number = null, msg_err = "", has_error = false;
+        if (!new_value){
+            has_error = true;
+            msg_err = loc.err_list.Max_score_cannot_be_blank + "<br>";
+        } else {
+            new_number = Number(new_value);
+            // the remainder / modulus operator (%) returns the remainder after (integer) division.
+            if(!new_number || (new_number % 1) || (new_number < 1) || (new_number > 250) ) {
+                has_error = true;
+                msg_err = loc.Maximum_score + " '" + new_value + "' " + loc.err_list.not_allowed + "<br>";
+            };
+        };
+
+        if (has_error) {
+            el_input.value = (mod_MEX_dict.scalelength) ? mod_MEX_dict.scalelength : null;
+            set_focus_on_el_with_timeout(el_input, 50)
+        } else if (new_number) {
+            mod_MEX_dict.scalelength = new_number;
+            //MEX_SetPages();
+            // only show btn_pge when there are multiple pages
+            //MEXQ_show_btnpage();
+            //MEX_BtnPageClicked();
+        }
+
+// ---  disable save button when not all required fields have value
+        //MEXQ_validate_and_disable();
+
+    }; // MEXQ_CalcScalelength
+
+
 //=========  MEXQ_calc_max_score  ================ PR2022-01-16
     function MEXQ_calc_max_score(partex_pk) {
-        //console.log(" ===  MEXQ_calc_max_score  =====") ;
-        //console.log("partex_pk", partex_pk) ;
-        //console.log("mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict) ;
+        console.log(" ===  MEXQ_calc_max_score  =====") ;
+        console.log("partex_pk", partex_pk) ;
+        console.log("mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict) ;
         let total_max_score = 0;
         if (partex_pk){
             const p_dict = mod_MEX_dict.partex_dict[partex_pk];
@@ -4390,6 +4241,46 @@ document.addEventListener("DOMContentLoaded", function() {
         return total_max_score;
     };  // MEXQ_calc_max_score
 
+//=========  MEXQ_calc_amount_maxscore  ================ PR2022-03-23
+    function MEXQ_calc_amount_maxscore() {
+        console.log("===== MEXQ_calc_amount_maxscore =====");
+
+        console.log( "mod_MEX_dict.partex_dict: ", mod_MEX_dict.partex_dict, typeof mod_MEX_dict.partex_dict);
+
+        let total_amount = 0, total_max_score = 0;
+        for (const p_dict of Object.values(mod_MEX_dict.partex_dict)) {
+
+            const partex_amount = (p_dict.amount) ? p_dict.amount : 0;
+            total_amount += partex_amount;
+
+
+            // number of questions of pertex (p_amount) is entered value, not the counted questions
+            const p_amount = (p_dict.amount) ? p_dict.amount : 0;
+            let p_max_score = 0;
+    // ---  loop through questions of p_dict
+            for (const q_dict of Object.values(p_dict.a_dict)) {
+                let q_max_score = 0;
+                if (q_dict.max_score) {
+                    q_max_score += q_dict.max_score
+                } else if (q_dict.max_char){
+                    // default max_score of character is 1 when q_dict.max_score has no value
+                    q_max_score += 1;
+                };
+                p_max_score += q_max_score;
+            };
+            // put max_score back in p_dict
+            p_dict.max_score = p_max_score
+            total_max_score += p_max_score
+        };
+
+        console.log("total_amount", total_amount, typeof total_amount);
+        console.log("total_max_score", total_max_score, typeof total_max_score);
+
+        mod_MEX_dict.amount = total_amount;
+        mod_MEX_dict.scalelength = total_max_score;
+        el_MEXQ_input_amount.value = (total_amount) ? total_amount : null;
+        el_MEXQ_input_scalelength.value = (total_max_score) ? total_max_score : null;
+    };  // MEXQ_calc_amount_maxscore
 
 ///////////////////////////////////////
 // +++++++++ MOD EXAM ANSWERS ++++++++++++++++ PR2021-05-23 PR2022-01-21
@@ -5223,12 +5114,13 @@ document.addEventListener("DOMContentLoaded", function() {
     function ModConfirmOpen(table, mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         console.log("mode", mode)
-        // values of mode are : "delete",, 'json'
+        // values of mode are : "delete", 'json', 'copy
         // values of table are : "exam"
         // TODO print_exam not in use: remove, add 'publish'
 
         const is_delete = (mode === "delete");
         const is_json = (mode === "json");
+        const is_copy = (mode === "copy");
         mod_dict = {mode: mode};
         if (permit_dict.permit_crud && permit_dict.requsr_role_admin ) {
             let hide_save_btn = false, has_selected_item = false;
@@ -5261,9 +5153,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 btn_cancel_txt = loc.No_cancel;
 
-            } else  if(is_delete){
-                header_text = loc.Delete_exam;
-        // ---  get MEXQ_
+            } else if(is_delete || is_copy){
+                header_text = (is_copy) ? loc.Copy_exam : loc.Delete_exam;
+
                 let tblName = null, selected_pk = null;
                 // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
                 const tblRow = t_get_tablerow_selected(el_input);
@@ -5283,7 +5175,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 const exam_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 console.log("exam_dict", exam_dict)
 
-
         // ---  create mod_dict
                 has_selected_item = (!isEmpty(exam_dict));
                 if(has_selected_item){
@@ -5301,7 +5192,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     msg_list.push(loc.No_exam_selected);
                     hide_save_btn = true;
                 } else {
-                    msg_list.push(loc.Exam + " '" + mod_dict.subj_name + "'" + loc.will_be_deleted);
+                    const will_be_deleted_copied_txt = (is_copy) ? loc.will_be_copied : loc.will_be_deleted;
+                    msg_list.push(loc.Exam + " '" + mod_dict.subj_name + "'" + will_be_deleted_copied_txt);
                     msg_list.push(loc.Do_you_want_to_continue);
                 }
 
@@ -5311,7 +5203,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 el_confirm_loader.classList.add(cls_visible_hide)
 
-                btn_save_txt = has_selected_item ? loc.Yes_delete : loc.OK;
+                btn_save_txt = has_selected_item ? (is_copy) ? loc.Yes_copy : loc.Yes_delete : loc.OK;
                 btn_cancel_txt = (has_selected_item) ? loc.No_cancel : loc.Close;
             };  //  if(is_delete)
 
@@ -5350,8 +5242,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (el_modconfirm_link) {
                     el_modconfirm_link.click();
                 };
-            } else if (mod_dict.mode === "delete") {
+            } else if (mod_dict.mode === "copy") {
+        // ---  Upload Changes
+                let upload_dict = { mode: mod_dict.mode,
+                                    exam_pk: mod_dict.exam_pk,
+                                    examyear_pk: mod_dict.examyear_pk,
+                                    subject_pk: mod_dict.subject_pk,
+                                    };
+                UploadChanges(upload_dict, urls.url_exam_copy);
 
+            } else if (mod_dict.mode === "delete") {
     // ---  when delete: make tblRow red, before uploading
                 let tblRow = document.getElementById(mod_dict.mapid);
                 if (tblRow && mod_dict.mode === "delete"){

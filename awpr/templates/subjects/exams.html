@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220320.js' %}"></script>
+    <script src="{% static 'js/exams220323.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import220320.js' %}"></script>
 
@@ -142,7 +142,9 @@
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
-                data-exam_upload_url="{% url 'exam_upload_url' %}"
+                data-url_exam_upload="{% url 'url_exam_upload' %}"
+                data-url_exam_copy="{% url 'url_exam_copy' %}"
+
                 data-url_approve_publish_exam="{% url 'url_approve_publish_exam' %}"
                 data-url_approve_submit_grade_exam="{% url 'url_approve_submit_grade_exam' %}"
                 data-url_send_email_submit_exam="{% url 'url_send_email_submit_exam' %}"
@@ -151,7 +153,7 @@
                 data-url_exam_download_grade_exam_pdf="{% url 'url_exam_download_grade_exam_pdf'  '-' %}"
                 data-url_exam_download_exam_json="{% url 'url_exam_download_exam_json' %}"
 
-                data-grade_upload_url="{% url 'grade_upload_url' %}"
+                data-url_grade_upload="{% url 'url_grade_upload' %}"
 
                 data-page="{{page}}"
                 data-paragraph="{{paragraph}}"

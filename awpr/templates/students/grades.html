@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220320.js' %}"></script>
-    <script src="{% static 'js/grades220320.js' %}"></script>
+    <script src="{% static 'js/grades220323.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -132,7 +132,7 @@
                     data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                     data-url_student_upload="{% url 'url_student_upload' %}"
                     data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
-                    data-grade_upload_url="{% url 'grade_upload_url' %}"
+                    data-url_grade_upload="{% url 'url_grade_upload' %}"
 
                     data-url_grade_approve="{% url 'url_grade_approve' %}"
                     data-url_grade_submit_ex2="{% url 'url_grade_submit_ex2' %}"

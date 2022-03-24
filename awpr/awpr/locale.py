@@ -88,12 +88,14 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['will_be_made_active'] = pgettext_lazy('singular', ' will be made active.')
     dict['will_be_printed'] = pgettext_lazy('singular', ' will be printed.')
     dict['will_be_downloaded'] = pgettext_lazy('singular', ' will be downloaded.')
+    dict['will_be_copied'] = pgettext_lazy('singular', ' will be copied.')
     dict['Copy_to_examyear'] = _('Copy to examyear')
 
     dict['Do_you_want_to_continue'] = _('Do you want to continue?')
     dict['Yes_delete'] = _('Yes, delete')
     dict['Yes_make_inactive'] = _('Yes, make inactive')
     dict['Yes_make_active'] = _('Yes, make active')
+    dict['Yes_copy'] = _('Yes, copy')
     dict['Make_inactive'] = _('Make inactive')
     dict['No_cancel'] = _('No, cancel')
     dict['Cancel'] = _('Cancel')
@@ -878,6 +880,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_exam'] = _("Select exam")
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
+        dict['Copy_exam'] = _("Copy exam")
         dict['Link_DUO_exams'] = _("Link DUO exams")
         dict['Publish_exams'] = _("Publish exams")
         dict['Submit_exams'] = _("Submit exams")
@@ -925,7 +928,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['except_for_selected_exam'] = _('except for the selected exam')
         dict['Yes_remove'] = _('Yes, remove')
 
-        dict['Enter_total_of_maximum_scores'] = _('Enter here the total of the maximum scores of the required partial exams.')
+        dict['Awp_calculates_amount'] = _('AWP calculates the number of questions.')
 
 
         dict['err_list'] = {

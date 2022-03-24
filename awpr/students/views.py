@@ -309,6 +309,7 @@ class ClusterUploadView(View):  # PR2022-01-06
                     created_cluster_pk_list = []
                     deleted_cluster_pk_list = []
                     updated_cluster_pk_list = []
+                    cluster_pk_list = []
 
                     if cluster_list:
                         err_list = loop_cluster_list(
@@ -324,13 +325,18 @@ class ClusterUploadView(View):  # PR2022-01-06
                         )
                         if err_list:
                             msg_list.extend(err_list)
+                        # cluster_pk_list stores cahnged clusters, to update cluster in table with studsubj
+                        if updated_cluster_pk_list:
+                            cluster_pk_list.extend(updated_cluster_pk_list)
+                        if deleted_cluster_pk_list:
+                            cluster_pk_list.extend(deleted_cluster_pk_list)
 
                         if logging_on:
                             logger.debug('created_cluster_pk_list: ' + str(created_cluster_pk_list))
                             logger.debug('deleted_cluster_pk_list: ' + str(deleted_cluster_pk_list))
                             logger.debug('updated_cluster_pk_list: ' + str(updated_cluster_pk_list))
                             logger.debug('mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
-
+                            logger.debug('cluster_pk_list: ' + str(cluster_pk_list))
 
                         updated_cluster_rows = []
                         if updated_cluster_pk_list:
@@ -338,14 +344,16 @@ class ClusterUploadView(View):  # PR2022-01-06
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_schoolbase,
                                 sel_depbase=sel_depbase,
-                                cluster_pk_list=updated_cluster_pk_list
+                                cur_dep_only=True,
+                                cluster_pk_list=updated_cluster_pk_list,
+                                add_field_created=False
                             )
-
                         if created_cluster_pk_list:
                             created_cluster_rows = sj_vw.create_cluster_rows(
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_schoolbase,
                                 sel_depbase=sel_depbase,
+                                cur_dep_only=True,
                                 cluster_pk_list=created_cluster_pk_list,
                                 add_field_created=True
                             )
@@ -361,6 +369,7 @@ class ClusterUploadView(View):  # PR2022-01-06
                         if logging_on:
                             logger.debug('updated_cluster_rows: ' + str(updated_cluster_rows))
 
+                    studsubj_pk_list = []
                     if studsubj_list:
                         err_list, studsubj_pk_list = loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request)
                         if err_list:
@@ -368,21 +377,22 @@ class ClusterUploadView(View):  # PR2022-01-06
                         if logging_on:
                             logger.debug('studsubj_pk_list: ' + str(studsubj_pk_list))
 
-                        if studsubj_pk_list:
-                            rows = create_studentsubject_rows(
-                                examyear=sel_examyear,
-                                schoolbase=sel_schoolbase,
-                                depbase=sel_depbase,
-                                requsr_same_school=True,  # check for same_school is included in may_edit
-                                setting_dict={},
-                                append_dict=append_dict,
-                                request=request,
-                                studsubj_pk_list=studsubj_pk_list
-                            )
-                            if rows:
-                                update_wrap['updated_studsubj_rows'] = rows
-                        #if logging_on:
-                        #    logger.debug('rows: ' + str(rows))
+                    if studsubj_pk_list or cluster_pk_list:
+                        rows = create_studentsubject_rows(
+                            examyear=sel_examyear,
+                            schoolbase=sel_schoolbase,
+                            depbase=sel_depbase,
+                            requsr_same_school=True,  # check for same_school is included in may_edit
+                            setting_dict={},
+                            append_dict=append_dict,
+                            request=request,
+                            studsubj_pk_list=studsubj_pk_list,
+                            cluster_pk_list=cluster_pk_list
+                        )
+                        if rows:
+                            update_wrap['updated_studsubj_rows'] = rows
+                    #if logging_on:
+                    #    logger.debug('rows: ' + str(rows))
 
         # - addd messages to update_wrap
         if msg_list:
@@ -4694,17 +4704,18 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 #/////////////////////////////////////////////////////////////////
 
 def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school, setting_dict,
-                               append_dict, request, student_pk=None, studsubj_pk_list=None):
+                               append_dict, request, student_pk=None, studsubj_pk_list=None, cluster_pk_list=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-10 studsubj_pk_list added
     # PR2022-02-15 show only not tobeleted students and studentsubjects
-
-    logging_on = False  # s.LOGGING_ON
+    # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_studentsubject_rows ============= ')
         logger.debug('student_pk: ' + str(student_pk))
         logger.debug('studsubj_pk_list: ' + str(studsubj_pk_list))
         logger.debug('setting_dict: ' + str(setting_dict))
         logger.debug('append_dict: ' + str(append_dict))
+        logger.debug('cluster_pk_list: ' + str(cluster_pk_list))
 
     rows = []
     try:
@@ -4806,11 +4817,11 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "LEFT JOIN schools_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
             "WHERE NOT studsubj.tobedeleted"]
 
-        # only show published subject for other users than sameschool
+        # studsubj are only visible for other users than sameschool when they are published
         if not requsr_same_school:
-            # PR2021-09-04 debug: examyear before 2022 have no subj_published_id. SHow them to others anyway
+            # PR2021-09-04 debug: examyears before 2022 have no subj_published_id. Show them to others anyway
             if examyear is None or examyear.code >= 2022:
-                sql_studsubj_list.append("WHERE studsubj.subj_published_id IS NOT NULL")
+                sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
 
         sql_studsubjects = ' '.join(sql_studsubj_list)
 
@@ -4895,13 +4906,20 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             table='studsubj'
         )
 
-
-
+        # also return existing studsubj of updated clusters, to show changed name in table
         # - filter on studsubj_pk_list with ANY clause
-
-        if studsubj_pk_list:
-            sql_keys['ss_pk_list'] = studsubj_pk_list
-            sql_list.append("AND studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[])")
+        # - PR2022-03-23 see https://stackoverflow.com/questions/34627026/in-vs-any-operator-in-postgresql
+        if cluster_pk_list:
+            sql_keys['cls_pk_list'] = cluster_pk_list
+            if studsubj_pk_list:
+                sql_keys['ss_pk_list'] = studsubj_pk_list
+                sql_list.append("AND ( studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[]) OR studsubj.cluster_id = ANY(%(cls_pk_list)s::INT[]) )  ")
+            else:
+                sql_list.append("AND studsubj.cluster_id = ANY(%(cls_pk_list)s::INT[])")
+        else:
+            if studsubj_pk_list:
+                sql_keys['ss_pk_list'] = studsubj_pk_list
+                sql_list.append("AND studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[])")
 
         sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST')
 
@@ -4914,12 +4932,12 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))
             logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
-        #logger.debug('connection.queries: ' + str(connection.queries))
+            #logger.debug('connection.queries: ' + str(connection.queries))
 
     # - full name to rows
         for row in rows:
-            if logging_on:
-                logger.debug('row: ' + str(row))
+            #if logging_on:
+            #    logger.debug('row: ' + str(row))
             first_name = row.get('firstname')
             last_name = row.get('lastname')
             prefix = row.get('prefix')

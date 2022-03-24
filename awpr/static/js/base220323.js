@@ -1342,7 +1342,7 @@
                         };
                     } else {
                         compare = compare1;
-                    }
+                    };
     //console.log( "compare : ", compare);
                     if (!compare ) {
                         //  search_value === middle_value
@@ -1382,11 +1382,7 @@
                                     // round up to integer
                                     min_index = middle_index + 1;
                                     middle_index =  Math.ceil( (min_index + max_index) / 2);
-                                }
-                            }
-                        }
-                    }
-                };  // if (i > 23)
+                }}}}};  // if (i > 23)
             };  // for (let i = 0
 
             // set index = -1 when new row comes after last tablerow, add 1 to index at other rows
@@ -1395,8 +1391,8 @@
                     middle_index = -1;
                 } else {
                     middle_index += 1;
-                }
-            }
+                };
+            };
         } else {
             // table is empty
             compare = is_desc * 1;

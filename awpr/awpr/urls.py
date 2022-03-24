@@ -196,7 +196,7 @@ urlpatterns = [
 # ===== SUBJECTS ==========================  PR2018-08-23 PR2020-10-20
     path('subjects/', include([
         path('subject', subject_views.SubjectListView.as_view(), name='subjects_url'),
-        path('subject_upload', subject_views.SubjectUploadView.as_view(), name='subject_upload_url'),
+        path('subject_upload', subject_views.SubjectUploadView.as_view(), name='url_subject_upload'),
         path('subject_import', subject_views.SubjectImportView.as_view(), name='subject_import_url'),
 
         path('uploadsetting', subject_views.SubjectImportUploadSetting.as_view(), name='subject_uploadsetting_url'),
@@ -248,7 +248,7 @@ urlpatterns = [
 # ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('grades/', include([
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
-        path('upload', grade_views.GradeUploadView.as_view(), name='grade_upload_url'),
+        path('upload', grade_views.GradeUploadView.as_view(), name='url_grade_upload'),
 
         path('approve', grade_views.GradeApproveView.as_view(), name='url_grade_approve'),
 
@@ -293,7 +293,9 @@ urlpatterns = [
 # ===== EXAMS ========================== PR2021-04-04
     path('exams/', include([
         path('exam', subject_views.ExamListView.as_view(), name='exams_url'),
-        path('upload', subject_views.ExamUploadView.as_view(), name='exam_upload_url'),
+        path('upload', subject_views.ExamUploadView.as_view(), name='url_exam_upload'),
+        path('copy', subject_views.ExamCopyView.as_view(), name='url_exam_copy'),
+
         path('approve_publish_exam', subject_views.ExamApproveOrPublishView.as_view(), name='url_approve_publish_exam'),
         path('approve_submit_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 

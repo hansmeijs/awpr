@@ -881,6 +881,12 @@ aXX:hover{
     height: 220px;
     width: auto
 }
+.tbl_partex_h280_w_auto {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 280px;
+    width: auto
+}
 .tbl_mailbox_h240_w_auto {
     overflow-x: hidden;
     overflow-y: auto;

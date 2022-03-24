@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text",  "text",  "text", "text",
                                 "text", "text", "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "075",
+                    field_width:  ["020", "020", "075", "180", "075", "075", "120",
                                     "075", "180","090", "032",
                                     "090", "032", "090", "032", "090", "032",
                                     "090", "032", "032"],
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "subj_code", "subj_name", "has_exemption"], //"exemption_year"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"], //"div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle"], //"text"],
-                    field_width:  ["020", "020", "075", "180", "075", "075", "075", "075", "180", "120"], //"120"],
+                    field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120"], //"120"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c"]}, //"c"]},
 
         btn_sr:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "subj_code", "subj_name", "has_sr", "sr_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         btn_reex:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_examination", "", ],
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "subj_code", "subj_name", "has_reex", "reex_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         btn_reex03:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "subj_code", "subj_name", "has_reex03", "reex03_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         btn_pok:  {field_caption: ["", "subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "subj_code", "subj_name", "pok_validthru:", "pok_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "075", "075", "180", "120", "032"],
+                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         };
 
@@ -3871,15 +3871,17 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             let tblRow = tblBody_select.insertRow(-1);
             let td = tblRow.insertCell(-1);
             td.innerText = loc.No_clusters_for_this_subject;
-
-        } else if(row_count === 1){
-            let tblRow = tblBody_select.rows[0]
-            if(tblRow) {
-// ---  make first row selected
-                //tblRow.classList.add(cls_selected)
-                MSELEX_SelectItem(tblRow);
-            };
         };
+
+// ---  make first row selected
+// don't. It will put the cluster automatically in the field
+        //} else if(row_count === 1){
+        //    let tblRow = tblBody_select.rows[0]
+        //    if(tblRow) {
+                //tblRow.classList.add(cls_selected)
+                //MSELEX_SelectItem(tblRow);
+        //    };
+        //};
         return row_count
     }; // MSELEX_FillSelectTable
 
@@ -4170,7 +4172,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
 //=========  RefreshDataRows  ================  PR2021-06-21
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        console.log(" --- RefreshDataRows  ---");
+        console.log(" ===== RefreshDataRows  =====");
         console.log("update_rows", update_rows);
         console.log("is_update", is_update);
         console.log("tblName", tblName);
@@ -4199,6 +4201,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
         console.log("update_dict", update_dict);
+        console.log("data_rows", data_rows);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -4208,25 +4211,24 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             const is_created = (!!update_dict.created);
             const error_columns = [];
 
-    // clusters are not table rows, skip col_hidden and error_columns when tblName = "cluster"
-            if (tblName !== "cluster"){
+        console.log("map_id", map_id);
     // ---  get list of hidden columns
-                // copy col_hidden from mod_MCOL_dict.cols_hidden
-                const col_hidden = [];
-                b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+            // copy col_hidden from mod_MCOL_dict.cols_hidden
+            const col_hidden = [];
+            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
 
-    // ---  get list of columns that are not updated because of errors
-                if (update_dict.err_fields){
-                    // replace field 'subj_auth2by' by 'subj_status'
-                    for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
-                        if (err_field && err_field.includes("_auth")){
-                            const arr = err_field.split("_");
-                            err_field = arr[0] + "_status";
-                        };
-                        error_columns.push(err_field);
+// ---  get list of columns that are not updated because of errors
+            if (update_dict.err_fields){
+                // replace field 'subj_auth2by' by 'subj_status'
+                for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
+                    if (err_field && err_field.includes("_auth")){
+                        const arr = err_field.split("_");
+                        err_field = arr[0] + "_status";
                     };
+                    error_columns.push(err_field);
                 };
             };
+
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
             //arr.splice(index, 0, item); will insert item into arr at the specified index
@@ -4260,12 +4262,24 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             } else {
 
 // +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
-                // 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
-                const student_pk = (update_dict && update_dict.stud_id) ? update_dict.stud_id : null;
-                const studsubj_pk = (update_dict && update_dict.studsubj_id) ? update_dict.studsubj_id : null;
-                const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
-                const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-                const datarow_index = index;
+                let data_dict = null, datarow_index = null;
+                if (tblName === "cluster"){
+                    const cluster_pk = (update_dict && update_dict.id) ? update_dict.id : null;
+                    const [index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", cluster_pk);
+                    if (!isEmpty(found_dict)){
+                        data_dict = found_dict;
+                        datarow_index = index;
+                    };
+                } else {
+                    // 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
+                    const student_pk = (update_dict && update_dict.stud_id) ? update_dict.stud_id : null;
+                    const studsubj_pk = (update_dict && update_dict.studsubj_id) ? update_dict.studsubj_id : null;
+                    const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
+                    if (!isEmpty(found_dict)){
+                        data_dict = found_dict;
+                        datarow_index = index;
+                    };
+                };
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -4274,14 +4288,16 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                     const deleted_row_dict = deleted_row_arr[0];
 
         //--- delete tblRow
-                    if(deleted_row_dict && deleted_row_dict.mapid){
-                        const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
-                        if (tblRow_tobe_deleted ){
-                            tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
-        // --- subtract 1 from item_count and show total in sidebar
-                            selected.item_count -= 1;
+                    if (tblName !== "cluster"){
+                        if(deleted_row_dict && deleted_row_dict.mapid){
+                            const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+                            if (tblRow_tobe_deleted ){
+                                tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
+            // --- subtract 1 from item_count and show total in sidebar
+                                selected.item_count -= 1;
+                            };
                         };
-                    }
+                    };
                 } else {
 
 // +++++++++++ updated row +++++++++++

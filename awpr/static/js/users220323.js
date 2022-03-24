@@ -1916,10 +1916,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // MSM_InputKeyup
 
-//=========  MSM_FillSelectTable  ================ PR2022-01-26
+//=========  MSM_FillSelectTable  ================ PR2022-01-26 PR2203023
     function MSM_FillSelectTable(fldName, caption) {
         console.log( "===== MSM_FillSelectTable ========= ");
         console.log( "fldName: ", fldName);
+
+        // check if school has multiple departments, only needed for allowed_clusterbases
+        let school_has_multiple_deps = false;
+        if (setting_dict.sel_school_depbases ){
+            const depbase_arr = setting_dict.sel_school_depbases.split(";");
+            school_has_multiple_deps = depbase_arr && depbase_arr.length > 1;
+        };
 
         const data_rows = (fldName === "allowed_depbases") ? department_rows :
                                 (fldName === "allowed_schoolbases") ? school_rows :
@@ -1935,6 +1942,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const display_code_field = (fldName === "allowed_schoolbases") ? "sb_code" :
                              (fldName === "allowed_subjectbases") ? "code" : null;
+
+        const display_depbase_field = (school_has_multiple_deps && fldName === "allowed_clusterbases") ? "depbase_code" : null;
 
         // cluster has no base table
         const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
@@ -1958,7 +1967,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const base_pk_str = (data_dict[base_pk_field]) ? data_dict[base_pk_field].toString() : null;
                 const row_is_selected = (base_pk_str && data_array && data_array.includes(base_pk_str));
                 const row_index = -1;
-                MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, row_is_selected);
+                MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, display_depbase_field, row_is_selected);
                 if(row_is_selected){has_selected_rows = true}
             };
         };
@@ -1975,7 +1984,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // MSM_FillSelectTable
 
 //=========  MSM_FillSelectRow  ================ PR2022-01-26
-    function MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, row_is_selected, insert_at_index_zero) {
+    function MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, display_depbase_field, row_is_selected, insert_at_index_zero) {
         //console.log( "===== MSM_FillSelectRow ========= ");
         //console.log("data_dict: ", data_dict);
         //console.log( "display_name_field: ", display_name_field);
@@ -1984,9 +1993,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // cluster has no base table
         const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
         const base_pk_int = data_dict[base_pk_field];
-        const display_txt = ( data_dict[display_name_field] ) ? data_dict[display_name_field] : "-";
+        const display_name = ( data_dict[display_name_field] ) ? data_dict[display_name_field] : "-";
 
-        //console.log( "display_txt: ", display_txt);
+        //console.log( "display_name: ", display_name);
 
         const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
@@ -1995,13 +2004,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                 (fldName === "allowed_schoolbases") ? "sb_code" :
                                 (fldName === "allowed_levelbases") ? "lvlbase_code" :
                                 (fldName === "allowed_subjectbases") ? "code" :
-                                (fldName === "allowed_clusterbases") ? "name" : null;
+                                (fldName === "allowed_clusterbases") ? "dep_sequence" : null;
+        const ob2_field = (fldName === "allowed_clusterbases") ? "name" : null;
 
         const ob1 = (ob1_field && data_dict[ob1_field]) ?
                         (typeof data_dict[ob1_field] === 'number') ? "00000" + data_dict[ob1_field].toString() :
                         data_dict[ob1_field].toLowerCase() : "";
+        const ob2 = (ob2_field && data_dict[ob2_field]) ?  data_dict[ob2_field].toLowerCase() : "";
+
         const row_index = (insert_at_index_zero) ? 0 :
-            b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, setting_dict.user_lang);
+            b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, setting_dict.user_lang);
 
         //console.log("row_index: ", row_index);
 
@@ -2014,7 +2026,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
-
+        if(ob2_field) {tblRow.setAttribute("data-ob2", ob2)};
 // ---  add EventListener to tblRow, not when 'no items' (base_pk_int is then -1
         if (base_pk_int > -1) {
             tblRow.addEventListener("click", function() {MSM_SelecttableClicked(tblRow)}, false )
@@ -2022,6 +2034,7 @@ document.addEventListener('DOMContentLoaded', function() {
             add_hover(tblRow);
         }
         let td, el;
+
 // ---  add select td to tblRow.
         td = tblRow.insertCell(-1);
             td.classList.add("mx-1", "tw_032")
@@ -2035,6 +2048,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (display_code_field){
             td = tblRow.insertCell(-1);
             td.classList.add("mx-1", "tw_075")
+
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
             el = document.createElement("div");
                 el.innerText = ( data_dict[display_code_field] ) ? data_dict[display_code_field] : "";
@@ -2045,8 +2059,20 @@ document.addEventListener('DOMContentLoaded', function() {
             td.classList.add("mx-1", "tw_270")
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
         el = document.createElement("div");
-            el.innerText = display_txt;
+            el.innerText = display_name;
         td.appendChild(el);
+
+// ---  add td with depbase_code to tblRow, only if display_depbase_field has value
+        if (display_depbase_field){
+            td = tblRow.insertCell(-1);
+            td.classList.add("mx-1", "tw_075")
+
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            el = document.createElement("div");
+                el.innerText = ( data_dict[display_depbase_field] ) ? data_dict[display_depbase_field] : "";
+            td.appendChild(el);
+        };
+
     };  // MSM_FillSelectRow
 
 //=========  MSM_SelecttableClicked  ================ PR2022-01-26

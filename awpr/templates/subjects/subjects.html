@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Subjects' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/subjects220320.js' %}"></script>
+    <script src="{% static 'js/subjects220323.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -104,7 +104,7 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
-                data-subject_upload_url="{% url 'subject_upload_url' %}"
+                data-url_subject_upload="{% url 'url_subject_upload' %}"
                 data-subjecttype_upload_url="{% url 'subjecttype_upload_url' %}"
                 data-subjecttypebase_upload_url="{% url 'subjecttypebase_upload_url' %}"
                 data-scheme_upload_url="{% url 'scheme_upload_url' %}"
