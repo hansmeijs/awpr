@@ -398,7 +398,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MDUO_err_level = document.getElementById("id_MDUO_err_level");
 
         const el_MDUO_tblBody_subjects = document.getElementById("id_MDUO_tblBody_subjects");
-        const el_MDUO_tblBody_exams = document.getElementById("id_MDUO_tblBody_exams");
+        const el_MDUO_tblBody_duo_exams = document.getElementById("id_MDUO_tblBody_duo_exams");
         const el_MDUO_tblBody_linked = document.getElementById("id_MDUO_tblBody_linked");
 
         const el_MDUO_filter_subjects = document.getElementById("id_MDUO_filter_subjects");
@@ -542,7 +542,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     must_update_headerbar = true;
                 };
 
-
                 if(must_create_submenu){CreateSubmenu()};
 
                 if(must_update_headerbar){
@@ -551,17 +550,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 if ("messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
-                }
+                };
                 if ("examyear_rows" in response) {
                     b_fill_datamap(examyear_map, response.examyear_rows);
                 };
-
                 if ("department_rows" in response) {
                     b_fill_datamap(department_map, response.department_rows);
                 };
                 if ("level_rows" in response) {
                     b_fill_datamap(level_map, response.level_rows);
-
                 };
 
                 // hide select level when department has no levels, also hide in modal approve exam
@@ -4625,12 +4622,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
             b_clear_dict(mod_MDUO_dict);
 
-            mod_MDUO_dict.subject_list = [];
-            mod_MDUO_dict.exam_list = [];
-            mod_MDUO_dict.nterm_list = [];
-            //MDUO_FillDict();
+            MDUO_FillDict();
+
     // ---  show modal
-            //$("#id_mod_duoexams").modal({backdrop: true});
+            $("#id_mod_duoexams").modal({backdrop: true});
         } ; //  if(is_permit_admin)
 
     };  // MEXQ_Open
@@ -4639,8 +4634,8 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  MDUO_FillDict  ================ PR2022-02-28
     function MDUO_FillDict() {
         console.log("===== MDUO_FillDict =====");
-        //console.log("exam_dict", exam_dict);
 
+        mod_MDUO_dict.subject_list = [];
         if(subject_rows && subject_rows.length){
     // loop through subject_rows
             for (let i = 0, data_dict; data_dict = subject_rows[i]; i++) {
@@ -4652,9 +4647,29 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 mod_MDUO_dict.subject_list.push(dict);
             };
-            console.log("mod_MDUO_dict", mod_MDUO_dict);
+            console.log("mod_MDUO_dict.subject_list", mod_MDUO_dict.subject_list);
         };
 
+        mod_MDUO_dict.exam_list = [];
+        if(exam_rows && exam_rows.length){
+    // loop through subject_rows
+            for (let i = 0, data_dict; data_dict = exam_rows[i]; i++) {
+                // show only DUO exams
+                //if (!data_dict.ete_exam){
+                    const dict = {
+                        id: data_dict.id,
+                        nex_id: data_dict.nex_id,
+                        lvl_abbrev: data_dict.lvl_abbrev,
+                        subj_base_code: data_dict.subj_base_code,
+                        exam_name: data_dict.exam_name,
+                    };
+                //};
+                mod_MDUO_dict.exam_list.push(dict);
+            };
+            console.log("mod_MDUO_dict.exam_list", mod_MDUO_dict.exam_list);
+        };
+
+        mod_MDUO_dict.nterm_list = [];
         if(ntermentable_rows && ntermentable_rows.length){
             for (let i = 0, data_dict; data_dict = ntermentable_rows[i]; i++) {
                 const dict = {
@@ -4669,13 +4684,181 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 mod_MDUO_dict.nterm_list.push(dict);
             };
-            console.log("mod_MDUO_dict", mod_MDUO_dict);
         };
+            console.log("mod_MDUO_dict.nterm_list", mod_MDUO_dict.nterm_list);
+            console.log("mod_MDUO_dict", mod_MDUO_dict);
 
-        ntermentable_rows
+        MDUO_FillSelectTableSubjects();
+        MDUO_FillSelectTableDuoExams();
 
     };  // MDUO_FillDict
 
+//=========  MDUO_FillSelectTableSubjects  ================ PR2022-04-05
+    function MDUO_FillSelectTableSubjects() {
+        console.log( "===== MDUO_FillSelectTableSubjects ========= ");
+
+        const tblBody_select = el_MDUO_tblBody_subjects;
+        tblBody_select.innerText = null;
+
+        let row_count = 0, add_to_list = false;
+// ---  loop through subject_rows
+        if(mod_MDUO_dict.subject_list && mod_MDUO_dict.subject_list.length){
+            for (let i = 0, data_dict; data_dict = mod_MDUO_dict.subject_list[i]; i++) {
+            //console.log( "data_dict: ", data_dict);
+            //console.log( "mod_MDUO_dict.subj_pk", mod_MDUO_dict.subj_pk, typeof mod_MDUO_dict.subj_pk);
+            //console.log( "data_dict.subject_id", data_dict.subject_id, typeof data_dict.subject_id);
+            // add only when eam has same subject as grade, and also the same depbase and lvlbase_id
+                let show_row = false;
+                if (mod_MDUO_dict.subj_pk === data_dict.subject_id){
+                    if(mod_MDUO_dict.student_lvlbase_pk){
+                        show_row = (mod_MDUO_dict.student_lvlbase_pk === data_dict.lvlbase_id);
+                    } else {
+                        show_row = true;
+                    };
+                };
+                show_row = true
+                if (show_row){
+                    row_count += 1;
+                    MDUO_FillSelectRow("subject", data_dict, tblBody_select, -1);
+                };
+            };
+        };
+        if(!row_count){
+            let tblRow = tblBody_select.insertRow(-1);
+            let td = tblRow.insertCell(-1);
+            td.innerText = loc.No_exam_for_this_subject;
+
+        } else if(row_count === 1){
+            let tblRow = tblBody_select.rows[0]
+            if(tblRow) {
+// ---  make first row selected
+                //tblRow.classList.add(cls_selected)
+
+                MDUO_SelectItem(tblRow);
+            };
+        };
+        return row_count
+    }; // MDUO_FillSelectTableSubjects
+
+//=========  MDUO_FillSelectTableDuoExams  ================ PR2022-04-05
+    function MDUO_FillSelectTableDuoExams() {
+        console.log( "===== MDUO_FillSelectTableDuoExams ========= ");
+
+        const tblBody_select = el_MDUO_tblBody_duo_exams;
+        tblBody_select.innerText = null;
+
+        let row_count = 0, add_to_list = false;
+// ---  loop through ntermentable_rows
+        if(ntermentable_rows && ntermentable_rows.length){
+            for (let i = 0, data_dict; data_dict = ntermentable_rows[i]; i++) {
+                //console.log( "data_dict: ", data_dict);
+            //console.log( "mod_MDUO_dict.subj_pk", mod_MDUO_dict.subj_pk, typeof mod_MDUO_dict.subj_pk);
+            //console.log( "data_dict.subject_id", data_dict.subject_id, typeof data_dict.subject_id);
+            // add only when eam has same subject as grade, and also the same depbase and lvlbase_id
+                let show_row = false;
+                if (mod_MDUO_dict.subj_pk === data_dict.subject_id){
+                    if(mod_MDUO_dict.student_lvlbase_pk){
+                        show_row = (mod_MDUO_dict.student_lvlbase_pk === data_dict.lvlbase_id);
+                    } else {
+                        show_row = true;
+                    };
+                };
+                show_row = true
+                if (show_row){
+                    row_count += 1;
+                    MDUO_FillSelectRow("ntermentable", data_dict, tblBody_select, -1);
+                };
+            };
+        };
+        if(!row_count){
+            let tblRow = tblBody_select.insertRow(-1);
+            let td = tblRow.insertCell(-1);
+            td.innerText = loc.No_exam_for_this_subject;
+
+        } else if(row_count === 1){
+            let tblRow = tblBody_select.rows[0]
+            if(tblRow) {
+// ---  make first row selected
+                //tblRow.classList.add(cls_selected)
+
+                MDUO_SelectItem(tblRow);
+            };
+        };
+        return row_count
+    }; // MDUO_FillSelectTableDuoExams
+
+//=========  MDUO_FillSelectRow  ================ PR2022-04-05
+    function MDUO_FillSelectRow(tblname, data_dict, tblBody_select, row_index) {
+        //console.log( "===== MDUO_FillSelectRow ========= ");
+        //console.log( "data_dict: ", data_dict);
+
+//--- loop through data_map
+        let pk_int = null;
+        let col_width_list = [], col_txt_list = [];
+        if (tblname === "subject") {
+            pk_int = data_dict.id;
+            const code_value = (data_dict.code) ? data_dict.code : "---";
+            const name_value = (data_dict.name) ? data_dict.name : "---";
+            col_width_list = ["tw_075", "tw_240"];
+            col_txt_list = [code_value, name_value];
+        } else if (tblname === "ntermentable") {
+            pk_int = data_dict.id;
+            const name_value = (data_dict.omschrijving) ? data_dict.omschrijving : "---"
+            col_width_list = ["tw_240"];
+            col_txt_list = [name_value];
+        } else if (tblname === "exam") {
+            pk_int = data_dict.id;
+            const code_value = (data_dict.code) ? data_dict.code : "---";
+            const name_value = (data_dict.name) ? data_dict.name : "---";
+            col_width_list = ["tw_075", "tw_240"];
+            col_txt_list = [code_value, name_value]
+        };
+
+        const is_selected_pk = (mod_MDUO_dict.exam_pk != null && exam_pk_int === mod_MDUO_dict.exam_pk)
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(row_index);
+        tblRow.setAttribute("data-pk", pk_int);
+// ---  add EventListener to tblRow
+        tblRow.addEventListener("click", function() {MDUO_SelectItem(tblRow)}, false )
+// ---  add hover to tblRow
+        add_hover(tblRow);
+// ---  highlight clicked row
+        if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+
+        // loop through columns
+        for (let i = 0, td, el_div, col_width; col_width = col_width_list[i]; i++) {
+    // ---  add first td to tblRow.
+            td = tblRow.insertCell(-1);
+    // --- add a element to td., necessary to get same structure as item_table, used for filtering
+            el_div = document.createElement("div");
+                el_div.innerText = col_txt_list[i];
+                el_div.classList.add(col_width, "px-4", "pointer_show" )
+            td.appendChild(el_div);
+        };
+    }  // MDUO_FillSelectRow
+
+//=========  MDUO_SelectItem  ================ PR2021-04-05
+    function MDUO_SelectItem(tblRow) {
+        console.log( "===== MDUO_SelectItem ========= ");
+        console.log( "tblRow", tblRow);
+// ---  deselect all highlighted rows
+        DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+        tblRow.classList.add(cls_selected)
+// ---  get pk code and value from tblRow in mod_MDUO_dict
+        mod_MDUO_dict.exam_pk = get_attr_from_el_int(tblRow, "data-pk")
+        console.log( "mod_MDUO_dict", mod_MDUO_dict);
+        MDUO_validate_and_disable();
+    }  // MDUO_SelectItem
+
+//=========  MDUO_Save  ================ PR2021-05-22
+    function MDUO_validate_and_disable(){
+        el_MDUO_btn_save.disabled = !mod_MDUO_dict.exam_pk;
+    }
+
+
+
+//////////////////////////////////////////////////////////////////////
 
 //========= MOD UPLOAD N-termen TABLE ====================================
     function MDNT_Open (open_mode ) {  // PR2022-02-25

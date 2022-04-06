@@ -337,8 +337,8 @@ def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request
 # --- end of create_subject_rows
 
 
-def create_cluster_rows(sel_examyear, sel_schoolbase, sel_depbase,
-                        cur_dep_only, cluster_pk_list=None, add_field_created=False):
+def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
+                        cur_dep_only, allowed_only=False, cluster_pk_list=None, add_field_created=False):
     # --- create rows of all clusters of this examyear this department  PR2022-01-06
     logging_on = False  # s.LOGGING_ON
 
@@ -379,6 +379,15 @@ def create_cluster_rows(sel_examyear, sel_schoolbase, sel_depbase,
             if cur_dep_only:
                 sql_keys['db_id'] = sel_depbase.pk
                 sql_list.append("AND dep.base_id = %(db_id)s::INT")
+
+# SO FAR @@@@@@@@@@@@@@@@@@@@@@@@@@@
+            acc_view.get_userfilter_allowed_subjbase(
+                request=request,
+                sql_keys=sql_keys,
+                sql_list=sql_list,
+                subjbase_pk=None,
+                skip_allowed_filter=not allowed_only,
+                table=None)
 
             sql_list.append("ORDER BY cl.id")
 
@@ -2188,7 +2197,7 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
                     else:
 
     # - skip if this author (like 'president') has already approved this studsubj
-            # under a different permit (like 'secretary' or 'commissioner')
+            # under a different permit (like 'secretary' or 'corrector')
 
                         double_approved = False
                         if requsr_auth == 'auth1':
@@ -2380,7 +2389,7 @@ def approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, u
                     else:
 
     # - skip if this author (like 'president') has already approved this studsubj
-            # under a different permit (like 'secretary' or 'commissioner')
+            # under a different permit (like 'secretary' or 'corrector')
 
                         double_approved = False
                         if requsr_auth == 'auth1':
@@ -5923,8 +5932,9 @@ def check_verifcode_local(upload_dict, request ):
     verif_key = upload_dict.get('verificationkey')
     verif_code = upload_dict.get('verificationcode')
     if logging_on:
-        logger.debug('verif_key: ' + str(verif_key))
-        logger.debug('verif_code: ' + str(verif_code))
+        logger.debug('upload_dict form_name:  ' + str(form_name))
+        logger.debug('upload_dict verif_key:  ' + str(verif_key))
+        logger.debug('upload_dict verif_code: ' + str(verif_code))
 
     is_ok, is_expired = False, False
     msg_html, msg_txt = None, None
@@ -5934,7 +5944,6 @@ def check_verifcode_local(upload_dict, request ):
     # - get saved key_code
         saved_dict = acc_view.get_usersetting_dict(c.KEY_VERIFICATIONCODE, request)
         if logging_on:
-            logger.debug('key_code: ' + str(key_code))
             logger.debug('saved_dict: ' + str(saved_dict))
 
         if saved_dict:
@@ -5947,9 +5956,11 @@ def check_verifcode_local(upload_dict, request ):
             if logging_on:
                 logger.debug('saved_expirationtime: ' + str(saved_expirationtime))
                 logger.debug('now_iso: ' + str(now_iso))
+
             if now_iso > saved_expirationtime:
                 is_expired = True
                 msg_txt = _("The verificationcode has expired.")
+
             else:
     # - check if code is correct:
                 saved_form = saved_dict.get('form')
@@ -5968,8 +5979,9 @@ def check_verifcode_local(upload_dict, request ):
                 acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, None, request)
 
     if logging_on:
-        logger.debug('is_ok: ' + str(is_ok))
+        logger.debug('is_ok:      ' + str(is_ok))
         logger.debug('is_expired: ' + str(is_expired))
+        logger.debug('msg_txt:    ' + str(msg_txt))
     if msg_txt:
         msg_html = ''.join(("<div class='p-2 border_bg_invalid'>",
                             "<p class='pb-2'>",

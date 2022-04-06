@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     field_settings.btn_usergroup = {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Examinator", "Commissioner_2lines",
+                                    "President", "Secretary", "Examiner", "Corrector_2lines",
                                     "Analyze",  "System_administrator_2lines", "Inactive"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_anlz", "group_admin", "is_active"],
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     field_settings.btn_userpermit = {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Examinator", "Commissioner_2lines",
+                                    "President", "Secretary", "Examiner", "Corrector_2lines",
                                     "Analyze", "System_administrator_2lines"],
                     field_names: ["select", "role", "page", "action", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4",
@@ -1829,16 +1829,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const pk_int = get_attr_from_el_int(tblRow, "data-pk")
             const [index, found_dict, compare] = b_recursive_integer_lookup(user_rows, "id", pk_int);
             const data_dict = (!isEmpty(found_dict)) ? found_dict : {};
-            console.log("data_dict", data_dict)
+    //console.log("data_dict", data_dict)
 
+            // fldName = allowed_subjectbases etc
             const fldName = get_attr_from_el(el_input, "data-field");
             mod_MSM_dict.user_pk = data_dict.id;
             mod_MSM_dict.schoolbase_pk = data_dict.schoolbase_id;
             mod_MSM_dict.mapid = data_dict.mapid;
             mod_MSM_dict.data_field = fldName;
+
+            // data_array = "117;136"
             mod_MSM_dict.data_array = data_dict[fldName]
 
-        console.log( "mod_MSM_dict", mod_MSM_dict)
             const caption = get_allowed_caption(fldName);
 
     // ---  set header text
@@ -1918,8 +1920,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSM_FillSelectTable  ================ PR2022-01-26 PR2203023
     function MSM_FillSelectTable(fldName, caption) {
-        console.log( "===== MSM_FillSelectTable ========= ");
-        console.log( "fldName: ", fldName);
+        //console.log( "===== MSM_FillSelectTable ========= ");
+        //console.log( "fldName: ", fldName);
 
         // check if school has multiple departments, only needed for allowed_clusterbases
         let school_has_multiple_deps = false;
@@ -1947,8 +1949,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // cluster has no base table
         const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
-
-        console.log( "data_rows: ", data_rows);
         const caption_none = loc.No_ + caption;
 
         let tblBody_select = el_MSM_tblbody_select;
@@ -1956,19 +1956,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let has_selected_rows = false;
 
-        console.log( "mod_MSM_dict.data_array: ", mod_MSM_dict.data_array);
-
 // --- loop through data_rows
         if(data_rows && data_rows.length){
-            const data_array = (mod_MSM_dict.data_array) ? mod_MSM_dict.data_array.split(";") : []
-        console.log( "data_array: ", data_array);
+            // data_array contains a list of strings with subbase_id etc.
+            const data_array = (mod_MSM_dict.data_array) ? mod_MSM_dict.data_array.split(";") : [];
 
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
                 const base_pk_str = (data_dict[base_pk_field]) ? data_dict[base_pk_field].toString() : null;
                 const row_is_selected = (base_pk_str && data_array && data_array.includes(base_pk_str));
+
+                if(row_is_selected){
+                    has_selected_rows = true;
+                };
+
                 const row_index = -1;
                 MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, display_depbase_field, row_is_selected);
-                if(row_is_selected){has_selected_rows = true}
             };
         };
 
@@ -1977,9 +1979,9 @@ document.addEventListener('DOMContentLoaded', function() {
         data_dict[base_pk_field] = 0;
         data_dict[display_name_field] = "<" + loc.All_ + caption + ">"
 
-        const row_is_selected = !has_selected_rows;
         const row_index = 0;
-        MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, row_is_selected, true)  // true = insert_at_index_zero
+        // select <All> when has_selected_rows = false;
+        MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, display_depbase_field, !has_selected_rows, true)  // true = insert_at_index_zero
 
     }  // MSM_FillSelectTable
 
@@ -1995,7 +1997,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const base_pk_int = data_dict[base_pk_field];
         const display_name = ( data_dict[display_name_field] ) ? data_dict[display_name_field] : "-";
 
-        //console.log( "display_name: ", display_name);
+    //console.log( "display_name: ", display_name);
 
         const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
@@ -2014,8 +2016,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const row_index = (insert_at_index_zero) ? 0 :
             b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, setting_dict.user_lang);
-
-        //console.log("row_index: ", row_index);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_select.insertRow(row_index);
@@ -2072,7 +2072,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.innerText = ( data_dict[display_depbase_field] ) ? data_dict[display_depbase_field] : "";
             td.appendChild(el);
         };
-
     };  // MSM_FillSelectRow
 
 //=========  MSM_SelecttableClicked  ================ PR2022-01-26

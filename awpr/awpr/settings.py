@@ -1,5 +1,4 @@
 import os
-
 from decouple import config, Csv  # PR2018-02-24
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
@@ -198,7 +197,6 @@ AWS_PRIVATE_MEDIA_LOCATION = config('AWS_PRIVATE_MEDIA_LOCATION')
 # PR2021-03-08 from the docs https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
 #STATICFILES_STORAGE = 'storages.backends.s3boto3.S3StaticStorage'
 AWS_S3_REGION_NAME = 'nyc3'
-
 
 # PR 2018-03-27
 LOGIN_URL = 'login'

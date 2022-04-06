@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
              ["id_user_manage", "User accounts"],
              ["id_user_usergroups", "Usergroups"],
              ["id_user_allowed", "Allowed sections"],
-             ["id_user_examiners", "Examiners en commissioners"],
+             ["id_user_examiners", "Examiners en correctors"],
              ]),
 
         get_dropdown_button("upload", "id_intro", "Upload data", [

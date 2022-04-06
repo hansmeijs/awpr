@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_studsubj_validate_all = get_attr_from_el(el_data, "data-url_studsubj_validate_all");
     urls.url_studsubj_multiple_occurrences = get_attr_from_el(el_data, "data-url_studsubj_multiple_occurrences");
     urls.url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
-    urls.url_studsubj_approve_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_multiple");
+    urls.url_studsubj_approve_submit_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_submit_multiple");
     urls.url_studsubj_send_email_exform = get_attr_from_el(el_data, "data-url_studsubj_send_email_exform");
     urls.url_grade_download_ex1 = get_attr_from_el(el_data, "data-url_grade_download_ex1");
 
@@ -4737,8 +4737,8 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
                 const function_str = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1")) ? loc.President :
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary :
-                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Examinator :
-                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4")) ? loc.Commissioner : "-";
+                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Examiner :
+                                (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4")) ? loc.Corrector : "-";
 
                 let header_txt = (is_approve) ? loc.Approve_subjects : loc.Submit_Ex1_form;
                 header_txt += loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")"
@@ -4794,26 +4794,30 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
             mod_MASS_dict.is_reset = (save_mode === "delete");
 
             mod_MASS_dict.step += 1;
+            console.log("mod_MASS_dict.is_submit", mod_MASS_dict.is_submit) ;
+            console.log("mod_MASS_dict.step", mod_MASS_dict.step) ;
 
             //  upload_dict.modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
-            let url_str = urls.url_studsubj_approve_multiple;
+            let url_str = urls.url_studsubj_approve_submit_multiple;
             const upload_dict = { table: "studsubj",
-                                    now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
+                                  form: "ex1",  // for verifcode
+                                  now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
                                 };
 
             if (mod_MASS_dict.is_approve){
                 if (mod_MASS_dict.step === 0){
-                    url_str = urls.url_studsubj_approve_multiple;
+                    url_str = urls.url_studsubj_approve_submit_multiple;
                     upload_dict.mode = "approve_test";
                 } else if (mod_MASS_dict.step === 2){
                     upload_dict.mode = (mod_MASS_dict.is_reset) ? "approve_reset" : "approve_save";
                 }
             } else if (mod_MASS_dict.is_submit){
                 if (mod_MASS_dict.step === 0){
-                    url_str = urls.url_studsubj_approve_multiple;
+                    url_str = urls.url_studsubj_approve_submit_multiple;
                     upload_dict.mode = "submit_test";
-                } else if (mod_MASS_dict.step === 2){
+                } else if (mod_MASS_dict.step === 2){  //PR2022-04-05 debug Hilly Buitenweg: could not get verif code. Was: if (mod_MASS_dict.step === 2
                     url_str = urls.url_studsubj_send_email_exform;
+                    upload_dict.mode = "request_verif";
                 } else if (mod_MASS_dict.step === 4){
                     upload_dict.mode = "submit_save";
                     upload_dict.verificationcode = el_MASS_input_verifcode.value
@@ -4970,7 +4974,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
         console.log("msg_info_txt", msg_info_txt) ;
         if (msg_info_txt){
-            mod_MASS_dict.msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + " ...</p></div>";
+            mod_MASS_dict.msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + "...</p></div>";
         }
         //console.log("mod_MASS_dict.msg_html", mod_MASS_dict.msg_html) ;
         el_MASS_info_container.innerHTML = mod_MASS_dict.msg_html;

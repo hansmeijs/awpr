@@ -86,7 +86,7 @@ def update_library(examyear, request):
         ('ex2', 'backpage01_lex', 'Digitale handtekening van de examinatoren voor akkoord cijfers commissie-examen (CIE) als aan ommezijde vermeld.'),
         ('ex2', 'backpage02', 'Ieder voorzover het zijn kandidaten betreft'),
 
-        ('ex2', 'backheader01', 'Naam Examinator'),
+        ('ex2', 'backheader01', 'Naam examinator'),
         ('ex2', 'backheader02', 'Vak'),
         ('ex2', 'backheader03', 'Klas'),
         ('ex2', 'backheader04', 'Cluster'),

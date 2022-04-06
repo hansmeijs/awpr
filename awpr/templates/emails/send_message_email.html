@@ -1,11 +1,13 @@
 {% load i18n %}{% autoescape off %}
-{% trans "This is a message from AWP-online. Login and click on the envelope in the right upper corner to view it and to download attachments." %}
 
 {{ school_attn }},
 {% trans "attn." %}:{% for sendto_name in sendto_name_list %}
     {{ sendto_name }}{% endfor %}
 
 {{ body_txt }}
+
+
+{% trans "This is a message from AWP-online. Login and click on the envelope in the right upper corner to view it and to download attachments." %}
 
 {% endautoescape %}
 

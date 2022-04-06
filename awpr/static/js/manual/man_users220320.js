@@ -131,11 +131,12 @@ const man_user = {
         write_image("img_users_tbl_allowed_ne"),
 
         write_paragraph_header("id_user_examiners", "Examinatoren en gecommitteerden"),
-        write_paragraph_body("",[
-            "<p>Ook de examinatoren en gecommitteerden zullen voortaan hun digitale handtekening moeten zetten. ",
-            "In deze paragraaf wordt aangegeven hoe dit in zijn werk gaat.</p>",
+        write_paragraph_body("",
+            ["<p>Ook de examinatoren en gecommitteerden zullen voortaan hun digitale handtekening moeten zetten.<br>",
+            "In het eerste deel van deze paragraaf wordt aangegeven hoe de accounts van de examinatoren en gecommitteerden worden aangemaakt.<br>",
+            "In het tweede deel wordt de procedure omschreven voor het goedkeuren door de examinator en gecommitteerde.</p>",
 
-            "<h5 class='mx-2 mb-0 pb-0'>Accounts aanmaken voor de examinatoren en gecommitteerden</h4>",
+            "<h5 class='mx-2 mt-4 mb-0 pb-0'><span class='man_underline'>Accounts aanmaken voor de examinatoren en gecommitteerden</span></h5>",
             "<p>Alle examinatoren en gecommitteerden krijgen een gebruikersaccount. ",
             "Ze kunnen worden aangemaakt door een gebruiker met systeembeheerder permissie. Doorloop de volgende drie stappen:</p>",
 
@@ -160,7 +161,7 @@ const man_user = {
             "<li>Klik in de regel van  een gebruiker op een van de kolommen <i>Toegestane afdelingen, - leerwegen, - vakken of - clusters</i>.</li>",
             "<li>Selecteer in het venster dat verschijnt een of meerdere items of klik op <i>Alle ... </i>.</li>",
             "<li>Klik op <i>Opslaan</i></ul>",
-        ]),
+            ]),
         write_paragraph_body("img_lightbulb",
             ["<p><b>Gebruikersnamen uploaden</b><br>",
                 "In plaats van de accounts een voor een aan te maken, kun je ze ook importeren vanuit een Excel bestand. ",
@@ -169,10 +170,11 @@ const man_user = {
                 "Klik bij elke gebruiker in de kolom <i>Geactiveerd</i> om de activerings e-mail te versturen.</p>",
             ]),
         write_paragraph_body("",
-            ["<h5 class='mx-2 mb-0 pb-0'>Scores en cijfers goedkeuren</h4>",
-            "<p class='mb-0 pb-0'>Alle schoolexamen cijfers dienen digitaal goedgekeurd te worden door de voorzitter, secretaris en examinator. ",
-            "De scores van het centraal examen dienen tevens door de gecommitteerde te worden goedgekeurd.<br>",
-            "Doorloop de volgende stappen om de scores of cijfers goed te keuren:</p>",
+            ["<h5 class='mx-2 mt-4 mb-0 pb-0'><span class='man_underline'>Goedkeuren van scores en cijfers door de examinator en gecommitteerde</span></h5>",
+            "<p>Alle schoolexamen cijfers dienen digitaal goedgekeurd te worden door de voorzitter, secretaris en examinator. ",
+            "Wanneer een vak geen examinator heeft, omdat het een cijfer van vorig jaar betreft, dient de voorzitter of secretaris tevens als examinator goed te keuren.</p>",
+            "<p>De scores van het centraal examen dienen tevens door de gecommitteerde te worden goedgekeurd.</p>",
+            "<p>Doorloop de volgende stappen om de scores of cijfers goed te keuren:</p>",
 
             "<p class='mb-0 pb-0'><b>Stap 1: Selecteer de goed te keuren kandidaten en vakken</b></p>",
             "<ul class='manual_bullet'><li>Open de pagina <i>Cijfers</i> door in de lichtblauwe paginabalk op de knop <i>Cijfers</i> te klikken.</li>",
@@ -213,7 +215,7 @@ const man_user = {
             "This is necessary because the security of the data is of great importance and because there are many different types of users, ",
             "all of which use AWP-online in different ways and access different parts of the program.</p>",
             "<p>The creation of user accounts and the granting of permissions is done by the organization itself. ",
-            "The accounts for the examiners and commissioners are also created by the school itself.</p>",
+            "The accounts for the examiners and correctors are also created by the school itself.</p>",
             "<p>Only a user belonging to the user group 'System Administrator' can create and edit user accounts.</p>",
             "<p>This section explains how to manage user accounts and their permissions.</p>",
         ]),
@@ -246,7 +248,7 @@ const man_user = {
             "Enter the username, full name of the user and the e-mail address.</p>",
             "<p>The username is used to log in. The full name is used in official documents such as the diploma, grade list and Ex forms. ",
             "The username, full name and email address must be unique within the organization. ",
-             "The same username and e-mail address may be used at another organization, for example when a user is also a commissioner at another school.</p>",
+             "The same username and e-mail address may be used at another organization, for example when a user is also a corrector at another school.</p>",
 
              "<p><b>Activation Link</b><br>After you click on <i>Create User Account</i> AWP will send an email to the user to verify the email address. ",
             "The email contains a link that allows the new user to create a password and log in. ",
@@ -279,10 +281,10 @@ const man_user = {
              "<p class='mb-0 pb-0'>AWP has the following user groups:</p>",
             "<ul class='manual_bullet'><li><b>Read only</b>. This user group can view the pages, but not edit any data.</li>",
             "<li><b>Change</b>. This user group can view the pages and change data.</li>",
-            "<li><b>Chairman</b>. The chairman can approve data and submit diplomas, lists of marks and Ex forms.</li>",
+            "<li><b>Chairperson</b>. The chairperson can approve data and submit diplomas, lists of marks and Ex forms.</li>",
             "<li><b>Secretary</b>. The secretary can approve data and submit diplomas, lists of marks and Ex forms.</li>",
             "<li><b>Examiner</b>. The examiner can approve scores and grades.</li>",
-            "<li><b>Commissioner</b>. The commissioner can approve scores and grades.</li>",
+            "<li><b>Corrector</b>. The corrector can approve scores and grades.</li>",
             "<li><b>System Administrator</b>. Only the System Administrator has access to the Users page and can create, delete and set permissions for user accounts.</li></ul></p>",
 
              "<p class='mb-0 pb-0'>A user can belong to <b>multiple user groups</b>. ",
@@ -292,15 +294,15 @@ const man_user = {
 
              "<p class='mb-0 pb-0'>The following <b>restrictions</b> apply: ",
              "<ul class='manual_bullet'><li>A user cannot be president and secretary at the same time.</li>",
-             "<li>Several users can belong to the user group 'Chairman' and 'Secretary'.</li>",
+             "<li>Several users can belong to the user group 'Chairperson' and 'Secretary'.</li>",
              "<li>The same user cannot approve subjects and grades as both chairperson and secretary.</li>",
              "<li>The same user cannot approve subjects and grades both as an examiner and as a examiner.</li>",
              "<li>A system administrator cannot delete the user group 'System Administrator' for himself.</li>",
              "<li>The ETE can create users at other organizations and if necessary delete or disable them.</li></ul></p>",
         ]),
         write_image("img_users_tbl_usergroups_ne"),
-        write_paragraph_header("id_user_allowed", "Allowed Sections"),
 
+        write_paragraph_header("id_user_allowed", "Allowed Sections"),
         write_paragraph_body("",[
             "<p>A user has access to all data of all candidates by default. This is not always desirable. ",
             "In AWP it is possible for each user to set restrictions on what information he/she can view and change. ",
@@ -314,11 +316,9 @@ const man_user = {
              "<p>When <b>allowed departments, learning paths and/or subjects</b> are set, the user can only see the data of the specified departments, learning paths and/or subjects.<br>",
              "When <b>allowed clusters</b> are set, the user can only change the data of the specified clusters, but the rest of the data remains visible.</p>",
              "<p>Example: ",
-
-
              "<ul class='manual_bullet'><li>A user belongs to the user groups 'Modify' and 'Examiner' and has the cluster 'wk -2' of the Mathematics subject as allowed clusters. ",
              "This user can view all data of all candidates, but can only change and approve the grades of the Mathematics subject of the candidates in the cluster 'wk -2'.</li>",
-             "<li>A user only belongs to the user group 'Commissioner' and has the allowed department 'Vsbo', the allowed subject 'Mathematics' and the cluster 'wk -2' as allowed clusters. ",
+             "<li>A user only belongs to the user group 'Corrector' and has the allowed department 'Vsbo', the allowed subject 'Mathematics' and the cluster 'wk -2' as allowed clusters. ",
              "This user can see the Mathematics data of all Vbso candidates, but can only approve the Mathematics grades of the candidates in the cluster 'wk -2'.</li></ul></p>" ,
 
              "<p class='mb-0 pb-0'>How to <b>set allowed sections</b> is as follows: ",
@@ -329,6 +329,84 @@ const man_user = {
              "<li>If there are no restrictions, the column remains empty.</li></ul></p>",
         ]),
         write_image("img_users_tbl_allowed_ne"),
+
+        write_paragraph_header("id_user_examiners", "Examiners and correctors"),
+        write_paragraph_body("",
+            ["<p>The examiners and correctors will also have to put their digital signature from now on.<br>",
+            "The first part of this section describes how the accounts of the examiners and correctors are created.<br>",
+            "The second part describes the procedure for approval by the examiner and the examiner.</p>",
+
+            "<h5 class='mx-2 mt-4 mb-0 pb-0'><span class='man_underline'>Create accounts for the examiners and correctors</span></h5>",
+            "<p>All examiners and correctors will receive a user account.",
+            "They can be created by a user with system administrator permission. Go through the following three steps:</p>",
+
+            "<p class='mb-0 pb-0'><b>Step 1: Create user accounts for examiners and examiners</b><br>",
+            "<ul class='manual_bullet'><li>Go to the <i>Users</i> page and click <i>Add User</i> in the menu bar.</li>",
+            "<li>In the <i>Add User</i> window, enter the username and full name.",
+            "The username is used for login, the full name is displayed on the Ex forms.</li>",
+            "<li>Finally enter the email address and click on <i>Create user account</i>.",
+            "AWP will now send an e-mail with a link to the specified e-mail address.</li>",
+            "<li>The user must click on the link in that email to enter a password and activate the account.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Step 2: Assign User Groups</b><br>",
+            "<ul class='manual_bullet'><li>In the horizontal black bar, click the <i>Usergroups</i> tab ",
+            "and put a check next to the user's name in the <i>Examiner</i> or <i>Assignee</i> column.</li>",
+            "<li>If the examiner also enters grades, put a check in the <i>Edit</i> column.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Step 3: Set allowed sections</b><br>",
+            "The examiner and correctors can now approve all subjects of all candidates.",
+            "That is not always desirable.",
+            "In the <i>Allowed Sections</i> tab, you can restrict which courses he/she can approve as follows:",
+            "<ul class='manual_bullet'><li>In the horizontal black bar, click the <i>Allowed Sections</i></li> tab",
+            "<li>In a user's line, click on one of the columns <i>Allowed departments, learning paths, courses or clusters</i>.</li>",
+            "<li>In the window that appears, select one or more items or click on <i>All ... </i>.</li>",
+            "<li>Click <i>Save</i></ul>",
+            ]),
+
+        write_paragraph_body("img_lightbulb",
+            ["<p><b>Upload usernames</b><br>",
+                "Instead of creating the accounts one by one, you can also import them from an Excel file.",
+                "Click <i>Upload Usernames</i> in the menu bar and go through the steps.",
+                "After uploading, AWP will automatically send <span class='man_underline'>not</span> an email with an activation link.",
+                "Click in the <i>Activated</i> column for each user to send the activation email.</p>",
+            ]),
+
+        write_paragraph_body("",
+            ["<h5 class='mx-2 mt-4 mb-0 pb-0'><span class='man_underline'>Approval of scores and grades by the examiner and examiner</span></h5>",
+            "<p>All school exam figures must be digitally approved by the chairperson, secretary and examiner.",
+            "If a subject does not have an examiner, because it has grades from last year, the chair or secretary must also approve as an examiner. </p>",
+            "<p>The scores of the central exam must also be approved by the examiner.</p>",
+            "<p>Go through the following steps to approve the scores or grades:</p>",
+
+            "<p class='mb-0 pb-0'><b>Step 1: Select the candidates and subjects to be approved</b></p>",
+            "<ul class='manual_bullet'><li>Open the <i>Grades</i> page by clicking the <i>Grades</i> button in the light blue page bar.</li>",
+            "<li>If desired, you can filter the grades you want to approve in the vertical gray bar on the left.</li>",
+            "<li>Click <i>View all of this time slot</i> at the bottom of the vertical gray bar on the left ",
+            "if you want to approve all grades for which you have permission at once.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Step 2: Check the grades to be approved</b></p>",
+            "<ul class='manual_bullet mb-0 pb-0'><li>Click the <i>Approve Grades</i> button in the horizontal gray menu bar. The <i>Approve Grades</i> window opens .</li>",
+            "<li>The frame indicates which filter has been set. The <i>Function</i> field shows the capacity in which you approve the grades. ",
+            "If you are both examiner and chairperson/secretary, you can select in this field in which capacity you approve the grades.</li>",
+            "<li>Click <i>Check Grades</i>. AWP checks the grades and displays the results in a separate frame.</li></ul>",
+        ]),
+
+        write_paragraph_body("img_exclamationsign",
+            ["<p>The filter on the allowed subjects and clusters is not (yet) displayed in the gray frame. ",
+                "The result of the check does take into account the permitted subjects and clusters. </p>",
+            ]),
+
+        write_paragraph_body("",
+            ["<p class='mb-0 pb-0'><b>Step 3: Approve grades or clear approvals</b></p>",
+            "<ul class='manual_bullet'><li>Click <i>Approve Grades</i>. The grades are now approved. The diamond behind the grade shows the status of the approval. ",
+            "Hover over the diamond to see who approved the grade.</li>",
+            "<li>Click on <i>Remove approvals</i>. The approval of the selected grades will be removed.</li></ul>",
+
+            "<p class='mb-0 pb-0'><b>Step 4: Approve individual grades or clear approvals</b></p>",
+            "<ul class='manual_bullet'><li>Click the diamond behind a grade to approve the grade or remove the approval.</li></ul>",
+        ]),
+
+
         "<div class='p-3 visibility_hide'>-</div>",
 
     ]

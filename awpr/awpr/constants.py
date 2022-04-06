@@ -276,7 +276,6 @@ area=> select 6::bit(32);
 
 
 # USER SETTING KEYS PR2018-12-19 PR2020-12-18
-KEY_MENU_SELECTED = "menu_selected"
 KEY_SELECTED_PK = 'selected_pk'
 KEY_SEL_EXAMPERIOD = 'sel_examperiod'
 KEY_SEL_EXAMTYPE = 'sel_examtype'
@@ -481,7 +480,7 @@ def get_role_options(request):
     ETE_DEX = _('Division of Examinations') if request.user.country.abbrev.lower() == 'sxm' else 'ETE'
     _role_options = [
         {'value': ROLE_008_SCHOOL, 'caption': _('School')},
-        {'value': ROLE_016_COMM, 'caption': _('Commissioners')},
+        {'value': ROLE_016_COMM, 'caption': _('Correctors')},
         {'value': ROLE_032_INSP, 'caption': _('Inspectorate')},
         {'value': ROLE_064_ADMIN, 'caption': ETE_DEX},
         {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
@@ -518,8 +517,8 @@ USERGROUP_CAPTION = {
     #USERGROUP_TEACHER: _('Teacher'),
     USERGROUP_AUTH1_PRES: _('President'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
-    USERGROUP_AUTH3_EXAM: _('Examinator'),
-    USERGROUP_AUTH4_COM: _('Commissioner'),
+    USERGROUP_AUTH3_EXAM: _('Examiner'),
+    USERGROUP_AUTH4_COM: _('Corrector'),
     USERGROUP_ANALYZE: _('Analyze'),
     USERGROUP_ADMIN: _('System administrator')
 }

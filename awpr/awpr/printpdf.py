@@ -1094,7 +1094,7 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
                         for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
                             result = result_partex_dict.get(q_number)
                             score = None
-                            is_not_entered = False  # is_not_entered, ie score not entered by examinator
+                            is_not_entered = False  # is_not_entered, ie score not entered by examiner
                             is_blank = False # is_blank, ie question not answered by candidate
                             has_error = False
 
@@ -1111,10 +1111,10 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
                                 # give error when there are no assignment for this q_number
                                 #r_dict['error'] = 'No assignment for this question'
                             elif not result:
-                                is_not_entered = True  # is_not_entered, ie score not entered by examinator
+                                is_not_entered = True  # is_not_entered, ie score not entered by examiner
                             elif result == 'x':
                                 is_blank = True # is_blank, ie question not answered by candidate
-                                entered_count += 1 # count entered by examinator
+                                entered_count += 1 # count entered by examiner
                             else:
                                 max_char = q_dict.get('max_char')
                                 max_score = q_dict.get('max_score')
@@ -1144,7 +1144,7 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
                                             else:
                                                 score = 0
 
-                                            entered_count += 1  # count entered by examinator
+                                            entered_count += 1  # count entered by examiner
 
                                         if logging_on:
                                             logger.debug('max_char_lc: ' + str(max_char_lc))
@@ -1167,7 +1167,7 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
                                         else:
                                             score = result_int
                                             total_score += result_int
-                                            entered_count += 1  # count entered by examinator
+                                            entered_count += 1  # count entered by examiner
 
                                     if logging_on:
                                         logger.debug('score: ' + str(score))

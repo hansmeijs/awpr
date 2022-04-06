@@ -341,19 +341,23 @@ class ClusterUploadView(View):  # PR2022-01-06
                         updated_cluster_rows = []
                         if updated_cluster_pk_list:
                             updated_cluster_rows = sj_vw.create_cluster_rows(
+                                request=request,
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_schoolbase,
                                 sel_depbase=sel_depbase,
                                 cur_dep_only=True,
+                                allowed_only=False,  # TODO check if value  false is ok
                                 cluster_pk_list=updated_cluster_pk_list,
                                 add_field_created=False
                             )
                         if created_cluster_pk_list:
                             created_cluster_rows = sj_vw.create_cluster_rows(
+                                request=request,
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_schoolbase,
                                 sel_depbase=sel_depbase,
                                 cur_dep_only=True,
+                                allowed_only=False,  # TODO check if value  false is ok
                                 cluster_pk_list=created_cluster_pk_list,
                                 add_field_created=True
                             )
@@ -1219,7 +1223,7 @@ class StudentsubjectMultipleOccurrencesView(View):  # PR2021-09-05
 @method_decorator([login_required], name='dispatch')
 class SendEmailSubmitExformView(View):  # PR2021-07-26
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= SendEmailSubmitExformView ============= ')
@@ -1244,6 +1248,9 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
             req_usr = request.user
             mode = upload_dict.get('mode')
             sel_page = 'page_exams' if mode in ('publish_exam', 'publish_grade_exam') else 'page_studsubj'
+            if logging_on:
+                logger.debug('mode: ' + str(mode))
+                logger.debug('sel_page: ' + str(sel_page))
             if req_usr and req_usr.country and req_usr.schoolbase:
                 permit_list = req_usr.permit_list(sel_page)
                 if permit_list and req_usr.usergroup_list:
@@ -1273,7 +1280,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
                     sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                         dl.get_selected_ey_school_dep_from_usersetting(request)
                 else:
-                    formname = 'Ex1'
+                    formname = 'ex1'
                     sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                         dl.get_selected_ey_school_dep_from_usersetting(request)
 
@@ -1444,6 +1451,10 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                         if verification_is_ok:
                             update_wrap['verification_is_ok'] = True
 
+                    if logging_on:
+                        logger.debug('verification_is_ok' + str(verification_is_ok))
+                        logger.debug('msg_html' + str(msg_html))
+
                     if verification_is_ok:
                         sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_student_pk = None, None, None, None
                         # don't filter on sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk when is_submit
@@ -1454,8 +1465,12 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                 sel_sctbase_pk = selected_dict.get(c.KEY_SEL_SCTBASE_PK)
                                 sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
                                 # TODO filter by cluster
-                            if logging_on:
-                                logger.debug('selected_dict: ' + str(selected_dict))
+                        if logging_on:
+                            logger.debug('is_approve: ' + str(is_approve))
+                            logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                            logger.debug('sel_sctbase_pk: ' + str(sel_sctbase_pk))
+                            logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
+                            logger.debug('sel_student_pk: ' + str(sel_student_pk))
 
 # +++ get selected studsubj_rows
                         # TODO exclude published rows?? Yes, but count them when checking. You cannot approve or undo approve or submit when submitted
@@ -1474,8 +1489,8 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                 crit.add(Q(schemeitem__subject_id=sel_subject_pk), crit.connector)
 
                         if logging_on:
-                            logger.debug('sel_lvlbase_pk:   ' + str(sel_lvlbase_pk))
-                            logger.debug('sel_sctbase_pk:  ' + str(sel_sctbase_pk))
+                            logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                            logger.debug('sel_sctbase_pk: ' + str(sel_sctbase_pk))
                             logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
 
                             row_count = stud_mod.Studentsubject.objects.filter(crit).count()
@@ -1503,6 +1518,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                             # file_name will be added after creating Ex-form
                             published_instance = None
                             published_instance_pk = None
+                            published_instance_filename = None
                             if is_submit and not is_test:
                                 now_arr = upload_dict.get('now_arr')
 
@@ -1514,9 +1530,11 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                     request=request)  # PR2021-07-27
                                 if published_instance:
                                     published_instance_pk = published_instance.pk
+                                    published_instance_filename = published_instance.filename
 
                             if logging_on:
                                 logger.debug('published_instance_pk' + str(published_instance_pk))
+                                logger.debug('published_instance_filename' + str(published_instance_filename))
 
                             studsubj_rows = []
 
@@ -1577,7 +1595,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                             update_wrap['approve_count_dict'] = count_dict
 
     # - create msg_html with info of rows
-                            msg_html = self.create_msg_list(count_dict, requsr_auth, is_approve, is_test)
+                            msg_html = self.create_Ex1_msg_list(count_dict, requsr_auth, is_approve, is_test, published_instance_filename)
 
 # +++++ create Ex1 form
                             if row_count:
@@ -1635,13 +1653,13 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                 studsubj.delete(request=request)
                 if logging_on:
                     logger.debug('deleted _studsubj: ' + str(studsubj))
-
 # - end of  delete_tobedeleted_from_studsubj
 
-    def create_msg_list(self, count_dict, requsr_auth, is_approve, is_test):
+
+    def create_Ex1_msg_list(self, count_dict, requsr_auth, is_approve, is_test, published_instance_filename):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
-            logger.debug('  ----- create_msg_list -----')
+            logger.debug('  ----- create_Ex1_msg_list -----')
             logger.debug('count_dict: ' + str(count_dict))
             logger.debug('is_test: ' + str(is_test))
 
@@ -1775,8 +1793,13 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                 if saved:
                     student_count_txt = get_student_count_text(student_saved_count)
                     subject_count_txt = get_subject_count_text(saved)
-                    msg_str += '<br>' + str(_("It contains %(subj)s of %(stud)s.")
-                                            % {'stud': student_count_txt, 'subj': subject_count_txt})
+                    file_name = published_instance_filename if published_instance_filename else '---'
+                    msg_str += ''.join(('<br>',
+                        str(_("It contains %(subj)s of %(stud)s.") % {'stud': student_count_txt, 'subj': subject_count_txt}),
+                        '<br>', str(_("The %(cpt)s form has been saved as '%(val)s'.") % {'cpt': 'Ex1', 'val': file_name}),
+                        '<br>', str(_("Go to the page 'Archive' to download the file."))
+                    ))
+
         msg_list.append(str(msg_str))
         msg_list.append('</p>')
 
@@ -1801,7 +1824,8 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
         msg_html = ''.join(msg_list)
         return msg_html
-    # - end of create_submit_msg_list
+# - end of create_Ex1_msg_list
+
 
     def create_Ex1_form(self, published_instance, sel_examyear, sel_school, sel_department, save_to_disk, request, user_lang):
         #PR2021-07-27 PR2021-08-14
@@ -2067,7 +2091,7 @@ def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, reque
                 else:
 
 # - skip if this author (like 'president') has already approved this studsubj
-        # under a different permit (like 'secretary' or 'commissioner')
+        # under a different permit (like 'secretary' or 'corrector')
                     logger.debug('>>> requsr_auth: ' + str(requsr_auth))
                     logger.debug('>>> req_user:    ' + str(req_user))
                     logger.debug('>>> auth1by:     ' + str(auth1by))
@@ -4898,11 +4922,11 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
 
         acc_view.get_userfilter_allowed_subjbase(
-            request = request,
-            sql_keys = sql_keys,
-            sql_list = sql_list,
-            subjbase_pk = sel_subjbase_pk,
-            skip_allowed_filter = False,
+            request=request,
+            sql_keys=sql_keys,
+            sql_list=sql_list,
+            subjbase_pk=sel_subjbase_pk,
+            skip_allowed_filter=False,
             table='studsubj'
         )
 
@@ -4931,7 +4955,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
 
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))
-            logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
+            #logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
             #logger.debug('connection.queries: ' + str(connection.queries))
 
     # - full name to rows

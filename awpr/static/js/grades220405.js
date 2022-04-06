@@ -420,7 +420,7 @@ document.addEventListener("DOMContentLoaded", function() {
             level_rows: {cur_dep_only: true},
             sector_rows: {cur_dep_only: true},
             subject_rows: {cur_dep_only: true},
-            cluster_rows: {cur_dep_only: true},
+            cluster_rows: {cur_dep_only: true, allowed_only: true},
 
             student_rows: {cur_dep_only: true},
             studentsubject_rows: {cur_dep_only: true},
@@ -562,9 +562,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let el_submenu = document.getElementById("id_submenu")
 
-        if(permit_dict.permit_crud){
-            AddSubmenuButton(el_submenu, loc.Preliminary_Ex2, function() {ModConfirmOpen("prelim_ex2")});
-        };
+        AddSubmenuButton(el_submenu, loc.Preliminary_Ex2, function() {ModConfirmOpen("prelim_ex2")});
 
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
         //AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
@@ -1452,8 +1450,8 @@ if(j && !is_status_field){td.classList.add("border_left")};
                     if(auth_id){
                         const function_str = (i === 1) ?  loc.President :
                                             (i === 2) ? loc.Secretary :
-                                            (i === 3) ?  loc.Examinator :
-                                            (i === 4) ? loc.Commissioner : "";
+                                            (i === 3) ?  loc.Examiner :
+                                            (i === 4) ? loc.Corrector : "";
                         const field_usr = prefix_auth + "by_usr";
                         const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
 
@@ -1865,7 +1863,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 // give message and exit when grade is published
                         if (fldName === "se_status" && requsr_auth_index === 4 ){
-                            const msg_html = loc.approve_err_list.Commissioner_cannot_approve_se;
+                            const msg_html = loc.approve_err_list.Corrector_cannot_approve_se;
                             b_show_mod_message_html(msg_html);
                         } else if (is_published){
                             const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_change_approval;
@@ -1897,15 +1895,15 @@ if(j && !is_status_field){td.classList.add("border_left")};
                             //console.log("auth_dict", auth_dict)
 
 // give message when status_bool = true and grade already approved by this user in different function
-                            // president may also approve a examinator
-                            // secretary may alo approve as examinator
+                            // president may also approve as examiner
+                            // secretary may alo approve as examiner
 
                             let already_approved_by_auth_index = null;
                             if(new_requsr_auth_approved){
-                                // president cannot also approve as secretary or as commissioner
-                                // secretary cannot also approve as president or as commissioner
-                                // examinator cannot also approve as commissioner
-                                // commissioner cannot also approve as president, secretary or examinator
+                                // president cannot also approve as secretary or as corrector
+                                // secretary cannot also approve as president or as corrector
+                                // examiner cannot also approve as corrector
+                                // corrector cannot also approve as president, secretary or examiner
                                 const no_double_auth_index_list = (requsr_auth_index === 1) ? [2, 4] :
                                                              (requsr_auth_index === 2) ? [1, 4] :
                                                              (requsr_auth_index === 3) ? [4] :
@@ -2261,8 +2259,8 @@ if(j && !is_status_field){td.classList.add("border_left")};
             if (setting_dict.sel_auth_index === 4 && !["pe", "ce", "reex", "reex03"].includes(setting_dict.sel_examtype) ){
                 setting_dict.sel_auth_index = null;
                 const info_txt = (setting_dict.sel_examtype === "exem") ?
-                                loc.MAG_info.commissioner_cannot_approve_exem :
-                                loc.MAG_info.commissioner_cannot_approve_se;
+                                loc.MAG_info.corrector_cannot_approve_exem :
+                                loc.MAG_info.corrector_cannot_approve_se;
                 b_show_mod_message_html(info_txt);
             };
 
@@ -2357,9 +2355,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 // --- fill selectbox auth_index
                 if (el_MAG_auth_index){
-                    // auth_list = [{value: 1, caption: 'President'}, {value: 3, caption: 'Examinator'} )
+                    // auth_list = [{value: 1, caption: 'President'}, {value: 3, caption: 'Examiner'} )
                     const auth_list = [];
-                    const cpt_list = [null, loc.President, loc.Secretary, loc.Examinator, loc.Commissioner];
+                    const cpt_list = [null, loc.President, loc.Secretary, loc.Examiner, loc.Corrector];
                     for (let i = 0, auth_index; auth_index = requsr_auth_list[i]; i++) {
                         auth_list.push({value: auth_index, caption: cpt_list[auth_index]});
                     };

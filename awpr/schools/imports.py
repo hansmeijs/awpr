@@ -1436,9 +1436,9 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
             usergroups = 'auth1;read'
         elif function_first_letter_lc == 's': # 'Secretaris', 'Secretary'
             usergroups = 'auth2;read'
-        elif function_first_letter_lc == 'e':  # 'Examinator', 'Examiner'
+        elif function_first_letter_lc == 'e':  # 'Examiner'
             usergroups = 'auth3;read'
-        elif function_first_letter_lc in ('g', 'c'): # 'Gecommitteerde', 'Commissioner', 'Corrector'
+        elif function_first_letter_lc in ('g', 'c'): # 'Gecommitteerde', 'Corrector'
             usergroups = 'auth4;read'
 
 # - when school uploads users: get school_code from req_user instead of from data_dict

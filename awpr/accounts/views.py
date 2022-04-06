@@ -1850,7 +1850,7 @@ def update_usergroups(instance, field_dict, validate, request):
                 logger.debug('new_value: ' + str(new_value))
 
             if new_value:
-                # if commissioner: remove all other auth
+                # if corrector: remove all other auth
 
         # - remove other 'auth' usergroups when usergroup = 'auth123' is set to True
         #   only when called by update_user_instance
@@ -2367,8 +2367,8 @@ def get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, lvlbase_pk=None,
         logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
 
     if filter_single_pk:
-        sql_keys['lvl_pk'] = filter_single_pk
-        sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
+        sql_keys['lvlbase_pk'] = filter_single_pk
+        sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
     elif filter_pk_arr:
         sql_keys['lvl_arr'] = filter_pk_arr
@@ -2377,6 +2377,7 @@ def get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, lvlbase_pk=None,
     elif filter_none:
         sql_list.append("AND FALSE")
 # - end of get_userfilter_allowed_lvlbase
+
 
 def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=None, skip_allowed_filter=False, table=None):
     # PR2022-03-13

@@ -1472,16 +1472,23 @@
         };
         // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter?retiredLocale=nl
         // new_array = array.filter(item => true);
-    };  // b_clear_array
+    };  // b_copy_array_noduplicates
 
-//=========  b_clear_array  ================ PR2021-07-07
+//=========  b_clear_array  ================ PR2021-07-07 PR2022-03-24
     function b_clear_array(array){
-       // clear the array. from https://love2dev.com/blog/javascript-remove-from-array/
+        // according to https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript
+        // the splice function is fastest, pop is slowest
         if(array){
-            while (array.length) {
-                array.pop();
-            };
+            array.splice(0, array.length);
         };
+
+       // clear the array. from https://love2dev.com/blog/javascript-remove-from-array/
+        //if(array){
+        //    while (array.length) {
+        //        array.pop();
+        //    };
+        //};
+
     };  // b_clear_array
 
 //=========  b_clear_dict  ================ PR2021-10-23
@@ -1517,7 +1524,7 @@
 
 //========= b_get_auth_index_pres_secr_of_requsr  ======== PR2022-02-24
     function b_get_auth_index_pres_secr_of_requsr(loc, permit_dict){
-        // function returns auth_index of auth user, only pres and secr, ignores examinator an commissioner
+        // function returns auth_index of auth user, only pres and secr, ignores examiner an corrector
         // only used in exam approve
         // gives err messages when requsr his both auth pres and auth secr
 
@@ -1570,7 +1577,7 @@
             auth_index = 0;
 // show msg error if user has multiple auth usergroups
             const functions = (permit_auth[1] && permit_auth[2]) ? loc.President + loc.and + loc.Secretary :
-                              (permit_auth[3] && permit_auth[4]) ? loc.Commissioner + loc.and + loc.Examinator : "";
+                              (permit_auth[3] && permit_auth[4]) ? loc.Corrector + loc.and + loc.Examiner : "";
 
             const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
                         loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
@@ -1584,8 +1591,8 @@
     function b_get_function_of_auth_index(loc, auth_index){
         return (auth_index === 1) ? loc.President :
                 (auth_index === 2) ? loc.Secretary :
-                (auth_index === 3) ? loc.Examinator :
-                (auth_index === 4) ? loc.Commissioner : "-";
+                (auth_index === 3) ? loc.Examiner :
+                (auth_index === 4) ? loc.Corrector : "-";
 
     };  // b_get_function_of_auth_index
 

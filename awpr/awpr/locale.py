@@ -272,9 +272,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
-        dict['Commissioner'] = TXT_Commissioner
-        dict['Commissioner_2lines'] =  pgettext_lazy('2 lines', 'Commis-\nsioner')
-        dict['Examinator'] = TXT_Examinator
+        dict['Corrector'] = TXT_Corrector
+        dict['Corrector_2lines'] = pgettext_lazy('2 lines', 'Corrector')
+        dict['Examiner'] = TXT_Examiner
         dict['Teacher'] =  _('Teacher')
         dict['Analyze'] = _('Analyze')
         dict['System_administrator'] = _('System administrator')
@@ -1057,13 +1057,13 @@ def get_locale_dict(table_dict, user_lang, request):
             'subheader_submit_ex2': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2'},
             'subheader_submit_ex2a': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2A'},
             'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
-            'approve_1': _('After the grades are approved by the president, secretary and commissioner,'),
+            'approve_1': _('After the grades are approved by the president, secretary and corrector,'),
             'approve_2_ex2': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2'},
             'approve_2_ex2a': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2A'},
 
-            'commissioner_cannot_approve_exem': _("As a commissioner you don't have to approve %(et)s grades.") \
+            'corrector_cannot_approve_exem': _("As a corrector you don't have to approve %(et)s grades.") \
                                                 % {'et': str(_('Exemption')).lower()},
-            'commissioner_cannot_approve_se': _("As a commissioner you don't have to approve %(et)s grades.") \
+            'corrector_cannot_approve_se': _("As a corrector you don't have to approve %(et)s grades.") \
                                               % {'et': str(_('School exam')).lower()},
             'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
             'submit_1_ex2': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected grades.") % {'ex': 'Ex2'},
@@ -1128,8 +1128,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['President'] = TXT_President
         dict['Secretary'] = TXT_Secretary
-        dict['Commissioner'] = TXT_Commissioner
-        dict['Examinator'] = TXT_Examinator
+        dict['Corrector'] = TXT_Corrector
+        dict['Examiner'] = TXT_Examiner
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_by'] = TXT_Submitted_by
 
@@ -1192,7 +1192,7 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Approved_different_function': _('You have approved this grade already in a different function.'),
                                'Approved_in_function_of': _('You have already approved this grade as '),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
-                               'Commissioner_cannot_approve_se': _("As a commissioner you don't have to approve school exam grades."),
+                               'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
         }
 
 # ====== PAGE RESULTS ========================= PR2021-11-15
@@ -1278,7 +1278,6 @@ TXT_Regnumber_twolines = _('Registration\nnumber')
 TXT_Prefix = _('Prefix')
 TXT_Prefix_twolines = pgettext_lazy('two lines ', 'Prefix')
 
-
 TXT_Exam_period = _('Exam period')
 TXT_Select_examperiod = _('Select exam period')
 TXT_No_examperiods_found = _('No exam periods found')
@@ -1304,8 +1303,8 @@ TXT_No_subject_selected = _('No subject selected.')
 TXT_Function = _('Function')
 TXT_President = _('President')
 TXT_Secretary = _('Secretary')
-TXT_Commissioner = _('Commissioner')
-TXT_Examinator = _('Examinator')
+TXT_Corrector = _('Corrector')
+TXT_Examiner = _('Examiner')
 
 TXT__of_ = _(' of ')
 TXT_Submit = _('Submit')

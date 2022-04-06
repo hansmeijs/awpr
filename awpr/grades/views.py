@@ -176,7 +176,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
                         # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-        # - get auth_index (1 = President, 2 = Secretary, 3 = examinator, 4 = Commissioner
+        # - get auth_index (1 = President, 2 = Secretary, 3 = examiner, 4 = Corrector
                         # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
                         #  function may have changed if gradepage is not refreshed in time)
                         #  was: auth_index = upload_dict.get('auth_index')
@@ -197,7 +197,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
                         sel_examyear, sel_school, sel_department, may_edit, err_list = \
                                 dl.get_selected_ey_school_dep_from_usersetting(
                                     request=request,
-                                    commissioner_may_edit=True
+                                    corrector_may_edit=True
                                 )
                         if err_list:
                             update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': str(_('Approve grade')),
@@ -219,6 +219,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
                             # if examtype exists in upload_dict : get from upload_dict, get from usersettings otherwise
                             # sel_examtype may contain 'all'
                             # examtype = 'se', 'sr', 'pe', 'ce', 'reex','reex03', 'exem', 'all'
+                            # examtype has no value when called bij MAG_Save > get then from usersetting
                             sel_examtype = upload_dict.get('examtype')
                             if sel_examtype is None:
                                 sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
@@ -244,6 +245,9 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
                                     sel_cluster_pk=sel_cluster_pk,
                                     grade_pk=grade_pk
                                 )
+
+                                if logging_on:
+                                    logger.debug('grade_approve_rows len: ' + str(len(grade_approve_rows)))
 
                                 msg_dict = {} # used when approving multiple grades, to count grades
                                 msg_list = [] # used when approving single grade, to display message
@@ -542,7 +546,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
                               grade_pk=None, include_grades=False):
     # PR2022-03-07
     # called by GradeApproveView, GradeSubmitEx2View
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_approve_rows -----')
         logger.debug('sel_examtype: ' + str(sel_examtype))
@@ -727,11 +731,11 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08
 
                         # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-        # - get auth_index (1 = President, 2 = Secretary, 3 = examinator, 4 = Commissioner
+        # - get auth_index (1 = President, 2 = Secretary, 3 = examiner, 4 = Corrector
                         # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
                         #  function may have changed if gradepage is not refreshed in time)
                         #  was: auth_index = upload_dict.get('auth_index')
-                        #  >>> can't do it like this any more. User can have be examinator and pres/secr at the same time
+                        #  >>> can't do it like this any more. User can have be examiner and pres/secr at the same time
                         #  back to upload_dict.get('auth_bool_at_index')
 
                         if logging_on:
@@ -888,7 +892,7 @@ def create_submit_exform_msg_dict(msg_dict, file_name, is_test, ex_form): # PR20
         if auth_missing:
             msg_dict['auth_missing_text'] = _("  - %(val)s not completely approved") % \
                                             {'val': get_grades_are_text(auth_missing)}
-            exam_comm = _(' and examinator') if ex_form == 'Ex2' else _(', examinator and commissioner')
+            exam_comm = _(' and examiner') if ex_form == 'Ex2' else _(', examiner and corrector')
             msg_dict['saved_text'] = _("The %(cpt)s form can not be submitted.") % {'cpt': ex_form}
             msg_dict['saved_text2'] = _("All grades must be approved by the president, secretary%(exam_comm)s.") % {'exam_comm': exam_comm}
         else:
@@ -1123,11 +1127,11 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
                 else:
 
 # - skip if this author (like 'president') has already approved this grade
-        # under a different permit (like 'secretary' or 'commissioner')
-                    # president cannot also approve as secretary or as commissioner
-                    # secretary cannot also approve as president or as commissioner
-                    # examinator cannot also approve as commissioner
-                    # commissioner cannot also approve as president, secretary or examinator
+        # under a different permit (like 'secretary' or 'corrector')
+                    # president cannot also approve as secretary or as corrector
+                    # secretary cannot also approve as president or as corrector
+                    # examiner cannot also approve as corrector
+                    # corrector cannot also approve as president, secretary or examiner
                     if requsr_auth == 'auth1':
                         double_approved = (auth2by_id and auth2by_id == req_user.pk or auth4by_id and auth4by_id == req_user.pk)
                     elif requsr_auth == 'auth2':
@@ -1231,10 +1235,10 @@ def submit_grade_row(grade_row, tobe_updated_list, sel_examtype, is_test, msg_di
             else:
 
 # - check if all auth are different
-                # president cannot also approve as secretary or as commissioner
-                # secretary cannot also approve as president or as commissioner
-                # examinator cannot also approve as commissioner
-                # commissioner cannot also approve as president, secretary or examinator
+                # president cannot also approve as secretary or as corrector
+                # secretary cannot also approve as president or as corrector
+                # examiner cannot also approve as corrector
+                # corrector cannot also approve as president, secretary or examiner
                 double_approved = (auth1by_id == auth2by_id) or \
                                   (auth1by_id == auth4by_id) or \
                                   (auth2by_id == auth4by_id) or \
@@ -1335,11 +1339,11 @@ def approve_single_grade(grade, sel_examtype, requsr_auth, auth_index, is_test, 
                 else:
 
 # - skip if this author (like 'president') has already approved this grade
-        # under a different permit (like 'secretary' or 'commissioner')
-                    # president cannot also approve as secretary or as commissioner
-                    # secretary cannot also approve as president or as commissioner
-                    # examinator cannot also approve as commissioner
-                    # commissioner cannot also approve as president, secretary or examinator
+        # under a different permit (like 'secretary' or 'corrector')
+                    # president cannot also approve as secretary or as corrector
+                    # secretary cannot also approve as president or as corrector
+                    # examiner cannot also approve as corrector
+                    # corrector cannot also approve as president, secretary or examiner
                     if requsr_auth == 'auth1':
                         double_approved = (auth2by and auth2by == req_user or auth4by and auth4by == req_user)
                     elif requsr_auth == 'auth2':
@@ -1586,11 +1590,10 @@ def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, su
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
-        logger.debug('schoolbase_pk: ' + str(schoolbase_pk))
-        logger.debug('depbase_pk: ' + str(depbase_pk))
-        logger.debug('lvlbase_pk: ' + str(lvlbase_pk))
-        logger.debug('subjbase_pk: ' + str(subjbase_pk))
-        logger.debug('cluster_pk: ' + str(cluster_pk))
+        logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
+                               'lvlbase_pk:', str(lvlbase_pk), 'subjbase_pk:', str(subjbase_pk),
+                               'cluster_pk:', str(cluster_pk))))
+
     if not msg_list:
         caption = None
         if request.user.allowed_clusterbases:
@@ -1619,6 +1622,8 @@ def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, su
             score_txt = str(_('This score') if is_score else _('This grade')).lower()
             msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
 
+            if logging_on:
+                logger.debug('caption: ' + str(caption))
 
 #######################################################
 
@@ -2127,8 +2132,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         # - only requsr of the same school can view grades that are not published, PR2021-04-29
         requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase_pk)
 
-        # - also commissioner .TODO: add allowed school to commissioner permit
-        requsr_commissioner = (req_user.role == c.ROLE_016_COMM)
+        # - also corrector .TODO: add allowed school to corrector permit
+        requsr_corrector = (req_user.role == c.ROLE_016_COMM)
 
     #  - add_auth_list is used in Ex form to add name of auth
         add_auth_list = True if auth_dict is not None else False
@@ -2138,8 +2143,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
 
     # - only when requsr_same_school the not-published grades are visible
-        # - also the commissioner
-        if requsr_same_school or requsr_commissioner:
+        # - also the corrector
+        if requsr_same_school or requsr_corrector:
             grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
             final_grade = "grd.finalgrade AS finalgrade,"
             status = "se_status, sr_status, pe_status, ce_status,"
@@ -2240,24 +2245,30 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
 
 # --- filter on usersetting
         # TODO replace all sel_subject_pk filters by sel_subjbase_pk filters
-        elif setting_dict:
-            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-            sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
-            sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
-            sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
-            sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
+        else:
+            sel_lvlbase_pk, sel_sctbase_pk, sel_subjbase_pk, sel_cluster_pk, sel_student_pk = None, None, None, None, None
+            if setting_dict:
+                sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+                sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
+                sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
+                sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
+                sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
 
-            if sel_lvlbase_pk:
-                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+            # PR2022-04-05 use get_userfilter_allowed_lvlbase instead of only sel_lvlbase_pk
+            #if sel_lvlbase_pk:
+            #    sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+            #    sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+            acc_view.get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, sel_lvlbase_pk)
 
             if sel_sctbase_pk:
                 sql_keys['sctbase_pk'] = sel_sctbase_pk
                 sql_list.append("AND sct.base_id = %(sctbase_pk)s::INT")
 
-            if sel_subjbase_pk:
-                sql_keys['subjbase_pk'] = sel_subjbase_pk
-                sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
+            # PR2022-04-05 use get_userfilter_allowed_subjbase instead of only sel_lvlbase_pk
+            #if sel_subjbase_pk:
+            #    sql_keys['subjbase_pk'] = sel_subjbase_pk
+            #    sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
+            acc_view.get_userfilter_allowed_subjbase(request, sql_keys, sql_list, sel_subjbase_pk)
 
             if sel_cluster_pk:
                 sql_keys['cluster_pk'] = sel_cluster_pk
@@ -2362,7 +2373,7 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
         logger.debug('setting_dict: ' + str(setting_dict))
 
     # - only requsr of the same school  can view grades that are not published, PR2021-04-29
-    # - also commissioner .TODO: add school to commissioner permit
+    # - also corrector .TODO: add school to corrector permit
 
     # - only exams that are published are visible
     # - only ce_exams that are submitted are visible for non - requsr_same_school user > not necessary

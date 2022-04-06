@@ -169,11 +169,14 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- clusters
                 if datalist_request.get('cluster_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('cluster_rows', 'cur_dep_only'), False)
+                    allowed_only = af.get_dict_value(datalist_request, ('cluster_rows', 'allowed_only'), False)
                     datalists['cluster_rows'] = sj_vw.create_cluster_rows(
+                        request=request,
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_schoolbase,
                         sel_depbase=sel_depbase,
-                        cur_dep_only=cur_dep_only)
+                        cur_dep_only=cur_dep_only,
+                        allowed_only=allowed_only)
 # ----- schemes
                 if datalist_request.get('scheme_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('scheme_rows', 'cur_dep_only'), False)
@@ -420,7 +423,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
         setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
 
     # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
-    # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
+    # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
     requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and
                           sel_schoolbase_instance and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
     permit_dict['requsr_same_school'] = requsr_same_school
@@ -944,7 +947,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request, commissioner_may_edit=False, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
+def get_selected_ey_school_dep_from_usersetting(request, corrector_may_edit=False, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
     logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
@@ -993,9 +996,9 @@ def get_selected_ey_school_dep_from_usersetting(request, commissioner_may_edit=F
         else:
             # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
             # used on entering students and grades. Schools can only enter grades of their own school
-            # PR2022-03-13 debug: also commissioners are allowed to make changes: add c.ROLE_016_COMM
+            # PR2022-03-13 debug: also correctors are allowed to make changes: add c.ROLE_016_COMM
             requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk) or \
-                                 (commissioner_may_edit and req_user.role == c.ROLE_016_COMM)
+                                 (corrector_may_edit and req_user.role == c.ROLE_016_COMM)
             if not requsr_same_school:
                 msg_list.append(str(_('Only users of this school are allowed to make changes.')))
 

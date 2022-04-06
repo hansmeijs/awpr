@@ -228,7 +228,7 @@ urlpatterns = [
         path('studsubj_multiple_occurrences', student_views.StudentsubjectMultipleOccurrencesView.as_view(), name='url_studsubj_multiple_occurrences'),
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
-        path('studsubj_approve_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_multiple'),
+        path('studsubj_approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_submit_multiple'),
         path('studsubj_send_email_exform', student_views.SendEmailSubmitExformView.as_view(), name='url_studsubj_send_email_exform'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
