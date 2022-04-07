@@ -933,14 +933,14 @@ def make_student_biscandidate(cur_student, other_student, request):
                         logger.debug('cur_student.department.base_id: ' + str(cur_student.department.base_id))
                         logger.debug('other_student.department.base_id: ' + str(other_student.department.base_id))
                         logger.debug('cur_student.department.level_req: ' + str(cur_student.department.level_req))
-                        logger.debug('cur_student.level.base_id: ' + str(cur_student.level.base_id))
-                        logger.debug('other_student.level.base_id: ' + str(other_student.level.base_id))
+                        #logger.debug('cur_student.level.base_id: ' + str(cur_student.level.base_id))
+                        #logger.debug('other_student.level.base_id: ' + str(other_student.level.base_id))
 
                     if cur_student.department.base_id == other_student.department.base_id:
 
         # - student can only be biscandidate when the lvlbases are the same (only when not level_req)
                         if cur_student.department.level_req:
-                            if cur_student.level.base_id == other_student.level.base_id:
+                            if cur_student.level and other_student.level and cur_student.level.base_id == other_student.level.base_id:
                                 is_biscand = True
                         else:
                             is_biscand = True
@@ -1729,10 +1729,10 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             if already_approved:
                 msg_list.append('<li>' + get_subjects_are_text(already_approved) + str(_(' already approved')) + ';</li>')
             if double_approved:
-                other_function =  str(_('president')) if requsr_auth == 'auth2' else str(_('secretary'))
+                other_function =  str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
                 msg_list.append(''.join(('<li>', get_subjects_are_text(double_approved),
                                          str(_(' already approved by you as ')), other_function, '.<br>',
-                                str(_("You cannot approve a subject both as president and as secretary.")), '</li>')))
+                                str(_("You cannot approve a subject both as chairperson and as secretary.")), '</li>')))
             msg_list.append('</ul>')
 
 # - line with text how many subjects will be approved / submitted
@@ -1817,7 +1817,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
 # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
         if show_msg_first_approve_by_pres_secr:
-            msg_txt = ''.join(('<p>', str(_('The president and the secretary must approve all subjects before you can submit the Ex1 form.')), '</p>'))
+            msg_txt = ''.join(('<p>', str(_('The chairperson and the secretary must approve all subjects before you can submit the Ex1 form.')), '</p>'))
             msg_list.append(msg_txt)
 
         msg_list.append('</div>')
@@ -2090,7 +2090,7 @@ def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, reque
                     count_dict['already_approved'] += 1
                 else:
 
-# - skip if this author (like 'president') has already approved this studsubj
+# - skip if this author (like 'chairperson') has already approved this studsubj
         # under a different permit (like 'secretary' or 'corrector')
                     logger.debug('>>> requsr_auth: ' + str(requsr_auth))
                     logger.debug('>>> req_user:    ' + str(req_user))

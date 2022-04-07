@@ -210,7 +210,7 @@ class SubjectListView(View):
 def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07
     # skip_allowed_filter is used in userpage: when setting 'allowed_', all subjects must be shown
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
     sel_examyear_pk = setting_dict.get('sel_examyear_pk')
 
@@ -289,9 +289,6 @@ def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request
 
         sub_sql = ' '.join(sub_sql_list)
 
-        if logging_on:
-            logger.debug('sub_sql: ' + str(sub_sql))
-
         user_line, user_join = '', ''
         if request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
             user_line = "subj.modifiedby_id, subj.modifiedat, SUBSTRING(au.username, 7) AS modby_username,"
@@ -308,9 +305,9 @@ def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request
             "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
             "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
             user_join,
-            "INNER JOIN (", sub_sql ,  ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
+            #"INNER JOIN (", sub_sql ,  ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
+            "WHERE subj.id IN (", sub_sql ,  ")",
             ]
-
 
         #if subject_pk:
        #     # when employee_pk has value: skip other filters
@@ -331,6 +328,7 @@ def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
+            #cursor.execute(sub_sql, sql_keys)
             subject_rows = af.dictfetchall(cursor)
 
     return subject_rows
@@ -340,14 +338,14 @@ def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request
 def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                         cur_dep_only, allowed_only=False, cluster_pk_list=None, add_field_created=False):
     # --- create rows of all clusters of this examyear this department  PR2022-01-06
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
         logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
         logger.debug('sel_schoolbase: ' + str(sel_schoolbase) + ' ' + str(type(sel_schoolbase)))
         logger.debug('sel_depbase: ' + str(sel_depbase) + ' ' + str(type(sel_depbase)))
-        logger.debug('add_field_created: ' + str(add_field_created))
+        logger.debug('allowed_only: ' + str(allowed_only))
         logger.debug('cluster_pk_list: ' + str(cluster_pk_list))
 
     cluster_rows = []
@@ -386,7 +384,15 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                 sql_keys=sql_keys,
                 sql_list=sql_list,
                 subjbase_pk=None,
-                skip_allowed_filter=not allowed_only,
+                skip_allowed_filter= not allowed_only,
+                table=None)
+
+            acc_view.get_userfilter_allowed_cluster(
+                request=request,
+                sql_keys=sql_keys,
+                sql_list=sql_list,
+                cluster_pk=None,
+                skip_allowed_filter=not not allowed_only,
                 table=None)
 
             sql_list.append("ORDER BY cl.id")
@@ -2030,10 +2036,10 @@ def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, i
             msg_list.append('<li>' + get_exams_are_text(already_approved) + str(
                 _(' already approved')) + ';</li>')
         if double_approved:
-            other_function = str(_('president')) if requsr_auth == 'auth2' else str(_('secretary'))
+            other_function = str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
             msg_list.append(''.join(('<li>', get_exams_are_text(double_approved),
                                      str(_(' already approved by you as ')), other_function, '.<br>',
-                                     str(_("You cannot approve an exam both as president and as secretary.")),
+                                     str(_("You cannot approve an exam both as chairperson and as secretary.")),
                                      '</li>')))
         msg_list.append('</ul>')
 
@@ -2110,11 +2116,11 @@ def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, i
         msg_list.append(str(_('Are you sure you want to continue?')))
         msg_list.append('</p>')
 
-    # - add line 'both president and secretary must first approve all exams before you can submit the Ex form
+    # - add line 'both chairperson and secretary must first approve all exams before you can submit the Ex form
     if show_msg_first_approve_by_pres_secr:
         if is_grade_exam:
             msg_txt = ''.join(('<p>', str(_(
-                'The president and the secretary must approve the exams before you can submit them.')),
+                'The chairperson and the secretary must approve the exams before you can submit them.')),
                                '</p>'))
 
 # - line with text how many  subjects of stuidents have been linked to exams
@@ -2196,7 +2202,7 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
                         count_dict['already_approved'] += 1
                     else:
 
-    # - skip if this author (like 'president') has already approved this studsubj
+    # - skip if this author (like 'chairperson') has already approved this studsubj
             # under a different permit (like 'secretary' or 'corrector')
 
                         double_approved = False
@@ -2388,7 +2394,7 @@ def approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, u
                         af.add_one_to_count_dict(count_dict, 'already_approved')
                     else:
 
-    # - skip if this author (like 'president') has already approved this studsubj
+    # - skip if this author (like 'chairperson') has already approved this studsubj
             # under a different permit (like 'secretary' or 'corrector')
 
                         double_approved = False
@@ -2730,7 +2736,7 @@ def add_published_exam_to_grades(exam):
     subjbase_pk = exam.subject.base_id
     examyear_code = exam.subject.examyear.code
     depbase_pk = exam.department.base_id
-    lvlbase_pk = exam.level.base_id
+    lvlbase_pk = exam.level.base_id if exam.level else None
     examperiod = exam.examperiod
     ce_exam_pk = exam.pk
 
@@ -3070,17 +3076,102 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
 
 
 def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
+    # PR2022-04-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_duo_exam_rows ============= ')
+
+# - only show published exams when user is school
+    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
+
+    sql_list = [
+        "SELECT ex.id, ex.subject_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
+        "CONCAT('exam_', ex.id::TEXT) AS mapid,",
+        "CONCAT(subj.name,",
+        "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
+        "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
+
+        "ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
+        "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+        "ex.version, ex.nex_id, ex.scalelength, ex.nterm, ex.locked, ex.modifiedat,",
+        "sb.code AS subj_base_code, subj.name AS subj_name,",
+        "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
+
+        "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
+        "ntb.tijdvak AS ntb_tijdvak, ntb.omschrijving AS ntb_omschrijving, ntb.schaallengte AS ntb_schaallengte, ntb.n_term AS ntb_nterm,",
+        "ntb.datum AS ntb_datum,"
+        
+        "au.last_name AS modby_username",
+
+        "FROM subjects_exam AS ex",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
+        "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+        "INNER JOIN schools_department AS dep ON (dep.id = ex.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = ex.level_id)",
+
+        "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = ex.ntermentable_id)",
+
+        "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
+        "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT AND NOT ex.ete_exam"
+    ]
+
+    if exam_pk_list:
+        sql_keys['pk_arr'] = exam_pk_list
+        sql_list.append("AND ex.id IN ( SELECT UNNEST( %(pk_arr)s::INT[]))")
+
+    elif setting_dict:
+        sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
+        if sel_examperiod in(1, 2):
+            # examperiod = 12 means ce and reex
+            sql_keys['ep'] = sel_examperiod
+            sql_list.append("AND (ex.examperiod = %(ep)s::INT)")
+
+        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+        if sel_lvlbase_pk:
+            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+    sql_list.append("ORDER BY ex.id")
+
+    sql = ' '.join(sql_list)
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        duo_exam_rows = af.dictfetchall(cursor)
+
+# - add messages to first exam_row, only when exam_pk exists
+        if exam_pk_list and len(exam_pk_list) == 1 and duo_exam_rows:
+            # when exam_pk has value there is only 1 row
+            row = duo_exam_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+    if logging_on:
+        logger.debug('duo_exam_rows: ' + str(duo_exam_rows))
+
+    return duo_exam_rows
+# --- end of create_duo_exam_rows
+
+
+def create_duo_subject_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' =============== create_duo_exam_rows ============= ')
+        logger.debug(' =============== create_duo_subject_rows ============= ')
 
 # - only show published exams when user is school
     sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
     sql_list = [
         "SELECT subj.id, subj.base_id AS subjbase_id,",
         "sb.code AS subj_base_code, subj.name AS subj_name,",
-        "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev",
+        "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev,",
+        "dep.id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code",
 
         "FROM subjects_schemeitem AS si",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
@@ -3102,8 +3193,7 @@ def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, 
             sql_keys['lvlbase_pk'] = sel_lvlbase_pk
             sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-    sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name, lvl.id, lvl.abbrev")
-    sql_list.append("ORDER BY subj.id, lvl.id")
+    sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name, lvl.id, lvl.abbrev, dep.id, depbase.id, depbase.code")
 
     sql = ' '.join(sql_list)
     if logging_on:
@@ -3112,21 +3202,21 @@ def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, 
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
-        duo_exam_rows = af.dictfetchall(cursor)
+        duo_subject_rows = af.dictfetchall(cursor)
 
 # - add messages to first exam_row, only when exam_pk exists
-        if exam_pk_list and len(exam_pk_list) == 1 and duo_exam_rows:
+        if exam_pk_list and len(exam_pk_list) == 1 and duo_subject_rows:
             # when exam_pk has value there is only 1 row
-            row = duo_exam_rows[0]
+            row = duo_subject_rows[0]
             if row:
                 for key, value in append_dict.items():
                     row[key] = value
 
     if logging_on:
-        logger.debug('duo_exam_rows: ' + str(duo_exam_rows))
+        logger.debug('duo_subject_rows: ' + str(duo_subject_rows))
 
-    return duo_exam_rows
-# --- end of create_duo_exam_rows
+    return duo_subject_rows
+# --- end of create_duo_subject_rows
 
 
 def create_ntermentable_rows(sel_examyear_pk, sel_depbase, setting_dict):
@@ -3154,7 +3244,6 @@ def create_ntermentable_rows(sel_examyear_pk, sel_depbase, setting_dict):
         "INNER JOIN schools_examyear AS ey ON (ey.id = nt.examyear_id)",
         "WHERE ey.id = %(ey_id)s::INT AND nt.sty_id = %(sty_id)s::INT"
     ]
-
     if setting_dict:
         sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
         if sel_examperiod == 1:

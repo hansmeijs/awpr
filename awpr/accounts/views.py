@@ -2394,11 +2394,10 @@ def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=Non
     #       else:
     #           --> no filter
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug('----- get_userfilter_allowed_subjbase ----- ')
-        logger.debug('subjbase_pk: ' + str(subjbase_pk) + ' ' + str(type(subjbase_pk)))
 
     filter_single_pk, filter_pk_arr, filter_none = None, None, False
 
@@ -2417,10 +2416,11 @@ def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=Non
             filter_pk_arr = allowed_subjbase_arr
 
     if logging_on:
-        logger.debug('allowed_subjbase_arr: ' + str(allowed_subjbase_arr) + ' ' + str(type(allowed_subjbase_arr)))
-        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
-        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
-        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+        logger.debug('     subjbase_pk: ' + str(subjbase_pk) + ' ' + str(type(subjbase_pk)))
+        logger.debug('     allowed_subjbase_arr: ' + str(allowed_subjbase_arr) + ' ' + str(type(allowed_subjbase_arr)))
+        logger.debug('     filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('     filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('     filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
 
     if filter_single_pk:
         sql_keys['sjb_pk'] = filter_single_pk
@@ -2441,7 +2441,7 @@ def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=Non
 # - end of get_userfilter_allowed_subjbase
 
 
-def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None, skip_allowed_filter=False):
+def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None, skip_allowed_filter=False, table=None):
     # PR2022-03-18
     # this function adds allowed_cluster filter to sql, or filters single cluster_pk
 
@@ -2486,11 +2486,17 @@ def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None,
 
     if filter_single_pk:
         sql_keys['cls_pk'] = filter_single_pk
-        sql_list.append("AND studsubj.cluster_id = %(cls_pk)s::INT")
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.cluster_id = %(cls_pk)s::INT")
+        else:
+            sql_list.append("AND cl.id = %(cls_pk)s::INT")
 
     elif filter_pk_arr:
         sql_keys['cls_arr'] = filter_pk_arr
-        sql_list.append("AND studsubj.cluster_id IN ( SELECT UNNEST(%(cls_arr)s::INT[]) )")
+        if table == 'studsubj':
+            sql_list.append("AND studsubj.cluster_id IN ( SELECT UNNEST(%(cls_arr)s::INT[]) )")
+        else:
+            sql_list.append("AND cl.id IN ( SELECT UNNEST(%(cls_arr)s::INT[]) )")
 
     elif filter_none:
         sql_list.append("AND FALSE")

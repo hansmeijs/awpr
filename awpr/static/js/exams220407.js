@@ -40,6 +40,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const cls_visible_hide = "visibility_hide";
     const cls_selected = "tsa_tr_selected";
 
+    const cls_selected_item = "tsa_td_unlinked_selected";
+
     let mod_dict = {};
     let mod_MSELEX_dict = {};
     const mod_MEX_dict = {};
@@ -56,6 +58,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let sector_map = new Map();
 
     let exam_rows = [];
+    let duo_subject_rows = [];
     let duo_exam_rows = [];
     let ntermentable_rows = [];
 
@@ -467,6 +470,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 exam_rows: {get: true},
+                duo_subject_rows: {get: true},
                 duo_exam_rows: {get: true},
                 ntermentable_rows: {get: ntermentable_rows},
 
@@ -578,6 +582,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
 
                 if ("exam_rows" in response) {exam_rows = response.exam_rows};
+                if ("duo_subject_rows" in response) {duo_subject_rows = response.duo_subject_rows};
                 if ("duo_exam_rows" in response) {duo_exam_rows = response.duo_exam_rows};
 
                 if ("ntermentable_rows" in response) {ntermentable_rows = response.ntermentable_rows};
@@ -682,6 +687,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // also retrieve the tables that have been changed because of the change in examperiod
             const datalist_request = {setting: new_setting,
                     exam_rows: {get: true},
+                    duo_subject_rows: {get: true},
                     duo_exam_rows: {get: true},
                     ntermentable_rows: {get: true},
                     published_rows: {get: true}
@@ -739,6 +745,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // also retrieve the tables that have been changed because of the change in examperiod
         const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_subject_rows: {get: true},
                 duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
@@ -776,6 +783,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // also retrieve the tables that have been changed because of the change in examperiod
         const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_subject_rows: {get: true},
                 duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
@@ -915,6 +923,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_subject_rows: {get: true},
                 duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
@@ -1100,21 +1109,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
 // ---  lookup index where this row must be inserted
-        let ob1 = "", ob2 = "", ob3 = "";
-        if (tblName === "exam") {
-            if (data_dict.subj_name) { ob1 = data_dict.subj_name.toLowerCase() };
-            if (data_dict.lvl_abbrev) { ob2 = data_dict.lvl_abbrev.toLowerCase() };
-            if (data_dict.examtype) { ob3 = data_dict.examtype.toLowerCase() };
-        } else if (tblName === "grades") {
-            if (data_dict.lastname) { ob1 = data_dict.lastname.toLowerCase() };
-            if (data_dict.firstname) { ob2 = data_dict.firstname.toLowerCase() };
-            if (data_dict.subj_code) { ob3 = (data_dict.subj_code) };
-        } else if (tblName === "ntermen") {
-            if (data_dict.lastname) { ob1 = data_dict.lastname.toLowerCase() };
-            if (data_dict.firstname) { ob2 = data_dict.firstname.toLowerCase() };
-            if (data_dict.subj_code) { ob3 = (data_dict.subj_code) };
-        }
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, ob1, ob2, ob3, false, setting_dict.user_lang);
+        const ob1 = (tblName === "exam") ? data_dict.subj_name : (tblName === "grades") ? data_dict.lastname : (tblName === "ntermen") ? data_dict.nex_id : "";
+        const ob2 = (tblName === "exam") ? data_dict.lvl_abbrev : (tblName === "grades") ? data_dict.firstname : "";
+        const ob3 = (tblName === "exam") ? data_dict.examtype : (tblName === "grades") ? data_dict.subj_code : "";
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2, ob3);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
@@ -1390,7 +1388,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     const auth_id = (i === 1) ?  auth1by_id : auth2by_id;
                     const prefix_auth = prefix + "auth" + i;
                     if(auth_id){
-                        const function_str = (i === 1) ?  loc.President.toLowerCase() : loc.Secretary.toLowerCase();
+                        const function_str = (i === 1) ?  loc.Chairperson.toLowerCase() : loc.Secretary.toLowerCase();
                         const field_usr = prefix_auth + "_usr";
     //console.log("field_usr", field_usr);
                         const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
@@ -3209,7 +3207,7 @@ document.addEventListener("DOMContentLoaded", function() {
     //console.log("partex_examperiod", partex_examperiod);
 
             for (let j = 0, tblBody; tblBody = tblBody_list[j]; j++) {
-                const row_index = b_recursive_tblRow_lookup(tblBody, p_dict.name, "", "", false, setting_dict.user_lang);
+                const row_index = b_recursive_tblRow_lookup(tblBody, setting_dict.user_lang, p_dict.name);
 
 // +++ insert tblRow into tblBody1
                 const tblRow = tblBody.insertRow(row_index);
@@ -3277,7 +3275,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  loop through mod_MEX_dict.partex_dict
         for (const p_dict of Object.values(mod_MEX_dict.partex_dict)) {
             const partex_name = p_dict.name;
-            const row_index = b_recursive_tblRow_lookup(tblBody, p_dict.name, "", "", false, setting_dict.user_lang);
+            const row_index = b_recursive_tblRow_lookup(tblBody, setting_dict.user_lang, p_dict.name);
 
 // +++ insert tblRow into tblBody1
             const tblRow = tblBody.insertRow(row_index);
@@ -4638,16 +4636,21 @@ document.addEventListener("DOMContentLoaded", function() {
         mod_MDUO_dict.subject_list = [];
         if(subject_rows && subject_rows.length){
     // loop through subject_rows
-            for (let i = 0, data_dict; data_dict = subject_rows[i]; i++) {
+            for (let i = 0, data_dict; data_dict = duo_subject_rows[i]; i++) {
                 const dict = {
-                    base_id: data_dict.base_id,
-                    code: data_dict.code,
-                    id: data_dict.id,
-                    name: data_dict.name
+                    subj_id: data_dict.id,
+                    subjbase_id: data_dict.subjbase_id,
+                    subj_base_code: data_dict.subj_base_code,
+                    subj_name: data_dict.subj_name,
+                    lvl_id: data_dict.lvl_id,
+                    lvl_abbrev: data_dict.lvl_abbrev,
+                    dep_id: data_dict.dep_id,
+                    depbase_id: data_dict.depbase_id,
+                    depbase_code: data_dict.depbase_code
                 };
                 mod_MDUO_dict.subject_list.push(dict);
             };
-            console.log("mod_MDUO_dict.subject_list", mod_MDUO_dict.subject_list);
+            //console.log("mod_MDUO_dict.subject_list", mod_MDUO_dict.subject_list);
         };
 
         mod_MDUO_dict.exam_list = [];
@@ -4666,14 +4669,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 //};
                 mod_MDUO_dict.exam_list.push(dict);
             };
-            console.log("mod_MDUO_dict.exam_list", mod_MDUO_dict.exam_list);
+            //console.log("mod_MDUO_dict.exam_list", mod_MDUO_dict.exam_list);
         };
 
         mod_MDUO_dict.nterm_list = [];
         if(ntermentable_rows && ntermentable_rows.length){
             for (let i = 0, data_dict; data_dict = ntermentable_rows[i]; i++) {
                 const dict = {
-                    id: data_dict.id,
+                    nterm_id: data_dict.id,
                     leerweg: data_dict.leerweg,
                     n_term: data_dict.n_term,
                     nex_id: data_dict.nex_id,
@@ -4685,25 +4688,42 @@ document.addEventListener("DOMContentLoaded", function() {
                 mod_MDUO_dict.nterm_list.push(dict);
             };
         };
-            console.log("mod_MDUO_dict.nterm_list", mod_MDUO_dict.nterm_list);
-            console.log("mod_MDUO_dict", mod_MDUO_dict);
 
-        MDUO_FillSelectTableSubjects();
-        MDUO_FillSelectTableDuoExams();
+    //console.log("mod_MDUO_dict.nterm_list", mod_MDUO_dict.nterm_list);
+    //console.log("mod_MDUO_dict", mod_MDUO_dict);
+
+        const table_list = ["subject", "ntermentable", "exam"];
+        for (let i = 0, tblName; tblName = table_list[i]; i++) {
+            MDUO_FillSelectTable(tblName);
+        }
+
+        const JustLinkedAwpId = null, JustUnLinkedAwpId = null, JustUnlinkedExcId = null;
+        Fill_AEL_Table(JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId)
 
     };  // MDUO_FillDict
 
-//=========  MDUO_FillSelectTableSubjects  ================ PR2022-04-05
-    function MDUO_FillSelectTableSubjects() {
-        console.log( "===== MDUO_FillSelectTableSubjects ========= ");
+//=========  MDUO_FillSelectTable  ================ PR2022-04-05
+    function MDUO_FillSelectTable(tblName) {
+        console.log( "===== MDUO_FillSelectTable ========= ");
 
-        const tblBody_select = el_MDUO_tblBody_subjects;
+        const tblBody_select = (tblName === "subject") ? el_MDUO_tblBody_subjects :
+                               (tblName === "ntermentable") ? el_MDUO_tblBody_duo_exams :
+                               (tblName === "exam") ? el_MDUO_tblBody_linked : null;
+        const data_rows = (tblName === "subject") ? mod_MDUO_dict.subject_list :
+                               (tblName === "ntermentable") ? ntermentable_rows :
+                               (tblName === "exam") ? mod_MDUO_dict.subject_list : null;
+
+        const col_width_list = (tblName === "subject") ? ["tw_090", "tw_060"] :
+                               (tblName === "ntermentable") ? ["tw_280"] :
+                               (tblName === "exam") ? ["tw_075", "tw_240"] : [];
+
         tblBody_select.innerText = null;
 
         let row_count = 0, add_to_list = false;
 // ---  loop through subject_rows
-        if(mod_MDUO_dict.subject_list && mod_MDUO_dict.subject_list.length){
-            for (let i = 0, data_dict; data_dict = mod_MDUO_dict.subject_list[i]; i++) {
+
+        if(data_rows && data_rows.length){
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
             //console.log( "data_dict: ", data_dict);
             //console.log( "mod_MDUO_dict.subj_pk", mod_MDUO_dict.subj_pk, typeof mod_MDUO_dict.subj_pk);
             //console.log( "data_dict.subject_id", data_dict.subject_id, typeof data_dict.subject_id);
@@ -4719,7 +4739,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 show_row = true
                 if (show_row){
                     row_count += 1;
-                    MDUO_FillSelectRow("subject", data_dict, tblBody_select, -1);
+                    MDUO_FillSelectRow(tblName, data_dict, tblBody_select, col_width_list);
                 };
             };
         };
@@ -4732,98 +4752,69 @@ document.addEventListener("DOMContentLoaded", function() {
             let tblRow = tblBody_select.rows[0]
             if(tblRow) {
 // ---  make first row selected
-                //tblRow.classList.add(cls_selected)
+                //tblRow.classList.add(cls_selected_item)
 
                 MDUO_SelectItem(tblRow);
             };
         };
         return row_count
-    }; // MDUO_FillSelectTableSubjects
-
-//=========  MDUO_FillSelectTableDuoExams  ================ PR2022-04-05
-    function MDUO_FillSelectTableDuoExams() {
-        console.log( "===== MDUO_FillSelectTableDuoExams ========= ");
-
-        const tblBody_select = el_MDUO_tblBody_duo_exams;
-        tblBody_select.innerText = null;
-
-        let row_count = 0, add_to_list = false;
-// ---  loop through ntermentable_rows
-        if(ntermentable_rows && ntermentable_rows.length){
-            for (let i = 0, data_dict; data_dict = ntermentable_rows[i]; i++) {
-                //console.log( "data_dict: ", data_dict);
-            //console.log( "mod_MDUO_dict.subj_pk", mod_MDUO_dict.subj_pk, typeof mod_MDUO_dict.subj_pk);
-            //console.log( "data_dict.subject_id", data_dict.subject_id, typeof data_dict.subject_id);
-            // add only when eam has same subject as grade, and also the same depbase and lvlbase_id
-                let show_row = false;
-                if (mod_MDUO_dict.subj_pk === data_dict.subject_id){
-                    if(mod_MDUO_dict.student_lvlbase_pk){
-                        show_row = (mod_MDUO_dict.student_lvlbase_pk === data_dict.lvlbase_id);
-                    } else {
-                        show_row = true;
-                    };
-                };
-                show_row = true
-                if (show_row){
-                    row_count += 1;
-                    MDUO_FillSelectRow("ntermentable", data_dict, tblBody_select, -1);
-                };
-            };
-        };
-        if(!row_count){
-            let tblRow = tblBody_select.insertRow(-1);
-            let td = tblRow.insertCell(-1);
-            td.innerText = loc.No_exam_for_this_subject;
-
-        } else if(row_count === 1){
-            let tblRow = tblBody_select.rows[0]
-            if(tblRow) {
-// ---  make first row selected
-                //tblRow.classList.add(cls_selected)
-
-                MDUO_SelectItem(tblRow);
-            };
-        };
-        return row_count
-    }; // MDUO_FillSelectTableDuoExams
+    }; // MDUO_FillSelectTable
 
 //=========  MDUO_FillSelectRow  ================ PR2022-04-05
-    function MDUO_FillSelectRow(tblname, data_dict, tblBody_select, row_index) {
+    function MDUO_FillSelectRow(tblName, data_dict, tblBody_select, col_width_list) {
         //console.log( "===== MDUO_FillSelectRow ========= ");
         //console.log( "data_dict: ", data_dict);
 
 //--- loop through data_map
         let pk_int = null;
-        let col_width_list = [], col_txt_list = [];
-        if (tblname === "subject") {
+        let col_txt_list = [];
+
+        let display_1 = "", display_2 = "";
+        if (tblName === "subject") {
+            pk_int = data_dict.subj_id;
+            display_1 = (data_dict.subj_base_code) ? data_dict.subj_base_code : "---";
+            display_2 = (data_dict.lvl_abbrev) ? data_dict.lvl_abbrev : "---";
+            col_txt_list = [display_1, display_2];
+        } else if (tblName === "exam") {
             pk_int = data_dict.id;
-            const code_value = (data_dict.code) ? data_dict.code : "---";
-            const name_value = (data_dict.name) ? data_dict.name : "---";
-            col_width_list = ["tw_075", "tw_240"];
-            col_txt_list = [code_value, name_value];
-        } else if (tblname === "ntermentable") {
+            display_1 = (data_dict.subj_base_code) ? data_dict.subj_base_code : "---";
+            display_2 = (data_dict.lvl_abbrev) ? data_dict.lvl_abbrev : "---";
+            col_txt_list = [display_1, display_2]
+        } else if (tblName === "ntermentable") {
             pk_int = data_dict.id;
-            const name_value = (data_dict.omschrijving) ? data_dict.omschrijving : "---"
-            col_width_list = ["tw_240"];
-            col_txt_list = [name_value];
-        } else if (tblname === "exam") {
-            pk_int = data_dict.id;
-            const code_value = (data_dict.code) ? data_dict.code : "---";
-            const name_value = (data_dict.name) ? data_dict.name : "---";
-            col_width_list = ["tw_075", "tw_240"];
-            col_txt_list = [code_value, name_value]
+            display_1 = (data_dict.omschrijving) ? data_dict.omschrijving : "---";
+            col_txt_list = [display_1];
         };
 
         const is_selected_pk = (mod_MDUO_dict.exam_pk != null && exam_pk_int === mod_MDUO_dict.exam_pk)
+
+
+// ---  lookup index where this row must be inserted
+// ---  lookup index where this row must be inserted
+        const ob1 = (tblName === "subject") ? data_dict.subj_base_code : (tblName === "exam") ? data_dict.lvl_abbrev : (tblName === "ntermentable") ? data_dict.nex_id : "";
+        const ob2 = (tblName === "subject") ? data_dict.lvl_abbrev : (tblName === "exam") ? data_dict.firstname : "---";
+        const row_index = b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1, ob2);
+
+        //console.log( "row_index: ", row_index);
+
 // ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
         let tblRow = tblBody_select.insertRow(row_index);
         tblRow.setAttribute("data-pk", pk_int);
+        tblRow.setAttribute("data-ob1", ob1);
+        if(ob2){tblRow.setAttribute("data-ob2", ob2)};
+
+        if (tblName === "ntermentable"){
+            tblRow.title = display_1;
+
+        } else if (tblName === "subject") {
+                tblRow.title = data_dict.subj_name;
+        }
 // ---  add EventListener to tblRow
-        tblRow.addEventListener("click", function() {MDUO_SelectItem(tblRow)}, false )
+        tblRow.addEventListener("click", function() {MDUO_SelectItem(tblName, tblRow)}, false )
 // ---  add hover to tblRow
         add_hover(tblRow);
 // ---  highlight clicked row
-        if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+        if (is_selected_pk){ tblRow.classList.add(cls_selected_item)}
 
         // loop through columns
         for (let i = 0, td, el_div, col_width; col_width = col_width_list[i]; i++) {
@@ -4832,29 +4823,84 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- add a element to td., necessary to get same structure as item_table, used for filtering
             el_div = document.createElement("div");
                 el_div.innerText = col_txt_list[i];
-                el_div.classList.add(col_width, "px-4", "pointer_show" )
+                el_div.classList.add(col_width, "px-4X", "pointer_show" )
             td.appendChild(el_div);
         };
     }  // MDUO_FillSelectRow
 
-//=========  MDUO_SelectItem  ================ PR2021-04-05
-    function MDUO_SelectItem(tblRow) {
+//=========  MDUO_SelectItem  ================ PR2022-04-06
+    function MDUO_SelectItem(tblName, tblRow) {
         console.log( "===== MDUO_SelectItem ========= ");
+        console.log( "tblName", tblName);  // "subject", "ntermentable"
         console.log( "tblRow", tblRow);
+// check if row is already selected
+        const tblRow_is_already_selected = tblRow.classList.contains(cls_selected_item);
+        const other_is_selected = (tblName === "subject") ? !!mod_MDUO_dict.ntermentable : (tblName === "ntermentable") ? !!mod_MDUO_dict.sel_subject_pk : false;
+
+        console.log( "tblRow_is_already_selected", tblRow_is_already_selected);
+        console.log( "other_is_selected", other_is_selected);
+
 // ---  deselect all highlighted rows
-        DeselectHighlightedRows(tblRow, cls_selected)
-// ---  highlight clicked row
-        tblRow.classList.add(cls_selected)
-// ---  get pk code and value from tblRow in mod_MDUO_dict
-        mod_MDUO_dict.exam_pk = get_attr_from_el_int(tblRow, "data-pk")
+        DeselectHighlightedRows(tblRow, cls_selected_item)
+// ---  highlight clicked row if not yet tblRow_is_already_selected
+        if (!tblRow_is_already_selected){
+            tblRow.classList.add(cls_selected_item);
+        };
+// ---  get pk from tblRow and store in in mod_MDUO_dict
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        const key_str = (tblName === "subject") ? "sel_subject_pk" : (tblName === "ntermentable") ? "sel_nterm_pk" : null;
+        if(key_str){
+            mod_MDUO_dict[key_str] = (!tblRow_is_already_selected) ? pk_int : null;
+        };
         console.log( "mod_MDUO_dict", mod_MDUO_dict);
-        MDUO_validate_and_disable();
+
+// ---  add exam when both tables have selected item
+        if (!tblRow_is_already_selected  && other_is_selected){
+            MDUO_link_exam();
+        }
     }  // MDUO_SelectItem
 
-//=========  MDUO_Save  ================ PR2021-05-22
-    function MDUO_validate_and_disable(){
-        el_MDUO_btn_save.disabled = !mod_MDUO_dict.exam_pk;
-    }
+//=========  MDUO_link_exam  ================ PR2022-04-06
+    function MDUO_link_exam(){
+        console.log("===  MDUO_link_exam  =====") ;
+
+        setTimeout(function (){
+           DeselectHighlightedTblbody(el_MDUO_tblBody_subjects, cls_selected_item)
+           DeselectHighlightedTblbody(el_MDUO_tblBody_duo_exams, cls_selected_item)
+        }, 350);
+        // get info from subject
+
+        let subject_dict = null, nterm_dict = null;
+        if (mod_MDUO_dict.sel_subject_pk){
+            subject_dict = b_lookup_dict_in_dictlist(mod_MDUO_dict.subject_list, "subj_id", mod_MDUO_dict.sel_subject_pk)
+            console.log("subject_dict", subject_dict) ;
+        };
+            console.log("mod_MDUO_dict.sel_nterm_pk", mod_MDUO_dict.sel_nterm_pk) ;
+            console.log("mod_MDUO_dict.sel_nterm_pk", mod_MDUO_dict.sel_nterm_pk) ;
+        if (mod_MDUO_dict.sel_nterm_pk){
+            nterm_dict = b_lookup_dict_in_dictlist(mod_MDUO_dict.nterm_list, "nterm_id", mod_MDUO_dict.sel_nterm_pk)
+            console.log("nterm_dict", nterm_dict) ;
+        };
+        if (subject_dict && nterm_dict){
+            const subject_pk = subject_dict.subj_id;
+            const department_pk = subject_dict.dep_id;
+            const level_pk = subject_dict.lvl_id;
+            const subj_base_code = subject_dict.subj_base_code;
+            const depbase_code = subject_dict.depbase_code;
+            const lvl_abbrev = subject_dict.lvl_abbrev;
+
+
+            const nterm_pk = nterm_dict.nterm_id
+            const examperiod = nterm_dict.tijdvak;
+            const omschrijving = nterm_dict.omschrijving;
+            const nex_id = nterm_dict.nex_id;
+            // lookup exam_dict : lookup fields are subject_pk, department_pk, level_pk, ntermentable_pk, examperiod
+
+
+
+        }
+
+    };
 
 
 
@@ -5097,6 +5143,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let new_setting = {page: 'page_exams'};
             const datalist_request = {setting: new_setting,
                 exam_rows: {get: true},
+                duo_subject_rows: {get: true},
                 duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 grade_with_exam_rows: {get: true},
@@ -5602,6 +5649,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const datalist_request = {
                 setting: new_setting,
                 exam_rows: {get: true},
+                duo_subject_rows: {get: true},
                 duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
                 subject_rows: {etenorm_only: true, cur_dep_only: true},
@@ -5777,6 +5825,5 @@ document.addEventListener("DOMContentLoaded", function() {
             //DatalistDownload(datalist_request);
         };
     }  //  RefreshDataRowsAfterUpload
-
 
 })  // document.addEventListener('DOMContentLoaded', function()

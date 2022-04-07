@@ -1196,8 +1196,7 @@ if(j && !is_status_field){th_filter.classList.add("border_left")};
         const ob2 = (data_dict.firstname) ? data_dict.firstname : "";
         const ob3 = (data_dict.subj_code) ? data_dict.subj_code : "";
 
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, ob2, ob3, false, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2, ob3);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
@@ -1448,7 +1447,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                     (i === 4) ?  auth4by_id : null;
                     const prefix_auth = prefix_str + "_auth" + i;
                     if(auth_id){
-                        const function_str = (i === 1) ?  loc.President :
+                        const function_str = (i === 1) ?  loc.Chairperson :
                                             (i === 2) ? loc.Secretary :
                                             (i === 3) ?  loc.Examiner :
                                             (i === 4) ? loc.Corrector : "";
@@ -1895,15 +1894,15 @@ if(j && !is_status_field){td.classList.add("border_left")};
                             //console.log("auth_dict", auth_dict)
 
 // give message when status_bool = true and grade already approved by this user in different function
-                            // president may also approve as examiner
+                            // chairperson may also approve as examiner
                             // secretary may alo approve as examiner
 
                             let already_approved_by_auth_index = null;
                             if(new_requsr_auth_approved){
-                                // president cannot also approve as secretary or as corrector
-                                // secretary cannot also approve as president or as corrector
+                                // chairperson cannot also approve as secretary or as corrector
+                                // secretary cannot also approve as chairperson or as corrector
                                 // examiner cannot also approve as corrector
-                                // corrector cannot also approve as president, secretary or examiner
+                                // corrector cannot also approve as chairperson, secretary or examiner
                                 const no_double_auth_index_list = (requsr_auth_index === 1) ? [2, 4] :
                                                              (requsr_auth_index === 2) ? [1, 4] :
                                                              (requsr_auth_index === 3) ? [4] :
@@ -2332,6 +2331,18 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
                 el_MAG_lvlbase.innerText = level_abbrev;
 
+// --- get cluster_text
+                let cluster_text = "---";
+                if(setting_dict.sel_cluster_pk){
+                    const [middle_index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", setting_dict.sel_cluster_pk);
+                    if (found_dict){
+                        cluster_text = (found_dict.name) ? found_dict.name : "---";
+                    };
+                } else {
+                    cluster_text = "<" + loc.All_clusters + ">";
+                };
+                el_MAG_cluster.innerText = cluster_text;
+
 // get subject_text
                 let subject_text = null;
                 if(setting_dict.sel_subject_pk){
@@ -2343,9 +2354,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 };
                 el_MAG_subject.innerText = subject_text;
 
-// --- get cluster_text
-                el_MAG_cluster.innerText = (setting_dict.sel_cluster_pk) ? setting_dict.sel_cluster_name : "<" + loc.All_clusters + ">";
-
+// --- get approved_by
                 if (el_MAG_approved_by_label){
                     el_MAG_approved_by_label.innerText = ( (is_submit_ex2_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
                 }
@@ -2355,9 +2364,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 // --- fill selectbox auth_index
                 if (el_MAG_auth_index){
-                    // auth_list = [{value: 1, caption: 'President'}, {value: 3, caption: 'Examiner'} )
+                    // auth_list = [{value: 1, caption: 'Chairperson'}, {value: 3, caption: 'Examiner'} )
                     const auth_list = [];
-                    const cpt_list = [null, loc.President, loc.Secretary, loc.Examiner, loc.Corrector];
+                    const cpt_list = [null, loc.Chairperson, loc.Secretary, loc.Examiner, loc.Corrector];
                     for (let i = 0, auth_index; auth_index = requsr_auth_list[i]; i++) {
                         auth_list.push({value: auth_index, caption: cpt_list[auth_index]});
                     };
@@ -3285,7 +3294,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         console.log( "sel_pk_int", sel_pk_int, typeof sel_pk_int);
         // mode = "subject" or "cluster" or "student"
 
-        // reset sel_student_pk when selecting sel_subject_pk and vice versa
         if(sel_pk_int === -1) { sel_pk_int = null};
 
         const selected_pk_dict = {};
@@ -3316,9 +3324,11 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             setting_dict.sel_cluster_pk = sel_pk_int;
             setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
 
+            // when selecting cluster: also set subject to the subject of this cluster
+            setting_dict.sel_subject_pk =  (selected_dict && selected_dict.subject_id) ? selected_dict.subject_id : null;
+            setting_dict.sel_subject_name = (selected_dict && selected_dict.subj_name) ? selected_dict.subj_name : null;
+
             if(sel_pk_int) {
-                setting_dict.sel_subject_pk = null;
-                setting_dict.sel_subject_name = null
                 setting_dict.sel_student_pk = null;
                 setting_dict.sel_student_name = null;
             };
@@ -3347,7 +3357,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         };
         console.log("setting_dict", setting_dict);
         UpdateHeader();
-        FillTblRows()
+
+        SBR_display_subject_cluster_student();
+
+        FillTblRows();
         //HandleBtnSelect(null, true)  // true = skip_upload
         // also calls: FillTblRows(), UpdateHeader()
 

@@ -201,9 +201,19 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
                     )
-# ----- duo_exams
-                if datalist_request.get('duo_exam_rows'):
-                    datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
+# ----- duo exams
+                    if datalist_request.get('duo_exam_rows'):
+                        datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
+                            req_usr=request.user,
+                            sel_examyear_pk=sel_examyear.pk,
+                            sel_depbase_pk=sel_depbase.pk,
+                            append_dict={},
+                            setting_dict=new_setting_dict,
+                            exam_pk_list=None
+                        )
+# ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
+                if datalist_request.get('duo_subject_rows'):
+                    datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
                         req_usr=request.user,
                         sel_examyear_pk=sel_examyear.pk,
                         sel_depbase_pk=sel_depbase.pk,

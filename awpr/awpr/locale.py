@@ -127,6 +127,10 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Clusters'] = _('Clusters')
     dict['a_cluster'] = _('a cluster')
 
+    dict['Assignment_title'] = _('Assignment title')
+    dict['Assignment_subjects'] = _('Assignment subjects')
+
+
     dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
@@ -270,7 +274,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['on_page'] = _(' on page ')
         dict['Delete_permission'] = _('Delete permission')
 
-        dict['President'] = TXT_President
+        dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary
         dict['Corrector'] = TXT_Corrector
         dict['Corrector_2lines'] = pgettext_lazy('2 lines', 'Corrector')
@@ -741,7 +745,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Authorized_by'] = _('Authorized by')
         dict['Submitted_at'] = _('Submitted at')
 
-        dict['President'] = TXT_President
+        dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary
 
         dict['Function'] = TXT_Function
@@ -797,8 +801,8 @@ def get_locale_dict(table_dict, user_lang, request):
             'subheader_submit_ex1': _('An %(ex)s form with the following subjects will be submitted:') % {'ex': 'Ex1'},
 
             'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
-            'approve_1': _('After the subjects are approved by the president and secretary,'),
-            'approve_2': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex1'},
+            'approve_1': _('After the subjects are approved by the chairperson and secretary,'),
+            'approve_2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex1'},
 
             'submit_0': _("Click 'Check subjects' to check the selected subjects before submitting."),
             'submit_1': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected subjects.") % {'ex': 'Ex1'},
@@ -978,8 +982,8 @@ def get_locale_dict(table_dict, user_lang, request):
             'subheader_submit_exam': _('The following exams will be submitted:'),
             'subheader_publish': _('The following exams will be published:'),
             'approve_0': _("Click 'Check exams' to check the selected exams before approving."),
-            'approve_1': _('After the exams are approved by the president and secretary,'),
-            'approve_2': _('the exams can be submitted by the president or secretary.'),
+            'approve_1': _('After the exams are approved by the chairperson and secretary,'),
+            'approve_2': _('the exams can be submitted by the chairperson or secretary.'),
 
             'submit_0': _("Click 'Check exams' to check the selected exams before submitting."),
             'submit_1': _("If the check is OK, click 'Submit exams' to submit the selected exams."),
@@ -1057,9 +1061,9 @@ def get_locale_dict(table_dict, user_lang, request):
             'subheader_submit_ex2': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2'},
             'subheader_submit_ex2a': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2A'},
             'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
-            'approve_1': _('After the grades are approved by the president, secretary and corrector,'),
-            'approve_2_ex2': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2'},
-            'approve_2_ex2a': _('the %(ex)s form can be submitted by the president or secretary.') % {'ex': 'Ex2A'},
+            'approve_1': _('After the grades are approved by the chairperson, secretary and corrector,'),
+            'approve_2_ex2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2'},
+            'approve_2_ex2a': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2A'},
 
             'corrector_cannot_approve_exem': _("As a corrector you don't have to approve %(et)s grades.") \
                                                 % {'et': str(_('Exemption')).lower()},
@@ -1126,7 +1130,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['options_examperiod'] = c.EXAMPERIOD_OPTIONS
         dict['options_examtype'] = c.EXAMTYPE_OPTIONS
 
-        dict['President'] = TXT_President
+        dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary
         dict['Corrector'] = TXT_Corrector
         dict['Examiner'] = TXT_Examiner
@@ -1207,9 +1211,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['candidates'] = _(' candidates')
 
         dict['will_be_downloaded'] = _('will be downloaded.')
-        dict['Select_a_president'] = _('Select a president')
+        dict['Select_a_chairperson'] = _('Select a chairperson')
         dict['Select_a_secretary'] = _('Select a secretary')
-        dict['No_president'] = _('There is no president')
+        dict['No_chairperson'] = _('There is no chairperson')
         dict['No_secretary'] = _('There is no secretary')
 
         dict['Calc_result'] = _('Calculate result')
@@ -1301,7 +1305,7 @@ TXT_No_subject_selected = _('No subject selected.')
 
 
 TXT_Function = _('Function')
-TXT_President = _('President')
+TXT_Chairperson = _('Chairperson')
 TXT_Secretary = _('Secretary')
 TXT_Corrector = _('Corrector')
 TXT_Examiner = _('Examiner')

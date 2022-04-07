@@ -198,7 +198,7 @@ const man_approve = {
             "<div class='mfr'>",
                 "<p>When submitting the Ex forms, the signature on paper has been replaced by a digital signature.</p>",
                  "<p class='pb-0'>Submitting Ex forms is done in two steps:</p>",
-                 "<ul class='manual_bullet mb-0'><li>The first step is the <b>approval</b> of the subjects, scores or grades by the president, secretary, examiner and possibly the corrector.</li>",
+                 "<ul class='manual_bullet mb-0'><li>The first step is the <b>approval</b> of the subjects, scores or grades by the chairperson, secretary, examiner and possibly the corrector.</li>",
                  "<li>The second step is the <b>submission</b> of the Ex-form by the chairperson or secretary.</li></ul>",
             "</div>",
         "</div>",
@@ -216,7 +216,7 @@ const man_approve = {
                 "<li>A user cannot be chairperson and secretary at the same time.</li>",
                 "<li>A chairperson cannot also sign as secretary.</li>",
                 "<li>A chairperson or secretary can also sign as examiner.</li>",
-                "<li>A corrector may not also sign as president, secretary or examiner.</li>",
+                "<li>A corrector may not also sign as chairperson, secretary or examiner.</li>",
                 "<li>Only a chairperson or secretary can submit Ex forms and print diplomas and final grade lists.</li></ul>",
 
                 "<p>The user's name and email address serve as identification. ",

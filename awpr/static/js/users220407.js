@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     field_settings.btn_usergroup = {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Examiner", "Corrector_2lines",
+                                    "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
                                     "Analyze",  "System_administrator_2lines", "Inactive"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_anlz", "group_admin", "is_active"],
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     field_settings.btn_userpermit = {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
-                                    "President", "Secretary", "Examiner", "Corrector_2lines",
+                                    "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
                                     "Analyze", "System_administrator_2lines"],
                     field_names: ["select", "role", "page", "action", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4",
@@ -603,8 +603,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const ob1 = (map_dict.sb_code) ? map_dict.sb_code : "";
         const ob2 = (map_dict.username) ? map_dict.username : "";
 
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, ob2, "", false, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
@@ -1261,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  lookup index where this row must be inserted
                         let ob1 = "", row_index = -1;
                         if (code) { ob1 = code.toLowerCase()};
-                        row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
+                        row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
 
 //--------- insert tblBody_select row at row_index
                         const map_id = "sel_" + tblName + "_" + base_id
@@ -2015,7 +2014,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const ob2 = (ob2_field && data_dict[ob2_field]) ?  data_dict[ob2_field].toLowerCase() : "";
 
         const row_index = (insert_at_index_zero) ? 0 :
-            b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, setting_dict.user_lang);
+            b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1, ob2);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_select.insertRow(row_index);

@@ -286,7 +286,7 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 student_list = get_grade_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, sel_sctbase_pk,
                                                   student_pk_list)
 
- # +++ get name of president and secretary
+ # +++ get name of chairperson and secretary
                 # auth_dict = get_pres_secr_dict(request)
 
                 # - get arial font
@@ -1188,8 +1188,8 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
     line_height = 7
     draw_text_one_line(canvas, coord, col_tab_list, line_height, 1.25, False, None, txt_list)
 
-# - draw name of president and secretary
-    # - place the text of the name of the president / secretary 40 mm under  the line president / secretary
+# - draw name of chairperson and secretary
+    # - place the text of the name of the chairperson / secretary 40 mm under  the line chairperson / secretary
     # but no lower than maximum
 
     txt_list = [
@@ -1205,11 +1205,11 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
     coord_auth = [coord[0], pos_y_auth]
     draw_text_one_line(canvas, coord_auth, col_tab_list, 0, 1.25, False, None, txt_list)
 
-# - draw label 'president' and 'secretary' under the name
+# - draw label 'chairperson' and 'secretary' under the name
     pos_y_auth_label  = pos_y_auth - 5 * mm
     coord_auth_label = [coord[0], pos_y_auth_label]
     txt_list = [
-        {'txt': library.get('president', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
+        {'txt': library.get('chairperson', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
          'x': x + col_tab_list[0] * mm},
         {'txt': library.get('secretary', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
          'x': x + col_tab_list[1] * mm},

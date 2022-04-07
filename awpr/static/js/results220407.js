@@ -652,8 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  lookup index where this row must be inserted
         const ob1 = (data_dict.fullname) ? data_dict.fullname : "";
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, "", "", false, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
@@ -1510,7 +1509,7 @@ function RefreshDataRowsAfterUpload(response) {
 
         const selected_value = null;
         t_FillOptionsFromList(el_MGL_select_pres, pres_secr_dict.auth1, "pk", "name",
-                                    loc.Select_a_president, loc.No_president, selected_value);
+                                    loc.Select_a_chairperson, loc.No_chairperson, selected_value);
         t_FillOptionsFromList(el_MGL_select_secr, pres_secr_dict.auth2, "pk", "name",
                                     loc.Select_a_secretary, loc.No_secretary, selected_value);
 
@@ -1530,7 +1529,7 @@ function RefreshDataRowsAfterUpload(response) {
 
         const selected_value = null;
         t_FillOptionsFromList(el_MGL_select_pres, pres_secr_dict.auth1, "pk", "name",
-                                    loc.Select_a_president, loc.No_president, selected_value);
+                                    loc.Select_a_chairperson, loc.No_chairperson, selected_value);
         t_FillOptionsFromList(el_MGL_select_secr, pres_secr_dict.auth2, "pk", "name",
                                     loc.Select_a_secretary, loc.No_secretary, selected_value);
         el_MGL_printdate.value = (pres_secr_dict.printdate) ? pres_secr_dict.printdate : null;

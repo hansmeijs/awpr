@@ -811,7 +811,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "subjecttypebase") {
             if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
         }
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, ob1, ob2, ob3, false, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2, ob3);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
@@ -3617,7 +3617,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let ob1 = "", row_index = -1;
             if(tblName === "subject"){
                 if (map_dict.name) { ob1 = map_dict.name.toLowerCase()};
-                row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, setting_dict.user_lang);
+                row_index = b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1);
             }
 
             const tblRow = tblBody_select.insertRow(row_index);

@@ -457,8 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  lookup index where this row must be inserted
         const ob1 = (data_dict.name) ? data_dict.name : "";
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, "", "", false, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);

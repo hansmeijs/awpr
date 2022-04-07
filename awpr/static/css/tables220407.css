@@ -851,6 +851,19 @@ aXX:hover{
     line-height: normal;
 }
 
+.tbl_h320 {
+    overflow-y: auto;
+    height: 320px;
+}
+.tbl_w200 {
+    overflow-x: hidden;
+    width: 200px;
+}
+.tbl_w320 {
+    overflow-x: hidden;
+    width: 320px;
+}
+
 .tbl_studsubj_h_w_auto {
     overflow-x: hidden;
     overflow-y: auto;

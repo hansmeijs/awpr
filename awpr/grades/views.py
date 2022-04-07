@@ -176,7 +176,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
                         # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-        # - get auth_index (1 = President, 2 = Secretary, 3 = examiner, 4 = Corrector
+        # - get auth_index (1 = Chairperson, 2 = Secretary, 3 = examiner, 4 = Corrector
                         # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
                         #  function may have changed if gradepage is not refreshed in time)
                         #  was: auth_index = upload_dict.get('auth_index')
@@ -255,35 +255,50 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
     # +++++ loop through grade_approve_rows
                                 grade_rows_tobe_updated = [] # list of grdaepk that passed validation
                                 updated_grade_pk_list = []
+
                                 for grade_row in grade_approve_rows:
 
     # +++ check if approving grade is allowed
                                     is_score = 'ce' in sel_examtype
-                                    validate_grade_is_allowed(
-                                        request=request,
-                                        schoolbase_pk=grade_row.get('schoolbase_id'),
-                                        depbase_pk=grade_row.get('depbase_id'),
-                                        lvlbase_pk=grade_row.get('lvlbase_id'),
-                                        subjbase_pk=grade_row.get('subjbase_id'),
-                                        cluster_pk=grade_row.get('cluster_id'),
-                                        msg_list=msg_list,
-                                        is_approve=True,
-                                        is_score=is_score
-                                    )
-                                    if msg_list:
-                                        if grade_pk:
-                                            logger.debug('grade_row: ' + str(grade_row))
-                                            header_text = str(_('Approve score') if is_score else _('Approve grade'))
-                                            update_wrap['messages'] = [
-                                                {'class': "border_bg_invalid", 'header': header_text,
-                                                 'msg_html': '<br>'.join(msg_list)}]
-                                            # add grade_pk to updated_grade_pk_list, to return grade_row with error field
-                                            updated_grade_pk_list = [grade_pk]
-                                        else:
-                                            pass
+                                    # use validate_grade_is_allowed when single garde is approved (in that case grade_pk has value)
+                                    if grade_pk:
+                                        is_allowed = validate_grade_is_allowed(
+                                            request=request,
+                                            schoolbase_pk=grade_row.get('schoolbase_id'),
+                                            depbase_pk=grade_row.get('depbase_id'),
+                                            lvlbase_pk=grade_row.get('lvlbase_id'),
+                                            subjbase_pk=grade_row.get('subjbase_id'),
+                                            cluster_pk=grade_row.get('cluster_id'),
+                                            msg_list=msg_list,
+                                            is_approve=True, # only used for msg text
+                                            is_score=is_score # only used for msg text
+                                        )
                                     else:
-                                        approve_grade_row(grade_row, grade_rows_tobe_updated, sel_examtype, requsr_auth, auth_index, is_test, is_reset, msg_dict, request)
-    # +++++  end of loop through grade_approve_rows
+                                        is_allowed = validate_grade_multiple_is_allowed(
+                                            request=request,
+                                            schoolbase_pk=grade_row.get('schoolbase_id'),
+                                            depbase_pk=grade_row.get('depbase_id'),
+                                            lvlbase_pk=grade_row.get('lvlbase_id'),
+                                            subjbase_pk=grade_row.get('subjbase_id'),
+                                            cluster_pk=grade_row.get('cluster_id')
+                                        )
+                                    if is_allowed:
+                                        approve_grade_row(grade_row, grade_rows_tobe_updated, sel_examtype, requsr_auth, auth_index, is_test, is_reset,
+                                                      msg_dict, request)
+                                    else:
+                                        if msg_list:
+                                            if grade_pk:
+                                                logger.debug('grade_row: ' + str(grade_row))
+                                                header_text = str(_('Approve score') if is_score else _('Approve grade'))
+                                                update_wrap['messages'] = [
+                                                    {'class': "border_bg_invalid", 'header': header_text,
+                                                     'msg_html': '<br>'.join(msg_list)}]
+                                                # add grade_pk to updated_grade_pk_list, to return grade_row with error field
+                                                updated_grade_pk_list = [grade_pk]
+                                            else:
+                                                pass
+
+     # +++++  end of loop through grade_approve_rows
 
                                 if logging_on:
                                     logger.debug('----- grade_rows_tobe_updated: ' + str(grade_rows_tobe_updated))
@@ -546,7 +561,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
                               grade_pk=None, include_grades=False):
     # PR2022-03-07
     # called by GradeApproveView, GradeSubmitEx2View
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_approve_rows -----')
         logger.debug('sel_examtype: ' + str(sel_examtype))
@@ -640,7 +655,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
             sql_list.append("AND subj.id = %(subj_pk)s::INT")
 
         if sel_cluster_pk:
-            sql_keys['cls_pk'] = sel_subject_pk
+            sql_keys['cls_pk'] = sel_cluster_pk
             sql_list.append("AND studsubj.cluster_id = %(cls_pk)s::INT")
 
         sql_list.append('ORDER BY stud.lastname, stud.firstname')
@@ -731,7 +746,7 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08
 
                         # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-        # - get auth_index (1 = President, 2 = Secretary, 3 = examiner, 4 = Corrector
+        # - get auth_index (1 = Chairperson, 2 = Secretary, 3 = examiner, 4 = Corrector
                         # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
                         #  function may have changed if gradepage is not refreshed in time)
                         #  was: auth_index = upload_dict.get('auth_index')
@@ -894,7 +909,7 @@ def create_submit_exform_msg_dict(msg_dict, file_name, is_test, ex_form): # PR20
                                             {'val': get_grades_are_text(auth_missing)}
             exam_comm = _(' and examiner') if ex_form == 'Ex2' else _(', examiner and corrector')
             msg_dict['saved_text'] = _("The %(cpt)s form can not be submitted.") % {'cpt': ex_form}
-            msg_dict['saved_text2'] = _("All grades must be approved by the president, secretary%(exam_comm)s.") % {'exam_comm': exam_comm}
+            msg_dict['saved_text2'] = _("All grades must be approved by the chairperson, secretary%(exam_comm)s.") % {'exam_comm': exam_comm}
         else:
             if committed:
                 msg_dict['test_is_ok'] = True
@@ -1126,12 +1141,12 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
                     af.add_one_to_count_dict(msg_dict, 'already_approved')
                 else:
 
-# - skip if this author (like 'president') has already approved this grade
+# - skip if this author (like 'chairperson') has already approved this grade
         # under a different permit (like 'secretary' or 'corrector')
-                    # president cannot also approve as secretary or as corrector
-                    # secretary cannot also approve as president or as corrector
+                    # chairperson cannot also approve as secretary or as corrector
+                    # secretary cannot also approve as chairperson or as corrector
                     # examiner cannot also approve as corrector
-                    # corrector cannot also approve as president, secretary or examiner
+                    # corrector cannot also approve as chairperson, secretary or examiner
                     if requsr_auth == 'auth1':
                         double_approved = (auth2by_id and auth2by_id == req_user.pk or auth4by_id and auth4by_id == req_user.pk)
                     elif requsr_auth == 'auth2':
@@ -1235,10 +1250,10 @@ def submit_grade_row(grade_row, tobe_updated_list, sel_examtype, is_test, msg_di
             else:
 
 # - check if all auth are different
-                # president cannot also approve as secretary or as corrector
-                # secretary cannot also approve as president or as corrector
+                # chairperson cannot also approve as secretary or as corrector
+                # secretary cannot also approve as chairperson or as corrector
                 # examiner cannot also approve as corrector
-                # corrector cannot also approve as president, secretary or examiner
+                # corrector cannot also approve as chairperson, secretary or examiner
                 double_approved = (auth1by_id == auth2by_id) or \
                                   (auth1by_id == auth4by_id) or \
                                   (auth2by_id == auth4by_id) or \
@@ -1338,12 +1353,12 @@ def approve_single_grade(grade, sel_examtype, requsr_auth, auth_index, is_test, 
                     af.add_one_to_count_dict(count_dict, 'already_approved')
                 else:
 
-# - skip if this author (like 'president') has already approved this grade
+# - skip if this author (like 'chairperson') has already approved this grade
         # under a different permit (like 'secretary' or 'corrector')
-                    # president cannot also approve as secretary or as corrector
-                    # secretary cannot also approve as president or as corrector
+                    # chairperson cannot also approve as secretary or as corrector
+                    # secretary cannot also approve as chairperson or as corrector
                     # examiner cannot also approve as corrector
-                    # corrector cannot also approve as president, secretary or examiner
+                    # corrector cannot also approve as chairperson, secretary or examiner
                     if requsr_auth == 'auth1':
                         double_approved = (auth2by and auth2by == req_user or auth4by and auth4by == req_user)
                     elif requsr_auth == 'auth2':
@@ -1491,11 +1506,16 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
 
 # +++ check if editing grade is allowed
                         is_score = 'score' in examgradetype
+                        # PR2022-04-06 <Marisela Cijntje RAdulphus cannot edit grade:
+                        # cause: Hav]Vwo has no level,
+                        # error: 'NoneType' object has no attribute 'base_id'
+                        # cause: Havo/Vwo has no level
+                        lvlbase_pk = grade.studentsubject.student.level.base_id if grade.studentsubject.student.level else None
                         validate_grade_is_allowed(
                             request=request,
                             schoolbase_pk=grade.studentsubject.student.school.base_id,
                             depbase_pk=grade.studentsubject.student.department.base_id,
-                            lvlbase_pk=grade.studentsubject.student.level.base_id,
+                            lvlbase_pk=lvlbase_pk,
                             subjbase_pk=grade.studentsubject.schemeitem.subject.base_id,
                             cluster_pk=grade.studentsubject.cluster_id,
                             msg_list=msg_list,
@@ -1584,6 +1604,38 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
 # --- end of GradeUploadView
 
 
+def validate_grade_multiple_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk):
+    # PR2022-04-07
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_grade_is_allowed -------')
+        logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
+                               'lvlbase_pk:', str(lvlbase_pk), 'subjbase_pk:', str(subjbase_pk),
+                               'cluster_pk:', str(cluster_pk))))
+
+    not_allowed = False
+    if request.user.allowed_clusterbases:
+        if not cluster_pk or str(cluster_pk) not in request.user.allowed_clusterbases.split(';'):
+            not_allowed = True
+
+    if not not_allowed and request.user.allowed_subjectbases:
+        if not subjbase_pk or str(subjbase_pk) not in request.user.allowed_subjectbases.split(';'):
+            not_allowed = True
+
+    if not not_allowed is None and request.user.allowed_schoolbases:
+        if not schoolbase_pk or str(schoolbase_pk) not in request.user.allowed_schoolbases.split(';'):
+            not_allowed = True
+
+    if not not_allowed is None and request.user.allowed_levelbases:
+        if not lvlbase_pk or str(lvlbase_pk) not in request.user.allowed_levelbases.split(';'):
+            not_allowed = True
+
+    if not not_allowed is None and request.user.allowed_depbases:
+        if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
+            not_allowed = True
+
+    return not not_allowed
+
 def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, msg_list,
                               is_approve=False, is_score=False):
     # PR2022-03-20
@@ -1594,37 +1646,43 @@ def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, su
                                'lvlbase_pk:', str(lvlbase_pk), 'subjbase_pk:', str(subjbase_pk),
                                'cluster_pk:', str(cluster_pk))))
 
-    if not msg_list:
-        caption = None
-        if request.user.allowed_clusterbases:
-            if not cluster_pk or str(cluster_pk) not in request.user.allowed_clusterbases.split(';'):
-                caption = _('the allowed clusters')
+    not_allowed = False
+    caption = None
+    if request.user.allowed_clusterbases:
+        if logging_on:
+            logger.debug('request.user.allowed_clusterbases: ' + str(request.user.allowed_clusterbases))
+            logger.debug('request.user.allowed_clusterbases.split: ' + str(request.user.allowed_clusterbases.split(';')))
+            logger.debug('cluster_pk: ' + str(cluster_pk))
+        if not cluster_pk or str(cluster_pk) not in request.user.allowed_clusterbases.split(';'):
+            caption = _('the allowed clusters')
 
-        if caption is None and request.user.allowed_subjectbases:
-            if not subjbase_pk or str(subjbase_pk) not in request.user.allowed_subjectbases.split(';'):
-                caption = _('the allowed subjects')
+    if caption is None and request.user.allowed_subjectbases:
+        if not subjbase_pk or str(subjbase_pk) not in request.user.allowed_subjectbases.split(';'):
+            caption = _('the allowed subjects')
 
-        if caption is None and request.user.allowed_schoolbases:
-            if not schoolbase_pk or str(schoolbase_pk) not in request.user.allowed_schoolbases.split(';'):
-                caption = _('the allowed schools')
+    if caption is None and request.user.allowed_schoolbases:
+        if not schoolbase_pk or str(schoolbase_pk) not in request.user.allowed_schoolbases.split(';'):
+            caption = _('the allowed schools')
 
-        if caption is None and request.user.allowed_levelbases:
-            if not lvlbase_pk or str(lvlbase_pk) not in request.user.allowed_levelbases.split(';'):
-                caption = _('the allowed learning paths')
+    if caption is None and request.user.allowed_levelbases:
+        if not lvlbase_pk or str(lvlbase_pk) not in request.user.allowed_levelbases.split(';'):
+            caption = _('the allowed learning paths')
 
-        if caption is None and request.user.allowed_depbases:
-            if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
-                caption = _('the allowed departments')
+    if caption is None and request.user.allowed_depbases:
+        if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
+            caption = _('the allowed departments')
 
-        if caption:
-            msg_list.append(str(_("This subject does not belong to %(cpt)s.") % {'cpt': caption}))
-            edit_txt = _('to approve') if is_approve else _('to edit')
-            score_txt = str(_('This score') if is_score else _('This grade')).lower()
-            msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
+    if caption:
+        not_allowed = True
+        msg_list.append(str(_("This subject does not belong to %(cpt)s.") % {'cpt': caption}))
+        edit_txt = _('to approve') if is_approve else _('to edit')
+        score_txt = str(_('This score') if is_score else _('This grade')).lower()
+        msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
 
-            if logging_on:
-                logger.debug('caption: ' + str(caption))
+        if logging_on:
+            logger.debug('caption: ' + str(caption))
 
+    return not not_allowed
 #######################################################
 
 def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,

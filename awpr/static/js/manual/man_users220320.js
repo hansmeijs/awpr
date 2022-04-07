@@ -293,7 +293,7 @@ const man_user = {
              "<li>If the administration enters the numbers, it gets the user group 'Change'.</li></ul></p>",
 
              "<p class='mb-0 pb-0'>The following <b>restrictions</b> apply: ",
-             "<ul class='manual_bullet'><li>A user cannot be president and secretary at the same time.</li>",
+             "<ul class='manual_bullet'><li>A user cannot be chairperson and secretary at the same time.</li>",
              "<li>Several users can belong to the user group 'Chairperson' and 'Secretary'.</li>",
              "<li>The same user cannot approve subjects and grades as both chairperson and secretary.</li>",
              "<li>The same user cannot approve subjects and grades both as an examiner and as a examiner.</li>",

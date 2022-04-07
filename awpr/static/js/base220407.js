@@ -381,7 +381,7 @@
         }, 2000);
     };
 
-//=========  ShowClassWithTimeout  ================ PR2020-04-26 PR2020-07-15
+//=========  ShowClassWithTimeout  ================ PR2020-04-26 PR2020-07-15 PR2022-04-06
     function ShowClassWithTimeout(el, className, timeout) {
         // show class, remove it after timeout milliseconds
         if(el && className){
@@ -1285,7 +1285,8 @@
     };  // b_recursive_lookup
 
 //========= b_recursive_tblRow_lookup  ========== PR2020-06-16
-    function b_recursive_tblRow_lookup(tblBody, search_value_1, search_value_2, search_value_3, descending_order, user_lang){
+    function b_recursive_tblRow_lookup(tblBody, user_lang, search_value_1, search_value_2, search_value_3,
+                descending_order_1, descending_order_2, descending_order_3){
         //console.log( " ----- b_recursive_tblRow_lookup -----");
         // function can handle list of 2 ^ (max_loop -2) rows , which is over 1 million rows
         // don't use recursive function, it is less efficient than a loop because it puts each call i the stack
@@ -1295,23 +1296,24 @@
         let compare = null, middle_index = null, found_row = null;
         const last_index = (tblBody.rows && tblBody.rows.length) ? tblBody.rows.length -1 : 0;
         // TODO test descending
-        const is_desc = (descending_order) ? -1 : 1;  // value = 1 when not descending
+        const is_desc_1 = (descending_order_1) ? -1 : 1;  // value = 1 when not descending
+        const is_desc_2 = (descending_order_2) ? -1 : 1;  // value = 1 when not descending
+        const is_desc_3 = (descending_order_3) ? -1 : 1;  // value = 1 when not descending
     //console.log( "last_index: ", last_index);
-
         if (tblBody.rows && tblBody.rows.length){
             let min_index = 0;
             let max_index = last_index;
             middle_index =  Math.floor( (min_index + max_index) / 2);
 
-            const s_val_1 = (search_value_1) ? search_value_1.toLowerCase() : "";
-            const s_val_2 = (search_value_2) ? search_value_2.toLowerCase() : "";
-            const s_val_3 = (search_value_3) ? search_value_3.toLowerCase() : "";
+            const s_val_1 = (search_value_1) ? search_value_1.toString().toLowerCase() : "";
+            const s_val_2 = (search_value_2) ? search_value_2.toString().toLowerCase() : "";
+            const s_val_3 = (search_value_3) ? search_value_3.toString().toLowerCase() : "";
 
             const max_loop = 25;
             for (let i = 0; i < max_loop; i++) {
                 if (i > 23) {
                 // exit when loop not breaked (should not be possible), put index at end of list
-                    compare = 1 * is_desc;
+                    compare = 1 * is_desc_1;
                     middle_index = last_index;
                     break;
                 } else {
@@ -1330,13 +1332,13 @@
                     // 'acu'.localeCompare('giro') = -1
                     // 'mcb'.localeCompare('giro') = 1
                     // note: value of compare can be 2 or -2 in some browsers, therefore use compare < 0 instead of compare === -1
-                    const compare1 = is_desc * s_val_1.localeCompare(middle_value_field_1, user_lang, {sensitivity: 'base'});
+                    const compare1 = is_desc_1 * s_val_1.localeCompare(middle_value_field_1, user_lang, {sensitivity: 'base'});
                     // if first lookup field matches: compare has value of second field
                     // if first lookup field does not match: compare has value of first field
                     if (!compare1){
-                        const compare2 = is_desc * s_val_2.localeCompare(middle_value_field_2, user_lang, {sensitivity: 'base'});
+                        const compare2 = is_desc_2 * s_val_2.localeCompare(middle_value_field_2, user_lang, {sensitivity: 'base'});
                         if (!compare2){
-                             compare = is_desc * s_val_3.localeCompare(middle_value_field_3, user_lang, {sensitivity: 'base'});
+                             compare = is_desc_3 * s_val_3.localeCompare(middle_value_field_3, user_lang, {sensitivity: 'base'});
                         } else {
                             compare = compare2;
                         };
@@ -1395,7 +1397,7 @@
             };
         } else {
             // table is empty
-            compare = is_desc * 1;
+            compare = -1;
             middle_index = -1;
         };  //  if (tblBody.rows && tblBody.rows.length)
 
@@ -1540,7 +1542,7 @@
 // skip if user has no auth usergroup
         if (is_auth_1 && is_auth_2){
 // show msg error if user has multiple auth usergroups
-            const functions = loc.President + loc.and + loc.Secretary;
+            const functions = loc.Chairperson + loc.and + loc.Secretary;
             const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
                         loc.approve_err_list.Only_1_allowed + "<br>" + loc.approve_err_list.cannot_approve
             b_show_mod_message_html(msg_html);
@@ -1576,7 +1578,7 @@
         if ( (permit_auth[1] && permit_auth[2]) || (permit_auth[1] && permit_auth[2]) ){
             auth_index = 0;
 // show msg error if user has multiple auth usergroups
-            const functions = (permit_auth[1] && permit_auth[2]) ? loc.President + loc.and + loc.Secretary :
+            const functions = (permit_auth[1] && permit_auth[2]) ? loc.Chairperson + loc.and + loc.Secretary :
                               (permit_auth[3] && permit_auth[4]) ? loc.Corrector + loc.and + loc.Examiner : "";
 
             const msg_html = loc.approve_err_list.You_have_functions + functions + ". " + "<br>" +
@@ -1589,7 +1591,7 @@
 
 //========= b_get_function_of_auth_index  ======== // PR2022-03-07
     function b_get_function_of_auth_index(loc, auth_index){
-        return (auth_index === 1) ? loc.President :
+        return (auth_index === 1) ? loc.Chairperson :
                 (auth_index === 2) ? loc.Secretary :
                 (auth_index === 3) ? loc.Examiner :
                 (auth_index === 4) ? loc.Corrector : "-";

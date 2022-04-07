@@ -104,8 +104,8 @@ document.addEventListener('DOMContentLoaded', function() {
         fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber", "Leerweg", "Sector", "Cluster", "Subject"]};
     columns_tobe_hidden.btn_ep_01 = {
-        fields: ["sjtp_abbrev", "subj_status"],
-        captions: ["Character", "Approved"]}
+        fields: ["sjtp_abbrev", "pws_title", "pws_subjects", "subj_status"],
+        captions: ["Character", "Assignment_title", "Assignment_subjects", "Approved"]}
     //columns_tobe_hidden.btn_exem = {
     //    fields: ["exemption_year"],
     //    captions: ["Exemption_year"]}
@@ -113,22 +113,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get field_settings
     const field_settings = {
         btn_ep_01: {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Character",  ""],
+                                "Abbreviation_twolines", "Subject", "Character", "Assignment_title", "Assignment_subjects",  ""],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "sjtp_abbrev", "subj_status",
+                                "subj_code", "subj_name", "sjtp_abbrev", "pws_title", "pws_subjects", "subj_status",
                                 ],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div"],
-                    filter_tags: ["", "toggle", "text", "text",  "text",  "text", "text",
-                                "text", "text", "toggle", "toggle"],
+                                "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text",
+                                "text", "text", "text", "text", "text", "toggle"],
                     field_width:  ["020", "020", "075", "180", "075", "075", "120",
-                                    "075", "180","090", "032",
-                                    "090", "032", "090", "032", "090", "032",
-                                    "090", "032", "032"],
+                                    "075", "180", "090", "150","150", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l",
-                                    "c", "l", "l", "c",
-                                    "c", "c", "c", "c", "c", "c", "c",
-                                    "c", "c"]},
+                                    "c", "l", "l", "l","l","c"]},
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
         btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
@@ -852,6 +848,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         };
 // --- add width, text_align
                         el_header.classList.add(class_width, class_align);
+                        if (field_name === "pws_subjects"){
+                        // to get space between title and subjects
+                            el_header.classList.add("pl-2");
+                        };
+
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
 
@@ -888,7 +889,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- add width, text_align
                     el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
-                th_filter.appendChild(el_filter)
+
+                th_filter.appendChild(el_filter);
                 tblRow_filter.appendChild(th_filter);
             }  //  if (columns_hidden.inludes(field_name))
         }  // for (let j = 0; j < column_count; j++)
@@ -919,7 +921,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (tblName === "published") {
              if (map_dict.datepublished) { ob1 = map_dict.datepublished};
         }
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, ob1, ob2, ob3, false, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2, ob3);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
@@ -1045,6 +1047,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     el.classList.add(class_width, class_align);
                 }
+                if (field_name === "pws_subjects"){
+                    // to get space between title and subjects
+                    el.classList.add("pl-2");
+                };
+
                 //if(field_name === "examnumber"){el.classList.add("pr-2")}
 
 // --- put value in field
@@ -1086,12 +1093,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (field === "select") {
                     // TODO add select multiple users option PR2020-08-18
                 } else if (["examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
-                            "subj_code", "subj_name", "sjtp_abbrev", "name", "exemption_year", "cluster_name"
+                            "subj_code", "subj_name", "sjtp_abbrev", "name", "exemption_year", "cluster_name",
+                            "pws_title", "pws_subjects",
                              ].includes(field)){
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
                     // "NBSP (non-breaking space)" is necessary to show green box when field is empty
                     inner_text = (fld_value) ? fld_value : "&nbsp";
-
+                    if (["pws_title", "pws_subjects"].includes(field)){
+                        if (fld_value){ title_text = fld_value};
+                    };
                 } else if (field.includes("has_")){
                     filter_value = (fld_value) ? "1" : "0";
                     el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
@@ -1194,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const auth_id = (i === 1) ?  auth1by_id : auth2by_id;
                         const examtype_auth = examtype + "_auth" + i;
                         if(auth_id){
-                            const function_str = (i === 1) ?  loc.President.toLowerCase() : loc.Secretary.toLowerCase();
+                            const function_str = (i === 1) ?  loc.Chairperson.toLowerCase() : loc.Secretary.toLowerCase();
                             const field_usr = examtype_auth + "_usr";
                             const auth_usr = (map_dict[field_usr]) ?  map_dict[field_usr] : "-";
                             title_text += "\n" + function_str + ": " + auth_usr;
@@ -1932,7 +1942,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (subj_name) { ob1 = subj_name.toLowerCase() };
         if (sjtp_abbrev) { ob2 = sjtp_abbrev.toString()};
 
-        const row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, ob3, false, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1, ob2, ob3);
 
         const tblRow = tblBody_select.insertRow(row_index);
         if (tblName === "studsubj") {
@@ -4735,7 +4745,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                             step: -1,  // gets value 1 in MASS_Save
                             is_reset: false}
 
-                const function_str = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1")) ? loc.President :
+                const function_str = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1")) ? loc.Chairperson :
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2")) ? loc.Secretary :
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Examiner :
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4")) ? loc.Corrector : "-";

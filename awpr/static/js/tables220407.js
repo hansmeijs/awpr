@@ -361,17 +361,17 @@
         if(tblName === "student"){
             if (map_dict.lastname) { ob1 = map_dict.lastname.toLowerCase()};
             if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
         } else if(tblName === "subject"){
             if (code) { ob1 = code.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
         } else if(tblName === "cluster"){
             if (code) { ob1 = code.toLowerCase()};
             if (name) { ob2 = name.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
         } else if(tblName === "school"){
             if (code) { ob1 = code.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, "", "", false, loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
         }
 
 //--------- insert tblBody_select row at row_index
@@ -548,7 +548,7 @@
         // and calls 'linkColumns' or 'unlinkColumns'
 // currentTarget refers to the element to which the event handler has been attached
 // event.target which identifies the element on which the event occurred.
-console.log("=========   handle_table_row_clicked   ======================") ;
+//console.log("=========   handle_table_row_clicked   ======================") ;
 //console.log("e.target.currentTarget.id", e.currentTarget.id) ;
 
         if(!!e.target && e.target.parentNode.nodeName === "TR") {
@@ -673,9 +673,9 @@ console.log("=========   handle_table_row_clicked   ======================") ;
                     let isEqual = false;
                     if (typeof(keyValue) === "string"){
                         const value_str = (typeof(value) === "number") ? value.toString() : value;
-                        isEqual = (keyValue.toLowerCase() === value_str.toLowerCase())
+                        isEqual = (keyValue.toLowerCase() === value_str.toLowerCase());
                     } else {
-                        isEqual = (keyValue === value)
+                        isEqual = (keyValue === value);
                     }
                     if (isEqual){
                         row = dict;

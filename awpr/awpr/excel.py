@@ -369,8 +369,8 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         if save_to_disk:
             sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
             auth_row += 2
-    # - President
-            sheet.write(auth_row, first_subject_column, str(_('President')) + ':')
+    # - Chairperson
+            sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
             auth1_list = ex1_rows_dict.get('auth1')
             if auth1_list:
                 for auth1_pk in auth1_list:
@@ -1074,8 +1074,8 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
         if save_to_disk:
             sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
             auth_row += 2
-     # - President
-            sheet.write(auth_row, first_subject_column, str(_('President')) + ':')
+     # - Chairperson
+            sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
             auth1_list = grades_auth_dict.get('auth1')
             if logging_on:
                 logger.debug('auth1_list: ' + str(auth1_list))

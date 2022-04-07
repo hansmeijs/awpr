@@ -39,7 +39,7 @@ def update_library(examyear, request):
         ('exform', 'col_exnr', 'Ex.nr.'),
         ('exform', 'col_idnr', 'ID-nummer'),
         ('exform', 'bullet', '*'),
-        ('exform', 'signature_president', '(Handtekening voorzitter)'),
+        ('exform', 'signature_chairperson', '(Handtekening voorzitter)'),
         ('exform', 'signature_secretary', '(Handtekening secretaris)'),
 
         ('exam', 'title', 'Examenvragen voor het examenjaar '),
@@ -206,7 +206,7 @@ def update_library(examyear, request):
 
         ('gradelist', 'place', 'Plaats:'),
         ('gradelist', 'date', 'Datum:'),
-        ('gradelist', 'president', 'voorzitter'),
+        ('gradelist', 'chairperson', 'voorzitter'),
         ('gradelist', 'secretary', 'secretaris'),
 
         ('diploma', 'born', 'geboren'),
@@ -219,7 +219,7 @@ def update_library(examyear, request):
 
         ('diploma', 'place', 'Plaats:'),
         ('diploma', 'date', 'Datum:'),
-        ('diploma', 'president', 'De voorzitter van de examencommissie:'),
+        ('diploma', 'chairperson', 'De voorzitter van de examencommissie:'),
         ('diploma', 'secretary', 'De secretaris van de examencommissie:'),
 
         ('diploma', 'ete', 'Het Expertisecentrum voor Toetsen & Examens:'),

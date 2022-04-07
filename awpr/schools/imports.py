@@ -638,7 +638,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                             if has_values:
 
     # - upload studentsubject
-                                studsubj_rows, has_error, pws_has_changed = \
+                                studsubj_rows, has_error, is_existing_student, pws_has_changed = \
                                     upload_studentsubject_from_datalist(
                                         data_dict=data_dict,
                                         school=sel_school,
@@ -657,6 +657,8 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                                 count_total += 1
                                 if has_error:
                                     count_error += 1
+                                elif is_existing_student:
+                                    count_existing += 1
                                 else:
                                     count_new += 1
                                 if pws_has_changed:
@@ -1431,15 +1433,23 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
     function = data_dict.get('function')
     function_first_letter_lc = function[0].lower() if function else None
     usergroups = 'read'
+
     if function_first_letter_lc:
-        if function_first_letter_lc in ('v', 'p'): # 'Voorzitter', 'President'
+        if function_first_letter_lc in ('v', 'p'): # 'Voorzitter', 'Chairperson'
             usergroups = 'auth1;read'
         elif function_first_letter_lc == 's': # 'Secretaris', 'Secretary'
             usergroups = 'auth2;read'
         elif function_first_letter_lc == 'e':  # 'Examiner'
             usergroups = 'auth3;read'
-        elif function_first_letter_lc in ('g', 'c'): # 'Gecommitteerde', 'Corrector'
+        elif function_first_letter_lc == 'g': # 'Gecommitteerde',
             usergroups = 'auth4;read'
+        elif function_first_letter_lc == 'c': # 'Chairperson', 'Corrector'
+            if len(function) > 1:
+                function_second_letter_lc = function[1].lower()
+                if function_second_letter_lc == 'h':  # 'Chairperson'
+                    usergroups = 'auth1;read'
+                elif function_second_letter_lc == 'o':  # 'Corrector'
+                    usergroups = 'auth4;read'
 
 # - when school uploads users: get school_code from req_user instead of from data_dict
     if request.user.is_role_school:
@@ -2696,11 +2706,12 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
     if logging_on:
         #logger.debug('students_dict_with_subjbase_pk_list: ' + str(students_dict_with_subjbase_pk_list))
         logger.debug('lookup_field_caption: ' + str(lookup_field_caption))
-        logger.debug('id_number_nodots: ' + str(id_number_nodots))
+        logger.debug('id_number_nodots: ' + str(id_number_nodots) + ' ' + str(type(id_number_nodots)))
         logger.debug('error_list: ' + str(error_list))
         logger.debug('has_error: ' + str(has_error))
 
     student = None
+    is_existing_student = False
     has_pws_subjbase_pk = None
     has_multiple_pws_subjects = False
     if not has_error:
@@ -2750,7 +2761,8 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
             else:
                 not_added_txt = pgettext_lazy('plural', "%(cpt)s have not been added.") % {'cpt':cpt}
             log_list.append(''.join((caption_txt, str(not_added_txt))))
-
+        else:
+            is_existing_student = True
     if not has_error:
         log_list.append(id_number_nodots + '  ' + student.fullname + ' ' + str(student.scheme))
 
@@ -2959,7 +2971,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                            # studsubj_dict[field] = field_dict
         # +++ end of add pws_title pws_subjects ++++++++++++++++++++++++++++++++++++++
 
-    return studsubj_rows, has_error, pws_has_changed
+    return studsubj_rows, has_error, is_existing_student, pws_has_changed
 # --- end of upload_studentsubject_from_datalist
 
 

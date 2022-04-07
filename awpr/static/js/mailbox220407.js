@@ -597,8 +597,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const ob1 = (map_dict.sentdate) ? map_dict.sentdate : "";
         const ob2 = (map_dict.username) ? map_dict.username : "";
 
-        const row_index = b_recursive_tblRow_lookup(tblBody_datatable,
-                                     ob1, ob2, "", true, setting_dict.user_lang);
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2, "", true);
 
         //console.log("ob1", ob1);
         //console.log("ob2", ob2);
@@ -2028,7 +2027,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const ob2 = (key === "sb") ? (data_dict.name) ? data_dict.name.toLowerCase() : "" :
                     (key === "us") ? (data_dict.username) ? data_dict.username.toLowerCase() : "" : "";
 
-        row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, loc.user_lang);
+        row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
 
         //console.log("ob1", ob1);
         //console.log("ob2", ob2);
@@ -2830,7 +2829,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let ob1 = "", ob2 = "", row_index = -1;
             if (data_dict.code) { ob1 = data_dict.code.toLowerCase()};
             if (data_dict.last_name) { ob2 = data_dict.last_name.toLowerCase()};
-            row_index = b_recursive_tblRow_lookup(tblBody_select, ob1, ob2, "", false, loc.user_lang);
+            row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
 
     //--------- insert tblBody_select row at row_index
             const map_id = "userpk_" + user_pk_int

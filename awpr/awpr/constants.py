@@ -515,7 +515,7 @@ USERGROUP_CAPTION = {
     USERGROUP_READ: _('Read'),
     USERGROUP_EDIT: _('Edit'),
     #USERGROUP_TEACHER: _('Teacher'),
-    USERGROUP_AUTH1_PRES: _('President'),
+    USERGROUP_AUTH1_PRES: _('Chairperson'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
     USERGROUP_AUTH3_EXAM: _('Examiner'),
     USERGROUP_AUTH4_COM: _('Corrector'),
