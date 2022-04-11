@@ -77,7 +77,7 @@ const man_exams = {
                 "<p>Het invoeren gaat het snelste, wanneer je na het intypen van het antwoord op de ENTER toets klikt. Je gaat dan meteen naar de volgende vraag. ",
                 "Klik op een toetsen met een pijltje om naar een volgende of vorige vraag, of naar een vraag in de volgende of vorige kolom te gaan.</p>",
 
-                "<p><b>Opslaan</b><br>De ingevulde antwoorden worden pas opgeslagen als je op de knop <i>Opslaan</i> klikt.",
+                "<p><b>Opslaan</b><br>De ingevulde antwoorden worden pas opgeslagen als je op de knop <i>Opslaan</i> klikt .",
                 "Vergeet daarom niet op de knop <i>Opslaan</i> te klikken als je de antwoorden hebt ingevoerd.</p>",
                 "<p class='pb-0'>In de kolom <i>Niet ingevuld</i> kunt je zien hoeveel vragen er nog ingevuld moeten worden. 49/58 betekent dat 49 van de 58 vragen nog niet zijn ingevuld. Als alle vragen zijn ingevuld blijft deze kolom leeg.</p>",
             ]),
@@ -240,8 +240,8 @@ const man_exams = {
                "Click <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>here</a> for a detailed description of this procedure.</p>",
 
                 "<p class='mb-0 pb-0'>Submission of the exams is done in two steps:</p>",
-                "<ul class='manual_bullet'><li>The first step is to <b>approve</b> the exams by the chairman and secretary.</li>",
-                "<li>The second step is the <b>submission</b> of the Ex-form by the chairman or secretary.</li></ul>",
+                "<ul class='manual_bullet'><li>The first step is to <b>approve</b> the exams by the chairperson and secretary.</li>",
+                "<li>The second step is the <b>submission</b> of the Ex-form by the chairperson or secretary.</li></ul>",
 
 
                 "<p><b>Approve</b><br>Click <i>Approve Exams</i> in the menu bar. The <i>Approve Exams</i> window appears. ",

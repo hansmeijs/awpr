@@ -585,10 +585,10 @@
 .img_mailbox_select_items_ne {background-image: url('/static/manual/mailbox_select_items_ne.png');}
 .img_mailbox_select_items_en {background-image: url('/static/manual/mailbox_select_items_en.png');}
 
-.img_mailbox_read_message_ne_nw, .img_mailbox_read_message_en_nw {
+.img_mailbox_read_message_ne, .img_mailbox_read_message_en {
     width: 797px; height: 682px; background-size: 797px 682px;}
-.img_mailbox_read_message_ne_nw {background-image: url('/static/manual/mailbox_read_message_ne_nw.png');}
-.img_mailbox_read_message_en_nw {background-image: url('/static/manual/mailbox_read_message_en_nw.png');}
+.img_mailbox_read_message_ne {background-image: url('/static/manual/mailbox_read_message_ne.png');}
+.img_mailbox_read_message_en {background-image: url('/static/manual/mailbox_read_message_en.png');}
 
 .img_mailbox_mailinglist_ne, .img_mailbox_mailinglist_en {
     width: 797px; height: 485px; background-size: 797px 485px;}

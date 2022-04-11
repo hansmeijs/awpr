@@ -1390,10 +1390,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 //=========  UpdateFieldStatus  ================ PR2021-12-19
     function UpdateFieldStatus(field_name, fld_value, data_dict) {
-        //console.log("=========  UpdateFieldStatus =========");
-        //console.log("field_name", field_name);
-        //console.log("fld_value", fld_value);
-        //console.log("data_dict", data_dict);
+        console.log("=========  UpdateFieldStatus =========");
+        console.log("field_name", field_name);
+        console.log("fld_value", fld_value);
+        console.log("data_dict", data_dict);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];

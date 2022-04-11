@@ -296,6 +296,7 @@ urlpatterns = [
         path('upload', subject_views.ExamUploadView.as_view(), name='url_exam_upload'),
         path('copy', subject_views.ExamCopyView.as_view(), name='url_exam_copy'),
 
+        path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),
         path('approve_publish_exam', subject_views.ExamApproveOrPublishView.as_view(), name='url_approve_publish_exam'),
         path('approve_submit_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 

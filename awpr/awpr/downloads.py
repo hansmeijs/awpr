@@ -166,6 +166,19 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         skip_allowed_filter=skip_allowed_filter,
                         cur_dep_only=cur_dep_only,
                         request=request)
+
+
+# ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
+                if datalist_request.get('duo_subject_rows'):
+                    datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
+                        req_usr=request.user,
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_depbase_pk=sel_depbase.pk,
+                        append_dict={},
+                        setting_dict=new_setting_dict,
+                        exam_pk_list=None
+                    )
+
 # ----- clusters
                 if datalist_request.get('cluster_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('cluster_rows', 'cur_dep_only'), False)
@@ -204,23 +217,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- duo exams
                     if datalist_request.get('duo_exam_rows'):
                         datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
-                            req_usr=request.user,
                             sel_examyear_pk=sel_examyear.pk,
                             sel_depbase_pk=sel_depbase.pk,
                             append_dict={},
                             setting_dict=new_setting_dict,
                             exam_pk_list=None
                         )
-# ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
-                if datalist_request.get('duo_subject_rows'):
-                    datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
-                        req_usr=request.user,
-                        sel_examyear_pk=sel_examyear.pk,
-                        sel_depbase_pk=sel_depbase.pk,
-                        append_dict={},
-                        setting_dict=new_setting_dict,
-                        exam_pk_list=None
-                    )
+
 # ----- ntermentable
                 if datalist_request.get('ntermentable_rows'):
                     datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
@@ -542,7 +545,15 @@ def download_setting(request_item_setting, messages, user_lang, request):
     permit_dict['allowed_depbases'] = allowed_depbases
     allowed_depbases_len = len(allowed_depbases)
     # Note: set may_select_department also in ExamyearListView
-    may_select_department = (page not in ('page_examyear',) and allowed_depbases_len > 1)
+    # in page exam: ETE may_select_department
+    may_select_department = False
+    if page == 'page_examyear':
+        pass
+    elif page == 'page_exams' and req_user.role >= c.ROLE_064_ADMIN:
+        may_select_department = True
+    else:
+        may_select_department = allowed_depbases_len > 1
+
     permit_dict['may_select_department'] = may_select_department
     permit_dict['display_department'] = (page not in ('page_examyear',))
 

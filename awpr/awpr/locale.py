@@ -739,7 +739,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['mandatory_subject'] = _('mandatory subject')
         dict['combination_subject'] = _('combination subject')
 
-        dict['Authorized_chairman'] = _('Authorized\nchairman')
+        dict['Authorized_chairperson'] = _('Authorized\nchairperson')
         dict['Authorized_secretary'] = _('Authorized\nsecretary')
         dict['Submitted'] = _('Submitted')
         dict['Authorized_by'] = _('Authorized by')
@@ -847,7 +847,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['ETE_exams'] = _("ETE exams")
         dict['DUO_exams'] = _("DUO exams")
-
+        dict['DUO_description'] = _("DUO description")
 
         dict['Exam_type'] = TXT_Exam_type
         dict['Exam_types'] = _('Exam types')
@@ -886,6 +886,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_exam'] = _("Delete exam")
         dict['Copy_exam'] = _("Copy exam")
         dict['Link_DUO_exams'] = _("Link DUO exams")
+        dict['Unlink_DUO_exam'] = _("Unlink DUO exam")
         dict['Publish_exams'] = _("Publish exams")
         dict['Submit_exams'] = _("Submit exams")
         dict['Approve_exams'] = _("Approve exams")
@@ -902,7 +903,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Download_PDF'] = _("Download PDF")
         dict['Download_JSON'] = _("Download JSON")
         dict['JSON_will_be_downloaded'] = _("The JSON file with exam results will be downloaded.")
+        dict['will_be_unlinked'] = pgettext_lazy('singular', ' will be unlinked.')
         dict['Yes_download'] = _("Yes, download")
+        dict['Yes_unlink'] = _("Yes, unlink")
 
         dict['Key'] = _("Key")
         dict['Version'] = _("Version")
@@ -920,6 +923,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Sequence_2lines'] = TXT_Sequence_2lines
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
+        dict['No_exams_found'] = _("No exams found.")
+        dict['No_subjects_found'] = _("No subjects found.")
 
         dict['Add_partial_exam'] = _('Add partial exam')
         dict['Delete_partial_exam'] = _('Delete partial exam')

@@ -323,7 +323,7 @@ function write_image(img_class){
     return ["<div class='mfc mb-2'>",
             "<div class='mfl mr-2'><p></p></div>",
             "<div class='mfr'>",
-                "<div class='ml-2 mt-2", img_class, "'></div>",
+                "<div class='ml-2 mt-2 ", img_class, "'></div>",
             "</div>",
         "</div>"
         ].join("");

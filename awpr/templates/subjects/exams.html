@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220407.js' %}"></script>
+    <script src="{% static 'js/exams220411.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import220320.js' %}"></script>
 
@@ -143,6 +143,7 @@
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-url_exam_upload="{% url 'url_exam_upload' %}"
+                data-url_duo_exam_upload="{% url 'url_duo_exam_upload' %}"
                 data-url_exam_copy="{% url 'url_exam_copy' %}"
 
                 data-url_approve_publish_exam="{% url 'url_approve_publish_exam' %}"

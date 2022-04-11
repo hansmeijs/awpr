@@ -110,7 +110,7 @@
             }
             el_hdrbar_examyear.innerText = examyer_txt;
 
-        //console.log("permit_dict.may_select_examyear", permit_dict.may_select_examyear )
+            // add pointer on hover when there are multiple examyear
             add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", permit_dict.may_select_examyear, "awp_navbar_item" )
 
         }
@@ -123,6 +123,7 @@
             const may_select_department = (display_department && allowed_depbases_count > 1);
 
             add_or_remove_class(el_hdrbar_department, cls_hide, !display_department)
+            // add pointer on hover when tehere are multiple departments
             add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )
 
             let department_txt = null;
@@ -143,16 +144,14 @@
                             department_txt = " <" + loc.department_notfound_thisexamyear + ">"
                         } else {
                             department_txt = " " + setting_dict.sel_depbase_code
-                        }
-                    }
-                }
-            }
+                        };
+                    };
+                };
+            };
             el_hdrbar_department.innerText = department_txt;
-
-        }
+        };
 // --- SCHOOL
         if(el_hdrbar_school) {
-
             const display_school = (!!permit_dict.display_school);
             const may_select_school = (display_school && permit_dict.may_select_school);
 
@@ -166,7 +165,7 @@
                     schoolname_txt = " <" + loc.Select_school + ">";
                 } else {
                     schoolname_txt = " <" + loc.No_school + ">";
-                }
+                };
             } else {
                 schoolname_txt = setting_dict.sel_schoolbase_code;
                 if (!setting_dict.sel_examyear_pk) {
@@ -176,18 +175,18 @@
                         schoolname_txt += " <" + loc.School_notfound_thisexamyear + ">"
                     } else {
                         schoolname_txt += " " + setting_dict.sel_school_name
-                    }
-                }
-            }
+                    };
+                };
+            };
             el_hdrbar_school.innerText = schoolname_txt;
 
 //console.log("display_school", display_school)
 //console.log("may_select_school", may_select_school)
 
-        }
+        };
 //console.log(el_hdrbar_school)
 
-    }  // UpdateHeaderbar
+    };  // UpdateHeaderbar
 
 //========= b_get_depbases_display  ============= PPR2021-05-06
     function b_get_depbases_display(department_map, fldName, fld_value) {
@@ -202,12 +201,12 @@
                     const code = (map_dict[fldName]) ? map_dict[fldName] : "-";
                     if(depbase_id){
                         if (arr.includes(depbase_id.toString())){
-                            if(depbase_codes) { depbase_codes += ", "}
+                            if(depbase_codes) { depbase_codes += ", "};
                             depbase_codes += code;
             }}}};
-        }
+        };
         return depbase_codes;
-    }  // b_get_depbases_display
+    };  // b_get_depbases_display
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 //========= b_get_permits_from_permitlist  ============= PPR2021-04-26
@@ -1530,8 +1529,8 @@
         // only used in exam approve
         // gives err messages when requsr his both auth pres and auth secr
 
-        console.log( "-----  b_get_auth_index_pres_secr_of_requsr  -----");
-        console.log( "permit_dict.usergroup_list", permit_dict.usergroup_list);
+        //console.log( "-----  b_get_auth_index_pres_secr_of_requsr  -----");
+        //console.log( "permit_dict.usergroup_list", permit_dict.usergroup_list);
         let is_auth_1 = false, is_auth_2 = false, auth_index = 0;
 
         if (permit_dict.usergroup_list){

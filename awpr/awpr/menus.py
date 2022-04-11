@@ -135,6 +135,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         sel_auth_index = af.get_dict_value(acc_view.get_usersetting_dict, (c.KEY_SELECTED_PK, c.KEY_SEL_AUTH_INDEX))
 
+# -  get permit_list
         permit_list, usergroup_list = acc_view.get_userpermit_list(sel_page, req_user)
         auth_list = []
         for usergroup in usergroup_list:

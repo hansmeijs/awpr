@@ -10,23 +10,28 @@
 
 // ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
-//=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10
+//=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
         //console.log( "===== t_MSED_Open ========= ", tblName);
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
+        //console.log( "data_map", data_map);
+        //console.log( "all_countries", all_countries);
         // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
             if (tblName === "examyear") {
                 may_open_modal = permit_dict.may_select_examyear;
                 selected_pk = setting_dict.sel_examyear_pk;
+
             } else if (tblName === "department") {
-                const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
+                // argument 'all_countries' also used to show all deps in page exam, only when used by ETE (requsr_role_admin)
+                const allowed_depbases_count = (all_countries && permit_dict.requsr_role_admin) ? data_map.size : (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
+
                 may_open_modal = (allowed_depbases_count > 1);
                 may_open_modal = permit_dict.may_select_department;
                 selected_pk = setting_dict.sel_depbase_pk;
-             }
+             };
     //console.log( "may_open_modal", may_open_modal);
             //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
             if (may_open_modal) {
@@ -48,7 +53,7 @@
 
     //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
-        console.log("===  t_MSED_Save =========");
+        //console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const tblName = get_attr_from_el(tblRow, "data-table");
@@ -66,6 +71,15 @@
             if(all_countries){new_setting.all_countries = true};
         } else if (tblName === "department") {
             new_setting.sel_depbase_pk = (selected_pk_int) ? selected_pk_int : null;
+
+
+            // PR2022-04-11 debug: ETE cannot change to all deps in exam page because sel_school is set to school with 1 dep
+            // therefore must set sel_school = requsr_schoolbase_pk when all_countries = true
+            // make sure that ETE school has all deps
+            //'argument 'all_countries' also used to show all deps in page exam, only when used by ETE (requsr_role_admin)
+            if (all_countries){
+                new_setting.sel_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
+            };
             // PR2022-01-08 debug: set level, sector, subject and student null when changing depbase
             new_setting.sel_lvlbase_pk = null;
             new_setting.sel_sctbase_pk = null;
@@ -74,7 +88,6 @@
             setting_dict.sel_level_abbrev = null;
             setting_dict.sel_sctbase_pk = null;
             setting_dict.sel_sector_abbrev = null;
-
         };
         // always reset student and subject when changing dep or ey
         new_setting.sel_student_pk = null;
@@ -118,35 +131,38 @@
                     code_value = (map_dict.examyear_code) ? map_dict.examyear_code : "---";
                     if (all_countries && map_dict.country) {country = map_dict.country};
                 } else if(tblName === "department") {
+                    country = "";
                     code_value = (map_dict.base_code) ? map_dict.base_code : "---"
                 }
 
                 let skip_row = false;
                 if(tblName === "examyear") {
-                    if(all_countries){
+                    if (all_countries){
                         skip_row = (setting_dict.sel_examyear_pk === map_dict.examyear_id || map_dict.locked);
                     } else {
                         skip_row = (permit_dict.requsr_country_pk !== map_dict.country_id);
                     };
                 } else if(tblName === "department"){
-                    if (permit_dict.allowed_depbases){
-                        skip_row = !permit_dict.allowed_depbases.includes(pk_int);
-                    } else {
-                        skip_row = true;
-                    }
-                }
+                    if (!all_countries){
+                        if (permit_dict.allowed_depbases){
+                            skip_row = !permit_dict.allowed_depbases.includes(pk_int);
+                        } else {
+                            skip_row = true;
+                        };
+                    };
+                };
                 if(!skip_row){
                     t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, country, all_countries, activated, locked, MSED_Response, selected_pk);
-                }
+                };
             };
-        }  // if(!!data_map)
+        };  // if(!!data_map)
         const row_count = (tblBody_select.rows) ? tblBody_select.rows.length : 0;
         if(!row_count){
             const caption_none = (tblName === "examyear") ? loc.No_examyears :
                                  (tblName === "department") ? loc.No_departments : null;
             t_MSED_CreateSelectRow(loc, tblName, tblBody_select, null, caption_none, null, false, false, MSED_Response, selected_pk);
-        }
-    }  // t_MSED_FillSelectTable
+        };
+    };  // t_MSED_FillSelectTable
 
 //=========  t_MSED_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24
     function t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, country, all_countries, activated, locked, MSED_Response, selected_pk) {
@@ -940,15 +956,15 @@
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
         const has_profiel = setting_dict.sel_dep_has_profiel;
-
-        //console.log("=== t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase");
-        //console.log("tblName", tblName);
-        //console.log("rows", rows);
-        //console.log("loc", loc);
-        //console.log("setting_dict", setting_dict);
-        //console.log("has_items", has_items);
-        //console.log("has_profiel", has_profiel);
-
+/*
+        console.log("=== t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase");
+        console.log("tblName", tblName);
+        console.log("rows", rows);
+        console.log("loc", loc);
+        console.log("setting_dict", setting_dict);
+        console.log("has_items", has_items);
+        console.log("has_profiel", has_profiel);
+*/
         // when label has no id the text is Sector / Profiel, set in .html file
         const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label");
         const all_sectors_profielen_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profielen : (has_profiel) ? loc.All_profielen :loc.All_sectors;
@@ -1050,9 +1066,9 @@
 //========= t_FillSelectOptions  =======  // PR2020-09-30 PR2021-05-12
     function t_FillSelectOptions(el_select, data_map, id_field, display_field, hide_none,
                 selected_pk, selectall_text, select_text_none, select_text) {
-        console.log( "===== t_FillSelectOptions  ===== ");
+        //console.log( "===== t_FillSelectOptions  ===== ");
         // called by page exam MEXQ_FillSelectTableLevel  and page_subject SBR_Select_scheme
-        console.log( "selected_pk", selected_pk, typeof selected_pk);
+        //console.log( "selected_pk", selected_pk, typeof selected_pk);
 
 // ---  fill options of select box
         let option_text = "";
@@ -1064,9 +1080,9 @@
                 const pk_int = map_dict[id_field];
                 const display_value = (map_dict[display_field]) ?  map_dict[display_field] : "---";
 
-        console.log( "map_dict", map_dict);
-        console.log( "pk_int", pk_int, typeof pk_int);
-        console.log( "display_value", display_value);
+        //console.log( "map_dict", map_dict);
+        //console.log( "pk_int", pk_int, typeof pk_int);
+        //console.log( "display_value", display_value);
                 option_text += "<option value=\"" + pk_int + "\"";
                 if (pk_int === selected_pk) {option_text += " selected=true" };
                 option_text +=  ">" + display_value + "</option>";
@@ -1114,13 +1130,14 @@
 //========= t_FillOptionsFromList  =======  PR2020-12-17
     function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
-        //console.log( "=== t_FillOptionsFromList ");
-        //console.log( "data_list", data_list);
-        //console.log( "value_field", value_field);
-        //console.log( "selected_value", selected_value);
-        //console.log( "filter_field", filter_field);
-        //console.log( "filter_value", filter_value, typeof filter_value);
-
+/*
+        console.log( "=== t_FillOptionsFromList ");
+        console.log( "data_list", data_list);
+        console.log( "value_field", value_field);
+        console.log( "selected_value", selected_value);
+        console.log( "filter_field", filter_field);
+        console.log( "filter_value", filter_value, typeof filter_value);
+*/
 // ---  fill options of select box
         let option_text = "";
         let row_count = 0;

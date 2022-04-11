@@ -207,7 +207,7 @@ class SubjectListView(View):
         return render(request, html_page, params)
 
 
-def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request):
+def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only=False, duo_exam_only=False):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07
     # skip_allowed_filter is used in userpage: when setting 'allowed_', all subjects must be shown
     logging_on = s.LOGGING_ON
@@ -250,7 +250,10 @@ def create_subject_rows(setting_dict, skip_allowed_filter, cur_dep_only, request
             "INNER JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
 
             "WHERE dep.examyear_id = %(ey_id)s::INT"
+
             ]
+        if duo_exam_only:
+            sub_sql_list.append("AND NOT si.ete_exam")
 
         sel_depbase_pk = None
         if cur_dep_only:
@@ -1292,9 +1295,14 @@ class ExamUploadView(View):
                 deleted_row = None
 
 # - get variables from upload_dict
-                # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
+                """
+                upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
+                upload_dict{'table': 'duo_exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'lvlbase_pk': 4, 'exam_pk': 112, 'auth_index': 1, 'auth_bool_at_index': True}
+                upload_dict{'table': 'duo_exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'lvlbase_pk': 4, 'exam_pk': 112, 'subject_pk': 122, 'auth_index': 1, 'auth_bool_at_index': True}
 
+                """
                 # don't get it from usersettings, get it from upload_dict instead
+                table = upload_dict.get('table')
                 mode = upload_dict.get('mode')
                 examyear_pk = upload_dict.get('examyear_pk')
                 depbase_pk = upload_dict.get('depbase_pk')
@@ -1313,13 +1321,15 @@ class ExamUploadView(View):
                         id=examyear_pk,
                         country=req_usr.country
                     )
+                if logging_on:
+                    logger.debug('examyear:     ' + str(examyear))
 
                 # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
                 if examyear and not examyear.locked:
 
 # - get subject
                     subject = subj_mod.Subject.objects.get_or_none(
-                        id=subject_pk,
+                        pk=subject_pk,
                         examyear=examyear
                     )
                     if logging_on:
@@ -1369,20 +1379,35 @@ class ExamUploadView(View):
 # +++++ Update instance, also when it is created, not when is_delete
                             update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
+
+                    if logging_on:
+                        logger.debug('---- exam: ' + str(exam))
+
     # 6. create list of updated exam
                     if deleted_row:
                         updated_exam_rows = [deleted_row]
                     else:
-                        updated_exam_rows = create_exam_rows(
-                            req_usr=req_usr,
-                            sel_examyear_pk=examyear.pk,
-                            sel_depbase_pk=depbase_pk,
-                            append_dict=append_dict,
-                            exam_pk_list=[exam.pk]
-                        )
+                        if table == 'exam':
+                            updated_exam_rows = create_exam_rows(
+                                req_usr=req_usr,
+                                sel_examyear_pk=examyear.pk,
+                                sel_depbase_pk=depbase_pk,
+                                append_dict=append_dict,
+                                exam_pk_list=[exam.pk]
+                            )
+                            if updated_exam_rows:
+                                update_wrap['updated_exam_rows'] = updated_exam_rows
 
-                    if updated_exam_rows:
-                        update_wrap['updated_exam_rows'] = updated_exam_rows
+                        elif table == 'duo_exam':
+                            updated_duo_exam_rows = create_duo_exam_rows(
+                                sel_examyear_pk=examyear.pk,
+                                sel_depbase_pk=depbase_pk,
+                                append_dict=append_dict,
+                                exam_pk_list=[exam.pk]
+                            )
+                            if updated_duo_exam_rows:
+                                update_wrap['updated_duo_exam_rows'] = updated_duo_exam_rows
+
         if err_html:
             update_wrap['err_html'] = err_html
 # - return update_wrap
@@ -1522,6 +1547,229 @@ class ExamCopyView(View):
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamCopyView
+
+
+# ============= ExamUploadDuoExamView ============= PR2021-04-07
+@method_decorator([login_required], name='dispatch')
+class ExamUploadDuoExamView(View):
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExamUploadDuoExamView ============= ')
+
+        req_usr = request.user
+        update_wrap = {}
+        err_html = ''
+
+# - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - add edit permit
+        has_permit = False
+        if req_usr and req_usr.country:
+            permit_list = req_usr.permit_list('page_exams')
+            if permit_list:
+                has_permit = 'permit_crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if not has_permit:
+            err_html = str(_("You don't have permission to perform this action."))
+        else:
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                error_list = []
+                append_dict = {}
+                deleted_row = None
+
+# - get variables from upload_dict
+                # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
+                """
+                upload_dict{'mode': 'delete', 'examyear_pk': 1, 'depbase_pk': 1}
+                """
+                # don't get it from usersettings, get it from upload_dict instead
+                mode = upload_dict.get('mode')
+
+                exam_pk = upload_dict.get('exam_pk')
+
+                if logging_on:
+                    logger.debug('exam_pk' + str(exam_pk))
+
+# +++++ Delete instance if is_delete
+                if mode == 'delete':
+                    # - get existing exam instance
+                    exam_instance = subj_mod.Exam.objects.get_or_none(
+                        pk=exam_pk
+                    )
+                    if logging_on:
+                        logger.debug('exam_instance: ' + str(exam_instance))
+
+                    if exam_instance:
+                        deleted_row = delete_duo_exam_instance(exam_instance, error_list, request)
+                        if deleted_row:
+                            update_wrap['updated_duo_exam_rows'] = [deleted_row]
+
+                elif mode == 'create':
+
+                    department_pk = upload_dict.get('department_pk')
+                    level_pk = upload_dict.get('level_pk')
+                    ntermentable_pk = upload_dict.get('ntermentable_pk')
+                    # PR2022-04-09 version not in use yet, to be added when multiple exams per level are possible
+                    version = upload_dict.get('version')
+                    # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
+                    subject_pk = upload_dict.get('subject_pk')
+
+                    if logging_on:
+                        logger.debug('exam_pk' + str(exam_pk))
+                        logger.debug('department_pk' + str(department_pk))
+                        logger.debug('level_pk' + str(level_pk))
+                        logger.debug('version' + str(version))
+                        logger.debug('ntermentable_pk' + str(ntermentable_pk))
+
+    # lookup ntermentable
+                    ntermentable, examyear, examperiod_int, nex_id = None, None, None, None
+                    if ntermentable_pk:
+                        ntermentable = subj_mod.Ntermentable.objects.get_or_none(
+                            pk=ntermentable_pk
+                        )
+                        if logging_on:
+                            logger.debug('ntermentable' + str(ntermentable))
+                        if ntermentable:
+                            nex_id = ntermentable.nex_id
+                            examperiod_int = ntermentable.tijdvak
+                            if logging_on:
+                                logger.debug('nex_id' + str(nex_id) + ' ' + str(type(nex_id)))
+
+    # - check if examyear exists and equals selected examyear from Usersetting
+                    # ntermentable has no fiels examyear - get it from nexid
+                            if nex_id:
+                                nex_id_str = str(nex_id)
+                                if len(nex_id_str) > 1:
+                                    year_str = nex_id_str[:2]
+                                    examyear_pk = 2000 + int(year_str)
+
+                                    examyear = sch_mod.Examyear.objects.get_or_none(
+                                        code=examyear_pk,
+                                        country=req_usr.country
+                                    )
+                                    if logging_on:
+                                        logger.debug('examyear:       ' + str(examyear))
+
+                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+
+                    if logging_on:
+                        logger.debug('nex_id:       ' + str(nex_id) + ' ' + str(type(nex_id)))
+                        logger.debug('selected_examyear_pk:  ' + str(selected_examyear_pk) + ' ' + str(type(selected_examyear_pk)))
+
+                    if examyear and examyear.pk == selected_examyear_pk and not examyear.locked:
+    # - get subject
+                        subject = subj_mod.Subject.objects.get_or_none(id=subject_pk, examyear=examyear)
+                        department = sch_mod.Department.objects.get_or_none(pk=department_pk, examyear=examyear)
+                        level = subj_mod.Level.objects.get_or_none(pk=level_pk, examyear=examyear)
+
+                        if logging_on:
+                            logger.debug('subject:        ' + str(subject))
+                            logger.debug('department:     ' + str(department))
+                            logger.debug('level:          ' + str(level))
+                            logger.debug('examperiod_int: ' + str(examperiod_int))
+
+    # +++++ Create new instance if is_create:
+                        ete_exam = False
+                        exam, msg_err = create_exam_instance(subject, department, level,
+                                                             examperiod_int, ete_exam, request, version, ntermentable)
+                        if msg_err:
+                            err_html = str(msg_err)
+                        elif exam:
+                            if logging_on:
+                                logger.debug('created exam: ' + str(exam))
+                                logger.debug('append_dict: ' + str(append_dict))
+
+    # 6. create list of updated exam
+                            append_dict = {'created': True}
+                            updated_duo_exam_rows = create_duo_exam_rows(
+                                sel_examyear_pk=examyear.pk,
+                                sel_depbase_pk=department.base_id,
+                                append_dict=append_dict,
+                                exam_pk_list=[exam.pk]
+                            )
+                            if updated_duo_exam_rows:
+                                update_wrap['updated_duo_exam_rows'] = updated_duo_exam_rows
+        if err_html:
+            update_wrap['err_html'] = err_html
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of ExamUploadDuoExamView
+
+
+def delete_duo_exam_instance(exam_instance, error_list, request):  # PR2022-04-09
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --- delete_duo_exam_instance --- ')
+        logger.debug('exam_instance: ' + str(exam_instance))
+
+# - create deleted_row
+    deleted_row = {'id': exam_instance.pk,
+                    'mapid': 'exam_' + str(exam_instance.pk),
+                    'deleted': True}
+    if logging_on:
+        logger.debug('deleted_row: ' + str(deleted_row))
+
+# - check if grades connected to this exam
+    count_grades = validate_exam_has_grades(exam_instance)
+
+    if count_grades:
+        deleted_row = None
+        if count_grades == 1:
+            error_list.append(_('There is 1 candidate with this exam.'))
+        else:
+            error_list.append(_('There are %(count)s candidates with this exam.'))
+        error_list.append(_('This DUO-exam could not be unlinked.'))
+    else:
+# - delete instance
+        try:
+            exam_instance.delete(request=request)
+        except Exception as e:
+            deleted_row = None
+            logger.error(getattr(e, 'message', str(e)))
+            error_list.append(_('This DUO-exam could not be unlinked.'))
+
+        if logging_on:
+            logger.debug('deleted_row: ' + str(deleted_row))
+            logger.debug('error_list: ' + str(error_list))
+    return deleted_row
+# - end of delete_duo_exam_instance
+
+
+def validate_exam_has_grades(exam_instance):
+    count_grades = 0
+
+    # - check if grades connected to this exam
+    sql_keys = {'exam_id': exam_instance.pk}
+    sql_list = [
+        "SELECT COUNT(grd.ce_exam_id)",
+        "FROM students_grade AS grd",
+        "WHERE grd.ce_exam_id = %(exam_id)s::INT",
+    ]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = cursor.fetchall()
+        # rows: [(0,)]
+        if rows:
+            count_grades = rows[0][0]
+    return count_grades
 
 
 @method_decorator([login_required], name='dispatch')
@@ -2817,13 +3065,14 @@ def add_published_exam_to_grades(exam):
 # end of add_published_exam_to_grades
 
 
-def create_exam_instance(subject, department, level, examperiod_int, ete_exam, request):
+def create_exam_instance(subject, department, level, examperiod_int, ete_exam, request, version=None, ntermentable=None):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_exam_instance --- ')
         logger.debug('subject: ' + str(subject))
         logger.debug('department: ' + str(department))
         logger.debug('level: ' + str(level))
+        logger.debug('version: ' + str(version))
         logger.debug('examperiod_int: ' + str(examperiod_int))
 
     exam = None
@@ -2839,6 +3088,12 @@ def create_exam_instance(subject, department, level, examperiod_int, ete_exam, r
             ete_exam=ete_exam
             # NIU (null not allowed): examtype=examtype
         )
+        # only used when creating duo-exam
+        if ntermentable:
+            exam.ntermentable = ntermentable
+        if version:
+            exam.version = version
+
         exam.save(request=request)
         if logging_on:
             logger.debug('exam: ' + str(exam))
@@ -2846,7 +3101,7 @@ def create_exam_instance(subject, department, level, examperiod_int, ete_exam, r
     except Exception as e:
 # - create error when exam is  not created
         logger.error(getattr(e, 'message', str(e)))
-        msg_err = ("An error occurred. This exam could not be created.")
+        msg_err = _("An error occurred. This exam could not be created.")
         if logging_on:
             logger.debug('msg_err: ' + str(msg_err))
 
@@ -2987,7 +3242,7 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request): 
 
 def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_exam_rows ============= ')
 
@@ -2995,7 +3250,7 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
     sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
 
     sql_list = [
-        "SELECT ex.id, ex.subject_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
+        "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', ex.id::TEXT) AS mapid,",
         "CONCAT(subj.name,",
         "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
@@ -3007,7 +3262,7 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
         "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm,",
 
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
-        "sb.code AS subj_base_code, subj.name AS subj_name,",
+        "sb.code AS subjbase_code, subj.name AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
         "au.last_name AS modby_username,",
 
@@ -3075,9 +3330,9 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
 # --- end of create_exam_rows
 
 
-def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
+def create_duo_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-04-06
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
 
@@ -3085,23 +3340,27 @@ def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, 
     sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
 
     sql_list = [
-        "SELECT ex.id, ex.subject_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
+        "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', ex.id::TEXT) AS mapid,",
         "CONCAT(subj.name,",
         "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
         "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
 
-        "ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
-        "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-        "ex.version, ex.nex_id, ex.scalelength, ex.nterm, ex.locked, ex.modifiedat,",
-        "sb.code AS subj_base_code, subj.name AS subj_name,",
+        "CONCAT('n', ntb.id, 'd', dep.id, 's', subj.id, 'l', lvl.id) AS ndsl_pk,",
+        "ex.examperiod, ex.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
+        "ex.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+        "ex.version, ex.nex_id, ex.scalelength, ex.nterm,",
+        "sb.code AS subjbase_code, subj.name AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
 
         "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
         "ntb.tijdvak AS ntb_tijdvak, ntb.omschrijving AS ntb_omschrijving, ntb.schaallengte AS ntb_schaallengte, ntb.n_term AS ntb_nterm,",
         "ntb.datum AS ntb_datum,"
-        
-        "au.last_name AS modby_username",
+
+        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
+        "au.last_name AS modby_username,",
+
+        "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, publ.modifiedat AS publ_modat",
 
         "FROM subjects_exam AS ex",
         "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
@@ -3114,7 +3373,12 @@ def create_duo_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, 
 
         "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = ex.ntermentable_id)",
 
+        "LEFT JOIN accounts_user AS auth1 ON (auth1.id = ex.auth1by_id)",
+        "LEFT JOIN accounts_user AS auth2 ON (auth2.id = ex.auth2by_id)",
+        "LEFT JOIN schools_published AS publ ON (publ.id = ex.published_id)",
+
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
+
         "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT AND NOT ex.ete_exam"
     ]
 
@@ -3169,8 +3433,8 @@ def create_duo_subject_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dic
     sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
     sql_list = [
         "SELECT subj.id, subj.base_id AS subjbase_id,",
-        "sb.code AS subj_base_code, subj.name AS subj_name,",
-        "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev,",
+        "sb.code AS subjbase_code, subj.name AS subj_name,",
+        "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id, ",
         "dep.id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code",
 
         "FROM subjects_schemeitem AS si",
