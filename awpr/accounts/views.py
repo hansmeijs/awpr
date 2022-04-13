@@ -2502,7 +2502,3 @@ def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None,
         sql_list.append("AND FALSE")
 # - end of get_userfilter_allowed_cluster
 
-
-
-
-

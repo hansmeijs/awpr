@@ -3444,11 +3444,8 @@ def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, save
 
                     sesr_grade, pece_grade, finalgrade = \
                         calc_final.calc_sesr_pece_final_grade(
+                            si_dict=si_dict,
                             is_ep_exemption=examgradetype in ('exemsegrade', 'exemsegrade'),
-                            has_practexam=si_dict.get('has_practexam', False),
-                            gradetype=si_dict.get('gradetype', 0),
-                            weight_se=si_dict.get('weight_se', 0),
-                            weight_ce=si_dict.get('weight_ce', 0),
                             has_sr=saved_studsubj_dict.get('has_sr', False),
                             se_grade=segrade,
                             sr_grade=srgrade,

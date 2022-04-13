@@ -829,11 +829,15 @@
 
     }  // t_td_selected_set
 
-//=========  t_td_selected_toggle  ================ PR2021-11-18
-    function t_td_selected_toggle(tblRow) {
+//=========  t_td_selected_toggle  ================ PR2021-11-18 PR2022-04-13
+    function t_td_selected_toggle(tblRow, select_single) {
         //console.log("=========  t_td_selected_toggle =========");
         //console.log("cls_selected", cls_selected, "cls_background", cls_background);
         if(tblRow){
+// deselect all selected rows when select_single = True
+            if (select_single){
+                t_td_selected_clear(tblRow.parentNode)
+            };
             const new_is_selected = !tblRow.classList.contains(cls_selected);
             if (new_is_selected) {
                 tblRow.classList.add(cls_selected)

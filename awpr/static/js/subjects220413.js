@@ -96,13 +96,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 "rule_grade_sufficient", "rule_gradesuff_notatevlex",
                 "extra_count_allowed",  "extra_nocount_allowed",
                  "has_practexam", "sr_allowed",
-                "max_reex", "no_thirdperiod",  "no_exemption_ce"],
+                "max_reex", "thumb_rule",  "no_ce_years"],
         captions: ["Subject", "Character", "ETE_exam", "Other_languages",
                 "Grade_type", "SE_weighing",  "CE_weighing", "Counts_double", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
                 "Subject_must_be_sufficient", "Not_at_evening_lex_school",
                 "Extra_count_allowed", "Extra_nocount_allowed",
                 "Has_practical_exam", "Herkansing_SE_allowed",
-                "Maximum_reex", "No_third_period", "Exemption_without_CE_allowed"]};
+                "Maximum_reex", "Thumbrule_applies", "Examyears_without_CE"]};
 
     columns_tobe_hidden.btn_subjecttype = {
         fields: ["name", "min_subjects",  "max_subjects", "min_extra_nocount" , "max_extra_nocount",
@@ -158,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             "Extra_count_allowed",  "Extra_nocount_allowed",
                             "Has_practical_exam", "Herkansing_SE_allowed",
                             "Subject_must_be_sufficient", "Not_at_evening_lex_school",
+                            "Thumbrule_applies", "Examyears_without_CE"
                             ],
                     field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam", "otherlang",
                             "gradetype", "weight_se", "weight_ce", "multiplier",
@@ -166,11 +167,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             "extra_count_allowed",  "extra_nocount_allowed",
                             "has_practexam", "sr_allowed",
                             "rule_grade_sufficient", "rule_gradesuff_notatevlex",
+                            "thumb_rule", "no_ce_years"
                             ],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div",
                                 "div", "div", "div", "div",
                                 "div", "div", "div",
                                 "div", "div", "div",
+                                "div", "div",
                                 "div", "div",
                                 "div", "div",
                                 "div", "div",
@@ -182,6 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 "toggle", "toggle",
                                 "toggle", "toggle",
                                 "toggle",  "toggle",
+                                "toggle",  "text",
                                 ],
                     field_width:  ["020", "180", "090", "300", "120", "090", "150",
                                     "090", "090", "090", "090",
@@ -190,6 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "090", "090",
                                     "090", "090",
                                     "090", "100",
+                                    "100", "100",
                                      ],
                     field_align: ["c", "l", "l","l", "l", "c", "l",
                                     "c", "c", "c", "c",
@@ -198,6 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "c", "c",
                                     "c", "c",
                                     "c", "c",
+                                    "c", "l",
                                     ]
                     };
     field_settings.btn_subjecttype = {field_caption: ["", "Subject_scheme", "Base_character", "Character_name",
@@ -690,9 +696,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
     function CreateTblHeader(field_setting, col_hidden) {
-        //console.log("===  CreateTblHeader ===== ");
-        //console.log("field_setting", field_setting);
-        //console.log("columns_hidden", columns_hidden);
+        console.log("===  CreateTblHeader ===== ");
+        console.log("field_setting.field_names", field_setting.field_names);
+        console.log("col_hidden", col_hidden);
 
         const column_count = field_setting.field_names.length;
 
@@ -895,8 +901,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             td.classList.add("pointer_show");
                             add_hover(td);
                     } else if (filter_tag ==="toggle"){
-                        // skip max_reex and no_thirdperiod when weight_ce = 0
-                        if(!["max_reex", "no_thirdperiod"].includes(field_name) || map_dict.weight_ce) {
+                        // skip max_reex  when weight_ce = 0
+                        if(field_name !== "max_reex" || map_dict.weight_ce) {
                             td.addEventListener("click", function() {HandleToggle(tblName, el)}, false)
                             td.classList.add("pointer_show");
                             add_hover(td)
@@ -966,7 +972,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let inner_text = null, title_text = null, filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev"].includes(field_name)){
+                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev", "no_ce_years"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
@@ -995,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             "rule_core_sufficient", "rule_core_notatevlex",
                             "extra_count_allowed", "extra_nocount_allowed",
                             "has_practexam", "has_pws", "sr_allowed", "reex_combi_allowed",
-                            "no_reex", "no_exemption_ce"].includes(field_name)) {
+                            "no_reex", "thumb_rule"].includes(field_name)) {
                     filter_value = (fld_value) ? "1" : "0";
                     el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
 
@@ -1003,17 +1009,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const counts_double = (fld_value === 2);
                     filter_value = (counts_double) ? "1" : "0";
                     el_div.className = (counts_double) ? "tickmark_1_2" : "tickmark_0_0";
-
-                } else if ( field_name === "no_thirdperiod") {
-                    if (map_dict.weight_ce){
-                        const is_etenorm = fld_value;
-                        filter_value = (is_etenorm) ? "1" : "0";
-                        el_div.className = (is_etenorm) ? "tickmark_1_2" : "tickmark_0_0";
-                    } else {
-                        inner_text = "-";
-                        filter_value = (inner_text) ? inner_text : null
-                    }
-                }
+                };
 // ---  put value in innerText and title
                 if (el_div.tagName === "INPUT"){
                     el_div.value = inner_text;

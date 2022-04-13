@@ -1302,6 +1302,7 @@ class ExamUploadView(View):
 
                 """
                 # don't get it from usersettings, get it from upload_dict instead
+                # values of table are 'ete_exam', 'duo_exam',
                 table = upload_dict.get('table')
                 mode = upload_dict.get('mode')
                 examyear_pk = upload_dict.get('examyear_pk')
@@ -1385,18 +1386,19 @@ class ExamUploadView(View):
 
     # 6. create list of updated exam
                     if deleted_row:
-                        updated_exam_rows = [deleted_row]
+                        update_wrap['updated_ete_exam_rows'] = [deleted_row]
+
                     else:
                         if table == 'exam':
-                            updated_exam_rows = create_exam_rows(
+                            updated_ete_exam_rows = create_ete_exam_rows(
                                 req_usr=req_usr,
                                 sel_examyear_pk=examyear.pk,
                                 sel_depbase_pk=depbase_pk,
                                 append_dict=append_dict,
                                 exam_pk_list=[exam.pk]
                             )
-                            if updated_exam_rows:
-                                update_wrap['updated_exam_rows'] = updated_exam_rows
+                            if updated_ete_exam_rows:
+                                update_wrap['updated_ete_exam_rows'] = updated_ete_exam_rows
 
                         elif table == 'duo_exam':
                             updated_duo_exam_rows = create_duo_exam_rows(
@@ -1532,7 +1534,7 @@ class ExamCopyView(View):
 
                 # 6. create list of updated exam
                                     if new_exam:
-                                        updated_exam_rows = create_exam_rows(
+                                        updated_ete_exam_rows = create_ete_exam_rows(
                                             req_usr=req_usr,
                                             sel_examyear_pk=new_exam.department.examyear.pk,
                                             sel_depbase_pk=new_exam.department.base.pk,
@@ -1540,8 +1542,8 @@ class ExamCopyView(View):
                                             exam_pk_list=[new_exam.pk]
                                         )
 
-                                        if updated_exam_rows:
-                                            update_wrap['updated_exam_rows'] = updated_exam_rows
+                                        if updated_ete_exam_rows:
+                                            update_wrap['updated_ete_exam_rows'] = updated_ete_exam_rows
         if err_html:
             update_wrap['err_html'] = err_html
 # - return update_wrap
@@ -1960,14 +1962,14 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
                         msg_html = create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
         # get updated_rows
                         if not is_test and updated_exam_pk_list:
-                            rows = create_exam_rows(
+                            rows = create_ete_exam_rows(
                                 req_usr=req_usr,
                                 sel_examyear_pk=sel_examyear.pk,
                                 sel_depbase_pk=sel_department.base_id,
                                 append_dict={},
                                 exam_pk_list=updated_exam_pk_list)
                             if rows:
-                                update_wrap['updated_exam_rows'] = rows
+                                update_wrap['updated_ete_exam_rows'] = rows
 
                             # +++++ create Ex1 form
 
@@ -2151,14 +2153,14 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11
                             msg_html = create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
             # get updated_rows
                             if not is_test and updated_exam_pk_list:
-                                rows = create_exam_rows(
+                                rows = create_ete_exam_rows(
                                     req_usr=req_usr,
                                     sel_examyear_pk=sel_examyear.pk,
                                     sel_depbase_pk=sel_department.base_id,
                                     append_dict={},
                                     exam_pk_list=updated_exam_pk_list)
                                 if rows:
-                                    update_wrap['updated_exam_rows'] = rows
+                                    update_wrap['updated_ete_exam_rows'] = rows
 
                                 # +++++ create Ex1 form
 
@@ -3240,11 +3242,11 @@ def update_exam_instance(instance, upload_dict, error_list, examyear, request): 
 # - end of update_exam_instance
 
 
-def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
+def create_ete_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' =============== create_exam_rows ============= ')
+        logger.debug(' =============== create_ete_exam_rows ============= ')
 
 # - only show published exams when user is school
     sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
@@ -3282,7 +3284,8 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
         "LEFT JOIN schools_published AS publ ON (publ.id = ex.published_id)",
 
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
-        "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT"
+        "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT",
+        "AND ex.ete_exam"
     ]
 
 # - only show exams that are not published when user is_role_admin
@@ -3327,7 +3330,7 @@ def create_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, sett
         logger.debug('exam_rows: ' + str(exam_rows))
 
     return exam_rows
-# --- end of create_exam_rows
+# --- end of create_ete_exam_rows
 
 
 def create_duo_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
@@ -3535,7 +3538,7 @@ def create_ntermentable_rows(sel_examyear_pk, sel_depbase, setting_dict):
         ntermentable_rows = af.dictfetchall(cursor)
 
     return ntermentable_rows
-# --- end of create_exam_rows
+# --- end of create_ete_exam_rows
 
 
 def calc_total():

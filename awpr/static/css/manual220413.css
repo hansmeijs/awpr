@@ -472,7 +472,7 @@
 .img_studsubj_mod_approve_ne, .img_studsubj_mod_approve_en,
 .img_studsubj_submit_step1_ne, .img_studsubj_submit_step1_en,
 .img_studsubj_submit_step2_ne, .img_studsubj_submit_step2_en,
-.img_studsubj_submitted_exforms_ne, .img_studsubj_submitted_exforms_en {
+.img_approve_archive_exforms_ne, .img_approve_archive_exforms_en {
     background-repeat: no-repeat;
     margin-left: 8px;
 }
@@ -524,16 +524,16 @@
     background-image: url('/static/manual/studsubj_submit_step2_en.png');
 }
 
-.img_studsubj_submitted_exforms_ne, .img_studsubj_submitted_exforms_en {
-    height: 175px;
-    width: 850px;
-    background-size: 850px 175px;
+.img_approve_archive_exforms_ne, .img_approve_archive_exforms_en {
+    width: 1054px;
+    height: 310px;
+    background-size: 1054px 310px;
  }
-.img_studsubj_submitted_exforms_ne {
-    background-image: url('/static/manual/studsubj_submitted_exforms_ne.png');
+.img_approve_archive_exforms_ne {
+    background-image: url('/static/manual/approve_archive_exforms_ne.png');
 }
-.img_studsubj_submitted_exforms_en {
-    background-image: url('/static/manual/studsubj_submitted_exforms_en.png');
+.img_approve_archive_exforms_en {
+    background-image: url('/static/manual/approve_archive_exforms_en.png');
 }
 
 .img_studsubj_mod_cluster_ne, .img_studsubj_mod_cluster_en {
@@ -548,6 +548,34 @@
     background-image: url('/static/manual/studsubj_mod_cluster_en.png');
 }
 
+
+/* ---------------------------------------------------
+    IMAGES - GRADES
+----------------------------------------------------- */
+
+.img_grades_approve_menu_ne, .img_grades_approve_menu_en {
+    width: 1295px;
+    height: 150px;
+    background-size: 1295px 150px;
+ }
+.img_grades_approve_menu_ne {
+    background-image: url('/static/manual/grades_approve_menu_ne.png');
+}
+.img_grades_approve_menu_en {
+    background-image: url('/static/manual/grades_approve_menu_en.png');
+}
+
+.img_grades_approve_modal_ne, .img_grades_approve_modal_en {
+    width: 798px;
+    height: 660px;
+    background-size: 798px 660px;
+ }
+.img_grades_approve_modal_ne {
+    background-image: url('/static/manual/grades_approve_modal_ne.png');
+}
+.img_grades_approve_modal_en {
+    background-image: url('/static/manual/grades_approve_modal_en.png');
+}
 /* ---------------------------------------------------
     IMAGES - MAILBOX
 ----------------------------------------------------- */

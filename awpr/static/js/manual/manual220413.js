@@ -184,8 +184,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         get_dropdown_button("approve", "id_intro", "Goedkeuren en indienen van Ex-formulieren", [
             ["id_digital_signature", "De digitale handtekening"],
-            ["id_approve", "Goedkeuren van vakken, scores of cijfers"],
             ["id_approve_icon", "Het goedkeurings-icoontje"],
+            ["id_approve_subjects", "Goedkeuren van vakken"],
+            ["id_approve_grades", "Goedkeuren van scores of cijfers"],
             ["id_prelim_exform", "Het voorlopige Ex-formulier"],
             ["id_submit_exform", "Het Ex-formulier indienen"],
             ["id_submitted_exforms", "Lijst met ingediende Ex-formulieren"],
@@ -248,8 +249,9 @@ document.addEventListener('DOMContentLoaded', function() {
             ]),
         get_dropdown_button("approve", "id_intro", "Approve and submit Ex forms", [
             ["id_digital_signature", "The digital signature"],
-            ["id_approve", "Approve courses, scores or grades"],
             ["id_approve_icon", "The approval icon"],
+            ["id_approve_subjects", "Approve subjects"],
+            ["id_approve_grades", "Approve scores or grades"],
             ["id_prelim_exform", "The preliminary Ex-form"],
             ["id_submit_exform", "Submit the Ex form"],
             ["id_submitted_exforms", "List of submitted Ex forms"],

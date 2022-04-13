@@ -552,7 +552,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Herkansing_SE_allowed'] = _('Herkansing SE allowed')
         dict['Maximum_reex'] = _('Maximum number of re-examinations')
         dict['No_third_period'] = _('Subject has no third period')
-        dict['Exemption_without_CE_allowed'] = _('Exemption without CE allowed')
+        dict['Thumbrule_applies'] = _('Thumbrule applies')
+        dict['Examyears_without_CE'] = _('Examyears without CE')
 
         dict['Delete_subject'] = _('Delete subject')
         dict['Delete_department'] = _('Delete department')
@@ -658,11 +659,13 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_candidate'] = _('Delete candidate')
         dict['Remove_bis_exam'] = _('Remove bis-exam')
         dict['The_bis_exam'] = _('The bis-exam')
+        dict['The_evening_student_label'] = _("Label 'evening student'")
+        dict['Remove_evening_student_label'] = _("Remove label 'evening student'")
 
         dict['_of_'] = TXT__of_
         dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
         dict['Yes_remove'] = _('Yes, remove')
-        dict['Exemptions_will_also_be_removed'] = _('The exemptions will also be removed.')
+        dict['Possible_exemptions_willbe_deleted'] = _('Existing exemptions will be deleted.')
 
         dict['Please_select_candidate_first'] = _('Please select a candidate first.')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
@@ -1060,6 +1063,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
         dict['Submit'] = TXT_Submit
+        dict['Show_fully_approved'] = _('Only show grades that are fully approved or submitted.')
+        dict['Show_not_fully_approved'] = _('Only show grades that are not fully approved.')
 
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),
@@ -1197,7 +1202,7 @@ def get_locale_dict(table_dict, user_lang, request):
                                'You_cannot_approve': _('You cannot approve this grade.'),
                                'No_cluster_permission': _("You don't have permission to approve grades of this cluster."),
                                'Warning': _('WARNING'),
-                               'Need_permission_of_inspectorate': _('It is only allowed to submit grades without value with the prior approval of the Inspectorate.'),
+                               'Need_permission_of_inspectorate': _('It is only allowed to submit grades without value with the prior approval of the Inspectorate, or when the candidate has an exemption.'),
                                'Approved_different_function': _('You have approved this grade already in a different function.'),
                                'Approved_in_function_of': _('You have already approved this grade as '),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),

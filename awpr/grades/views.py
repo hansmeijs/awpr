@@ -419,7 +419,7 @@ def get_warning_no_value(msg_dict, no_value):
         'val': no_value}
     msg_list = ["<p class='pt-2'><b>", str(_('WARNING')), ':</b><br>', str(no_value_str), ' ',
                 str(_(
-                    'It is only allowed to submit grades without value with the prior approval of the Inspectorate.')),
+                    'It is only allowed to submit grades without value with the prior approval of the Inspectorate, or when the candidate has an exemption.')),
                 '</p>']
     msg_dict['warning'] = ''.join(msg_list)
 # --- end of get_warning_no_value
@@ -1920,11 +1920,14 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
 
             studentsubject = grade_instance.studentsubject
             has_sr = studentsubject.has_sr
+            exem_year = studentsubject.exemption_year
 
             gradetype = si_dict.get('gradetype')
             weight_se = si_dict.get('weight_se')
             weight_ce = si_dict.get('weight_ce')
             has_practexam = si_dict.get('has_practexam')
+
+
 
             se_grade, sr_grade, pe_grade = None, None, None
 
@@ -1968,8 +1971,14 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
                 logger.debug(' calc sesr pece and final grade ')
             sesr_grade, pece_grade, finalgrade = \
                 calc_final.calc_sesr_pece_final_grade(
-                    is_ep_exemption, has_practexam, gradetype, weight_se, weight_ce,
-                    has_sr, se_grade, sr_grade, pe_grade, ce_grade)
+                    si_dict=si_dict,
+                    is_ep_exemption=is_ep_exemption,
+                    has_sr=has_sr,
+                    exem_year=exem_year,
+                    se_grade=se_grade,
+                    sr_grade=sr_grade,
+                    pe_grade=pe_grade,
+                    ce_grade=ce_grade)
 
             setattr(grade_instance, 'sesrgrade', sesr_grade)
             setattr(grade_instance, 'pecegrade', pece_grade)

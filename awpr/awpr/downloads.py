@@ -204,9 +204,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         examyear=sel_examyear,
                         cur_dep_only=cur_dep_only,
                         depbase=sel_depbase)
-# ----- exams
-                if datalist_request.get('exam_rows'):
-                    datalists['exam_rows'] = sj_vw.create_exam_rows(
+# ----- ete_exams
+                if datalist_request.get('ete_exam_rows'):
+                    datalists['ete_exam_rows'] = sj_vw.create_ete_exam_rows(
                         req_usr=request.user,
                         sel_examyear_pk=sel_examyear.pk,
                         sel_depbase_pk=sel_depbase.pk,

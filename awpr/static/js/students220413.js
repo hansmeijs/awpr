@@ -186,10 +186,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
         };
-        const el_MSTUD_abbrev = document.getElementById("id_MSTUD_abbrev")
-        const el_MSTUD_name = document.getElementById("id_MSTUD_name")
+        const el_MSTUD_abbrev = document.getElementById("id_MSTUD_abbrev");
+        const el_MSTUD_name = document.getElementById("id_MSTUD_name");
 
-        const el_MSTUD_tbody_select = document.getElementById("id_MSTUD_tblBody_department")
+        const el_MSTUD_bis_exam = document.getElementById("id_MSTUD_bis_exam");
+        const el_MSTUD_iseveningstudent = document.getElementById("id_MSTUD_iseveningstudent");
+
+        const el_MSTUD_tbody_select = document.getElementById("id_MSTUD_tblBody_department");
         const el_MSTUD_btn_delete = document.getElementById("id_MSTUD_btn_delete");
         //if(el_MSTUD_btn_delete){el_MSTUD_btn_delete.addEventListener("click", function() {MSTUD_Save("delete")}, false)}
         if(el_MSTUD_btn_delete){el_MSTUD_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete")}, false)}
@@ -803,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
         console.log( "el_input", el_input);
-
+        // only called by table field bis_exam
         if (permit_dict.permit_crud && permit_dict.requsr_same_school){
 
             const tblRow = t_get_tablerow_selected(el_input);
@@ -836,11 +839,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
         // open mod confirm when deleting exemption, reex, reex3
                     ModConfirmOpen(fldName, el_input);
-
-                }
+                };
             };
         }; //   if(permit_dict.permit_approve_subject)
-    }  // UploadToggle
+    };  // UploadToggle
 
 
 
@@ -1079,13 +1081,15 @@ function RefreshDataRowsAfterUpload(response) {
         console.log("permit_dict.permit_crud", permit_dict.permit_crud)
         console.log("el_input", el_input)
 
+        mod_MSTUD_dict = {};
+
         if (permit_dict.permit_crud){
             const focus_fldName = get_attr_from_el(el_input, "data-field", "lastname");
 
             // el_input is undefined when called by submenu btn 'Add new'
             const is_addnew = (!el_input);
-            mod_MSTUD_dict = {}
-            let tblName = "student";
+
+            const tblName = "student";
             if(is_addnew){
                 mod_MSTUD_dict = {is_addnew: is_addnew,
                     db_code: setting_dict.sel_depbase_code}
@@ -1125,8 +1129,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 // show fields isdayeve student only when school is both dayschool and eveningschool
             const show_el_eveningstudent = (setting_dict.sel_school_isdayschool && setting_dict.sel_school_iseveningschool);
-            const el_MSTUD_isdayeve_container = document.getElementById("id_MSTUD_iseveningstudent_container");
-            add_or_remove_class(el_MSTUD_isdayeve_container, cls_hide, !show_el_eveningstudent )
+            add_or_remove_class(el_MSTUD_iseveningstudent.parentNode, cls_hide, !show_el_eveningstudent )
 
     // ---  remove value from el_mod_employee_input, set focus to selected field
             MSTUD_SetElements(focus_fldName);
@@ -1158,8 +1161,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  MSTUD_Save  ================  PR2020-10-01
     function MSTUD_Save(crud_mode) {
-        //console.log(" -----  MSTUD_save  ----", crud_mode);
-        //console.log( "mod_MSTUD_dict: ", mod_MSTUD_dict);
+        console.log(" -----  MSTUD_save  ----", crud_mode);
+        console.log( "mod_MSTUD_dict: ", mod_MSTUD_dict);
 
         if (permit_dict.permit_crud){
             const is_create = (mod_MSTUD_dict.is_addnew);
@@ -1177,20 +1180,33 @@ function RefreshDataRowsAfterUpload(response) {
             let form_elements = el_MSTUD_div_form_controls.getElementsByClassName("form-control")
             for (let i = 0, el_input; el_input = form_elements[i]; i++) {
                 const fldName = get_attr_from_el(el_input, "data-field");
-                let new_value = (el_input.value) ? el_input.value : null;
-                let old_value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
+                let new_value = null, old_value = null;
 
                 if(["lvlbase_id", "sctbase_id"].includes(fldName)){
-                    new_value = (new_value && Number(new_value)) ? Number(new_value) : null;
-                    old_value = (old_value && Number(old_value)) ? Number(old_value) : null;
+                    new_value = (el_input.value && Number(el_input.value)) ? Number(el_input.value) : null;
+                    old_value = (mod_MSTUD_dict[fldName] && Number(mod_MSTUD_dict[fldName])) ? Number(mod_MSTUD_dict[fldName]) : null;
                 } else if(["bis_exam", "partial_exam", "iseveningstudent"].includes(fldName)){
+                    // mod_MSTUD_dict[fldName] contains old value, a boolean
+                    // el.attribute 'data-value' contains new value, a string "1" or "0"
+
                     const data_value = get_attr_from_el(el_input, "data-value")
                     new_value = (data_value === "1");
+                    old_value = !!mod_MSTUD_dict[fldName];
+
+    console.log( ".....fldName: ", fldName);
+    console.log( ".... mod_MSTUD_dict[fldName]", mod_MSTUD_dict[fldName]);
+    console.log( ".....old_value: ", old_value, typeof old_value);
+    console.log( ".....data_value: ", data_value);
+    console.log( ".....new_value: ", new_value, typeof new_value);
+                } else {
+                    new_value = (el_input.value) ? el_input.value : null;
+                    old_value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
                 }
                 if (new_value !== old_value) {
                     const field = (fldName === "lvlbase_id") ? "level" :
                                   (fldName === "sctbase_id") ? "sector" : fldName;
                     upload_dict[field] = new_value;
+    console.log( ".....upload_dict[field]: ", upload_dict[field], typeof upload_dict[field]);
                     if(fldName === "lvlbase_id"){
                         new_level_pk = new_value;
                         level_or_sector_has_changed = true;
@@ -1261,25 +1277,40 @@ function RefreshDataRowsAfterUpload(response) {
         MSTUD_validate_and_disable();
     }; // MSTUD_InputSelect
 
-//========= MSTUD_InputToggle  ============= PR2021-06-15
+//========= MSTUD_InputToggle  ============= PR2021-06-15 PR2022-04-11
     function MSTUD_InputToggle(el_input){
         console.log( "===== MSTUD_InputToggle  ========= ");
-        console.log( "el_input", el_input);
+        const data_field = get_attr_from_el(el_input, "data-field")
         const data_value = get_attr_from_el(el_input, "data-value")
         const new_data_value = (data_value === "1") ? "0" : "1";
-        el_input.setAttribute("data-value", new_data_value);
+    // note: don't put new value in mod_MSTUD_dict - it contains the old value and must be unchanged
 
-        const el_img = el_input.children[0];
-        add_or_remove_class(el_img, "tickmark_2_2", (new_data_value === "1"), "tickmark_1_1")
+        let show_warning = false;
+        // show warning that exemption grades will be deleted:
+        // - when new_value = false
+        // - only when old value of bis_exam OR evelex student is True
+        // - and new value of of bis_exam AND evelex student is False
+        if (new_data_value !== "1"){
+            if (mod_MSTUD_dict.bis_exam || mod_MSTUD_dict.iseveningstudent || mod_MSTUD_dict.islexstudent){
+                if(["bis_exam", "iseveningstudent"].includes(data_field)){
+                    // show warning only when other element is also false
+                    const other_el = (data_field === "bis_exam") ? el_MSTUD_iseveningstudent : el_MSTUD_bis_exam
+                    show_warning = (get_attr_from_el(other_el, "data-value") !== "1");
+                };
+            };
+        };
 
-    // put new value in mod_MSTUD_dict and update LabelPartialAdditionalExam
+        // open mod confirm when deleting exemption, reex, reex3
+        if (show_warning){
+            ModConfirmOpen("MSTUD_" + data_field);
+        } else {
+            // data-value is attached to parentNode
+            el_input.setAttribute("data-value", new_data_value);
+            const el_img = el_input.children[0];
+            add_or_remove_class(el_img, "tickmark_2_2", (new_data_value === "1"), "tickmark_1_1")
 
-        const fldName = get_attr_from_el(el_input, "data-field");
-        console.log( "fldName", fldName);
-        mod_MSTUD_dict[fldName] = (new_data_value === "1");
-
-        MSTUD_SetLabelPartialAdditionalExam()
-
+            MSTUD_SetLabelPartialAdditionalExam();
+        };
     }; // MSTUD_InputToggle
 
 //=========  MSTUD_validate_and_disable  ================  PR2020-10-01
@@ -1297,12 +1328,11 @@ function RefreshDataRowsAfterUpload(response) {
                 el_msg.innerText = msg_err;
                 disable_save_btn = true;
                 add_or_remove_class(el_msg, cls_hide, !msg_err)
-            }
+            };
         };
-
 // ---  disable save button on error
         el_MSTUD_btn_save.disabled = disable_save_btn;
-    }  // MSTUD_validate_and_disable
+    };  // MSTUD_validate_and_disable
 
 //=========  MSTUD_validate_field  ================  PR2020-10-01
     function MSTUD_validate_field(el_input, fldName) {
@@ -1489,12 +1519,14 @@ function RefreshDataRowsAfterUpload(response) {
 // +++++++++ END MOD STUDENT +++++++++++++++++++++++++++++++++++++++++
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23 PR2022-04-11
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-        // only called by menubtn Delete_candidate and mod MSTUD btn delete
+        // called by menubtn Delete_candidate and mod MSTUD btn delete and MSTUD_InputToggle
         // values of mode is : "delete" and "validate_scheme" of afte colled by uploadtoggle:  fldName
 
+        console.log("mode", mode)
+        console.log("el_input", el_input)
         const tblName = "student";
         let show_modal = false;
 
@@ -1520,7 +1552,7 @@ function RefreshDataRowsAfterUpload(response) {
         if (el_input) { mod_dict.el_input = el_input};
 
         const has_selected_item = (!isEmpty(data_dict));
-        if (["delete", "bis_exam"].includes(mode)){
+        if (["delete", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
             show_modal = may_edit;
             if(has_selected_item ){
                 mod_dict.student_pk = data_dict.id;
@@ -1538,8 +1570,9 @@ function RefreshDataRowsAfterUpload(response) {
         let hide_save_btn = false;
 
         const full_name = (data_dict.fullname) ? data_dict.fullname  : "---";
-        if (["delete", "bis_exam"].includes(mode)){
-            header_text = (mode === "bis_exam") ? loc.Remove_bis_exam : loc.Delete_candidate;
+        if (["delete", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
+            header_text = (mode === "delete") ? loc.Delete_candidate :
+                           (mode === "bis_exam") ? loc.Remove_bis_exam : null;
             if(!has_selected_item){
                 msg01_txt = loc.Please_select_candidate_first;
                 hide_save_btn = true;
@@ -1547,13 +1580,20 @@ function RefreshDataRowsAfterUpload(response) {
                 const full_name = (data_dict.fullname) ? data_dict.fullname  : "---";
                 if (mode === "bis_exam") {
                     msg01_txt = loc.The_bis_exam + loc._of_ + " '" + full_name + "'" + loc.will_be_removed
-                    msg02_txt = loc.Exemptions_will_also_be_removed;
+                    // PR2022-04-11 Richard westerink ATC: not when also evening / lex student
+
+                    if (data_dict.bis_exam && !data_dict.iseveningstudent && !data_dict.islexstudent){
+                        msg02_txt = loc.Possible_exemptions_willbe_deleted;
+                    };
+                    msg03_txt = loc.Do_you_want_to_continue;
+                } else if (["MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
+                    msg02_txt = loc.Possible_exemptions_willbe_deleted;
                     msg03_txt = loc.Do_you_want_to_continue;
                 } else {
                     msg01_txt = loc.Candidate + " '" + full_name + "'" + loc.will_be_deleted
                     msg02_txt = loc.Do_you_want_to_continue;
-                }
-            }
+                };
+            };
         } else if(mode === "validate_scheme"){
             header_text = loc.Validate_candidate_schemes;
             msg01_txt = loc.Schemes_of_candidates_willbe_validated;
@@ -1563,14 +1603,16 @@ function RefreshDataRowsAfterUpload(response) {
             header_text = loc.Correct_candidate_schemes;
             msg01_txt = loc.Schemes_of_candidates_willbe_corrected;
             msg02_txt = loc.Do_you_want_to_continue;
-        }
+        };
 
         el_confirm_header.innerText = header_text;
-        el_confirm_loader.classList.add(cls_visible_hide)
+        el_confirm_loader.classList.add(cls_visible_hide);
         el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
+
         //el_confirm_msg01.innerText = msg01_txt;
         //el_confirm_msg02.innerText = msg02_txt;
         //el_confirm_msg03.innerText = msg03_txt;
+
         let msg_html = "";
         if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
         if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
@@ -1599,7 +1641,7 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
-        //console.log("mod_dict: ", mod_dict);
+        console.log("mod_dict: ", mod_dict);
 
         const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
 // ---  Upload Changes
@@ -1632,6 +1674,11 @@ function RefreshDataRowsAfterUpload(response) {
                 };
                 UploadChanges(upload_dict, urls.url_student_upload);
             }
+
+        } else if (["MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mod_dict.mode)){
+            const el_input = (mod_dict.mode === "MSTUD_bis_exam") ? el_MSTUD_bis_exam : el_MSTUD_iseveningstudent;
+            el_input.setAttribute("data-value", false);
+            add_or_remove_class(el_input.children[0], "tickmark_2_2", false, "tickmark_1_1")
 
         } else if (["validate_scheme", "correct_scheme"].includes(mod_dict.mode)){
             if(permit_dict.requsr_role_system){

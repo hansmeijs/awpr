@@ -564,14 +564,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2, function() {ModConfirmOpen("prelim_ex2")});
 
-        AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
+        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
         //AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
         if (permit_dict.permit_approve_grade){
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         }
         if (permit_dict.permit_submit_grade){
             AddSubmenuButton(el_submenu, loc.Submit_Ex2_form, function() {MAG_Open("submit_ex2")});
-            AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit_ex2a")});
+            //AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit_ex2a")});
         };
         if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Upload_grades, function() {MIMP_Open(loc, "import_grade")}, null, "id_submenu_import");
@@ -1019,7 +1019,7 @@ document.addEventListener("DOMContentLoaded", function() {
             col_hidden.push(...["pescore", "pe_status", "pegrade"]);
         };
 
-        // hide level when not level_req
+// - hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
 // - show only columns of sel_examtype
@@ -1390,10 +1390,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 //=========  UpdateFieldStatus  ================ PR2021-12-19
     function UpdateFieldStatus(field_name, fld_value, data_dict) {
-        console.log("=========  UpdateFieldStatus =========");
-        console.log("field_name", field_name);
-        console.log("fld_value", fld_value);
-        console.log("data_dict", data_dict);
+        //console.log("=========  UpdateFieldStatus =========");
+        //console.log("field_name", field_name);
+        //console.log("fld_value", fld_value);
+        //console.log("data_dict", data_dict);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
@@ -1428,7 +1428,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
             //                  (auth1by_id && auth2by_id) ? "4" :
             //                  (auth2by_id ) ? "3" :
             //                  (auth1by_id) ? "2" : "1"; // diamond_0_0 is outlined diamond
-
 
            filter_value = (auth1by_id && auth2by_id && auth3by_id && auth4by_id) ? "0" : "1";
 
@@ -2325,11 +2324,16 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 }
                 el_MAG_examtype.innerText = examtype_caption
 
+// --- hide filter subject, cluster when submitting Ex2 Ex2a form. Leave level visible if exists, MPC must be able to submit per level
+                const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req || is_approve_mode;
+                add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
+
 // --- hide level textbox when not sel_dep_level_req
-                add_or_remove_class(el_MAG_lvlbase.parentNode, cls_hide, !setting_dict.sel_dep_level_req)
+                add_or_remove_class(el_MAG_lvlbase.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
 
                 const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
                 el_MAG_lvlbase.innerText = level_abbrev;
+
 
 // --- get cluster_text
                 let cluster_text = "---";
@@ -2374,9 +2378,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
                         loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
                 };
 
-
-// --- hide filter subject, level, cluster when submitting Ex2 Ex2a form
-                add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !is_approve_mode)
 
 // --- show info and hide loader
                 // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
@@ -3175,8 +3176,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23 PR2022-03-09
     function HandleFilterToggle(el_input) {
-        console.log( "===== HandleFilterToggle  ========= ");
-        console.log( "el_input", el_input);
+        //console.log( "===== HandleFilterToggle  ========= ");
+        //console.log( "el_input", el_input);
 
     // - get col_index and filter_tag from  el_input
         // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
@@ -3188,35 +3189,42 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         const filter_tag = get_attr_from_el(el_input, "data-filtertag");
         const field_name = get_attr_from_el(el_input, "data-field");
         const is_status_field = (field_name && field_name.includes("status"))
-        //console.log( "col_index", col_index);
-        console.log( "filter_tag", filter_tag);
-        console.log( "field_name", field_name);
-        console.log( "is_status_field", is_status_field);
+
+    //console.log( "col_index", col_index);
+    //console.log( "filter_tag", filter_tag);
+    //console.log( "field_name", field_name);
+    //console.log( "is_status_field", is_status_field);
 
     // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
         const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
         const filter_value = (filter_array[1]) ? filter_array[1] : "0";
-        //console.log( "filter_array", filter_array);
-        //console.log( "filter_value", field_name);
-        let new_value = "0", icon_class = "tickmark_0_0";
+
+    //console.log( "filter_array", filter_array);
+    //console.log( "filter_value", field_name);
+
+        let new_value = "0", icon_class = "tickmark_0_0", title = "";
         if(filter_tag === "toggle") {
             // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
 // - toggle filter value
             new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+    //console.log( "new_value", new_value);
+
 // - get new icon_class
             if (field_name === "note_status"){
                 icon_class = (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "note_0_1" : "tickmark_0_0";
+
             } else if (is_status_field){
                 icon_class = (new_value === "2") ? "diamond_3_3" : (new_value === "1") ? "diamond_0_0" : "tickmark_0_0";
+                title = (new_value === "2") ? loc.Show_fully_approved : (new_value === "1") ?loc.Show_not_fully_approved : "";
             };
-
-        console.log( "is_status_field", is_status_field);
         };
-
-    // - put new filter value in filter_dict
-        filter_dict[col_index] = [filter_tag, new_value]
-        //console.log( "filter_dict", filter_dict);
         el_input.className = icon_class;
+        el_input.title = title
+    //console.log( "icon_class", icon_class);
+
+// - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+    //console.log( "filter_dict", filter_dict);
 
         t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
 

@@ -3981,7 +3981,7 @@ def create_student(school, department, upload_dict, messages, error_list, reques
 
 #######################################################
 def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict, idnumber_list, examnumber_list, msg_list, error_list, request, skip_save):
-    # --- update existing and new instance PR2019-06-06 PR2021-07-19
+    # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -4220,32 +4220,38 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         new_value = True
 
                     if new_value != saved_value:
-                        # check if student has publsihed grades when removing bis_exam
+                        # check if student has published grades when removing bis_exam
+                        # not when it is evening / lex student
                         has_published_exemptions = False
                         if not new_value:
-                            has_errorNIU, has_published = stud_val.validate_submitted_locked_grades(
-                                student_pk=instance.pk,
-                                examperiod=c.EXAMPERIOD_EXEMPTION
-                            )
-                            if has_published:
-                                has_published_exemptions = True
-                                field_error = True
-                                err_txt1 = str(_('This candidate has submitted exemptions.'))
-                                err_txt2 = str(_('The bis-exam cannot be removed.'))
-                                error_list.append(' '.join((err_txt1, err_txt2)))
-                                msg_list.append({'class': "border_bg_warning", 'msg_html': '<br>'.join((err_txt1, err_txt2))})
+                            is_evelex = False
+                            for evelex_field in ('iseveningstudent', 'islexstudent'):
+                                if upload_dict.get(evelex_field):
+                                    is_evelex = True
+                                elif getattr(instance, evelex_field):
+                                    is_evelex = True
 
-                            if logging_on:
-                                logger.debug('saved ' + str(field) + ': ' + str(saved_value) + ' ' + str(type(saved_value)))
-                                logger.debug('new   ' + str(field) + ': ' + str(new_value) + ' ' + str(type(new_value)))
+                            if not is_evelex:
+                                has_errorNIU, has_published = stud_val.validate_submitted_locked_grades(
+                                    student_pk=instance.pk,
+                                    examperiod=c.EXAMPERIOD_EXEMPTION
+                                )
+                                if has_published:
+                                    has_published_exemptions = True
+                                    field_error = True
+                                    err_txt1 = str(_('This candidate has submitted exemptions.'))
+                                    err_txt2 = str(_('The bis-exam cannot be removed.'))
+                                    error_list.append(' '.join((err_txt1, err_txt2)))
+                                    msg_list.append({'class': "border_bg_warning", 'msg_html': '<br>'.join((err_txt1, err_txt2))})
+                            else:
+                                remove_exemptions = True
 
                         if not has_published_exemptions:
                             setattr(instance, field, new_value)
                             save_changes = True
-                            if new_value == False:
-                                remove_exemptions = True
+
     # - save changes in other fields
-                elif field in ('has_dyslexie', 'iseveningstudent', 'islexstudent', 'partial_exam'):
+                elif field in ('iseveningstudent', 'islexstudent', 'partial_exam', 'has_dyslexie'):
                     saved_value = getattr(instance, field)
                     if new_value is None:
                         new_value = False
@@ -4254,12 +4260,36 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         new_value = True
 
                     if new_value != saved_value:
-                        if logging_on:
-                            logger.debug('saved ' + str(field) + ': ' + str(saved_value) + ' ' + str(type(saved_value)))
-                            logger.debug('new   ' + str(field) + ': ' + str(new_value) + ' ' + str(type(new_value)))
+                        has_published_exemptions = False
+                        # check if student has published grades when removing iseveningstudent', 'islexstudent
+                        # not when it is bis_exam
+                        if not new_value and field in ('iseveningstudent', 'islexstudent'):
+                            is_bisexam = False
+                            if upload_dict.get('bis_exam'):
+                                is_bisexam = True
+                            elif getattr(instance, 'bis_exam'):
+                                is_bisexam = True
 
-                        setattr(instance, field, new_value)
-                        save_changes = True
+                            if not is_bisexam:
+                                has_errorNIU, has_published = stud_val.validate_submitted_locked_grades(
+                                    student_pk=instance.pk,
+                                    examperiod=c.EXAMPERIOD_EXEMPTION
+                                )
+                                if has_published:
+                                    has_published_exemptions = True
+                                    field_error = True
+                                    err_txt1 = str(_('This candidate has submitted exemptions.'))
+                                    caption = 'landsexamen candidate' if field == 'islexstudent' else 'evening candidate'
+                                    err_txt2 = str(_("The label '%(cpt)s' cannot be removed.") % {'cpt': caption})
+                                    error_list.append(' '.join((err_txt1, err_txt2)))
+                                    msg_list.append({'class': "border_bg_warning", 'msg_html': '<br>'.join((err_txt1, err_txt2))})
+                                else:
+                                    remove_exemptions = True
+
+                        if not has_published_exemptions:
+                            setattr(instance, field, new_value)
+                            save_changes = True
+
 
             #except Exception as e:
             #    logger.error(getattr(e, 'message', str(e)))
@@ -4382,25 +4412,27 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
             if logging_on:
                 logger.debug(' --- remove_exemptions --- ')
             # get exemptions of this student
-            # check for published exemptions already done above.
-            if student_has_exemptions(instance.pk):
-                recalc_studsubj_and_student = delete_exemptions(instance.pk)
-                # TODO recalc_studsubj_and_student
+            # check for published exemptions is already done above.
+            # PR2022-04-11 Richard Westerink ATC: eveningstudent may have exemptions.
+            # Don't remove exemptions when iseveningstudent or islexstudent
+            if not instance.bis_exam and not instance.iseveningstudent and not instance.islexstudent:
+                if student_has_exemptions(instance.pk):
+                    recalc_studsubj_and_student = delete_exemptions(instance.pk)
+                    # TODO recalc_studsubj_and_student
 
-                sql_studsubj_list, sql_student_list = \
-                    grd_view.update_studsubj_and_recalc_student_result(
-                        sel_examyear=sel_examyear,
-                        sel_school=sel_school,
-                        sel_department=sel_department,
-                        student=instance)
-                if sql_studsubj_list:
-                    calc_res.save_studsubj_batch(sql_studsubj_list)
+                    sql_studsubj_list, sql_student_list = \
+                        grd_view.update_studsubj_and_recalc_student_result(
+                            sel_examyear=sel_examyear,
+                            sel_school=sel_school,
+                            sel_department=sel_department,
+                            student=instance)
+                    if sql_studsubj_list:
+                        calc_res.save_studsubj_batch(sql_studsubj_list)
 
-
-                #if recalc_studsubj_and_student:
-                #    calc_res.calc_student_result(examyear, department, student_dict, scheme_dict,
-                #                                 schemeitems_dict, log_list,
-                #                    sql_studsubj_list, sql_student_list)
+                    #if recalc_studsubj_and_student:
+                    #    calc_res.calc_student_result(examyear, department, student_dict, scheme_dict,
+                    #                                 schemeitems_dict, log_list,
+                    #                    sql_studsubj_list, sql_student_list)
     if logging_on:
         logger.debug('changes_are_saved: ' + str(changes_are_saved))
         logger.debug('field_error: ' + str(field_error))

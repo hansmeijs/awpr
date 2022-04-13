@@ -106,9 +106,9 @@ document.addEventListener('DOMContentLoaded', function() {
     columns_tobe_hidden.btn_ep_01 = {
         fields: ["sjtp_abbrev", "pws_title", "pws_subjects", "subj_status"],
         captions: ["Character", "Assignment_title", "Assignment_subjects", "Approved"]}
-    //columns_tobe_hidden.btn_exem = {
-    //    fields: ["exemption_year"],
-    //    captions: ["Exemption_year"]}
+    columns_tobe_hidden.btn_exem = {
+        fields: ["exemption_year"],
+        captions: ["Exemption_year"]}
 
 // --- get field_settings
     const field_settings = {
@@ -128,13 +128,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
         btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Exemption"],  // "Exemption_year_twolines"],
+                                "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "has_exemption"], //"exemption_year"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"], //"div"],
-                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle"], //"text"],
-                    field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120"], //"120"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c"]}, //"c"]},
+                                "subj_code", "subj_name", "has_exemption", "exemption_year"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div","div"],
+                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
+                    field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120","120"],
+                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c","c"]},
 
         btn_sr:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_schoolexam_2lns", "", ],
@@ -553,7 +553,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
                     must_update_headerbar = true;
-                }
+                };
 
 
                 if(must_create_submenu){CreateSubmenu()};
@@ -772,14 +772,17 @@ document.addEventListener('DOMContentLoaded', function() {
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
                 const map_id = data_dict.mapid;
                 const bis_exam = data_dict.bis_exam;
-                // when exemption: only show students with bis_exam
-                 const show_row = ((selected_btn === "btn_exem" && data_dict.bis_exam) || (selected_btn !== "btn_exem")) &&
-                                (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
+                 let show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
                                 (!setting_dict.sel_sctbase_pk || data_dict.sctbase_id === setting_dict.sel_sctbase_pk) &&
                                 (!setting_dict.sel_student_pk || data_dict.stud_id === setting_dict.sel_student_pk) &&
                                 (!setting_dict.sel_cluster_pk || data_dict.cluster_id === setting_dict.sel_cluster_pk) &&
                                 (!setting_dict.sel_subject_pk || data_dict.subj_id === setting_dict.sel_subject_pk);
 
+                // when exemption: only show students with bis_exam
+                 // PR2022-04-11 tel Richard Westerink: exemptions also allowed when when evening / lex students
+                if (show_row && selected_btn === "btn_exem" ){
+                   show_row = (data_dict.bis_exam || data_dict.iseveningstudent || data_dict.islexstudent );
+                };
                 if (show_row){
                     CreateTblRow(tblName, field_setting, map_id, data_dict, col_hidden)
                 };
@@ -1810,7 +1813,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  loop through studsubj_rows
         let has_studsubj_rows = false;
         for (let i = 0, row_dict; row_dict = studsubj_rows[i]; i++) {
-            console.log("row_dict", row_dict)
             const map_id = row_dict.mapid;
         // add only studsubj from this student
             if (student_pk === row_dict.stud_id) {
@@ -1838,9 +1840,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         // PR2021-09-28 debug: dont put schemeitem info here, it changes when schemeitem_id changes
                     };
-                }
-            }
-        }
+                };
+            };
+        };
 
         console.log("..................");
         console.log("mod_MSTUDSUBJ_dict.studsubj_dict:", mod_MSTUDSUBJ_dict.studsubj_dict);
@@ -4751,19 +4753,19 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4")) ? loc.Corrector : "-";
 
                 let header_txt = (is_approve) ? loc.Approve_subjects : loc.Submit_Ex1_form;
-                header_txt += loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")"
+                header_txt += loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")";
                 el_MASS_header.innerText = header_txt;
                 el_MASS_subheader.innerText = (is_approve) ? loc.MASS_info.subheader_approve : loc.MASS_info.subheader_submit_ex1;
 
-                add_or_remove_class(el_MASS_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req)
+                add_or_remove_class(el_MASS_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
                 el_MASS_level.innerText = (setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev : null;
 
                 el_MASS_sector.innerText = (setting_dict.sel_sector_abbrev) ? setting_dict.sel_sector_abbrev : null;
 
                 let subject_text = null;
                 if(setting_dict.sel_subject_pk){
-                    const data_dict = b_get_datadict_by_integer_from_datarows(subject_rows, "id", setting_dict.sel_subject_pk)
-                    subject_text =  (data_dict.name) ? data_dict.name : "---"
+                    const data_dict = b_get_datadict_by_integer_from_datarows(subject_rows, "id", setting_dict.sel_subject_pk);
+                    subject_text =  (data_dict.name) ? data_dict.name : "---";
                 } else {
                     subject_text = "<" + loc.All_subjects + ">";
                 }
@@ -4771,8 +4773,8 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
     // ---  show info container and delete button only in approve mode
                 //console.log("...........is_submit", is_submit) ;
-                add_or_remove_class(el_MASS_select_container, cls_hide, !is_approve)
-                add_or_remove_class(el_MASS_btn_delete, cls_hide, is_submit)
+                add_or_remove_class(el_MASS_select_container, cls_hide, !is_approve);
+                add_or_remove_class(el_MASS_btn_delete, cls_hide, is_submit);
 
     // ---  reset el_MASS_input_verifcode
                 el_MASS_input_verifcode.value = null;
@@ -4787,9 +4789,10 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
                 $("#id_mod_approve_studsubj").modal({backdrop: true});
 
-            }  // if(status_index)
-        }  // if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject)
-    }  // MASS_Open
+            };  // if(status_index)
+        };  // if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject)
+    };  // MASS_Open
+
 
 //=========  MASS_Save  ================
     function MASS_Save (save_mode) {

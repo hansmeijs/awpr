@@ -50,6 +50,15 @@ urlpatterns = [
     # PR2018-03-19
     url(r'^logout/$', auth_views.LogoutView.as_view(), name='logout'),
 
+
+#$$$$$$$$$$$$$$$$$$$$$$$
+    #path('reset',
+    #     auth_views.PasswordResetView.as_view(
+    #         form_class=account_views.EmailValidationOnForgotPassword),
+    #     name='password_reset'),
+
+#$$$$$$$$$$$$$$$$$$$$$$
+
 # 1. AwpPasswordResetView shows form with input fields 'schoolcode' and 'email' PR2018-03-27 PR2021-07-15
    # url(r'^reset/$',
     path('reset',

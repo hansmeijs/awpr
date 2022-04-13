@@ -612,6 +612,7 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
+
 # PR2018-06-05
 class Schemeitem(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
@@ -662,11 +663,11 @@ class Schemeitem(sch_mod.AwpBaseModel):
     # deleted: no_centralexam = BooleanField(default=False)
     # deleted: no_reex = BooleanField(default=False)
 
-    # TODO to be deprecated, moved to scheme
-    #max_reex = PositiveSmallIntegerField(default=1)
-    # TODO remove, not in use
-    #no_thirdperiod = BooleanField(default=False)
-    #no_exemption_ce = BooleanField(default=False)
+    # deprecated, moved to scheme
+    # max_reex = PositiveSmallIntegerField(default=1)
+    # removed, not in use
+    # no_thirdperiod = BooleanField(default=False)
+    # no_exemption_ce = BooleanField(default=False)
 
     # TODO
     # PR2022-03-09 to skip ce in calc endgrade when exemption has no ce

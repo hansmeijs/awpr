@@ -126,8 +126,8 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     bis_exam = BooleanField(default=False)
     partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
 
-    # TODO additional_exam to be deprecated, use field partial_exam (additional_exam is partial_exam on a day school
-    # additional_exam = BooleanField(default=False)  # when student does extra subject at adifferent school, possible in day/evening/lex school, only valid in the same examyear
+    # additional_exam is deprecated, field partial_exam is used (additional_exam is partial_exam on a day school
+    # additional_exam =  when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
     # notlinked contains ';'-delimited list of student_id's with the same idnumber, but that are not the same student
     # islinked = BooleanField(default=False)
@@ -252,10 +252,10 @@ class Student_log(sch_mod.AwpBaseModel):
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
-    partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
+    partial_exam = BooleanField(default=False)  # gets a certificate, only when evening- or lexstudent
 
-    # TODO additional_exam to be deprecated, use field partial_exam (additional_exam is partial_exam on a day school
-    #additional_exam = BooleanField(default=False)  # when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
+    # additional_exam is deprecated, field partial_exam is used (additional_exam is partial_exam on a day school
+    # additional_exam = when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
     # islinked = BooleanField(default=False)
     linked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
