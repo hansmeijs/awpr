@@ -827,7 +827,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
 
                              "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
                              "studsubj.has_exemption, studsubj.has_sr,",
-                             "studsubj.has_reex, studsubj.has_reex03,",
+                             "studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year,",
 
                              "sub_grade_sql.grade_id, sub_grade_sql.value,",
 
@@ -876,7 +876,7 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
 
             "sub_sql.sjb_id, sub_sql.sjb_code, sub_sql.cluster_id,",  # 3
             "sub_sql.is_extra_nocount, sub_sql.is_extra_counts,",  # 2
-            "sub_sql.has_exemption, sub_sql.has_sr, sub_sql.has_reex, sub_sql.has_reex03,",  # 4
+            "sub_sql.has_exemption, sub_sql.has_sr, sub_sql.has_reex, sub_sql.has_reex03, sub_sql.exemption_year,",  # 4
 
             "sub_sql.ss_si_id, sub_sql.grade_id, sub_sql.studsubj_id, sub_sql.value,",  # 4
 
@@ -965,28 +965,29 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                             'has_sr': row[24],
                             'has_reex': row[25],
                             'has_reex03': row[26],
+                            'exem_year': row[27],
 
-                            'ss_si_id': row[27],   # studsubj.schemeitem_id
-                            'gr_id': row[28],
-                            'ss_id': row[29],
-                            'val': row[30],
+                            'ss_si_id': row[28],   # studsubj.schemeitem_id
+                            'gr_id': row[29],
+                            'ss_id': row[30],
+                            'val': row[31],
 
-                            'pescore': row[31],
-                            'cescore': row[32],
-                            'segrade': row[33],
-                            'srgrade': row[34],
-                            'pegrade': row[35],
-                            'cegrade': row[36],
+                            'pescore': row[32],
+                            'cescore': row[33],
+                            'segrade': row[34],
+                            'srgrade': row[35],
+                            'pegrade': row[36],
+                            'cegrade': row[37],
 
-                            'publ': row[37],
-                            'bl': row[38],
-                            'auth': row[39],
+                            'publ': row[38],
+                            'bl': row[39],
+                            'auth': row[40],
 
-                            'exam_id': row[40],
-                            'nex_id': row[41],
-                            'scalelength': row[42],
-                            'cesuur': row[43],
-                            'nterm': row[44],
+                            'exam_id': row[41],
+                            'nex_id': row[42],
+                            'scalelength': row[43],
+                            'cesuur': row[44],
+                            'nterm': row[45],
                             # 'examdate': row[41]
                         }
                         student_dict[subjectbase_pk] = subjbase_dict

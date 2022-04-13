@@ -699,7 +699,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  deselect all highlighted rows, select clicked row
        // t_td_selected_clear(tr_clicked.parentNode);
        // t_td_selected_set(tr_clicked);
-        t_td_selected_toggle(tr_clicked);
+        t_td_selected_toggle(tr_clicked, true);  // select_single = true
 
 // ---  update setting_dict.sel_student_pk
         // only select employee from select table
@@ -798,9 +798,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
     }  // HandleSbrLevelSector
 
-//=========  FillOptionsExamtype  ================ PR2021-03-08 PR2021-12-02
+//=========  FillOptionsExamtype  ================ PR2021-03-08 PR2021-12-02 PR2022-04-13
     function FillOptionsExamtype() {
-        //console.log("=== FillOptionsExamtype");
+        console.log("=== FillOptionsExamtype");
         const has_practexam = !setting_dict.no_practexam;
         const sr_allowed = !!setting_dict.sr_allowed;
         const has_centralexam = !setting_dict.no_centralexam;
@@ -808,8 +808,32 @@ document.addEventListener("DOMContentLoaded", function() {
         // set examperiod = 1 when sel_examperiod -= 12 or null
         const examperiod = ([1, 2, 3, 4].includes(setting_dict.sel_examperiod)) ? setting_dict.sel_examperiod : 1;
 
-        //console.log("loc.options_examtype", loc.options_examtype);
-        //console.log("examperiod", examperiod);
+// change sel_examperiod if it is not allowed in sel_btn
+        let must_upload = false;
+        if (setting_dict.sel_btn === "btn_ep_01" && setting_dict.sel_examperiod !== 1) {
+            setting_dict.sel_examperiod = 1;
+            must_upload = true;
+        } else if (setting_dict.sel_btn === "btn_reex" && setting_dict.sel_examperiod !== 2) {
+            setting_dict.sel_examperiod = 2;
+            must_upload = true;
+        } else if (setting_dict.sel_btn === "btn_reex03" && setting_dict.sel_examperiod !== 3) {
+            setting_dict.sel_examperiod = 3;
+            must_upload = true;
+        } else if (setting_dict.sel_btn === "btn_exem" && setting_dict.sel_examperiod !== 4) {
+            setting_dict.sel_examperiod = 4;
+            must_upload = true;
+        };
+
+// ---  upload new selected_btn, not after loading page (then skip_upload = true)
+        if(must_upload){
+            const upload_dict = {selected_pk: {sel_examperiod: setting_dict.sel_examperiod}};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+        };
+
+    console.log("setting_dict.sel_btn", setting_dict.sel_btn);
+    console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod);
+    console.log("loc.options_examtype", loc.options_examtype);
+    console.log("examperiod", examperiod);
 
         if (el_SBR_select_examtype) {
 

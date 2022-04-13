@@ -3435,6 +3435,10 @@ def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, save
                     pegrade = output_str if db_field == 'pegrade' else saved_studsubj_dict.get('pegrade')
                     cegrade = output_str if db_field == 'cegrade' else saved_studsubj_dict.get('cegrade')
 
+                    is_ep_exemption = examgradetype in ('exemsegrade', 'exemsegrade'),
+                    has_sr = saved_studsubj_dict.get('has_sr', False)
+                    exem_year = saved_studsubj_dict.get('exem_year')
+
                     if logging_on and False:
                         logger.debug(' ..........  calc_sesr_pece_final_grade ')
                         logger.debug('       segrade: ' + str(segrade) + ' ' + str(type(segrade)))
@@ -3445,13 +3449,15 @@ def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, save
                     sesr_grade, pece_grade, finalgrade = \
                         calc_final.calc_sesr_pece_final_grade(
                             si_dict=si_dict,
-                            is_ep_exemption=examgradetype in ('exemsegrade', 'exemsegrade'),
-                            has_sr=saved_studsubj_dict.get('has_sr', False),
+                            is_ep_exemption=is_ep_exemption,
+                            has_sr=has_sr,
+                            exem_year=exem_year,
                             se_grade=segrade,
                             sr_grade=srgrade,
                             pe_grade=pegrade,
                             ce_grade=cegrade
                         )
+
                     sql_output_str = ''.join(("'", output_str, "'")) if output_str else 'NULL'
                     sql_sesr_grade_str = ''.join(("'", sesr_grade, "'")) if sesr_grade else 'NULL'
                     sql_pece_grade_str = ''.join(("'", pece_grade, "'")) if pece_grade else 'NULL'

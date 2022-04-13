@@ -17,7 +17,7 @@ def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exem_year, se_g
     # this function does not save the calculated dields
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' @@@@@@@@@@@@@@ ------- calc_sesr_pece_final_grade -------')
+        logger.debug(' ------- calc_sesr_pece_final_grade -------')
 
     # - when second or third examperiod: get se_grade and pe_grade from first examperiod,
     # and store them in second or third examperiod

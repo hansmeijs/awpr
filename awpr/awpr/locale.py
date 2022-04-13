@@ -1063,8 +1063,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
         dict['Submit'] = TXT_Submit
-        dict['Show_fully_approved'] = _('Only show grades that are fully approved or submitted.')
-        dict['Show_not_fully_approved'] = _('Only show grades that are not fully approved.')
+        dict['Show_fully_approved'] = _('Only the grades, that are fully approved or submitted, are shown.')
+        dict['Show_not_fully_approved'] = _('Only the grades, that are not fully approved, are shown.')
 
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),

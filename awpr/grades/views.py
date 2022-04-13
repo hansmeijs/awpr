@@ -1978,7 +1978,8 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
                     se_grade=se_grade,
                     sr_grade=sr_grade,
                     pe_grade=pe_grade,
-                    ce_grade=ce_grade)
+                    ce_grade=ce_grade
+                )
 
             setattr(grade_instance, 'sesrgrade', sesr_grade)
             setattr(grade_instance, 'pecegrade', pece_grade)
