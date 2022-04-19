@@ -78,12 +78,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     columns_tobe_hidden.all = {
         fields: ["idnumber", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
-        captions: ["ID_number", "Prefix", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_candidate"]};
+        captions: ["ID_number", "Prefix", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_exam"]};
 
 // --- get field_settings
     // declared as global: let field_settings = {};
     field_settings.student = {
-        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Leerweg", "Sector", "Class", "Examnumber_twolines", "Regnumber_twolines", "Bis_candidate"],
+        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Leerweg", "Sector", "Class", "Examnumber_twolines", "Regnumber_twolines", "Bis_exam"],
         field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
         filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "text", "text", "text","text", "text", "toggle"],
         field_width:  ["020", "120", "220", "240", "090", "090", "120", "180", "180", "090", "090", "090", "090", "120","090"],

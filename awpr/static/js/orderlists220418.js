@@ -860,14 +860,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 loc.MPUBORD_info.request_verifcode_05,
                 loc.MPUBORD_info.request_verifcode_06
             ].join("<br>");
-            save_btn_txt = loc.Apply_verificationcode;
+            save_btn_txt = loc.Request_verifcode;
         } else if (step === 1) {
-            // when clicked on 'Apply_verificationcode'
+            // when clicked on 'Request_verificationcode'
             // tekst: 'AWP is sending an email with the verification code'
             // show textbox with 'You need a 6 digit verification code to submit the Ex form'
             msg_info_txt = loc.MPUBORD_info.requesting_verifcode + "...";
             disable_save_btn = true;
-            save_btn_txt = loc.Apply_verificationcode;
+            save_btn_txt = loc.Request_verifcode;
         } else if (step === 2) {
             // when response 'email sent' is received
             // msg_html is in response

@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220320.js' %}"></script>
-    <script src="{% static 'js/studentsubjects220413.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220418.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -75,6 +75,8 @@
             {% include 'students/modapprovesubject.html' %}
             {% include 'students/modstudentsubject.html' %}
             {% include 'students/modselectex3.html' %}
+            {% include 'includes/modselectexemptionyear.html' %}
+
             {% include 'includes/modimport.html' %}
             {% include 'students/modmultipleoccurrences.html' %}
             {% include 'includes/modmessage.html' %}

@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let level_map = new Map();
     let sector_map = new Map();
 
-
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
@@ -106,14 +105,18 @@ document.addEventListener('DOMContentLoaded', function() {
     columns_tobe_hidden.btn_ep_01 = {
         fields: ["sjtp_abbrev", "pws_title", "pws_subjects", "subj_status"],
         captions: ["Character", "Assignment_title", "Assignment_subjects", "Approved"]}
-    columns_tobe_hidden.btn_exem = {
-        fields: ["exemption_year"],
-        captions: ["Exemption_year"]}
+
+    // don'/'t add exemption_year to columns_tobe_hidden PR2022-04-15
+    // exemption_year only in use when iseveningschool or islexschool
+    // was: must remove this field after setting_dict got value
+    //      columns_tobe_hidden.btn_exem = {
+    //          fields: ["exemption_year"],
+    //          captions: ["Exemption_year"]}
 
 // --- get field_settings
     const field_settings = {
         btn_ep_01: {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Character", "Assignment_title", "Assignment_subjects",  ""],
+                                "Abbreviation_twolines", "Subject", "Character", "Assignment_title", "Assignment_subjects", ""],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "sjtp_abbrev", "pws_title", "pws_subjects", "subj_status",
                                 ],
@@ -124,17 +127,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["020", "020", "075", "180", "075", "075", "120",
                                     "075", "180", "090", "150","150", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l",
-                                    "c", "l", "l", "l","l","c"]},
+                                    "c", "l", "l", "l", "l", "c"]},
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
         btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "has_exemption", "exemption_year"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div","div"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
                     field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120","120"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c","c"]},
+                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
 
         btn_sr:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_schoolexam_2lns", "", ],
@@ -160,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
-        btn_pok:  {field_caption: ["", "subj_error", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
+        btn_pok:  {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
                                 "subj_code", "subj_name", "pok_validthru:", "pok_status"],
@@ -266,7 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
 
-
 // ---  MSEX MOD SELECT CLUSTER ------------------------------
         const el_MSELEX_header = document.getElementById("id_MSELEX_header");
         const el_MSELEX_tblBody_select = document.getElementById("id_MSELEX_tblBody_select");
@@ -278,6 +280,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSELEX_btn_delete = document.getElementById("id_MSELEX_btn_delete");
         if (el_MSELEX_btn_delete){
             el_MSELEX_btn_delete.addEventListener("click", function() {MSELEX_Save("delete")}, false )
+        };
+
+// ---  MODAL SELECT EXEMPTION EXAMYEAR ------------------------------
+        const el_MExemptionYear_header = document.getElementById("id_MExemptionYear_header");
+        const el_MExemptionYear_tblBody_select = document.getElementById("id_MExemptionYear_tblBody_select");
+        const el_MExemptionYear_message_container = document.getElementById("id_MExemptionYear_message_container");
+        const el_MExemptionYear_btn_delete = document.getElementById("id_MExemptionYear_btn_delete");
+        if (el_MExemptionYear_btn_delete){
+            el_MExemptionYear_btn_delete.addEventListener("click", function() {MExemptionYear_Save("delete")}, false )
+        };
+
+        const el_MExemptionYear_btn_save = document.getElementById("id_MExemptionYear_btn_save");
+        if (el_MExemptionYear_btn_save){
+            el_MExemptionYear_btn_save.addEventListener("click", function() {MExemptionYear_Save("save")}, false )
         };
 
 // ---  MODAL CLUSTER
@@ -529,6 +545,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         // will be changed into an array when saving with t_MCOL_Save
                         if (Array.isArray(setting_dict.cols_hidden)) {
                              b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
+                            // don'/'t add exemption_year to columns_tobe_hidden
+                            // was: if (!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){
+                            //    b_remove_item_from_array(columns_tobe_hidden.btn_exem.fields, "exemption_year");
+                            //};
+
                         };
                     };
 
@@ -788,9 +809,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
           };
         };  // if(data_rows)
+        if (tblBody_datatable.rows.length){
+           Filter_TableRows();
+        } else if (selected_btn === "btn_exem") {
+            if (!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){
+                let tblRow = tblBody_datatable.insertRow(-1);
+                let td = tblRow.insertCell(-1);
+                td = tblRow.insertCell(-1);
+                td = tblRow.insertCell(-1);
+                td.setAttribute("colspan", 6);
+                let el = document.createElement("p");
+                el.className = "border_bg_transparent text-muted p-2 m-4"
+                el.innerHTML = loc.exemption_msg_01 + "<br>" + loc.exemption_msg_02;
+                td.appendChild(el);
+            };
+        };
 
-        Filter_TableRows();
     }  // FillTblRows
+
+    function create_exemption_message(){
+        let tblRow = tblBody_datatable.insertRow(-1);
+        let td = tblRow.insertCell(-1);
+        td = tblRow.insertCell(-1);
+        td = tblRow.insertCell(-1);
+        td.setAttribute("colspan", 6);
+        let el = document.createElement("p");
+        el.className = "border_bg_transparent text-muted p-2 m-4"
+        el.innerHTML = loc.exemption_msg_01 + "<br>" + lo.exemption_msg_012;
+        td.appendChild(el);
+    };
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-07-22 PR2021-12-14
     function CreateTblHeader(field_setting, col_hidden) {
@@ -862,7 +909,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ++++++++++ create filter row +++++++++++++++
 // --- add th to tblRow_filter.
                 const th_filter = document.createElement("th");
-                th_filter.id = "id_th_filter";  // to reset icons when clicked on show_all
+
 // --- create element with tag from field_tags
                 const el_tag = (filter_tag === "text") ? "input" : "div";
                 const el_filter = document.createElement(el_tag);
@@ -872,7 +919,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (filter_tag === "toggle") {
                         // add EventListener for icon to th_filter, not el_filter
                         th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
-                        th_filter.classList.add("pointer_show", "awp_filter_toggle");
+                        th_filter.classList.add("pointer_show");
                     }
 // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
@@ -992,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 td.appendChild(el);
 
-    // --- add EventListener to td
+// --- add EventListener to td
                 if (field_name === "select") {
                     // pass
                 } else if (field_name.includes("has_")){
@@ -1015,24 +1062,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         };
                     };
 
-        // --- add data-field Attribute when input element
-                } else if (field_tag === "input") {
-                    // only used for "exemption_year")
-                    el.setAttribute("type", "text")
-                    el.setAttribute("autocomplete", "off");
-                    el.setAttribute("ondragstart", "return false;");
-                    el.setAttribute("ondrop", "return false;");
-    // --- add EventListener
-                    el.addEventListener("change", function(){HandleInputChange(el)});
-                    //el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
-
-// --- add class 'input_text' and text_align
+        // - add data-field Attribute when input element
+                } else if (field_name === "exemption_year") {
+                    if(permit_dict.permit_crud && permit_dict.requsr_same_school){
+                        td.addEventListener("click", function() {MExemptionYear_Open(el)}, false)
+                        td.classList.add("pointer_show");
+                        add_hover(td);
+                    };
+        // - add class 'input_text' and text_align
                 // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                     el.classList.add("input_text");
+
                 } else if (field_name === "cluster_name") {
-                    td.addEventListener("click", function() {MSELEX_Open(el)}, false)
-                    td.classList.add("pointer_show");
-                    add_hover(td);
+                    if(permit_dict.permit_crud && permit_dict.requsr_same_school){
+                        td.addEventListener("click", function() {MSELEX_Open(el)}, false)
+                        td.classList.add("pointer_show");
+                        add_hover(td);
+                    };
 
                 } else {
                     // everyone that can view the page can open it, only permit_crud from same_school can edit PR2021-08-31
@@ -1245,6 +1291,9 @@ document.addEventListener('DOMContentLoaded', function() {
             //    is_hidden = (selected_btn !== "btn_ep_01");
             } else if (mapped_field === "has_exemption") {
                 is_hidden = (selected_btn !== "btn_exem");
+            } else if (mapped_field === "exemption_year") {
+                is_hidden = (selected_btn !== "btn_exem" ||
+                            (!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool) );
             } else if (mapped_field === "has_reex") {
                 is_hidden = (selected_btn !== "btn_reex");
             } else if (mapped_field === "has_reex03") {
@@ -1435,8 +1484,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
                                 console.log("auth_dict)", auth_dict);
-                                const new_class_str = b_get_status_iconclass(is_published, is_blocked,
-                                                        auth_dict[1], auth_dict[2], auth_dict[2], auth_dict[1]);
+                                const new_class_str = b_get_status_auth1_auth2_iconclass(is_published, is_blocked, auth_dict[1], auth_dict[2]);
                                 el_input.className = new_class_str;
 
                 // ---  upload changes
@@ -1490,9 +1538,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 UploadChanges(upload_dict, urls.url_studsubj_single_update);
             } else {
     // open mod confirm when deleting exemption, reex, reex3
-            ModConfirmOpen(fldName, el_input);
+                ModConfirmOpen(fldName, el_input);
+            };
 
-            }
         }; //   if(permit_dict.permit_approve_subject)
     }  // UploadToggle
 
@@ -3142,8 +3190,175 @@ document.addEventListener('DOMContentLoaded', function() {
         return next_cluster_name;
     };  // MCL_get_next_clustername
 
-
 // +++++++++++++++++ END OF MODAL CLUSTERS +++++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++ MODAL SELECT EXEMPTION YEAR ++++++++++++++++++++++++++++++++++++++++++
+
+//=========  MExemptionYear_Open  ================ PR2022-04-14
+    function MExemptionYear_Open(el_input) {
+        console.log( "===== MExemptionYear_Open ========= ");
+
+        const tblRow = t_get_tablerow_selected(el_input)
+        const stud_pk_int = get_attr_from_el_int(tblRow, "data-stud_pk");
+
+// -- lookup selected student
+        const [index, student_dict, compare] = b_recursive_integer_lookup(student_rows, "id", stud_pk_int);
+        if (!isEmpty(student_dict)){
+        // chjanging exemption_yrear only possible when iseveningstudent or islexstudent
+            if (student_dict.iseveningstudent || student_dict.islexstudent){
+                const studsubj_pk_int = get_attr_from_el_int(tblRow, "data-studsubj_pk");
+                const [index, found_dict, compare] = b_recursive_integer_lookup(studsubj_rows, "stud_id", stud_pk_int, "studsubj_id", studsubj_pk_int);
+                const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+                console.log("data_dict", data_dict);
+
+                b_clear_dict(mod_MSELEX_dict);
+                if(!isEmpty(data_dict)){
+                    mod_MSELEX_dict.mapid = data_dict.mapid;
+                    mod_MSELEX_dict.student_pk = data_dict.stud_id;
+                    mod_MSELEX_dict.studsubj_pk = data_dict.studsubj_id;
+                    mod_MSELEX_dict.selected_exemption_year = (data_dict.exemption_year ) ? data_dict.exemption_year : 0;
+                    mod_MSELEX_dict.el_input = el_input;
+            console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+            console.log( "data_dict.weight_ce", data_dict.weight_ce);
+
+
+        // set header text
+                    el_MExemptionYear_header.innerText = loc.Select_exemption_examyear;
+        // set info text
+                    const inner_HTML = [
+                        "<div class='mb-2'>", loc.MExemptionYear_info.line_01, " ", loc.MExemptionYear_info.line_02,
+                        "</div><div class='mb-2'>", loc.MExemptionYear_info.line_03, loc.MExemptionYear_info.line_04,
+                        "</div><div>", loc.MExemptionYear_info.line_05,"</div>"
+                    ].join("");
+                    el_MExemptionYear_message_container.innerHTML = inner_HTML
+
+        // show delete button
+                    add_or_remove_class(el_MExemptionYear_btn_delete.parentNode, cls_hide, false);
+
+        // ---  fill select table
+                    MExemptionYear_FillSelectTable();
+
+        // ---  show modal
+                    $("#id_mod_select_exemptionyear").modal({backdrop: true});
+
+                };
+            };  // if (student_dict.iseveningstudent || student_dict.islexstudent)
+        };  // if (!isEmpty(student_dict))
+
+    };  // MExemptionYear_Open
+
+//=========  MExemptionYear_Save  ================ PR2022-04-15
+    function MExemptionYear_Save(mode) {
+        console.log("===  MExemptionYear_Save =========");
+        // mode = 'save' or 'delete'
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school){
+
+// ---  get selected_pk
+            const tr_selected = b_get_element_by_data_value(el_MExemptionYear_tblBody_select, "selected", "1")
+            const selected_exemption_examyear_int = (mode === "delete") ? 0 : get_attr_from_el_int(tr_selected, "data-pk");
+            console.log( "tr_selected", tr_selected);
+            console.log( "selected_exemption_examyear_int", selected_exemption_examyear_int);
+
+            const upload_dict = {
+                table: "studsubj",
+                mode: "update",
+                exemption_year: (selected_exemption_examyear_int) ? selected_exemption_examyear_int : null,
+                student_pk: mod_MSELEX_dict.student_pk,
+                studsubj_pk: mod_MSELEX_dict.studsubj_pk,
+            };
+
+            console.log( "upload_dict", upload_dict);
+        // update field before upload
+            const update_dict = {exemption_year: (selected_exemption_examyear_int) ? selected_exemption_examyear_int : null}
+            UpdateField(mod_MSELEX_dict.el_input, update_dict);
+
+            UploadChanges(upload_dict, urls.url_studsubj_single_update);
+        };
+
+// hide modal
+        $("#id_mod_select_exemptionyear").modal("hide");
+
+    }  // t_MMExemptionYear_Save
+
+//=========  MExemptionYear_SelectItem  ================ PR2022-04-14
+    function MExemptionYear_SelectItem(tblRow, el_icon) {
+        console.log( "===== MExemptionYear_SelectItem ========= ");
+
+        if(tblRow) {
+// ---  deselect all highlighted rows
+            const class_selected = "tickmark_2_2", class_not_selected = "tickmark_0_0";
+            const data_field = "data-selected";
+            for (let i = 0, row; row = el_MExemptionYear_tblBody_select.rows[i]; i++) {
+                row.cells[0].children[0].className = class_not_selected;
+                if (row.hasAttribute(data_field)) {
+                    row.removeAttribute(data_field)
+                }
+            };
+
+// ---  set tick in  clicked row
+            el_icon.className = class_selected;
+            tblRow.setAttribute(data_field, "1")
+        };
+    }; // MExemptionYear_SelectItem
+
+//=========  MExemptionYear_FillSelectTable  ================ PR2022-04-15
+    function MExemptionYear_FillSelectTable() {
+        //console.log( "===== MExemptionYear_FillSelectTable ========= ");
+        const tblBody_select = el_MExemptionYear_tblBody_select;
+        tblBody_select.innerText = null;
+
+// --- loop through list of examyears, starting with 2020, max 10 years
+        if (setting_dict.sel_examyear_code && setting_dict.sel_examyear_code > 2020){
+            const start_year = (setting_dict.sel_examyear_code > 2030) ? setting_dict.sel_examyear_code - 10 : 2020;
+            for (let i = start_year; i < setting_dict.sel_examyear_code; i++) {
+                MExemptionYear_CreateSelectRow(tblBody_select, i, mod_MSELEX_dict.selected_exemption_year);
+            };
+        };
+    };  // MExemptionYear_FillSelectTable
+
+//=========  MExemptionYear_CreateSelectRow  ================ PR2022-04-14
+    function MExemptionYear_CreateSelectRow(tblBody_select, pk_int, selected_exemption_year) {
+        console.log( "===== MExemptionYear_CreateSelectRow ========= ");
+        console.log( "pk_int", pk_int, typeof pk_int);
+
+        const is_selected_pk = (selected_exemption_year && pk_int === selected_exemption_year)
+
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(-1);
+        tblRow.setAttribute("data-pk", pk_int);
+
+// ---  add select td to tblRow.
+        let td = tblRow.insertCell(-1);
+            td.className = "mx-1 tw_032";
+
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            const el_icon = document.createElement("div");
+                el_icon.className = (is_selected_pk) ? "tickmark_2_2" : "tickmark_0_0";
+            td.appendChild(el_icon);
+// ---  add hover to tblRow
+            add_hover(tblRow);
+
+
+// ---  add td with display_code_field to tblRow, only if display_code_field has value
+        td = tblRow.insertCell(-1);
+            td.className = "mx-1 tw_075 ta_c";
+
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            const el_div = document.createElement("div");
+                el_div.innerText = ( pk_int) ? pk_int.toString() : "---";
+            td.appendChild(el_div);
+
+// ---  add EventListener to tblRow
+            tblRow.addEventListener("click", function() { MExemptionYear_SelectItem(tblRow, el_icon) }, false )
+// ---  add hover to tblRow
+            add_hover(tblRow);
+
+// ---  highlight clicked row
+            if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+
+    }  // MExemptionYear_CreateSelectRow
+
+// ++++++++++++  END OF MODAL SELECT EXEMPTION YEAR   +++++++++++++++++++++++++++++++++++++++
 
 // +++++++++++++++++ MODAL MULTIPLE OCCURRENCES ++++++++++++++++++++++++++++++++++++++++++
 //=========  MMUOC_Open  ================ PR2021-09-05
@@ -3388,7 +3603,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleShowAll  ================ PR2020-12-17
     function HandleShowAll() {
-        //console.log("=== HandleShowAll");
+        console.log("=== HandleShowAll");
         //console.log("setting_dict", setting_dict);
 
         setting_dict.sel_lvlbase_pk = null;
@@ -3403,16 +3618,7 @@ document.addEventListener('DOMContentLoaded', function() {
         el_SBR_select_level.value = null;
         el_SBR_select_sector.value = null;
 
-        filter_dict = {};
-        const el_th_filter = document.getElementById("id_th_filter");
-        //console.log("el_th_filter", el_th_filter);
-        if (el_th_filter){
-             let filter_toggle_elements = el_th_filter.querySelectorAll(".awp_filter_toggle");
-             for (let i = 0, el; el = filter_toggle_elements[i]; i++) {
-        //console.log("el", el);
-                el.className = "tickmark_2_2";
-             }
-        }
+        ResetFilterRows();
 
 // ---  upload new setting
         const selected_pk_dict = {sel_lvlbase_pk: null, sel_sctbase_pk: null, sel_subject_pk: null, sel_student_pk: null};
@@ -4556,16 +4762,14 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
 
 
 //========= ResetFilterRows  ====================================
-    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20 PR2021-08-21
+    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20 PR2021-08-21 PR2022-04-17
         //console.log( "===== ResetFilterRows  ========= ");
 
         selected.studsubj_dict = null;
         selected.student_pk = null;
         selected.subject_pk = null;
 
-        filter_dict = {};
-
-        Filter_TableRows();
+        b_clear_dict(filter_dict);
 
         let filterRow = tblHead_datatable.rows[1];
         if(!!filterRow){
@@ -4578,13 +4782,11 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                             el.value = null
                         } else {
                             el.className = "tickmark_0_0";
-                        }
-                    }
-                }
-            }
-       };
-       //console.log("function ResetFilterRows");
+        }}}}};
+
         FillTblRows();
+        Filter_TableRows();
+
     }  // function ResetFilterRows
 
 //###########################################################################
@@ -4857,6 +5059,7 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
         console.log( " ==== MASS_UpdateFromResponse ====");
         console.log( "response", response);
         console.log("mod_MASS_dict", mod_MASS_dict);
+
         mod_MASS_dict.step += 1;
 
         mod_MASS_dict.test_is_ok = !!response.test_is_ok;
@@ -4959,10 +5162,10 @@ function MEX3_reset_layout_options(){  // PR2021-10-10
                     // msg_info_txt is in response
                     show_info_request_verifcode = mod_MASS_dict.test_is_ok;
                     if (mod_MASS_dict.test_is_ok){
-                        save_btn_txt = loc.Apply_verificationcode;
+                        save_btn_txt = loc.Request_verifcode;
                     };
                 } else if (step === 2) {
-                    // clicked on 'Apply_verificationcode'
+                    // clicked on 'Request_verificationcode'
                     // tekst: 'AWP is sending an email with the verification code'
                     // show textbox with 'You need a 6 digit verification code to submit the Ex form'
                     msg_info_txt = loc.MASS_info.requesting_verifcode;

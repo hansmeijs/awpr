@@ -1221,9 +1221,9 @@ class StudentsubjectMultipleOccurrencesView(View):  # PR2021-09-05
 #####################################################################################
 
 @method_decorator([login_required], name='dispatch')
-class SendEmailSubmitExformView(View):  # PR2021-07-26
+class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= SendEmailSubmitExformView ============= ')
@@ -1242,12 +1242,21 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
             upload_dict = json.loads(upload_json)
             if logging_on:
                 logger.debug('upload_dict: ' + str(upload_dict))
-
+            """
+            upload_dict: {'table': 'grade', 'mode': 'submit_save', 'form': 'ex2', 'verificationcode': '', 'verificationkey': None, 'auth_index': 2, 'now_arr': [2022, 4, 18, 11, 21]}
+            """
 # - get permit
             has_permit = False
             req_usr = request.user
             mode = upload_dict.get('mode')
-            sel_page = 'page_exams' if mode in ('publish_exam', 'publish_grade_exam') else 'page_studsubj'
+            table = upload_dict.get('table')
+
+            if table == 'grade':
+                sel_page = 'page_grade'
+            elif mode in ('publish_exam', 'publish_grade_exam'):
+                sel_page = 'page_exams'
+            else:
+                sel_page ='page_studsubj'
             if logging_on:
                 logger.debug('mode: ' + str(mode))
                 logger.debug('sel_page: ' + str(sel_page))
@@ -1255,7 +1264,9 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
                 permit_list = req_usr.permit_list(sel_page)
                 if permit_list and req_usr.usergroup_list:
                     if 'auth1' in req_usr.usergroup_list or 'auth2' in req_usr.usergroup_list:
-                        if mode == 'publish_exam':
+                        if table == 'grade':
+                            has_permit = 'permit_submit_grade' in permit_list
+                        elif mode == 'publish_exam':
                             has_permit = 'permit_publish_exam' in permit_list
                         elif mode in ('publish_grade_exam'):
                             has_permit = 'permit_submit_exam' in permit_list
@@ -1280,7 +1291,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
                     sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                         dl.get_selected_ey_school_dep_from_usersetting(request)
                 else:
-                    formname = 'ex1'
+                    formname = upload_dict.get('form')
                     sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                         dl.get_selected_ey_school_dep_from_usersetting(request)
 
@@ -1328,7 +1339,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26
                             if mode == 'publish_exam':
                                 msg_txt = str(_('Enter the verification code and click the ENTER key to publish the exams.'))
                             else:
-                                msg_txt = str(_('Enter the verification code and click the ENTER key to submit the exams.'))
+                                msg_txt = str(_('Enter the verification code and click the ENTER key to submit the Ex form.'))
 
                             msg_list += ("<p class='pb-0'>",
                                          str(_("We have sent an email with a 6 digit verification code to the email address:")), '</p>',
@@ -1428,7 +1439,6 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                 if len(msg_list):
                     msg_html = '<br>'.join(msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
-
                 else:
 
     # - get selected mode. Modes are 'approve_test', 'approve_save', 'approve_reset', 'submit_test' 'submit_save'
@@ -1538,7 +1548,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
                             studsubj_rows = []
 
-# +++++ loop through subjects
+# +++++ loop through studsubjects
                             row_count = 0
                             student_pk_list, student_committed_list, student_saved_list, student_saved_error_list = \
                                 [],[], [], []
@@ -1585,7 +1595,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                         if rows:
                                               studsubj_rows.append(rows[0])
                                     """
-    # +++++  end of loop through  subjects
+    # +++++  end of loop through  studsubjects
 
                             count_dict['count'] = row_count
                             count_dict['student_count'] = len(student_pk_list)
@@ -1720,8 +1730,8 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             msg_list.append("<p class='pb-0'>" + str(_("The following subjects %(willbe)s skipped")
                                                      % {'willbe': willbe_or_are_txt}) + ':</p><ul>')
             if already_published:
-                msg_list.append('<li>' + str(_("%(subj)s already submitted") %
-                                             {'subj': get_subjects_are_text(already_published)}) + ';</li>')
+                msg_list.append('<li>' + str(_("%(val)s already submitted") %
+                                             {'val': get_subjects_are_text(already_published)}) + ';</li>')
             if auth_missing:
                 msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
                                              {'subj': get_subjects_are_text(auth_missing)}) + ';</li>')
@@ -1834,7 +1844,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             logger.debug(' ')
             logger.debug(' ============= create_Ex1_form ============= ')
 
-# get text from examyearsettin  g
+# get text from examyearsetting
         settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
         #if logging_on:
         #    logger.debug('settings: ' + str(settings))
@@ -2931,7 +2941,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
 
 #######################################################
 def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_school, sel_department,
-                    msg_list, err_fields, request):  # PR2019-06-06 PR2021-12-25
+                    msg_list, err_fields, request):  # PR2019-06-06 PR2021-12-25 PR2022-04-15
     # --- update existing and new studsubj_instance PR2019-06-06
     # called by StudentsubjectUploadView, StudentsubjectSingleUpdateView, StudentsubjectApproveSingleView
 
@@ -2948,7 +2958,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
     for field, new_value in upload_dict.items():
 
-# +++ save changes in instance fields
+# +++ save changes in studsubj_instance fields
         if field in ['schemeitem_pk']:
             saved_schemeitem = getattr(studsubj_instance, 'schemeitem')
             new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(pk=new_value)
@@ -2996,7 +3006,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 save_changes = True
 
         elif field == 'exemption_year':
-            # TODO Validate if changing allowed
+            # changing is only allowed when evening or lex student. Is set on client side
 
             if not new_value:
                 new_value = False
@@ -3122,6 +3132,12 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
+
+    # - when setting exemption: fill in previous examyear as exemption_year PR2022-04-15
+                        if field == 'has_exemption':
+                            previous_exam_year = sel_examyear.code - 1
+                            setattr(studsubj_instance, 'exemption_year', previous_exam_year)
+
             else:
 
 # +++++ delete exemption, sr, reex, reex03
@@ -3141,12 +3157,16 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         msg_list.extend(err_list)
                         err_fields.append(field)
                     else:
-        # - set has_exemption etc True
+        # - set has_exemption etc False
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
 
-        # - add exem, reex, reex03 grade or make grade 'tobedeleted'
+        # - when deleting exemption: also delete exemption_year PR2022-04-15
+                        if field == 'has_exemption':
+                            setattr(studsubj_instance, 'exemption_year', None)
+
+# --- add exem, reex, reex03 grade or make grade 'tobedeleted'
             if recalc_finalgrade:
                 err_list = add_or_delete_grade_exem_reex_reex03(
                             field, studsubj_instance, new_value, request)
@@ -4764,7 +4784,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-10 studsubj_pk_list added
     # PR2022-02-15 show only not tobeleted students and studentsubjects
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_studentsubject_rows ============= ')
         logger.debug('student_pk: ' + str(student_pk))

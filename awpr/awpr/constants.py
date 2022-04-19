@@ -462,7 +462,7 @@ STRING_SINGLELINE_80 = '-' * 80
 #ROLE_002_STUDENT = 2
 #ROLE_004_TEACHER = 4
 ROLE_008_SCHOOL = 8
-ROLE_016_COMM = 16
+ROLE_016_CORR = 16
 ROLE_032_INSP = 32
 ROLE_064_ADMIN = 64
 ROLE_128_SYSTEM = 128
@@ -470,7 +470,7 @@ ROLE_128_SYSTEM = 128
 # PR2018-12-23 used in set_menu_items
 ROLE_DICT = {
     ROLE_008_SCHOOL: 'school',
-    ROLE_016_COMM: 'comm',
+    ROLE_016_CORR: 'corr',
     ROLE_032_INSP: 'insp',
     ROLE_064_ADMIN: 'admin',
     ROLE_128_SYSTEM: 'system'
@@ -480,7 +480,7 @@ def get_role_options(request):
     ETE_DEX = _('Division of Examinations') if request.user.country.abbrev.lower() == 'sxm' else 'ETE'
     _role_options = [
         {'value': ROLE_008_SCHOOL, 'caption': _('School')},
-        {'value': ROLE_016_COMM, 'caption': _('Correctors')},
+        {'value': ROLE_016_CORR, 'caption': _('Correctors')},
         {'value': ROLE_032_INSP, 'caption': _('Inspectorate')},
         {'value': ROLE_064_ADMIN, 'caption': ETE_DEX},
         {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
@@ -496,6 +496,7 @@ USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
 USERGROUP_AUTH3_EXAM = 'auth3'
 USERGROUP_AUTH4_COM = 'auth4'
+USERGROUP_DOWNLOAD = 'dwnl'
 USERGROUP_ANALYZE = 'anlz'
 USERGROUP_ADMIN = 'admin'
 
@@ -507,6 +508,7 @@ USERGROUP_TUPLE = (
     USERGROUP_AUTH2_SECR,
     USERGROUP_AUTH3_EXAM,
     USERGROUP_AUTH4_COM,
+    USERGROUP_DOWNLOAD,
     USERGROUP_ANALYZE,
     USERGROUP_ADMIN
 )
@@ -519,10 +521,11 @@ USERGROUP_CAPTION = {
     USERGROUP_AUTH2_SECR: _('Secretary'),
     USERGROUP_AUTH3_EXAM: _('Examiner'),
     USERGROUP_AUTH4_COM: _('Corrector'),
+    USERGROUP_DOWNLOAD: _('Download'),
     USERGROUP_ANALYZE: _('Analyze'),
     USERGROUP_ADMIN: _('System administrator')
 }
-
+# NIU I think
 PAGE_LIST = {
     'users': _('Users'),
     'examyears': _('Exam years'),
@@ -531,6 +534,7 @@ PAGE_LIST = {
     'students': _('Students'),
     'studentsubjects': _('Subjects of students'),
     'orderlist': _('Order list'),
-    'grades': _('Grades')
+    'grades': _('Grades'),
+    'archive': _('Archive')
 }
 

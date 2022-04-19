@@ -261,7 +261,7 @@ class User(AbstractUser):
     @property
     def is_role_comm(self):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-        return self.is_authenticated and self.role is not None and self.role == c.ROLE_016_COMM
+        return self.is_authenticated and self.role is not None and self.role == c.ROLE_016_CORR
 
     @property
     def is_role_school(self):

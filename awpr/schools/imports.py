@@ -344,6 +344,7 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                                     get_tobe_updated_gradelist_from_datalist(
                                         upload_data_dict=upload_data_dict,
                                         department=sel_department,
+                                        examyear=sel_examyear,
                                         examperiod=sel_examperiod,
                                         examgradetype=examgradetype,
                                         is_test=is_test,
@@ -378,8 +379,11 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                         if logging_on:
                             logger.debug('studsubj_pk_list_of_created_exem_grades: ' + str(studsubj_pk_list_of_created_exem_grades))
 
-    # - set has_exemption True in studsubj
-                        updated_student_pk_list = update_hasexemption_in_studsubj_batch(studsubj_pk_list_of_created_exem_grades, request)
+    # - set has_exemption True in studsubj, also add exemption_year
+                        updated_student_pk_list = update_hasexemption_in_studsubj_batch(
+                            tobe_updated_studsubj_pk_list=studsubj_pk_list_of_created_exem_grades,
+                            examyear=sel_examyear,
+                            request=request)
 
                         updated_grade_pk_list, updated_studsubj_pk_list = update_grade_batch(tobe_updated_dict, sel_db_field, request)
                         if logging_on:
@@ -2976,7 +2980,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examperiod, examgradetype, is_test,
+def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examyear, examperiod, examgradetype, is_test,
                                double_entrieslist, scheme_si_dict, count_dict,
                                saved_student_subj_grade_dict, tobe_updated_dict,
                                 new_exemption_pk_list, mapped_new_exemption_grade_list, log_list, request):
@@ -3160,7 +3164,7 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
             for sjbase_pk_str, grade_arr in upload_subjects_dict.items():
 
                 subject_not_found, subject_has_error, grade_has_error, value_has_changed = \
-                    import_studsubj_grade_from_datalist(request, examperiod, examgradetype, saved_student_dict, scheme_dict,
+                    import_studsubj_grade_from_datalist(request, examyear, examperiod, examgradetype, saved_student_dict, scheme_dict,
                                         sjbase_pk_str, grade_arr, tobe_updated_dict, log_list, is_test)
                 if subject_not_found:
                     has_notfound_subjects = True
@@ -3209,7 +3213,7 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examp
 # --- end of get_tobe_updated_gradelist_from_datalist
 
 
-def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, saved_student_dict, scheme_dict,
+def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgradetype, saved_student_dict, scheme_dict,
                             sjbase_pk_str, grade_arr, tobe_updated_dict, log_list, is_test):
     # PR2021-12-10 PR2022-01-04 PR2022-02-09 PR2022-02-19
     logging_on = s.LOGGING_ON
@@ -3247,7 +3251,7 @@ def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, save
 # --- lookup upload_sjbase_pk_int in saved_subj_grade_dict
     saved_studsubj_dict = saved_student_dict.get(upload_sjbase_pk_int)
     if logging_on:
-        logger.debug('.....  saved_studsubj_dict: ' + str(saved_studsubj_dict))
+        logger.debug('@@@@@@@@@@@@.....  saved_studsubj_dict: ' + str(saved_studsubj_dict))
 
     """
     saved_student_dict: {
@@ -3347,8 +3351,9 @@ def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, save
                 outpt_str, err_lst, exemp_grade_tobe_created = \
                     grade_val.validate_import_grade(
                         student_dict=saved_student_dict,
-                        subj_dict=saved_studsubj_dict,
+                        studsubj_dict=saved_studsubj_dict,
                         si_dict=si_dict,
+                        examyear=examyear,
                         examperiod=examperiod,
                         examgradetype=examgradetype,
                         grade_str=grade_str,
@@ -3437,7 +3442,7 @@ def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, save
 
                     is_ep_exemption = examgradetype in ('exemsegrade', 'exemsegrade'),
                     has_sr = saved_studsubj_dict.get('has_sr', False)
-                    exem_year = saved_studsubj_dict.get('exem_year')
+                    exemption_year = saved_studsubj_dict.get('exem_year')
 
                     if logging_on and False:
                         logger.debug(' ..........  calc_sesr_pece_final_grade ')
@@ -3446,12 +3451,12 @@ def import_studsubj_grade_from_datalist(request, examperiod, examgradetype, save
                         logger.debug('       pegrade: ' + str(pegrade) + ' ' + str(type(pegrade)))
                         logger.debug('       cegrade: ' + str(cegrade) + ' ' + str(type(cegrade)))
 
-                    sesr_grade, pece_grade, finalgrade = \
+                    sesr_grade, pece_grade, finalgrade, delete_cegrade = \
                         calc_final.calc_sesr_pece_final_grade(
                             si_dict=si_dict,
                             is_ep_exemption=is_ep_exemption,
                             has_sr=has_sr,
-                            exem_year=exem_year,
+                            exemption_year=exemption_year,
                             se_grade=segrade,
                             sr_grade=srgrade,
                             pe_grade=pegrade,
@@ -3723,7 +3728,8 @@ def update_grade_batch(tobe_updated_dict, sel_db_field, request):  #PR2022-02-03
 # - end of update_grade_batch
 
 
-def update_hasexemption_in_studsubj_batch(tobe_updated_studsubj_pk_list, request):  #PR2022-02-19
+def update_hasexemption_in_studsubj_batch(tobe_updated_studsubj_pk_list, examyear, request):
+    #PR2022-02-19 PR2022-04-15
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- update_hasexemption_in_studsubj_batch  --------------------')
@@ -3736,10 +3742,18 @@ def update_hasexemption_in_studsubj_batch(tobe_updated_studsubj_pk_list, request
         try:
             modifiedby_pk_str = str(request.user.pk)
             modifiedat_str = str(timezone.now())
-            sql_keys = {'studsubj_pk_arr': tobe_updated_studsubj_pk_list}
+
+            # add previous examyear as exemption_year,
+            # filter 'not when eveningschool or lexschool' is too complicated, because it can be different for each student.
+            # therefore add to all students
+
+            previous_exam_year = examyear.code - 1
+            sql_keys = {'studsubj_pk_arr': tobe_updated_studsubj_pk_list,
+                        'prev_ey': previous_exam_year}
+
             sql_list = [
                 "UPDATE students_studentsubject ",
-                "SET has_exemption = TRUE, ",
+                "SET has_exemption = TRUE, exemption_year = %(prev_ey)s::INT, ",
                 "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '" , modifiedat_str, "' ",
                 "WHERE students_studentsubject.id IN ( SELECT UNNEST(%(studsubj_pk_arr)s::INT[]) ) ",
                 "AND NOT students_studentsubject.has_exemption"

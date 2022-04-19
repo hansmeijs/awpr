@@ -123,17 +123,10 @@ const man_exams = {
 
         write_paragraph_header("id_practical_exams", "Praktijkexamens"),
         write_paragraph_body("",
-            [
-                "<p><b>Deelexamens</b><br>In 2022 is de nieuwe examinering van de praktijkexamens ingevoerd. ",
+            ["<p><b>Deelexamens</b><br>In 2022 is de nieuwe examinering van de praktijkexamens ingevoerd. ",
                 "Het afzonderlijke praktijkexamen en centraal examen zijn nu samengevoegd tot een praktijkexamen dat uit verschillende onderdelen bestaat: de praktijktoetsen en de theoretische 'minitoetsen'. ",
-                "Deze toetsen zijn als deelexamens opgenomen. ",
-                "Voordat de antwoorden van een praktijkexamen kunnen worden ingevoerd dienen eerst de deelexamens te worden geselecteerd, die de kandidaat heeft afgelegd.</p> ",
-                "<p><b>Maximum score</b><br>Elk deelexamen heeft een maximum score. AWP controleert of de totale maximum score van de geselecteerde deelexamens overeenkomt met de maximale score van het hele praktijkexamen. ",
-                "Hiermee wordt voorkomen dat er teveel, te weinig of verkeerde deelexamens worden geselecteerd.</p>",
-                "<p><b>Antwoorden invoeren</b><br>Het invoeren van de antwoorden van de deelexamens gaat op dezelfde manier als bij de gewone examens.</p>",
-                "<p><b>Herexamen</b><br>Wanneer de kandidaat een herexamen doet van het praktijkexamen wordt een deel van het examen opnieuw afgelegd. ",
-                "AWP kopieert de antwoorden van het reeds afgelegde examen naar het herexamen. Verwijder eerst het overeenkomende deelexamen van het reeds afgelegde examen en selecteer het deelexamen waarin de kandidaat herexamen doet. ",
-                "Vul de antwoorden van het herexamen in</p>.",
+                "Deze toetsen zijn als deelexamens opgenomen.</p>",
+                "<p><b>Antwoorden invoeren</b><br>Selecteer eerst een deelexamen. Het invoeren van de antwoorden van de deelexamens gaat op dezelfde manier als bij de gewone examens.</p>",
             ]),
 
         "<div class='p-3 visibility_hide'>-</div>",
@@ -259,17 +252,10 @@ const man_exams = {
 
             write_paragraph_header("id_practical_exams", "Practical exams"),
             write_paragraph_body("",
-            [
-                "<p><b>Partial exams</b><br>In 2022, the new examination of the practical exams will be introduced.",
+            ["<p><b>Partial exams</b><br>In 2022, the new examination of the practical exams will be introduced.",
                 "The separate practical exam and central exam have now been merged into a practical exam that consists of different parts: the practical tests and the theoretical 'mini tests'.",
-                "These tests are included as partial exams.",
-                "Before the answers of a practical exam can be entered, the partial exams that the candidate has taken must first be selected. </p> ",
-                "<p><b>Maximum score</b><br>Each partial exam has a maximum score. AWP checks whether the total maximum score of the selected partial exams corresponds to the maximum score of the entire practical exam. ",
-                "This prevents too many, too few or wrong partial exams being selected.</p>",
-                "<p><b>Enter answers</b><br>Enter the answers of the partial exams in the same way as for the regular exams.</p>",
-                "<p><b>Re-examination</b><br>When the candidate retakes the practical exam, part of the exam is retaken. ",
-                "AWP copies the answers from the exam already taken to the re-exam. First, remove the corresponding partial exam from the already taken exam and select the partial exam in which the candidate retakes.",
-                "Enter the answers of the re-exam</p>.",
+                "These tests are included as partial exams.</p> ",
+                "<p><b>Enter answers</b><br>First select a partial exam. Enter the answers of the partial exam in the same way as for the regular exams.</p>",
             ]),
 
         "<div class='p-3 visibility_hide'>-</div>",

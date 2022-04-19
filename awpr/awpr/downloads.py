@@ -166,8 +166,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         skip_allowed_filter=skip_allowed_filter,
                         cur_dep_only=cur_dep_only,
                         request=request)
-
-
 # ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
                 if datalist_request.get('duo_subject_rows'):
                     datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
@@ -178,7 +176,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
                     )
-
 # ----- clusters
                 if datalist_request.get('cluster_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('cluster_rows', 'cur_dep_only'), False)
@@ -928,6 +925,7 @@ def get_selected_examyear_examperiod_dep_school_from_usersetting(request):  # PR
 # - end of get_selected_examyear_examperiod_dep_school_from_usersetting
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
 def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
     # - get selected examyear.code and scheme_p from usersettings
     # used in SchemeDownloadXlsxView
@@ -968,7 +966,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request, corrector_may_edit=False, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
+def get_selected_ey_school_dep_from_usersetting(request, corr_insp_may_edit=False, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
     logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
@@ -1017,9 +1015,10 @@ def get_selected_ey_school_dep_from_usersetting(request, corrector_may_edit=Fals
         else:
             # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
             # used on entering students and grades. Schools can only enter grades of their own school
-            # PR2022-03-13 debug: also correctors are allowed to make changes: add c.ROLE_016_COMM
+            # PR2022-03-13 debug: also correctors are allowed to make changes: add c.ROLE_016_CORR
             requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk) or \
-                                 (corrector_may_edit and req_user.role == c.ROLE_016_COMM)
+                                 (corr_insp_may_edit and req_user.role == c.ROLE_016_CORR) or \
+                                 (corr_insp_may_edit and req_user.role == c.ROLE_032_INSP)
             if not requsr_same_school:
                 msg_list.append(str(_('Only users of this school are allowed to make changes.')))
 
@@ -1097,7 +1096,7 @@ def get_selected_ey_school_dep_from_usersetting(request, corrector_may_edit=Fals
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-def get_selected_examyear_from_usersetting(request):  # PR2021-09-08 PR2022-02-26
+def get_selected_examyear_from_usersetting(request):  # PR2021-09-08 PR2022-02-26 PR2022-04-16
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
@@ -1134,7 +1133,9 @@ def get_selected_examyear_from_usersetting(request):  # PR2021-09-08 PR2022-02-2
     # - add info to msg_list, will be sent back to client
             message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
 
-    may_edit = len(msg_list) == 0
+    may_edit = not msg_list
+    if not may_edit:
+        sel_examyear = None
 
     if logging_on:
         logger.debug('msg_list: ' + str(msg_list))
@@ -1197,7 +1198,7 @@ def create_permit_dict(req_user):
     if req_user.is_authenticated and req_user.role is not None:
         if req_user.role == c.ROLE_008_SCHOOL:
             permit_dict['requsr_role_school'] = True
-        elif req_user.role == c.ROLE_016_COMM:
+        elif req_user.role == c.ROLE_016_CORR:
             permit_dict['requsr_role_comm'] = True
         elif req_user.role == c.ROLE_032_INSP:
             permit_dict['requsr_role_insp'] = True

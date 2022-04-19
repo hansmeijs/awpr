@@ -78,7 +78,8 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_grade_approve = get_attr_from_el(el_data, "data-url_grade_approve");
     urls.url_grade_approve_single = get_attr_from_el(el_data, "data-url_grade_approve_single");
     urls.url_grade_submit_ex2 = get_attr_from_el(el_data, "data-url_grade_submit_ex2");
-    urls.url_grade_submit_ex2a = get_attr_from_el(el_data, "data-url_grade_submit_ex2a");
+    urls.url_studsubj_send_email_exform = get_attr_from_el(el_data, "data-url_studsubj_send_email_exform");
+    urls.url_grade_block = get_attr_from_el(el_data, "data-url_grade_block");
 
     urls.url_download_grade_icons = get_attr_from_el(el_data, "data-download_grade_icons_url");
     urls.url_grade_download_ex2 = get_attr_from_el(el_data, "data-url_grade_download_ex2");
@@ -93,21 +94,23 @@ document.addEventListener("DOMContentLoaded", function() {
     columns_tobe_hidden.all = {
         fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
         captions: ["Examnumber", "Leerweg", "Sector", "Cluster", "Subject"]};
-
+    columns_tobe_hidden.btn_exem = {
+        fields: ["exemption_year"],
+        captions: ["Exemption_year"]};
 // --- get field_settings
     const field_settings = {
         btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
-                                  "segrade", "cegrade", "finalgrade", "note_status"], //  "ce_status" not in use yet PR2022-03-03
+                                  "exemption_year",  "segrade", "cegrade", "finalgrade", "note_status"], //  "ce_status" not in use yet PR2022-03-03
                     field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
-                                  "Exem_SE_twolines", "Exem_CE_twolines", "Exem_FINAL_twolines", ""],
+                                  "Exemption_year_twolines", "Exem_SE_twolines", "Exem_CE_twolines", "Exem_FINAL_twolines", ""],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
-                                "input", "input", "div", "div"],
+                                "div", "input", "input", "div", "div"],
                     filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
-                                 "text", "text", "text", "text"],
+                                 "text", "text", "text", "text", "text"],
                     field_width: ["020", "060", "240", "060", "060", "120", "075", "240",
-                                 "090", "090", "090", "020"],
+                                 "100", "090", "090", "090", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l",
-                                 "c", "c", "c", "c"]},
+                                 "c", "c", "c", "c", "c"]},
 
         btn_ep_01: { field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                    "segrade", "se_status", "srgrade", "sr_status",
@@ -134,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "090", "020", "090", "020",
                                 "090", "020", "090",
                                 "090", "020", "090", "090",
-                                 "020"],
+                                 "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c","l",
                                 "c", "c", "c", "c",
                                 "c", "c", "c",
@@ -149,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "input", "div",  "input", "div"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text","text",
                                 "text", "text", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "020"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
         btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
                                   "Third_period_score", "", "Third_period_grade", ""],
@@ -159,7 +162,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                     "input", "div",  "input", "div"],
                     filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
                                     "text", "text", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075","240", "090", "020", "090", "020"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075","240", "090", "020", "090", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
 
         published: {field_caption: ["", "Name_ex_form", "Exam_period", "Exam_type", "Date_submitted", "Download_Exform"],
@@ -286,12 +289,9 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MAG_auth_index.addEventListener("change", function() {MAG_UploadAuthIndex(el_MAG_auth_index)}, false );
         };
 
-        const el_MAG_info_container = document.getElementById("id_MAG_info_container");
         const el_MAG_loader = document.getElementById("id_MAG_loader");
         const el_MAG_msg_container = document.getElementById("id_MAG_msg_container");
-
-        const el_MAG_info_request_msg1 = document.getElementById("id_MAG_info_request_msg1");
-        const el_MAG_info_request_verifcode = document.getElementById("id_MAG_info_request_verifcode");
+        const el_MAG_info_container = document.getElementById("id_MAG_info_container");
 
         const el_MAG_input_verifcode = document.getElementById("id_MAG_input_verifcode");
         if (el_MAG_input_verifcode){
@@ -587,7 +587,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2020-11-14 PR2021-03-15
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
         // function is called by HandleShowAll, MSSSS_Response, select_btn.click, t_MCOL_Save, DatalistDownload after response.setting_dict
         // skip_upload = true when called by DatalistDownload, MSSSS_Response, HandleShowAll
         //  PR2021-09-07 debug: gave error because old btn name was still in saved setting
@@ -800,7 +800,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  FillOptionsExamtype  ================ PR2021-03-08 PR2021-12-02 PR2022-04-13
     function FillOptionsExamtype() {
-        console.log("=== FillOptionsExamtype");
+        //console.log("=== FillOptionsExamtype");
         const has_practexam = !setting_dict.no_practexam;
         const sr_allowed = !!setting_dict.sr_allowed;
         const has_centralexam = !setting_dict.no_centralexam;
@@ -830,10 +830,10 @@ document.addEventListener("DOMContentLoaded", function() {
             b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
 
-    console.log("setting_dict.sel_btn", setting_dict.sel_btn);
-    console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod);
-    console.log("loc.options_examtype", loc.options_examtype);
-    console.log("examperiod", examperiod);
+    //console.log("setting_dict.sel_btn", setting_dict.sel_btn);
+    //console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod);
+    //console.log("loc.options_examtype", loc.options_examtype);
+    //console.log("examperiod", examperiod);
 
         if (el_SBR_select_examtype) {
 
@@ -918,7 +918,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function HandleShowAll() {
         console.log("=== HandleShowAll");
 
-        t_SBR_show_all(FillTblRows);
+        //t_SBR_show_all(FillTblRows);
 
         setting_dict.sel_lvlbase_pk = null;
         setting_dict.sel_level_abbrev = null;
@@ -942,6 +942,9 @@ document.addEventListener("DOMContentLoaded", function() {
         t_MSSSS_display_in_sbr("subject", null);
         t_MSSSS_display_in_sbr("cluster", null);
         t_MSSSS_display_in_sbr("student", null);
+
+        ResetFilterRows();
+
 /*
 // ---  upload new setting
         const selected_pk_dict = {sel_lvlbase_pk: null, sel_sctbase_pk: null, sel_subject_pk: null, sel_student_pk: null};
@@ -1276,6 +1279,9 @@ if(j && !is_status_field){th_filter.classList.add("border_left")};
     // --- add class 'input_text' and text_align
                     // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                         el.classList.add("input_text");
+
+    // --- make el readonly when not requsr_requsr_same_school
+                        el.readOnly = !permit_dict.requsr_same_school;
                     }
 
     // --- add width, text_align, right padding in examnumber
@@ -1400,7 +1406,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                     }
                     //el_div.innerText = (inner_text) ? inner_text : null;
                     el_div.innerText = (inner_text) ? inner_text : "\n"; // \n is necessary to show green field when blank
-                    filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+                    filter_value = (inner_text) ? inner_text.toString().toLowerCase() : null;
                 }
 
     // ---  add attribute title
@@ -1443,23 +1449,51 @@ if(j && !is_status_field){td.classList.add("border_left")};
             const auth3by_id = (data_dict[field_auth3by_id]) ? data_dict[field_auth3by_id] : null;
             const auth4by_id = (data_dict[field_auth4by_id]) ? data_dict[field_auth4by_id] : null;
             const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
-            const blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
+            const is_blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
+            const auth4_must_sign = ["pe_status", "ce_status"].includes(field_name);
 
-            className = b_get_status_iconclass(published_id, blocked, auth1by_id, auth2by_id, auth3by_id, auth4by_id);
 
+    //console.log("field_blocked", field_blocked);
+    //console.log("is_blocked", is_blocked);
+
+            className = b_get_status_auth1234_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3by_id, auth4_must_sign, auth4by_id);
+
+    //console.log("className", className);
             // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
             //filter_value = (published_id) ? "5" :
             //                  (auth1by_id && auth2by_id) ? "4" :
             //                  (auth2by_id ) ? "3" :
             //                  (auth1by_id) ? "2" : "1"; // diamond_0_0 is outlined diamond
 
-           filter_value = (auth1by_id && auth2by_id && auth3by_id && auth4by_id) ? "0" : "1";
+            if(published_id){
+                filter_value = "2";
+            } else if (auth4_must_sign) {
+                filter_value = (auth1by_id && auth2by_id && auth3by_id && auth4by_id)  ? "2" : "1";
+            } else {
+                filter_value = (auth1by_id && auth2by_id && auth3by_id)  ? "2" : "1";
+            };
 
+    //console.log("auth1by_id", auth1by_id);
+    //console.log("auth2by_id", auth2by_id);
+    //console.log("auth3by_id", auth3by_id);
+    //console.log("filter_value", filter_value);
+
+            let formatted_publ_modat = "";
             if (published_id){
                 const field_publ_modat = prefix_str + "_publ_modat" // subj_publ_modat
                 const publ_modat = (data_dict[field_publ_modat]) ? data_dict[field_publ_modat] : null;
                 const modified_dateJS = parse_dateJS_from_dateISO(publ_modat);
-                title_text = loc.Submitted_at + ":\n" + format_datetime_from_datetimeJS(loc, modified_dateJS)
+                formatted_publ_modat = format_datetime_from_datetimeJS(loc, modified_dateJS);
+            };
+            if (is_blocked) {
+                if (published_id){
+                    title_text = loc.blocked_11 + "\n" + loc.blocked_12 + formatted_publ_modat + "\n" + loc.blocked_13;
+                } else {
+                    title_text = loc.blocked_01 + "\n" + loc.blocked_02 + "\n" + loc.blocked_03;
+                };
+            } else if (published_id){
+
+                title_text = loc.Submitted_at + ":\n" + formatted_publ_modat;
 
             } else if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
                 title_text = loc.Approved_by + ": ";
@@ -1851,132 +1885,151 @@ if(j && !is_status_field){td.classList.add("border_left")};
         console.log( "permit_dict", permit_dict);
         //console.log( "permit_dict.permit_approve_grade", permit_dict.permit_approve_grade);
 
-        // only called by field 'se_status', 'pe_status', 'ce_status'
+        // only called by field 'se_status', 'sr_status', 'pe_status', 'ce_status'
         mod_dict = {};
-        if(permit_dict.permit_approve_grade){
 
+        if(permit_dict.permit_approve_grade || permit_dict.permit_block_grade){
+            const tblName = "grade";
             const fldName = get_attr_from_el(el_input, "data-field");
             const tblRow = t_get_tablerow_selected(el_input);
+            const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
+            const data_dict = get_gradedict_by_gradepk(grade_pk);
+            //console.log( "data_dict", data_dict);
 
-// - get auth_index of requsr ( statusindex = 1 when auth1 etc
-            // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
-            // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
-            // this function gives err message when multiple found. (uses b_show_mod_message_html)
-            // get value of highest index
-            const permit_auth_list = b_get_multiple_auth_index_of_requsr(permit_dict)
-            const requsr_auth_index = setting_dict.sel_auth_index;
+            if(!isEmpty(data_dict)){
 
-            //console.log( "requsr_auth_index", requsr_auth_index);
+// - get info of this grade
+                const examtype_2char = fldName.substring(0,2);
+                const is_published = (!!data_dict[examtype_2char + "_published_id"]);
+                const is_blocked = (!!data_dict[examtype_2char + "_blocked"]);
+                const examperiod = data_dict.examperiod;
 
-            if(requsr_auth_index){
-                const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
-                const data_dict = get_gradedict_by_gradepk(grade_pk);
-                //console.log( "data_dict", data_dict);
+// +++ approve grades by school +++++++++++++++++++++
+                if(permit_dict.permit_approve_grade){
 
-                if(!isEmpty(data_dict)){
-                    const tblName = "grade";
-                    if(fldName in data_dict){
+        // - get auth_index of requsr ( statusindex = 1 when auth1 etc
+                    // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
+                    // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
+                    // this function gives err message when multiple found. (uses b_show_mod_message_html)
+                    // get value of highest index
+                    const permit_auth_list = b_get_multiple_auth_index_of_requsr(permit_dict)
+                    const requsr_auth_index = setting_dict.sel_auth_index;
 
-// - get auth info of this grade
-                        const examtype = fldName.substring(0,2);
-                        const is_published = (!!data_dict[examtype + "_published_id"]);
-                        const is_blocked = (!!data_dict[examtype + "_blocked"]);
-                        const examperiod = data_dict.examperiod;
+                    if(requsr_auth_index){
 
-// give message and exit when grade is published
-                        if (fldName === "se_status" && requsr_auth_index === 4 ){
-                            const msg_html = loc.approve_err_list.Corrector_cannot_approve_se;
-                            b_show_mod_message_html(msg_html);
-                        } else if (is_published){
-                            const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_change_approval;
-                            b_show_mod_message_html(msg_html);
-                        } else {
+                        if(fldName in data_dict){
 
-// - requsr_auth_approved = true when requsr_auth has approved in this function
-                            // - auth_dict contains user_id of all auth_index
-                            // auth_dict:  {1: 146, 3: 157}
-                            let requsr_auth_approved = false;
-                            const auth_dict = {};
-                            for (let i = 1, key_str; i < 5; i++) {
-                                key_str = examtype + "_auth" + i + "by_id";
-                                if (data_dict[key_str]){
-                                    if (requsr_auth_index === i) {
-                                        requsr_auth_approved = true;
-                                    };
-                                    auth_dict[i] = data_dict[key_str];
-                                };
-                            };
-                            //console.log("auth_dict", auth_dict)
-                            //console.log("requsr_auth_approved", requsr_auth_approved)
 
-// ---  toggle value of requsr_auth_approved
-                            const new_requsr_auth_approved = !requsr_auth_approved;
-
-// also update requsr_pk in auth_dict;
-                            auth_dict[requsr_auth_index] = (new_requsr_auth_approved) ? permit_dict.requsr_pk : null;
-                            //console.log("auth_dict", auth_dict)
-
-// give message when status_bool = true and grade already approved by this user in different function
-                            // chairperson may also approve as examiner
-                            // secretary may alo approve as examiner
-
-                            let already_approved_by_auth_index = null;
-                            if(new_requsr_auth_approved){
-                                // chairperson cannot also approve as secretary or as corrector
-                                // secretary cannot also approve as chairperson or as corrector
-                                // examiner cannot also approve as corrector
-                                // corrector cannot also approve as chairperson, secretary or examiner
-                                const no_double_auth_index_list = (requsr_auth_index === 1) ? [2, 4] :
-                                                             (requsr_auth_index === 2) ? [1, 4] :
-                                                             (requsr_auth_index === 3) ? [4] :
-                                                             (requsr_auth_index === 4) ? [1, 2, 3] : [];
-
-                                for (let i = 0, no_double_auth_index; no_double_auth_index = no_double_auth_index_list[i]; i++) {
-                                    if (auth_dict[no_double_auth_index] === auth_dict[requsr_auth_index]) {
-                                        already_approved_by_auth_index = no_double_auth_index;
-                                        break;
-                                    };
-                                };
-                            };
-                            if (already_approved_by_auth_index) {
-                                const auth_function = b_get_function_of_auth_index(loc, already_approved_by_auth_index);
-                                const msg_html = loc.approve_err_list.Approved_in_function_of + auth_function.toLowerCase() + ".<br>" + loc.approve_err_list.You_cannot_approve_again;
+    // give message and exit when grade is published
+                            if (fldName === "se_status" && requsr_auth_index === 4 ){
+                                const msg_html = loc.approve_err_list.Corrector_cannot_approve_se;
                                 b_show_mod_message_html(msg_html);
-
+                            } else if (is_published){
+                                const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_change_approval;
+                                b_show_mod_message_html(msg_html);
                             } else {
 
-// - give message when grade /score  has no value
-                                // PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
-                                // no value of exemption is complicated, because of no CE in 2020 and partly in 2021.
-                                // skip no_grade_value of exemption, validate on server
-                                const key_grade = (examtype + "grade");
-                                const no_grade_value = (examperiod !== 4 && !data_dict[key_grade]);
-                                const key_score = (examtype + "score");
-                                const no_score_value = (examtype === "se") ? true : !data_dict[key_score];
-                                // skip msg when removing approved
-                                if (new_requsr_auth_approved && no_grade_value && no_score_value){
-                                    mod_dict = {tblName: tblName, fldName: fldName, examtype: examtype,
-                                                data_dict: data_dict, auth_dict: auth_dict, requsr_auth_index: requsr_auth_index,
-                                                is_published: is_published, is_blocked: is_blocked,
-                                                new_requsr_auth_approved: new_requsr_auth_approved, el_input: el_input};
+    // - requsr_auth_approved = true when requsr_auth has approved in this function
+                                // - auth_dict contains user_id of all auth_index
+                                // auth_dict:  {1: 146, 3: 157}
+                                let requsr_auth_approved = false;
+                                const auth_dict = {};
+                                for (let i = 1, key_str; i < 5; i++) {
+                                    key_str = examtype_2char + "_auth" + i + "by_id";
+                                    if (data_dict[key_str]){
+                                        if (requsr_auth_index === i) {
+                                            requsr_auth_approved = true;
+                                        };
+                                        auth_dict[i] = data_dict[key_str];
+                                    };
+                                };
+                                //console.log("auth_dict", auth_dict)
+                                //console.log("requsr_auth_approved", requsr_auth_approved)
 
-            console.log("mod_dict)", mod_dict);
-                                    ModConfirmOpen("approve", el_input);
+    // ---  toggle value of requsr_auth_approved
+                                const new_requsr_auth_approved = !requsr_auth_approved;
+
+    // also update requsr_pk in auth_dict;
+                                auth_dict[requsr_auth_index] = (new_requsr_auth_approved) ? permit_dict.requsr_pk : null;
+                                //console.log("auth_dict", auth_dict)
+
+    // give message when status_bool = true and grade already approved by this user in different function
+                                // chairperson may also approve as examiner
+                                // secretary may alo approve as examiner
+
+                                let already_approved_by_auth_index = null;
+                                if(new_requsr_auth_approved){
+                                    // chairperson cannot also approve as secretary or as corrector
+                                    // secretary cannot also approve as chairperson or as corrector
+                                    // examiner cannot also approve as corrector
+                                    // corrector cannot also approve as chairperson, secretary or examiner
+                                    const no_double_auth_index_list = (requsr_auth_index === 1) ? [2, 4] :
+                                                                 (requsr_auth_index === 2) ? [1, 4] :
+                                                                 (requsr_auth_index === 3) ? [4] :
+                                                                 (requsr_auth_index === 4) ? [1, 2, 3] : [];
+
+                                    for (let i = 0, no_double_auth_index; no_double_auth_index = no_double_auth_index_list[i]; i++) {
+                                        if (auth_dict[no_double_auth_index] === auth_dict[requsr_auth_index]) {
+                                            already_approved_by_auth_index = no_double_auth_index;
+                                            break;
+                                        };
+                                    };
+                                };
+                                if (already_approved_by_auth_index) {
+                                    const auth_function = b_get_function_of_auth_index(loc, already_approved_by_auth_index);
+                                    const msg_html = loc.approve_err_list.Approved_in_function_of + auth_function.toLowerCase() + ".<br>" + loc.approve_err_list.You_cannot_approve_again;
+                                    b_show_mod_message_html(msg_html);
+
                                 } else {
-                                    UploadApproveGrade(tblName, fldName, examtype, data_dict, auth_dict, requsr_auth_index,
-                                                        is_published, is_blocked, new_requsr_auth_approved, el_input) ;
-                            } //  if (double_approved))
-                            };
-                        }  // if (published_pk)
-                    }  //   if(fldName in data_dict ){
-                }  //  if(!isEmpty(data_dict))
-            }  //if(perm_auth1 || perm_auth1)
 
-        }  // if(permit_dict.permit_approve_grade){
-    }  // UploadToggle
+    // - give message when grade /score  has no value
+                                    // PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
+                                    // no value of exemption is complicated, because of no CE in 2020 and partly in 2021.
+                                    // skip no_grade_value of exemption, validate on server
+                                    const key_grade = (examtype_2char + "grade");
+                                    const no_grade_value = (examperiod !== 4 && !data_dict[key_grade]);
+                                    const key_score = (examtype_2char + "score");
+                                    const no_score_value = (examtype_2char === "se") ? true : !data_dict[key_score];
+                                    // skip msg when removing approved
+                                    if (new_requsr_auth_approved && no_grade_value && no_score_value){
+                                        mod_dict = {tblName: tblName, fldName: fldName, examtype_2char: examtype_2char,
+                                                    data_dict: data_dict, auth_dict: auth_dict, requsr_auth_index: requsr_auth_index,
+                                                    is_published: is_published, is_blocked: is_blocked,
+                                                    new_requsr_auth_approved: new_requsr_auth_approved, el_input: el_input};
+
+                console.log("mod_dict)", mod_dict);
+                                        ModConfirmOpen("approve", el_input);
+                                    } else {
+                                        UploadApproveGrade(tblName, fldName, examtype_2char, data_dict, auth_dict, requsr_auth_index,
+                                                            is_published, is_blocked, new_requsr_auth_approved, el_input) ;
+                                    }; //  if (double_approved))
+                                };  // if (already_approved_by_auth_index)
+                            };  // if (published_pk)
+                        };  // if(fldName in data_dict)
+                    };  //  if(requsr_auth_index)
+
+    // +++ Inspectorate can block grades +++++++++++++++++++++
+                } else if(permit_dict.permit_block_grade ){
+                    if (is_published || is_blocked)  {
+                        mod_dict = {tblName: tblName,
+                                    fldName: fldName,
+                                    grade_pk: grade_pk,
+                                    examtype_2char: examtype_2char,
+                                    examperiod: examperiod,
+                                    is_published: is_published,
+                                    is_blocked: is_blocked,
+                                    data_dict: data_dict,
+                                    el_input: el_input};
+
+                        ModConfirmOpen("block_grade")
+                    };
+                };  // if(permit_dict.permit_approve_grade)
+            }  //   if(!isEmpty(data_dict)){
+        };  // if(permit_dict.permit_approve_grade){
+    };  // UploadToggle
 
 //========= UploadApproveGrade  ============= PR2022-03-12
-    function UploadApproveGrade(tblName, fldName, examtype, data_dict, auth_dict, requsr_auth_index,
+    function UploadApproveGrade(tblName, fldName, examtype_2char, data_dict, auth_dict, requsr_auth_index,
                                 is_published, is_blocked, new_requsr_auth_approved, el_input) {
         console.log( " ==== UploadApproveGrade ====");
 // ---  change icon, before uploading
@@ -1996,8 +2049,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
         } else {
 
             console.log("auth_dict)", auth_dict);
-            const new_class_str = b_get_status_iconclass(is_published, is_blocked,
-                                    auth_dict[1], auth_dict[2], auth_dict[3], auth_dict[4]);
+            const auth4_must_sign = ["pe_status", "ce_status"].includes(fldName);
+            const new_class_str = b_get_status_auth1234_iconclass(is_published, is_blocked,
+                                    auth_dict[1], auth_dict[2], auth_dict[3], auth4_must_sign, auth_dict[4]);
             el_input.className = new_class_str;
             console.log( "new_class_str)", new_class_str);
 
@@ -2010,13 +2064,53 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                    mapid: data_dict.mapid,
                                    grade_pk: data_dict.id,
                                    field: fldName,
-                                   examtype: examtype,
+                                   examtype: examtype_2char,
                                    auth_index: requsr_auth_index
                                 };
             // UploadChanges(upload_dict, urls.url_grade_approve_single);
             UploadChanges(upload_dict, urls.url_grade_approve);
         };
     }  // UploadApproveGrade
+
+
+//========= UploadBlockGrade  ============= PR2022-04-16
+    function UploadBlockGrade(new_is_blocked) {
+        console.log( " ==== UploadBlockGrade ====");
+
+// ---  change icon, before uploading
+        // check for allowed cluster - othet allowed not nedded because they are not downloaded
+        //const is_allowed_cluster = (!data_dict.cluster_id ||
+        //                            !permit_dict.requsr_allowed_clusters ||
+        //                            !permit_dict.requsr_allowed_clusters.length ||
+        //                            permit_dict.requsr_allowed_clusters.includes(data_dict.cluster_id));
+        let is_allowed_cluster = true;
+        if (permit_dict.requsr_allowed_clusters && permit_dict.requsr_allowed_clusters.length) {
+            if (!permit_dict.requsr_allowed_clusters.includes(data_dict.cluster_id)){
+                //is_allowed_cluster = false;
+            };
+        };
+        if (!is_allowed_cluster){
+            b_show_mod_message_html(loc.approve_err_list.No_cluster_permission);
+        } else {
+            // "diamond_1_4" = red diamond: blocked by Inspectorate, published is removed to enable correction
+            // "diamond_2_4" = orange diamond: published after blocked by Inspectorate
+            //const new_class_str =  (new_is_blocked) ?  "diamond_1_4" : "diamond_2_4";
+            //mod_dict.el_input.className = new_class_str;
+            //console.log("new_class_str)", new_class_str);
+
+    // ---  upload changes
+            const mode = (new_is_blocked) ? "block" : "unblock"
+            const upload_dict = { mode: mode,
+                                  grade_pk: mod_dict.data_dict.id,
+                                  examtype: mod_dict.examtype_2char,
+                                  examperiod: mod_dict.examperiod
+                                };
+            console.log("upload_dict)", upload_dict);
+
+            UploadChanges(upload_dict, urls.url_grade_block);
+        };
+    }  // UploadBlockGrade
+
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
@@ -2042,16 +2136,16 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
                     if ("msg_html" in response) {
                         b_show_mod_message_html(response.msg_html)
-                    }
+                    };
                     if ("messages" in response) {
                         b_show_mod_message_dictlist(response.messages)
-                    }
-                    if ("msg_dict" in response && !isEmpty(response.msg_dict)) {
-                        //if (mod_dict.mode && ["submit_test", "approve"].indexOf(mod_dict.mode) > -1){
-                            MAG_UpdateFromResponse (response.msg_dict);
-                        //}
-                    }
-
+                    };
+                    if ("approve_msg_dict" in response && !isEmpty(response.msg_dict)) {
+                        MAG_UpdateFromResponse (response);
+                    };
+                    if ( "approve_msg_html" in response){
+                        MAG_UpdateFromResponse(response)
+                    };
                     if ("updated_grade_rows" in response) {
                         RefreshDataRows("grades", response.updated_grade_rows, grade_rows, true); // true = is_update
                         //$("#id_mod_approve_grade").modal("hide");
@@ -2074,7 +2168,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 // +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++++++++++
 //=========  SBR_display_subject_cluster_student  ================ PR2022-03-03
     function SBR_display_subject_cluster_student() {
-        console.log("===== SBR_display_subject_cluster_student =====");
+        //console.log("===== SBR_display_subject_cluster_student =====");
         let subject_code = null, subject_name = null, student_code = null, student_name = null;
         if(setting_dict.sel_subject_pk){
             if(setting_dict.sel_subject_code){subject_code = setting_dict.sel_subject_code};
@@ -2090,19 +2184,20 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03 PR2022-02-17
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2022-02-17 PR2022-04-17
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
             console.log("mode", mode )
-        // values of mode are : "prelim_ex2"
+        // values of mode are : "approve", "block_grade", "prelim_ex2"
+
+        // mode already has values, got it in UploadToggle
+
         mod_dict.mode = mode;
 
         if (mode === "approve"){
             el_confirm_header.innerText = loc.Approve_grade;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.className = "p-3";
-
-
 
             const msg_html = ["<p class='p-2 border_bg_warning'><b>",
             loc.approve_err_list.Warning,":</b> ",
@@ -2115,6 +2210,40 @@ if(j && !is_status_field){td.classList.add("border_left")};
             el_confirm_btn_save.innerText = loc.OK;
             el_confirm_btn_cancel.innerText = loc.Cancel;
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
+
+        // set focus to save button
+            setTimeout(function (){
+                el_confirm_btn_save.focus();
+            }, 500);
+        // show modal
+            $("#id_mod_confirm").modal({backdrop: true});
+
+        } else if (mode === "block_grade"){
+            el_confirm_header.innerText = (mod_dict.is_blocked) ? loc.Unblock_grade : loc.Block_grade;
+            el_confirm_msg_container.className = "p-3";
+            let msg_html = null;
+            if (mod_dict.is_blocked) {
+                msg_html = ["<p>", loc.MAG_info.unblock_01, "</p>",
+                                    "<p>", loc.Do_you_want_to_continue, "</p>"].join("");
+            } else {
+                msg_html = ["<p>", loc.MAG_info.block_01, "</p>",
+                                    "<p class='p-2'><small>",
+                                        loc.MAG_info.block_02, " ",
+                                        loc.MAG_info.block_03, " ",
+                                        loc.MAG_info.block_04, "</small></p>",
+                                    "<p>", loc.MAG_info.block_05, " ",
+                                        loc.MAG_info.block_06, "</p>",
+                                    "<p>", loc.Do_you_want_to_continue, "</p>"].join("");
+            }
+            el_confirm_msg_container.innerHTML = msg_html;
+
+            el_confirm_loader.className = cls_hide;
+
+            el_confirm_btn_save.innerText = loc.OK;
+            el_confirm_btn_cancel.innerText = loc.Cancel;
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
+
+            console.log("mod_dict", mod_dict )
 
         // set focus to save button
             setTimeout(function (){
@@ -2161,8 +2290,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
                             mod_dict.is_published, mod_dict.is_blocked, mod_dict.new_requsr_auth_approved,
                             mod_dict.el_input) ;
 
-            // close modal
-                $("#id_mod_confirm").modal("hide");
+        } else if (mod_dict.mode === "block_grade"){
+                const new_blocked = !mod_dict.is_blocked;
+
+                UploadBlockGrade(new_blocked) ;
 
         } else if (mod_dict.mode === "prelim_ex2"){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
@@ -2171,11 +2302,11 @@ if(j && !is_status_field){td.classList.add("border_left")};
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
 
-            // close modal
-                $("#id_mod_confirm").modal("hide");
             };
         };
 
+    // close modal
+        $("#id_mod_confirm").modal("hide");
     }  // ModConfirmSave
 
 //=========  ModConfirmResponse  ================ PR2019-06-23
@@ -2249,18 +2380,36 @@ if(j && !is_status_field){td.classList.add("border_left")};
         // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
         } else if (!["se", "pe", "ce", "reex", "reex03", "exem"].includes(setting_dict.sel_examtype) ){
             b_show_mod_message_html(loc.Please_select_examtype);
+        } else if (mode === "submit_ex2" && setting_dict.sel_examtype !== "se") {
+            b_show_mod_message_html(loc.Please_select_schoolexam);
+        } else if (mode === "submit_ex2a" && !["ce", "reex", "reex03"].includes(setting_dict.sel_examtype) ){
+            b_show_mod_message_html(loc.Please_select_correct_exam);
         } else {
 
-            const is_approve_mode = (mode === "approve");
-            const is_submit_ex2_mode = (mode === "submit_ex2");
-            const is_submit_ex2a_mode = (mode === "submit_ex2a");
+// PR2022-03-13 debug: also check on allowed subjects, levels and clusters
+
+// put info in mod_MAG_dict
+            // modes are 'approve' 'submit_test' 'submit_save'
+            mod_MAG_dict.mode = mode;
+            mod_MAG_dict.step = 0;
+
+            mod_MAG_dict.auth_index = setting_dict.sel_auth_index;
+
+            mod_MAG_dict.may_test = true;
+            mod_MAG_dict.test_is_ok = false;
+            mod_MAG_dict.submit_is_ok = false;
+            mod_MAG_dict.is_reset = false;
+
+            mod_MAG_dict.is_approve_mode = (mode === "approve");
+            mod_MAG_dict.is_submit_ex2_mode = (mode === "submit_ex2");
+            mod_MAG_dict.is_submit_ex2a_mode = (mode === "submit_ex2a");
 
 // --- get list of auth_index of requsr
             const requsr_auth_list = [];
             if (permit_dict.usergroup_list.includes("auth1")){requsr_auth_list.push(1)};
             if (permit_dict.usergroup_list.includes("auth2")){requsr_auth_list.push(2)};
            // add examiner and commissiner only when mode = approve
-            if (is_approve_mode){
+            if (mod_MAG_dict.is_approve_mode){
                 if (permit_dict.usergroup_list.includes("auth3")){requsr_auth_list.push(3)};
                 if (permit_dict.usergroup_list.includes("auth4")){requsr_auth_list.push(4)};
             };
@@ -2286,23 +2435,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 b_show_mod_message_html(info_txt);
             };
 
-// PR2022-03-13 debug: also check on allowed subjects, levels and clusters
-
-// put info in mod_MAG_dict
-            // modes are 'approve' 'submit_test' 'submit_save'
-            mod_MAG_dict.mode = mode;
-            mod_MAG_dict.step = 0;
-            mod_MAG_dict.is_approve_mode = is_approve_mode;
-            mod_MAG_dict.is_submit_ex2_mode = is_submit_ex2_mode;
-            mod_MAG_dict.is_submit_ex2a_mode = is_submit_ex2a_mode;
-
-            mod_MAG_dict.auth_index = setting_dict.sel_auth_index;
-
-            mod_MAG_dict.may_test = true;
-            mod_MAG_dict.test_is_ok = false;
-            mod_MAG_dict.submit_is_ok = false;
-            mod_MAG_dict.is_reset = false;
-
 // get has_permit
             mod_MAG_dict.permit_same_school = (permit_dict.requsr_same_school) ?
                                         (mod_MAG_dict.is_approve_mode && permit_dict.permit_approve_grade) ||
@@ -2321,13 +2453,13 @@ if(j && !is_status_field){td.classList.add("border_left")};
             if (mod_MAG_dict.has_permit && mod_MAG_dict.auth_index){
 
 // --- get header_txt and subheader_txt
-                const header_txt = (is_approve_mode) ? loc.Approve_grades :
-                                    (is_submit_ex2_mode) ? loc.Submit_Ex2_form :
-                                    (is_submit_ex2a_mode) ? loc.Submit_Ex2A_form : null;
+                const header_txt = (mod_MAG_dict.is_approve_mode) ? loc.Approve_grades :
+                                    (mod_MAG_dict.is_submit_ex2_mode) ? loc.Submit_Ex2_form :
+                                    (mod_MAG_dict.is_submit_ex2a_mode) ? loc.Submit_Ex2A_form : null;
                 el_MAG_header.innerText = header_txt;
-                const subheader_txt = (is_approve_mode) ? loc.MAG_info.subheader_approve :
-                                      (is_submit_ex2_mode) ? loc.MAG_info.subheader_submit_ex2 :
-                                      (is_submit_ex2a_mode) ? loc.MAG_info.subheader_submit_ex2a : null;
+                const subheader_txt = (mod_MAG_dict.is_approve_mode) ? loc.MAG_info.subheader_approve :
+                                      (mod_MAG_dict.is_submit_ex2_mode) ? loc.MAG_info.subheader_submit_ex2 :
+                                      (mod_MAG_dict.is_submit_ex2a_mode) ? loc.MAG_info.subheader_submit_ex2a : null;
                 el_MAG_subheader.innerText = subheader_txt;
 
 // --- get examperiod and examtype text
@@ -2349,7 +2481,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 el_MAG_examtype.innerText = examtype_caption
 
 // --- hide filter subject, cluster when submitting Ex2 Ex2a form. Leave level visible if exists, MPC must be able to submit per level
-                const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req || is_approve_mode;
+                const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req || mod_MAG_dict.is_approve_mode;
                 add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
 
 // --- hide level textbox when not sel_dep_level_req
@@ -2384,7 +2516,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 // --- get approved_by
                 if (el_MAG_approved_by_label){
-                    el_MAG_approved_by_label.innerText = ( (is_submit_ex2_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
+                    el_MAG_approved_by_label.innerText = ( (mod_MAG_dict.is_submit_ex2_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
                 }
                 if (el_MAG_approved_by){
                     el_MAG_approved_by.innerText = permit_dict.requsr_name;
@@ -2402,13 +2534,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
                         loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
                 };
 
-
-// --- show info and hide loader
-                // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
-                add_or_remove_class(el_MAG_info_container, cls_hide, false)
-                add_or_remove_class(el_MAG_loader, cls_hide, true);
-
 // --- reset ok button
+                MAG_SetMsgContainer()
+                MAG_SetInfoContainer();
                 MAG_SetBtnSaveDeleteCancel();
 
 // --- open modal
@@ -2419,26 +2547,48 @@ if(j && !is_status_field){td.classList.add("border_left")};
     };  // MAG_Open
 
 //=========  MAG_Save  ================
-    function MAG_Save (mode) {
-        //console.log("===  MAG_Save  =====") ;
-        // mode = 'save' or 'delete'
+    function MAG_Save (save_mode) {
+        console.log("===  MAG_Save  =====") ;
+        console.log("save_mode", save_mode) ;
+        // save_mode = 'save' or 'delete'
 
         if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade) {
 
-            mod_MAG_dict.is_reset = (mode === "delete");
+            mod_MAG_dict.is_reset = (save_mode === "delete");
+
+    console.log("mod_MAG_dict.step", mod_MAG_dict.step)
 
             //  upload_modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
-            let upload_mode = null;
+            const upload_dict = {
+                table: "grade",
+                form: (mod_MAG_dict.is_submit_ex2a_mode) ? "ex2a" : "ex2",
+                auth_index: mod_MAG_dict.auth_index,
+                now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
+                };
+
+            let url_str = null;
             if (mod_MAG_dict.is_approve_mode){
+                url_str = urls.url_grade_approve;
                 if (mod_MAG_dict.is_reset) {
-                    upload_mode = "approve_reset";
+                    upload_dict.mode = "approve_reset";
                 } else {
-                    upload_mode = (mod_MAG_dict.test_is_ok) ? "approve_save" : "approve_test";
-                }
-            } else if (mod_MAG_dict.is_submit_ex2_mode){
-                upload_mode = (mod_MAG_dict.test_is_ok) ? "submit_save" : "submit_test";
-            } else if (mod_MAG_dict.is_submit_ex2a_mode){
-                upload_mode = (mod_MAG_dict.test_is_ok) ? "submit_save" : "submit_test";
+                    upload_dict.mode = (mod_MAG_dict.test_is_ok) ? "approve_save" : "approve_test";
+                };
+            } else {
+                if (mod_MAG_dict.step === 1 && mod_MAG_dict.test_is_ok){
+                    url_str = urls.url_studsubj_send_email_exform;
+                } else if (mod_MAG_dict.is_submit_ex2_mode || mod_MAG_dict.is_submit_ex2a_mode){
+                    url_str = urls.url_grade_submit_ex2;
+
+                    if (mod_MAG_dict.test_is_ok){
+                        upload_dict.mode = "submit_save";
+
+                        upload_dict.verificationcode = el_MAG_input_verifcode.value
+                        upload_dict.verificationkey = mod_MAG_dict.verificationkey;
+                    } else {
+                        upload_dict.mode = "submit_test";
+                    };
+                };
             };
 
     // ---  show loader
@@ -2450,22 +2600,14 @@ if(j && !is_status_field){td.classList.add("border_left")};
             };
 
     // ---  hide info box and msg box
-            b_show_hide_selected_elements_byClass("tab_show", "-", el_mod_approve_grade);
+            add_or_remove_class(el_MAG_msg_container, cls_hide, true)
+            add_or_remove_class(el_MAG_info_container, cls_hide, true)
 
     // ---  hide delete btn
             add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
 
-            const url_str = (mod_MAG_dict.is_approve_mode) ? urls.url_grade_approve :
-                            (mod_MAG_dict.is_submit_ex2_mode) ? urls.url_grade_submit_ex2 :
-                            (mod_MAG_dict.is_submit_ex2a_mode) ? urls.url_grade_submit_ex2a : null;
+    console.log("upload_dict", upload_dict);
 
-    // ---  upload changes
-            const upload_dict = { table: "grade",
-                                   mode: upload_mode,
-                                   auth_index: mod_MAG_dict.auth_index,
-                                   now_arr: get_now_arr()  // only for timestamp on filename saved Ex-form
-                                   }
-            //console.log("upload_dict", upload_dict);
             UploadChanges(upload_dict, url_str);
 // hide modal when clicked on save btn when test_is_ok
             if (mod_MAG_dict.test_is_ok){
@@ -2473,7 +2615,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
             };
         }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
     };  // MAG_Save
-
 
 //=========  MAG_UploadAuthIndex  ================ PR2022-03-13
     function MAG_UploadAuthIndex (el_select) {
@@ -2492,102 +2633,32 @@ if(j && !is_status_field){td.classList.add("border_left")};
     }; // MAG_UploadAuthIndex
 
 
-//=========  MAG_UpdateFromResponse  ================ PR2021-02-08
-    function MAG_UpdateFromResponse (msg_dict) {
+//=========  MAG_UpdateFromResponse  ================ PR2021-02-08 PR2022-04-18
+    function MAG_UpdateFromResponse (response) {
         console.log("===  MAG_UpdateFromResponse  =====") ;
-        console.log("msg_dict", msg_dict);
-        console.log("msg_dict.warning", msg_dict.warning);
-        //console.log("mod_MAG_dict", mod_MAG_dict);
 
-        mod_MAG_dict.step += 1,
+        mod_MAG_dict.step += 1;
+        console.log("mod_MAG_dict.step", mod_MAG_dict.step) ;
 
-// ---  hide loader
-        add_or_remove_class(el_MAG_loader, cls_hide, true);
-        let msg01_txt = null,  msg02_txt = null, msg03_txt = null, msg_04_txt = null;
+        mod_MAG_dict.verification_is_ok = !!response.verification_is_ok;
+        mod_MAG_dict.verificationkey = (mod_MAG_dict.verification_is_ok) ? response.verificationkey : null;
 
-// make message container green when grades can be published, red otherwise
-        // msg_dict.saved > 0 when grades are approved or published
-
-        mod_MAG_dict.may_test = false;
-        mod_MAG_dict.test_is_ok = msg_dict.test_is_ok;
-        mod_MAG_dict.has_already_approved = (!!msg_dict.already_approved)
-        mod_MAG_dict.has_already_published = (!!msg_dict.already_published)
-        mod_MAG_dict.has_saved = !!msg_dict.saved;
-        mod_MAG_dict.submit_is_ok = !!msg_dict.now_saved;  // submit_is_ok when records are saved
-
-       // const border_class = (mod_MAG_dict.test_is_ok) ? "border_bg_valid" : "border_bg_invalid";
-        //console.log("mod_MAG_dict.test_is_ok", mod_MAG_dict.test_is_ok) ;
-        //const bg_class = (mod_MAG_dict.test_is_ok) ? "border_bg_valid" : "border_bg_invalid" // "border_bg_message"
-        //el_MAG_msg_container.className = bg_class
-        let bg_class_ok = (mod_MAG_dict.test_is_ok || mod_MAG_dict.has_saved );
-
-        const bg_class = (!bg_class_ok) ? "border_bg_invalid" : (msg_dict.warning) ? "border_bg_warning" : "border_bg_valid";
-        el_MAG_msg_container.classList.remove("border_bg_invalid");
-        el_MAG_msg_container.classList.remove("border_bg_warning");
-        el_MAG_msg_container.classList.remove("border_bg_valid");
-        el_MAG_msg_container.classList.add(bg_class);
-
+// create message in el_MAG_msg_container
+        MAG_SetMsgContainer(response);
+        MAG_SetInfoContainer();
 // hide ok button when not mod_MAG_dict.test_is_ok
         MAG_SetBtnSaveDeleteCancel ();
-
-// create message in container
-        el_MAG_msg_container.innerText = null
-
-// --- create element with tag from field_tags
-
-        console.log("msg_dict", msg_dict) ;
-        const array = ["count_text", "skip_text", "already_published_text", "no_value_text", "auth_missing_text",
-            "double_approved_text", "already_approved_text", "saved_text", "saved_text2"]
-        for (let i = 0, el, key; key = array[i]; i++) {
-            if(key in msg_dict) {
-        console.log("key", key) ;
-        console.log("msg_dict[key]", msg_dict[key]) ;
-                el = document.createElement("p");
-                el.innerText = msg_dict[key];
-                if (key === "count_text") {
-                    el.classList.add("pb-2");
-                } else if (key === "saved_text") {
-                    el.classList.add("pt-2");
-                } else if (key === "saved_text2") {
-                    el.classList.add("pt-0");
-                } else if (key === "skip_text") {
-                } else {
-                    el.classList.add("pl-4");
-                };
-        console.log("el", el) ;
-                el_MAG_msg_container.appendChild(el);
-            };
-        };
-
-        if(msg_dict.file_name) {
-            const el = document.createElement("p");
-            el.innerHTML = msg_dict.file_name;
-            el_MAG_msg_container.appendChild(el);
-        };
-
-        if(msg_dict.warning) {
-            const el = document.createElement("div");
-            el.innerHTML = msg_dict.warning;
-            el_MAG_msg_container.appendChild(el);
-        };
-
-
-       // msg01_txt = "The selection contains " + msg_dict.count + " grades."
-       // if (msg_dict.no_value){msg02_txt = " -  " + msg_dict.no_value + " grades have no value. They will be skipped."}
-       // if (msg_dict.auth_missing){msg03_txt = " -  " + msg_dict.auth_missing + " grades are not completely authorized. They will be skipped"}
-        //if (msg_dict.already_published){msg03_txt = " -  " + msg_dict.already_published + " grades are already submitted.They will be skipped."}
-
 // hide modal after submitting, only when is_approve_mode
         if(mod_MAG_dict.step === 2 && mod_MAG_dict.is_approve_mode){
             $("#id_mod_approve_grade").modal("hide");
-        }
+        };
 
     };  // MAG_UpdateFromResponse
 
 //=========  MAG_SetBtnSaveDeleteCancel  ================ PR2021-02-08
      function MAG_SetBtnSaveDeleteCancel() {
-        //console.log("===  MAG_SetBtnSaveDeleteCancel  =====") ;
-//
+        console.log("===  MAG_SetBtnSaveDeleteCancel  =====") ;
+
         const is_approve_mode = mod_MAG_dict.is_approve_mode;
         const is_submit_ex2_mode = mod_MAG_dict.is_submit_ex2_mode;
         const is_submit_ex2a_mode = mod_MAG_dict.is_submit_ex2a_mode;
@@ -2602,22 +2673,13 @@ if(j && !is_status_field){td.classList.add("border_left")};
         const has_already_published = !!mod_MAG_dict.has_already_published;
         const has_saved = !!mod_MAG_dict.has_saved;
 
-// put info text in el_MAG_info_container, only on open modal
-
-        console.log("setting_dict.examperiod", setting_dict.examperiod) ;
-
-        let inner_html = "";
-        if(!step){
-            const ex2_key = ( [1,4].includes(setting_dict.sel_examperiod)) ? "ex2" : "ex2a";
-            const keys = (mod_MAG_dict.is_approve_mode) ?
-                            ['approve_0', 'approve_1', "approve_2_" + ex2_key] :
-                            ['submit_0', 'submit_1_' + ex2_key, "submit_2"];
-        console.log("keys", keys) ;
-            for (let i = 0, el, key; key = keys[i]; i++) {
-                inner_html += "<div><small>" + loc.MAG_info[key] + "</div></small>";
-            }
-        }
-        el_MAG_info_container.innerHTML = inner_html
+        console.log("mod_MAG_dict.step", mod_MAG_dict.step) ;
+        console.log("is_approve_mode", is_approve_mode) ;
+        console.log("is_submit_ex2_mode", is_submit_ex2_mode) ;
+        console.log("is_submit_ex2a_mode", is_submit_ex2a_mode) ;
+        console.log("may_test", may_test) ;
+        console.log("test_is_ok", test_is_ok) ;
+        console.log("submit_is_ok", submit_is_ok) ;
 
 // ---  hide save button when not can_publish
         let show_save_btn = false;
@@ -2627,11 +2689,27 @@ if(j && !is_status_field){td.classList.add("border_left")};
             show_save_btn = (may_test || test_is_ok);
         }
         add_or_remove_class(el_MAG_btn_save, cls_hide, !show_save_btn);
-        el_MAG_btn_save.innerText = (is_approve_mode && test_is_ok) ? loc.Approve_grades :
-                                    (is_submit_ex2_mode && test_is_ok) ? loc.Submit_Ex2_form : loc.Check_grades;
-                                    (is_submit_ex2a_mode && test_is_ok) ? loc.Submit_Ex2A_form : loc.Check_grades;
-        let btn_text = (submit_is_ok || (!may_test && !test_is_ok) || (!submit_is_ok)) ? loc.Close : loc.Cancel;
-        el_MAG_btn_cancel.innerText = btn_text;
+
+        let save_btn_txt = loc.Check_grades;
+        if (step === 0) {
+
+        } else if (step === 1) {
+            if (test_is_ok){
+                save_btn_txt = (is_approve_mode) ? loc.Approve_grades : loc.Request_verifcode;
+            };
+        } else if (step === 2) {
+            if (test_is_ok){
+                save_btn_txt = (is_approve_mode) ? loc.Approve_grades :
+                                (is_approve_mode) ? loc.Approve_grades :
+                                (is_approve_mode) ? loc.Approve_grades : loc.Check_grades ;
+            } else {
+
+            }
+        }
+        el_MAG_btn_save.innerText = save_btn_txt;
+
+        let btn_cancel_text = (submit_is_ok || (!may_test && !test_is_ok) || (!submit_is_ok)) ? loc.Close : loc.Cancel;
+        el_MAG_btn_cancel.innerText = btn_cancel_text;
 
 // ---  show only the elements that are used in this tab
         let show_class = "tab_step_" + step;
@@ -2648,10 +2726,177 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
      } //  MAG_SetBtnSaveDeleteCancel
 
+//=========  MAG_SetMsgContainer  ================ PR2021-02-08 PR2022-04-17
+     function MAG_SetMsgContainer(response) {
+        console.log("===  MAG_SetMsgContainer  =====") ;
+
+// --- show info and hide loader
+        add_or_remove_class(el_MAG_loader, cls_hide, true);
+
+        el_MAG_msg_container.innerHTML = null;
+        let show_msg_container = false;
+
+
+        console.log("mod_MAG_dict.step", mod_MAG_dict.step);
+
+        const show_input_verifcode = (response && !!response.approve_msg_html);
+        add_or_remove_class(el_MAG_input_verifcode.parentNode, cls_hide, !show_input_verifcode);
+
+
+        console.log("show_input_verifcode", show_input_verifcode);
+        if (show_input_verifcode){
+            show_msg_container = true;
+
+            mod_MAG_dict.verificationkey = response.verificationkey
+
+            el_MAG_msg_container.className = "mt-2";
+            el_MAG_msg_container.innerHTML = response.approve_msg_html
+
+            console.log("response.approve_msg_html", response.approve_msg_html);
+            if (show_input_verifcode){set_focus_on_el_with_timeout(el_MAG_input_verifcode, 150)};
+
+        } else if (response && !isEmpty(response.msg_dict)){
+
+            const msg_dict = response.msg_dict;
+            console.log("msg_dict", msg_dict);
+            console.log("response.test_is_ok", response.test_is_ok);
+            //console.log("mod_MAG_dict", mod_MAG_dict);
+
+            const test_is_ok = (!!response.test_is_ok)
+
+    // ---  hide loader
+            add_or_remove_class(el_MAG_loader, cls_hide, true);
+            let msg01_txt = null,  msg02_txt = null, msg03_txt = null, msg_04_txt = null;
+
+    // make message container green when grades can be published, red otherwise
+            // msg_dict.saved > 0 when grades are approved or published
+
+            mod_MAG_dict.may_test = false;
+            mod_MAG_dict.test_is_ok = !!response.test_is_ok;
+            mod_MAG_dict.has_already_approved = (msg_dict && !!msg_dict.already_approved)
+            mod_MAG_dict.has_already_published = (msg_dict && !!msg_dict.already_published)
+            mod_MAG_dict.has_saved = msg_dict && !!msg_dict.saved;
+            mod_MAG_dict.submit_is_ok = msg_dict && !!msg_dict.now_saved;  // submit_is_ok when records are saved
+
+
+
+            show_msg_container = true
+           // const border_class = (mod_MAG_dict.test_is_ok) ? "border_bg_valid" : "border_bg_invalid";
+            //console.log("mod_MAG_dict.test_is_ok", mod_MAG_dict.test_is_ok) ;
+            //const bg_class = (mod_MAG_dict.test_is_ok) ? "border_bg_valid" : "border_bg_invalid" // "border_bg_message"
+            //el_MAG_msg_container.className = bg_class
+            let bg_class_ok = (mod_MAG_dict.test_is_ok || mod_MAG_dict.has_saved );
+            const bg_class = (!bg_class_ok) ? "border_bg_invalid" : (msg_dict.warning) ? "border_bg_warning" : "border_bg_valid";
+
+        console.log("bg_class", bg_class) ;
+            el_MAG_msg_container.className = "mt-2 p-2 " + bg_class;
+
+    // create message in container
+            const array = ["count_text", "skip_text", "already_published_text", "no_value_text", "auth_missing_text",
+                "double_approved_text", "already_approved_text", "saved_text", "saved_text2"]
+            for (let i = 0, el, key; key = array[i]; i++) {
+                if(key in msg_dict) {
+        //console.log("key", key) ;
+        //console.log("msg_dict[key]", msg_dict[key]) ;
+                    el = document.createElement("p");
+                    el.innerText = msg_dict[key];
+                    if (key === "count_text") {
+                        el.classList.add("pb-2");
+                    } else if (key === "saved_text") {
+                        el.classList.add("pt-2");
+                    } else if (key === "saved_text2") {
+                        el.classList.add("pt-0");
+                    } else if (key === "skip_text") {
+                    } else {
+                        el.classList.add("pl-4");
+                    };
+                    el_MAG_msg_container.appendChild(el);
+                };
+            };
+            if(msg_dict.file_name) {
+                const el = document.createElement("p");
+                el.innerHTML = msg_dict.file_name;
+                el_MAG_msg_container.appendChild(el);
+            };
+
+            if(msg_dict.warning) {
+                const el = document.createElement("div");
+                el.innerHTML = msg_dict.warning;
+                el_MAG_msg_container.appendChild(el);
+            };
+
+           // msg01_txt = "The selection contains " + msg_dict.count + " grades."
+           // if (msg_dict.no_value){msg02_txt = " -  " + msg_dict.no_value + " grades have no value. They will be skipped."}
+           // if (msg_dict.auth_missing){msg03_txt = " -  " + msg_dict.auth_missing + " grades are not completely authorized. They will be skipped"}
+            //if (msg_dict.already_published){msg03_txt = " -  " + msg_dict.already_published + " grades are already submitted.They will be skipped."}
+        };
+
+        add_or_remove_class(el_MAG_msg_container, cls_hide, !show_msg_container)
+    };  // MAG_SetMsgContainer
+
+//=========  MAG_SetInfoContainer  ================ PR2022-04-17
+     function MAG_SetInfoContainer() {
+        console.log("===  MAG_SetInfoContainer  =====") ;
+        console.log("mod_MAG_dict.step", mod_MAG_dict.step) ;
+        console.log("mod_MAG_dict.test_is_ok", mod_MAG_dict.test_is_ok) ;
+
+        el_MAG_info_container.innerHTML = null;
+
+// put info text in el_MAG_info_container, only on open modal
+        // el_MAG_info_container contains: 'Klik op 'Cijfers controleren' om de cijfers te controleren voordat ze worden ingediend.
+        // only visible on open modal
+        // Klik op 'Verificatiecode aanvragen', dan sturen we je een e-mail met de verificatiecode. De verificatiecode blijft 30 minuten geldig.
+
+        let inner_html = "";
+        if (mod_MAG_dict.step === 0) {
+            // step 0: when form opens
+            const ex2_key = ( ["se", "sr"].includes(setting_dict.sel_examtype) ) ? "ex2" :
+                            ( ["pe", "ce"].includes(setting_dict.sel_examtype) ) ? "ex2a" : "ex2";
+        console.log("ex2_key", ex2_key) ;
+            const keys = (mod_MAG_dict.is_approve_mode) ?
+                            ["approve_0", "approve_1_" + ex2_key, "approve_2_" + ex2_key] :
+                            ["submit_0", "submit_1", "submit_2"];
+            for (let i = 0, el, key; key = keys[i]; i++) {
+                inner_html += "<div><small>" + loc.MAG_info[key] + "</div></small>";
+            }
+        } else if (mod_MAG_dict.step === 1) {
+            if(mod_MAG_dict.is_submit_ex2_mode || mod_MAG_dict.is_submit_ex2a_mode){
+                if(mod_MAG_dict.test_is_ok){
+                    inner_html = ["<div class='py-0'><small>", loc.MAG_info.verif_01,
+                                "<br>", loc.MAG_info.verif_02,
+                                "<br>", loc.MAG_info.verif_03,
+                                "</small></div>"].join("");
+                };
+            };
+        };
+        add_or_remove_class(el_MAG_info_container, cls_hide, !inner_html)
+        el_MAG_info_container.innerHTML = inner_html
+    };  // MAG_SetInfoContainer
+
+
+//=========  MAG_InputVerifcode  ================ PR2022-04-18
+     function MAG_InputVerifcode(el_input, event_key) {
+        console.log("===  MAG_InputVerifcode  =====") ;
+
+        if(event_key && event_key === "Enter"){
+
+        }
+        // enable save btn when el_input has value
+        const disable_save_btn = !el_input.value;
+        //console.log("disable_save_btn", disable_save_btn) ;
+        el_MAG_btn_save.disabled = disable_save_btn;
+
+        if(!disable_save_btn && event_key && event_key === "Enter"){
+            MAG_Save("save")
+        }
+     };  // MAG_InputVerifcode
+
+/////////////////////////////////////////////
+
 //========= MOD NOTE Open====================================
     function ModNote_Open (el_input) {
-        //console.log("===  ModNote_Open  =====") ;
-        //console.log("el_input", el_input) ;
+        console.log("===  ModNote_Open  =====") ;
+        console.log("el_input", el_input) ;
 
     // get has_note from grade_map
         const grade_dict = get_datadict_by_el(el_input);
@@ -2672,14 +2917,23 @@ if(j && !is_status_field){td.classList.add("border_left")};
             // hide external note if no permit write_note_extern
             add_or_remove_class(el_ModNote_external, cls_hide, !permit_dict.permit_write_note_extern)
 
-            // hide 'x' option when not inspection
-            const el_ModNote_memo_icon4 = document.getElementById("id_ModNote_memo_icon4")
-            add_or_remove_class(el_ModNote_memo_icon4, cls_hide, !permit_dict.requsr_role_insp)
+            // hide option icons when not inspection
+            const el_ModNote_memo_icon4 = document.getElementById("id_ModNote_memo_external")
+            const icon_els = el_ModNote_external.children
+            if (!permit_dict.requsr_role_insp){
+                for (let i = 0, el; el = el_ModNote_external.children[i]; i++) {
+                    const data_icon = el.getAttribute("data-icon")
+                    if (["3", "4", "6"].includes(data_icon)){
+                        el.classList.add(cls_hide)
+                    };
+                };
+            };
 
     // get tr_selected
             let tr_selected = t_get_tablerow_selected(el_input)
 
             if(!isEmpty(grade_dict)){
+
                 let headertext = (grade_dict.fullname) ? grade_dict.fullname + "\n" : "";
                 if(grade_dict.subj_code) { headertext += grade_dict.subj_name};
                 el_ModNote_header.innerText = headertext;
@@ -2709,7 +2963,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
 //========= ModNote_Save============== PR2020-10-15
     function ModNote_Save () {
-        //console.log("===  ModNote_Save  =====");
+        console.log("===  ModNote_Save  =====");
         const filename = document.getElementById("id_ModNote_filedialog").value;
 
         if(permit_dict.permit_write_note_intern || permit_dict.permit_permit_write_note_extern){
@@ -2722,6 +2976,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
             const file_name = (file) ? file.name : null;
             const file_size = (file) ? file.size : 0;
 
+        console.log("file_name", file_name);
            // may check size or type here with
             // ---  upload changes
             const upload_dict = { table: mod_note_dict.table,
@@ -2729,8 +2984,8 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                    studsubj_pk: mod_note_dict.studsubj_pk,
                                    examperiod: mod_note_dict.examperiod,
                                    note: note,
-                                   note_status: note_status,
                                    is_internal_note: mod_note_dict.is_internal,
+                                   note_status: note_status,
                                    file_type: file_type,
                                    file_name: file_name,
                                    file_size: file_size
@@ -3061,14 +3316,14 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-        console.log("update_dict", update_dict);
+        //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
 
 // ---  get list of columns that are not updated because of errors
             const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
-    console.log("error_columns", error_columns);
+    //console.log("error_columns", error_columns);
 
 // ---  update or add update_dict in subject_map
             let updated_columns = [];
@@ -3087,23 +3342,23 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // ---  create list of updated fields
             if(!isEmpty(data_dict)){
                 for (const [key, new_value] of Object.entries(update_dict)) {
-                    if (key in data_dict){
-                        if (new_value !== data_dict[key]) {
+                    const mapped_key = (key === "se_blocked") ? "se_status" :
+                                        (key === "sr_blocked") ? "sr_status" :
+                                        (key === "pe_blocked") ? "pe_status" :
+                                        (key === "ce_blocked") ? "ce_status" : key;
 
-    console.log("key", key);
-    console.log("new_value", new_value);
-    console.log("data_dict[key]", data_dict[key]);
+                    if (mapped_key in data_dict){
+                        if (new_value !== data_dict[mapped_key]) {
+                            updated_columns.push(mapped_key)
 
-                            updated_columns.push(key)
+        // ---  put updated map_dict back in data_map
+                        if(key in data_dict){
+                            data_dict[key] = update_dict[key];
+                        };
+
                 }}};
     console.log("updated_columns", updated_columns);
 
-        // ---  put updated map_dict back in data_map
-                if(updated_columns.length){
-                    for (let i = 0, key; key = updated_columns[i]; i++) {
-                        if(key in data_dict){
-                            data_dict[key] = update_dict[key];
-                }}};
 
         // ---  make update in tblRow
                 const tblRow = document.getElementById(data_dict.mapid);
@@ -3116,11 +3371,12 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                             el = td.children[0];
                             if(el){
                                 el_fldName = get_attr_from_el(el, "data-field")
+    console.log(",,,,,,,,,,,,el_fldName", el_fldName);
                                 const is_updated_field = updated_columns.includes(el_fldName);
                                 const is_err_field = error_columns.includes(el_fldName);
+    console.log(",,,,,,,,,,,,is_updated_field", el_fldName);
         // update field and make field green when field name is in updated_columns
                                 if(is_updated_field){
-    console.log(",,,,,,,,,,,,is_updated_field", el_fldName);
                                     UpdateField(el, update_dict);
                                     if(!skip_show_ok){ShowOkElement(el)};
                                 } else if( is_err_field){
@@ -3150,7 +3406,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(grade_rows, "id", grade_pk);
         return  found_dict;
     };  // get_datadict_by_el
-
 
 //=========  fill_data_list  ================ PR2020-10-07
     function fill_data_list(data_rows) {
@@ -3200,7 +3455,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23 PR2022-03-09
     function HandleFilterToggle(el_input) {
-        //console.log( "===== HandleFilterToggle  ========= ");
+        console.log( "===== HandleFilterToggle  ========= ");
         //console.log( "el_input", el_input);
 
     // - get col_index and filter_tag from  el_input
@@ -3214,24 +3469,24 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         const field_name = get_attr_from_el(el_input, "data-field");
         const is_status_field = (field_name && field_name.includes("status"))
 
-    //console.log( "col_index", col_index);
-    //console.log( "filter_tag", filter_tag);
-    //console.log( "field_name", field_name);
-    //console.log( "is_status_field", is_status_field);
+    console.log( "col_index", col_index);
+    console.log( "filter_tag", filter_tag);
+    console.log( "field_name", field_name);
+    console.log( "is_status_field", is_status_field);
 
     // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
         const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
         const filter_value = (filter_array[1]) ? filter_array[1] : "0";
 
-    //console.log( "filter_array", filter_array);
-    //console.log( "filter_value", field_name);
+    console.log( "filter_array", filter_array);
+    console.log( "filter_value", field_name);
 
         let new_value = "0", icon_class = "tickmark_0_0", title = "";
         if(filter_tag === "toggle") {
             // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
 // - toggle filter value
             new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
-    //console.log( "new_value", new_value);
+    console.log( "new_value", new_value);
 
 // - get new icon_class
             if (field_name === "note_status"){
@@ -3244,11 +3499,11 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         };
         el_input.className = icon_class;
         el_input.title = title
-    //console.log( "icon_class", icon_class);
+    console.log( "icon_class", icon_class);
 
 // - put new filter value in filter_dict
         filter_dict[col_index] = [filter_tag, new_value]
-    //console.log( "filter_dict", filter_dict);
+    console.log( "filter_dict", filter_dict);
 
         t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
 
@@ -3263,7 +3518,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;
 
-        b_clear_dict(filter_dict)
+        b_clear_dict(filter_dict);
 
         t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
 
@@ -3290,7 +3545,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 };
             };
        };
-        FillTblRows();
+       FillTblRows();
     }  // function ResetFilterRows
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -3547,8 +3802,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             locked: field_is_locked,
             confirmed: field_is_confirmed
         }
-
-
 
         let header_text = null;
         if (fldName === "stat_start_conf") {
@@ -4024,6 +4277,54 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
        return [output_text, msg_html]
     }  // ValidateGrade
 ////////////////////////////////////////////////
+
+//========= get_column_is_hidden  ====== PR2022-04-17
+    function get_column_is_hidden() {
+    // ---  get list of hidden columns
+        // copy col_hidden from mod_MCOL_dict.cols_hidden
+        const col_hidden = [];
+        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+
+// - hide columns that are not in use this examyear or this department PR2021-12-04
+        // PR2021-12-04 use spread operator. from https://stackoverflow.com/questions/4842993/javascript-push-an-entire-list
+
+        // hide srgrade when not sr_allowed
+        if(!setting_dict.sr_allowed){col_hidden.push(...["srgrade", "sr_status"])};
+
+        // hide pe or ce + pe when not allowed
+        if(setting_dict.no_centralexam){
+            col_hidden.push(...["pescore", "pe_status", "pegrade", "cescore", "ce_status", "cegrade"]);
+        } else if(setting_dict.no_practexam){
+            col_hidden.push(...["pescore", "pe_status", "pegrade"]);
+        };
+
+// - hide level when not level_req
+        if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
+
+// - hide exemption_year when not evening or lex school
+         if(!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){col_hidden.push("exemption_year")};
+
+// - show only columns of sel_examtype
+        //console.log( "setting_dict.sel_examtype", setting_dict.sel_examtype);
+        if(setting_dict.sel_examtype === "se"){
+            col_hidden.push(...["srgrade", "sr_status",
+                               "pescore", "pe_status", "pegrade",
+                                "cescore", "ce_status", "cegrade", "finalgrade"]);
+        } else if(setting_dict.sel_examtype === "sr"){
+            col_hidden.push(...["segrade", "se_status",
+                               "pescore", "pe_status", "pegrade",
+                                "cescore", "ce_status", "cegrade", "finalgrade"]);
+        } else if(setting_dict.sel_examtype === "pe"){
+            col_hidden.push(...["segrade", "se_status", "srgrade", "sr_status",
+                                    "cescore", "ce_status", "cegrade", "finalgrade"]);
+        } else if(  ["ce", "reex", "reex03"].includes(setting_dict.sel_examtype)){
+            col_hidden.push(...["segrade", "se_status", "srgrade", "sr_status",
+                                   "pescore", "pe_status", "pegrade",
+                                    "finalgrade"]);
+        };
+        //console.log( "col_hidden", col_hidden);
+        return col_hidden;
+    };
 
 
 //========= GetNumberFromInputGrade  =============== PR2020-12-16

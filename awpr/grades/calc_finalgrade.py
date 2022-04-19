@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exem_year, se_grade, sr_grade, pe_grade, ce_grade):
+def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exemption_year, se_grade, sr_grade, pe_grade, ce_grade):
     # PR2021-12-28 PR2022-04-11
     # called by GradeUploadView.recalc_finalgrade_in_grade_and_save and by import_studsubj_grade_from_datalist
     # this function does not save the calculated dields
@@ -27,7 +27,7 @@ def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exem_year, se_g
     # PR2022-04-12 thumb_rule = True: may skip this subject when calculating result
     # TODO thumb_rule = si_dict.get('thumb_rule')
 
-    sesr_grade, pece_grade, finalgrade = None, None, None
+    sesr_grade, pece_grade, finalgrade, delete_cegrade = None, None, None, False
     try:
 
         has_practexam = si_dict.get('has_practexam', False)
@@ -60,8 +60,9 @@ def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exem_year, se_g
             sesr_grade = str(sesr_decimal) if sesr_decimal else None
 
     # - calculate pe_ce
-            pece_decimal, pe_noinput, ce_noinput = calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce,
-                                                                     has_practexam, exem_year, no_ce_years)
+            # also check if no_exemption_ce
+            pece_decimal, pe_noinput, ce_noinput, delete_cegrade = calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce,
+                                                                     has_practexam, exemption_year, no_ce_years)
             pece_grade = str(pece_decimal) if pece_decimal else None
 
     # - sesr_noinput = True if als weight_se > 0 and  se_noinput = True or sr_noinput = True
@@ -83,7 +84,7 @@ def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exem_year, se_g
         logger.debug('pece_grade: ' + str(pece_grade))
         logger.debug('finalgrade: ' + str(finalgrade))
 
-    return sesr_grade, pece_grade, finalgrade
+    return sesr_grade, pece_grade, finalgrade, delete_cegrade
 # --- end of calc_sesr_pece_final_grade
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -317,11 +318,11 @@ def calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se):  
 # - end of calc_sesr_decimal
 
 
-def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practexam, exem_year, no_ce_years):
+def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practexam, exemption_year, no_ce_years):
     # PR2021-01-18 PR2021-09-18 PR2021-12-14 PR2022-04-12
     # PR2022-04-12 no_ce_years = '2020;2021' has list of examyears that had no CE. This is used to skip no_input_ce when calculating exemption endgrade
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- calc_pece_decimal -----')
         logger.debug('... is_ep_exemption:  ' + str(is_ep_exemption))
@@ -329,7 +330,7 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
         logger.debug('... pe_grade: ' + str(pe_grade) + ' ' + str(type(pe_grade)))
         logger.debug('... weight_ce: ' + str(weight_ce))
         logger.debug('... has_practexam: ' + str(has_practexam))
-        logger.debug('... exem_year: ' + str(exem_year))
+        logger.debug('... exemption_year: ' + str(exemption_year))
         logger.debug('... no_ce_years: ' + str(no_ce_years))
 
     """
@@ -349,20 +350,28 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
     ce_noinput = False
     pe_noinput = False
     pece_decimal = None
+    delete_cegrade = False
 
 # - skip if weight_ce = 0, no error
     if weight_ce:
 
+# - check if this subject had central exam, only when is_ep_exemption
+        is_exemption_without_ce = False
+        if is_ep_exemption and exemption_year and no_ce_years:
+            # no_ce_years = '2020;2021', value in schemeitem
+            # exemption_year = 2020, value in studentsubject
+            no_ce_years_arr = no_ce_years.split(';')
+            if str(exemption_year) in no_ce_years_arr:
+                is_exemption_without_ce = True
+        # - in case ce_grade has value: remove value from ce_grade
+                # this can happen when ETE changes no_ce_years_arr after school has entered exemption CEgrade
+                if ce_grade:
+                    # delete_cegrade is return_value, to set original ce_grade to None
+                    delete_cegrade = True
+                    ce_grade = None
+
 # - check if ce_grade has value, if not: set ce_noinput = True, except when is_exemption_without_ce
         if not ce_grade:
-    # - check if this subject had central exam, only when is_ep_exemption
-            is_exemption_without_ce = False
-            if is_ep_exemption and exem_year and no_ce_years:
-                # no_ce_years = '2020;2021', value in schemeitem
-                # exem_year = 2020, value in studentsubject
-                no_ce_years_arr = no_ce_years.split(';')
-                if str(exem_year) in no_ce_years_arr:
-                    is_exemption_without_ce = True
 
             if not is_exemption_without_ce:
                 ce_noinput = True
@@ -408,7 +417,7 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
         logger.debug('... pe_noinput: ' + str(pe_noinput) + ' ' + str(type(pe_noinput)))
         logger.debug('... ce_noinput: ' + str(ce_noinput) + ' ' + str(type(ce_noinput)))
 
-    return pece_decimal, pe_noinput, ce_noinput
+    return pece_decimal, pe_noinput, ce_noinput, delete_cegrade
 # --- end of calc_pece_decimal
 
 

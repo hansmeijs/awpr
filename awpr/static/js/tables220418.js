@@ -7,7 +7,6 @@
     const cls_selected = "tsa_tr_selected";
     const cls_bc_transparent = "tsa_bc_transparent";
 
-
 // ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08
@@ -51,7 +50,7 @@
         }
     }  // t_MSED_Open
 
-    //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
+//=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
         //console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
@@ -215,7 +214,9 @@
         }
     }  // t_MSED_CreateSelectRow
 
-// ++++++++++++  END OF MODAL SELECT SCHOOL OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
+// ++++++++++++  END OF MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
+
+
 
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 //========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
@@ -1620,17 +1621,12 @@
                         const filter_value = filter_arr[1];
                         const filter_mode = filter_arr[2];
 
-            //console.log( "filter_tag", filter_tag)
-            //console.log( "filter_value", filter_value)
-            //console.log( "col_index", col_index)
                         const cell = tblRow.cells[col_index];
-            //console.log( "cell", cell)
                         if(cell){
                             const el = cell.children[0];
-            //console.log( "el", el)
                             if (el){
                                 const cell_value = get_attr_from_el(el, "data-filter")
-            //console.log( "cell_value", cell_value)
+
                                 if (filter_tag === "toggle"){
                                     // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                     if (filter_value === "2"){
@@ -1640,6 +1636,12 @@
                                         // only show rows with tickmark
                                          if (cell_value !== "1") { hide_row = true };
                                     }
+
+        //console.log("filter_tag", filter_tag);
+        //console.log("filter_value", filter_value, typeof filter_value);
+        //console.log("cell_value", cell_value, typeof cell_value);
+        //console.log("hide_row", hide_row);
+
                                 } else if(filter_tag === "multitoggle"){  // PR2021-08-21
                                     if (filter_value){
                                         hide_row = (cell_value !== filter_value);
@@ -1664,7 +1666,7 @@
                                     } else {
                                         const filter_number = Number(filter_value);
                                         const cell_number = (Number(cell_value)) ? Number(cell_value) : 0;
-            //console.log( "cell_number", cell_number, typeof cell_number);
+        //console.log( "cell_number", cell_number, typeof cell_number);
                                         if ( filter_mode === "lte") {
                                             if (cell_number > filter_number) {hide_row = true};
                                         } else if ( filter_mode === "lt") {

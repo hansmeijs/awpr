@@ -795,9 +795,9 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
     rule_gradesuff_notatevlex = BooleanField(default=False)  # PR2021-11-23 rule_grade_sufficient not at evening or lex school
 
     sr_allowed = BooleanField(default=False)  # herkansing schoolexamen
-    #max_reex = PositiveSmallIntegerField(default=1)
-    #no_thirdperiod = BooleanField(default=False)
-    #no_exemption_ce = BooleanField(default=False)
+    # max_reex = PositiveSmallIntegerField(default=1)
+    # no_thirdperiod = BooleanField(default=False)
+    # no_exemption_ce = BooleanField(default=False)
 
     no_ce_years = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     thumb_rule = BooleanField(default=False)

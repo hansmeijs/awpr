@@ -603,6 +603,7 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
     ]
     if save_to_disk:
         # when submitting an Ex1 form published_instance is already saved, therefore published_instance.pk has a value
+        # studsubj.subj_published_id also has a value: the id of the new published_instance
         # filter on published_instance.pk, so only subjects of this submit will ne added to Ex1 form
         # was: sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(published_id)s::INT")
         sql_studsubj_agg_list.append("WHERE studsubj.subj_published_id = %(published_id)s::INT")
@@ -1364,7 +1365,7 @@ def create_ex2_format_dict(book, sheet, school, department, subject_pk_list, sub
 def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_instance, lvlbase_pk=None):
     # PR2022-02-17 PR2022-03-09
     # this function is only called by create_ex2_xlsx
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex2_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
@@ -1385,13 +1386,25 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
     published_pk = published_instance.pk if published_instance else None
     sql_keys = {'ey_id': examyear.pk, 'ep': c.EXAMPERIOD_FIRST, 'sch_id': school.pk, 'dep_id': department.pk, 'published_id': published_pk}
 
+    # PR2022-04-13 add exemption grade if subject has exemption se_grade and se-grade is blank
+    sql_exem_list = ["SELECT grd.studentsubject_id AS exem_studsubj_id, grd.segrade AS exem_segrade",
+                "FROM students_grade AS grd",
+                "WHERE grd.examperiod = 4 AND grd.segrade IS NOT NULL AND NOT grd.tobedeleted"]
+    sql_grd_exem = ' '.join(sql_exem_list)
+
+###############
+
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
 
-    sql_list = ["SELECT st.id AS student_id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
+    sql_list = ["WITH grd_exem AS (" + sql_grd_exem + ")",
+
+                "SELECT st.id AS student_id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
                 "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
                 "si.subject_id, cluster.name AS clustername,",
                 "grd.segrade, grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id,",
+                "studsubj.has_exemption, grd_exem.exem_segrade,",
+
                 "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, auth3.last_name AS auth3_usr, auth4.last_name AS auth4_usr",
 
                 "FROM students_grade AS grd",
@@ -1399,6 +1412,8 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
                 "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
                 "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+
+                "LEFT JOIN grd_exem ON (grd_exem.exem_studsubj_id = studsubj.id)",
 
                 "LEFT JOIN subjects_cluster AS cluster ON (cluster.id = studsubj.cluster_id)",
 
@@ -1446,6 +1461,9 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
     grades_auth4_dict = grades_auth_dict.get('auth4')
 
     for row in rows:
+
+        if logging_on:
+            logger.debug('row: ' + str(row))
 
         # value is '0' when level_id = None (Havo/Vwo)
         level_pk = row.get('level_id')
@@ -1546,7 +1564,7 @@ def create_ex2_rows_dict(examyear, school, department, save_to_disk, published_i
     if logging_on:
         logger.debug('-----------------------------------------------')
         # logger.debug('ex2_rows_dict: ' + str(ex2_rows_dict))
-        logger.debug('>>>>>>>>> grades_auth_dict: ' + str(grades_auth_dict))
+        #logger.debug('>>>>>>>>> grades_auth_dict: ' + str(grades_auth_dict))
 
     """
     https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-a-value-of-the-dictionary

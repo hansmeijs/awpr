@@ -210,7 +210,7 @@ class SubjectListView(View):
 def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only=False, duo_exam_only=False):
     # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07
     # skip_allowed_filter is used in userpage: when setting 'allowed_', all subjects must be shown
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     sel_examyear_pk = setting_dict.get('sel_examyear_pk')
 
@@ -341,7 +341,7 @@ def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only
 def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                         cur_dep_only, allowed_only=False, cluster_pk_list=None, add_field_created=False):
     # --- create rows of all clusters of this examyear this department  PR2022-01-06
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
@@ -2270,17 +2270,17 @@ def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, i
                                                  % {'willbe': get_willbe_or_are_txt(is_test, exam_count)}) + ':</p><ul>')
         if already_published:
             if is_grade_exam:
-                msg_list.append('<li>' + str(_("%(subj)s already submitted") %
-                                             {'subj': get_exams_are_text(already_published)}) + ';</li>')
+                msg_list.append('<li>' + str(_("%(val)s already submitted") %
+                                             {'val': get_exams_are_text(already_published)}) + ';</li>')
             else:
-                msg_list.append('<li>' + str(_("%(subj)s already published") %
-                                             {'subj': get_exams_are_text(already_published)}) + ';</li>')
+                msg_list.append('<li>' + str(_("%(val)s already published") %
+                                             {'val': get_exams_are_text(already_published)}) + ';</li>')
         if has_blanks:
-            msg_list.append('<li>' + str(_("%(subj)s no questions or blank questions") %
-                                         {'subj': get_exams_have_text(has_blanks)}) + ';</li>')
+            msg_list.append('<li>' + str(_("%(val)s no questions or blank questions") %
+                                         {'val': get_exams_have_text(has_blanks)}) + ';</li>')
         if auth_missing:
-            msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
-                                         {'subj': get_exams_are_text(auth_missing)}) + ';</li>')
+            msg_list.append('<li>' + str(_("%(val)s not fully approved") %
+                                         {'val': get_exams_are_text(auth_missing)}) + ';</li>')
             show_msg_first_approve_by_pres_secr = True
         if already_approved:
             msg_list.append('<li>' + get_exams_are_text(already_approved) + str(
@@ -4544,7 +4544,8 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
     if instance:
         save_changes = False
         msg_header_txt = _("Update subject of subject scheme")
-
+        # TODO when no_ce_years has changed after school have entered grades, recalc endgrade should be run on all grades
+        # probably also when other fields have changed ('gradetype', 'weight_se', 'weight_ce')
         for field, new_value in upload_dict.items():
 
             if field in ('gradetype', 'weight_se', 'weight_ce', 'multiplier', 'is_mandatory', 'is_mand_subj', 'is_combi',

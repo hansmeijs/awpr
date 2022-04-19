@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Subjects' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/subjects220413.js' %}"></script>
+    <script src="{% static 'js/subjects220418.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -64,6 +64,7 @@
             {% include 'subjects/modsubjecttypebase.html' %}
             {% include 'subjects/modschemeitem.html' %}
             {% include 'subjects/modotherlang.html' %}
+            {% include 'includes/modselectexemptionyear.html' %}
 
             <div class="content_margin_top78">
                 <div class="flex_4 mx-4 visibility_hide">

@@ -1,0 +1,48 @@
+{% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SELECT EXEMPTION EXAMYEAR =================== -->
+    <div class="modal" id="id_mod_select_exemptionyear" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MExemptionYear_header"  class="modal-title mx-2" ></h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="flex_container">
+
+                        <div class="flex_1">
+                            <div class="tbl_studsubj_h_w_auto">
+                                <table class="table tsa_tbl mx-1 my-1">
+                                    <tbody id="id_MExemptionYear_tblBody_select">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="flex_2">
+                            <div id="id_MExemptionYear_message_container"class="mx-2 my-2"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-2">
+                        <div>
+                            <button id="id_MExemptionYear_btn_delete" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete exam year' %}</button>
+                        </div>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MExemptionYear_btn_save" type="button" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>

@@ -6,12 +6,15 @@ const man_exemption = {
 
 /////////  NEDERLANDS //////////////////////////////
     nl: [
-        write_paragraph_header("id_intro", "Vrijstellingen"),
+        write_paragraph_header("id_intro_exemption", "Vrijstellingen"),
         write_paragraph_body("",
         ["<p class='mb-0 pb-0'>Het invoeren van vrijstellingen gaat in drie stappen:</p>",
-            "<ul class='manual_bullet mb-0'><li>In de pagina <i>Kandidaten</i> wordt aangevinkt welke kandidaten <b>bis-kandidaten</b> zijn, dat zijn kandidaten die opnieuw examen doen;</li>",
+            "<ul class='manual_bullet mb-2'><li>In de pagina <i>Kandidaten</i> wordt aangevinkt welke kandidaten <b>bis-kandidaten</b> zijn, dat zijn kandidaten die opnieuw examen doen;</li>",
            "<li>In de pagina <i>Vakken</i> wordt aangevinkt voor welke vakken de bis-kandidaten <b>vrijstelling</b> hebben;</li>",
             "<li>In de pagina <i>Cijfers</i> worden de <b>cijfers</b> van de vrijstellingen ingevoerd.</li></ul>",
+            "<p class='mt-0 pb-2'><b>Avondscholen</b> en <b>Landsexamen</b> kunnen ook vrijstellingen toevoegen aan kandidaten, die geen bis-kandidaat zijn. ",
+            "Zij dienen ook het examenjaar in te vullen waarin de vrijstelling is behaald. Zie de paragraaf <i>Jaar van de vrijstelling</i>.</p>",
+
             "<p class='mt-0 pb-2'>Het is ook mogelijk om vrijstellingen te <b>uploaden</b>. Dan worden alle stappen in een keer doorlopen.</p>",
         ]),
         write_paragraph_body("img_exclamationsign",
@@ -85,18 +88,35 @@ const man_exemption = {
 
         ]),
 
+        write_paragraph_header("id_exem_exemption_year", "Jaar van de vrijstelling"),
+        write_paragraph_body("",
+        ["<p>De <b>vrijstelling van dagscholen</b> is één jaar geldig. ",
+        "Het jaar van de vrijstelling is daarom altijd het jaar, voorafgaand aan het huidige examenjaar. ",
+        "AWP vult dit automatisch in en gaat na, of voor het betreffende vak in dat jaar een centraal examen is afgenomen. ",
+        "Als dat niet het geval is, hoeft het CE-cijfer van de vrijstelling niet te worden ingevuld.</p>",
+        "<p>De <b>vrijstelling van avondscholen en landsexamen</b> is 10 jaar geldig. ",
+        "Het jaar waarin de vrijstelling is behaald moet daarom worden ingevuld, ",
+        "zodat AWP kan nagaan of voor het betreffende vak in dat jaar een centraal examen is afgenomen.<br>",
+        "Het invullen van het examenjaar is alleen nodig, wanneer de vrijstelling geen CE-cijfer heeft, omdat in dat examenjaar het centraal examen niet is afgenomen vanwege de Covid-pandemie. ",
+        "Wanneer de vrijstelling wel een CE-cijfer heeft, of wanneer er normaal gesproken ook geen centraal examen is voor dat vak, hoeft het examenjaar niet te worden ingevuld.</p>",
+        "<p>Klik in de kolom <i>Jaar van de vrijstelling</i> en selecteer een examenjaar of klik op '---' voor een blanco examenjaar en klik op <i>Opslaan</i>.</p>",
+        ]),
+
         "<div class='p-3 visibility_hide'>-</div>",
     ],
 
 en:  [
-        write_paragraph_header("id_intro", "Exemptions"),
+        write_paragraph_header("id_intro_exemption", "Exemptions"),
         write_paragraph_body("",
-        ["<p class='mb-0 pb-0'>Entering exemptions is done in three steps:</p>",
-            "<ul class='manual_bullet mb-0'><li>In the page <i>Candidates</i> it is indicated which candidates are <b>bis-candidates</b>, ie candidates who retake the exam;</li>",
-           "<li>In the page <i>Subjects</i> it is indicated for which subjects the bis-candidates have <b>exemption</b>;</li>",
-            "<li>In the page <i>Grades</i> the <b>grades</b> of the exemptions are entered.</li></ul>",
-            "<p class='mt-0 pb-2'>It is also possible to <b>upload</b> exemptions. Then all steps will be completed at once.</p>",
-        ]),
+            ["<p class='mb-0 pb-0'>Entering exemptions is done in three steps:</p>",
+             "<ul class='manual_bullet mb-2'><li>In the page <i>Candidates</i> you can tick off which candidates are <b>bis-candidates</b>, ie candidates who retake the exam; </li>",
+            "<li>In the page <i>Subjects</i> you can tick off for which subjects the bis-candidates have <b>exemption</b>;</li>",
+             "<li>In the page <i>Grades</i> the <b>grades</b> of the exemptions are entered.</li></ul>",
+             "<p class='mt-0 pb-2'><b>Evening schools</b> and <b>Landsexamen</b> can also add exemptions to candidates who are not bis-candidates. ",
+             "They must also fill in the exam year in which the exemption was obtained. See the paragraph <i>Year of the exemption</i>.</p>",
+
+             "<p class='mt-0 pb-2'>It is also possible to <b>upload</b> exemptions. Then all steps will be completed at once.</p>"
+             ]),
         write_paragraph_body("img_exclamationsign",
         ["<p class='mb-0 pb-0'>Entering an exemption does not mean that AWP always uses this grade when calculating the result. The choice is determined as follows:</p>",
             "<ul class='manual_bullet mb-0 pb-2'><li>When a candidate has an exemption, AWP compares the final grade of the exam with the final grade of the exemption.</li>",
@@ -165,6 +185,20 @@ en:  [
         write_paragraph_body("",
         ["<p>At this time, exemptions do not need to be approved and submitted.<br>",
         "The procedure for approving and submitting school exam grades may also apply to exemptions in the future.</p>",
+        ]),
+
+        write_paragraph_header("id_exem_exemption_year", "Year of the exemption"),
+        write_paragraph_body("",
+        ["<p>The <b>exemption from day schools</b> is valid for one year. ",
+        "The year of the exemption is therefore always the year preceding the current examination year. ",
+        "AWP enters this automatically and checks whether a central exam has been taken for the subject in question in that year. ",
+        "If this is not the case, the CE grade of the exemption does not need to be entered.</p>",
+        "<p>The <b>exemption from evening classes and landsexamen</b> is valid for 10 years. ",
+        "The year in which the exemption was obtained must therefore be entered, ",
+        "so that AWP can check whether a central exam has been taken for the subject in question in that year.<br>",
+        "Entering the exam year is only necessary if the exemption does not have a CE grade, because the central exam was not taken in that exam year due to the Covid pandemic. ",
+        "If the exemption does have a CE grade, or if there is normally no central exam for that subject, the exam year does not have to be entered.</p>",
+        "<p>Click in the column <i>Year of the exemption</i> and select an exam year or click on '---' for a blank exam year and click on <i>Save</i>.</p >",
         ]),
 
         "<div class='p-3 visibility_hide'>-</div>",

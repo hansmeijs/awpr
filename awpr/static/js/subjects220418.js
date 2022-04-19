@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_MSUBJ_dict = {};
     let mod_MSJTP_dict = {};
     let mod_MSJTBASE_dict = {};
+    let mod_MSELEX_dict = {};
 
     let mod_MSI_dict = {
         subject_dict: {},
@@ -389,7 +390,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_MCOL_btn_save){
             el_MCOL_btn_save.addEventListener("click", function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
-        };;
+        };
+
+// ---  MODAL SELECT EXEMPTION EXAMYEAR ------------------------------
+        const el_MExemptionYear_header = document.getElementById("id_MExemptionYear_header");
+        const el_MExemptionYear_tblBody_select = document.getElementById("id_MExemptionYear_tblBody_select");
+        const el_MExemptionYear_message_container = document.getElementById("id_MExemptionYear_message_container");
+        const el_MExemptionYear_btn_delete = document.getElementById("id_MExemptionYear_btn_delete");
+
+        const el_MExemptionYear_btn_save = document.getElementById("id_MExemptionYear_btn_save");
+        if (el_MExemptionYear_btn_save){
+            el_MExemptionYear_btn_save.addEventListener("click", function() {MExemptionYear_Save("save")}, false )
+        };
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -531,11 +543,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
+        //console.log("===  CreateSubmenu == ");
         let el_submenu = document.getElementById("id_submenu")
 
-        console.log("requsr_role_system", permit_dict.requsr_role_system);
-        console.log("permit_crud", permit_dict.permit_crud);
+        //console.log("requsr_role_system", permit_dict.requsr_role_system);
+        //console.log("permit_crud", permit_dict.permit_crud);
         if (permit_dict.permit_crud){
                 AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_subject"]);
                 AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("subject", "delete")}, ["tab_show", "tab_btn_subject"]);
@@ -696,9 +708,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-05-10
     function CreateTblHeader(field_setting, col_hidden) {
-        console.log("===  CreateTblHeader ===== ");
-        console.log("field_setting.field_names", field_setting.field_names);
-        console.log("col_hidden", col_hidden);
+        //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting.field_names", field_setting.field_names);
+        //console.log("col_hidden", col_hidden);
 
         const column_count = field_setting.field_names.length;
 
@@ -895,6 +907,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ( filter_tag ==="text"){
                         if(field_name === "otherlang"){
                             td.addEventListener("click", function() {MOL_Open(el)}, false);
+                        } else if(field_name === "no_ce_years"){
+                            td.addEventListener("click", function() {MExemptionYear_Open(el)}, false);
                         } else {
                             td.addEventListener("click", function() {MSI_Open(el)}, false);
                         };
@@ -1014,7 +1028,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (el_div.tagName === "INPUT"){
                     el_div.value = inner_text;
                 } else {
-                    el_div.innerText = inner_text;
+                    el_div.innerText = (inner_text) ? inner_text : "\n";
                 };
                 // NIU yet: add_or_remove_attr (el_div, "title", !!title_text, title_text);
 
@@ -3948,6 +3962,190 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ++++++++ END OF MODAL OTHER LANG ++++++++++++++++++++++++++++++++++
 
+// +++++++++++++++++ MODAL SELECT EXEMPTION YEAR ++++++++++++++++++++++++++++++++++++++++++
+
+//=========  MExemptionYear_Open  ================ PR2022-04-14
+    function MExemptionYear_Open(el_input) {
+        console.log( "===== MExemptionYear_Open ========= ");
+
+        if (permit_dict.permit_crud){
+
+            const tblRow = t_get_tablerow_selected(el_input)
+            const schemeitem_pk_int = get_attr_from_el_int(tblRow, "data-pk");
+            const [index, found_dict, compare] = b_recursive_integer_lookup(schemeitem_rows, "id", schemeitem_pk_int);
+            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+            console.log("data_dict", data_dict);
+
+            b_clear_dict(mod_MSELEX_dict);
+            if(!isEmpty(data_dict)){
+
+
+                if (!data_dict.weight_ce){
+                    const msg_html = loc.NoCe_examyear_info1 + "<br>" + loc.NoCe_examyear_info2;
+                    b_show_mod_message_html(msg_html);
+                } else {
+
+
+                    mod_MSELEX_dict.mapid = data_dict.mapid;
+                    mod_MSELEX_dict.scheme_pk = data_dict.scheme_id;
+                    mod_MSELEX_dict.schemeitem_pk = data_dict.id;
+                    mod_MSELEX_dict.no_ce_years = data_dict.no_ce_years;
+                    mod_MSELEX_dict.el_input = el_input;
+            console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+
+        // set header text
+                    el_MExemptionYear_header.innerText = [loc.Examyears_without_CE, "\n", data_dict.subj_name, "-", data_dict.scheme_name].join(" ");
+
+        // set info text
+                    const inner_HTML = [
+                        "<p class='mb-2'>", loc.ModExemptionYear_info.line_01,
+                        "</p><p>", loc.ModExemptionYear_info.line_02,"</p>",
+                        "</p><p>", loc.ModExemptionYear_info.line_03,"</p>"
+                    ].join("");
+                    el_MExemptionYear_message_container.innerHTML = inner_HTML
+
+
+        // hide delete button
+                    add_or_remove_class(el_MExemptionYear_btn_delete.parentNode, cls_hide, true);
+
+        // ---  fill select table
+                    MExemptionYear_FillSelectTable();
+
+        // ---  show modal
+                    $("#id_mod_select_exemptionyear").modal({backdrop: true});
+                };
+            };
+
+        }; //  if (permit_dict.permit_crud){
+    };  // MExemptionYear_Open
+
+//=========  MExemptionYear_Save  ================ PR2022-04-15
+    function MExemptionYear_Save() {
+        console.log("===  MExemptionYear_Save =========");
+
+        if (permit_dict.permit_crud){
+
+// ---  loop through tblRows and add selected exam years to exam year list
+            const no_ce_years_arr = [];
+            const tblBody_select = el_MExemptionYear_tblBody_select;
+            for (let i = 0, tblRow, is_selected; tblRow = tblBody_select.rows[i]; i++) {
+                is_selected = get_attr_from_el(tblRow, "data-selected") === "1";
+                if (is_selected) {
+                    const sel_examyear_str = get_attr_from_el(tblRow, "data-pk")
+                    if (sel_examyear_str){
+                        no_ce_years_arr.push(sel_examyear_str)
+                    };
+                };
+            };
+            no_ce_years_arr.sort();
+            const no_ce_years_str = (no_ce_years_arr.length) ? no_ce_years_arr.join(";") : null;
+
+            const upload_dict = {
+                table: "schemeitem",
+                mode: "update",
+                scheme_pk: mod_MSELEX_dict.scheme_pk,
+                si_pk: mod_MSELEX_dict.schemeitem_pk,
+                no_ce_years: (no_ce_years_str) ? no_ce_years_str : null,
+            };
+// si_pk: (mod_MSI_dict.schemeitem_pk) ? mod_MSI_dict.schemeitem_pk : null,
+            console.log( "upload_dict", upload_dict);
+        // update field before upload
+
+            const update_dict = {no_ce_years: (no_ce_years_str) ? no_ce_years_str : null}
+            UpdateField(mod_MSELEX_dict.el_input, update_dict);
+
+            UploadChanges(upload_dict, urls.url_schemeitem_upload);
+
+    // hide modal
+            $("#id_mod_select_exemptionyear").modal("hide");
+        };
+    }  // t_MMExemptionYear_Save
+
+//=========  MExemptionYear_SelectItem  ================ PR2022-04-14
+    function MExemptionYear_SelectItem(tblRow, el_icon) {
+        console.log( "===== MExemptionYear_SelectItem ========= ");
+
+        if(tblRow) {
+// ---  deselect all highlighted rows
+            const class_selected = "tickmark_2_2", class_not_selected = "tickmark_0_0";
+            const data_field = "data-selected";
+            // NIU multiple examyears can be selected
+            //for (let i = 0, row; row = el_MExemptionYear_tblBody_select.rows[i]; i++) {
+            //    row.cells[0].children[0].className = class_not_selected;
+            //    if (row.hasAttribute(data_field)) {
+            //        row.removeAttribute(data_field)
+            //    }
+            //};
+            const old_selected_value = get_attr_from_el(tblRow, data_field);
+        console.log( "old_selected_value", old_selected_value);
+            const new_selected_value = (old_selected_value === "1") ? "0" : "1";
+        console.log( "new_selected_value", new_selected_value);
+
+// ---  set tick in  clicked row
+            el_icon.className = (new_selected_value === "1") ? class_selected : class_not_selected;
+            tblRow.setAttribute(data_field, new_selected_value)
+        };
+    }; // MExemptionYear_SelectItem
+
+//=========  MExemptionYear_FillSelectTable  ================ PR2022-04-15
+    function MExemptionYear_FillSelectTable() {
+        //console.log( "===== MExemptionYear_FillSelectTable ========= ");
+        const tblBody_select = el_MExemptionYear_tblBody_select;
+        tblBody_select.innerText = null;
+
+// --- loop through list op examyear
+
+        if (setting_dict.sel_examyear_code && setting_dict.sel_examyear_code > 2020){
+            const start_year = (setting_dict.sel_examyear_code > 2030) ? setting_dict.sel_examyear_code - 10 : 2020;
+            for (let i = start_year; i < setting_dict.sel_examyear_code; i++) {
+                MExemptionYear_CreateSelectRow(tblBody_select, i, mod_MSELEX_dict.no_ce_years);
+            };
+        };
+    };  // MExemptionYear_FillSelectTable
+
+//=========  MExemptionYear_CreateSelectRow  ================ PR2022-04-14
+    function MExemptionYear_CreateSelectRow(tblBody_select, pk_int, no_ce_years) {
+        console.log( "===== MExemptionYear_CreateSelectRow ========= ");
+
+        const pk_str = (pk_int) ? pk_int.toString() : null;
+        const no_ce_years_arr = (no_ce_years) ? no_ce_years.split(";") : [];
+        const is_selected_pk = no_ce_years_arr.includes(pk_str);
+        console.log( "is_selected_pk", is_selected_pk, typeof is_selected_pk);
+
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(-1);
+        tblRow.setAttribute("data-pk", pk_str);
+
+// ---  add selected_value to tblRow.
+        const selected_value = (is_selected_pk) ? "1" : "0";
+        tblRow.setAttribute("data-selected", selected_value);
+
+// ---  add select td to tblRow.
+        let td = tblRow.insertCell(-1);
+            td.className = "mx-1 tw_032";
+
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            const el_icon = document.createElement("div");
+                el_icon.className = (is_selected_pk) ? "tickmark_2_2" : "tickmark_0_0";
+            td.appendChild(el_icon);
+
+// ---  add td with display_code_field to tblRow, only if display_code_field has value
+        td = tblRow.insertCell(-1);
+            td.className = "mx-1 tw_075 ta_c";
+
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+            const el_div = document.createElement("div");
+                el_div.innerText = ( pk_int) ? pk_int.toString() : "---";
+            td.appendChild(el_div);
+
+// ---  add EventListener to tblRow
+            tblRow.addEventListener("click", function() { MExemptionYear_SelectItem(tblRow, el_icon) }, false )
+// ---  add hover to tblRow
+            add_hover(tblRow);
+
+    }  // MExemptionYear_CreateSelectRow
+
+// ++++++++++++  END OF MODAL SELECT EXEMPTION YEAR   +++++++++++++++++++++++++++++++++++++++
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03
@@ -4332,7 +4530,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         return found_dict;
     };  // get_recursive_integer_lookup
-
 
 //========= get_datarows_from_selBtn  ======== // PR2021-06-22
     function get_datarows_from_selBtn() {

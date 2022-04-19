@@ -260,9 +260,9 @@ urlpatterns = [
         path('upload', grade_views.GradeUploadView.as_view(), name='url_grade_upload'),
 
         path('approve', grade_views.GradeApproveView.as_view(), name='url_grade_approve'),
+        path('block', grade_views.GradeBlockView.as_view(), name='url_grade_block'),
 
         path('submit_ex2', grade_views.GradeSubmitEx2View.as_view(), name='url_grade_submit_ex2'),
-        path('submit_ex2a', grade_views.GradeSubmitEx2View.as_view(), name='url_grade_submit_ex2a'),
 
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
         path('download_ex2', grade_excel.GradeDownloadEx2View.as_view(), name='url_grade_download_ex2'),

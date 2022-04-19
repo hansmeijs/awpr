@@ -38,7 +38,7 @@ MENUS_ITEMS = {
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
                      'page_result', 'page_archive'],  #, 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],
-    c.ROLE_016_COMM: ['page_school', 'page_student', 'page_grade', 'page_result', 'page_archive'],
+    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_grade', 'page_result', 'page_archive'],
     c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_archive'] # 'page_report',
 }
 
@@ -124,7 +124,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         activate(requsr_lang)
 
 # - set background color in headerbar to purple when role is not a school
-        if req_user.role in (c.ROLE_016_COMM, c.ROLE_032_INSP):
+        if req_user.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
             _class_bg_color = 'awp_bg_green'
         elif req_user.role == c.ROLE_064_ADMIN:
             _class_bg_color = 'awp_bg_purple'

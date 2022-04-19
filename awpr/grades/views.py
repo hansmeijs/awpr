@@ -115,6 +115,121 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
 ########################################
 
 @method_decorator([login_required], name='dispatch')
+class GradeBlockView(View):  # PR2022-04-16
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= GradeBlockView ============= ')
+        # function blockes or unblocks grade by Inspectorate
+        update_wrap = {}
+
+        #<PERMIT>
+        # only users with role > student and perm_edit can change student data
+        # only school that is requsr_school can be changed
+        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
+        # only if country/examyear/school not locked, examyear is published and school is activated
+
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
+
+            permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list('page_grade', req_user)
+            allowed_dict = {}
+            dl.get_requsr_allowed(req_user, allowed_dict)
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('allowed_dict: ' + str(allowed_dict))
+                # allowed_dict: {'requsr_allowed_clusters': [300]}
+
+            has_permit = 'permit_block_grade' in permit_list
+            if logging_on:
+                logger.debug('has_permit: ' + str(has_permit))
+
+            if has_permit:
+
+    # -  get user_lang
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+    # - get upload_dict from request.POST
+                upload_json = request.POST.get('upload', None)
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
+
+                    """
+                    upload_dict{'mode': 'block', 'grade_pk': 22433, 'examtype': 'se'}
+                    """
+
+    # - get selected mode. Modes are 'block' 'unblock'
+                    mode = upload_dict.get('mode')
+
+    # - get grade_pk. It only has value when a single grade is approved
+                    grade_pk = upload_dict.get('grade_pk')
+                    examperiod = upload_dict.get('examperiod')
+                    examtype = upload_dict.get('examtype')
+
+                    if logging_on:
+                        logger.debug('upload_dict' + str(upload_dict))
+                        logger.debug('mode: ' + str(mode))
+                        logger.debug('grade_pk: ' + str(grade_pk))
+                        logger.debug('examperiod:   ' + str(examperiod))
+                        logger.debug('examtype: ' + str(examtype))
+
+    # - get selected examyear, school and department from usersettings
+
+                    # - get selected examyear, school and department from usersettings
+                    sel_examyear, sel_school, sel_department, may_edit, err_list = \
+                        dl.get_selected_ey_school_dep_from_usersetting(
+                            request=request,
+                            corr_insp_may_edit=True # This give Insepctorate permission to change grade
+                        )
+                    if err_list:
+                        update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': str(_('Block grade')),
+                                    'msg_html': '<br>'.join(err_list)}]
+                    else:
+                        grade = stud_mod.Grade.objects.get_or_none(
+                            pk=grade_pk
+                        )
+                        if grade:
+                            # fields are 'se_blocked', 'sr_blocked', 'pe_blocked', ce'_blocked'
+                            if mode == 'block':
+                                setattr(grade, examtype + '_blocked', True)
+                                setattr(grade, examtype + '_published_id', None)
+                                setattr(grade, examtype + '_auth1by_id', None)
+                                setattr(grade, examtype + '_auth2by_id', None)
+                                setattr(grade, examtype + '_auth3by_id', None)
+                                setattr(grade, examtype + '_auth4by_id', None)
+
+                            elif mode == 'unblock':
+                                setattr(grade, examtype + '_blocked', False)
+
+                            # don't update modifiedby
+                            grade.save()
+
+                            updated_grade_rows = create_grade_rows(
+                                sel_examyear_pk=sel_examyear.pk,
+                                sel_schoolbase_pk=sel_school.base_id,
+                                sel_depbase_pk=sel_department.base_id,
+                                sel_examperiod=examperiod,
+                                setting_dict={},
+                                # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase not icon when refreshing this row
+                                remove_note_status=True,
+                                request=request,
+                                append_dict={},
+                                grade_pk_list=[grade.pk]
+                            )
+                            if updated_grade_rows:
+                                update_wrap['updated_grade_rows'] = updated_grade_rows
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of GradeBlockView
+
+
+########################################
+
+@method_decorator([login_required], name='dispatch')
 class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
     def post(self, request):
@@ -197,7 +312,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
                         sel_examyear, sel_school, sel_department, may_edit, err_list = \
                                 dl.get_selected_ey_school_dep_from_usersetting(
                                     request=request,
-                                    corrector_may_edit=True
+                                    corr_insp_may_edit=True
                                 )
                         if err_list:
                             update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': str(_('Approve grade')),
@@ -251,6 +366,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
                                 msg_dict = {} # used when approving multiple grades, to count grades
                                 msg_list = [] # used when approving single grade, to display message
+                                test_is_ok = False
 
     # +++++ loop through grade_approve_rows
                                 grade_rows_tobe_updated = [] # list of grdaepk that passed validation
@@ -347,10 +463,11 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
     # - create msg_html with info of rows
                                     if is_test:
-                                        create_approve_grade_msg_dict(msg_dict)
+                                        test_is_ok = create_approve_grade_msg_dict(msg_dict)
 
     # - add  msg_dict to update_wrap
-                                update_wrap['msg_dict'] = msg_dict
+                                update_wrap['test_is_ok'] = test_is_ok
+                                update_wrap['approve_msg_dict'] = msg_dict
                                 if logging_on:
                                     logger.debug('msg_dict:    ' + str(msg_dict))
 
@@ -375,8 +492,9 @@ def create_approve_grade_msg_dict(msg_dict):  # PR2022-03-11
 
     msg_dict['count_text'] = _("The selection contains %(val)s.") % \
                              {'val': get_grade_text(count)}
+    test_is_ok = False
     if committed:
-        msg_dict['test_is_ok'] = True
+        test_is_ok = True
 
     if committed < count:
         msg_dict['skip_text'] = _("The following grades will be skipped:")
@@ -410,6 +528,7 @@ def create_approve_grade_msg_dict(msg_dict):  # PR2022-03-11
     if no_value:
         get_warning_no_value(msg_dict, no_value)
 
+    return test_is_ok
 # --- end of create_approve_grade_msg_dict
 
 
@@ -561,10 +680,12 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
                               grade_pk=None, include_grades=False):
     # PR2022-03-07
     # called by GradeApproveView, GradeSubmitEx2View
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' ----- create_grade_approve_rows -----')
-        logger.debug('sel_examtype: ' + str(sel_examtype))
+        logger.debug('sel_examtype:  ' + str(sel_examtype))
+        logger.debug('sel_examperiod: ' + str(sel_examperiod))
 
     grade_rows = []
     try:
@@ -617,7 +738,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
             "WHERE ey.id = %(ey_id)s::INT AND grd.examperiod = %(experiod)s::INT",
             # is in get_userfilter_allowed: "AND school.base_id = %(sb_id)s::INT",
             # is in get_userfilter_allowed: "AND dep.base_id = %(depbase_id)s::INT",
-            "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted",
+            #"AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted",
             ]
 
         if grade_pk:
@@ -664,28 +785,32 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys))
-            logger.debug('sql: ' + str(sql))
+            # logger.debug('sql:      ' + str(sql))
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             grade_rows = af.dictfetchall(cursor)
 
         if logging_on:
-            logger.debug('len(grade_rows: ' + str(len(grade_rows)))
+            logger.debug('len(grade_rows): ' + str(len(grade_rows)))
+
+    # only used for logger.debug
             no_value_count, not_approved_count, published_count = 0, 0, 0
             for row in grade_rows:
                 if not row.get('has_value', False):
                     no_value_count += 1
-                if not row.get('auth1by_id') or \
-                        not row.get('auth2by_id') or \
-                        not row.get('auth3by_id') or \
-                        not row.get('auth4by_id'):
+                if not row.get('auth1by_id') or not row.get('auth2by_id') or not row.get('auth3by_id'):
                     not_approved_count += 1
+                # TODO submit exemption grades
+                elif sel_examperiod != c.EXAMPERIOD_EXEMPTION:
+                    if sel_examtype in ('pe', 'ce'):
+                        if not row.get('auth4by_id'):
+                            not_approved_count += 1
                 if row.get('published_id'):
                     published_count += 1
-            logger.debug('no_value_count: ' + str(no_value_count))
+            logger.debug('no_value_count:     ' + str(no_value_count))
             logger.debug('not_approved_count: ' + str(not_approved_count))
-            logger.debug('published_count: ' + str(published_count))
+            logger.debug('published_count:    ' + str(published_count))
 
     except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -695,91 +820,116 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 
 
 @method_decorator([login_required], name='dispatch')
-class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08
+class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17
+    # function creates new published_instance, Ex2_xlsx and sets published_id in grade
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeSubmitEx2View ============= ')
-        # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
         update_wrap = {}
+        messages = []
+        msg_html = None
+        msg_dict = {}
+        test_is_ok = False
+# - get permit
+        has_permit = False
+        req_usr = request.user
+        requsr_auth = None
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_grade')
+            if permit_list:
+                requsr_usergroup_list = req_usr.usergroup_list
+                # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-        #<PERMIT>
-        # only users with role > student and perm_edit can change student data
-        # only school that is requsr_school can be changed
-        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
-        # only if country/examyear/school not locked, examyear is published and school is activated
-
-        if request.user and request.user.country and request.user.schoolbase:
-            req_user = request.user
-
-            permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list('page_grade', req_user)
+                is_auth1 = 'auth1' in requsr_usergroup_list
+                is_auth2 = 'auth2' in requsr_usergroup_list
+                if is_auth1 + is_auth2 == 1:
+                    if is_auth1:
+                        requsr_auth = 'auth1'
+                    elif is_auth2:
+                        requsr_auth = 'auth2'
+                if requsr_auth:
+                    has_permit = 'permit_submit_grade' in permit_list
 
             if logging_on:
-                logger.debug('permit_list' + str(permit_list))
-                logger.debug('requsr_usergroups_listNIU: ' + str(requsr_usergroups_listNIU) + ' ' + str(type(requsr_usergroups_listNIU)))
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
 
-            msg_dict = {}
+        if has_permit:
 
-            has_permit = 'permit_approve_grade' in permit_list
-            if has_permit:
+# -  get user_lang
+            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+            activate(user_lang)
 
-    # -  get user_lang
-                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
-                activate(user_lang)
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                """
+                upload_dict{'table': 'grade', 'mode': 'submit_test', 'auth_index': 1, 'now_arr': [2022, 3, 14, 11, 13]}
+                """
 
-    # - get upload_dict from request.POST
-                upload_json = request.POST.get('upload', None)
-                if upload_json:
-                    upload_dict = json.loads(upload_json)
-                    """
-                    upload_dict{'table': 'grade', 'mode': 'submit_test', 'auth_index': 1, 'now_arr': [2022, 3, 14, 11, 13]}
-                    """
+# -- get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, err_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                if err_list:
+                    msg_html = '<br>'.join(err_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                else:
 
     # - get selected mode. Modes are 'submit_test' 'submit_save'
                     mode = upload_dict.get('mode')
                     is_test = (mode == 'submit_test')
-
                     auth_index = upload_dict.get('auth_index')
+
+                    if logging_on:
+                        logger.debug('upload_dict: ' + str(upload_dict))
+                        logger.debug('mode:        ' + str(mode))
+                        logger.debug('auth_index:  ' + str(auth_index))
+
                     if auth_index:
 
                         # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-        # - get auth_index (1 = Chairperson, 2 = Secretary, 3 = examiner, 4 = Corrector
+        # - get auth_index (1 = Chairperson, 2 = Secretary, 3 = Examiner, 4 = Corrector
                         # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
                         #  function may have changed if gradepage is not refreshed in time)
                         #  was: auth_index = upload_dict.get('auth_index')
                         #  >>> can't do it like this any more. User can have be examiner and pres/secr at the same time
-                        #  back to upload_dict.get('auth_bool_at_index')
+                        #  back to upload_dict.get('auth_index')
+
+
+    # - get selected examperiod from usersetting
+                        sel_examperiod, sel_examtype = None, None
+                        selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                        if selected_pk_dict:
+                            sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+                            sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
 
                         if logging_on:
-                            logger.debug('upload_dict' + str(upload_dict))
-                            logger.debug('mode: ' + str(mode))
-                            logger.debug('auth_index: ' + str(auth_index))
+                            logger.debug('sel_examtype:   ' + str(sel_examtype))
+                            logger.debug('sel_examperiod: ' + str(sel_examperiod))
 
-
-        # - get selected examyear, school and department from usersettings
-                        sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                                dl.get_selected_ey_school_dep_from_usersetting(request)
-                        if err_list:
-                            msg_dict = {'class': "border_bg_invalid", 'header': str(_('Approve grade')),
-                                        'msg_html': '<br>'.join(err_list)}
-                            update_wrap['messages'] = [msg_dict]
-                        else:
-
-        # - get selected examperiod from usersetting
-                            sel_examperiod, sel_examtype = None, None
-                            selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                            if selected_pk_dict:
-                                sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
-                                sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
+                        if sel_examperiod and sel_examtype:
+    # - when mode = submit_submit: check verificationcode.
+                            verification_is_ok = True
+                            if not is_test:
+                                verification_is_ok, verif_msg_html = subj_vw.check_verifcode_local(upload_dict, request)
+                                if verif_msg_html:
+                                    msg_html = verif_msg_html
+                                if verification_is_ok:
+                                    update_wrap['verification_is_ok'] = True
 
                             if logging_on:
-                                logger.debug('sel_examtype:   ' + str(sel_examtype))
-                                logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                                logger.debug('verification_is_ok: ' + str(verification_is_ok))
+                                logger.debug('msg_html:           ' + str(msg_html))
+                                logger.debug('is_test:            ' + str(is_test))
 
-                            if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
+                            if verification_is_ok:
+
+# - create_grade_approve_rows
                                 grade_approve_rows = create_grade_approve_rows(
                                     request=request,
                                     sel_examyear_pk=sel_examyear.pk,
@@ -793,7 +943,7 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08
                                 msg_dict = {}
                                 if grade_approve_rows:
 
-        # +++ create new published_instance.
+# +++ create new published_instance.
                                     # only save it when it is not a test
                                     # file_name will be added after creating Ex-form
                                     published_instance = None
@@ -815,11 +965,15 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08
                                             published_pk = published_instance.pk
                                             file_name = published_instance.name
 
-        # +++++ loop through grade_approve_rows
+                                    if logging_on:
+                                        logger.debug('published_pk: ' + str(published_pk))
+                                        logger.debug('file_name:    ' + str(file_name))
+
+# +++++ loop through grade_approve_rows
                                     grade_rows_tobe_updated = []
                                     for grade_row in grade_approve_rows:
-                                        submit_grade_row(grade_row, grade_rows_tobe_updated, sel_examtype, is_test, msg_dict, request)
-        # +++++  end of loop through grade_approve_rows
+                                        submit_grade_row(grade_row, grade_rows_tobe_updated, sel_examperiod, sel_examtype, is_test, msg_dict, request)
+# +++++  end of loop through grade_approve_rows
 
                                     updated_grade_pk_list = []
                                     if not is_test and grade_rows_tobe_updated:
@@ -828,18 +982,18 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08
                                     row_count = len(grade_approve_rows)
                                     if logging_on:
                                         logger.debug('row_count: ' + str(row_count))
-                                        logger.debug('msg_dict: ' + str(msg_dict))
+                                        logger.debug('msg_dict:  ' + str(msg_dict))
 
                                     if not row_count:
                                         msg_dict['count_text'] = str(
                                             _("The selection contains %(val)s.") % {'val': get_grade_text(0)})
                                     else:
-                        # - create msg_html with info of rows
-                                        create_submit_exform_msg_dict(msg_dict, file_name, is_test, 'Ex2')
+                        # - create msg_dict with info of rows
+                                        test_is_ok = create_submit_exform_msg_dict(msg_dict, file_name, is_test, 'Ex2')
 
+# +++ create Ex2_xlsx
                                         if not is_test:
-                         # +++ create Ex2_xlsx
-                            # - get text from examyearsetting
+                        # - get text from examyearsetting
                                             library = awpr_lib.get_library(sel_examyear, ['exform', 'ex2'])
                                             # just to prevent PyCharm warning on published_instance=published_instance
                                             # response = awpr_excel.create_Ex2_xlsx(
@@ -875,15 +1029,17 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08
                                                 )
                                                 if updated_grade_rows:
                                                     update_wrap['updated_grade_rows'] = updated_grade_rows
-
-    # - add  msg_dict to update_wrap
-            update_wrap['msg_dict'] = msg_dict
-            if logging_on:
-                logger.debug('msg_dict:    ' + str(msg_dict))
+ # - add  msg_html to update_wrap
+        update_wrap['test_is_ok'] = test_is_ok
+        if msg_html:
+            update_wrap['approve_msg_html'] = msg_html
+        if msg_dict:
+            update_wrap['approve_msg_dict'] = msg_dict
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of GradeSubmitEx2View
+
 
 def create_submit_exform_msg_dict(msg_dict, file_name, is_test, ex_form): # PR2022-03-11
     logging_on = False  # s.LOGGING_ON
@@ -891,6 +1047,8 @@ def create_submit_exform_msg_dict(msg_dict, file_name, is_test, ex_form): # PR20
         logger.debug(' ')
         logger.debug('  ----- create_submit_exform_msg_dict -----')
         logger.debug('msg_dict: ' + str(msg_dict))
+
+    test_is_ok = False
 
     if is_test:
         count = msg_dict.get('count', 0)
@@ -912,7 +1070,7 @@ def create_submit_exform_msg_dict(msg_dict, file_name, is_test, ex_form): # PR20
             msg_dict['saved_text2'] = _("All grades must be approved by the chairperson, secretary%(exam_comm)s.") % {'exam_comm': exam_comm}
         else:
             if committed:
-                msg_dict['test_is_ok'] = True
+                test_is_ok = True
 
             if committed < count:
                 msg_dict['skip_text'] = _("The following grades will be skipped:")
@@ -960,8 +1118,10 @@ def create_submit_exform_msg_dict(msg_dict, file_name, is_test, ex_form): # PR20
             msg_dict['file_name'] = ''.join((str(_("The %(cpt)s form has been saved as '%(val)s'.") % {'cpt': ex_form, 'val': file_name}),
                                              '<br>',
                                               str(_("Go to the page 'Archive' to download the file."))))
+    if logging_on:
+        logger.debug('msg_dict: ' + str(msg_dict))
 
-
+    return test_is_ok
 # - end of create_submit_exform_msg_dict
 
 
@@ -1210,12 +1370,14 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
 # - end of approve_grade_row
 
 
-def submit_grade_row(grade_row, tobe_updated_list, sel_examtype, is_test, msg_dict, request):
-    # PR2022-03-09
+def submit_grade_row(grade_row, tobe_updated_list, sel_examperiod, sel_examtype, is_test, msg_dict, request):
+    # PR2022-03-09 PR2022-04-17
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- submit_grade_row -----')
-        logger.debug('grade_row: ' + str(grade_row))
+        logger.debug('grade_row:      ' + str(grade_row))
+        logger.debug('sel_examperiod: ' + str(sel_examperiod))
+        logger.debug('sel_examtype:   ' + str(sel_examtype))
 
     af.add_one_to_count_dict(msg_dict, 'count')
 
@@ -1226,7 +1388,7 @@ def submit_grade_row(grade_row, tobe_updated_list, sel_examtype, is_test, msg_di
 # - skip if this grade/examtype is already published
         published_id = grade_row.get( 'published_id')
         if logging_on:
-            logger.debug('published_id:    ' + str(published_id))
+            logger.debug('published_id:   ' + str(published_id))
 
         if published_id:
             af.add_one_to_count_dict(msg_dict, 'already_published')
@@ -1241,7 +1403,13 @@ def submit_grade_row(grade_row, tobe_updated_list, sel_examtype, is_test, msg_di
             auth4by_id = grade_row.get('auth4by_id')
 
 # - skip if this grade / examtype is not approved by all auth
-            auth_missing = auth1by_id is None or auth2by_id is None or auth3by_id is None or auth4by_id is None
+            auth_missing = auth1by_id is None or auth2by_id is None or auth3by_id is None
+            if not auth_missing:
+            # TODO change when submitting exemption grades (NIU yet)
+                if sel_examperiod != c.EXAMPERIOD_EXEMPTION:
+                    if sel_examtype in ('pe', 'ce'):
+                        auth_missing = auth4by_id is None
+
             if logging_on:
                 logger.debug('auth_missing: ' + str(auth_missing))
 
@@ -1404,12 +1572,13 @@ def approve_single_grade(grade, sel_examtype, requsr_auth, auth_index, is_test, 
 
 
 @method_decorator([login_required], name='dispatch')
-class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01-24 PR2022-03-18
+class GradeUploadView(View):
+    # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01-24 PR2022-03-18
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
-            logger.debug('')
+            logger.debug(' ')
             logger.debug(' ============= GradeUploadView ============= ')
         # function updates grade records of current studentsubject PR2020-11-21
         # adding or deleting grades is done by StudentsubjectSingleUpdateView
@@ -1449,7 +1618,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
                 'grade_pk': 22958, 'student_pk': 3935, 'studsubj_pk': 21706, 'examgradetype': 'segrade', 'segrade': '44'}
  
                 """
-    # - get selected examyear, school and department from usersettings
+# - get selected examyear, school and department from usersettings
                 # may_edit = False when:
                 #  - country is locked,
                 #  - examyear is not found, not published or locked
@@ -1498,15 +1667,15 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
                         logger.debug('grade: ' + str(grade))
 
                     if grade:
-                        # TODO student_subj_grade_dict is not in use, I think
-                        #examperiod_int = grade.examperiod
-                        #double_entrieslist = []
-                        #studsubj_pk = grade.studentsubject_id
-                        #student_subj_grade_dict =  grad_val.get_student_subj_grade_dict(sel_school, sel_department, examperiod_int, examgradetype, double_entrieslist, student_pk, studsubj_pk)
+                        # student_subj_grade_dict is not in use, I think
+                        #   examperiod_int = grade.examperiod
+                        #   double_entrieslist = []
+                        #   studsubj_pk = grade.studentsubject_id
+                        #   student_subj_grade_dict =  grad_val.get_student_subj_grade_dict(sel_school, sel_department, examperiod_int, examgradetype, double_entrieslist, student_pk, studsubj_pk)
 
 # +++ check if editing grade is allowed
                         is_score = 'score' in examgradetype
-                        # PR2022-04-06 <Marisela Cijntje RAdulphus cannot edit grade:
+                        # PR2022-04-06 <Marisela Cijntje Radulphus cannot edit grade:
                         # cause: Hav]Vwo has no level,
                         # error: 'NoneType' object has no attribute 'base_id'
                         # cause: Havo/Vwo has no level
@@ -1606,7 +1775,7 @@ class GradeUploadView(View):  # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01
 
 def validate_grade_multiple_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk):
     # PR2022-04-07
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
@@ -1689,7 +1858,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
                                 sel_department, student, si_dict, request):
     # --- update existing grade PR2020-12-16 PR2021-12-13 PR2021-12-25
     # add new values to update_dict (don't reset update_dict, it has values)
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_grade_instance -------')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -1707,9 +1876,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 
     for field, new_value in upload_dict.items():
 
-        if logging_on:
-            logger.debug('......... field: ' + str(field))
-            logger.debug('......... new_value: ' + str(new_value))
+        #if logging_on:
+        #    logger.debug('......... field: ' + str(field))
+        #    logger.debug('......... new_value: ' + str(new_value))
 
         if field in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
 
@@ -1806,7 +1975,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 
 # +++ if one of the input fields has changed: recalc calculated fields
     if recalc_finalgrade:
-        recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, True) # True = skip_save, will be saved furthtr in this function
+        recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, True) # True = skip_save, will be saved further in this function
 
 # 5. save changes`
     if save_changes:
@@ -1920,14 +2089,12 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
 
             studentsubject = grade_instance.studentsubject
             has_sr = studentsubject.has_sr
-            exem_year = studentsubject.exemption_year
+            exemption_year = studentsubject.exemption_year
 
             gradetype = si_dict.get('gradetype')
             weight_se = si_dict.get('weight_se')
             weight_ce = si_dict.get('weight_ce')
             has_practexam = si_dict.get('has_practexam')
-
-
 
             se_grade, sr_grade, pe_grade = None, None, None
 
@@ -1969,12 +2136,12 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
 # - calc sesr pece and final grade
             if logging_on:
                 logger.debug(' calc sesr pece and final grade ')
-            sesr_grade, pece_grade, finalgrade = \
+            sesr_grade, pece_grade, finalgrade, delete_cegrade = \
                 calc_final.calc_sesr_pece_final_grade(
                     si_dict=si_dict,
                     is_ep_exemption=is_ep_exemption,
                     has_sr=has_sr,
-                    exem_year=exem_year,
+                    exemption_year=exemption_year,
                     se_grade=se_grade,
                     sr_grade=sr_grade,
                     pe_grade=pe_grade,
@@ -1984,6 +2151,10 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
             setattr(grade_instance, 'sesrgrade', sesr_grade)
             setattr(grade_instance, 'pecegrade', pece_grade)
             setattr(grade_instance, 'finalgrade', finalgrade)
+
+            # - when exemption: in case ce_grade has value: remove value when exemption has no central exam
+            if delete_cegrade:
+                setattr(grade_instance, 'cegrade', None)
 
             if not skip_save:
                 grade_instance.save()
@@ -2046,6 +2217,20 @@ def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
         # filter on exyr, schoolbase, depbase, examperiod is in main query
         requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase_pk)
 
+        # PRE2022-04-17 show not icon of last note, instead of max icon
+        # from: https://ubiq.co/database-blog/how-to-get-first-row-per-group-in-postgresql/
+        # nope, keep max icon
+        # sql_ssn_list = [
+        #    "SELECT studsubj_id, last_note_status FROM (",
+        #    "SELECT ssn.studentsubject_id AS studsubj_id, ",
+        #     "COALESCE(note_status, '0_1') AS last_note_status, ",
+        #    "ROW_NUMBER() over (PARTITION BY ssn.studentsubject_id ORDER BY ssn.modifiedat DESC) AS row_number",
+        #     "FROM students_studentsubjectnote AS ssn",
+        #    "WHERE (ssn.intern_schoolbase_id = %(requsr_sb_id)s::INT OR ssn.intern_schoolbase_id IS NULL)",
+        #    ") temp WHERE row_number=1"]
+        # sql_ssn = ' '.join(sql_ssn_list)
+        # row: {'studsubj_id': 23033, 'last_note_status': '1_3'}
+
         sql_keys = {
             'ey_id': sel_examyear_pk,
             'sb_id': sel_schoolbase_pk,
@@ -2057,6 +2242,7 @@ def create_grade_note_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
             logger.debug('sql_keys: ' + str(sql_keys))
             logger.debug('requsr_same_school: ' + str(requsr_same_school))
 
+        # was:
         sql_ssn_list = ["SELECT ssn.studentsubject_id AS studsubj_id, MAX(ssn.note_status) AS max_note_status",
                     "FROM students_studentsubjectnote AS ssn",
                     "WHERE (ssn.intern_schoolbase_id = %(requsr_sb_id)s::INT OR ssn.intern_schoolbase_id IS NULL)",
@@ -2184,7 +2370,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
     #   create dict with pk and username of all users of this school and lookup in
     username_dict = acc_view.get_username_dict()
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
@@ -2201,7 +2387,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
         requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase_pk)
 
         # - also corrector .TODO: add allowed school to corrector permit
-        requsr_corrector = (req_user.role == c.ROLE_016_COMM)
+        requsr_corrector = (req_user.role == c.ROLE_016_CORR)
 
     #  - add_auth_list is used in Ex form to add name of auth
         add_auth_list = True if auth_dict is not None else False
@@ -2211,8 +2397,10 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
 
     # - only when requsr_same_school the not-published grades are visible
-        # - also the corrector
-        if requsr_same_school or requsr_corrector:
+        # - also the role_corrector may see the grades
+        # - also exemptions, because they are not published - they are always visible. TODO publish exemptions
+
+        if requsr_same_school or requsr_corrector or sel_examperiod == c.EXAMPERIOD_EXEMPTION:
             grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
             final_grade = "grd.finalgrade AS finalgrade,"
             status = "se_status, sr_status, pe_status, ce_status,"
@@ -2236,13 +2424,15 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
             final_check_pe = '(CASE WHEN si.has_practexam THEN (CASE WHEN grd.pe_published_id IS NOT NULL THEN TRUE ELSE FALSE END) ELSE TRUE END)'
 
             final_grade = "CASE WHEN " + final_check_se + " AND " + final_check_ce + "  AND " + final_check_pe + " THEN grd.finalgrade ELSE NULL END AS finalgrade,"
-
+            # TODO remove this one?
             status = ' '.join([
                 "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.se_status ELSE NULL END AS se_status,",
                 "CASE WHEN grd.sr_published_id IS NOT NULL THEN grd.sr_status ELSE NULL END AS sr_status,",
                 "CASE WHEN grd.pe_published_id IS NOT NULL THEN grd.pe_status ELSE NULL END AS pe_status,",
                 "CASE WHEN grd.ce_published_id IS NOT NULL THEN grd.ce_status ELSE NULL END AS ce_status,"
             ])
+
+            status = "se_status, sr_status, pe_status, ce_status,"
 
         sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
                     "CONCAT('grade_', grd.id::TEXT) AS mapid,",
@@ -2251,7 +2441,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "sct.id AS sct_id, sct.base_id AS sctbase_id, sct.abbrev AS sct_abbrev,",
                     "stud.iseveningstudent, ey.locked AS ey_locked, school.locked AS school_locked,",
                     "school.islexschool,",
-                    "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
+                    "studsubj.has_exemption, studsubj.exemption_year, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
 
                     grades, final_grade, status,
                     "grd.examperiod,",

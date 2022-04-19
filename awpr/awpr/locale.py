@@ -259,7 +259,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Read_only'] = _('Read only')
         dict['Read_only_2lines'] =  pgettext_lazy('2 lines', 'Read\nonly')
         dict['Edit'] = _('Edit')
-        dict['pagelist'] = c.PAGE_LIST
+        # NIU dict['pagelist'] = c.PAGE_LIST
 
         dict['Allowed_sections'] = _('Allowed sections')
         dict['Allowed_departments'] = _('Allowed departments')
@@ -614,6 +614,17 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['already_exists_in_departments'] = _(' already exists in one of the departments.')
 
+
+        dict['Examyears_without_CE'] = _('Exam years without CE')
+        dict['ModExemptionYear_info'] = {
+            'line_01': _('In 2020 and 2021 not all subjects had a central exam because of the Covid-pandemic.'),
+            'line_02': _('Select the exam years in which the subject did not have a central exam.'),
+            'line_03': _("You can leave the examyear blank, when the CE-weighing of the subject is zero."),
+        }
+
+        dict['NoCe_examyear_info1'] = _('The CE weighing of this subject is zero.')
+        dict['NoCe_examyear_info2'] = _("You don't have to select exam years without CE.")
+
 # ====== PAGE SCHOOL ========================= PR2020-09-30
     if 'page_school' in page_list:
 
@@ -690,7 +701,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Abbrev'] = _('Abbrev.')
 
         dict['Class'] = _('Class')
-        dict['Bis_candidate'] = _('Bis-candidate')
+        dict['Bis_exam'] = _('Bis exam')
         dict['Partial_exam'] = _('Partial exam')
         dict['Additional_exam'] = _('Additional exam')
 
@@ -708,6 +719,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Abbreviation_twolines'] = _('Abbre-\nviation')
         dict['Exemption_year'] = _('Exemption year')
         dict['Exemption_year_twolines'] = _('Exemption-\nyear')
+
+        dict['Select_exemption_examyear'] = _('Select the exam year of the exemption')
+
+        dict['exemption_msg_01'] = _("You can only enter exemptions when a candidate has a 'Bis-exam'.")
+        dict['exemption_msg_02'] = _("Go to the page 'Candidates' first and tick off 'Bis-exam'.")
 
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
         dict['No_subject_selected'] = TXT_No_subject_selected
@@ -758,7 +774,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['_for_'] = TXT__for_
 
         dict['Approve_subjects'] = _('Approve subjects')
-        dict['Apply_verificationcode'] = _('Apply verificationcode')
+        dict['Request_verifcode'] = TXT_Request_verifcode
         dict['Submit_Ex1_form'] = _('Submit Ex1 form')
 
         dict['Preliminary_Ex1_form'] = _('Preliminary Ex1')
@@ -816,6 +832,14 @@ def get_locale_dict(table_dict, user_lang, request):
             'creating_Ex1_form': _("AWP is creating the %(ex)s form") % {'ex': 'Ex1'},
             'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
+        dict['MExemptionYear_info'] = {
+            'line_01': _('In 2020 and 2021 not all subjects had a central exam because of the Covid-pandemic.'),
+            'line_02': _('In that case the exemption has no CE-grade.'),
+            'line_03': _('If the exemption is from one of these examyears, you must select the proper examyear, ',),
+            'line_04': _('so AWP can determine if a CE-grade is required.'),
+            'line_05': _('You can leave the examyear blank, when the exemption has a CE-grade or when the CE-weighing of the subject is zero.')
+        }
+
         # Ex3 modal
 
         dict['Ex3'] = _('Ex3')
@@ -899,7 +923,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submitted_at'] = _('Submitted at ')
         dict['Published_at'] = _('Published at ')
 
-        dict['Apply_verificationcode'] = _('Apply verificationcode')
+        dict['Request_verifcode'] = TXT_Request_verifcode
 
         dict['Print_exam'] = _("Print exam")
         dict['Blanks'] = _("Blanks")
@@ -1025,6 +1049,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_examperiod'] = _('Please select an exam period in the horizontal black bar.')
         dict['Please_select_examtype'] = _('Please select one exam type in the vertical grey bar at the left.')
 
+
+        dict['Please_select_schoolexam'] = _("First select the exam type 'School exam' in the vertical grey bar at the left.")
+        dict['Please_select_correct_exam'] = _("First select the correct exam type in the vertical grey bar at the left.")
+
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
@@ -1053,15 +1081,21 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+        dict['Exemption_year'] = _('Exemption year')
 
         dict['Submit_Ex2_form'] = _('Submit Ex2 form')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Approve_grade'] = _('Approve grade')
         dict['Approve_grades'] = _('Approve grades')
+        dict['Block_grade'] = _('Block grade')
+        dict['Unblock_grade'] = _('Unblock grade')
         dict['Preliminary_Ex2A'] = _('Preliminary Ex2A')
 
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
+
+        dict['Request_verifcode'] = TXT_Request_verifcode
+
         dict['Submit'] = TXT_Submit
         dict['Show_fully_approved'] = _('Only the grades, that are fully approved or submitted, are shown.')
         dict['Show_not_fully_approved'] = _('Only the grades, that are not fully approved, are shown.')
@@ -1071,7 +1105,8 @@ def get_locale_dict(table_dict, user_lang, request):
             'subheader_submit_ex2': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2'},
             'subheader_submit_ex2a': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2A'},
             'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
-            'approve_1': _('After the grades are approved by the chairperson, secretary and corrector,'),
+            'approve_1_ex2': _('After the grades are approved by the chairperson, secretary and examiner,'),
+            'approve_1_ex2a': _('After the grades are approved by the chairperson, secretary, examiner and corrector,'),
             'approve_2_ex2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2'},
             'approve_2_ex2a': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2A'},
 
@@ -1080,13 +1115,28 @@ def get_locale_dict(table_dict, user_lang, request):
             'corrector_cannot_approve_se': _("As a corrector you don't have to approve %(et)s grades.") \
                                               % {'et': str(_('School exam')).lower()},
             'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
-            'submit_1_ex2': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected grades.") % {'ex': 'Ex2'},
-            'submit_1_ex2a': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected grades.") % {'ex': 'Ex2A'},
+            'submit_1': _("If the check is OK, click 'Request verification code' to submit the selected grades."),
             'submit_2': _("After the grades are submitted, you can only change them with permission of the Inpsection."),
 
             'submit_ok_01_ex2': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2'},
             'submit_ok_01_ex2a': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2A'},
+
+            'block_01': _("You are about to block this grade."),
+            'block_02': _("The diploma and final grade list can not be printed when a grade is blocked."),
+            'block_03': _("The school has to change the grade and approve and submit it again."),
+            'block_04': _("Then you can unblock the grade by clicking this icon again."),
+            'block_05': _("Please add a note with an explanation and include the grade in the note."),
+            'block_06': _("After blocking the grade, the value of the grade will no longer be visible for you."),
+
+            'unblock_01': _("You are about to unblock this grade."),
+
+            'verif_01': _("You need a 6 digit verification code to submit the Ex form."),
+            'verif_02': _("Click 'Request verification code' and we will send you an email with the verification code."),
+            'verif_03': _("The verification code expires in 30 minutes."),
+
+
         }
+
 
         dict['Score'] = _('Score')
         dict['Grade'] = _('Grade')
@@ -1120,6 +1170,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Exem_SE_twolines'] = '\n'.join((str(_('Exemption')), str(_('SE-grade'))))
         dict['Exem_CE_twolines'] = '\n'.join((str(_('Exemption')), str(_('CE-grade'))))
         dict['Exem_FINAL_twolines'] = '\n'.join((str(_('Exemption')), str(_('Final grade'))))
+        dict['Exemption_year_twolines'] = _('Exemption-\nyear')
 
         dict['Examnumber'] = TXT_Examnumber
         dict['Notes'] = _('Notes')
@@ -1145,7 +1196,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Corrector'] = TXT_Corrector
         dict['Examiner'] = TXT_Examiner
         dict['Approved_by'] = TXT_Approved_by
-        dict['Submitted_by'] = TXT_Submitted_by
+        dict['Submitted_at'] = TXT_Submitted_at
+
+        dict['blocked_01'] = _('This grade has been blocked by the Inspectorate.')
+        dict['blocked_02'] = _('Make corrections and approve and submit this grade again.')
+        dict['blocked_03'] = _("Click the icon in the column 'Notes' to view the explanation.")
+
+        dict['blocked_11'] = _('This grade has been blocked by the Inspectorate.')
+        dict['blocked_12'] = _('It has been submitted again at ')
+        dict['blocked_13'] = _("The Inspectorate has not unblocked the grade yet.")
 
         dict['and'] = TXT__and_
 
@@ -1324,7 +1383,9 @@ TXT__of_ = _(' of ')
 TXT_Submit = _('Submit')
 
 TXT_Approved_by = _('Approved by')
-TXT_Submitted_by = _('Submitted by')
+TXT_Submitted_at = _('Submitted at')
+
+TXT_Request_verifcode = _('Request verificationcode')
 
 TXT__and_ = _(' and ')
 TXT__or_ = _(" or ")

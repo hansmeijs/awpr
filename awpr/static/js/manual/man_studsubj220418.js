@@ -89,7 +89,7 @@ const man_studsubj = {
                 "<p>De 'Titel van het werkstuk' en 'Vakken waarop het werkstuk betrekking heeft' zijn voortaan opgenomen als individueel kenmerk van het vak 'Werkstuk'. ",
                 "Klik op het vak 'Werkstuk' en vul de titel en vakken van het werkstuk in bij <i>Kenmerken van het vak</i> </p>",
                 "<p>Je kunt de titels en vakken van het werkstuk ook uploaden. ",
-                "Klik in de menubalk op <i>Vakken uploaden</i> en koppel bij stap 2 de velden 'Titel van het werkstuk' en 'Vakken van het werkstuk' ",
+                "Klik in de menubalk van de pagina <i>Vakken</i> op <i>Vakken uploaden</i> en koppel bij stap 2 de velden 'Titel van het werkstuk' en 'Vakken van het werkstuk' ",
                 "aan de betreffende Excel kolommen.<br>",
                 "Ook als de vakken reeds zijn ingevoerd in AWP kun je de titels en vakken van het werkstuk uploaden.</p"
             ]),
@@ -181,10 +181,10 @@ en:  [
              [
                  "<p>The 'Title of the assignment' and 'Subjects to which the assignment relates' are now included as individual attributes of the subject 'Project'. ",
                  "Click on the field 'Project' and fill in the title and fields of the assignment at <i>Attributes of the subject</i> </p>",
-                 "<p>You can also upload the titles and subjects of the paper. ",
-                 "Click in the menu bar on <i>Upload courses</i> and link the fields 'Title of the assignment' and 'Subjects of the assignment' in step 2 ",
+                 "<p>You can also upload the titles and subjects of the assignment. ",
+                 "Click in the menu bar of the page <i>Subjects</i> on <i>Upload subjects</i> and link the fields 'Title of the assignment' and 'Subjects of the assignment' in step 2 ",
                  "to the appropriate Excel columns.<br>",
-                 "Even if the courses have already been entered in AWP, you can upload the titles and courses of the paper.</p"
+                 "Even if the subjects have already been entered in AWP, you can upload the titles and subjects of the assignment.</p"
              ]),
         "<div class='p-3 visibility_hide'>-</div>",
      ]

@@ -732,8 +732,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  HandleTblRowClicked  ================ PR2020-08-03 PR2021-05-22
     function HandleTblRowClicked(tblRow) {
-        console.log("=== HandleTblRowClicked");
-        console.log( "tblRow: ", tblRow, typeof tblRow);
+        //console.log("=== HandleTblRowClicked");
+        //console.log( "tblRow: ", tblRow);
 
 // ---  deselect all highlighted rows - also tblFoot , highlight selected row
         //DeselectHighlightedRows(tblRow, cls_selected);
@@ -1043,9 +1043,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-22
     function CreateTblHeader(field_setting, col_hidden) {
-        console.log("===  CreateTblHeader ===== ");
-        console.log("field_setting", field_setting);
-        console.log("col_hidden", col_hidden);
+        //console.log("===  CreateTblHeader ===== ");
+        //console.log("field_setting", field_setting);
+        //console.log("col_hidden", col_hidden);
 
         const column_count = field_setting.field_names.length;
 
@@ -1126,10 +1126,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-05-23 PR2022-01-19
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        console.log("=========  CreateTblRow =========");
-        console.log("tblName", tblName);
+        //console.log("=========  CreateTblRow =========");
+        //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-        console.log("data_dict", data_dict);
+        //console.log("data_dict", data_dict);
         //console.log("col_hidden", col_hidden, typeof col_hidden);
 
         const field_names = field_setting.field_names;
@@ -1599,7 +1599,9 @@ document.addEventListener("DOMContentLoaded", function() {
     console.log( "is_published", is_published);
     console.log( "auth1by_id", auth1by_id);
     console.log( "auth2by_id", auth2by_id);
-                    const new_class_str = b_get_status_iconclass(is_published, false, !!auth1by_id, !!auth2by_id, !!auth2by_id, !!auth1by_id);
+
+                    const new_class_str = b_get_status_auth1_auth2_iconclass(is_published, false, auth1by_id, auth2by_id);
+
                     el_input.className = new_class_str;
                     console.log( "new_class_str)", new_class_str);
 
@@ -5147,6 +5149,10 @@ document.addEventListener("DOMContentLoaded", function() {
             const is_approve_mode = (mode === "approve");
             const is_submit_mode = (mode === "submit");
 
+    console.log("is_approve_mode", is_approve_mode) ;
+    console.log("is_submit_mode", is_submit_mode) ;
+    console.log("permit_dict.usergroup_list", permit_dict.usergroup_list) ;
+
 // get list of auth_index of requsr
             const requsr_auth_list = [];
             if (permit_dict.usergroup_list.includes("auth1")){requsr_auth_list.push(1)};
@@ -5436,10 +5442,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     // msg_info_txt is in response
                     show_info_request_verifcode = mod_MASE_dict.test_is_ok;
                     if (mod_MASE_dict.test_is_ok){
-                        save_btn_txt = loc.Apply_verificationcode;
+                        save_btn_txt = loc.Request_verifcode;
                     };
                 } else if (step === 2) {
-                    // clicked on 'Apply_verificationcode'
+                    // clicked on 'Request_verificationcode'
                     // tekst: 'AWP is sending an email with the verification code'
                     // show textbox with 'You need a 6 digit verification code to submit the Ex form'
                     msg_info_txt = loc.MASE_info.requesting_verifcode;

@@ -828,19 +828,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UploadToggle  ============= PR2020-07-31
     function UploadToggle(el_input) {
-        //console.log( " ==== UploadToggle ====");
-        //console.log( "el_input", el_input);
+        console.log( " ==== UploadToggle ====");
+        console.log( "el_input", el_input);
+        console.log( "permit_dict", permit_dict);
 
         mod_dict = {};
         const has_permit = (permit_dict.permit_crud_otherschool) ||
                             (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
+
+        console.log( "has_permit", has_permit);
+
         if(has_permit){
             const tblRow = t_get_tablerow_selected(el_input);
             if(tblRow){
                 const tblName = get_tblName_from_mapid(tblRow.id);
                 const data_dict = get_datadict_from_mapid(tblRow.id)
-        //console.log( "tblName", tblName);
-        //console.log( "data_dict", data_dict);
+    console.log( "tblName", tblName);
+    console.log( "data_dict", data_dict);
 
                 if(!isEmpty(data_dict)){
                     const fldName = get_attr_from_el(el_input, "data-field");
@@ -855,14 +859,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // ---  toggle permission el_input
                         permit_bool = (!permit_bool);
-    //console.log( "new permit_bool", permit_bool);
+    console.log( "new permit_bool", permit_bool);
             // ---  put new permission in el_input
                         el_input.setAttribute("data-filter", (permit_bool) ? "1" : "0")
            // ---  change icon, before uploading
                         el_input.className = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
 
-           //console.log( "tblName", tblName);
-           //console.log( "fldName", fldName);
+    console.log( "tblName", tblName);
+    console.log( "fldName", fldName);
                         const url_str = (tblName === "userpermit") ? urls.url_userpermit_upload : urls.url_user_upload;
                         const upload_dict = {mode: "update", mapid: data_dict.mapid};
                         if (tblName === "userpermit"){
@@ -875,6 +879,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const usergroupname = fldName.substr(6);
                         upload_dict.usergroups = {}
                         upload_dict.usergroups[usergroupname] = permit_bool;
+    console.log( "upload_dict", upload_dict);
+
                         UploadChanges(upload_dict, url_str);
                     }  // if(fldName === "group_admin" && is_request_user && permit_bool ){
                 }  //  if(!isEmpty(data_dict)){

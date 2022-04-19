@@ -292,12 +292,11 @@ class UserUploadView(View):
                             #       - new_permits is 'write' when user_school is same as requsr_school,
                             #       - permits is 'write' plus 'admin' when user_school is different from requsr_school
 
-                            is_existing_user = True if user_pk else False
-
+                            # is_existing_user = True if user_pk else False
                             if is_same_schoolbase:
-                                new_usergroups = c.USERGROUP_EDIT
+                                new_usergroups = ';'.join((c.USERGROUP_READ, c.USERGROUP_EDIT))
                             else:
-                                new_usergroups = ';'.join((c.USERGROUP_EDIT, c.USERGROUP_ADMIN))
+                                new_usergroups = ';'.join((c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_ADMIN))
 
                             new_user_pk, err_dict, ok_dict = \
                                 create_or_validate_user_instance(
@@ -560,7 +559,7 @@ class UserpermitUploadView(View):
                         if page and action:
                             try:
                                 if role is None:
-                                    role_list = (c.ROLE_008_SCHOOL, c.ROLE_016_COMM, c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM)
+                                    role_list = (c.ROLE_008_SCHOOL, c.ROLE_016_CORR, c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM)
                                 else:
                                     role_list = (role,)
 
@@ -2394,7 +2393,7 @@ def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=Non
     #       else:
     #           --> no filter
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug('----- get_userfilter_allowed_subjbase ----- ')

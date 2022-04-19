@@ -1166,18 +1166,95 @@ def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
 
+
+    # PR2021-03-26 run this always to update text in ex-forms
+    awpr_lib.update_library(examyear, request)
+    # PR2022-04-18 add no_ce_years = '2020' to_schemeitems
+    add_no_ce_years_to_schemeitems(request)
+    # PR2022-04-17 add exemption_year 2021 when field exemption_year is empty
+    add_exemption_year(request)
+
     # PR2021-10-11 move otherlang from subject to schemitem, after this: must delete field otherlang from subject
-    transfer_otherlang_from_subj_to_schemeitem(request)
+    # transfer_otherlang_from_subj_to_schemeitem(request)
 
     #PR2021-08-05 add SXMSYS school if not exists
     # add_sxmsys_school_if_not_exist(request)
 
-    awpr_lib.update_library(examyear, request)
-    # PR2021-03-26
 
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
+
+def add_exemption_year(request):
+    # PR2022-04-17 add exemption_year 2021 when field exemption_year is empty
+    # from now on exemption_year will be added when creating exemption grdae
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- add_exemption_year -------')
+    try:
+        exists = sch_mod.Systemupdate.objects.filter(
+            name='add_exemption_year'
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            sql_list = [
+                "UPDATE students_studentsubject",
+                "SET exemption_year = 2021",
+                "WHERE has_exemption AND exemption_year IS NULL",
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name='add_exemption_year'
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+
+def add_no_ce_years_to_schemeitems(request):
+    # PR2022-04-18 add no_ce_years '2020' when field no_ce_years is empty and weight_ce = 0
+    # from now on exemption_year will be added when creating exemption grdae
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- add_no_ce_years_to_schemeitems -------')
+    try:
+        exists = sch_mod.Systemupdate.objects.filter(
+            name='add_no_ce_years'
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            sql_list = [
+                "UPDATE subjects_schemeitem",
+                "SET no_ce_years = '2020'",
+                "WHERE weight_ce > 0 AND no_ce_years IS NULL",
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name='add_no_ce_years'
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# - end of add_no_ce_years_to_schemeitems
+
 
 def transfer_otherlang_from_subj_to_schemeitem(request):
     # PR 2021-10-12 one time function to move otherlang from table subjects to schemeitem

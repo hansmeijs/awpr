@@ -27,7 +27,7 @@
                             </div>
                         </div>
                         <div class="modal_body_right mx-2 my-2">
-                            <div class="mx-2 my-2">
+                            <div id="id_MSM_input_container"class="mx-2 my-2">
                                 <label id="id_MSM_input_label"></label>
                                 <div class="form-group">
                                     <input id="id_MSM_input"
@@ -39,6 +39,16 @@
                                         placeholder="{% trans 'Type a few letters to filter items in the list ...' %}">
                                 </div>
                             </div>
+
+                            <div id="id_MSM_message_container"class="mx-2 my-2">
+
+                                <div class="mb-2"> {% trans 'In 2020 and 2021 not all subjects had a central exam because of the Covid-pandemic.' %}
+                                {% trans 'In that case the exemption has no CE-grade.' %}</div>
+                                <div class="mb-2">{% trans 'If the exemption is from one of these examyears, you must select the proper examyear, so AWP can determine if a CE-grade is required.' %}</div>
+                                <div>{% trans 'When the exemption has a CE-grade, or when the CE-weighing is 0, you can leave the examyear blank.' %}</div>
+
+                            </div>
+
                         </div>
                     </div>
                 </div>

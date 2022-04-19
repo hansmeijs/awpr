@@ -92,9 +92,9 @@
 
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
-        console.log(" --- UpdateHeaderbar ---" )
-        console.log("setting_dict", setting_dict )
-        console.log("permit_dict", permit_dict )
+        //console.log(" --- UpdateHeaderbar ---" )
+        //console.log("setting_dict", setting_dict )
+        //console.log("permit_dict", permit_dict )
 
         const cls_hide = "display_hide";
 
@@ -458,7 +458,7 @@
     };
 
 //========= add_or_remove_attr_with_qsAll  ======== PR2020-05-01
-    function add_or_remove_attr_with_qsAll(el_container, filter_str, atr_name, is_add, atr_value){
+    function add_or_remove_attr_with_qsAll(el_container, filter_str, attr_name, is_add, attr_value){
         // add or remove attribute from all elements with filter 'filter_str' PR2020-04-29
     //console.log(" --- add_or_remove_attr_with_qsAll --- ")
     //console.log("is_add: ", is_add)
@@ -471,18 +471,29 @@
         //let elements =  document.querySelectorAll("." + filter_str)
         let elements = el_container.querySelectorAll(filter_str);
         for (let i = 0, len = elements.length; i < len; i++) {
-            add_or_remove_attr(elements[i], atr_name, is_add, atr_value);
+            add_or_remove_attr(elements[i], attr_name, is_add, attr_value);
     //console.log(elements[i])
         };
     };  // add_or_remove_attr_with_qsAll
 
+//========= b_get_element_by_data_value  ======== PR2022-04-15
+    function b_get_element_by_data_value(el_container, data_field, data_value){
+        if (data_field && data_value) {
+            const filter_str = ["[data-", data_field, "='", data_value, "']"].join("");
+            return el_container.querySelector(filter_str);
+        } else {
+            return false;
+        };
+    };  // b_get_element_by_data_value
+
+
 //========= add_or_remove_attr  =========== PR2020-05-01
-    function add_or_remove_attr (el, atr_name, is_add, atr_value) {
+    function add_or_remove_attr (el, attr_name, is_add, attr_value) {
         if(!!el){
             if (is_add){
-                el.setAttribute(atr_name, atr_value);
+                el.setAttribute(attr_name, attr_value);
             } else {
-                el.removeAttribute(atr_name);
+                el.removeAttribute(attr_name);
             };
         };
     };  // add_or_remove_attr
@@ -711,72 +722,105 @@
         return status_array_reversed;
     };  // b_get_status_array
 
-    function b_get_status_iconclass(publ, blocked, auth1, auth2, auth3, auth4) { //  PR2021-05-07 PR2021-12-18
-        let img_class = "diamond_0_0"; // empty diamond
+    function b_get_status_auth1_auth2_iconclass(publ, blocked, auth1, auth2) {
+    // PR2022-04-17
+        const prefix = (blocked) ? "blocked_" : "diamond_";
+        let img_class = prefix + "0_0"; // empty diamond
         if(publ){
             if (blocked){
-                img_class = "diamond_2_4";  // orange diamond: published after blocked by Inspectorate
+                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
             } else {
-                img_class = "diamond_0_4";  // blue diamond: published
-            }
+                img_class = prefix + "0_4";  // blue diamond: published
+            };
         } else {
             if (blocked){
-                img_class = "diamond_1_4";  // red diamond: blocked by Inspectorate, published is removed to enable correction
+                img_class = prefix + "1_4";  // red diamond: blocked by Inspectorate, published is removed to enable correction
             } else {
                 if (auth1){
                     if (auth2){
-                        if (auth3){
-                            if (auth4){
-                                img_class = "diamond_3_3"; // auth 1+2+3+4
-                            } else {
-                                img_class = "diamond_1_3"; // auth 1+2+3
-                            }
-                        } else {
-                            if (auth4){
-                                img_class = "diamond_2_3"; // auth 1+2+4
-                            } else {
-                                img_class = "diamond_0_3"; // auth 1+2
-                        }};
+                        img_class = prefix + "3_3"; // auth 1+2+3+4
                     } else {
-                        if (auth3){
-                            if (auth4){
-                                img_class = "diamond_3_1"; // auth 1+3+4
-                            } else {
-                                img_class = "diamond_1_1"; // auth 1+3
-                            }
-                        } else {
-                            if (auth4){
-                                img_class = "diamond_2_1"; // auth 1+4
-                            } else {
-                                img_class = "diamond_0_1"; // auth 1
-                    }}};
+                        img_class = prefix + "2_1"; // auth 1+4
+                    };
                 } else {
                     if (auth2){
-                        if (auth3){
-                            if (auth4){
-                                img_class = "diamond_3_2"; // auth 2+3+4
-                            } else {
-                                img_class = "diamond_1_2"; // auth 2+3
-                            }
-                        } else {
-                            if (auth4){
-                                img_class = "diamond_3_2"; // auth 2+4
-                            } else {
-                                img_class = "diamond_0_2"; // auth 2
-                        }};
+                        img_class = prefix + "1_2"; // auth 2+3
                     } else {
-                        if (auth3){
-                            if (auth4){
-                                img_class = "diamond_3_0"; // auth 3+4
-                            } else {
-                                img_class = "diamond_1_0"; // auth 3
-                            }
+                        img_class = prefix + "0_0"; // auth -
+        }}}};
+        return img_class;
+    };
+
+    function b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3, auth4_must_sign, auth4) {
+    // PR2021-05-07 PR2021-12-18 PR2022-04-17
+        //console.log( " ==== b_get_status_auth1234_iconclass ====");
+        //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2, "auth3", auth3)
+        const prefix = (blocked) ? "blocked_" : "diamond_";
+        let img_class = prefix + "0_0"; // empty diamond
+    //console.log( "img_class", img_class);
+        if(publ){
+            if (blocked){
+                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
+            } else {
+                img_class = prefix + "0_4";  // blue diamond: published
+            }
+        } else {
+
+            if (auth1){
+                if (auth2){
+                    if (auth3){
+                        if (auth4 || !auth4_must_sign){
+                            img_class = prefix + "3_3"; // auth 1+2+3+4
                         } else {
-                            if (auth4){
-                                img_class = "diamond_2_0"; // auth 4
-                            } else {
-                                img_class = "diamond_0_0"; // auth -
-        }}}}}};
+                            img_class = prefix + "1_3"; // auth 1+2+3
+                        }
+                    } else {
+                        if (auth4){
+                            img_class = prefix + "2_3"; // auth 1+2+4
+                        } else {
+                            img_class = prefix + "0_3"; // auth 1+2
+                    }};
+                } else {
+                    if (auth3){
+                        if (auth4){
+                            img_class = prefix + "3_1"; // auth 1+3+4
+                        } else {
+                            img_class = prefix + "1_1"; // auth 1+3
+                        }
+                    } else {
+                        if (auth4){
+                            img_class = prefix + "2_1"; // auth 1+4
+                        } else {
+                            img_class = prefix + "0_1"; // auth 1
+                }}};
+            } else {
+                if (auth2){
+                    if (auth3){
+                        if (auth4){
+                            img_class = prefix + "3_2"; // auth 2+3+4
+                        } else {
+                            img_class = prefix + "1_2"; // auth 2+3
+                        }
+                    } else {
+                        if (auth4){
+                            img_class = prefix + "3_2"; // auth 2+4
+                        } else {
+                            img_class = prefix + "0_2"; // auth 2
+                    }};
+                } else {
+                    if (auth3){
+                        if (auth4){
+                            img_class = prefix + "3_0"; // auth 3+4
+                        } else {
+                            img_class = prefix + "1_0"; // auth 3
+                        }
+                    } else {
+                        if (auth4){
+                            img_class = prefix + "2_0"; // auth 4
+                        } else {
+                            img_class = prefix + "0_0"; // auth -
+        }}}}};
+    //console.log( "img_class", img_class);
         return img_class;
     };
 

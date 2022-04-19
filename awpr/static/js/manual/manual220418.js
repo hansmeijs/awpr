@@ -167,12 +167,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_cluster_student", "Kandidaten toevoegen of verwijderen"]
             ]),
 
-        get_dropdown_button("exemption", "id_intro", "Vrijstellingen", [
+        get_dropdown_button("exemption", "id_intro_exemption", "Vrijstellingen", [
             ["id_exem_bis_exam", "Bis-kandidaten"],
             ["id_exem_set", "Vrijstellingen aanmaken"],
             ["id_exem_grades", "Vrijstelling cijfers invoeren"],
             ["id_exem_upload", "Vrijstelling cijfers uploaden"],
-            ["id_exem_approve", "Vrijstellingen goedkeuren en indienen"]
+            ["id_exem_approve", "Vrijstellingen goedkeuren en indienen"],
+            ["id_exem_exemption_year", "Jaar van de vrijstelling"]
             ]),
 
         get_dropdown_button("exams", "id_intro_exams", "Examens (voormalige WOLF programma)", [
@@ -187,6 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_approve_icon", "Het goedkeurings-icoontje"],
             ["id_approve_subjects", "Goedkeuren van vakken"],
             ["id_approve_grades", "Goedkeuren van scores of cijfers"],
+            ["id_block_grades", "Controle door de Inspectie"],
             ["id_prelim_exform", "Het voorlopige Ex-formulier"],
             ["id_submit_exform", "Het Ex-formulier indienen"],
             ["id_submitted_exforms", "Lijst met ingediende Ex-formulieren"],
@@ -240,18 +242,20 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_cluster_add_delete", "Clusters toevoegen of wissen"],
             ["id_cluster_student", "Kandidaten toevoegen of verwijderen"]
             ]),
-        get_dropdown_button("exemption", "id_intro", "Exemptions", [
+        get_dropdown_button("exemption", "id_intro_exemption", "Exemptions", [
              ["id_exem_bis_exam", "Bis candidates"],
              ["id_exem_set", "Create exemptions"],
              ["id_exem_grades", "Enter grade exemption"],
              ["id_exem_upload", "Number upload exemption"],
-             ["id_exem_approve", "Approve and submit exemptions"]
+             ["id_exem_approve", "Approve and submit exemptions"],
+             ["id_exem_exemption_year", "Year of the exemption"]
             ]),
         get_dropdown_button("approve", "id_intro", "Approve and submit Ex forms", [
             ["id_digital_signature", "The digital signature"],
             ["id_approve_icon", "The approval icon"],
             ["id_approve_subjects", "Approve subjects"],
             ["id_approve_grades", "Approve scores or grades"],
+            ["id_block_grades", "Checking grades by the Inspectorate"],
             ["id_prelim_exform", "The preliminary Ex-form"],
             ["id_submit_exform", "Submit the Ex form"],
             ["id_submitted_exforms", "List of submitted Ex forms"],
