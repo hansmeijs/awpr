@@ -116,7 +116,9 @@
         tblBody_select.innerText = null;
 
 // --- loop through data_map
-        if(data_map){
+        if(data_map && data_map.size){
+            // PR2022-04-19 Sentry Error: Expected identifier
+            // don't know why. Added: && data_map.size to if clause
             for (const [map_id, map_dict] of data_map.entries()) {
                 const pk_int = (tblName === "examyear") ? map_dict.examyear_id :
                                (tblName === "department") ? map_dict.base_id : null;
@@ -1572,7 +1574,6 @@
                 inner_text = [loc.Total, count_txt, unit_txt].join(" ");
             }
             el_SBR_item_count.innerText = inner_text;
-        //console.log( "inner_text", inner_text);
         };
     }; // t_set_sbr_itemcount_txt
 

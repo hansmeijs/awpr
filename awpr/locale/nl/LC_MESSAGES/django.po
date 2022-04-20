@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-04-18 20:03-0400\n"
+"POT-Creation-Date: 2022-04-20 08:17-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -598,7 +598,7 @@ msgstr "Gewijzigd"
 msgid "Authorized"
 msgstr "Geautoriseerd"
 
-#: .\awpr\constants.py:65 .\awpr\locale.py:789 .\grades\validators.py:809
+#: .\awpr\constants.py:65 .\awpr\locale.py:789 .\grades\validators.py:807
 #: .\templates\includes\modnote.html:29
 msgid "Approved"
 msgstr "Goedgekeurd"
@@ -2345,7 +2345,7 @@ msgstr "Ja, verstuur e-mail"
 msgid "Created at "
 msgstr "Aangemaakt op "
 
-#: .\awpr\locale.py:343 .\grades\validators.py:809
+#: .\awpr\locale.py:343 .\grades\validators.py:807
 #: .\templates\schools\modexamyear.html:23
 msgid "Published"
 msgstr "Gepubliceerd"
@@ -3809,7 +3809,8 @@ msgstr "CE + her"
 msgid "Number of questions"
 msgstr "Aantal vragen"
 
-#: .\awpr\locale.py:948 .\templates\subjects\modexamquestions.html:88
+#: .\awpr\locale.py:948 .\grades\calc_score.py:84 .\grades\calc_score.py:92
+#: .\templates\subjects\modexamquestions.html:88
 msgid "Maximum score"
 msgstr "Maximale score"
 
@@ -5504,13 +5505,75 @@ msgstr "Herkansingen schoolexamen"
 msgid "Re-examinations 3rd period"
 msgstr "Herexamens 3e tijdvak"
 
+#: .\grades\calc_score.py:81
+#, fuzzy
+#| msgid "The sector is not entered."
+msgid "Scale length is not entered."
+msgstr "De sector is niet ingevuld."
+
+#: .\grades\calc_score.py:84 .\grades\calc_score.py:92
+msgid "Scale length"
+msgstr ""
+
+#: .\grades\calc_score.py:85
+#, fuzzy, python-format
+#| msgid "The score must be a number greater than zero."
+msgid "%(cpt)s must be a whole number greater dan zero."
+msgstr "De score moet een getal zijn, groter dan nul."
+
+#: .\grades\calc_score.py:89
+#, fuzzy, python-format
+#| msgid " must be a number greater than or equal to "
+msgid "%(cpt)s must be a whole number greater than or equal to zero."
+msgstr " moet een getal zijn, groter dan of gelijk aan "
+
+#: .\grades\calc_score.py:89
+#, fuzzy
+#| msgid "The scores"
+msgid "The score"
+msgstr "De scores"
+
+#: .\grades\calc_score.py:94
+#, fuzzy, python-format
+#| msgid "You must enter a %(item_str)s."
+msgid "Score must be fewer than %(cpt)s."
+msgstr "Je moet een %(item_str)s invoeren."
+
+#: .\grades\calc_score.py:99
+#, fuzzy, python-format
+#| msgid "The score must be a number greater than zero."
+msgid "%(cpt)s must be a whole number greater than zero."
+msgstr "De score moet een getal zijn, groter dan nul."
+
+#: .\grades\calc_score.py:99
+msgid "Cesuur"
+msgstr ""
+
+#: .\grades\calc_score.py:101
+#, fuzzy
+#| msgid "AWP calculates the maximum score."
+msgid "Cesuur must be fewer than maximum score."
+msgstr "AWP berekent de maximale score."
+
+#: .\grades\calc_score.py:106
+#, fuzzy
+#| msgid "ID number is not entered."
+msgid "Nterm is not entered."
+msgstr "Het ID-nummer is niet ingevuld."
+
+#: .\grades\calc_score.py:123
+#, fuzzy
+#| msgid "The score must be a number greater than zero."
+msgid "N-term must be a number greater than zero."
+msgstr "De score moet een getal zijn, groter dan nul."
+
 #: .\grades\validators.py:158 .\grades\validators.py:276
-#: .\grades\validators.py:701 .\grades\views.py:1848 .\schools\imports.py:3035
+#: .\grades\validators.py:701 .\grades\views.py:1849 .\schools\imports.py:3035
 msgid "This score"
 msgstr "Deze score"
 
 #: .\grades\validators.py:158 .\grades\validators.py:276
-#: .\grades\validators.py:701 .\grades\views.py:1848 .\schools\imports.py:3035
+#: .\grades\validators.py:701 .\grades\views.py:1849 .\schools\imports.py:3035
 msgid "This grade"
 msgstr "Dit cijfer"
 
@@ -5661,7 +5724,7 @@ msgstr ""
 "Je moet eerst de goedkeuring ongedaan maken om wijzigingen aan te kunnen "
 "brengen."
 
-#: .\grades\validators.py:812
+#: .\grades\validators.py:810
 #, python-format
 msgid "%(cpt)s is already %(publ_appr_cpt)s."
 msgstr "%(cpt)s is al %(publ_appr_cpt)s."
@@ -5806,53 +5869,53 @@ msgstr " - 1 cijfer is al goedgekeurd"
 msgid " grades are already approved"
 msgstr "  cijfers zijn al goedgekeurd"
 
-#: .\grades\views.py:1766
+#: .\grades\views.py:1767
 msgid "Edit score"
 msgstr "Score wijzigen"
 
-#: .\grades\views.py:1766
+#: .\grades\views.py:1767
 msgid "Edit grade"
 msgstr "Cijfer wijzigen"
 
-#: .\grades\views.py:1826
+#: .\grades\views.py:1827
 msgid "the allowed clusters"
 msgstr "de toegestane clusters"
 
-#: .\grades\views.py:1830
+#: .\grades\views.py:1831
 msgid "the allowed subjects"
 msgstr "de toegestane vakken"
 
-#: .\grades\views.py:1834
+#: .\grades\views.py:1835
 msgid "the allowed schools"
 msgstr "de toegestane scholen"
 
-#: .\grades\views.py:1838
+#: .\grades\views.py:1839
 msgid "the allowed learning paths"
 msgstr "de toegestane leerwegen"
 
-#: .\grades\views.py:1842
+#: .\grades\views.py:1843
 msgid "the allowed departments"
 msgstr "de toegestane afdelingen"
 
-#: .\grades\views.py:1846
+#: .\grades\views.py:1847
 #, python-format
 msgid "This subject does not belong to %(cpt)s."
 msgstr "Dit vak behoort niet tot %(cpt)s."
 
-#: .\grades\views.py:1847
+#: .\grades\views.py:1848
 msgid "to approve"
 msgstr "goed te keuren"
 
-#: .\grades\views.py:1847
+#: .\grades\views.py:1848
 msgid "to edit"
 msgstr "te wijzigen"
 
-#: .\grades\views.py:1849
+#: .\grades\views.py:1850
 #, python-format
 msgid "You don't have permission %(edit)s %(score)s."
 msgstr "Je hebt geen permissie om %(score)s %(edit)s."
 
-#: .\grades\views.py:1991 .\schools\imports.py:2304 .\students\views.py:3240
+#: .\grades\views.py:1992 .\schools\imports.py:2304 .\students\views.py:3240
 #: .\students\views.py:3324
 msgid "An error occurred. The changes have not been saved."
 msgstr "Er is een fout opgetreden. De wijzigingen zijn niet opgeslagen."

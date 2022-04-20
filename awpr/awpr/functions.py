@@ -1166,12 +1166,18 @@ def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
 
-
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
-    # PR2022-04-18 add no_ce_years = '2020' to_schemeitems
+
+
+# PR2022-04-18 add usergroup 'download' to not 'read' en non null users
+    # TODO add download to usergroups
+    # add_usergroup_download(request)
+
+# PR2022-04-18 add no_ce_years = '2020' to_schemeitems
     add_no_ce_years_to_schemeitems(request)
-    # PR2022-04-17 add exemption_year 2021 when field exemption_year is empty
+
+# PR2022-04-17 add exemption_year 2021 when field exemption_year is empty
     add_exemption_year(request)
 
     # PR2021-10-11 move otherlang from subject to schemitem, after this: must delete field otherlang from subject
@@ -1184,6 +1190,51 @@ def system_updates(examyear, request):
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
+
+
+def add_usergroup_download(request):
+    # PR2022-04-19 add usergroup 'download' to all users with usergroups other than 'read'
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- add_usergroup_download -------')
+    try:
+        key = 'add_ug_download'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            users = acc_mod.User.objects.filter(
+            ).exclude(usergroups__isnull=True).exclude(usergroups__exact='').exclude(usergroups__exact='read')
+            if users:
+                for user in users:
+                    if logging_on:
+                        logger.debug('user.usergroups: ' + str(user.usergroups))
+
+                    arr = user.usergroups.split(';')
+                    arr.append('download')
+                    arr.sort()
+                    usergroups_str = ';'.join(arr)
+
+                    setattr(user,'usergroups', usergroups_str)
+                    if logging_on:
+                        logger.debug('     usergroups: ' + str(user.usergroups))
+                    user.save()
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# - end of add_usergroup_download
+
 
 def add_exemption_year(request):
     # PR2022-04-17 add exemption_year 2021 when field exemption_year is empty

@@ -1523,7 +1523,9 @@ function RefreshDataRowsAfterUpload(response) {
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         // called by menubtn Delete_candidate and mod MSTUD btn delete and MSTUD_InputToggle
-        // values of mode is : "delete" and "validate_scheme" of afte colled by uploadtoggle:  fldName
+        // values of mode are : "delete", "validate_scheme", "correct_scheme",
+        //  in UploadToggle:  fldName, in MSTUD_InputToggle: "MSTUD_" + data_field)
+        //  el_input has only value when called by UploadToggle
 
         console.log("mode", mode)
         console.log("el_input", el_input)
@@ -1539,8 +1541,9 @@ function RefreshDataRowsAfterUpload(response) {
 
 // --- get existing data_dict from data_rows
         const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", selected.student_pk);
-        const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-        selected.student_pk = (data_dict) ? data_dict.id : null
+        const has_data_dict = (!isEmpty(found_dict));
+        const data_dict = (has_data_dict) ? found_dict : {};
+        selected.student_pk = (has_data_dict) ? data_dict.id : null
 
     console.log("data_dict", data_dict)
 
@@ -1551,10 +1554,9 @@ function RefreshDataRowsAfterUpload(response) {
 
         if (el_input) { mod_dict.el_input = el_input};
 
-        const has_selected_item = (!isEmpty(data_dict));
         if (["delete", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
             show_modal = may_edit;
-            if(has_selected_item ){
+            if(has_data_dict ){
                 mod_dict.student_pk = data_dict.id;
                 mod_dict.mapid = data_dict.mapid;
                 mod_dict.fullname = data_dict.fullname;
@@ -1569,20 +1571,19 @@ function RefreshDataRowsAfterUpload(response) {
         let msg01_txt = null, msg02_txt = null, msg03_txt = null;
         let hide_save_btn = false;
 
-        const full_name = (data_dict.fullname) ? data_dict.fullname  : "---";
         if (["delete", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
             header_text = (mode === "delete") ? loc.Delete_candidate :
                            (mode === "bis_exam") ? loc.Remove_bis_exam : null;
-            if(!has_selected_item){
+            if(!has_data_dict){
                 msg01_txt = loc.Please_select_candidate_first;
                 hide_save_btn = true;
             } else {
-                const full_name = (data_dict.fullname) ? data_dict.fullname  : "---";
+                const full_name = (has_data_dict && data_dict.fullname) ? data_dict.fullname  : "---";
                 if (mode === "bis_exam") {
                     msg01_txt = loc.The_bis_exam + loc._of_ + " '" + full_name + "'" + loc.will_be_removed
                     // PR2022-04-11 Richard westerink ATC: not when also evening / lex student
 
-                    if (data_dict.bis_exam && !data_dict.iseveningstudent && !data_dict.islexstudent){
+                    if (has_data_dict && data_dict.bis_exam && !data_dict.iseveningstudent && !data_dict.islexstudent){
                         msg02_txt = loc.Possible_exemptions_willbe_deleted;
                     };
                     msg03_txt = loc.Do_you_want_to_continue;
@@ -1626,7 +1627,7 @@ function RefreshDataRowsAfterUpload(response) {
         //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
         add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete"), "btn-primary");
 
-        el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
+        el_confirm_btn_cancel.innerText = (has_data_dict) ? loc.No_cancel : loc.Close;
 
 // set focus to cancel button
         set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
@@ -1634,8 +1635,7 @@ function RefreshDataRowsAfterUpload(response) {
 // show modal
         if (show_modal) {
             $("#id_mod_confirm").modal({backdrop: true});
-        }
-
+        };
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2019-06-23

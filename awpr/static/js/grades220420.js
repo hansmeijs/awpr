@@ -298,7 +298,6 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MAG_input_verifcode.addEventListener("keyup", function() {MAG_InputVerifcode(el_MAG_input_verifcode, event.key)}, false);
             el_MAG_input_verifcode.addEventListener("change", function() {MAG_InputVerifcode(el_MAG_input_verifcode)}, false);
         };
-
         const el_MAG_btn_delete = document.getElementById("id_MAG_btn_delete");
         if (el_MAG_btn_delete){
             el_MAG_btn_delete.addEventListener("click", function() {MAG_Save("delete")}, false );  // true = reset
@@ -1035,15 +1034,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // - hide columns that are not in use this examyear or this department PR2021-12-04
         // PR2021-12-04 use spread operator. from https://stackoverflow.com/questions/4842993/javascript-push-an-entire-list
+        // PR2022-04-19 Sentry debug: Syntax error
+        // back from spread operator, is not supported bij IE
 
         // hide srgrade when not sr_allowed
-        if(!setting_dict.sr_allowed){col_hidden.push(...["srgrade", "sr_status"])};
+        if(!setting_dict.sr_allowed){col_hidden.push("srgrade", "sr_status")};
 
         // hide pe or ce + pe when not allowed
         if(setting_dict.no_centralexam){
-            col_hidden.push(...["pescore", "pe_status", "pegrade", "cescore", "ce_status", "cegrade"]);
+            col_hidden.push("pescore", "pe_status", "pegrade", "cescore", "ce_status", "cegrade");
         } else if(setting_dict.no_practexam){
-            col_hidden.push(...["pescore", "pe_status", "pegrade"]);
+            col_hidden.push("pescore", "pe_status", "pegrade");
         };
 
 // - hide level when not level_req
@@ -1052,20 +1053,20 @@ document.addEventListener("DOMContentLoaded", function() {
 // - show only columns of sel_examtype
         //console.log( "setting_dict.sel_examtype", setting_dict.sel_examtype);
         if(setting_dict.sel_examtype === "se"){
-            col_hidden.push(...["srgrade", "sr_status",
+            col_hidden.push("srgrade", "sr_status",
                                "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade"]);
+                                "cescore", "ce_status", "cegrade", "finalgrade");
         } else if(setting_dict.sel_examtype === "sr"){
-            col_hidden.push(...["segrade", "se_status",
+            col_hidden.push("segrade", "se_status",
                                "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade"]);
+                                "cescore", "ce_status", "cegrade", "finalgrade");
         } else if(setting_dict.sel_examtype === "pe"){
-            col_hidden.push(...["segrade", "se_status", "srgrade", "sr_status",
-                                    "cescore", "ce_status", "cegrade", "finalgrade"]);
+            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
+                                    "cescore", "ce_status", "cegrade", "finalgrade");
         } else if(  ["ce", "reex", "reex03"].includes(setting_dict.sel_examtype)){
-            col_hidden.push(...["segrade", "se_status", "srgrade", "sr_status",
+            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
                                    "pescore", "pe_status", "pegrade",
-                                    "finalgrade"]);
+                                    "finalgrade");
         };
         //console.log( "col_hidden", col_hidden);
 
@@ -1379,9 +1380,21 @@ if(j && !is_status_field){td.classList.add("border_left")};
                     el_div.value = (fld_value) ? fld_value : null;
                     filter_value = (fld_value) ? fld_value : null;
                 } else if (el_div.nodeName === "INPUT"){
+                    //PR2022-04-17 Sentry error: Object doesn't support property or method 'replaceAll'
+                    // tried to solve by adding 'typeof, but
+                    // replaceAll is not supported by Internet Explorere,
+                    // changed to replace()
+                    if (fld_value == null || fld_value === "" ){
+                        el_div.value = null;
+                        filter_value = null;
+                    } else if (typeof fld_value === 'string' || fld_value instanceof String){
                     // replace dot with comma
-                    el_div.value = (fld_value) ? fld_value.replaceAll(".", ",") : null;
-                    filter_value = (fld_value) ? fld_value.toLowerCase() : null;
+                        el_div.value = fld_value.replace(".", ",");
+                        filter_value = fld_value.toLowerCase();
+                    } else {
+                        el_div.value = fld_value;
+                        filter_value = fld_value;
+                    };
 
                 } else if (field_name.includes("_status")){
                     const [status_className, status_title_text, filter_val] = UpdateFieldStatus(field_name, fld_value, data_dict);
@@ -1633,10 +1646,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
             let new_row_index = tblRow.rowIndex + move_vertical - 2;
             const new_tblRow = tblBody.rows[new_row_index]
             if(new_tblRow){
-        console.log("new_tblRow", new_tblRow)
-        console.log("new_col_index", new_col_index)
                 const next_cell = new_tblRow.cells[new_col_index];
-        console.log("next_cell", next_cell)
                 if(next_cell){
                     const next_el = next_cell.children[0];
         console.log("next_el", next_el)
@@ -1659,8 +1669,8 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
             const fldName = get_attr_from_el(el_input, "data-field")
             const old_value = data_dict[fldName];
-    //console.log("fldName", fldName)
-    //console.log("data_dict", data_dict)
+    console.log("fldName", fldName)
+    console.log("data_dict", data_dict)
 
             const has_permit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
             if (!has_permit){
@@ -1674,19 +1684,23 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 const published_field = fldName.slice(0, 2) + "_published_id";
                 const is_blocked = (data_dict[blocked_field]) ? data_dict[blocked_field] : false;
                 const is_published = (data_dict[published_field]) ? true : false;
+                const is_submitted = data_dict[published_field] ? true : false;
 
-    //console.log("old_value", old_value)
-    //console.log("blocked_field", blocked_field)
-    //console.log("published_field", published_field)
-    //console.log("is_blocked", is_blocked)
-    //console.log("is_published", is_published)
+    console.log("old_value", old_value)
+    console.log("blocked_field", blocked_field)
+    console.log("published_field", published_field)
+    console.log("is_blocked", is_blocked)
+    console.log("is_published", is_published)
+    console.log("is_published", is_published)
 
-                if (is_blocked){
-                    // Note: if grade is_published and not blocked: this means the inspection has given permission to change grade
-                    const is_submitted = data_dict[published_field] ? true : false;
-                    const msg_html = (is_submitted) ? loc.grade_err_list.grade_submitted + "<br>" + loc.grade_err_list.need_permission_inspection :
+                if (is_submitted){
+                    // Note: if grade blocked: this means the inspection has given permission to change grade
+                    // when blocking by Inspection the published and auth fields are reset to null
+                    const msg_html = (!is_blocked) ? loc.grade_err_list.grade_submitted + "<br>" + loc.grade_err_list.need_permission_inspection :
                                                       loc.grade_err_list.grade_approved + "<br>" + loc.grade_err_list.needs_approvals_removed+ "<br>" + loc.grade_err_list.Then_you_can_change_it;
 
+    console.log("is_submitted", is_submitted)
+    console.log("msg_html", msg_html)
             // show message
                     b_show_mod_message_html(msg_html);
             // put back old value  in el_input
@@ -2140,7 +2154,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                     if ("messages" in response) {
                         b_show_mod_message_dictlist(response.messages)
                     };
-                    if ("approve_msg_dict" in response && !isEmpty(response.msg_dict)) {
+                    if ("approve_msg_dict" in response) {
                         MAG_UpdateFromResponse (response);
                     };
                     if ( "approve_msg_html" in response){
@@ -2364,7 +2378,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
     }  // ModMessageClose
 
-
 //========= MOD APPROVE GRADE ==================================== PR2022-03-09
     function MAG_Open (mode ) {
         console.log("===  MAG_Open  =====") ;
@@ -2433,116 +2446,117 @@ if(j && !is_status_field){td.classList.add("border_left")};
                                 loc.MAG_info.corrector_cannot_approve_exem :
                                 loc.MAG_info.corrector_cannot_approve_se;
                 b_show_mod_message_html(info_txt);
-            };
+            } else {
 
-// get has_permit
-            mod_MAG_dict.permit_same_school = (permit_dict.requsr_same_school) ?
-                                        (mod_MAG_dict.is_approve_mode && permit_dict.permit_approve_grade) ||
-                                        (mod_MAG_dict.is_submit_ex2_mode && permit_dict.permit_submit_grade) ||
-                                        (mod_MAG_dict.is_submit_ex2a_mode && permit_dict.permit_submit_grade) : false;
+    // get has_permit
+                mod_MAG_dict.permit_same_school = (permit_dict.requsr_same_school) ?
+                                            (mod_MAG_dict.is_approve_mode && permit_dict.permit_approve_grade) ||
+                                            (mod_MAG_dict.is_submit_ex2_mode && permit_dict.permit_submit_grade) ||
+                                            (mod_MAG_dict.is_submit_ex2a_mode && permit_dict.permit_submit_grade) : false;
 
-            mod_MAG_dict.has_permit =
-                    (mod_MAG_dict.auth_index)
-                    ? (mod_MAG_dict.is_approve_mode && permit_dict.permit_approve_grade)
-                        ? (permit_dict.requsr_same_school || permit_dict.requsr_role_comm)
-                        : (mod_MAG_dict.is_submit_ex2_mode || mod_MAG_dict.is_submit_ex2a_mode)
-                            ? (permit_dict.requsr_same_school && permit_dict.permit_submit_grade)
-                            : false
-                    : false;
+                mod_MAG_dict.has_permit = false;
+                if (mod_MAG_dict.auth_index) {
+                    if( mod_MAG_dict.is_approve_mode && permit_dict.permit_approve_grade){
+                        mod_MAG_dict.has_permit = (permit_dict.requsr_same_school || permit_dict.requsr_role_comm);
+                    } else if (mod_MAG_dict.is_submit_ex2_mode || mod_MAG_dict.is_submit_ex2a_mode){
+                        mod_MAG_dict.has_permit = (permit_dict.requsr_same_school && permit_dict.permit_submit_grade)
+                    };
+                };
+            console.log("mod_MAG_dict.has_permit", mod_MAG_dict.has_permit) ;
 
-            if (mod_MAG_dict.has_permit && mod_MAG_dict.auth_index){
+                if (mod_MAG_dict.has_permit && mod_MAG_dict.auth_index){
 
-// --- get header_txt and subheader_txt
-                const header_txt = (mod_MAG_dict.is_approve_mode) ? loc.Approve_grades :
-                                    (mod_MAG_dict.is_submit_ex2_mode) ? loc.Submit_Ex2_form :
-                                    (mod_MAG_dict.is_submit_ex2a_mode) ? loc.Submit_Ex2A_form : null;
-                el_MAG_header.innerText = header_txt;
-                const subheader_txt = (mod_MAG_dict.is_approve_mode) ? loc.MAG_info.subheader_approve :
-                                      (mod_MAG_dict.is_submit_ex2_mode) ? loc.MAG_info.subheader_submit_ex2 :
-                                      (mod_MAG_dict.is_submit_ex2a_mode) ? loc.MAG_info.subheader_submit_ex2a : null;
-                el_MAG_subheader.innerText = subheader_txt;
+    // --- get header_txt and subheader_txt
+                    const header_txt = (mod_MAG_dict.is_approve_mode) ? loc.Approve_grades :
+                                        (mod_MAG_dict.is_submit_ex2_mode) ? loc.Submit_Ex2_form :
+                                        (mod_MAG_dict.is_submit_ex2a_mode) ? loc.Submit_Ex2A_form : null;
+                    el_MAG_header.innerText = header_txt;
+                    const subheader_txt = (mod_MAG_dict.is_approve_mode) ? loc.MAG_info.subheader_approve :
+                                          (mod_MAG_dict.is_submit_ex2_mode) ? loc.MAG_info.subheader_submit_ex2 :
+                                          (mod_MAG_dict.is_submit_ex2a_mode) ? loc.MAG_info.subheader_submit_ex2a : null;
+                    el_MAG_subheader.innerText = subheader_txt;
 
-// --- get examperiod and examtype text
-                // sel_examperiod 4 shows "Vrijstelling" as examperiod, replace by "Eerste tijdvak"
-                // sel_examperiod 12 shows "Eerste tijdvak / Tweede tijdvak" replace by "---"
-                // replace by First period
-                el_MAG_examperiod.innerText = (setting_dict.sel_examperiod === 3) ? loc.examperiod_caption[3] :
-                                (setting_dict.sel_examperiod === 2) ? loc.examperiod_caption[2] :
-                                ([1, 4].includes(setting_dict.sel_examperiod)) ? loc.examperiod_caption[1] : "---"
+    // --- get examperiod and examtype text
+                    // sel_examperiod 4 shows "Vrijstelling" as examperiod, replace by "Eerste tijdvak"
+                    // sel_examperiod 12 shows "Eerste tijdvak / Tweede tijdvak" replace by "---"
+                    // replace by First period
+                    el_MAG_examperiod.innerText = (setting_dict.sel_examperiod === 3) ? loc.examperiod_caption[3] :
+                                    (setting_dict.sel_examperiod === 2) ? loc.examperiod_caption[2] :
+                                    ([1, 4].includes(setting_dict.sel_examperiod)) ? loc.examperiod_caption[1] : "---"
 
-                // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
-                let examtype_caption = null;
-                for (let i = 0, dict; dict = loc.options_examtype[i]; i++) {
-                    if(dict.value === setting_dict.sel_examtype) {
-                        examtype_caption = dict.caption;
-                        break;
+                    // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
+                    let examtype_caption = null;
+                    for (let i = 0, dict; dict = loc.options_examtype[i]; i++) {
+                        if(dict.value === setting_dict.sel_examtype) {
+                            examtype_caption = dict.caption;
+                            break;
+                        }
                     }
-                }
-                el_MAG_examtype.innerText = examtype_caption
+                    el_MAG_examtype.innerText = examtype_caption
 
-// --- hide filter subject, cluster when submitting Ex2 Ex2a form. Leave level visible if exists, MPC must be able to submit per level
-                const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req || mod_MAG_dict.is_approve_mode;
-                add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
+    // --- hide filter subject, cluster when submitting Ex2 Ex2a form. Leave level visible if exists, MPC must be able to submit per level
+                    const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req || mod_MAG_dict.is_approve_mode;
+                    add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
 
-// --- hide level textbox when not sel_dep_level_req
-                add_or_remove_class(el_MAG_lvlbase.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
+    // --- hide level textbox when not sel_dep_level_req
+                    add_or_remove_class(el_MAG_lvlbase.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
 
-                const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
-                el_MAG_lvlbase.innerText = level_abbrev;
+                    const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
+                    el_MAG_lvlbase.innerText = level_abbrev;
 
-
-// --- get cluster_text
-                let cluster_text = "---";
-                if(setting_dict.sel_cluster_pk){
-                    const [middle_index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", setting_dict.sel_cluster_pk);
-                    if (found_dict){
-                        cluster_text = (found_dict.name) ? found_dict.name : "---";
+    // --- get cluster_text
+                    let cluster_text = "---";
+                    if(setting_dict.sel_cluster_pk){
+                        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", setting_dict.sel_cluster_pk);
+                        if (found_dict){
+                            cluster_text = (found_dict.name) ? found_dict.name : "---";
+                        };
+                    } else {
+                        cluster_text = "<" + loc.All_clusters + ">";
                     };
-                } else {
-                    cluster_text = "<" + loc.All_clusters + ">";
-                };
-                el_MAG_cluster.innerText = cluster_text;
+                    el_MAG_cluster.innerText = cluster_text;
 
-// get subject_text
-                let subject_text = null;
-                if(setting_dict.sel_subject_pk){
-                    const [middle_index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", setting_dict.sel_subject_pk);
-                    if (found_dict){ subject_text = (found_dict.name) ? found_dict.name : "---" };
+    // get subject_text
+                    let subject_text = null;
+                    if(setting_dict.sel_subject_pk){
+                        const [middle_index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", setting_dict.sel_subject_pk);
+                        if (found_dict){ subject_text = (found_dict.name) ? found_dict.name : "---" };
 
-                } else {
-                    subject_text = "<" + loc.All_subjects + ">";
-                };
-                el_MAG_subject.innerText = subject_text;
-
-// --- get approved_by
-                if (el_MAG_approved_by_label){
-                    el_MAG_approved_by_label.innerText = ( (mod_MAG_dict.is_submit_ex2_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
-                }
-                if (el_MAG_approved_by){
-                    el_MAG_approved_by.innerText = permit_dict.requsr_name;
-                }
-
-// --- fill selectbox auth_index
-                if (el_MAG_auth_index){
-                    // auth_list = [{value: 1, caption: 'Chairperson'}, {value: 3, caption: 'Examiner'} )
-                    const auth_list = [];
-                    const cpt_list = [null, loc.Chairperson, loc.Secretary, loc.Examiner, loc.Corrector];
-                    for (let i = 0, auth_index; auth_index = requsr_auth_list[i]; i++) {
-                        auth_list.push({value: auth_index, caption: cpt_list[auth_index]});
+                    } else {
+                        subject_text = "<" + loc.All_subjects + ">";
                     };
-                    t_FillOptionsFromList(el_MAG_auth_index, auth_list, "value", "caption",
-                        loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
-                };
+                    el_MAG_subject.innerText = subject_text;
 
-// --- reset ok button
-                MAG_SetMsgContainer()
-                MAG_SetInfoContainer();
-                MAG_SetBtnSaveDeleteCancel();
+    // --- get approved_by
+                    if (el_MAG_approved_by_label){
+                        el_MAG_approved_by_label.innerText = ( (mod_MAG_dict.is_submit_ex2_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
+                    }
+                    if (el_MAG_approved_by){
+                        el_MAG_approved_by.innerText = permit_dict.requsr_name;
+                    }
 
-// --- open modal
-                $("#id_mod_approve_grade").modal({backdrop: true});
+    // --- fill selectbox auth_index
+                    if (el_MAG_auth_index){
+                        // auth_list = [{value: 1, caption: 'Chairperson'}, {value: 3, caption: 'Examiner'} )
+                        const auth_list = [];
+                        const cpt_list = [null, loc.Chairperson, loc.Secretary, loc.Examiner, loc.Corrector];
+                        for (let i = 0, auth_index; auth_index = requsr_auth_list[i]; i++) {
+                            auth_list.push({value: auth_index, caption: cpt_list[auth_index]});
+                        };
+                        t_FillOptionsFromList(el_MAG_auth_index, auth_list, "value", "caption",
+                            loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
+                    };
 
-            };  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
+    // --- reset ok button
+                    MAG_SetMsgContainer()
+                    MAG_SetInfoContainer();
+                    MAG_SetBtnSaveDeleteCancel();
+
+    // --- open modal
+                    $("#id_mod_approve_grade").modal({backdrop: true});
+
+                };  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
+            };  // if (setting_dict.sel_auth_index === 4 && !["pe", "ce", "reex", "reex03"].includes(setting_dict.sel_examtype) ){
         };
     };  // MAG_Open
 
@@ -2599,9 +2613,10 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 el_MAG_auth_index.disabled = true;
             };
 
-    // ---  hide info box and msg box
-            add_or_remove_class(el_MAG_msg_container, cls_hide, true)
-            add_or_remove_class(el_MAG_info_container, cls_hide, true)
+    // ---  hide info box and msg box and input verifcode
+            add_or_remove_class(el_MAG_msg_container, cls_hide, true);
+            add_or_remove_class(el_MAG_info_container, cls_hide, true);
+            add_or_remove_class(el_MAG_input_verifcode.parentNode, cls_hide, true);
 
     // ---  hide delete btn
             add_or_remove_class(el_MAG_btn_delete, cls_hide, true);
@@ -2636,95 +2651,24 @@ if(j && !is_status_field){td.classList.add("border_left")};
 //=========  MAG_UpdateFromResponse  ================ PR2021-02-08 PR2022-04-18
     function MAG_UpdateFromResponse (response) {
         console.log("===  MAG_UpdateFromResponse  =====") ;
+        if (!isEmpty(response)){
+            mod_MAG_dict.step += 1;
+            console.log("mod_MAG_dict.step", mod_MAG_dict.step) ;
 
-        mod_MAG_dict.step += 1;
-        console.log("mod_MAG_dict.step", mod_MAG_dict.step) ;
+            mod_MAG_dict.verification_is_ok = !!response.verification_is_ok;
+            mod_MAG_dict.verificationkey = (mod_MAG_dict.verification_is_ok) ? response.verificationkey : null;
 
-        mod_MAG_dict.verification_is_ok = !!response.verification_is_ok;
-        mod_MAG_dict.verificationkey = (mod_MAG_dict.verification_is_ok) ? response.verificationkey : null;
-
-// create message in el_MAG_msg_container
-        MAG_SetMsgContainer(response);
-        MAG_SetInfoContainer();
-// hide ok button when not mod_MAG_dict.test_is_ok
-        MAG_SetBtnSaveDeleteCancel ();
-// hide modal after submitting, only when is_approve_mode
-        if(mod_MAG_dict.step === 2 && mod_MAG_dict.is_approve_mode){
-            $("#id_mod_approve_grade").modal("hide");
-        };
-
-    };  // MAG_UpdateFromResponse
-
-//=========  MAG_SetBtnSaveDeleteCancel  ================ PR2021-02-08
-     function MAG_SetBtnSaveDeleteCancel() {
-        console.log("===  MAG_SetBtnSaveDeleteCancel  =====") ;
-
-        const is_approve_mode = mod_MAG_dict.is_approve_mode;
-        const is_submit_ex2_mode = mod_MAG_dict.is_submit_ex2_mode;
-        const is_submit_ex2a_mode = mod_MAG_dict.is_submit_ex2a_mode;
-        const is_reset = mod_MAG_dict.is_reset;
-
-        const step = mod_MAG_dict.step;
-        const may_test = mod_MAG_dict.may_test;
-        const test_is_ok = mod_MAG_dict.test_is_ok;
-        const submit_is_ok = mod_MAG_dict.submit_is_ok;
-
-        const has_already_approved = !!mod_MAG_dict.has_already_approved;
-        const has_already_published = !!mod_MAG_dict.has_already_published;
-        const has_saved = !!mod_MAG_dict.has_saved;
-
-        console.log("mod_MAG_dict.step", mod_MAG_dict.step) ;
-        console.log("is_approve_mode", is_approve_mode) ;
-        console.log("is_submit_ex2_mode", is_submit_ex2_mode) ;
-        console.log("is_submit_ex2a_mode", is_submit_ex2a_mode) ;
-        console.log("may_test", may_test) ;
-        console.log("test_is_ok", test_is_ok) ;
-        console.log("submit_is_ok", submit_is_ok) ;
-
-// ---  hide save button when not can_publish
-        let show_save_btn = false;
-        if (is_approve_mode){
-            show_save_btn = (may_test || test_is_ok);
-        } else {
-            show_save_btn = (may_test || test_is_ok);
-        }
-        add_or_remove_class(el_MAG_btn_save, cls_hide, !show_save_btn);
-
-        let save_btn_txt = loc.Check_grades;
-        if (step === 0) {
-
-        } else if (step === 1) {
-            if (test_is_ok){
-                save_btn_txt = (is_approve_mode) ? loc.Approve_grades : loc.Request_verifcode;
+    // create message in el_MAG_msg_container
+            MAG_SetMsgContainer(response);
+            MAG_SetInfoContainer();
+    // hide ok button when not mod_MAG_dict.test_is_ok
+            MAG_SetBtnSaveDeleteCancel ();
+    // hide modal after submitting, only when is_approve_mode
+            if(mod_MAG_dict.step === 2 && mod_MAG_dict.is_approve_mode){
+                $("#id_mod_approve_grade").modal("hide");
             };
-        } else if (step === 2) {
-            if (test_is_ok){
-                save_btn_txt = (is_approve_mode) ? loc.Approve_grades :
-                                (is_approve_mode) ? loc.Approve_grades :
-                                (is_approve_mode) ? loc.Approve_grades : loc.Check_grades ;
-            } else {
-
-            }
-        }
-        el_MAG_btn_save.innerText = save_btn_txt;
-
-        let btn_cancel_text = (submit_is_ok || (!may_test && !test_is_ok) || (!submit_is_ok)) ? loc.Close : loc.Cancel;
-        el_MAG_btn_cancel.innerText = btn_cancel_text;
-
-// ---  show only the elements that are used in this tab
-        let show_class = "tab_step_" + step;
-
-        b_show_hide_selected_elements_byClass("tab_show", show_class, el_mod_approve_grade);
-
-// ---  hide delete btn when reset or publish mode
-        let show_delete_btn = false;
-        if (is_approve_mode){
-            if (has_already_approved) {show_delete_btn = true}
-        }
-        //const show_delete_btn = (is_approve_mode && !is_reset && test_is_ok)
-        add_or_remove_class(el_MAG_btn_delete, cls_hide, !show_delete_btn);
-
-     } //  MAG_SetBtnSaveDeleteCancel
+        };
+    };  // MAG_UpdateFromResponse
 
 //=========  MAG_SetMsgContainer  ================ PR2021-02-08 PR2022-04-17
      function MAG_SetMsgContainer(response) {
@@ -2736,14 +2680,17 @@ if(j && !is_status_field){td.classList.add("border_left")};
         el_MAG_msg_container.innerHTML = null;
         let show_msg_container = false;
 
-
-        console.log("mod_MAG_dict.step", mod_MAG_dict.step);
+        // response is undefined when opening modal
 
         const show_input_verifcode = (response && !!response.approve_msg_html);
         add_or_remove_class(el_MAG_input_verifcode.parentNode, cls_hide, !show_input_verifcode);
 
-
-        console.log("show_input_verifcode", show_input_verifcode);
+    console.log("mod_MAG_dict.step", mod_MAG_dict.step);
+    console.log("show_input_verifcode.step", show_input_verifcode);
+    if (response){
+        console.log("response.approve_msg_html", response.approve_msg_html);
+        console.log("response.approve_msg_dict", response.approve_msg_dict);
+    };
         if (show_input_verifcode){
             show_msg_container = true;
 
@@ -2752,12 +2699,11 @@ if(j && !is_status_field){td.classList.add("border_left")};
             el_MAG_msg_container.className = "mt-2";
             el_MAG_msg_container.innerHTML = response.approve_msg_html
 
-            console.log("response.approve_msg_html", response.approve_msg_html);
             if (show_input_verifcode){set_focus_on_el_with_timeout(el_MAG_input_verifcode, 150)};
 
-        } else if (response && !isEmpty(response.msg_dict)){
+        } else if (response && !isEmpty(response.approve_msg_dict)){
 
-            const msg_dict = response.msg_dict;
+            const msg_dict = response.approve_msg_dict;
             console.log("msg_dict", msg_dict);
             console.log("response.test_is_ok", response.test_is_ok);
             //console.log("mod_MAG_dict", mod_MAG_dict);
@@ -2777,8 +2723,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
             mod_MAG_dict.has_already_published = (msg_dict && !!msg_dict.already_published)
             mod_MAG_dict.has_saved = msg_dict && !!msg_dict.saved;
             mod_MAG_dict.submit_is_ok = msg_dict && !!msg_dict.now_saved;  // submit_is_ok when records are saved
-
-
 
             show_msg_container = true
            // const border_class = (mod_MAG_dict.test_is_ok) ? "border_bg_valid" : "border_bg_invalid";
@@ -2873,6 +2817,76 @@ if(j && !is_status_field){td.classList.add("border_left")};
         el_MAG_info_container.innerHTML = inner_html
     };  // MAG_SetInfoContainer
 
+//=========  MAG_SetBtnSaveDeleteCancel  ================ PR2021-02-08
+     function MAG_SetBtnSaveDeleteCancel() {
+        console.log("===  MAG_SetBtnSaveDeleteCancel  =====") ;
+
+        const is_approve_mode = mod_MAG_dict.is_approve_mode;
+        const is_submit_ex2_mode = mod_MAG_dict.is_submit_ex2_mode;
+        const is_submit_ex2a_mode = mod_MAG_dict.is_submit_ex2a_mode;
+        const is_reset = mod_MAG_dict.is_reset;
+
+        const step = mod_MAG_dict.step;
+        const may_test = mod_MAG_dict.may_test;
+        const test_is_ok = mod_MAG_dict.test_is_ok;
+        const submit_is_ok = mod_MAG_dict.submit_is_ok;
+
+        const has_already_approved = !!mod_MAG_dict.has_already_approved;
+        const has_already_published = !!mod_MAG_dict.has_already_published;
+        const has_saved = !!mod_MAG_dict.has_saved;
+
+    console.log("mod_MAG_dict.step", mod_MAG_dict.step) ;
+    console.log("is_approve_mode", is_approve_mode) ;
+    console.log("is_submit_ex2_mode", is_submit_ex2_mode) ;
+    console.log("is_submit_ex2a_mode", is_submit_ex2a_mode) ;
+    console.log("may_test", may_test) ;
+    console.log("test_is_ok", test_is_ok) ;
+    console.log("submit_is_ok", submit_is_ok) ;
+
+// ---  hide save button when not can_publish
+        let show_save_btn = false;
+        if (is_approve_mode){
+            show_save_btn = (may_test || test_is_ok);
+        } else {
+            show_save_btn = (may_test || test_is_ok);
+        }
+        add_or_remove_class(el_MAG_btn_save, cls_hide, !show_save_btn);
+
+        let save_btn_txt = loc.Check_grades;
+        if (step === 0) {
+
+        } else if (step === 1) {
+            if (test_is_ok){
+                save_btn_txt = (is_approve_mode) ? loc.Approve_grades : loc.Request_verifcode;
+            };
+        } else if (step === 2) {
+            if (test_is_ok){
+                save_btn_txt = (is_approve_mode) ? loc.Approve_grades :
+                                (is_approve_mode) ? loc.Approve_grades :
+                                (is_approve_mode) ? loc.Approve_grades : loc.Check_grades ;
+            } else {
+
+            }
+        }
+        el_MAG_btn_save.innerText = save_btn_txt;
+
+        let btn_cancel_text = (submit_is_ok || (!may_test && !test_is_ok) || (!submit_is_ok)) ? loc.Close : loc.Cancel;
+        el_MAG_btn_cancel.innerText = btn_cancel_text;
+
+// ---  show only the elements that are used in this tab
+        let show_class = "tab_step_" + step;
+
+        b_show_hide_selected_elements_byClass("tab_show", show_class, el_mod_approve_grade);
+
+// ---  hide delete btn when reset or publish mode
+        let show_delete_btn = false;
+        if (is_approve_mode){
+            if (has_already_approved) {show_delete_btn = true}
+        }
+        //const show_delete_btn = (is_approve_mode && !is_reset && test_is_ok)
+        add_or_remove_class(el_MAG_btn_delete, cls_hide, !show_delete_btn);
+
+     } //  MAG_SetBtnSaveDeleteCancel
 
 //=========  MAG_InputVerifcode  ================ PR2022-04-18
      function MAG_InputVerifcode(el_input, event_key) {
@@ -3313,7 +3327,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows, skip_show_ok) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
         //console.log("update_dict", update_dict);
@@ -3337,7 +3351,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // +++ get existing data_dict from data_rows. data_rows is ordered by grade.id'
             const grade_pk = update_dict.id;
             const data_dict = get_gradedict_by_gradepk(grade_pk);
-    console.log("data_dict", data_dict);
+    //console.log("data_dict", data_dict);
 
 // ---  create list of updated fields
             if(!isEmpty(data_dict)){
@@ -3357,7 +3371,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                         };
 
                 }}};
-    console.log("updated_columns", updated_columns);
+    //console.log("updated_columns", updated_columns);
 
 
         // ---  make update in tblRow
@@ -3371,10 +3385,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                             el = td.children[0];
                             if(el){
                                 el_fldName = get_attr_from_el(el, "data-field")
-    console.log(",,,,,,,,,,,,el_fldName", el_fldName);
+    //console.log(",,,,,,,,,,,,el_fldName", el_fldName);
                                 const is_updated_field = updated_columns.includes(el_fldName);
                                 const is_err_field = error_columns.includes(el_fldName);
-    console.log(",,,,,,,,,,,,is_updated_field", el_fldName);
+    //console.log(",,,,,,,,,,,,is_updated_field", el_fldName);
         // update field and make field green when field name is in updated_columns
                                 if(is_updated_field){
                                     UpdateField(el, update_dict);
@@ -4223,7 +4237,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                     // strMsgText = "Er kunnen geen scores ingevuld worden in examenjaar " & ExkExamenjaar & "."
 
                     //PR2015-12-27 debug: vervang komma door punt, anders wordt komma genegeerd
-                    const value_with_dots = value.replaceAll(",", ".");
+                    const value_with_dots = value.replace(",", ".");
                     const value_number = Number(value_with_dots);
                     if(!value_number){
                         msg_html = err_list.score_mustbe_number;
@@ -4289,13 +4303,13 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         // PR2021-12-04 use spread operator. from https://stackoverflow.com/questions/4842993/javascript-push-an-entire-list
 
         // hide srgrade when not sr_allowed
-        if(!setting_dict.sr_allowed){col_hidden.push(...["srgrade", "sr_status"])};
+        if(!setting_dict.sr_allowed){col_hidden.push("srgrade", "sr_status")};
 
         // hide pe or ce + pe when not allowed
         if(setting_dict.no_centralexam){
-            col_hidden.push(...["pescore", "pe_status", "pegrade", "cescore", "ce_status", "cegrade"]);
+            col_hidden.push("pescore", "pe_status", "pegrade", "cescore", "ce_status", "cegrade");
         } else if(setting_dict.no_practexam){
-            col_hidden.push(...["pescore", "pe_status", "pegrade"]);
+            col_hidden.push("pescore", "pe_status", "pegrade");
         };
 
 // - hide level when not level_req
@@ -4307,20 +4321,20 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // - show only columns of sel_examtype
         //console.log( "setting_dict.sel_examtype", setting_dict.sel_examtype);
         if(setting_dict.sel_examtype === "se"){
-            col_hidden.push(...["srgrade", "sr_status",
+            col_hidden.push("srgrade", "sr_status",
                                "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade"]);
+                                "cescore", "ce_status", "cegrade", "finalgrade");
         } else if(setting_dict.sel_examtype === "sr"){
-            col_hidden.push(...["segrade", "se_status",
+            col_hidden.push("segrade", "se_status",
                                "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade"]);
+                                "cescore", "ce_status", "cegrade", "finalgrade");
         } else if(setting_dict.sel_examtype === "pe"){
-            col_hidden.push(...["segrade", "se_status", "srgrade", "sr_status",
-                                    "cescore", "ce_status", "cegrade", "finalgrade"]);
+            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
+                                    "cescore", "ce_status", "cegrade", "finalgrade");
         } else if(  ["ce", "reex", "reex03"].includes(setting_dict.sel_examtype)){
-            col_hidden.push(...["segrade", "se_status", "srgrade", "sr_status",
+            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
                                    "pescore", "pe_status", "pegrade",
-                                    "finalgrade"]);
+                                    "finalgrade");
         };
         //console.log( "col_hidden", col_hidden);
         return col_hidden;
@@ -4356,7 +4370,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if (imput_trim) {
 
 // 5. vervang komma's door punten
-            const input_with_dots = imput_trim.replaceAll(",", ".");
+            const input_with_dots = imput_trim.replace(",", ".");
 
 // 6. exit als strCijfer niet Numeric is
             if(!Number(input_with_dots)){
@@ -4387,7 +4401,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                     } else {
                         output_text = input_number.toString()
                         // replace dot by comma
-                        output_text = output_text.replaceAll(".", ",");
+                        output_text = output_text.replace(".", ",");
                         // add ",0" if integer
                         if (!output_text.includes(",")){
                             output_text += ",0";

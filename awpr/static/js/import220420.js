@@ -60,8 +60,11 @@
 
 // reset all values of mimp to null, keep the keys.
         // was: Object.keys(mimp).forEach(function(key, index) {
-        for (const key of Object.keys(mimp)) {
-            mimp[key] = null;
+        // PR2022-04-19 Sentry debug:  Unhandled: Const moet zijn geïnitialiseerd
+        // was: for (const key of Object.keys(mimp)) {
+        // mimp[key] = null;
+        for (const value of Object.values(mimp)) {
+            value = null;
         };
         mimp.import_table = import_table;
 
@@ -1880,6 +1883,8 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
 
         let is_same_val_stripped = false;
         if (awpValue && excValue ) {
+            //PR2022-04-17 note: replaceAll is not supported by Internet Explorer,
+            // therefore importing not possible with Internet Explorere
 
             // PR2021-08-10 debug: when value is integer toLowerCase() gives error, convert to string first
             let awp_val_stripped = awpValue.toString().toLowerCase();

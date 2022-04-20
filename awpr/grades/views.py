@@ -1751,6 +1751,7 @@ class GradeUploadView(View):
                                 request=request,
                                 append_dict=append_dict,
                                 grade_pk_list=[grade.pk],
+                                remove_note_status=True,
                                 skip_allowed_filter=True
                             )
                         if rows:
@@ -2370,7 +2371,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
     #   create dict with pk and username of all users of this school and lookup in
     username_dict = acc_view.get_username_dict()
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))

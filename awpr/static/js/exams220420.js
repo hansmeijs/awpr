@@ -18,6 +18,7 @@ const selected = {
     item_count: 0
 };
 
+let school_rows = [];
 let subject_rows = [];
 let cluster_rows = [];
 let student_rows = [];
@@ -220,8 +221,10 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
+            // PR2022-04-19 Sentry error: school_map is not defined
+            // solved by replacing school_map by school_rows
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         };
 
 // ---  SIDEBAR ------------------------------------
@@ -376,7 +379,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const el_MEXQ_msg_modified = document.getElementById("id_MEXQ_msg_modified");
 
-// ---  MODAL APPROVE GRADE ------------------------------------
+// ---  MODAL APPROVE EXAM ------------------------------------
         const el_MASE_header = document.getElementById("id_MASE_header");
 
         const el_MASE_select_container = document.getElementById("id_MASE_select_container");
@@ -388,19 +391,25 @@ document.addEventListener("DOMContentLoaded", function() {
             const el_MASE_lvlbase = document.getElementById("id_MASE_lvlbase");
             const el_MASE_cluster = document.getElementById("id_MASE_cluster");
 
-        const el_MASE_info_container = document.getElementById("id_MASE_info_container");
-        const el_MASE_loader = document.getElementById("id_MASE_loader");
-        const el_MASE_msg_container = document.getElementById("id_MASE_msg_container");
-
         const el_MASE_info_request_msg1 = document.getElementById("id_MASE_info_request_msg1");
         const el_MASE_info_request_verifcode = document.getElementById("id_MASE_info_request_verifcode");
+
+        const el_MASE_approved_by_label = document.getElementById("id_MASE_approved_by_label");
+        const el_MASE_approved_by = document.getElementById("id_MASE_approved_by");
+        const el_MASE_auth_index = document.getElementById("id_MASE_auth_index");
+        if (el_MASE_auth_index){
+            el_MASE_auth_index.addEventListener("change", function() {MASE_UploadAuthIndex(el_MASE_auth_index)}, false );
+        };
+
+        const el_MASE_loader = document.getElementById("id_MASE_loader");
+        const el_MASE_info_container = document.getElementById("id_MASE_info_container");
+        const el_MASE_msg_container = document.getElementById("id_MASE_msg_container");
 
         const el_MASE_input_verifcode = document.getElementById("id_MASE_input_verifcode");
         if (el_MASE_input_verifcode){
             el_MASE_input_verifcode.addEventListener("keyup", function() {MASE_InputVerifcode(el_MASE_input_verifcode, event.key)}, false);
             el_MASE_input_verifcode.addEventListener("change", function() {MASE_InputVerifcode(el_MASE_input_verifcode)}, false);
         };
-
         const el_MASE_btn_delete = document.getElementById("id_MASE_btn_delete");
         if (el_MASE_btn_delete){
             el_MASE_btn_delete.addEventListener("click", function() {MASE_Save("delete")}, false )  // true = reset
@@ -572,6 +581,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 if ("examyear_rows" in response) {
                     b_fill_datamap(examyear_map, response.examyear_rows);
                 };
+                if ("school_rows" in response)  {
+                    school_rows = response.school_rows;
+                };
                 if ("department_rows" in response) {
                     b_fill_datamap(department_map, response.department_rows);
                 };
@@ -636,16 +648,26 @@ document.addEventListener("DOMContentLoaded", function() {
             AddSubmenuButton(el_submenu, loc.Link_DUO_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
             AddSubmenuButton(el_submenu, loc.Unlink_DUO_exam, function() {ModConfirmOpen("duo_exam", "delete")}, ["tab_show", "tab_btn_duo_exams"]);
         }
-        if((permit_dict.permit_approve_exam) && (permit_dict.requsr_role_admin) ){
-            AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve")}, ["tab_show", "tab_btn_ete_exams"]);
-            AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit")}, ["tab_show", "tab_btn_ete_exams"]);
-        }else if(permit_dict.permit_submit_exam && permit_dict.requsr_same_school){
-            AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve")}, ["tab_showXX", "tab_btn_ete_examsXX"]);
-            AddSubmenuButton(el_submenu, loc.Submit_exams, function() {MASE_Open("submit")}, ["tab_showXX", "tab_btn_ete_examsX"]);
+
+        if (permit_dict.requsr_role_admin){
+            if (permit_dict.permit_approve_exam ){
+                AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_admin")}, ["tab_show", "tab_btn_ete_exams"]);
+            };
+            if (permit_dict.permit_publish_exam ){
+                AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit_admin")}, ["tab_show", "tab_btn_ete_exams"]);
+            };
+        } else if (permit_dict.requsr_role_school){
+            if (permit_dict.permit_approve_exam ){
+                AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
+            }
+            if (permit_dict.permit_submit_exam ){
+                AddSubmenuButton(el_submenu, loc.Submit_exams, function() {MASE_Open("submit_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
+            }
+
         };
 
+
         if(permit_dict.permit_crud && permit_dict.requsr_role_admin ){
-            AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit")}, ["tab_show", "tab_btn_ete_exams"]);
             AddSubmenuButton(el_submenu, loc.Upload_ntermen, function() {MDNT_Open()}, ["tab_show", "tab_btn_ntermen"], "id_submenu_upload_dnt");
             AddSubmenuButton(el_submenu, loc.Download_JSON, function() {ModConfirmOpen("ete_exam", "json")}, ["tab_show", "tab_btn_ete_exams"]);
         };
@@ -5136,7 +5158,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("===  MASE_Open  =====") ;
         console.log("mode", mode) ;
         console.log("setting_dict", setting_dict) ;
-        // modes are: "approve", "submit"
+        // modes are: "approve_admin", "submit_admin", "approve_school", "submit_school"
 
         b_clear_dict(mod_MASE_dict);
 
@@ -5146,8 +5168,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
         } else {
 
-            const is_approve_mode = (mode === "approve");
-            const is_submit_mode = (mode === "submit");
+            const is_approve_mode = (mode.includes("approve"));
+            const is_submit_mode = (mode.includes("submit"));
+            const is_admin_mode = (mode.includes("admin"));
+            const is_school_mode = (mode.includes("school"));
 
     console.log("is_approve_mode", is_approve_mode) ;
     console.log("is_submit_mode", is_submit_mode) ;
@@ -5158,8 +5182,8 @@ document.addEventListener("DOMContentLoaded", function() {
             if (permit_dict.usergroup_list.includes("auth1")){requsr_auth_list.push(1)};
             if (permit_dict.usergroup_list.includes("auth2")){requsr_auth_list.push(2)};
 
-           // add examiner only when mode = approve
-            if (is_approve_mode){
+           // add examiner only when mode = approve_school
+            if (is_approve_mode && is_school_mode){
                 if (permit_dict.usergroup_list.includes("auth3")){requsr_auth_list.push(3)};
             };
             console.log("requsr_auth_list", requsr_auth_list) ;
@@ -5246,6 +5270,27 @@ document.addEventListener("DOMContentLoaded", function() {
 // --- hide filter subject, level, cluster when submitting grade_exam
                 add_or_remove_class(el_MASE_subj_lvl_cls_container, cls_hide, !is_approve_mode && !mod_MASE_dict.permit_admin)
 
+
+// --- get approved_by
+                if (el_MASE_approved_by_label){
+                    el_MASE_approved_by_label.innerText = ( (mod_MASE_dict.is_submit_ex2_mode) ? loc.Submitted_by : loc.Approved_by ) + ":"
+                }
+                if (el_MASE_approved_by){
+                    el_MASE_approved_by.innerText = permit_dict.requsr_name;
+                }
+
+// --- fill selectbox auth_index
+                if (el_MASE_auth_index){
+                    // auth_list = [{value: 1, caption: 'Chairperson'}, {value: 3, caption: 'Examiner'} )
+                    const auth_list = [];
+                    const cpt_list = [null, loc.Chairperson, loc.Secretary, loc.Examiner, loc.Corrector];
+                    for (let i = 0, auth_index; auth_index = requsr_auth_list[i]; i++) {
+                        auth_list.push({value: auth_index, caption: cpt_list[auth_index]});
+                    };
+                    t_FillOptionsFromList(el_MASE_auth_index, auth_list, "value", "caption",
+                        loc.Select_function, loc.No_functions_found, setting_dict.sel_auth_index);
+                };
+
 // ---  show info and hide loader
                 // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
                 add_or_remove_class(el_MASE_info_container, cls_hide, false)
@@ -5325,6 +5370,22 @@ document.addEventListener("DOMContentLoaded", function() {
         //    $("#id_mod_approve_studsubj").modal("hide");
         //}
     };  // MASE_Save
+
+//=========  MASE_UploadAuthIndex  ================ PR2022-04-19
+    function MASE_UploadAuthIndex (el_select) {
+        //console.log("===  MASE_UploadAuthIndex  =====") ;
+
+// ---  put new  auth_index in mod_MASE_dict and setting_dict
+        mod_MASE_dict.auth_index = (Number(el_select.value)) ? Number(el_select.value) : null;
+        setting_dict.sel_auth_index = mod_MASE_dict.auth_index;
+        setting_dict.sel_auth_function = b_get_function_of_auth_index(loc, mod_MASE_dict.auth_index);
+        //console.log( "setting_dict.sel_auth_function: ", setting_dict.sel_auth_function);
+
+// ---  upload new setting
+        const upload_dict = {selected_pk: {sel_auth_index: setting_dict.sel_auth_index}};
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+    }; // MASE_UploadAuthIndex
 
 //========= MASE_UpdateFromResponse ============= PR2021-07-25
     function MASE_UpdateFromResponse(response) {
@@ -5915,8 +5976,27 @@ document.addEventListener("DOMContentLoaded", function() {
         if(selected_pk === -1) { selected_pk = null};
 
         if (tblName === "school") {
-            // not enabled on this page
+        // Note: when tblName = school: selected_pk = schoolbase_pk
 
+// ---  upload new setting and refresh page
+        // PR2022-04-07 debug: when changing dep, levels must also be retrieved again. Added: level_rows: {cur_dep_only: true},
+        const datalist_request = {
+                setting: {page: "page_exams",
+                        sel_schoolbase_pk: selected_pk
+                    },
+                school_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
+                subject_rows: {etenorm_only: true, cur_dep_only: true},
+                duo_subject_rows: {get: true},
+                ete_exam_rows: {get: true},
+                duo_exam_rows: {get: true},
+                grade_with_exam_rows: {get: true},
+                ntermentable_rows: {get: true},
+                published_rows: {get: true}
+            };
+
+            DatalistDownload(datalist_request);
         } else if (tblName === "subject") {
 
 // -- lookup selected.subject_pk in subject_rows and get sel_subject_dict

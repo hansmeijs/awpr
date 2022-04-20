@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
         if (el_hdrbar_school){
+            // TODO replace school_map by school_rows
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_map, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }

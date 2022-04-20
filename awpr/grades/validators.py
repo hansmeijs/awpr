@@ -796,17 +796,15 @@ def validate_grade_auth_publ_from_dict(studsubj_dict, this_item_cpt):
 
     # keys in subj_dict are: 'publ', 'bl', 'auth'. They are set in get_student_subj_grade_dict
     is_published = studsubj_dict.get('publ', False)
-    is_blocked = studsubj_dict.get('bl', False)
     is_auth = studsubj_dict.get('auth', False)
 
     if logging_on:
         logger.debug('is_published: ' + str(is_published))
-        logger.debug('is_blocked: ' + str(is_blocked))
         logger.debug('is_auth: ' + str(is_auth))
         logger.debug('subj_dict: ' + str(studsubj_dict))
 
-    if is_published or is_blocked or is_auth:
-        publ_appr_cpt = str(_('Published')) if is_published or is_blocked else str(_('Approved'))
+    if is_published or is_auth:
+        publ_appr_cpt = str(_('Published')) if is_published else str(_('Approved'))
         publ_appr_cpt_lc = publ_appr_cpt.lower()
 
         err_list.append(str(_('%(cpt)s is already %(publ_appr_cpt)s.') % {'cpt': this_item_cpt, 'publ_appr_cpt': publ_appr_cpt_lc}))

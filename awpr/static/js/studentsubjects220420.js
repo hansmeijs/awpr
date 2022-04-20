@@ -349,13 +349,17 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSTUDSUBJ_btn_add_package.addEventListener("click", function() {MSTUDSUBJ_AddPackage()}, false)};
         const el_MSTUDSUBJ_char_header = document.getElementById("id_MSTUDSUBJ_char_header");
 
-        const el_MSTUDSUBJ_input_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_checkbox")
-        if(el_MSTUDSUBJ_input_controls){
-            for (let i = 0, el; el = el_MSTUDSUBJ_input_controls[i]; i++) {
-                const key_str = (el.classList.contains("awp_input_checkbox")) ? "change" : "keyup";
-                el.addEventListener(key_str, function() {MSTUDSUBJ_InputboxEdit(el)}, false)
-            };
-        };
+        // PR2022-04-19 Sentry error: null is not an object
+        // was: const el_MSTUDSUBJ_input_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_checkbox")
+        const el_MSTUDSUBJ_div_form_controls = document.getElementById("id_MSTUDSUBJ_div_form_controls");
+        if (el_MSTUDSUBJ_div_form_controls)  {
+            const el_MSTUDSUBJ_input_controls = el_MSTUDSUBJ_div_form_controls.querySelectorAll(".awp_input_text, .awp_input_checkbox")
+            if(el_MSTUDSUBJ_input_controls){
+                for (let i = 0, el; el = el_MSTUDSUBJ_input_controls[i]; i++) {
+                    const key_str = (el.classList.contains("awp_input_checkbox")) ? "change" : "keyup";
+                    el.addEventListener(key_str, function() {MSTUDSUBJ_InputboxEdit(el)}, false)
+        }}};
+
         const el_MSTUDSUBJ_msg_container = document.getElementById("id_MSTUDSUBJ_msg_container");
         const el_MSTUDSUBJ_loader = document.getElementById("id_MSTUDSUBJ_loader");
         const el_MSTUDSUBJ_btn_save = document.getElementById("id_MSTUDSUBJ_btn_save");
