@@ -1177,7 +1177,7 @@ def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
     sel_lvlbase_pk = None
     sel_sctbase_pk = None
 
-    if req_user and  req_user.schoolbase:
+    if req_user and req_user.schoolbase:
         selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
         if selected_dict:
             sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)

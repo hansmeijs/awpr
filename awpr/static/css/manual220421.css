@@ -633,10 +633,10 @@
 .img_exams_tableA_ne {background-image: url('/static/manual/exams_tableA_ne.png');}
 .img_exams_tableA_en {background-image: url('/static/manual/exams_tableA_en.png');}
 
-.img_exams_modA_ne, .img_exams_modA_en {
-    width: 798px; height: 564px; background-size: 798px 564px;}
-.img_exams_modA_ne {background-image: url('/static/manual/exams_modA_ne.png');}
-.img_exams_modA_en {background-image: url('/static/manual/exams_modA_en.png');}
+.img_exams_modalA_ne, .img_exams_modalA_en {
+    width: 875px; height: 708px; background-size: 875px 708px;}
+.img_exams_modalA_ne {background-image: url('/static/manual/exams_modalA_ne.png');}
+.img_exams_modalA_en {background-image: url('/static/manual/exams_modalA_en.png');}
 
 .img_exams_print_result_ne_en {
     width: 789px; height: 540px; background-size: 789px 540px;

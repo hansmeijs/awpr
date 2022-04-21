@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-04-20 08:17-0400\n"
+"POT-Creation-Date: 2022-04-21 12:22-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -413,7 +413,7 @@ msgid "Please enter a password to finish the registration."
 msgstr "Vul je wachtwoord in om de registratie te voltooien."
 
 #: .\accounts\views.py:222 .\accounts\views_new_isn.py:222
-#: .\grades\views.py:1605 .\schools\imports.py:160 .\schools\imports.py:237
+#: .\grades\views.py:1618 .\schools\imports.py:160 .\schools\imports.py:237
 #: .\schools\imports.py:559 .\schools\imports.py:735 .\schools\imports.py:1308
 #: .\schools\imports.py:3839 .\schools\views.py:1986 .\schools\views.py:2070
 #: .\students\views.py:2830 .\subjects\views.py:1283 .\subjects\views.py:1450
@@ -433,8 +433,8 @@ msgstr "Systeembeheerders kunnen hun eigen account niet wissen."
 #: .\schools\views.py:2170 .\schools\views.py:2184 .\schools\views.py:2366
 #: .\schools\views.py:2375 .\schools\views.py:3312 .\students\views.py:230
 #: .\students\views.py:1334 .\students\views.py:3054 .\students\views.py:4420
-#: .\students\views.py:5426 .\subjects\views.py:699 .\subjects\views.py:4248
-#: .\subjects\views.py:4361 .\subjects\views.py:4411 .\subjects\views.py:4837
+#: .\students\views.py:5426 .\subjects\views.py:699 .\subjects\views.py:4258
+#: .\subjects\views.py:4371 .\subjects\views.py:4421 .\subjects\views.py:4847
 msgid "An error occurred"
 msgstr "Er is een fout opgetreden"
 
@@ -532,7 +532,7 @@ msgstr "De school moet ingevuld worden."
 
 #: .\accounts\views.py:1534 .\accounts\views.py:1694
 #: .\accounts\views_new_isn.py:1697 .\accounts\views_new_isn.py:1857
-#: .\subjects\views.py:661 .\subjects\views.py:4214 .\subjects\views.py:4810
+#: .\subjects\views.py:661 .\subjects\views.py:4224 .\subjects\views.py:4820
 msgid "The name"
 msgstr "De naam"
 
@@ -565,8 +565,8 @@ msgstr "De wijzigingen zijn met succes opgeslagen."
 #: .\accounts\views.py:1810 .\accounts\views_new_isn.py:1973
 #: .\schools\imports.py:1080 .\schools\views.py:3313 .\schools\views.py:3921
 #: .\schools\views.py:3932 .\students\views.py:4422 .\subjects\views.py:823
-#: .\subjects\views.py:4360 .\subjects\views.py:4362 .\subjects\views.py:4589
-#: .\subjects\views.py:4705 .\subjects\views.py:5044
+#: .\subjects\views.py:4370 .\subjects\views.py:4372 .\subjects\views.py:4599
+#: .\subjects\views.py:4715 .\subjects\views.py:5054
 msgid "The changes have not been saved."
 msgstr "De wijzigingen zijn niet opgeslagen."
 
@@ -849,12 +849,12 @@ msgstr "Teruggetrokken"
 msgid "Subject abbreviation"
 msgstr "Afkorting van het vak"
 
-#: .\awpr\constants.py:319 .\subjects\views.py:4122
+#: .\awpr\constants.py:319 .\subjects\views.py:4132
 msgid "Subject name"
 msgstr "Naam van het vak"
 
 #: .\awpr\constants.py:320 .\awpr\constants.py:366 .\awpr\locale.py:1399
-#: .\schools\views.py:4286 .\subjects\views.py:4124
+#: .\schools\views.py:4286 .\subjects\views.py:4134
 #: .\templates\subjects\modsubject.html:31
 #: .\templates\subjects\modsubjecttypebase.html:39
 msgid "Sequence"
@@ -1149,7 +1149,7 @@ msgid "Exam year %(exyr)s is locked."
 msgstr "Examenjaar %(exyr)s is afgesloten."
 
 #: .\awpr\downloads.py:471 .\awpr\downloads.py:527 .\awpr\locale.py:81
-#: .\awpr\validators.py:226 .\grades\views.py:1630 .\students\views.py:2851
+#: .\awpr\validators.py:226 .\grades\views.py:1643 .\students\views.py:2851
 msgid "You cannot make changes."
 msgstr "Je kunt geen wijzigingen aanbrengen."
 
@@ -1327,12 +1327,12 @@ msgstr "Laatst gewijzigd door"
 
 #: .\awpr\excel.py:2879 .\awpr\locale.py:566 .\awpr\locale.py:715
 #: .\awpr\validators.py:520 .\awpr\validators.py:560 .\schools\functions.py:389
-#: .\subjects\views.py:4836
+#: .\subjects\views.py:4846
 msgid "Character"
 msgstr "Karakter"
 
 #: .\awpr\excel.py:2879 .\awpr\excel.py:2947 .\awpr\locale.py:125
-#: .\awpr\locale.py:1166 .\subjects\views.py:779 .\subjects\views.py:4120
+#: .\awpr\locale.py:1166 .\subjects\views.py:779 .\subjects\views.py:4130
 #: .\templates\subjects\modsubject.html:25
 #: .\templates\subjects\modsubjecttypebase.html:45
 msgid "Abbreviation"
@@ -1406,7 +1406,7 @@ msgstr "Heeft werkstuk"
 msgid "Herkansing SE allowed"
 msgstr "Herkansing SE toegestaan"
 
-#: .\awpr\excel.py:2955 .\awpr\locale.py:553 .\subjects\views.py:4673
+#: .\awpr\excel.py:2955 .\awpr\locale.py:553 .\subjects\views.py:4683
 msgid "Maximum number of re-examinations"
 msgstr "Maximaal aantal herexamens"
 
@@ -1427,11 +1427,11 @@ msgstr "Andere talen"
 msgid "AWP-online verificationcode"
 msgstr "AWP-online verificatiecode"
 
-#: .\awpr\functions.py:176 .\subjects\views.py:6319
+#: .\awpr\functions.py:176 .\subjects\views.py:6329
 msgid "The verificationcode has expired."
 msgstr "De verificatiecode is verlopen."
 
-#: .\awpr\functions.py:188 .\subjects\views.py:6332
+#: .\awpr\functions.py:188 .\subjects\views.py:6342
 msgid "The verificationcode you have entered is not correct."
 msgstr "De verificatiecode die je hebt ingevuld is niet correct."
 
@@ -1697,7 +1697,7 @@ msgstr "Examenjaar"
 #: .\awpr\locale.py:109 .\awpr\menus.py:399 .\awpr\printpdf.py:543
 #: .\awpr\validators.py:336 .\schools\functions.py:464 .\students\views.py:4700
 #: .\students\views.py:4735 .\students\views.py:4766 .\subjects\views.py:459
-#: .\subjects\views.py:4249 .\subjects\views.py:4272
+#: .\subjects\views.py:4259 .\subjects\views.py:4282
 #: .\templates\includes\modstatus.html:27
 #: .\templates\schools\orderlists.html:33 .\templates\students\grades.html:42
 #: .\templates\students\modapprovegrade.html:48
@@ -1796,7 +1796,7 @@ msgstr "Kandidaten"
 msgid "a candidate"
 msgstr "een kandidaat"
 
-#: .\awpr\locale.py:142 .\schools\views.py:4288 .\subjects\views.py:4126
+#: .\awpr\locale.py:142 .\schools\views.py:4288 .\subjects\views.py:4136
 msgid "Departments"
 msgstr "Afdelingen"
 
@@ -2880,7 +2880,7 @@ msgstr "Duimregeling is van toepassing"
 msgid "Examyears without CE"
 msgstr "Examenjaren zonder CE"
 
-#: .\awpr\locale.py:558 .\subjects\views.py:4149
+#: .\awpr\locale.py:558 .\subjects\views.py:4159
 #: .\templates\students\modstudentsubject.html:123
 #: .\templates\subjects\modschemeitem.html:70
 #: .\templates\subjects\modsubject.html:86
@@ -2901,7 +2901,7 @@ msgstr "Leerweg wissen"
 msgid "Delete sector"
 msgstr "Sector wissen"
 
-#: .\awpr\locale.py:562 .\subjects\views.py:4859
+#: .\awpr\locale.py:562 .\subjects\views.py:4869
 msgid "Delete character"
 msgstr "Karakter wissen"
 
@@ -3929,7 +3929,7 @@ msgctxt "Teken"
 msgid "Character"
 msgstr "Teken"
 
-#: .\awpr\locale.py:988 .\schools\views.py:4139 .\subjects\views.py:3987
+#: .\awpr\locale.py:988 .\schools\views.py:4139 .\subjects\views.py:3997
 msgid "already exists."
 msgstr "komt al voor."
 
@@ -4113,7 +4113,7 @@ msgstr "Ex2-formulier indienen"
 msgid "Submit Ex2A form"
 msgstr "Ex2A-formulier indienen"
 
-#: .\awpr\locale.py:1088 .\grades\views.py:318 .\grades\views.py:408
+#: .\awpr\locale.py:1088 .\grades\views.py:319 .\grades\views.py:410
 msgid "Approve grade"
 msgstr "Cijfer goedkeuren"
 
@@ -4596,12 +4596,12 @@ msgstr "Je kunt het cijfer niet goedkeuren."
 msgid "You don't have permission to approve grades of this cluster."
 msgstr "Je hebt geen permissie om cijfers van deze cluster goed te keuren."
 
-#: .\awpr\locale.py:1263 .\grades\views.py:539 .\students\views.py:1819
-#: .\subjects\views.py:2355
+#: .\awpr\locale.py:1263 .\grades\views.py:541 .\students\views.py:1819
+#: .\subjects\views.py:2364
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
-#: .\awpr\locale.py:1264 .\grades\views.py:541
+#: .\awpr\locale.py:1264 .\grades\views.py:543
 msgid ""
 "It is only allowed to submit grades without value with the prior approval of "
 "the Inspectorate, or when the candidate has an exemption."
@@ -5175,7 +5175,7 @@ msgstr "%(cpt)s '%(val)s' is te lang. Maximaal %(max)s tekens."
 #: .\awpr\validators.py:152 .\awpr\validators.py:164 .\awpr\validators.py:377
 #: .\awpr\validators.py:446 .\students\validators.py:1789
 #: .\students\validators.py:1859 .\students\validators.py:1867
-#: .\students\validators.py:1892 .\subjects\views.py:4673
+#: .\students\validators.py:1892 .\subjects\views.py:4683
 #, python-format
 msgid "%(cpt)s cannot be blank."
 msgstr "%(cpt)s moet ingevuld worden."
@@ -5288,7 +5288,7 @@ msgid "%(cpt)s '%(val)s' is too long.<br>Maximum %(max)s characters."
 msgstr "%(cpt)s '%(val)s' is te lang.<br>Maximaal %(max)s tekens."
 
 #: .\awpr\validators.py:466 .\subjects\views.py:980 .\subjects\views.py:1058
-#: .\subjects\views.py:4607
+#: .\subjects\views.py:4617
 msgid "Update subject scheme"
 msgstr "Vakschema bijwerken"
 
@@ -5297,8 +5297,8 @@ msgstr "Vakschema bijwerken"
 msgid "%(cpt)s '%(val)s' already exists in this subject scheme."
 msgstr "%(cpt)s '%(val)s' komt al voor in dit vakschema."
 
-#: .\awpr\validators.py:559 .\subjects\views.py:865 .\subjects\views.py:4730
-#: .\subjects\views.py:4909
+#: .\awpr\validators.py:559 .\subjects\views.py:865 .\subjects\views.py:4740
+#: .\subjects\views.py:4919
 msgid "Update character"
 msgstr "Karakter bijwerken"
 
@@ -5452,7 +5452,7 @@ msgstr "landsexamenkandidaat"
 #: .\grades\calc_results.py:2714 .\schools\imports.py:299
 #: .\schools\imports.py:592 .\schools\imports.py:772 .\schools\imports.py:1341
 #: .\schools\imports.py:2393 .\schools\imports.py:3525 .\schools\views.py:2113
-#: .\schools\views.py:3071 .\schools\views.py:3971 .\subjects\views.py:3812
+#: .\schools\views.py:3071 .\schools\views.py:3971 .\subjects\views.py:3822
 msgid "date"
 msgstr "datum"
 
@@ -5506,74 +5506,54 @@ msgid "Re-examinations 3rd period"
 msgstr "Herexamens 3e tijdvak"
 
 #: .\grades\calc_score.py:81
-#, fuzzy
-#| msgid "The sector is not entered."
 msgid "Scale length is not entered."
-msgstr "De sector is niet ingevuld."
+msgstr "De schaallengte is niet ingevuld."
 
 #: .\grades\calc_score.py:84 .\grades\calc_score.py:92
 msgid "Scale length"
-msgstr ""
+msgstr "Schaallengte"
 
 #: .\grades\calc_score.py:85
-#, fuzzy, python-format
-#| msgid "The score must be a number greater than zero."
+#, python-format
 msgid "%(cpt)s must be a whole number greater dan zero."
-msgstr "De score moet een getal zijn, groter dan nul."
+msgstr "%(cpt)s moet een geheel getal zijn, groter dan nul."
 
 #: .\grades\calc_score.py:89
-#, fuzzy, python-format
-#| msgid " must be a number greater than or equal to "
+#, python-format
 msgid "%(cpt)s must be a whole number greater than or equal to zero."
-msgstr " moet een getal zijn, groter dan of gelijk aan "
+msgstr "%(cpt)s moet een geheel getal zijn, groter dan of gelijk aan nul."
 
 #: .\grades\calc_score.py:89
-#, fuzzy
-#| msgid "The scores"
 msgid "The score"
-msgstr "De scores"
+msgstr "De score"
 
-#: .\grades\calc_score.py:94
-#, fuzzy, python-format
-#| msgid "You must enter a %(item_str)s."
-msgid "Score must be fewer than %(cpt)s."
-msgstr "Je moet een %(item_str)s invoeren."
+#: .\grades\calc_score.py:93 .\grades\calc_score.py:102
+msgid "%(cpt)s must be fewer than or equal to %(val)s."
+msgstr "%(cpt)s moet kleiner of gelijk zijn aan %(val)s."
+
+#: .\grades\calc_score.py:97 .\grades\calc_score.py:101
+msgid "The cesuur"
+msgstr "De cesuur"
 
 #: .\grades\calc_score.py:99
-#, fuzzy, python-format
-#| msgid "The score must be a number greater than zero."
 msgid "%(cpt)s must be a whole number greater than zero."
-msgstr "De score moet een getal zijn, groter dan nul."
+msgstr "%(cpt)s moet een geheel getal zijn, groter dan %(val)s."
 
-#: .\grades\calc_score.py:99
-msgid "Cesuur"
-msgstr ""
-
-#: .\grades\calc_score.py:101
-#, fuzzy
-#| msgid "AWP calculates the maximum score."
-msgid "Cesuur must be fewer than maximum score."
-msgstr "AWP berekent de maximale score."
-
-#: .\grades\calc_score.py:106
-#, fuzzy
-#| msgid "ID number is not entered."
+#: .\grades\calc_score.py:107
 msgid "Nterm is not entered."
-msgstr "Het ID-nummer is niet ingevuld."
+msgstr "De N-term is niet ingevuld."
 
-#: .\grades\calc_score.py:123
-#, fuzzy
-#| msgid "The score must be a number greater than zero."
+#: .\grades\calc_score.py:124
 msgid "N-term must be a number greater than zero."
-msgstr "De score moet een getal zijn, groter dan nul."
+msgstr "De N-term moet een getal zijn, groter dan nul."
 
 #: .\grades\validators.py:158 .\grades\validators.py:276
-#: .\grades\validators.py:701 .\grades\views.py:1849 .\schools\imports.py:3035
+#: .\grades\validators.py:701 .\grades\views.py:1867 .\schools\imports.py:3035
 msgid "This score"
 msgstr "Deze score"
 
 #: .\grades\validators.py:158 .\grades\validators.py:276
-#: .\grades\validators.py:701 .\grades\views.py:1849 .\schools\imports.py:3035
+#: .\grades\validators.py:701 .\grades\views.py:1867 .\schools\imports.py:3035
 msgid "This grade"
 msgstr "Dit cijfer"
 
@@ -5729,193 +5709,193 @@ msgstr ""
 msgid "%(cpt)s is already %(publ_appr_cpt)s."
 msgstr "%(cpt)s is al %(publ_appr_cpt)s."
 
-#: .\grades\views.py:408
+#: .\grades\views.py:410
 msgid "Approve score"
 msgstr "Score goedkeuren"
 
-#: .\grades\views.py:431 .\grades\views.py:493 .\grades\views.py:989
-#: .\grades\views.py:1062 .\subjects\views.py:2264
+#: .\grades\views.py:433 .\grades\views.py:495 .\grades\views.py:999
+#: .\grades\views.py:1072 .\subjects\views.py:2273
 #, python-format
 msgid "The selection contains %(val)s."
 msgstr "De selectie bevat %(val)s."
 
-#: .\grades\views.py:500 .\grades\views.py:1076
+#: .\grades\views.py:502 .\grades\views.py:1086
 msgid "The following grades will be skipped:"
 msgstr "De volgende cijfers worden overgeslagen:"
 
-#: .\grades\views.py:502 .\grades\views.py:1078
+#: .\grades\views.py:504 .\grades\views.py:1088
 #, python-format
 msgid "  - %(val)s already submitted"
 msgstr "  - %(val)s al ingediend"
 
-#: .\grades\views.py:505 .\grades\views.py:1066 .\grades\views.py:1081
+#: .\grades\views.py:507 .\grades\views.py:1076 .\grades\views.py:1091
 #, python-format
 msgid "  - %(val)s not completely approved"
 msgstr "  - %(val)s niet volledig goedgekeurd"
 
-#: .\grades\views.py:514 .\grades\views.py:1090
+#: .\grades\views.py:516 .\grades\views.py:1100
 msgid ", in a different function"
 msgstr ", in een andere functie"
 
-#: .\grades\views.py:520
+#: .\grades\views.py:522
 msgid "No grades will be approved."
 msgstr "Er worden geen cijfers goedgekeurd."
 
-#: .\grades\views.py:522
+#: .\grades\views.py:524
 msgid "One grade will be approved."
 msgstr "Eén cijfer wordt goedgekeurd."
 
-#: .\grades\views.py:524
+#: .\grades\views.py:526
 #, python-format
 msgid "%(val)s grades will be approved."
 msgstr "%(val)s cijfers worden goedgekeurd."
 
-#: .\grades\views.py:537
+#: .\grades\views.py:539
 msgid "One grade has no value."
 msgstr "Eén cijfer is niet ingevuld."
 
-#: .\grades\views.py:537
+#: .\grades\views.py:539
 #, python-format
 msgid "%(val)s grades have no value."
 msgstr "%(val)s cijfers zijn niet ingevuld."
 
-#: .\grades\views.py:1068
+#: .\grades\views.py:1078
 msgid " and examiner"
 msgstr " en examinator"
 
-#: .\grades\views.py:1068
+#: .\grades\views.py:1078
 msgid ", examiner and corrector"
 msgstr ", examinator en gecommitteerde"
 
-#: .\grades\views.py:1069 .\grades\views.py:1096
+#: .\grades\views.py:1079 .\grades\views.py:1106
 #, python-format
 msgid "The %(cpt)s form can not be submitted."
 msgstr "Het %(cpt)s-formulier kan niet worden ingediend."
 
-#: .\grades\views.py:1070
+#: .\grades\views.py:1080
 #, python-format
 msgid "All grades must be approved by the chairperson, secretary%(exam_comm)s."
 msgstr ""
 "Alle cijfers moeten goedgekeurd zijn door de voorzitter, secretaris"
 "%(exam_comm)s."
 
-#: .\grades\views.py:1098
+#: .\grades\views.py:1108
 #, python-format
 msgid "One grade will be added to the %(cpt)s form."
 msgstr "Er wordt één cijfer opgenomen in het %(cpt)s-formulier."
 
-#: .\grades\views.py:1100
+#: .\grades\views.py:1110
 #, python-format
 msgid "%(val)s grades will be added to the %(cpt)s form."
 msgstr "Er worden %(val)s cijfers opgenomen in het %(cpt)s-formulier."
 
-#: .\grades\views.py:1110
+#: .\grades\views.py:1120
 #, python-format
 msgid "The %(cpt)s form has not been submitted."
 msgstr "Het %(cpt)s-formulier is niet ingediend."
 
-#: .\grades\views.py:1112 .\grades\views.py:1115
+#: .\grades\views.py:1122 .\grades\views.py:1125
 #, python-format
 msgid "The %(cpt)s has been submitted."
 msgstr "Het %(cpt)s-formulier is ingediend."
 
-#: .\grades\views.py:1113
+#: .\grades\views.py:1123
 msgid "It contains 1 grade."
 msgstr "Het bevat 1 cijfer."
 
-#: .\grades\views.py:1116
+#: .\grades\views.py:1126
 #, python-format
 msgid "It contains %(val)s grades."
 msgstr "Het bevat %(val)s cijfers."
 
-#: .\grades\views.py:1118 .\students\views.py:1809
+#: .\grades\views.py:1128 .\students\views.py:1809
 #, python-format
 msgid "The %(cpt)s form has been saved as '%(val)s'."
 msgstr "Het %(cpt)s-formulier is opgeslagen als '%(val)s'."
 
-#: .\grades\views.py:1120 .\students\views.py:1810
+#: .\grades\views.py:1130 .\students\views.py:1810
 msgid "Go to the page 'Archive' to download the file."
 msgstr "Ga naar de pagina 'Archief' om het bestand te downloaden."
 
-#: .\grades\views.py:1224
+#: .\grades\views.py:1237
 msgid "no grades"
 msgstr "geen cijfers"
 
-#: .\grades\views.py:1224
+#: .\grades\views.py:1237
 msgid "1 grade"
 msgstr "1 cijfer"
 
-#: .\grades\views.py:1224
+#: .\grades\views.py:1237
 msgid " grades"
 msgstr " cijfers"
 
-#: .\grades\views.py:1228
+#: .\grades\views.py:1241
 msgid "no grades are"
 msgstr "geen cijfers zijn"
 
-#: .\grades\views.py:1228
+#: .\grades\views.py:1241
 msgid "1 grade is"
 msgstr "1 cijfer is"
 
-#: .\grades\views.py:1228
+#: .\grades\views.py:1241
 msgid " grades are"
 msgstr " cijfers zijn"
 
-#: .\grades\views.py:1233
+#: .\grades\views.py:1246
 msgid " - 1 grade is already approved"
 msgstr " - 1 cijfer is al goedgekeurd"
 
-#: .\grades\views.py:1235
+#: .\grades\views.py:1248
 msgid " grades are already approved"
 msgstr "  cijfers zijn al goedgekeurd"
 
-#: .\grades\views.py:1767
+#: .\grades\views.py:1780
 msgid "Edit score"
 msgstr "Score wijzigen"
 
-#: .\grades\views.py:1767
+#: .\grades\views.py:1780
 msgid "Edit grade"
 msgstr "Cijfer wijzigen"
 
-#: .\grades\views.py:1827
+#: .\grades\views.py:1845
 msgid "the allowed clusters"
 msgstr "de toegestane clusters"
 
-#: .\grades\views.py:1831
+#: .\grades\views.py:1849
 msgid "the allowed subjects"
 msgstr "de toegestane vakken"
 
-#: .\grades\views.py:1835
+#: .\grades\views.py:1853
 msgid "the allowed schools"
 msgstr "de toegestane scholen"
 
-#: .\grades\views.py:1839
+#: .\grades\views.py:1857
 msgid "the allowed learning paths"
 msgstr "de toegestane leerwegen"
 
-#: .\grades\views.py:1843
+#: .\grades\views.py:1861
 msgid "the allowed departments"
 msgstr "de toegestane afdelingen"
 
-#: .\grades\views.py:1847
+#: .\grades\views.py:1865
 #, python-format
 msgid "This subject does not belong to %(cpt)s."
 msgstr "Dit vak behoort niet tot %(cpt)s."
 
-#: .\grades\views.py:1848
+#: .\grades\views.py:1866
 msgid "to approve"
 msgstr "goed te keuren"
 
-#: .\grades\views.py:1848
+#: .\grades\views.py:1866
 msgid "to edit"
 msgstr "te wijzigen"
 
-#: .\grades\views.py:1850
+#: .\grades\views.py:1868
 #, python-format
 msgid "You don't have permission %(edit)s %(score)s."
 msgstr "Je hebt geen permissie om %(score)s %(edit)s."
 
-#: .\grades\views.py:1992 .\schools\imports.py:2304 .\students\views.py:3240
+#: .\grades\views.py:2010 .\schools\imports.py:2304 .\students\views.py:3240
 #: .\students\views.py:3324
 msgid "An error occurred. The changes have not been saved."
 msgstr "Er is een fout opgetreden. De wijzigingen zijn niet opgeslagen."
@@ -6081,17 +6061,17 @@ msgid "The changes will not be saved."
 msgstr "De wijzigingen worden niet opgeslagen."
 
 #: .\schools\imports.py:1108 .\schools\imports.py:1622
-#: .\schools\imports.py:3492 .\schools\views.py:4151 .\subjects\views.py:3999
+#: .\schools\imports.py:3492 .\schools\views.py:4151 .\subjects\views.py:4009
 msgid "blank"
 msgstr "blanco"
 
 #: .\schools\imports.py:1109 .\schools\imports.py:1623
-#: .\schools\imports.py:3496 .\schools\views.py:4152 .\subjects\views.py:4000
+#: .\schools\imports.py:3496 .\schools\views.py:4152 .\subjects\views.py:4010
 msgid "was"
 msgstr ""
 
 #: .\schools\imports.py:1127 .\schools\imports.py:1641 .\schools\views.py:4174
-#: .\subjects\views.py:4022
+#: .\subjects\views.py:4032
 #, python-format
 msgid "'%(val)s' is too long. Maximum is %(max)s characters'."
 msgstr "'%(val)s' is te lang, maximaal %(max)s tekens."
@@ -6279,7 +6259,7 @@ msgstr ""
 msgid "have"
 msgstr "hebben"
 
-#: .\schools\imports.py:1939 .\students\views.py:2028 .\subjects\views.py:2219
+#: .\schools\imports.py:1939 .\students\views.py:2028 .\subjects\views.py:2228
 msgctxt "singular"
 msgid "will be"
 msgstr "wordt"
@@ -6382,7 +6362,7 @@ msgctxt "plur"
 msgid "will be skipped."
 msgstr "worden overgeslagen."
 
-#: .\schools\imports.py:2078 .\schools\views.py:4031 .\subjects\views.py:3872
+#: .\schools\imports.py:2078 .\schools\views.py:4031 .\subjects\views.py:3882
 msgid "is skipped."
 msgstr "is overgeslagen."
 
@@ -6638,8 +6618,8 @@ msgstr "is bijgewerkt."
 msgid "Error in row"
 msgstr "Fout in regel"
 
-#: .\schools\models.py:693 .\subjects\views.py:736 .\subjects\views.py:4160
-#: .\subjects\views.py:4456 .\subjects\views.py:4872
+#: .\schools\models.py:693 .\subjects\views.py:736 .\subjects\views.py:4170
+#: .\subjects\views.py:4466 .\subjects\views.py:4882
 #, python-format
 msgid "%(cpt)s could not be deleted."
 msgstr "%(cpt)s kon niet worden gewist."
@@ -6675,7 +6655,7 @@ msgstr "De lijst met geadresseerden"
 msgid "The text of this message"
 msgstr "De tekst van dit bericht"
 
-#: .\schools\views.py:610 .\schools\views.py:1392 .\subjects\views.py:4249
+#: .\schools\views.py:610 .\schools\views.py:1392 .\subjects\views.py:4259
 #, python-format
 msgid "%(cpt)s '%(val)s'could not be added."
 msgstr "%(cpt)s '%(val)s' kon niet worden toegevoegd."
@@ -6882,8 +6862,8 @@ msgstr ""
 "Er is een fout opgetreden. School '%(val)s' kon niet worden aangemaakt."
 
 #: .\schools\views.py:3921 .\schools\views.py:3932 .\subjects\views.py:822
-#: .\subjects\views.py:4359 .\subjects\views.py:4588 .\subjects\views.py:4704
-#: .\subjects\views.py:5043
+#: .\subjects\views.py:4369 .\subjects\views.py:4598 .\subjects\views.py:4714
+#: .\subjects\views.py:5053
 msgid "An error occurred: "
 msgstr "Er is een fout opgetreden: "
 
@@ -6910,33 +6890,33 @@ msgstr "De schoolgegevens zijn opgeslagen."
 msgid "Schools are looked up by the field: '%(fld)s'."
 msgstr "De scholen worden opgezocht met het veld: '%(fld)s'."
 
-#: .\schools\views.py:4032 .\subjects\views.py:3873
+#: .\schools\views.py:4032 .\subjects\views.py:3883
 msgid "Skipped."
 msgstr "Overgeslagen."
 
-#: .\schools\views.py:4043 .\subjects\views.py:3884
+#: .\schools\views.py:4043 .\subjects\views.py:3894
 #, python-format
 msgid "No value for lookup field: '%(fld)s'."
 msgstr "Het veld '%(fld)s' is niet ingevuld."
 
-#: .\schools\views.py:4048 .\schools\views.py:4061 .\subjects\views.py:3889
-#: .\subjects\views.py:3902
+#: .\schools\views.py:4048 .\schools\views.py:4061 .\subjects\views.py:3899
+#: .\subjects\views.py:3912
 #, python-format
 msgid "Value '%(val)s' is too long."
 msgstr "Waarde '%(val)s' is te lang."
 
-#: .\schools\views.py:4049 .\schools\views.py:4062 .\subjects\views.py:3890
-#: .\subjects\views.py:3903
+#: .\schools\views.py:4049 .\schools\views.py:4062 .\subjects\views.py:3900
+#: .\subjects\views.py:3913
 #, python-format
 msgid "Max %(fld)s characters."
 msgstr "Maximaal %(fld)s tekens."
 
-#: .\schools\views.py:4056 .\subjects\views.py:3897
+#: .\schools\views.py:4056 .\subjects\views.py:3907
 #, python-format
 msgid "No value for required field: '%(fld)s'."
 msgstr "Het verplichte veld '%(fld)s' is niet ingevuld."
 
-#: .\schools\views.py:4078 .\subjects\views.py:3919
+#: .\schools\views.py:4078 .\subjects\views.py:3929
 #, python-format
 msgid "%(fld)s '%(val)s' is not unique in Excel file."
 msgstr "%(fld)s '%(val)s' is niet uniek in het Excel-bestand."
@@ -6945,7 +6925,7 @@ msgstr "%(fld)s '%(val)s' is niet uniek in het Excel-bestand."
 msgid "An error occurred. The school is not added."
 msgstr "Er is een fout opgetreden. De school is niet toegevoegd."
 
-#: .\schools\views.py:4131 .\subjects\views.py:3979
+#: .\schools\views.py:4131 .\subjects\views.py:3989
 msgid "is added."
 msgstr "is toegevoegd."
 
@@ -7079,9 +7059,9 @@ msgid "The required subjects %(code)s are missing."
 msgstr "De verplichte vakken %(code)s ontbreken."
 
 #: .\students\validators.py:898 .\students\validators.py:921
-#: .\students\views.py:2039 .\subjects\views.py:4975 .\subjects\views.py:4980
-#: .\subjects\views.py:4986 .\subjects\views.py:4991 .\subjects\views.py:4997
-#: .\subjects\views.py:5002
+#: .\students\views.py:2039 .\subjects\views.py:4985 .\subjects\views.py:4990
+#: .\subjects\views.py:4996 .\subjects\views.py:5001 .\subjects\views.py:5007
+#: .\subjects\views.py:5012
 msgid "subjects"
 msgstr "vakken"
 
@@ -7277,7 +7257,7 @@ msgstr ""
 msgid "The selection contains %(stud)s with %(subj)s."
 msgstr "De selectie bevat %(stud)s met %(subj)s."
 
-#: .\students\views.py:1729 .\students\views.py:2030 .\subjects\views.py:2219
+#: .\students\views.py:1729 .\students\views.py:2030 .\subjects\views.py:2228
 msgctxt "plural"
 msgid "will be"
 msgstr "worden"
@@ -7287,7 +7267,7 @@ msgstr "worden"
 msgid "The following subjects %(willbe)s skipped"
 msgstr "De volgende vakken %(willbe)s overgeslagen"
 
-#: .\students\views.py:1733 .\subjects\views.py:2273
+#: .\students\views.py:1733 .\subjects\views.py:2282
 #, python-format
 msgid "%(val)s already submitted"
 msgstr "%(val)s al ingediend"
@@ -7297,19 +7277,19 @@ msgstr "%(val)s al ingediend"
 msgid "%(subj)s not fully approved"
 msgstr "%(subj)s niet volledig goedgekeurd"
 
-#: .\students\views.py:1740 .\subjects\views.py:2287
+#: .\students\views.py:1740 .\subjects\views.py:2296
 msgid " already approved"
 msgstr " al goedgekeurd"
 
-#: .\students\views.py:1742 .\subjects\views.py:2289
+#: .\students\views.py:1742 .\subjects\views.py:2298
 msgid "chairperson"
 msgstr "voorzitter"
 
-#: .\students\views.py:1742 .\subjects\views.py:2289
+#: .\students\views.py:1742 .\subjects\views.py:2298
 msgid "secretary"
 msgstr "secretaris"
 
-#: .\students\views.py:1744 .\subjects\views.py:2291
+#: .\students\views.py:1744 .\subjects\views.py:2300
 msgid " already approved by you as "
 msgstr " al goedgekeurd door jou als "
 
@@ -7321,8 +7301,8 @@ msgstr "Je kunt een vak niet goedkeuren als voorzitter en als secretaris."
 msgid "No subjects will be approved."
 msgstr "Er worden geen vakken goedgekeurd."
 
-#: .\students\views.py:1758 .\students\views.py:1771 .\subjects\views.py:2305
-#: .\subjects\views.py:2314
+#: .\students\views.py:1758 .\students\views.py:1771 .\subjects\views.py:2314
+#: .\subjects\views.py:2323
 msgid "approved."
 msgstr "goedgekeurd."
 
@@ -7338,8 +7318,8 @@ msgstr "Het Ex1-formulier kan niet worden ingediend."
 msgid "added to the Ex1 form."
 msgstr "opgenomen in het Ex1-formulier."
 
-#: .\students\views.py:1782 .\students\views.py:1801 .\subjects\views.py:2323
-#: .\subjects\views.py:2342
+#: .\students\views.py:1782 .\students\views.py:1801 .\subjects\views.py:2332
+#: .\subjects\views.py:2351
 msgid "not"
 msgstr "niet"
 
@@ -7356,12 +7336,12 @@ msgstr "zijn"
 msgid "%(subj)s of %(stud)s %(havehasbeen)s approved."
 msgstr "%(subj)s van %(stud)s %(havehasbeen)s goedgekeurd."
 
-#: .\students\views.py:1796 .\subjects\views.py:2228
+#: .\students\views.py:1796 .\subjects\views.py:2237
 msgctxt "singular"
 msgid "could"
 msgstr "kon"
 
-#: .\students\views.py:1796 .\subjects\views.py:2228
+#: .\students\views.py:1796 .\subjects\views.py:2237
 msgctxt "plural"
 msgid "could"
 msgstr "konden"
@@ -7523,7 +7503,7 @@ msgstr "Basiskarakter aanmaken"
 msgid "The code"
 msgstr "De code"
 
-#: .\subjects\views.py:664 .\subjects\views.py:4211
+#: .\subjects\views.py:664 .\subjects\views.py:4221
 msgid "The abbreviation"
 msgstr "De afkorting"
 
@@ -7531,7 +7511,7 @@ msgstr "De afkorting"
 msgid "The sequence"
 msgstr "Het volgnummer"
 
-#: .\subjects\views.py:700 .\subjects\views.py:4838
+#: .\subjects\views.py:700 .\subjects\views.py:4848
 #, python-format
 msgid "%(cpt)s '%(val)s' could not be created."
 msgstr "%(cpt)s '%(val)s' kon niet worden aangemaakt."
@@ -7553,7 +7533,7 @@ msgstr "Er zijn kandidaten met vakken met dit karakter."
 msgid "Update base character"
 msgstr "Basiskarakter bijwerken"
 
-#: .\subjects\views.py:800 .\subjects\views.py:4644 .\subjects\views.py:4967
+#: .\subjects\views.py:800 .\subjects\views.py:4654 .\subjects\views.py:4977
 #, python-format
 msgid "'%(val)s' is not a valid number."
 msgstr "'%(val)s' is geen geldig getal."
@@ -7588,148 +7568,148 @@ msgstr "Er zijn %(count)s kandidaten met dit examen."
 msgid "This DUO-exam could not be unlinked."
 msgstr "Dit DUO-examen kon niet worden ontkoppeld."
 
-#: .\subjects\views.py:2205
+#: .\subjects\views.py:2214
 msgid "exam"
 msgstr "examen"
 
-#: .\subjects\views.py:2205
+#: .\subjects\views.py:2214
 msgid "exams"
 msgstr "examens"
 
-#: .\subjects\views.py:2206
+#: .\subjects\views.py:2215
 msgctxt "geen"
 msgid "no "
 msgstr "geen "
 
-#: .\subjects\views.py:2216
+#: .\subjects\views.py:2225
 msgctxt "singular"
 msgid "is"
 msgstr "is"
 
-#: .\subjects\views.py:2216
+#: .\subjects\views.py:2225
 msgctxt "plural"
 msgid "are"
 msgstr "zijn"
 
-#: .\subjects\views.py:2225
+#: .\subjects\views.py:2234
 msgctxt "singular"
 msgid "has"
 msgstr "heeft"
 
-#: .\subjects\views.py:2225
+#: .\subjects\views.py:2234
 msgctxt "plural"
 msgid "have"
 msgstr "hebben"
 
-#: .\subjects\views.py:2231
+#: .\subjects\views.py:2240
 msgctxt "singular"
 msgid "has been"
 msgstr "is"
 
-#: .\subjects\views.py:2231
+#: .\subjects\views.py:2240
 msgctxt "plural"
 msgid "have been"
 msgstr "zijn"
 
-#: .\subjects\views.py:2269
+#: .\subjects\views.py:2278
 #, python-format
 msgid "The following exams %(willbe)s skipped"
 msgstr "De volgende examens %(willbe)s overgeslagen"
 
-#: .\subjects\views.py:2276
+#: .\subjects\views.py:2285
 #, python-format
 msgid "%(val)s already published"
 msgstr "%(val)s al gepubliceerd"
 
-#: .\subjects\views.py:2279
+#: .\subjects\views.py:2288
 #, python-format
 msgid "%(val)s no questions or blank questions"
 msgstr "%(val)s geen vragen of niet ingevulde vragen"
 
-#: .\subjects\views.py:2282
+#: .\subjects\views.py:2291
 #, python-format
 msgid "%(val)s not fully approved"
 msgstr "%(val)s niet volledig goedgekeurd"
 
-#: .\subjects\views.py:2292
+#: .\subjects\views.py:2301
 msgid "You cannot approve an exam both as chairperson and as secretary."
 msgstr "Je kunt een examen niet goedkeuren als voorzitter en als secretaris."
 
-#: .\subjects\views.py:2301
+#: .\subjects\views.py:2310
 msgid "No exams will be approved."
 msgstr "Er worden geen examens goedgekeurd."
 
-#: .\subjects\views.py:2310
+#: .\subjects\views.py:2319
 msgid "No exams will be submitted."
 msgstr "Er worden geen examens ingediend."
 
-#: .\subjects\views.py:2310
+#: .\subjects\views.py:2319
 msgid "No exams will be published."
 msgstr "Er worden geen examens gepubliceerd."
 
-#: .\subjects\views.py:2312
+#: .\subjects\views.py:2321
 msgid "The exams cannot be submitted."
 msgstr "De examens kunnen niet worden ingediend."
 
-#: .\subjects\views.py:2312
+#: .\subjects\views.py:2321
 msgid "The exams cannot be published."
 msgstr "De examens kunnen niet worden gepubliceerd."
 
-#: .\subjects\views.py:2314
+#: .\subjects\views.py:2323
 msgid "submitted."
 msgstr "ingediend."
 
-#: .\subjects\views.py:2314
+#: .\subjects\views.py:2323
 msgid "published."
 msgstr "gepubliceerd."
 
-#: .\subjects\views.py:2326 .\subjects\views.py:2333
+#: .\subjects\views.py:2335 .\subjects\views.py:2342
 msgid "No exams have been approved."
 msgstr "Er zijn geen examens goedgekeurd."
 
-#: .\subjects\views.py:2329
+#: .\subjects\views.py:2338
 #, python-format
 msgid "%(exams)s %(havehasbeen)s approved."
 msgstr "%(exams)s %(havehasbeen)s goedgekeurd."
 
-#: .\subjects\views.py:2338
+#: .\subjects\views.py:2347
 #, python-format
 msgid "%(subj)s %(could)s not be approved because an error occurred."
 msgstr ""
 "%(subj)s %(could)s niet worden goedgekeurd omdat er een fout is opgetreden."
 
-#: .\subjects\views.py:2344
+#: .\subjects\views.py:2353
 #, python-format
 msgid "The exams have %(not)s been submitted."
 msgstr "De examens zijn %(not)s ingediend."
 
-#: .\subjects\views.py:2346
+#: .\subjects\views.py:2355
 #, python-format
 msgid "The exams have %(not)s been published."
 msgstr "De examens zijn %(not)s gepubliceerd."
 
-#: .\subjects\views.py:2348
+#: .\subjects\views.py:2357
 #, python-format
 msgid "It contains %(exam)s."
 msgstr "Het bevat %(exam)s."
 
-#: .\subjects\views.py:2357
+#: .\subjects\views.py:2366
 msgid "There are exams that are not fully approved."
 msgstr "Er zijn examens die niet volledig zijn goedgekeurd."
 
-#: .\subjects\views.py:2361
+#: .\subjects\views.py:2370
 msgid "They will not be submitted."
 msgstr "Ze worden niet ingediend."
 
-#: .\subjects\views.py:2363
+#: .\subjects\views.py:2372
 msgid "They will not be published."
 msgstr "Ze worden niet gepubliceerd."
 
-#: .\subjects\views.py:2366
+#: .\subjects\views.py:2375
 msgid "Are you sure you want to continue?"
 msgstr "Weet je zeker dat je wilt doorgaan?"
 
-#: .\subjects\views.py:2373
+#: .\subjects\views.py:2382
 msgid ""
 "The chairperson and the secretary must approve the exams before you can "
 "submit them."
@@ -7737,156 +7717,156 @@ msgstr ""
 "De voorzitter en secretaris moeten de examens eerst goedkeuren voordat je ze "
 "kunt indienen."
 
-#: .\subjects\views.py:2380
+#: .\subjects\views.py:2389
 msgid "The exam has been linked to 1 subject of a candidate."
 msgstr "Het examen is gekoppeld aan 1 vak van een kandidaat."
 
-#: .\subjects\views.py:2382
+#: .\subjects\views.py:2391
 #, python-format
 msgid "The exams have been linked to %(count)s subjects of candidates."
 msgstr "De examens zijn gekoppeld aan %(count)s vakken van kandidaten."
 
-#: .\subjects\views.py:3106
+#: .\subjects\views.py:3116
 msgid "An error occurred. This exam could not be created."
 msgstr "Er is een fout opgetreden. Dit examen kon niet worden aangemaakt."
 
-#: .\subjects\views.py:3133
+#: .\subjects\views.py:3143
 msgid "This exam could not be deleted."
 msgstr "Dit examen kon niet worden gewist."
 
-#: .\subjects\views.py:3240
+#: .\subjects\views.py:3250
 msgid "An error occurred. This exam could not be updated."
 msgstr "Er is een fout opgetreden. Dit examen kon niet worden aangemaakt."
 
-#: .\subjects\views.py:3812
+#: .\subjects\views.py:3822
 msgid "Import subjects"
 msgstr "Importeer vakken"
 
-#: .\subjects\views.py:3816
+#: .\subjects\views.py:3826
 msgid ""
 "There is no field given to lookup subjects. Subjects cannot be uploaded."
 msgstr ""
 "Er is geen veld geselecteerd om vakken op te zoeken. Vakken kunnen niet "
 "worden geüpload."
 
-#: .\subjects\views.py:3820
+#: .\subjects\views.py:3830
 msgid "This is a test. The subject data are not saved."
 msgstr "Dit is een test. De vakgegevens zijn niet opgeslagen."
 
-#: .\subjects\views.py:3822
+#: .\subjects\views.py:3832
 msgid "The subject data are saved."
 msgstr "De vakgegevens zijn opgeslagen."
 
-#: .\subjects\views.py:3825
+#: .\subjects\views.py:3835
 #, python-format
 msgid "Subjects are looked up by the field: '%(fld)s'."
 msgstr "De vakken worden opgezocht met het veld: '%(fld)s'."
 
-#: .\subjects\views.py:3928
+#: .\subjects\views.py:3938
 #, python-format
 msgid "Value '%(fld)s' is found multiple times."
 msgstr "Waarde '%(fld)s' komt meerdere keren voor."
 
-#: .\subjects\views.py:3936
+#: .\subjects\views.py:3946
 #, python-format
 msgid "Value '%(fld)s' is found multiple times in this exam year."
 msgstr "Waarde '%(fld)s' komt dit examenjaar meerdere keren voor."
 
-#: .\subjects\views.py:3959 .\subjects\views.py:3982
+#: .\subjects\views.py:3969 .\subjects\views.py:3992
 msgid "An error occurred. The subject is not added."
 msgstr "Er is een fout opgetreden. Het vak is niet toegevoegd."
 
-#: .\subjects\views.py:4148
+#: .\subjects\views.py:4158
 #, python-format
 msgid "Subject '%(tbl)s'"
 msgstr "Vak '%(tbl)s'"
 
-#: .\subjects\views.py:4159
+#: .\subjects\views.py:4169
 msgid "There are candidates with this subject."
 msgstr "Er zijn kandidaten met dit vak."
 
-#: .\subjects\views.py:4195 .\subjects\views.py:4251
+#: .\subjects\views.py:4205 .\subjects\views.py:4261
 msgid "Create subject"
 msgstr "Vak toevoegen"
 
-#: .\subjects\views.py:4358
+#: .\subjects\views.py:4368
 msgid "Update subject"
 msgstr "Vak bijwerken"
 
-#: .\subjects\views.py:4379
+#: .\subjects\views.py:4389
 msgid "Create subject scheme subject"
 msgstr "Vak toevoegen aan vakschema"
 
-#: .\subjects\views.py:4388
+#: .\subjects\views.py:4398
 msgid "Subject not found."
 msgstr "Vak niet gevonden."
 
-#: .\subjects\views.py:4398
+#: .\subjects\views.py:4408
 msgid "Subject type not found."
 msgstr "Vaktype niet gevonden."
 
-#: .\subjects\views.py:4412
+#: .\subjects\views.py:4422
 #, python-format
 msgid "Subject scheme subject '%(val)s' could not be created."
 msgstr "Vak '%(val)s' kon niet aan het vakschema worden toegevoegd."
 
-#: .\subjects\views.py:4440
+#: .\subjects\views.py:4450
 #, python-format
 msgid "Subject '%(tbl)s' of subject scheme '%(tbl)s'"
 msgstr "Vak '%(tbl)s' van vakschema '%(tbl)s'"
 
-#: .\subjects\views.py:4441
+#: .\subjects\views.py:4451
 msgid "Delete subject from subject scheme"
 msgstr "Vak van het vakschema verwijderen"
 
-#: .\subjects\views.py:4455
+#: .\subjects\views.py:4465
 msgid "There are candidates with subjects with this schemeitem."
 msgstr "Er zijn kandidaten met dit vak van het vakschemame."
 
-#: .\subjects\views.py:4546
+#: .\subjects\views.py:4556
 msgid "Update subject of subject scheme"
 msgstr "Vakken van vakschema bijwerken"
 
-#: .\subjects\views.py:4658
+#: .\subjects\views.py:4668
 #, python-format
 msgid "Minimum amount of subjects cannot be greater than maximum (%(val)s)."
 msgstr ""
 "Het minimaal aantal vakken kan niet groter zijn dan het maximum (%(val)s)."
 
-#: .\subjects\views.py:4669
+#: .\subjects\views.py:4679
 #, python-format
 msgid "Maximum amount of subjects cannot be fewer than minimum (%(val)s)."
 msgstr ""
 "Het maximaal aantal vakken kan niet kleiner zijn dan het minimum (%(val)s)."
 
-#: .\subjects\views.py:4675
+#: .\subjects\views.py:4685
 msgid "Maximum number of re-examinations must be a positive whole number."
 msgstr "Maximaal aantal herexamens moet een geheel getal zijn, groter dan nul."
 
-#: .\subjects\views.py:4791
+#: .\subjects\views.py:4801
 msgid "Create character"
 msgstr "Karakter aanmaken"
 
-#: .\subjects\views.py:4798
+#: .\subjects\views.py:4808
 msgid "Base character not found."
 msgstr "Basiskarakter niet gevonden."
 
-#: .\subjects\views.py:4858
+#: .\subjects\views.py:4868
 #, python-format
 msgid "Character '%(tbl)s'"
 msgstr "Karakter '%(tbl)s'"
 
-#: .\subjects\views.py:4871
+#: .\subjects\views.py:4881
 msgid "There are candidates with subjects with this character."
 msgstr "Er zijn kandidaten met dit vak met dit karakter."
 
-#: .\subjects\views.py:4974 .\subjects\views.py:4985 .\subjects\views.py:4996
+#: .\subjects\views.py:4984 .\subjects\views.py:4995 .\subjects\views.py:5006
 #, python-format
 msgid "Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s)."
 msgstr ""
 "Het minimaal aantal %(cpt)s kan niet groter zijn dan het maximum (%(val)s)."
 
-#: .\subjects\views.py:4979 .\subjects\views.py:4990 .\subjects\views.py:5001
+#: .\subjects\views.py:4989 .\subjects\views.py:5000 .\subjects\views.py:5011
 #, python-format
 msgid "Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s)."
 msgstr ""
@@ -8482,6 +8462,7 @@ msgid "Orderlists"
 msgstr "Bestellijsten"
 
 #: .\templates\schools\orderlists.html:51 .\templates\students\grades.html:60
+#: .\templates\subjects\exams.html:55
 msgid "Show all from this period"
 msgstr "Alles van dit tijdvak weergeven"
 
@@ -8723,10 +8704,6 @@ msgstr "Alle vakken weeergeven"
 msgid "Proof of knowledge"
 msgstr "Bewijs van kennis"
 
-#: .\templates\subjects\exams.html:55 .\templates\subjects\subjects.html:40
-msgid "Show all"
-msgstr "Alles weergeven"
-
 #: .\templates\subjects\exams.html:117
 msgid "N-termen tabel"
 msgstr ""
@@ -8938,6 +8915,10 @@ msgstr "Excel-bestand gegevens"
 msgid "The columns with a red header will be uploaded."
 msgstr "De kolommen met een rode kopregel worden geüpload."
 
+#: .\templates\subjects\subjects.html:40
+msgid "Show all"
+msgstr "Alles weergeven"
+
 #: .\templates\subjects\subjects.html:90
 msgid "Subject scheme subjects"
 msgstr "Vakken van vakschema"
@@ -8958,3 +8939,4 @@ msgstr "Alle"
 #, python-format
 msgid "An error occurred. '%(fld)s' is not saved."
 msgstr "Er is een fout opgetreden. '%(fld)s' is niet opgeslagen."
+

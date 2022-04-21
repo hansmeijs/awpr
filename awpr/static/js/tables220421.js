@@ -234,14 +234,14 @@
         // allow opening only when loc has value
         if(!isEmpty(permit_dict)){
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
-        //console.log( "may_select", may_select);
+    //console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (tblName === "school") ? setting_dict.sel_school_pk :
                                    (tblName === "subject") ? setting_dict.sel_subject_pk :
                                    (tblName === "student") ? setting_dict.sel_student_pk : null;
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
-        //console.log( "el_MSSSS_input", el_MSSSS_input);
+    //console.log( "el_MSSSS_input", el_MSSSS_input);
         // --- fill select table
                 t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
                 el_MSSSS_input.value = null;

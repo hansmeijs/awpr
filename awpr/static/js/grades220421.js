@@ -799,7 +799,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  FillOptionsExamtype  ================ PR2021-03-08 PR2021-12-02 PR2022-04-13
     function FillOptionsExamtype() {
-        //console.log("=== FillOptionsExamtype");
+        console.log("=== FillOptionsExamtype");
         const has_practexam = !setting_dict.no_practexam;
         const sr_allowed = !!setting_dict.sr_allowed;
         const has_centralexam = !setting_dict.no_centralexam;
@@ -831,8 +831,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     //console.log("setting_dict.sel_btn", setting_dict.sel_btn);
     //console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod);
-    //console.log("loc.options_examtype", loc.options_examtype);
-    //console.log("examperiod", examperiod);
+    console.log("loc.options_examtype", loc.options_examtype);
+    console.log("examperiod", examperiod);
 
         if (el_SBR_select_examtype) {
 
@@ -2440,6 +2440,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
             };
             console.log("setting_dict.sel_auth_index", setting_dict.sel_auth_index) ;
 
+        console.log("mod_MAG_dict", mod_MAG_dict) ;
             if (setting_dict.sel_auth_index === 4 && !["pe", "ce", "reex", "reex03"].includes(setting_dict.sel_examtype) ){
                 setting_dict.sel_auth_index = null;
                 const info_txt = (setting_dict.sel_examtype === "exem") ?
@@ -2494,12 +2495,13 @@ if(j && !is_status_field){td.classList.add("border_left")};
                     }
                     el_MAG_examtype.innerText = examtype_caption
 
-    // --- hide filter subject, cluster when submitting Ex2 Ex2a form. Leave level visible if exists, MPC must be able to submit per level
+    // --- hide filter subject, level and cluster when submitting Ex2 Ex2a form. Leave level visible if sel_dep_level_req, MPC must be able to submit per level
                     const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req || mod_MAG_dict.is_approve_mode;
                     add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
 
-    // --- hide level textbox when not sel_dep_level_req
-                    add_or_remove_class(el_MAG_lvlbase.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
+    // --- hide select subject and cluster when submit mode
+                    add_or_remove_class(el_MAG_subject.parentNode, cls_hide, !mod_MAG_dict.is_approve_mode);
+                    add_or_remove_class(el_MAG_cluster.parentNode, cls_hide, !mod_MAG_dict.is_approve_mode);
 
                     const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
                     el_MAG_lvlbase.innerText = level_abbrev;
@@ -3597,7 +3599,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
         if(sel_pk_int === -1) { sel_pk_int = null};
 
-        const selected_pk_dict = {};
+        const upload_pk_dict = {};
         if (mode === "subject") {
             // Note: when tblName = subject: sel_pk_int = subject_pk
 
@@ -3611,15 +3613,11 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 setting_dict.sel_student_name = null;
             };
 
-            selected_pk_dict.sel_subject_pk = sel_pk_int;
-            if(sel_pk_int) {selected_pk_dict.sel_student_pk = null};
-
-    // ---  upload new setting
-            const upload_dict = {selected_pk: {
-                sel_subject_pk: setting_dict.sel_subject_pk,
-                sel_student_pk: null,
-                sel_cluster_pk: null}};
-            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+            upload_pk_dict.sel_subject_pk = sel_pk_int;
+            if(sel_pk_int) {
+                upload_pk_dict.sel_cluster_pk = null;
+                upload_pk_dict.sel_student_pk = null;
+            };
 
         } else if (mode === "cluster") {
             setting_dict.sel_cluster_pk = sel_pk_int;
@@ -3628,34 +3626,35 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             // when selecting cluster: also set subject to the subject of this cluster
             setting_dict.sel_subject_pk =  (selected_dict && selected_dict.subject_id) ? selected_dict.subject_id : null;
             setting_dict.sel_subject_name = (selected_dict && selected_dict.subj_name) ? selected_dict.subj_name : null;
+            setting_dict.sel_student_pk = null;
+            setting_dict.sel_student_name = null;
 
+            upload_pk_dict.sel_cluster_pk = sel_pk_int;
             if(sel_pk_int) {
-                setting_dict.sel_student_pk = null;
-                setting_dict.sel_student_name = null;
+                upload_pk_dict.sel_subject_pk = selected_dict.subject_id;
+                upload_pk_dict.sel_student_pk = null;
             };
-    // ---  upload new setting
-            const upload_dict = {selected_pk: {
-                sel_cluster_pk: setting_dict.sel_cluster_pk,
-                sel_student_pk: null,
-                sel_subject_pk: null}};
-            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
         } else if (mode === "student") {
             setting_dict.sel_student_pk = sel_pk_int;
             setting_dict.sel_student_name = (selected_dict && selected_dict.fullname) ? selected_dict.fullname : null;
+
+            setting_dict.sel_subject_pk = null;
+            setting_dict.sel_subject_name = null;
+            setting_dict.sel_cluster_pk = null;
+            setting_dict.sel_cluster_name = null
+
+            upload_pk_dict.sel_student_pk = sel_pk_int;
             if(sel_pk_int) {
-                setting_dict.sel_subject_pk = null;
-                setting_dict.sel_subject_name = null;
+                upload_pk_dict.sel_subject_pk = null;
                 setting_dict.sel_cluster_pk = null;
-                setting_dict.sel_cluster_name = null
             };
-    // ---  upload new setting
-            const upload_dict = {selected_pk: {
-                sel_student_pk: setting_dict.sel_student_pk,
-                sel_subject_pk: null,
-                sel_cluster_pk: null}};
-            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
+
+// ---  upload new setting
+        const upload_dict = {selected_pk: upload_pk_dict};
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
         console.log("setting_dict", setting_dict);
         UpdateHeader();
 

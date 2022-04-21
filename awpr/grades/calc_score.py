@@ -90,15 +90,16 @@ def calc_grade_from_score(score_int , scalelength_int , nterm_str , cesuur_int, 
 
     elif score_int > scalelength_int:
         caption = _('Maximum score') if is_ete_exam else _('Scale length')
-        caption = str(caption).lower()
-        err_txt = _('Score must be fewer than %(cpt)s.') % {'cpt': caption}
+        err_txt = _('%(cpt)s must be fewer than or equal to %(val)s.') % {'cpt': caption, 'val': str(scalelength_int)}
 
     else:
         if is_ete_exam:
+            caption = _('The cesuur')
             if cesuur_int <= 0:
-                err_txt = _('%(cpt)s must be a whole number greater than zero.') % {'cpt': _('Cesuur')}
+                err_txt = _('%(cpt)s must be a whole number greater than zero.') % {'cpt': caption}
             elif cesuur_int >= scalelength_int:
-                err_txt = _('Cesuur must be fewer than maximum score.')
+                caption = _('The cesuur')
+                err_txt = _('%(cpt)s must be fewer than or equal to %(val)s.') % {'cpt': caption, 'val': str(scalelength_int)}
             else:
                 grade = calc_grade_from_score_ETE(score_int, scalelength_int, cesuur_int)
         else:

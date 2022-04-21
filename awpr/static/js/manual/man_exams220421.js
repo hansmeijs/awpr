@@ -17,9 +17,11 @@ const man_exams = {
 
                  "<p class='pb-0 pt-2'>De <b>procedure voor het invoeren van de antwoorden en het indienen</b> bij het ETE is als volgt:</p>",
                 "<ul class='manual_bullet mb-0'><li>Het ETE voert de algemene gegevens van de examens in: de naam, het aantal vragen, welke vragen meerkeuzevraag zijn en welke antwoorden zijn toegestaan;</li>",
-                "<li>Zodra het ETE dit heeft afgerond worden de examens 'gepubliceerd', dat wil zeggen: ze worden zichtbaar voor de scholen. AWP koppelt waar mogelijk het examen aan de vakken van de kandidaten. Alleen wanneer bij een vak meerdere examens beschikbaar zijn, dient de school het juiste examen te kiezen;</li>",
+                "<li>Zodra het ETE dit heeft afgerond worden de examens 'gepubliceerd', dat wil zeggen: ze worden zichtbaar voor de scholen. AWP koppelt waar mogelijk het examen aan de vakken van de kandidaten. ",
+                "Alleen wanneer bij een vak meerdere examens beschikbaar zijn, dient de school het juiste examen te kiezen. ",
+                "Dit is het geval bij de praktijkexamens, die meerdere versies hebben;</li>",
                 "<li>De school vult alle antwoorden van de vragen in. AWP controleert of het ingevulde antwoord is toegestaan;</li>",
-                "<li>Nadat de antwoorden van alle examens zijn ingevoerd, dienen ze te worden goedgekeurd en ingediend. De procedure hiervoor is hetzelfde als bij het indienen van het Ex1- en Ex2-formulier;</li>",
+                "<li>Nadat de antwoorden van alle examens zijn ingevoerd, dienen ze te worden goedgekeurd en ingediend. De procedure hiervoor is hetzelfde als bij het indienen van het Ex2-formulier;</li>",
                 "<li>Na het indienen van de antwoorden vult AWP de totaal score in bij het betreffende vak van de kandidaat.</li></ul>",
 
                 "<p>De pagina <i>Examens</i> bevat een tabel met alle kandidaten, hun vakken en het bijbehorende examen. ",
@@ -49,10 +51,9 @@ const man_exams = {
 
         write_paragraph_header("id_link_exams", "Examen koppelen aan een vak"),
         write_paragraph_body("",
-            [
-                "<p>Zodra het ETE de examens heeft gepubliceerd koppelt AWP waar mogelijk het bijbehorende examen aan de vakken van de kandidaten. ",
-                "Alleen wanneer bij een vak meerdere examens beschikbaar zijn, dient de school het juiste examen te kiezen.</p>",
-
+            ["<p>Zodra het ETE de examens heeft gepubliceerd koppelt AWP waar mogelijk het bijbehorende examen aan de vakken van de kandidaten. ",
+                "Alleen wanneer bij een vak meerdere examens beschikbaar zijn, dient de school het juiste examen te kiezen. ",
+                "Dit is het geval bij de praktijkexamens, die meerdere versies hebben.</p>",
                 "<p>Klik in de kolom 'Examen' van het betreffende vak van de kandidaat. Er verschijnt een venster met een of meerdere examens. Selecteer een examen en klik op <i>OK</i>. ",
                 "Wanneer bij een vak (nog) geen examens beschikbaar zijn, verschijnt de melding'Er zijn nog geen examens voor dit vak.'.</p>",
 
@@ -69,6 +70,8 @@ const man_exams = {
                 "<p>Boven in het venster staan de naam van het examen, het vak en de kandidaat. ",
                 "Daaronder staan de nummers van de vragen met een kader voor het antwoord. Bij een meerkeuzevraag staat er een asterisk (*) achter de vraaag.<br>",
                 "Wanneer een examen meer dan 50 vragen heeft worden de vragen over twee pagina's verdeeld. Links onderin het venster staan dan knoppen waarmee je naar een andere pagina kunt gaan.</p>",
+                "Bij de praktijkexamens is er links een kader met deelexamens zichtbaar. Klik op een deelexamen en vul de vragen van dat deelexamen is. ",
+                "Bij de examens zonder deelexamen is dit kader niet zichtbaar.</p>",
 
                 "<p class='pb-0'><b>Antwoorden invullen</b><br>Vul het antwoord van de vraag in. Bij een open vraag vul je de behaalde score in, bij een meerkeuzevraag een letter. ",
                 "Vul een 'x' in als de kandidaat een vraag niet heeft beantwoord of bij een meerkeuzevraag meerdere antwoorden heeft ingevuld. Alle vragen moeten worden ingevuld.</p>",
@@ -81,7 +84,7 @@ const man_exams = {
                 "Vergeet daarom niet op de knop <i>Opslaan</i> te klikken als je de antwoorden hebt ingevoerd.</p>",
                 "<p class='pb-0'>In de kolom <i>Niet ingevuld</i> kunt je zien hoeveel vragen er nog ingevuld moeten worden. 49/58 betekent dat 49 van de 58 vragen nog niet zijn ingevuld. Als alle vragen zijn ingevuld blijft deze kolom leeg.</p>",
             ]),
-        write_image("img_exams_modA_ne"),
+        write_image("img_exams_modalA_ne"),
 
         write_paragraph_header("id_download_exams", "Antwoorden downloaden"),
         write_paragraph_body("",
@@ -140,26 +143,29 @@ const man_exams = {
             [
                 "<p>The 'Exams' page replaces the former WOLF program for entering the answers to the exam questions of the ETE exams. </p>",
                 "<p class='pb-0'>This has several advantages:</p>",
-                "<ul class='manual_bullet mb-0'><li>Data of the candidates and their courses do not need to be re-entered;</li>",
-                "<li>After submitting the answers, the total score is automatically entered in the relevant course of the candidate;</li>",
+                "<ul class='manual_bullet mb-0'><li>Data of the candidates and their subjects do not need to be re-entered;</li>",
+                "<li>After submitting the answers, the total score is automatically entered in the relevant subject of the candidate;</li>",
                 "<li>The ETE does not have to collect and merge the completed exams from the schools.</li></ul>",
 
                  "<p class='pb-0 pt-2'>The <b>procedure for entering the answers and submitting them</b> to the ETE is as follows:</p>",
                 "<ul class='manual_bullet mb-0'><li>The ETE enters the general data of the exams: the name, the number of questions, which questions are multiple choice and which answers are allowed;</li>",
-                "<li>As soon as the ETE has completed this, the exams are 'published', i.e. they become visible to the schools. Where possible, AWP links the exam to the subjects of the candidates. Only if several exams are available for a subject , the school should choose the correct exam;</li>",
+                "<li>As soon as the ETE has completed this, the exams are 'published', i.e. they become visible to the schools. ",
+                "Where possible, AWP links the exam to the subjects of the candidates. ",
+                "Only if multiple exams are available for a subject, the school should choose the correct exam. ",
+                 "This is the case with the practical exams, which have multiple versions;</li>",
                 "<li>The school fills in all the answers of the questions. AWP checks whether the entered answer is allowed;</li>",
-                "<li>After the answers of all exams have been entered, they must be approved and submitted. The procedure for this is the same as for submitting the Ex1 and Ex2 form;</li>",
+                "<li>After the answers of all exams have been entered, they must be approved and submitted. The procedure for this is the same as for submitting the Ex2 form;</li>",
                 "<li>After submitting the answers, AWP fills in the total score for the relevant subject of the candidate.</li></ul>",
 
                 "<p>The <i>Exams</i> page contains a table with all candidates, their subjects and the corresponding exam. ",
-                "In this page you can link exams to courses, fill in the answers, download the answers and approve and submit the exams.</p>",
+                "In this page you can link exams to subjects, fill in the answers, download the answers and approve and submit the exams.</p>",
 
                 "<p>Click the <i>Exams</i> button in the page bar. The <i>Exams</i> page below will now open.</p>",
                 "<p>The <i>Exam</i> column contains the name of the exam.<br>",
                 "The column <i>Not filled in</i> shows the number of questions that the school still needs to fill in and the total number of questions.<br>",
                 "Click on <i>Download PDF</i> to download an overview of the completed answers.</p>",
 
-                "<p><b>Filter</b><br>Each line in the table shows a candidate's course. ",
+                "<p><b>Filter</b><br>Each line in the table shows a candidate's subject. ",
                 "You can display all exams of all candidates, but that is not convenient. ",
                 "It makes the page cluttered and for many candidates also slow. It is better to filter exams.</p>",
 
@@ -176,17 +182,17 @@ const man_exams = {
             ]),
         write_image("img_exams_tableA_en"),
 
-        write_paragraph_header("id_link_exams", "Link exam to a course"),
+        write_paragraph_header("id_link_exams", "Link exam to a subject"),
         write_paragraph_body("",
-            [
-                "<p>As soon as the ETE has published the exams, AWP will link the corresponding exam to the subjects of the candidates where possible.",
-                "The school should only choose the correct exam if several exams are available for a subject. </p>",
+            ["<p>Once the ETE has published the exams, AWP will link the corresponding exam to the candidates' subjects where possible. ",
+                 "The school should only choose the correct exam if multiple exams are available for a subject. ",
+                 "This is the case with the practical exams, which have multiple versions.</p>",
+                 "<p>Click in the column 'Exam' of the relevant subject of the candidate. A window with one or more exams will appear. ",
+                 "Select an exam and click on <i>OK</i>. ",
+                 "If no exams are (yet) available for a subject, the message 'There are no exams for this subject yet.'.</p>",
 
-                "<p>Click in the column 'Exam' of the relevant subject of the candidate. A window with one or more exams will appear. Select an exam and click on <i>OK</i>. ",
-                "If no exams are (yet) available for a subject, the message 'There are no exams for this subject yet.'.</p>",
-
-                "<p><b>Delete exam</b><br>If a candidate has not taken the exam, you can delete the exam. ",
-                "Click on the exam of the candidate's subject. In the window that appears, click on <i>Delete exam</i>.</p>",
+                 "<p><b>Delete exam</b><br>If a candidate has not taken the exam, you can delete the exam. ",
+                 "Click on the exam of the candidate's subject. In the window that appears, click on <i>Delete exam</i>.</p>",
            ]),
 
         write_paragraph_header("id_enter_exams", "Enter answers"),
@@ -198,7 +204,8 @@ const man_exams = {
                 "<p>At the top of the window is the name of the exam, subject and candidate.",
                 "Below are the numbers of the questions with a box for the answer. With a multiple choice question there is an asterisk (*) after the question.<br>",
                 "When an exam has more than 50 questions, the questions are divided over two pages. At the bottom left of the window there are buttons with which you can go to another page.</p>",
-
+                "The practical exams have a frame with partial exams on the left. Click on a partial exam and fill in the questions of that partial exam. ",
+                 "This frame is not visible when an exam has no partial exams.</p>",
                 "<p class='pb-0'><b>Fill in answers</b><br>Enter the answer of the question. For an open question, enter the score obtained, for a multiple choice question a letter. ",
                 "Enter an 'x' if the candidate has not answered a question or has entered multiple answers for a multiple choice question. All questions must be completed.</p>",
                 "<p class='pb-0'>If you enter an answer that is not possible, a window will appear. This shows which answers are allowed.</p>",
@@ -210,7 +217,7 @@ const man_exams = {
                 "So don't forget to click the <i>Save</i> button when you have entered the answers.</p>",
                 "<p class='pb-0'>In the column <i>Not filled in</i> you can see how many questions still need to be filled in. 49/58 means that 49 of the 58 questions have not yet been filled in. If all questions have been completed, this column remains empty.</p>",
             ]),
-        write_image("img_exams_modA_en"),
+        write_image("img_exams_modalA_en"),
 
         write_paragraph_header("id_download_exams", "Download answers"),
         write_paragraph_body("",

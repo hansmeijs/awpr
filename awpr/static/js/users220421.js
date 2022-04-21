@@ -3008,13 +3008,13 @@ function RefreshDataRowsAfterUpload(response) {
     };  // get_datadict_from_mapid
 
     function get_datadict_from_pk(tblName, pk_int) {
-        console.log( "===== get_datadict_from_pk  === ");
-        console.log( "tblName", tblName);
-        console.log( "pk_int", pk_int, typeof pk_int );
+        //console.log( "===== get_datadict_from_pk  === ");
+        //console.log( "tblName", tblName);
+        //console.log( "pk_int", pk_int, typeof pk_int );
         let data_dict = null;
         if(tblName && pk_int){
             const data_rows = get_data_rows(tblName) ;
-        console.log( "data_rows", data_rows, typeof data_rows );
+    //console.log( "data_rows", data_rows, typeof data_rows );
             const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
             if (!isEmpty(found_dict)) {data_dict = found_dict};
 

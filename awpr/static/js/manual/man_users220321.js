@@ -30,7 +30,18 @@ const man_user = {
         ]),
         write_paragraph_body("",[
             "<p><b>Wachtwoord vergeten</b><br>Klik op <i>Wachtwoord vergeten?</i> onderaan het inlog venster als je je wachtwoord bent vergeten. ",
-            "AWP stuurt dan een e-mail naar het e-mail adres van de gebruiker. De e-mail bevat een link. Klik hierop om naar de pagina te gaan, waar je je wachtwoord kunt wijzigen.</p>",
+            "Er verschijnt een venster <i>Nieuw wachtwoord aanmaken</i>.<br>",
+            "Vul je schoolcode en e-mail adres in en klik op <i>E-mail aanvragen</i>. ",
+            "Let erop dat het e-mail adres dat je invult hetzelfde moet zijn als het e-mail adres van je gebruikersaccount.<br>",
+            "AWP stuurt nu een e-mail naar het e-mail adres van de gebruiker. De e-mail bevat een link. Klik hierop om naar de pagina te gaan, waar je je wachtwoord kunt wijzigen.</p>",
+        ]),
+
+        write_paragraph_body("",[
+            "<p class='mb-0 pb-0'>Wanneer je geen e-mail hebt ontvangen kan dat verschillende oorzaken hebben:</p>",
+            "<ul class='manual_bullet'><li>De e-mail is in de map met spam terecht gekomen.</li>",
+            "<li>Het e-mail adres dat je hebt ingevuld komt niet overeen met het e-mail adres van je gebruikersaccount.</li>",
+            "<li>De e-mail is tegengehouden door de firewall van je organisatie.</li>",
+            "<li>AWP heeft de e-mail om andere redenen niet kunnen versturen.</li></ul>"
         ]),
 
         write_paragraph_header("id_user_manage", "Gebruikersaccounts"),
@@ -61,10 +72,10 @@ const man_user = {
              "Wanneer een gebruiker gegevens heeft ingevoerd kun je de account niet meer wissen. In plaats daarvan kun je de account 'Niet-actief' maken.",
 
              "<p><b>Gebruikersaccount niet-actief maken</b><br>Klik in de kolom <i>Niet actief</i> van een gebruiker. Er verschijnt een scherm om te bevestigen dat de gebruiker 'Niet-actief' wordt gemaakt. Klik op <i>Ja, maak niet-actief</i>. ",
-              "Het icoontje wordt nu zwart. De gebruiker kan nu niet meer inloggen.",
+              "Het icoontje wordt nu zwart. De gebruiker kan nu niet meer inloggen. ",
               "Klik op het zwarte icoontje om een gebruiker weer actief te maken.</p>",
 
-             "<p><b>Niet-actieve gebruikersaccounts tonen</b><br>Klik in de kolom <i>Niet actief</i> op het icoontje met het oog onder 'Niet actief'. Nu worden alleen de niet-actieve accounts gettond.",
+             "<p><b>Niet-actieve gebruikersaccounts tonen</b><br>Klik in de kolom <i>Niet actief</i> op het icoontje met het oog onder 'Niet actief'. Nu worden alleen de niet-actieve accounts weergegeven. ",
              "Nog een keer klikken en alle accounts worden weergegeven. Nog een keer klikken en alleen de actieve accounts worden weergegeven.</p>",
         ]),
 
@@ -232,10 +243,20 @@ const man_user = {
             "<li>Your browser does not accept cookies. Change the browser setting.</li></ul></p>"
         ]),
         write_paragraph_body("",[
-            "<p><b>Password forgotten </b><br>Click on <i>Forgot password?</i> at the bottom of the login window if you have forgotten your password. ",
-            "AWP will then send an e-mail to the user's e-mail address. The e-mail contains a link. Click this to go to the page where you can change your password.</p>",
+            "<p><b>Forgotten password</b><br>Click on <i>Wachtwoord vergeten?</i> at the bottom of the login window if you have forgotten your password.",
+            "A window <i>Nieuw wachtwoord aanmaken</i> will appear.<br>",
+            "Enter your school code and email address and click <i>Request email</i>.",
+            "Note that the e-mail address you enter must be the same as the email address of your user account.<br>",
+            "AWP will now send an email to the user's email address. The email contains a link. Click this link to go to the page where you can change your password.</p>",
         ]),
 
+        write_paragraph_body("",[
+            "<p class='mb-0 pb-0'>If you have not received an e-mail, it can be for several reasons:</p>",
+            "<ul class='manual_bullet'><li>The email ended up in the spam folder.</li>",
+            "<li>The e-mail address you entered does not match the e-mail address of your user account.</li>",
+            "<li>The email was blocked by your organization's firewall.</li>",
+            "<li>AWP was unable to send the email for other reasons.</li></ul>"
+        ]),
         write_paragraph_header("id_user_manage", "User Accounts"),
         write_paragraph_body("",[
             "<p><b>Open user page</b><br>Click on your username at the top right of the screen. ",

@@ -63,7 +63,7 @@
         // PR2022-04-19 Sentry debug:  Unhandled: Const moet zijn geïnitialiseerd
         // was: for (const key of Object.keys(mimp)) {
         // mimp[key] = null;
-        for (const value of Object.values(mimp)) {
+        for (let value of Object.values(mimp)) {
             value = null;
         };
         mimp.import_table = import_table;
