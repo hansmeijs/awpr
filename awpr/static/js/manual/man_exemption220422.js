@@ -99,7 +99,8 @@ const man_exemption = {
         "zodat AWP kan nagaan of voor het betreffende vak in dat jaar een centraal examen is afgenomen.<br>",
         "Het invullen van het examenjaar is alleen nodig, wanneer de vrijstelling geen CE-cijfer heeft, omdat in dat examenjaar het centraal examen niet is afgenomen vanwege de Covid-pandemie. ",
         "Wanneer de vrijstelling wel een CE-cijfer heeft, of wanneer er normaal gesproken ook geen centraal examen is voor dat vak, hoeft het examenjaar niet te worden ingevuld.</p>",
-        "<p>Klik in de kolom <i>Jaar van de vrijstelling</i> en selecteer een examenjaar of klik op '---' voor een blanco examenjaar en klik op <i>Opslaan</i>.</p>",
+        "<p>Ga naar de pagina <i>Vakken</i> en klik op de tab <i>Vrijstellingen</i>. Klik in de kolom <i>Jaar van de vrijstelling</i>, selecteer een examenjaar en klik op <i>Opslaan</i>. ",
+        "Klik op <i>Examenjaar wissen</i> om een examenjaar te verwijderen.</p>",
         ]),
 
         "<div class='p-3 visibility_hide'>-</div>",
@@ -198,7 +199,8 @@ en:  [
         "so that AWP can check whether a central exam has been taken for the subject in question in that year.<br>",
         "Entering the exam year is only necessary if the exemption does not have a CE grade, because the central exam was not taken in that exam year due to the Covid pandemic. ",
         "If the exemption does have a CE grade, or if there is normally no central exam for that subject, the exam year does not have to be entered.</p>",
-        "<p>Click in the column <i>Year of the exemption</i> and select an exam year or click on '---' for a blank exam year and click on <i>Save</i>.</p >",
+        "<p>Go to the page <i>Subjects</i> and click on the tab <i>Exemptions</i>. Click in the column <i>Year of the exemption</i>, select an exam year and click <i>Save</i>.",
+        "Click on <i>Delete exam year</i> to delete an exam year.</p>",
         ]),
 
         "<div class='p-3 visibility_hide'>-</div>",

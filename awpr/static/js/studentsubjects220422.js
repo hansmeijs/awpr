@@ -1050,6 +1050,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     };
+
                 } else if (field_name.includes("_status")){
         //console.log("field_name", field_name);
                     // skip when no permit or row has no studsubj_id or when it is published
@@ -3176,9 +3177,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const tblRow = t_get_tablerow_selected(el_input)
         const stud_pk_int = get_attr_from_el_int(tblRow, "data-stud_pk");
 
+        console.log( "stud_pk_int", stud_pk_int);
 // -- lookup selected student
         const [index, student_dict, compare] = b_recursive_integer_lookup(student_rows, "id", stud_pk_int);
+        console.log( "student_dict", student_dict);
         if (!isEmpty(student_dict)){
+        console.log( "student_dict.iseveningstudent", student_dict.iseveningstudent);
         // chjanging exemption_yrear only possible when iseveningstudent or islexstudent
             if (student_dict.iseveningstudent || student_dict.islexstudent){
                 const studsubj_pk_int = get_attr_from_el_int(tblRow, "data-studsubj_pk");

@@ -950,6 +950,16 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Sequence_2lines'] = TXT_Sequence_2lines
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
+        dict['No_exam_linked_to_this_subject'] = _("There is no exam linked to this subject.")
+        dict['This_exam_has_no_questions'] = _("This exam has no questions.")
+        dict['No_questions_of'] = _("No questions of ")
+        dict['One_question_of'] = _("One question of ")
+        dict['questions_of'] = _(" questions of ")
+        dict['is_not_entered'] = _(" is not entered.")
+        dict['are_not_entered'] = _(" are not entered.")
+        dict['are_entered'] = _(" questions are entered.")
+        dict['All_questions_are_entered'] = _("All questions are entered.")
+
         dict['No_exams_found'] = _("No exams found.")
         dict['No_subjects_found'] = _("No subjects found.")
 

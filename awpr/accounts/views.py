@@ -1061,7 +1061,9 @@ class AwpPasswordResetForm(forms.Form):
             html_email = loader.render_to_string(html_email_template_name, context)
             email_message.attach_alternative(html_email, 'text/html')
 
-        email_message.send()
+        email_sent = email_message.send()
+        logger.debug('     email_sent: ' + str(email_sent))
+
 
     def get_users(self, schoolbase_id, email):
         #logger.debug(' ----- get_users -----')
@@ -1103,7 +1105,11 @@ class AwpPasswordResetForm(forms.Form):
              use_https=False, token_generator=default_token_generator,
              from_email=None, request=None, html_email_template_name=None,
              extra_email_context=None):
-        #logger.debug(' ----- save -----')
+        logger.debug(' ----- new password request -----')
+
+        now = datetime.now()
+        logger.debug('     date: ' + str(now.strftime("%Y-%m-%d %H:%M:%S")))
+
         """
         Generate a one-use only link for resetting password and send it to the
         user.
@@ -1116,10 +1122,11 @@ class AwpPasswordResetForm(forms.Form):
             )
             if schoolbase:
                 schoolbase_id = schoolbase.pk
-        #logger.debug('schoolcode: ' + str(schoolcode))
+        logger.debug('     schoolcode: ' + str(schoolcode))
         #logger.debug('schoolbase_id: ' + str(schoolbase_id))
 
         email = self.cleaned_data["email"]
+        logger.debug('     email: ' + str(email))
 
         if not domain_override:
             current_site = get_current_site(request)
@@ -1129,11 +1136,13 @@ class AwpPasswordResetForm(forms.Form):
             site_name = domain = domain_override
         email_field_name = UserModel.get_email_field_name()
 
-        #logger.debug('email: ' + str(email))
         #logger.debug('email_field_name: ' + str(email_field_name))
 
         for user in self.get_users(schoolbase_id, email):
             user_email = getattr(user, email_field_name)
+
+            logger.debug('     user_email: ' + str(user_email))
+
             context = {
                 'email': user_email,
                 'domain': domain,
@@ -1148,7 +1157,6 @@ class AwpPasswordResetForm(forms.Form):
                 subject_template_name, email_template_name, context, from_email,
                 user_email, html_email_template_name=html_email_template_name,
             )
-
 # === end of class AwpPasswordResetForm =====================================
 
 
@@ -1194,6 +1202,7 @@ class AwpPasswordResetView(PasswordContextMixin, FormView):
             'extra_email_context': self.extra_email_context,
         }
         form.save(**opts)
+
         return super().form_valid(form)
 
 # === end of class AwpPasswordResetView =====================================

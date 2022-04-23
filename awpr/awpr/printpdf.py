@@ -15,6 +15,7 @@ from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
 from awpr import library as awpr_lib
+from grades import views as grade_views
 
 import logging
 logger = logging.getLogger(__name__)
@@ -654,7 +655,7 @@ def get_all_partex_assignment_keys_detail_dict(partex_str, assignment_str, keys_
     """
 
 # - create dict with assignments PR2021-05-08
-    all_assignment_detail_dict = get_allassignment_detail_dict_from_string(assignment_str, keys_str)
+    all_assignment_detail_dict = get_allassignment_detail_dict_from_stringXXX(assignment_str, keys_str)
 
 #  create dict from partex
     all_partex_assignment_keys_detail_dict = {}
@@ -697,7 +698,7 @@ all_partex_assignment_keys_list: {
 def get_allassignment_dict_from_string(assignment_str, keys_str):
     # - create dict with assignments and keys PR2022-01-27
 
-    all_keys_dict = get_allkeys_dict_from_string(keys_str)
+    all_keys_dict = get_allkeys_dict_from_stringXXX(keys_str)
 
     logging_on = False  #s.LOGGING_ON
     if logging_on:
@@ -769,15 +770,15 @@ def get_allassignment_dict_from_string(assignment_str, keys_str):
 # - end of get_allassignment_dict_from_string
 
 
-def get_allassignment_detail_dict_from_string(assignment_str, keys_str):
+def get_allassignment_detail_dict_from_stringXXX(assignment_str, keys_str):
     # - create dict with assignments and keys PR2022-01-30
 
-    all_keys_dict = get_allkeys_dict_from_string(keys_str)
+    all_keys_dict = get_allkeys_dict_from_stringXXX(keys_str)
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug('@@@@@@@@@@@@@@@@@ ----- get_allassignment_detail_dict_from_string -----')
+        logger.debug('@@@@@@@@@@@@@@@@@ ----- get_allassignment_detail_dict_from_stringXXX -----')
         logger.debug( 'assignment_str: ' + str(assignment_str) + ' ' + str(type(assignment_str)))
         logger.debug( 'keys_str: ' + str(keys_str) + ' ' + str(type(keys_str)))
 
@@ -860,10 +861,10 @@ def get_allassignment_detail_dict_from_string(assignment_str, keys_str):
             7: {'max_char': '', 'max_score': '2', 'min_score': ''}}, 
         4: {}}    """
     return all_assignment_dict
-# - end of get_allassignment_detail_dict_from_string
+# - end of get_allassignment_detail_dict_from_stringXXX
 
 
-def get_allkeys_dict_from_string(keys_str):
+def get_allkeys_dict_from_stringXXX(keys_str):
     #  keys: 1|2;b|4;d # 2|2;a|3;b|4;c # 3|2;ab|3;d|5;a
     all_keys_dict = {}
     if keys_str:
@@ -894,14 +895,14 @@ def get_allkeys_dict_from_string(keys_str):
     # all_keys_dict: {1: {2: 'b', 4: 'd'}, 2: {2: 'a', 3: 'b', 4: 'c'}, 3: {2: 'ab', 3: 'd', 5: 'a'}}
 
     return all_keys_dict
-# - end of get_allkeys_dict_from_string
+# - end of get_allkeys_dict_from_stringXXX
 
 
-def get_all_result_dict_from_string(result_str):  # PR2022-01-30
+def get_all_result_dict_from_stringXXX(result_str):  # PR2022-01-30
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('   ')
-        logger.debug('----- get_all_result_dict_from_string -----')
+        logger.debug('----- get_all_result_dict_from_stringXXX -----')
         logger.debug('result_str: ' + str(result_str))
         """
         result_str: 189;202#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3#4
@@ -967,10 +968,10 @@ def get_all_result_dict_from_string(result_str):  # PR2022-01-30
             'amount': 103}
         """
     return all_result_dict
-# - end of get_all_result_dict_from_string
+# - end of get_all_result_dict_from_stringXXX
 
 
-def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, keys_str, result_str):  # PR2022-01-29
+def get_all_result_with_assignment_dict_from_string_MOVED_TO_GRADES_VIEW(partex_str, assignment_str, keys_str, result_str):  # PR2022-01-29
     #  ce_exam_result: "189;202#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3#4"
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -981,7 +982,7 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
          result_str: 90;103#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3
         """
 
-    all_result_dict = get_all_result_dict_from_string(result_str)
+    all_result_dict = get_all_result_dict_from_stringXXX(result_str)
 
     if logging_on:
         logger.debug('all_result_dict: ' + str(all_result_dict))
@@ -1001,7 +1002,7 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
         'partex': {}
     }
 # - get dict with assignments PR2021-05-08
-     # this one gives 'D-3':  get_allassignment_detail_dict_from_string(assignment_str, keys_str)
+     # this one gives 'D-3':  get_allassignment_detail_dict_from_stringXXX(assignment_str, keys_str)
     all_partex_assignment_keys_detail_dict = get_all_partex_assignment_keys_detail_dict(partex_str, assignment_str, keys_str)
     if logging_on:
         logger.debug('all_partex_assignment_keys_detail_dict: ' + str(all_partex_assignment_keys_detail_dict))
@@ -1137,7 +1138,7 @@ def get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, 
                                         else:
                                             if not max_score_int:
                                                 max_score_int = 1
-                                            if result in keys: # keys may comntain multiple characters: 'ac'
+                                            if result in keys:  # keys may contain multiple characters: 'ac'
                                                 score = max_score_int
                                                 total_score += max_score_int
                                                 # don't give result in PDF - to prevent cheating result += ' - ok' # Character “✓” (U + 2713)
@@ -1254,17 +1255,12 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
     blanks_str = str(sel_exam_instance.blanks) if sel_exam_instance.blanks else '-'
     scalelength_str = str(sel_exam_instance.scalelength) if sel_exam_instance.scalelength else '-'
 
-    partex_str = sel_exam_instance.partex
-    assignment_str = sel_exam_instance.assignment
-    keys_str = sel_exam_instance.keys
-    result_str = sel_grade_instance.ce_exam_result
-
 # create list of results
-    all_result_dict = get_all_result_with_assignment_dict_from_string(partex_str, assignment_str, keys_str, result_str)
+    all_result_dict, total_score = grade_views.get_all_result_with_assignment_dict_from_string(
+        sel_grade_instance, sel_exam_instance)
     if logging_on:
         logger.debug('----- draw_grade_exam -----')
         logger.debug('sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
-
 
 # - get dep_abbrev from department
     dep_abbrev = '---'
@@ -1301,9 +1297,11 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
     full_name = sel_grade_instance.studentsubject.student.fullname
     exam_number = sel_grade_instance.studentsubject.student.examnumber
 
-    total_score_str = "---"
-    if 'total_score' in all_result_dict:
-        total_score_str = str(all_result_dict.get('total_score'))
+    # was: total_score_str = "---"
+    #       if 'total_score' in all_result_dict:
+    #           total_score_str = str(all_result_dict.get('total_score'))
+
+    total_score_str = str(total_score) if total_score else '---'
     total_score_cpt = form_text.get('total_score', '-') + ':'
 
     header_list = [

@@ -1239,7 +1239,7 @@ def add_usergroup_download(request):
 def add_exemption_year(request):
     # PR2022-04-17 add exemption_year 2021 when field exemption_year is empty
     # from now on exemption_year will be added when creating exemption grdae
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_exemption_year -------')
     try:
@@ -1274,9 +1274,10 @@ def add_exemption_year(request):
 def add_no_ce_years_to_schemeitems(request):
     # PR2022-04-18 add no_ce_years '2020' when field no_ce_years is empty and weight_ce = 0
     # from now on exemption_year will be added when creating exemption grdae
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_no_ce_years_to_schemeitems -------')
+
     try:
         exists = sch_mod.Systemupdate.objects.filter(
             name='add_no_ce_years'
