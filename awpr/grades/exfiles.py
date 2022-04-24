@@ -389,12 +389,12 @@ class DownloadEx3View(View):  # PR2021-10-07
         if logging_on:
             logger.debug(' ============= DownloadEx3View ============= ')
 
-        # TODO for uloading Exs with signatures:
+        # TODO for uploading Exs with signatures:
         # - give each Ex3 a sequence, print under Ex3 in box
         # - create table mapped_ex3 with field Ex3 sequence and field with all grade_pks of that Ex3
         # when uploading: user types Ex3 number when uploading Ex3,
         # Awp links grades of that Ex3 to the uploaded file
-        # in grade table: add column with href to the uploaded Ex3 form
+        # in table mapped_ex3: add column with href to the uploaded Ex3 form
 
         # function creates, Ex3 pdf file based on settings in list and usersetting
 
@@ -1013,6 +1013,7 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
         draw_Ex3_row(canvas, row_data, left, right, y_bottom, coord, line_height, col_width_list)
 
 # - draw page footer
+    # TODO
     # sequence is number to be added to pages to be used when uploading Ex3 forms with signatures
     sequence = 0
     draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, user_lang)

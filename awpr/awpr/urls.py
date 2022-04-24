@@ -307,7 +307,7 @@ urlpatterns = [
 
         path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),
         path('approve_publish_exam', subject_views.ExamApproveOrPublishView.as_view(), name='url_approve_publish_exam'),
-        path('approve_submit_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
+        path('approve_grade_exam', subject_views.ExamApproveGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 
         path('send_email_submit_exam', student_views.SendEmailSubmitExformView.as_view(),  name='url_send_email_submit_exam'),
 

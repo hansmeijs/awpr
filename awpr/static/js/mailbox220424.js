@@ -1516,7 +1516,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // reset mod_MMM_dict
         b_clear_dict(mod_MMM_dict);
-        mod_MMM_dict.is_mod_MML = false;
+        mod_MMM_dict.is_mod_MML = false;  // MML = mod mailing list
 
 // reset input fields
         // reset tblBodies happens in MMM_FillSelectTables
@@ -2275,14 +2275,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MMM_FillAttachments  ================ PR2021-10-15
     function MMM_FillAttachments(MMR_reader) {
-        //console.log(" --- MMM_FillAttachments  ---");
-        //console.log("mod_MMM_dict.mailmessage_pk:", mod_MMM_dict.mailmessage_pk);
-        //console.log("mod_MMM_dict.mailattachment_pk:", mod_MMM_dict.mailattachment_pk);
-        //console.log("mailattachment_rows:", mailattachment_rows);
+        console.log(" --- MMM_FillAttachments  ---");
+        console.log("mod_MMM_dict.mailmessage_pk:", mod_MMM_dict.mailmessage_pk);
+        console.log("mod_MMM_dict.mailattachment_pk:", mod_MMM_dict.mailattachment_pk);
+        console.log("mailattachment_rows:", mailattachment_rows);
         const el_attachment_container = (MMR_reader) ? el_MMR_attachment_container : el_MMM_attachment_container
         el_attachment_container.innerHTML = null;
 
-        //console.log("el_attachment_container:", el_attachment_container);
+        console.log("el_attachment_container:", el_attachment_container);
 
         for (let i = 0, row_dict; row_dict = mailattachment_rows[i]; i++) {
             if(row_dict.mailmessage_id === mod_MMM_dict.mailmessage_pk){
@@ -2317,7 +2317,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (MMR_reader) {div.addEventListener("click", function() {MMM_DownloadAttachment(el_href)}, false)};
 
-                if(!MMR_reader &&  !row_dict.issent){
+                if(!MMR_reader && !row_dict.issent){
                     const el_del = document.createElement("div");
                     el_del.setAttribute("data-mailattachment_pk", row_dict.id);
                     el_del.classList.add("delete_0_1", "mr-2", "ml-0");

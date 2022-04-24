@@ -294,6 +294,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('published_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['published_rows'] = gr_vw.create_published_rows(
+                            request=request,
                             sel_examyear_pk=sel_examyear.pk,
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk

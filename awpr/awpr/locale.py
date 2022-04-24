@@ -843,8 +843,8 @@ def get_locale_dict(table_dict, user_lang, request):
         # Ex3 modal
 
         dict['Ex3'] = _('Ex3')
-        dict['Ex3_form'] = _('Ex3 Proces Verbaal')
-        dict['Ex3_backpage'] = _('Ex3 back page')
+        dict['Ex3_form'] = TXT_Ex3_form
+        dict['Ex3_backpage'] = TXT_Ex3_backpage
         dict['Proces_verbaal_van_Toezicht'] = _('Proces-verbaal van Toezicht')
         dict['No_studenst_with_subjects'] = _('There are no candidates with subjects.')
         dict['No_studenst_examperiod_02'] = _('There are no re-examination candidates.')
@@ -1101,6 +1101,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Unblock_grade'] = _('Unblock grade')
         dict['Preliminary_Ex2A'] = _('Preliminary Ex2A')
 
+        dict['Ex3_form'] = TXT_Ex3_form
+        dict['Ex3_backpage'] = TXT_Ex3_backpage
+
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
 
@@ -1144,9 +1147,10 @@ def get_locale_dict(table_dict, user_lang, request):
             'verif_02': _("Click 'Request verification code' and we will send you an email with the verification code."),
             'verif_03': _("The verification code expires in 30 minutes."),
 
-
         }
 
+        dict['Ex3_btn_info_01'] = _("The Ex3 form 'Proces-verbaal van Toezicht' can be downloaded in the page <b>Subjects</b>.")
+        dict['Ex3_btn_info_02'] = _("Open that page and click in the menu bar on the button <b>Ex3 Proces Verbaal</b> and <b>Ex3 back page</b>.")
 
         dict['Score'] = _('Score')
         dict['Grade'] = _('Grade')
@@ -1401,6 +1405,10 @@ TXT__and_ = _(' and ')
 TXT__or_ = _(" or ")
 TXT__by_ = _(" by ")
 TXT__for_ = _(" for ")
+
+TXT_Ex3_form = _('Ex3 Proces Verbaal')
+
+TXT_Ex3_backpage = _('Ex3 back page')
 
 TXT_Name_ex_form = _('Name Ex form')
 TXT_Date_submitted = _('Date submitted')

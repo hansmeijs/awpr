@@ -118,7 +118,7 @@ class GradeDownloadGradeIconsView(View):  # PR2021-04-30
 class GradeBlockView(View):  # PR2022-04-16
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeBlockView ============= ')
@@ -233,11 +233,12 @@ class GradeBlockView(View):  # PR2022-04-16
 class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeApproveView ============= ')
-        # function creates, deletes and updates grade records of current studentsubject PR2020-11-21
+
+# function creates, deletes and updates grade records of current studentsubject PR2020-11-21
         update_wrap = {}
 
         if request.user and request.user.country and request.user.schoolbase:
@@ -282,11 +283,10 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
                     auth_index = upload_dict.get('auth_index')
 
-
                     if auth_index:
                         requsr_auth = 'auth' + str(auth_index)
 
-        # - check if auth_index is in requsr_usergroups_list, to be on the safe side PR2022-04-20
+    # - check if auth_index is in requsr_usergroups_list, to be on the safe side PR2022-04-20
                         if requsr_auth in requsr_usergroups_list:
 
                             # msg_err is made on client side. Here: just skip if user has no or multiple functions
@@ -829,7 +829,7 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17
     # function creates new published_instance, Ex2_xlsx and sets published_id in grade
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeSubmitEx2View ============= ')
@@ -1022,6 +1022,7 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17
                                                 user_lang=user_lang)
 
                                             update_wrap['updated_published_rows'] = create_published_rows(
+                                                request=request,
                                                 sel_examyear_pk=sel_examyear.pk,
                                                 sel_schoolbase_pk=sel_school.base_id,
                                                 sel_depbase_pk=sel_department.base_id,
@@ -1593,7 +1594,7 @@ class GradeUploadView(View):
     # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01-24 PR2022-03-18
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeUploadView ============= ')
@@ -1624,7 +1625,7 @@ class GradeUploadView(View):
 
         # - TODO when deleting: return warning when subject grades have values
 
-    # - get upload_dict from request.POST
+# - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
@@ -1634,6 +1635,11 @@ class GradeUploadView(View):
                 upload_dict: {'mode': 'update', 'mapid': 'grade_22958', 'examperiod': 1, 
                 'grade_pk': 22958, 'student_pk': 3935, 'studsubj_pk': 21706, 'examgradetype': 'segrade', 'segrade': '44'}
  
+                upload_dict: {'table': 'grade', 'mode': 'update', 'return_grades_with_exam': True, 
+                                'examyear_pk': 1, 'depbase_pk': 1, 'examperiod': 1, 'examtype': 'se', 
+                                'exam_pk': 36,  'grade_pk': 22440, 'student_pk': 3747, 
+                                'ce_exam_result': '34;35#1|2;a'}
+
                 """
 # - get selected examyear, school and department from usersettings
                 # may_edit = False when:
@@ -1705,7 +1711,8 @@ class GradeUploadView(View):
                             subjbase_pk=grade.studentsubject.schemeitem.subject.base_id,
                             cluster_pk=grade.studentsubject.cluster_id,
                             msg_list=msg_list,
-                            is_score=is_score
+                            is_score=is_score,
+                            is_grade_exam=return_grades_with_exam
                         )
                         if logging_on:
                             logger.debug('student: ' + str(student))
@@ -1829,9 +1836,9 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, schoolbase_pk, depb
     return not not_allowed
 
 def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, msg_list,
-                              is_approve=False, is_score=False):
+                              is_approve=False, is_score=False, is_grade_exam=False):
     # PR2022-03-20
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
@@ -1868,7 +1875,7 @@ def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, su
         not_allowed = True
         msg_list.append(str(_("This subject does not belong to %(cpt)s.") % {'cpt': caption}))
         edit_txt = _('to approve') if is_approve else _('to edit')
-        score_txt = str(_('This score') if is_score else _('This grade')).lower()
+        score_txt = str(_('This exam') if is_grade_exam else _('This score') if is_score else _('This grade')).lower()
         msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
 
         if logging_on:
@@ -1879,7 +1886,7 @@ def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, su
 
 def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
                                 sel_department, student, si_dict, request):
-    # --- update existing grade PR2020-12-16 PR2021-12-13 PR2021-12-25
+    # --- update existing grade PR2020-12-16 PR2021-12-13 PR2021-12-25 PR2022-04-24
     # add new values to update_dict (don't reset update_dict, it has values)
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -1895,6 +1902,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
     err_list = []
     save_changes = False
     recalc_finalgrade = False
+    recalc_exam_score = False
     must_recalc_reex_reex03 = False
 
     for field, new_value in upload_dict.items():
@@ -1950,8 +1958,10 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
             else:
                 save_exam = (saved_exam is not None)
             if save_exam:
-                # reset result when exam_pk changes
+                # reset result and pescore when exam_pk changes
+                # NOTE: field ce_exam_score tobe added, total_score is stored in pescore for now.
                 setattr(grade_instance, "ce_exam_result", None)
+                setattr(grade_instance, "pescore", None)
                 setattr(grade_instance, db_field, exam)
                 save_changes = True
                 if logging_on:
@@ -1964,25 +1974,12 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
                 logger.debug('field: ' + str(field) + ' new_value: ' + str(new_value))
                 logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
     # 2. save changes if changed and no_error
-            # always calculate and save result. Was: if new_value != saved_value:
-            exam_instance = grade_instance.ce_exam
-# create list of results
-            total_score = 0
-            if exam_instance:
-                all_result_dictNIU, total_score = get_all_result_with_assignment_dict_from_string(grade_instance, exam_instance)
-            else:
-                new_value = None
-
-            if logging_on:
-                logger.debug('total_score: ' + str(total_score))
-                logger.debug('new_value: ' + str(new_value))
-# - save total_score
-            # NOTE: field ce_exam_score tobe added, total_score is stored in pescore for now.
-            #   the field ce_score stores score after submitting or calculated from n-term
-            setattr(grade_instance, 'pescore', total_score)
+            # always calculate and save result, to be on the save side. Was: if new_value != saved_value:
 
             setattr(grade_instance, field, new_value)
             save_changes = True
+        # - recalculate total_score after saving grade, otherwise new value is not calculates
+            recalc_exam_score = True
             if logging_on:
                 logger.debug('save_changes: ' + str(save_changes))
 
@@ -2047,6 +2044,32 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
             #    if sql_student_list:
             #        calc_res.save_student_batch(sql_student_list)
 
+            if recalc_exam_score:
+                exam_instance = grade_instance.ce_exam
+
+                # create list of results
+                total_score = 0
+                if exam_instance:
+                    total_score = calc_total_score_of_examresult(grade_instance, exam_instance)
+
+                    if logging_on:
+                        logger.debug('total_score: ' + str(total_score))
+
+                    # - calculate total_score after saving grade, otherwise new value is not calculates
+                    # NOTE: field ce_exam_score tobe added, total_score is stored in pescore for now.
+                    #   the field ce_score stores score after submitting or calculated from n-term
+
+                    try:
+                        setattr(grade_instance, 'pescore', total_score)
+                        grade_instance.save(request=request)
+
+                        if logging_on:
+                            logger.debug('The total_score has been saved.')
+
+                    except Exception as e:
+                        logger.error(getattr(e, 'message', str(e)))
+                        err_list.append(str(_('An error occurred. The changes have not been saved.')))
+
     return err_list
 # --- end of update_grade_instance
 
@@ -2056,7 +2079,7 @@ def calc_total_score_of_examresult(grade_instance, exam_instance):
     logging_on = False  #s.LOGGING_ON
 
 # create list of results
-    all_result_dict = get_all_result_with_assignment_dict_from_string(grade_instance, exam_instance)
+    all_result_dict, total_score, total_blanks = get_all_result_with_assignment_dict_from_string(grade_instance, exam_instance)
     if logging_on:
         logger.debug('----- calc_total_score_of_examresult -----')
 
@@ -2064,7 +2087,7 @@ def calc_total_score_of_examresult(grade_instance, exam_instance):
     #if 'total_score' in all_result_dict:
     #    total_score_str = str(all_result_dict.get('total_score'))
     #total_score_cpt = form_text.get('total_score', '-') + ':'
-
+    return total_score
 
 def update_studsubj_and_recalc_student_result(sel_examyear, sel_school, sel_department, student):
     # PR2022-01-01
@@ -2862,7 +2885,7 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
 
 ###############################################
 
-def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, published_pk=None):
+def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, published_pk=None):
     # --- create rows of published records PR2021-01-21
     #logger.debug(' ----- create_grade_rows -----')
 
@@ -2897,9 +2920,12 @@ def create_published_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, pu
     """
     # can't use sql because of file field
     # +++ get selected grade_rows
-    crit = Q(school__base_id=sel_schoolbase_pk) & \
-           Q(school__examyear_id=sel_examyear_pk)
+    crit = Q(school__examyear_id=sel_examyear_pk)
           # Q(department__base_id=sel_depbase_pk)
+    # admin and insp can view all Ex forms
+    if request.user.role < c.ROLE_032_INSP:
+        crit.add(Q(school__base_id=sel_schoolbase_pk), crit.connector)
+
     # published_pk only has value when called by GradeApproveView. Then it is a created row
     if published_pk:
         crit.add(Q(pk=published_pk), crit.connector)
@@ -3031,16 +3057,16 @@ def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, se
         ZapfDingbats 
     """
 
+
 def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instance):  # PR2022-01-29 PR2022-04-22
     #  ce_exam_result: "189;202#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3#4"
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('   ')
         logger.debug('----- get_all_result_with_assignment_dict_from_string -----')
         """
          result_str: 90;103#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3
         """
-    total_score = 0
 
     partex_str = exam_instance.partex
     assignment_str = exam_instance.assignment
@@ -3053,12 +3079,10 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
         logger.debug('all_result_dict: ' + str(all_result_dict))
         """
         all_result_dict: {
-            'partex': {
-                1: {'1': '1', '2': 'a', '3': '2', '4': 'b', '5': '2', '6': '0', '7': 'x', '8': 'x'}, 
-                2: {'1': 'x', '2': 'c', '3': 'b', '4': 'd', '5': 'x'}, 
-                3: {}}, 
-            'blanks': 90, 
-            'amount': 103}
+            'partex': {1: {1: '2', 2: '3', 3: '4', 4: '5'}, 
+                       3: {1: 'a', 2: 'b', 3: 'b', 4: '0', 5: '1', 6: 'x', 7: 'x', 8: 'x'}, 
+            'blanks': 27, 
+            'amount': 39}
         """
 
     all_result_with_assignment_dict = {
@@ -3066,34 +3090,32 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
         'amount': all_result_dict.get('amount'),
         'partex': {}
     }
+
 # - get dict with assignments PR2021-05-08
      # this one gives 'D-3':  get_allassignment_detail_dict_from_string(assignment_str, keys_str)
     all_partex_assignment_keys_detail_dict = get_all_partex_assignment_keys_detail_dict(partex_str, assignment_str, keys_str)
     if logging_on:
         logger.debug('all_partex_assignment_keys_detail_dict: ' + str(all_partex_assignment_keys_detail_dict))
         """
-        all_partex_assignment_keys_detail_dict: {
-            1: {'amount': 31, 'max_score': 24, 'name': 'Praktijktoets blauw', 
-                'q': {
-                    1: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
-                    2: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
-                    10: {'max_char': '', 'max_score': '5', 'min_score': ''}}}, 
-            2: {'amount': 31, 'max_score': 12, 'name': 'Minitoets rood', 
-                'q': {
-                1: {'max_char': '', 'max_score': '2', 'min_score': ''}, 
-                    2: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'a'}, 
-                    3: {'max_char': 'B', 'max_score': '', 'min_score': '', 'keys': 'b'}, 
-                    4: {'max_char': 'E', 'max_score': '', 'min_score': '', 'keys': 'c'}, 
-                    5: {'max_char': '', 'max_score': '6', 'min_score': ''}}}, 
-            3: {'amount': 41, 'max_score': 13, 'name': 'Minitoets groen', 
-                'q': {
-                    1: {'max_char': '', 'max_score': '2', 'min_score': ''}, 
-                    2: {'max_char': 'C', 'max_score': '', 'min_score': '', 'keys': 'ab'}, 
-                    3: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'd'}, 
-                    7: {'max_char': '', 'max_score': '2', 'min_score': ''}}}, 
-            4: {'amount': 99, 'max_score': 0, 'name': 'Deelexamen 4', 
-                'q': {}}}
+        all_partex_assignment_keys_detail_dict: 
+            {1: {'amount': 4, 'max_score': 20, 'name': 'Praktijkexamen onderdeel A', 
+                'q': {1: {'max_char': '', 'max_score': '6', 'min_score': ''}, 
+                    2: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+                    3: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+                    4: {'max_char': '', 'max_score': '6', 'min_score': ''}}}, 
+        3: {'amount': 8, 'max_score': 12, 'name': 'Minitoets 1 BLAUW onderdeel A', 
+                'q': {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
+                    2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
+                    3: {'max_char': 'C', 'max_score': '1', 'min_score': '', 'keys': 'ab'}, 
+                    4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                    5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                    6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                    7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
+                    8: {'max_char': '', 'max_score': '2', 'min_score': ''}}}, 
         """
+
+    total_score = 0
+    total_blanks = 0
 
 # - loop through all_result_dict, to get only the partex that are present in result_str
     if all_result_dict:
@@ -3101,14 +3123,13 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
         if logging_on:
             logger.debug('all_result_partex_dict: ' + str(all_result_partex_dict))
             """
-            all_result_partex_dict: {
-                1: {'1': '1', '2': 'a', '3': '2', '4': 'b', '5': '2', '6': '0', '7': 'x', '8': 'x'}, 
-                2: {'1': 'x', '2': 'c', '3': 'b', '4': 'd', '5': 'x'}, 
-                3: {}}
+            all_result_partex_dict: 
+                {1: {1: '2', 2: '3', 3: '4', 4: '5'}, 
+                 3: {1: 'a', 2: 'b', 3: 'b', 4: '0', 5: '1', 6: 'x', 7: 'x', 8: 'x'}, 
             """
         if all_result_partex_dict:
+            total_has_error = False
 
-            has_errors = False
             for partex_pk, result_partex_dict in all_result_partex_dict.items():
                 if logging_on:
                     logger.debug('-----------------------------')
@@ -3123,24 +3144,37 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                 if logging_on:
                     logger.debug('assignment_detaildict: ' + str(assignment_detaildict))
                 """
-                assignment_detaildict: {
-                    'amount': 31, 'max_score': 24, 'name': 'Praktijktoets blauw', 
-                    'q': {  1: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
-                            2: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
-                            3: {'max_char': '', 'max_score': '6', 'min_score': ''}, 
-                            4: {'max_char': 'E', 'max_score': '', 'min_score': '', 'keys': 'd'}, 
-                            10: {'max_char': '', 'max_score': '5', 'min_score': ''}}}
+                assignment_detaildict: 
+                    {'amount': 4, 'max_score': 20, 'name': 'Praktijkexamen onderdeel A', 
+                        'q': {1: {'max_char': '', 'max_score': '6', 'min_score': ''}, 
+                        2: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+                        3: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+                        4: {'max_char': '', 'max_score': '6', 'min_score': ''}}}
+                        
+                assignment_detaildict: 
+                    {'amount': 8, 'max_score': 12, 'name': 'Minitoets 1 BLAUW onderdeel A', 
+                    'q': {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
+                        2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
+                        3: {'max_char': 'C', 'max_score': '1', 'min_score': '', 'keys': 'ab'}, 
+                        4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                        5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                        6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                        7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
+                        8: {'max_char': '', 'max_score': '2', 'min_score': ''}}}            
                 """
                 entered_count = 0
+                subtotal_score = 0
+                subtotal_has_error = False
+
                 if assignment_detaildict is None:
-                    pass
+                    subtotal_has_error = True
                     # return error when assignment not found
                 else:
                     name = assignment_detaildict.get('name')
                     amount = assignment_detaildict.get('amount', 0)
                     amount_int = int(amount) if amount else 0
                     if not amount_int:
-                        pass
+                        subtotal_has_error = True
                         # give error when there are no questions
                     else:
                         this_partex_result_dict['name'] = name
@@ -3151,36 +3185,43 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                         if logging_on:
                             logger.debug('all_q_dict: ' + str(all_q_dict))
                             """
-                            all_q_dict: {
-                                1: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
-                                2: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
-                                3: {'max_char': '', 'max_score': '6', 'min_score': ''},  
-                                10: {'max_char': '', 'max_score': '5', 'min_score': ''}}
+                            all_q_dict: 
+                                {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
+                                2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
+                                3: {'max_char': 'C', 'max_score': '1', 'min_score': '', 'keys': 'ab'}, 
+                                4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                                5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                                6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                                7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
+                                8: {'max_char': '', 'max_score': '2', 'min_score': ''}}
                             """
                         for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
                             result = result_partex_dict.get(q_number)
+
                             score = None
                             is_not_entered = False  # is_not_entered, ie score not entered by examiner
                             is_blank = False # is_blank, ie question not answered by candidate
                             has_error = False
 
                             q_dict = all_q_dict.get(q_number)
-                            """
-                            q_dict: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'b'}
-                            """
 
                             if logging_on:
                                 logger.debug('q_dict: ' + str(q_dict))
+                                logger.debug('>>>>>>>>>>>>>>> result: ' + str(result))
+                            """
+                             q_dict: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}
+                             result: a
+                             """
 
                             if q_dict is None:
                                 has_error = True
                                 # give error when there are no assignment for this q_number
                                 #r_dict['error'] = 'No assignment for this question'
                             elif not result:
-                                is_not_entered = True  # is_not_entered, ie score not entered by examiner
+                                is_not_entered = True  # is_not_entered, ie answer not entered by school
                             elif result == 'x':
                                 is_blank = True # is_blank, ie question not answered by candidate
-                                entered_count += 1 # count entered by examiner
+                                entered_count += 1 # count entered by school
                             else:
                                 max_char = q_dict.get('max_char')
                                 max_score = q_dict.get('max_score')
@@ -3195,6 +3236,7 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                                     else:
                                         max_char_lc = max_char.lower()
                                         result_lc = result.lower()
+                                        # The ord() function returns an integer representing the Unicode character.
                                         result_ord = ord(result_lc)
                                         if not (ord('a') <= result_ord <= ord('w')) :
                                             has_error = True
@@ -3206,17 +3248,11 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                                             if result in keys:  # keys may contain multiple characters: 'ac'
                                                 score = max_score_int
                                                 total_score += max_score_int
-                                                # don't give result in PDF - to prevent cheating result += ' - ok' # Character “✓” (U + 2713)
+                                                subtotal_score += max_score_int
                                             else:
                                                 score = 0
 
-                                            entered_count += 1  # count entered by examiner
-
-                                        if logging_on:
-                                            logger.debug('max_char_lc: ' + str(max_char_lc))
-                                            logger.debug('result_lc: ' + str(result_lc))
-                                            logger.debug('entered_count: ' + str(entered_count))
-                                            logger.debug('result: ' + str(result))
+                                            entered_count += 1  # count entered by school
 
                                 else:
                                     if not max_score_int:
@@ -3233,15 +3269,11 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                                         else:
                                             score = result_int
                                             total_score += result_int
-                                            entered_count += 1  # count entered by examiner
-
-                                    if logging_on:
-                                        logger.debug('score: ' + str(score))
-                                        logger.debug('total_score: ' + str(total_score))
-                                        logger.debug('entered_count: ' + str(entered_count))
+                                            subtotal_score += result_int
+                                            entered_count += 1  # count entered by school
 
                             if has_error:
-                                has_errors = True
+                                subtotal_has_error = True
                                 r_str = 'e'
                             elif is_not_entered:
                                 r_str = 'n'
@@ -3253,35 +3285,76 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                                 this_partex_result_dict['s'][q_number] = r_str
                             if result:
                                 this_partex_result_dict['q'][q_number] = result
-                    if amount_int:
-                        this_partex_result_dict['blanks'] = amount_int - entered_count
-                all_result_with_assignment_dict['partex'][partex_pk] = this_partex_result_dict
-                if not has_errors :
-                    all_result_with_assignment_dict['total_score'] = total_score
+                        # end of for q_number in range(1, amount + 1)
 
+
+                        blanks = amount_int - entered_count
+
+                        if logging_on:
+                            logger.debug('amount_int: ' + str(amount_int))
+                            logger.debug('entered_count: ' + str(entered_count))
+                            logger.debug('blanks: ' + str(blanks))
+                            logger.debug('total_score: ' + str(total_score))
+                            logger.debug('entered_count: ' + str(entered_count))
+
+                        this_partex_result_dict['blanks'] = blanks
+                        this_partex_result_dict['score'] = subtotal_score
+
+                        total_blanks += blanks
+
+                if subtotal_has_error:
+                    total_has_error = True
+            # end of for q_number in range(1, amount + 1)
+                all_result_with_assignment_dict['partex'][partex_pk] = this_partex_result_dict
+
+            if not total_has_error and not total_blanks:
+                all_result_with_assignment_dict['total_score'] = total_score
+            else:
+                total_score = 0
     if logging_on:
         logger.debug('all_result_with_assignment_dict: ' + str(all_result_with_assignment_dict))
 
     """
-all_result_with_assignment_dict: {
-    'blanks': 90, 
-    'amount': 103, 
-    'partex': {
-        1: {'d': {1: '1', 2: 'a', 3: '2', 4: 'b', 5: '2', 6: '0', 7: 'x', 8: 'x'}, 
-            's': {1: 1, 3: 2, 5: 2, 7: 'x', 8: 'x', 9: 'n', 10: 'n', 11: 'e', 12: 'e', 13: 'e', 14: 'e', 15: 'e', 16: 'e', 17: 'e', 18: 'e', 19: 'e', 20: 'e', 21: 'e', 22: 'e', 23: 'e', 24: 'e', 25: 'e', 26: 'e', 27: 'e', 28: 'e', 29: 'e', 30: 'e'}, 
-            'name': 'Praktijktoets blauw',
-            'amount': 31}, 
-        2: {'d': {1: 'x', 2: 'c', 3: 'b', 4: 'd', 5: 'x'}, 
-            's': {1: 'x', 3: 1, 5: 'x', 6: 'e', 7: 'e', 8: 'e', 9: 'e', 10: 'e', 11: 'e', 12: 'e', 13: 'e', 14: 'e', 15: 'e', 16: 'e', 17: 'e', 18: 'e', 19: 'e', 20: 'e', 21: 'e', 22: 'e', 23: 'e', 24: 'e', 25: 'e', 26: 'e', 27: 'e', 28: 'e', 29: 'e', 30: 'e'}, 
-            'name': 'Minitoets rood', 
-            'amount': 31}, 
-        3: {'d': {}, 
-            's': {1: 'n', 2: 'n', 3: 'n', 4: 'n', 5: 'n', 6: 'n', 7: 'n', 8: 'e', 9: 'e', 10: 'e', 11: 'e', 12: 'e', 13: 'e', 14: 'e', 15: 'e', 16: 'e', 17: 'e', 18: 'e', 19: 'e', 20: 'e', 21: 'e', 22: 'e', 23: 'e', 24: 'e', 25: 'e', 26: 'e', 27: 'e', 28: 'e', 29: 'e', 30: 'e', 31: 'e', 32: 'e', 33: 'e', 34: 'e', 35: 'e', 36: 'e', 37: 'e', 38: 'e', 39: 'e', 40: 'e'}, 
-            'name': 'Minitoets groen', 
-            'amount': 41}}
+    all_result_with_assignment_dict: 
+        {'blanks': 27, 'amount': 39, 
+        'partex': {
+            1: {'blanks': 0, 'q': {1: '2', 2: '3', 3: '4', 4: '5'}, 's': {1: 2, 2: 3, 3: 4, 4: 5},
+                'name': 'Praktijkexamen onderdeel A', 'amount': 4, 'score': 14}, 
+            3: {'blanks': 0, 'q': {1: 'a', 2: 'a', 3: 'b', 4: '0', 5: '1', 6: 'x', 7: 'x', 8: 'x'}, 's': {1: 3, 3: 1, 5: 1, 6: 'x', 7: 'x', 8: 'x'}, 
+                'name': 'Minitoets 1 BLAUW onderdeel A', 'amount': 8, 'score': 5}, 
+            4: {'blanks': 3, 'q': {}, 's': {1: 'n', 2: 'n', 3: 'n'}, 
+                'name': 'Praktijkexamen onderdeel B', 'amount': 3, 'score': 0}, 
+            6: {'blanks': 7, 'q': {}, 's': {1: 'n', 2: 'n', 3: 'n', 4: 'n', 5: 'n', 6: 'n', 7: 'n'}, 
+                'name': 'Minitoets 2 BLAUW onderdeel B', 'amount': 7, 'score': 0}, 
+            7: {'blanks': 1, 'q': {}, 's': {1: 'n'}, 
+                'name': 'Praktijkexamen onderdeel C', 'amount': 1, 'score': 0}, 
+             9: {'blanks': 7, 'q': {}, 's': {1: 'n', 2: 'n', 3: 'n', 4: 'n', 5: 'n', 6: 'n', 7: 'n'}, 
+                'name': 'Minitoets 3 BLAUW onderdeel C', 'amount': 7, 'score': 0}, 
+            10: {'blanks': 1, 'q': {}, 's': {1: 'n'}, 
+                'name': 'Praktijkexamen onderdeel D', 'amount': 1, 'score': 0}, 
+            12: {'blanks': 8, 'q': {}, 's': {1: 'n', 2: 'n', 3: 'n', 4: 'n', 5: 'n', 6: 'n', 7: 'n', 8: 'n'}, 
+                'name': 'Minitoets 4 BLAUW onderdeel D', 'amount': 8, 'score': 0}}, 
+         'total_blanks': 27}
+
+    all_result_with_assignment_dict: 
+        {'blanks': 27, 'amount': 39, 
+            'partex': {
+                1: {'blanks': 0, 
+                    'q': {1: '2', 2: '3', 3: '4', 4: '5'}, 
+                    's': {1: 2, 2: 3, 3: 4, 4: 5}, 
+                    'name': 'Praktijkexamen onderdeel A', 
+                    'amount': 4, 
+                    'score': 14}, 
+                3: {'blanks': 0, 
+                    'q': {1: 'a', 2: 'a', 3: 'b', 4: '0', 5: '1', 6: 'x', 7: 'x', 8: 'x'}, 
+                    's': {1: 3, 3: 1, 5: 1, 6: 'x', 7: 'x', 8: 'x'}, 
+                    'name': 'Minitoets 1 BLAUW onderdeel A', 
+                    'amount': 8, 
+                    'score': 5}, 
+            'total_score': 19}
     }
     """
-    return all_result_with_assignment_dict, total_score
+    return all_result_with_assignment_dict, total_score, total_blanks
 # - end of get_all_result_with_assignment_dict_from_string
 
 
@@ -3301,6 +3374,25 @@ def get_all_partex_assignment_keys_detail_dict(partex_str, assignment_str, keys_
 
 # - create dict with assignments PR2021-05-08
     all_assignment_detail_dict = get_allassignment_detail_dict_from_string(assignment_str, keys_str)
+
+    if logging_on:
+        logger.debug('all_assignment_detail_dict -----')
+        logger.debug(str(all_assignment_detail_dict))
+    """
+    all_assignment_detail_dict:
+        {1: {1: {'max_char': '', 'max_score': '6', 'min_score': ''}, 
+            2: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+            3: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+            4: {'max_char': '', 'max_score': '6', 'min_score': ''}}, 
+        3: {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
+            2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
+            3: {'max_char': 'C', 'max_score': '1', 'min_score': '', 'keys': 'ab'}, 
+            4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+            5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+            6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+            7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
+            8: {'max_char': '', 'max_score': '2', 'min_score': ''}}, 
+    """
 
 #  create dict from partex
     all_partex_assignment_keys_detail_dict = {}
@@ -3322,22 +3414,40 @@ def get_all_partex_assignment_keys_detail_dict(partex_str, assignment_str, keys_
                 all_partex_assignment_keys_detail_dict[partex_pk] = partex_dict
 
     if logging_on:
-        logger.debug( 'XXXXXXXXXXXXXXXXX all_partex_assignment_keys_dict: ' + str(all_partex_assignment_keys_detail_dict) + ' ' + str(type(all_partex_assignment_keys_detail_dict)))
+        logger.debug( 'all_partex_assignment_keys_dict: ' + str(all_partex_assignment_keys_detail_dict) + ' ' + str(type(all_partex_assignment_keys_detail_dict)))
 
     """
-all_partex_assignment_keys_list: {
-    1: {'amount': 31, 'max_score': 24, 'name': 'Praktijktoets blauw', 
-            'q': {1: '4', 2: 'D - b', 3: '6', 4: 'E - d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1', 10: '5'}}, 
-    2: {'amount': 31, 'max_score': 12, 'name': 'Minitoets rood', 
-            'q': {1: '2', 2: 'D - a', 3: 'B - b', 4: 'E - c', 5: '6'}}, 
-    3: {'amount': 41, 'max_score': 13, 'name': 'Minitoets groen', 
-            'q': {1: '2', 2: 'C - ab', 3: 'D - d', 4: '3', 5: 'E - a', 6: '2', 7: '2'}}, 
-    4: {'amount': 99, 'max_score': 0, 'name': 'Deelexamen 4', 'q': {}}
-}
+    all_partex_assignment_keys_dict: 
+        {1: {'amount': 4, 'max_score': 20, 'name': 'Praktijkexamen onderdeel A', 
+            'q': {1: {'max_char': '', 'max_score': '6', 'min_score': ''}, 
+                2: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+                3: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+                4: {'max_char': '', 'max_score': '6', 'min_score': ''}}}, 
+        3: {'amount': 8, 'max_score': 12, 'name': 'Minitoets 1 BLAUW onderdeel A', 
+            'q': {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
+                2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
+                3: {'max_char': 'C', 'max_score': '1', 'min_score': '', 'keys': 'ab'}, 
+                4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+                7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
+                8: {'max_char': '', 'max_score': '2', 'min_score': ''}}}, 
+
+ll_partex_assignment_keys_dict: 
+{1: {'amount': 4, 'max_score': 20, 'name': 'Praktijkexamen onderdeel A', 
+'q': {1: {'max_char': '', 'max_score': '6', 'min_score': ''}, 2: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+3: {'max_char': '', 'max_score': '4', 'min_score': ''}, 4: {'max_char': '', 'max_score': '6', 'min_score': ''}}}, 
+3: {'amount': 8, 'max_score': 12, 'name': 'Minitoets 1 BLAUW onderdeel A', 
+'q': {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
+2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
+3: {'max_char': 'C', 'max_score': '', 'min_score': '', 'keys': 'ab'}, 4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 7: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'd'}, 8: {'max_char': '', 'max_score': '2', 'min_score': ''}}}, 4: {'amount': 3, 'max_score': 22, 'name': 'Praktijkexamen onderdeel B', 'q': {1: {'max_char': '', 'max_score': '6', 'min_score': ''}, 2: {'max_char': '', 'max_score': '6', 'min_score': ''}, 3: {'max_char': '', 'max_score': '10', 'min_score': ''}}}, 6: {'amount': 7, 'max_score': 7, 'name': 'Minitoets 2 BLAUW onderdeel B', 'q': {1: {'max_char': '', 'max_score': '1', 'min_score': ''}, 2: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'b'}, 3: {'max_char': '', 'max_score': '1', 'min_score': ''}, 4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 6: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'b'}, 7: {'max_char': '', 'max_score': '1', 'min_score': ''}}}, 7: {'amount': 1, 'max_score': 9, 'name': 'Praktijkexamen onderdeel C', 'q': {1: {'max_char': '', 'max_score': '9', 'min_score': ''}}}, 9: {'amount': 7, 'max_score': 8, 'name': 'Minitoets 3 BLAUW onderdeel C', 'q': {1: {'max_char': 'C', 'max_score': '', 'min_score': '', 'keys': 'b'}, 2: {'max_char': '', 'max_score': '1', 'min_score': ''}, 3: {'max_char': '', 'max_score': '1', 'min_score': ''}, 4: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'c'}, 5: {'max_char': '', 'max_score': '2', 'min_score': ''}, 6: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'a'}, 7: {'max_char': '', 'max_score': '1', 'min_score': ''}}}, 10: {'amount': 1, 'max_score': 10, 'name': 'Praktijkexamen onderdeel D', 'q': {1: {'max_char': '', 'max_score': '10', 'min_score': ''}}}, 12: {'amount': 8, 'max_score': 8, 'name': 'Minitoets 4 BLAUW onderdeel D', 'q': {1: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'a'}, 2: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'b'}, 3: {'max_char': 'C', 'max_score': '', 'min_score': '', 'keys': 'a'}, 4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 6: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'd'}, 7: {'max_char': 'D', 'max_score': '', 'min_score': '', 'keys': 'd'}, 8: {'max_char': '', 'max_score': '1', 'min_score': ''}}}} <class 'dict'>
+
+
+
+
     """
     return all_partex_assignment_keys_detail_dict
 # - end of get_all_partex_assignment_keys_detail_dict
-
 
 
 def get_all_result_dict_from_string(result_str):  # PR2022-01-30
@@ -3347,7 +3457,7 @@ def get_all_result_dict_from_string(result_str):  # PR2022-01-30
         logger.debug('----- get_all_result_dict_from_string -----')
         logger.debug('result_str: ' + str(result_str))
         """
-        result_str: 189;202#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3#4
+        result_str: 27;39#1|1;2|2;3|3;4|4;5#3|1;a|2;b|3;b|4;0|5;1|6;x|7;x|8;x#4#6#7#9#10#12
         """
 
 # - loop through result_str
@@ -3402,12 +3512,10 @@ def get_all_result_dict_from_string(result_str):  # PR2022-01-30
         logger.debug('all_result_dict: ' + str(all_result_dict))
         """
         all_result_dict: {
-            'partex': {
-                1: {'1': '1', '2': 'a', '3': '2', '4': 'b', '5': '2', '6': '0', '7': 'x', '8': 'x'}, 
-                2: {'1': 'x', '2': 'c', '3': 'b', '4': 'd', '5': 'x'}, 
-                3: {}}, 
-            'blanks': 90, 
-            'amount': 103}
+            'partex': {1: {1: '2', 2: '3', 3: '4', 4: '5'}, 
+                       3: {1: 'a', 2: 'b', 3: 'b', 4: '0', 5: '1', 6: 'x', 7: 'x', 8: 'x'}, 
+            'blanks': 27, 
+            'amount': 39}
         """
     return all_result_dict
 # - end of get_all_result_dict_from_string
@@ -3421,7 +3529,7 @@ def get_allassignment_detail_dict_from_string(assignment_str, keys_str):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug('@@@@@@@@@@@@@@@@@ ----- get_allassignment_detail_dict_from_string -----')
+        logger.debug('----- get_allassignment_detail_dict_from_string -----')
         logger.debug('assignment_str: ' + str(assignment_str) + ' ' + str(type(assignment_str)))
         logger.debug('keys_str: ' + str(keys_str) + ' ' + str(type(keys_str)))
 
@@ -3463,9 +3571,10 @@ def get_allassignment_detail_dict_from_string(assignment_str, keys_str):
                             # qa_arr: ['2', 'D', '2', '']  q_number, max_char, max_score, min_score
                             if len(qa_arr) == 4:
                                 q_number = int(qa_arr[0])
-                                max_char = qa_arr[1] if qa_arr[1] else ""
-                                max_score_str = qa_arr[2] if qa_arr[2] else ""
-                                min_score_str = qa_arr[3] if qa_arr[3] else ""
+                                max_char = qa_arr[1] if qa_arr[1] else ''
+                                # make max_score = 1 when empty and question is is character
+                                max_score_str = qa_arr[2] if qa_arr[2] else '1' if max_char else ''
+                                min_score_str = qa_arr[3] if qa_arr[3] else ''
                                 q_dict = {
                                     'max_char': max_char,
                                     'max_score': max_score_str,
@@ -3481,28 +3590,23 @@ def get_allassignment_detail_dict_from_string(assignment_str, keys_str):
 
                 all_assignment_dict[partex_pk] = assignment_dict
     if logging_on:
-        logger.debug('allassignment_detail_dict_from_string: ' + str(all_assignment_dict))
+        logger.debug('all_assignment_dict: ' + str(all_assignment_dict))
     """
-    all_assignment_dict: {
-    allassignment_detail_dict_from_string: {
-        1: {1: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
-            2: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
-            3: {'max_char': '', 'max_score': '6', 'min_score': ''}, 
-            4: {'max_char': 'E', 'max_score': '', 'min_score': '', 'keys': 'd'}, 
-            5: {'max_char': '', 'max_score': '2', 'min_score': ''}, 
-            6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 7: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
-            8: {'max_char': '', 'max_score': '1', 'min_score': ''}, 9: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
-            10: {'max_char': '', 'max_score': '5', 'min_score': ''}}, 
-
-        2: {1: {'max_char': '', 'max_score': '2', 'min_score': ''}, 
-            2: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'a'}, 
-            3: {'max_char': 'B', 'max_score': '', 'min_score': '', 'keys': 'b'}, 
-            4: {'max_char': 'E', 'max_score': '', 'min_score': '', 'keys': 'c'}, 5: {'max_char': '', 'max_score': '6', 'min_score': ''}}, 
-        3: {1: {'max_char': '', 'max_score': '2', 'min_score': ''}, 2: {'max_char': 'C', 'max_score': '', 'min_score': '', 'keys': 'ab'}, 
-            3: {'max_char': 'D', 'max_score': '2', 'min_score': '', 'keys': 'd'}, 4: {'max_char': '', 'max_score': '3', 'min_score': ''}, 
-            5: {'max_char': 'E', 'max_score': '', 'min_score': '', 'keys': 'a'}, 6: {'max_char': '', 'max_score': '2', 'min_score': ''}, 
-            7: {'max_char': '', 'max_score': '2', 'min_score': ''}}, 
-        4: {}}    """
+    all_assignment_dict: 
+    {1: {1: {'max_char': '', 'max_score': '6', 'min_score': ''}, 
+        2: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+        3: {'max_char': '', 'max_score': '4', 'min_score': ''}, 
+        4: {'max_char': '', 'max_score': '6', 'min_score': ''}}, 
+    3: {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
+        2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
+        3: {'max_char': 'C', 'max_score': '1', 'min_score': '', 'keys': 'ab'}, 
+        4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+        5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+        6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
+        7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
+        8: {'max_char': '', 'max_score': '2', 'min_score': ''}}, 
+ 
+    """
     return all_assignment_dict
 # - end of get_allassignment_detail_dict_from_string
 
@@ -3539,5 +3643,99 @@ def get_allkeys_dict_from_string(keys_str):
 
     return all_keys_dict
 # - end of get_allkeys_dict_from_string
+
+
+def get_allassignment_dict_from_string(assignment_str, keys_str):
+    # - create dict with assignments and keys PR2022-01-27
+
+    all_keys_dict = get_allkeys_dict_from_string(keys_str)
+
+    """
+    partex: "1;1;4;20;Praktijkexamen onderdeel A # 3;1;8;12;Minitoets 1 BLAUW onderdeel A # ...
+    format of partex_str is:
+        partex are divided by "#"
+            each item of partex contains: partex_pk ; partex_examperiod ; partex_amount ; max_score ; partex_name #
+
+    assignment: "1;4;20|1;;6;|2;;4;|3;;4;|4;;6; # 3;8;12|1;D;3;|2;C;2;|3;C;;|4;;1;|5;;1;|6;;1;|7;D;;|8;;2; # ...
+    format of assignment_str is:
+        partex are divided by "#"
+            first item of partex contains partex info: partex_pk ; partex_amount ; max_score |
+            other items =  | q_number ; max_char ; max_score ; min_score |
+
+    keys: "1 # 3|1;ac|2;b|3;ab|7;d # ...
+    format of keys_str is:
+        partex are divided by "#"
+            first item of partex contains partex_pk ; partex_amount ; max_score |
+
+    """
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('all_keys_dict: ' + str(all_keys_dict) + ' ' + str(type(all_keys_dict)))
+
+    all_assignment_dict = {}
+    if assignment_str:
+        # pa is the assignment of a partial exam
+        for pa in assignment_str.split('#'):
+            if pa:
+                assignment_dict = {}
+                partex_pk = None
+
+                # pa: 1;15;19 | 1;;4; | 2;D;2; | 3;;6; | 4;E;; | 5;;2; | 6;;1; | 7;;1; | 8;;1; | 9;;1;
+                pa_arr = pa.split('|')
+                if pa_arr:
+                    # first item contains partex_pk, amount and max_score
+                    info_str = pa_arr[0]
+                    if info_str:
+                        info_arr = info_str.split(';')
+                        partex_pk = int(info_arr[0])
+
+                    # all_keys_dict: {1: {2: 'b', 4: 'bd'}, 2: {2: 'a', 3: 'b', 4: 'c'}, 3: {2: 'ab', 3: 'd', 5: 'a'}}
+                    if all_keys_dict and partex_pk in all_keys_dict:
+                        keys_dict = all_keys_dict[partex_pk]
+                    else:
+                        keys_dict = None
+
+                    skip_first = True
+                    for qa in pa_arr:
+                        # qa: 1;C;22;
+                        # first item contains partex_pk, amount and max_score
+                        if skip_first:
+                            skip_first = False
+                        else:
+                            qa_arr = qa.split(';')
+
+                            # qa_arr: ['2', 'D', '2', '']  q_number, max_char, max_score, min_score
+                            if len(qa_arr) == 4:
+                                q_number = int(qa_arr[0])
+                                max_char = qa_arr[1] if qa_arr[1] else ""
+                                max_score_str = qa_arr[2] if qa_arr[2] else ""
+                                min_score_str = qa_arr[3] if qa_arr[3] else ""
+
+                                if max_char:
+                                    value = max_char
+                                    if keys_dict and q_number in keys_dict:
+                                        keys = keys_dict[q_number]
+                                        if keys:
+                                            value += ' - ' + keys
+                                        if max_score_str:
+                                            value += ' - ' + max_score_str
+                                elif max_score_str:
+                                    value = max_score_str
+                                else:
+                                    value = ""
+
+                                if min_score_str:
+                                    value += ' min: ' + min_score_str
+                                assignment_dict[q_number] = value
+
+                all_assignment_dict[partex_pk] = assignment_dict
+    if logging_on:
+        logger.debug('all_assignment_dict: ' + str(all_assignment_dict))
+    """
+    all_assignment_dict: {
+        1: { 1: '4', 2: 'D - b', 3: '6', 4: 'E - d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1', 10: '5'}, 2: {1: '2', 2: 'D - a', 3: 'B - b', 4: 'E - c', 5: '6'}, 3: {1: '2', 2: 'C - ab', 3: 'D - d', 4: '3', 5: 'E - a', 6: '2', 7: '2'}, 4: {}}
+    """
+    return all_assignment_dict
+# - end of get_allassignment_dict_from_string
 
 

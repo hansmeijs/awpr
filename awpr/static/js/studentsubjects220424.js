@@ -3643,7 +3643,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("el_MEX3_save_link", el_MEX3_save_link)
 
         el_MEX3_save_link.click();
-    };
+    };  // MEX3_Backpage
 
 // +++++++++ MOD EX3 FORM++++++++++++++++ PR2021-10-06
     function MEX3_Open(){
@@ -3936,41 +3936,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MEX3_AddRemoveSubject
 
-function MEX3_get_sel_lvlbase_pk_list(){  // PR2021-10-09
-// ---  loop through id_MEX3_select_level and collect selected lvlbase_pk's
-    //console.log("  =====  MEX3_get_sel_lvlbase_pk_list  =====");
-    let sel_lvlbase_pk_list = [];
-    if(el_MEX3_select_level){
-        const level_options = Array.from(el_MEX3_select_level.options);
-        console.log("level_options", level_options);
-        if(level_options && level_options.length){
-            for (let i = 0, level_option; level_option = level_options[i]; i++) {
-                if (level_option.selected){
-        console.log("level_option.selected", level_option);
-                    if (level_option.value === "0"){
-                        sel_lvlbase_pk_list = [];
-                        break;
-                    } else {
-                        const lvlbase_pk = Number(level_option.value);
-                        if (lvlbase_pk){
-                            sel_lvlbase_pk_list.push(lvlbase_pk);
-    }}}}}};
-    //console.log("sel_lvlbase_pk_list", sel_lvlbase_pk_list);
-    return sel_lvlbase_pk_list;
-}
+    function MEX3_get_sel_lvlbase_pk_list(){  // PR2021-10-09
+    // ---  loop through id_MEX3_select_level and collect selected lvlbase_pk's
+        //console.log("  =====  MEX3_get_sel_lvlbase_pk_list  =====");
+        let sel_lvlbase_pk_list = [];
+        if(el_MEX3_select_level){
+            const level_options = Array.from(el_MEX3_select_level.options);
+            console.log("level_options", level_options);
+            if(level_options && level_options.length){
+                for (let i = 0, level_option; level_option = level_options[i]; i++) {
+                    if (level_option.selected){
+            console.log("level_option.selected", level_option);
+                        if (level_option.value === "0"){
+                            sel_lvlbase_pk_list = [];
+                            break;
+                        } else {
+                            const lvlbase_pk = Number(level_option.value);
+                            if (lvlbase_pk){
+                                sel_lvlbase_pk_list.push(lvlbase_pk);
+        }}}}}};
+        //console.log("sel_lvlbase_pk_list", sel_lvlbase_pk_list);
+        return sel_lvlbase_pk_list;
+    }
 
-function MEX3_reset_layout_options(){  // PR2021-10-10
-// ---  remove 'se';lected' from layout options
-    //console.log("  =====  MEX3_reset_layout_options  =====");
-    if(el_MEX3_select_layout){
-        const layout_options = Array.from(el_MEX3_select_layout.options);
-        if(layout_options && layout_options.length){
-            for (let i = 0, option; option = layout_options[i]; i++) {
-                option.selected = false;
+    function MEX3_reset_layout_options(){  // PR2021-10-10
+    // ---  remove 'se';lected' from layout options
+        //console.log("  =====  MEX3_reset_layout_options  =====");
+        if(el_MEX3_select_layout){
+            const layout_options = Array.from(el_MEX3_select_layout.options);
+            if(layout_options && layout_options.length){
+                for (let i = 0, option; option = layout_options[i]; i++) {
+                    option.selected = false;
+                };
             };
         };
-    };
-};  // MEX3_reset_layout_options
+    };  // MEX3_reset_layout_options
 
 ///////////////////////////////////////
 // +++++++++ MOD SELECT CLUSTER  ++++++++++++++++ PR2022-01-27

@@ -628,16 +628,22 @@
     IMAGES - EXAMS
 ----------------------------------------------------- */
 
-.img_exams_tableA_ne, .img_exams_tableA_en {
-    width: 1220px; height: 490px; background-size: 1220px 490px;}
-.img_exams_tableA_ne {background-image: url('/static/manual/exams_tableA_ne.png');}
-.img_exams_tableA_en {background-image: url('/static/manual/exams_tableA_en.png');}
+.img_exams_table_ne, .img_exams_table_en {
+    width: 1244px; height: 470px; background-size: 1244px 470px;}
+.img_exams_table_ne {background-image: url('/static/manual/exams_table_ne.png');}
+.img_exams_table_en {background-image: url('/static/manual/exams_table_en.png');}
 
-.img_exams_modalA_ne, .img_exams_modalA_en {
-    width: 875px; height: 708px; background-size: 875px 708px;}
-.img_exams_modalA_ne {background-image: url('/static/manual/exams_modalA_ne.png');}
-.img_exams_modalA_en {background-image: url('/static/manual/exams_modalA_en.png');}
+.img_exams_select_exam_ne, .img_exams_select_exam_en {
+    width: 498px; height: 240px; background-size: 498px 240px;}
+.img_exams_select_exam_ne {background-image: url('/static/manual/exams_select_exam_ne.png');}
+.img_exams_select_exam_en {background-image: url('/static/manual/exams_select_exam_en.png');}
 
-.img_exams_print_result_ne_en {
-    width: 789px; height: 540px; background-size: 789px 540px;
-    background-image: url('/static/manual/exams_print_result_ne_en.png');}
+.img_exams_answers_ne, .img_exams_answers_en {
+    width: 798px; height: 620px; background-size: 798px 620px;}
+.img_exams_answers_ne {background-image: url('/static/manual/exams_answers_ne.png');}
+.img_exams_answers_en {background-image: url('/static/manual/exams_answers_en.png');}
+
+.img_exams_result_ne, .img_exams_result_en {
+    width: 790px; height: 540px; background-size: 790px 540px;}
+.img_exams_result_ne {background-image: url('/static/manual/exams_result_ne.png');}
+.img_exams_result_en {background-image: url('/static/manual/exams_result_en.png');}

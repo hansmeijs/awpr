@@ -179,8 +179,9 @@ document.addEventListener('DOMContentLoaded', function() {
         get_dropdown_button("exams", "id_intro_exams", "Examens (voormalige WOLF programma)", [
             ["id_link_exams", "Examen koppelen aan een vak"],
             ["id_enter_exams", "Antwoorden invoeren"],
-            ["id_download_exams", "Antwoorden downloaden"],
+            ["id_download_exams", "Overzicht antwoorden downloaden"],
             ["id_submit_exams", "Examens goedkeuren en indienen"],
+            ["id_practical_exams", "Praktijkexamens"],
             ]),
 
         get_dropdown_button("approve", "id_intro", "Goedkeuren en indienen van Ex-formulieren", [
@@ -250,6 +251,15 @@ document.addEventListener('DOMContentLoaded', function() {
              ["id_exem_approve", "Approve and submit exemptions"],
              ["id_exem_exemption_year", "Year of the exemption"]
             ]),
+
+        get_dropdown_button("exams", "id_intro_exams", "Exams (former WOLF program)", [
+             ["id_link_exams", "Link exam to a subject"],
+             ["id_enter_exams", "Enter answers"],
+             ["id_download_exams", "Download overview answers"],
+             ["id_submit_exams", "Approve and submit exams"],
+             ["id_practical_exams", "Practical exams"],
+            ]),
+
         get_dropdown_button("approve", "id_intro", "Approve and submit Ex forms", [
             ["id_digital_signature", "The digital signature"],
             ["id_approve_icon", "The approval icon"],

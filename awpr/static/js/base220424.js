@@ -444,6 +444,13 @@
 //console.log(" --- end of add_or_remove_class_with_qsAll --- ")
     };
 
+
+//========= add_or_remove_class_by_id  ========================  PR2022-04-23
+    function add_or_remove_class_by_id (id, classname, is_add, default_class) {
+        const el = document.getElementById(id);
+        add_or_remove_class (el, classname, is_add, default_class);
+    };
+
 //========= add_or_remove_class  ========================  PR2020-06-20
     function add_or_remove_class (el, classname, is_add, default_class) {
         if(el && classname){

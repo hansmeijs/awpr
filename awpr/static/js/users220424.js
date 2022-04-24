@@ -1821,6 +1821,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MSM_Open ====================================  PR2022-01-26
     function MSM_Open (el_input) {
         console.log(" ===  MSM_Open  =====") ;
+        console.log("el_input", el_input) ;
 
         b_clear_dict(mod_MSM_dict)
 
@@ -1851,6 +1852,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  set header text
             const header_text = loc.Select + caption + ":";
             document.getElementById("id_MSM_hdr_multiple").innerText = header_text;
+
+            const hide_msg = (get_attr_from_el(el_input, "data-field") === "allowed_clusterbases");
+        console.log("hide_msg", hide_msg) ;
+            add_or_remove_class_by_id ("id_MSM_message_container", cls_hide, hide_msg);
 
             el_MSM_input.value = null;
 

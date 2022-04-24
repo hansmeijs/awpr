@@ -225,7 +225,7 @@ def create_mailbox_recipients_rows(examyear_pk, mailmessage_pk):
 
 def create_mailattachment_rows(examyear, request, mailattachment_pk=None):
     # --- create mail_inbox rows of this user this examyear PR2021-09-11
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_mailattachment_rows ============= ')
         logger.debug('examyear: ' + str(examyear))
@@ -238,6 +238,11 @@ def create_mailattachment_rows(examyear, request, mailattachment_pk=None):
         filter_mailattachment_pk = "AND mail_att.id = " + str(mailattachment_pk) if mailattachment_pk else ''
 
         req_usr_pk_str = ''.join((';', str(request.user.pk), ';'))
+
+        if logging_on:
+            logger.debug('req_usr_pk_str: ' + str(req_usr_pk_str))
+            logger.debug('filter_mailattachment_pk: ' + str(filter_mailattachment_pk))
+
         sql_list = [
             "SELECT mail_att.id, msg.id AS mailmessage_id,",
             "mail_att.filename, mail_att.contenttype, mail_att.filesize,",
@@ -247,8 +252,10 @@ def create_mailattachment_rows(examyear, request, mailattachment_pk=None):
             "INNER JOIN schools_mailmessage AS msg ON (msg.id = mail_att.mailmessage_id)",
 
             "WHERE (msg.examyear_id = ", str(examyear.pk), ")",
-            "AND ( msg.sender_user_id = ", str(request.user.pk),
-            "OR POSITION('" + str(req_usr_pk_str) + "' IN CONCAT(';', msg.recipients, ';')) > 0 )",
+            # TODO change format recipients to list of all users (otherwise list may not reflexactual sender list)
+            #  increase max length of recipients (max 1.000 recipients * 5 char = 5k > 10k max
+            #"AND ( msg.sender_user_id = ", str(request.user.pk),
+            #"OR POSITION('" + str(req_usr_pk_str) + "' IN CONCAT(';', msg.recipients, ';')) > 0 )",
 
             filter_mailattachment_pk,
             "ORDER BY mail_att.id"
