@@ -888,6 +888,12 @@ aXX:hover{
     height: 320px;
     width: auto
 }
+.tbl_studsubj_h240_w_auto {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 240px;
+    width: auto
+}
 .tbl_partex_h220_w_auto {
     overflow-x: hidden;
     overflow-y: auto;

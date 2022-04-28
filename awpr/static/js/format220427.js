@@ -186,3 +186,29 @@
         return display_text
     }  // f_format_count
 
+
+//========= f_format_percentage ======== PR2022-04-27
+    function f_format_percentage (user_lang, rate_int, number_of_decimals) {
+        //console.log(" --- f_format_percentage  -----")
+        if (!number_of_decimals){number_of_decimals = 0};
+
+        console.log("rate_int", rate_int, typeof rate_int)
+        let display_text = "";
+
+        if (rate_int) {
+            // rate_int is rate: 0.56125
+            const value_percentage = 100 * rate_int;
+        // from https://www.delftstack.com/howto/javascript/javascript-round-to-2-decimal-places/
+            let value_str = value_percentage.toFixed(number_of_decimals)
+
+            display_text = (user_lang !== "en") ? value_str.replace(".", ",") : value_str;
+            console.log("value_str", value_str)
+            console.log("display_text", display_text)
+
+            display_text += "%"
+        }  // if (!!value_int)
+
+        return display_text
+    }  // f_format_percentage
+
+

@@ -244,8 +244,10 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
         if request.user and request.user.country and request.user.schoolbase:
             req_usr = request.user
 
-# -  get permit
+    # -  get permit
             permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_grade', req_usr)
+
+            # NOT IN USE > can be removed??
             allowed_dict = {}
             dl.get_requsr_allowed(req_usr, allowed_dict)
             if logging_on:
@@ -299,7 +301,6 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
                             # back to upload_dict.get('auth_bool_at_index')
                             # 'auth_bool_at_index' not in use any more. Set or reset is determined by 'approve_save' or 'approve_reset'
-
 
                             if logging_on:
                                 logger.debug('upload_dict' + str(upload_dict))
@@ -833,11 +834,13 @@ class GradeSubmitEx2View(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeSubmitEx2View ============= ')
+
         update_wrap = {}
         messages = []
         msg_html = None
         msg_dict = {}
         test_is_ok = False
+
 # - get permit
         has_permit = False
         req_usr = request.user
@@ -1594,7 +1597,7 @@ class GradeUploadView(View):
     # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01-24 PR2022-03-18
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeUploadView ============= ')
@@ -1910,8 +1913,8 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
         #if logging_on:
         #    logger.debug('......... field: ' + str(field))
         #    logger.debug('......... new_value: ' + str(new_value))
-
-        if field in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
+        # pescore is used to store exam_score for now. temporary removed from fieldlist
+        if field in ('cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'): # 'pescore',
 
 # - validate new_value
         # - check if it is allowed to enter this examgradetype this examyear
@@ -1978,10 +1981,11 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 
             setattr(grade_instance, field, new_value)
             save_changes = True
-        # - recalculate total_score after saving grade, otherwise new value is not calculates
+
+    # - recalculate total_score after saving grade, otherwise new value is not calculated
             recalc_exam_score = True
             if logging_on:
-                logger.debug('save_changes: ' + str(save_changes))
+                logger.debug('>>>>>>>> recalc_exam_score: ' + str(recalc_exam_score))
 
         # - save changes in fields 'xx_status' and 'xxpublished'
         elif field in ('se_status', 'pe_status', 'ce_status', 'sepublished', 'pepublished', 'cepublished'):
@@ -2044,16 +2048,17 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
             #    if sql_student_list:
             #        calc_res.save_student_batch(sql_student_list)
 
+
+            if logging_on:
+                logger.debug('========== recalc_exam_score: ' + str(recalc_exam_score))
             if recalc_exam_score:
                 exam_instance = grade_instance.ce_exam
 
                 # create list of results
-                total_score = 0
-                if exam_instance:
-                    total_score = calc_total_score_of_examresult(grade_instance, exam_instance)
 
-                    if logging_on:
-                        logger.debug('total_score: ' + str(total_score))
+                if exam_instance:
+
+                    total_score = calc_total_score_of_examresult(grade_instance, exam_instance)
 
                     # - calculate total_score after saving grade, otherwise new value is not calculates
                     # NOTE: field ce_exam_score tobe added, total_score is stored in pescore for now.
@@ -2073,21 +2078,15 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
     return err_list
 # --- end of update_grade_instance
 
+
 def calc_total_score_of_examresult(grade_instance, exam_instance):
     #PR2022-04-21
 
-    logging_on = False  #s.LOGGING_ON
+    all_result_dictNIU, total_score, total_blanksNIU, has_errorsNIU = \
+            get_all_result_with_assignment_dict_from_string(grade_instance, exam_instance)
 
-# create list of results
-    all_result_dict, total_score, total_blanks = get_all_result_with_assignment_dict_from_string(grade_instance, exam_instance)
-    if logging_on:
-        logger.debug('----- calc_total_score_of_examresult -----')
-
-    #total_score_str = "---"
-    #if 'total_score' in all_result_dict:
-    #    total_score_str = str(all_result_dict.get('total_score'))
-    #total_score_cpt = form_text.get('total_score', '-') + ':'
     return total_score
+
 
 def update_studsubj_and_recalc_student_result(sel_examyear, sel_school, sel_department, student):
     # PR2022-01-01
@@ -2713,7 +2712,7 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
 
     # - only exams that are published are visible
     # - only ce_exams that are submitted are visible for non - requsr_same_school user > not necessary
-    #       > not necessary, because only requsr_same_school can access grade_with_exam_rows
+    #       > not necessary, because only requsr_same_school can access grade_exam_rows
 
     grade_rows = []
 
@@ -2882,6 +2881,99 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
     return grade_rows
 # --- end of create_grade_with_ete_exam_rows
 
+
+def create_grade_exam_result_rows(sel_examyear_code, sel_examperiod, sel_depbase_pk, request):
+    # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_grade_exam_result_rows -----')
+
+    # - only grades with ete exams are visible
+    # - only ce_exams that are submitted have results shown
+    # - group by exam and school
+
+    result_rows = []
+
+    req_usr = request.user
+    if req_usr.role == c.ROLE_064_ADMIN:
+
+        sql_keys = {'ey_code': sel_examyear_code, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
+
+        sub_list = ["SELECT grd.id AS grd_id,",
+                    "(grd.pescore::FLOAT / exam.scalelength::FLOAT) AS score_frac,",
+                    "grd.pescore, exam.scalelength,"
+                    "1 AS score_count",
+
+                    "FROM students_grade AS grd",
+                    "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+
+                    "WHERE exam.ete_exam",
+                    "AND grd.examperiod = %(experiod)s::INT",
+                    "AND exam.published_id IS NOT NULL",
+                    #TODO set filter ce_exam_published_id
+                    #"AND grd.ce_exam_published_id IS NOT NULL ",
+                    "AND grd.pescore IS NOT NULL",
+                    "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
+                    "AND NOT grd.tobedeleted"
+                    ]
+
+        sub_grd_result = ' '.join(sub_list)
+
+        sql_list = ["WITH grd_result AS (" + sub_grd_result + ")",
+
+                    "SELECT exam.id AS exam_id, school.id AS school_id, schoolbase.code AS schoolbase_code, school.name AS school_name,",
+                    "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
+                    "subjbase.code AS subj_code, subj.name AS subj_name,",
+                    "exam.version,",
+                    "COUNT(grd.id) AS grd_count,",
+                    "COUNT(grd_result.score_frac) AS result_count,",
+                    "AVG(grd_result.score_frac) AS result_avg",
+
+                    "FROM students_grade AS grd",
+                    "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                    "LEFT JOIN grd_result ON (grd_result.grd_id = grd.id)",
+
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+
+                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                    "INNER JOIN schools_schoolbase AS schoolbase ON (school.base_id = schoolbase.id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                    "WHERE ey.code = %(ey_code)s::INT",
+                    "AND exam.ete_exam",
+                    "AND grd.examperiod = %(experiod)s::INT",
+                    "AND dep.base_id = %(depbase_id)s::INT",
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                    "GROUP BY exam.id, school.id, schoolbase.code, school.name, depbase.code, lvl.abbrev, subjbase.code, subj.name, exam.version"
+                    ]
+
+        sql_list.append('ORDER BY exam.id, school.id')
+
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            result_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+
+        if result_rows:
+            if logging_on:
+                logger.debug('len(grade_rows): ' + str(len(result_rows)))
+            for row in result_rows:
+                if logging_on:
+                    logger.debug('row: ' + str(row))
+
+    return result_rows
 
 ###############################################
 
@@ -3114,8 +3206,9 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                     8: {'max_char': '', 'max_score': '2', 'min_score': ''}}}, 
         """
 
-    total_score = 0
-    total_blanks = 0
+    assignment_has_errors = False
+    assignment_not_entered_count = 0
+    assignment_total_score = None
 
 # - loop through all_result_dict, to get only the partex that are present in result_str
     if all_result_dict:
@@ -3128,8 +3221,8 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                  3: {1: 'a', 2: 'b', 3: 'b', 4: '0', 5: '1', 6: 'x', 7: 'x', 8: 'x'}, 
             """
         if all_result_partex_dict:
-            total_has_error = False
 
+# +++  loopt through all partex of this assignment
             for partex_pk, result_partex_dict in all_result_partex_dict.items():
                 if logging_on:
                     logger.debug('-----------------------------')
@@ -3162,157 +3255,174 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                         7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
                         8: {'max_char': '', 'max_score': '2', 'min_score': ''}}}            
                 """
-                entered_count = 0
-                subtotal_score = 0
-                subtotal_has_error = False
+
+                partex_has_errors = False
+                partex_entered_count = 0  # is_entered, ie score entered by school
+                partex_amount_int = 0
+                partex_total_score = None
 
                 if assignment_detaildict is None:
-                    subtotal_has_error = True
+                    partex_has_errors = True
                     # return error when assignment not found
                 else:
                     name = assignment_detaildict.get('name')
                     amount = assignment_detaildict.get('amount', 0)
-                    amount_int = int(amount) if amount else 0
-                    if not amount_int:
-                        subtotal_has_error = True
+                    partex_amount_int = int(amount) if amount else 0
+                    if not partex_amount_int:
+                        partex_has_errors = True
                         # give error when there are no questions
                     else:
                         this_partex_result_dict['name'] = name
-                        this_partex_result_dict['amount'] = amount_int
+                        this_partex_result_dict['amount'] = partex_amount_int
 
-    # loop through all questions of assignment
                         all_q_dict = assignment_detaildict.get('q')
                         if logging_on:
                             logger.debug('all_q_dict: ' + str(all_q_dict))
                             """
                             all_q_dict: 
                                 {1: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}, 
-                                2: {'max_char': 'C', 'max_score': '2', 'min_score': '', 'keys': 'b'}, 
-                                3: {'max_char': 'C', 'max_score': '1', 'min_score': '', 'keys': 'ab'}, 
                                 4: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
-                                5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
-                                6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 
-                                7: {'max_char': 'D', 'max_score': '1', 'min_score': '', 'keys': 'd'}, 
-                                8: {'max_char': '', 'max_score': '2', 'min_score': ''}}
                             """
-                        for q_number in range(1, amount + 1):  # range(start_value, end_value, step), end_value is not included!
-                            result = result_partex_dict.get(q_number)
+# +++  loop through all questions of this partex
 
-                            score = None
-                            is_not_entered = False  # is_not_entered, ie score not entered by examiner
-                            is_blank = False # is_blank, ie question not answered by candidate
-                            has_error = False
+                        for q_number in range(1, partex_amount_int + 1):  # range(start_value, end_value, step), end_value is not included!
+                            q_result_str = result_partex_dict.get(q_number)
+
+                            q_score = None
+                            q_is_not_entered = False  # is_not_entered, ie score not entered by school
+                            q_is_blank = False # is_blank, ie question not answered by candidate
+                            q_has_error = False
 
                             q_dict = all_q_dict.get(q_number)
 
-                            if logging_on:
-                                logger.debug('q_dict: ' + str(q_dict))
-                                logger.debug('>>>>>>>>>>>>>>> result: ' + str(result))
+                            if logging_on and False:
+                                logger.debug('     q_dict: ' + str(q_dict))
+                                logger.debug('     q_result_str: ' + str(q_result_str))
                             """
                              q_dict: {'max_char': 'D', 'max_score': '3', 'min_score': '', 'keys': 'ac'}
-                             result: a
-                             """
+                             q_result: a
+                            """
 
                             if q_dict is None:
-                                has_error = True
-                                # give error when there are no assignment for this q_number
-                                #r_dict['error'] = 'No assignment for this question'
-                            elif not result:
-                                is_not_entered = True  # is_not_entered, ie answer not entered by school
-                            elif result == 'x':
-                                is_blank = True # is_blank, ie question not answered by candidate
-                                entered_count += 1 # count entered by school
+                                q_has_error = True
+                                # error when there are no assignment for this q_number
+                            elif not q_result_str:
+                                q_is_not_entered = True  # is_not_entered, ie answer not entered by school
+                            elif q_result_str == 'x':
+                                q_is_blank = True # is_blank, ie question not answered by candidate
+                                partex_entered_count += 1 # count entered by school
                             else:
-                                max_char = q_dict.get('max_char')
-                                max_score = q_dict.get('max_score')
-                                max_score_int = int(max_score) if max_score else None
+                                q_max_char = q_dict.get('max_char')
+                                q_max_score = q_dict.get('max_score')
+                                q_max_score_int = int(q_max_score) if q_max_score else None
                                 # min_score = int(q_dict.get('min_score', 0))
-                                keys = q_dict.get('keys')
+                                q_keys = q_dict.get('keys')
 
             # if max_char has value, it is a multiplechoice question
-                                if max_char:
-                                    if not keys:
-                                        has_error = True
+                                if q_max_char:
+                                    if not q_keys:
+                                        q_has_error = True
                                     else:
-                                        max_char_lc = max_char.lower()
-                                        result_lc = result.lower()
+                                        q_max_char_lc = q_max_char.lower()
+                                        q_result_lc = q_result_str.lower()
                                         # The ord() function returns an integer representing the Unicode character.
-                                        result_ord = ord(result_lc)
-                                        if not (ord('a') <= result_ord <= ord('w')) :
-                                            has_error = True
-                                        elif result_ord > ord(max_char_lc):
-                                            has_error = True
+                                        q_result_ord = ord(q_result_lc)
+                                        if not (ord('a') <= q_result_ord <= ord('w')) :
+                                            q_has_error = True
+                                        elif q_result_ord > ord(q_max_char_lc):
+                                            q_has_error = True
                                         else:
-                                            if not max_score_int:
-                                                max_score_int = 1
-                                            if result in keys:  # keys may contain multiple characters: 'ac'
-                                                score = max_score_int
-                                                total_score += max_score_int
-                                                subtotal_score += max_score_int
-                                            else:
-                                                score = 0
+                                            partex_entered_count += 1  # count entered by school
 
-                                            entered_count += 1  # count entered by school
+                                            # q_max_score may be > 1, default = 1 when not entered
+                                            if not q_max_score_int:
+                                                q_max_score_int = 1
+
+                                            # answer is correct if result_str is in q_keys
+                                            # q_keys may contain multiple characters: 'ac'
+                                            if q_result_str in q_keys:
+                                                q_score = q_max_score_int
+                                            else:
+                                                q_score = 0
 
                                 else:
-                                    if not max_score_int:
-                                        has_error = True
+                                    if not q_max_score_int:
+                                        q_has_error = True
                                         #r_dict['error'] = 'No max_score for this question'
                                     else:
-                                        result_int = int(result)
-                                        if result_int > max_score_int:
-                                            has_error = True
+                                        # q_result can be '0'
+                                        q_result_int = int(q_result_str)
+                                        if q_result_int > q_max_score_int:
+                                            q_has_error = True
                                             #r_dict['error'] = 'Score exceeds max_score'
-                                        elif result_int < 0:
-                                            has_error = True
+                                        elif q_result_int < 0:
+                                            q_has_error = True
                                             #r_dict['error'] = 'Score is fewer than zero'
                                         else:
-                                            score = result_int
-                                            total_score += result_int
-                                            subtotal_score += result_int
-                                            entered_count += 1  # count entered by school
+                                            partex_entered_count += 1  # count entered by school
+                                            q_score = q_result_int
 
-                            if has_error:
-                                subtotal_has_error = True
+                            if q_has_error:
+                                partex_has_errors = True
                                 r_str = 'e'
-                            elif is_not_entered:
+                            elif q_is_not_entered:
                                 r_str = 'n'
-                            elif is_blank:
+                            elif q_is_blank:
                                 r_str = 'x'
                             else:
-                                r_str = score
-                            if r_str:
-                                this_partex_result_dict['s'][q_number] = r_str
-                            if result:
-                                this_partex_result_dict['q'][q_number] = result
-                        # end of for q_number in range(1, amount + 1)
+                                r_str = q_result_str
 
+                # add score to partex_total_score
+                            # when score = 0, partex_total_score must be changed from None to 0
+                            if q_score is not None:
+                                if partex_total_score is None:
+                                    partex_total_score = q_score
+                                else:
+                                    partex_total_score += q_score
+                # put score in 's' dict, when score has value. SKip None and 0
+                            if q_score:
+                                this_partex_result_dict['s'][q_number] = str(q_score)
 
-                        blanks = amount_int - entered_count
+                            if q_result_str:
+                                this_partex_result_dict['q'][q_number] = q_result_str
 
-                        if logging_on:
-                            logger.debug('amount_int: ' + str(amount_int))
-                            logger.debug('entered_count: ' + str(entered_count))
-                            logger.debug('blanks: ' + str(blanks))
-                            logger.debug('total_score: ' + str(total_score))
-                            logger.debug('entered_count: ' + str(entered_count))
+# +++  end of loop through all questions of this partex
+                partex_not_entered_count = (partex_amount_int - partex_entered_count)
 
-                        this_partex_result_dict['blanks'] = blanks
-                        this_partex_result_dict['score'] = subtotal_score
+                if partex_has_errors:
+                    assignment_has_errors = True
+                    partex_total_score = None
+                    assignment_total_score = None
+                elif partex_not_entered_count:
+                    assignment_not_entered_count += partex_not_entered_count
+                    partex_total_score = None
+                    assignment_total_score = None
+                elif partex_total_score is not None:
+                    if assignment_total_score is None:
+                        assignment_total_score = partex_total_score
+                    else:
+                        assignment_total_score += partex_total_score
 
-                        total_blanks += blanks
+                this_partex_result_dict['blanks'] = partex_not_entered_count
+                this_partex_result_dict['score'] = partex_total_score
 
-                if subtotal_has_error:
-                    total_has_error = True
-            # end of for q_number in range(1, amount + 1)
                 all_result_with_assignment_dict['partex'][partex_pk] = this_partex_result_dict
 
-            if not total_has_error and not total_blanks:
-                all_result_with_assignment_dict['total_score'] = total_score
-            else:
-                total_score = 0
+                if logging_on:
+                    logger.debug('partex_not_entered_count: ' + str(partex_not_entered_count))
+                    logger.debug('partex_total_score: ' + str(partex_total_score))
+                    logger.debug('this_partex_result_dict: ' + str(this_partex_result_dict))
+# +++  end of loop through all partex of this assignment
+
+            # when a student has all questions wrong the total_score = 0 and will be calculated in teh avergae score
+            # when an error or not blanks > 0 then  total_score = None
+
+            all_result_with_assignment_dict['total_score'] = assignment_total_score
+
     if logging_on:
-        logger.debug('all_result_with_assignment_dict: ' + str(all_result_with_assignment_dict))
+        logger.debug('assignment_total_score: ' + str(assignment_total_score))
+        logger.debug('assignment_not_entered_count: ' + str(assignment_not_entered_count))
+        logger.debug('assignment_has_errors: ' + str(assignment_has_errors))
 
     """
     all_result_with_assignment_dict: 
@@ -3334,7 +3444,7 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
                 'name': 'Praktijkexamen onderdeel D', 'amount': 1, 'score': 0}, 
             12: {'blanks': 8, 'q': {}, 's': {1: 'n', 2: 'n', 3: 'n', 4: 'n', 5: 'n', 6: 'n', 7: 'n', 8: 'n'}, 
                 'name': 'Minitoets 4 BLAUW onderdeel D', 'amount': 8, 'score': 0}}, 
-         'total_blanks': 27}
+         'total_not_entered': 27}
 
     all_result_with_assignment_dict: 
         {'blanks': 27, 'amount': 39, 
@@ -3354,7 +3464,12 @@ def get_all_result_with_assignment_dict_from_string(grade_instance, exam_instanc
             'total_score': 19}
     }
     """
-    return all_result_with_assignment_dict, total_score, total_blanks
+    if logging_on:
+        logger.debug('     assignment_has_errors: ' + str(assignment_has_errors))
+        logger.debug('     assignment_not_entered_count: ' + str(assignment_not_entered_count))
+        logger.debug('     assignment_total_score: ' + str(assignment_total_score))
+
+    return all_result_with_assignment_dict, assignment_total_score, assignment_not_entered_count, assignment_has_errors
 # - end of get_all_result_with_assignment_dict_from_string
 
 

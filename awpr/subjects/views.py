@@ -41,6 +41,8 @@ from schools import models as sch_mod
 from subjects import models as sbj_mod
 from students import models as stud_mod
 
+from grades import views as grade_views
+
 import json  # PR2018-10-25
 # PR2018-04-27
 import logging
@@ -1775,15 +1777,15 @@ def validate_exam_has_grades(exam_instance):
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
+class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
-            logger.debug(' ============= ExamApproveOrPublishView ============= ')
+            logger.debug(' ============= ExamApproveOrPublishExamView ============= ')
 
-# function sets auth and publish of exam records - submitting grade_exams happens in ExamApproveGradeExamView
+# function sets auth and publish of exam records - submitting grade_exams happens in ExamApproveOrSubmitGradeExamView
         update_wrap = {}
         requsr_auth = None
         msg_html = None
@@ -1878,10 +1880,11 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
                         # submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
 
                         crit = Q(subject__examyear=sel_examyear) & \
-                               Q(department=sel_department)
-                        # examperiod=12 means both first and second examperiod are selected
+                               Q(department=sel_department) & \
+                               Q(ete_exam=True)
+                        # examperiod=12 means both first and second examperiod are selected Not in use any more
                         if sel_examperiod in (1, 2):
-                            crit.add(Q(examperiod=sel_examperiod) | Q(examperiod=12), crit.connector)
+                            crit.add(Q(examperiod=sel_examperiod), crit.connector)
 
                         if sel_lvlbase_pk:
                             crit.add(Q(level__base_id=sel_lvlbase_pk), crit.connector)
@@ -1891,6 +1894,12 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
                         exams = subj_mod.Exam.objects.filter(crit).order_by('subject__base__code')
 
                         if logging_on:
+                            if exams:
+                                for exam in exams:
+                                    logger.debug('row exam_pk:  ' + str(exam.pk))
+                                    logger.debug('row examperiod:  ' + str(exam.examperiod))
+                                    logger.debug('row ete_exam:  ' + str(exam.ete_exam))
+
                             logger.debug('sel_examperiod:  ' + str(sel_examperiod))
                             logger.debug('sel_department:  ' + str(sel_department))
                             logger.debug('sel_lvlbase_pk:   ' + str(sel_lvlbase_pk))
@@ -1951,7 +1960,7 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
                                 update_wrap['approve_count_dict'] = count_dict
 
 # - create msg_html with info of rows
-                        msg_html = create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
+                        msg_html = create_exam_approve_submit_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
         # get updated_rows
                         if not is_test and updated_exam_pk_list:
                             rows = create_ete_exam_rows(
@@ -1974,182 +1983,354 @@ class ExamApproveOrPublishView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
         update_wrap['approve_msg_html'] = msg_html
 
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# --- end of ExamApproveOrPublishView
+# --- end of ExamApproveOrPublishExamView
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamApproveGradeExamView(View):  # PR2021-04-04 PR2022-03-11
+class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR2022-04-26
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
-            logger.debug(' ============= ExamApproveGradeExamView ============= ')
+            logger.debug(' ============= ExamApproveOrSubmitGradeExamView ============= ')
 
-# function sets ce_authby_id of grade records
+# function sets ce_published_id of grade records
         update_wrap = {}
         msg_html = None
 
-        if request.user and request.user.country and request.user.schoolbase:
-            req_usr = request.user
+        has_permit_approve = False
+        has_permit_submit = False
+        requsr_auth = None
+        req_usr = request.user
 
-    # -  get permit
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_exams', req_usr)
-            allowed_dict = {}
-            dl.get_requsr_allowed(req_usr, allowed_dict)
-            if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('allowed_dict: ' + str(allowed_dict))
+# - get permit
+        if req_usr and req_usr.country and req_usr.schoolbase:
+            permit_list = req_usr.permit_list('page_exams')
+            if permit_list:
+                requsr_usergroup_list = req_usr.usergroup_list
+                # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-            has_permit = 'permit_approve_exam' in permit_list
-            if has_permit:
+                is_auth1 = ('auth1' in requsr_usergroup_list)
+                is_auth2 = ('auth2' in requsr_usergroup_list)
+                if is_auth1 + is_auth2 == 1:
+                    if is_auth1:
+                        requsr_auth = 'auth1'
+                    elif is_auth2:
+                        requsr_auth = 'auth2'
+                if requsr_auth:
+                    has_permit_approve = 'permit_approve_exam' in permit_list
+                    has_permit_submit = 'permit_submit_exam' in permit_list
 
-    # -  get user_lang
-                user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
-                activate(user_lang)
+                if logging_on:
+                    logger.debug('permit_list: ' + str(permit_list))
+                    logger.debug('     has_permit_approve:  ' + str(has_permit_approve))
+                    logger.debug('     has_permit_submit:  ' + str(has_permit_submit))
+                    logger.debug('     requsr_auth: ' + str(requsr_auth))
 
-    # - get upload_dict from request.POST
-                upload_json = request.POST.get('upload', None)
-                if upload_json:
-                    upload_dict = json.loads(upload_json)
+        # NOT IN USE > can be removed??
+        #allowed_dict = {}
+        #dl.get_requsr_allowed(req_usr, allowed_dict)
+        #if logging_on:
+        #    logger.debug('permit_list: ' + str(permit_list))
+        #    logger.debug('allowed_dict: ' + str(allowed_dict))
+
+        if has_permit_approve or has_permit_submit:
+
+# -  get user_lang
+            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+                """
+                upload_dict: {'form': 'grade_exam', 'now_arr': [2022, 4, 26, 7, 9], 'mode': 'submit_test'}
+                """
+
+# - get selected mode. Modes are 'approve_test', 'approve_reset', 'approve_save', 'submit_test', 'submit_save'
+                mode = upload_dict.get('mode')
+                form_name = upload_dict.get('form')
+                is_approve = True if 'approve' in mode else False
+                is_submit = True if 'submit' in mode else False
+                is_reset = True if 'reset' in mode else False
+                is_test = True if 'test' in mode else False
+
+                if logging_on:
+                    logger.debug('mode: ' + str(mode))
+                    logger.debug('     is_approve: ' + str(is_approve))
+                    logger.debug('     is_submit:  ' + str(is_submit))
+                    logger.debug('     is_reset:   ' + str(is_reset))
+                    logger.debug('     is_test:    ' + str(is_test))
+
+ # - get grade_pk. It only has value when a single grade is approved
+                # not necessary. Single grade exams are approved in GradeUploadView.update_grade_instance, field 'auth_index'
+
+# - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, err_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(
+                        request=request,
+                        corr_insp_may_edit=False
+                    )
+# - check if user is same_school
+                is_role_same_school = req_usr.is_role_school and sel_school and req_usr.schoolbase and req_usr.schoolbase.pk == sel_school.base_id
+
+                if err_list:
+                    msg_html = ''.join(("<div class='p-2 border_bg_warning'>", '<br>'.join(err_list), '</>'))
+                elif not is_role_same_school:
+                    pass
+                elif (is_approve and has_permit_approve) or (is_submit and has_permit_submit):
+
                     if logging_on:
-                        logger.debug('upload_dict: ' + str(upload_dict))
+                        logger.debug('     sel_examyear:        ' + str(sel_examyear))
+                        logger.debug('     sel_school:          ' + str(sel_school))
+                        logger.debug('     sel_department:      ' + str(sel_department))
+                        logger.debug('     req_usr.schoolbase:  ' + str(req_usr.schoolbase))
+                        logger.debug('     is_role_same_school: ' + str(is_role_same_school))
+
+# - get selected examperiod from usersetting
+                    sel_examperiod, sel_lvlbase_pk, sel_subject_pk, sel_subjbase_pk, sel_cluster_pk = None, None, None, None, None
+
+                    selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    if selected_pk_dict:
+                        sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+                        sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+                        sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+                        sel_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+                    # Filter on subjbase_pok, not sel_subject_pk because subject_pk of SXM is different from Curacao
+                        if sel_subject_pk:
+                            subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
+                            if subject:
+                                sel_subjbase_pk=subject.base_id
+
+# +++ get selected grade_exam_rows
+                    sel_examperiod = sel_examperiod if sel_examperiod in (1, 2) else None
+                    # exclude published rows??
+                    # when published_id has value it means that admin has published the exam, so it is visible for the schools.
+                    # submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
+
+                    grade_exam_rows = get_approve_grade_exam_rows(
+                        sel_examyear_pk=sel_examyear.pk,
+                        sel_schoolbase_pk=sel_school.base.pk,
+                        sel_depbase_pk=sel_department.base.pk,
+                        sel_examperiod=sel_examperiod,
+                        sel_lvlbase_pk=sel_lvlbase_pk,
+                        sel_subjbase_pk=sel_subjbase_pk,
+                        sel_cluster_pk=sel_cluster_pk)
+
+                    if logging_on:
+                        logger.debug('     sel_examperiod: ' + str(sel_examperiod))
+                        logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                        logger.debug('     sel_subject_pk: ' + str(sel_subject_pk))
+
+                        row_count = len(grade_exam_rows)
+                        logger.debug('row_count:      ' + str(row_count))
+                        if row_count:
+                            for row in grade_exam_rows:
+                                logger.debug('row:      ' + str(row))
+                    """"
+                    row:   {'grade_id': 22459, 'examperiod': 1, 'ce_exam_blanks': None, 
+                            'ce_exam_result': '0;39#1|1;2|2;3|3;4|4;5#3|1;a|2;b|3;b|4;0|5;1|6;x|7;x|8;x#4|1;1|2;1|3;1#6|1;1|2;a|3;1|4;1|5;1|6;a|7;x#7|1;1#9|1;a|2;1|3;1|4;a|5;x|6;c|7;1#10|1;6#12|1;a|2;a|3;a|4;1|5;1|6;a|7;a|8;1',
+                             'ce_exam_auth1by_id': 719, 'ce_exam_auth2by_id': 498, 
+                             'ce_exam_published_id': None,  'ce_exam_blocked': False, 
+                             'dep_code': 'Vsbo', 'lvl_code': 'PBL', 
+                             'ceex_exam_id': 117, 'ceex_amount': 39, 'ceex_blanks': None, 'ceex_subj_code': 'bw'}
+                    row:   {'grade_id': 22539, 'examperiod': 1, 'ce_exam_blanks': None, 'ce_exam_result': None, 
+                            'ce_exam_auth1by_id': None, 'ce_exam_auth2by_id': None, 'ce_exam_published_id': None, 'ce_exam_blocked': False, 
+                            'dep_code': 'Vsbo', 'lvl_code': 'PBL', 
+                            'ceex_exam_id': 117, 'ceex_amount': 39, 'ceex_blanks': None, 'ceex_subj_code': 'bw'}
+
                     """
-                    upload_dict{'form': 'grade_exam', 'now_arr': [2022, 4, 24, 15, 9], 'mode': 'approve_test'}
-                    """
-
-    # - get selected mode. Modes are 'approve_test', 'approve_save', 'approve_reset',
-                    mode = upload_dict.get('mode')
-                    form_name = upload_dict.get('form')
-                    is_reset = True if '_reset' in mode else False
-                    is_test = True if '_test' in mode else False
-
-     # - get grade_pk. It only has value when a single grade is approved
-                    # not necessary. Single grade exams are approved in GradeUploadView.update_grade_instance, field 'auth_index'
-
-                    auth_index = upload_dict.get('auth_index')
-
-                    if auth_index:
-                        requsr_auth = 'auth' + str(auth_index)
-
-    # - check if auth_index is in requsr_usergroups_list, to be on the safe side PR2022-04-20
-                        if requsr_auth in requsr_usergroups_list:
-
-    # - check if user is is_role_same_school > happens after sel_school is retrieved
-                            if logging_on:
-                                logger.debug('permit_list: ' + str(permit_list))
-                                logger.debug('has_permit:  ' + str(has_permit))
-
-    # - get selected examyear, school and department from usersettings
-                            sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                                dl.get_selected_ey_school_dep_from_usersetting(
-                                    request=request,
-                                    corr_insp_may_edit=False
+                    grade_exams_tobe_updated_list = []
+                    count_dict = {}
+                    if grade_exam_rows:
+# +++ create new published_instance.
+                        # only save it when it is not a test
+                        # no file will be attached when submitting grade_exam. Published_id is only needed to indicate that exam is submitted and keep date submission
+                        published_instance = None
+                        published_pk = None
+                        file_name = None
+                        if not is_test:
+                            # get level
+                            sel_level = None
+                            if sel_lvlbase_pk:
+                                sel_level = subj_mod.Level.objects.get_or_none(
+                                    base_id=sel_lvlbase_pk,
+                                    examyear=sel_examyear
                                 )
+                            now_arr = upload_dict.get('now_arr')
+                            published_instance = grade_views.create_published_instance(
+                                sel_examyear=sel_examyear,
+                                sel_school=sel_school,
+                                sel_department=sel_department,
+                                sel_level=sel_level,
+                                sel_examtype='ce',
+                                sel_examperiod=sel_examperiod,
+                                is_test=is_test,
+                                now_arr=now_arr,
+                                request=request
+                            )
+                            if published_instance:
+                                published_pk = published_instance.pk
+                                file_name = published_instance.name
 
-                            if err_list:
-                                msg_html = ''.join(("<div class='p-2 border_bg_warning'>", '<br>'.join(err_list), '</>'))
-                            else:
+                        if logging_on:
+                            logger.debug('published_pk: ' + str(published_pk))
+                            logger.debug('file_name:    ' + str(file_name))
 
-        # - check if user is same_school
-                                is_role_same_school = req_usr.is_role_school and sel_school and req_usr.schoolbase and req_usr.schoolbase.pk == sel_school.base_id
+# +++++ loop through grade_exam_rows
+                        for grade_exam_dict in grade_exam_rows:
+                            approve_grade_exam(
+                                request=request,
+                                grade_exam_dict=grade_exam_dict,
+                                requsr_auth=requsr_auth,
+                                is_test=is_test,
+                                is_reset=is_reset,
+                                count_dict=count_dict,
+                                grade_exams_tobe_updated_list=grade_exams_tobe_updated_list
+                            )
+# +++++  end of loop through  exams
+                    update_wrap['approve_count_dict'] = count_dict
 
-                                if logging_on:
-                                    logger.debug('upload_dict' + str(upload_dict))
-                                    logger.debug('     mode:                ' + str(mode))
-                                    logger.debug('     is_test:             ' + str(is_test))
-                                    logger.debug('     sel_examyear:        ' + str(sel_examyear))
-                                    logger.debug('     sel_school:          ' + str(sel_school))
-                                    logger.debug('     sel_department:      ' + str(sel_department))
-                                    logger.debug('     req_usr.schoolbase:  ' + str(req_usr.schoolbase))
-                                    logger.debug('     is_role_same_school: ' + str(is_role_same_school))
+# - create msg_html with info of rows
+                    is_approve = True
+                    msg_html = create_exam_approve_submit_msg_list(
+                        req_usr=req_usr,
+                        count_dict=count_dict,
+                        requsr_auth=requsr_auth,
+                        is_approve=is_approve,
+                        is_test=is_test,
+                        is_grade_exam=True
+                    )
+    # get updated_rows
+                    if not is_test and grade_exams_tobe_updated_list:
+                        updated_grade_pk_list = batch_approve_grade_exam_rows(
+                            request=request,
+                            grade_exams_tobe_updated_list=grade_exams_tobe_updated_list,
+                            requsr_auth=requsr_auth
+                        )
+                        if updated_grade_pk_list:
+                            rows = grade_views.create_grade_with_ete_exam_rows(
+                                sel_examyear_pk=sel_examyear.pk,
+                                sel_schoolbase_pk=sel_school.base_id,
+                                sel_depbase_pk=sel_department.base_id,
+                                sel_examperiod=sel_examperiod,
+                                request=request,
+                                grade_pk_list=updated_grade_pk_list
+                            )
 
-        # - get selected examperiod from usersetting
-                                sel_examperiod, sel_lvlbase_pk, sel_subject_pk, sel_cluster_pk = None, None, None, None
-                                selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                                if selected_pk_dict:
-                                    sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
-                                    sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
-                                    sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
-                                    sel_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+                            if rows:
+                                # must return 'updated_grade_rows', not 'updated_grade_exam_rows'
+                                # because single approve returns 'updated_grade_rows'
+                                update_wrap['updated_grade_rows'] = rows
 
-        # +++ get selected grade_exam_rows
-                                sel_examperiod = sel_examperiod if sel_examperiod in (1, 2) else None
-                                # exclude published rows??
-                                # when published_id has value it means that admin has published the exam, so it is visible for the schools.
-                                # submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
-
-                                grade_exam_rows = get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_examperiod, request)
-
-                                if logging_on:
-                                    logger.debug('     sel_examperiod: ' + str(sel_examperiod))
-                                    logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
-                                    logger.debug('     sel_subject_pk: ' + str(sel_subject_pk))
-
-                                    row_count = len(grade_exam_rows)
-                                    logger.debug('row_count:      ' + str(row_count))
-
-                                updated_exam_pk_list = []
-                                count_dict = {}
-                                if grade_exam_rows:
-                                    # +++ create new published_instance. Only save it when it is not a test
-                                    # file_name will be added after creating Ex-form
-                                    published_instance = None
-                                    published_instance_pk = None
-
-        # +++++ loop through exams
-                                    for grade_exam in grade_exam_rows:
-                                        approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_pk_list, request)
-
-                                    # - add rows to exam_rows, to be sent back to page
-                                        # to increase speed, dont create return rows but refresh page after finishing this request
-
-                                # +++++  end of loop through  exams
-                                        update_wrap['approve_count_dict'] = count_dict
-
-        # - create msg_html with info of rows
-                                msg_html = create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
-                # get updated_rows
-                                if not is_test and updated_exam_pk_list:
-                                    rows = create_ete_exam_rows(
-                                        req_usr=req_usr,
-                                        sel_examyear_pk=sel_examyear.pk,
-                                        sel_depbase_pk=sel_department.base_id,
-                                        append_dict={},
-                                        exam_pk_list=updated_exam_pk_list)
-                                    if rows:
-                                        update_wrap['updated_ete_exam_rows'] = rows
-
-                                    # +++++ create Ex1 form
-
-                                if is_test:
-                                    committed = count_dict.get('committed', 0)
-                                    if committed:
-                                        update_wrap['test_is_ok'] = True
+                    if is_test:
+                        committed = count_dict.get('committed', 0)
+                        if committed:
+                            update_wrap['test_is_ok'] = True
 
 # - add  msg_html to update_wrap
         update_wrap['approve_msg_html'] = msg_html
 
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# --- end of ExamApproveGradeExamView
+# --- end of ExamApproveOrSubmitGradeExamView
 
 
-def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test, is_grade_exam=False):
-    logging_on = False  # s.LOGGING_ON
+
+def batch_approve_grade_exam_rows(request, grade_exams_tobe_updated_list, requsr_auth):
+    #PR2020-04-25
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('  ----- create_exam_approve_msg_list -----')
-        logger.debug('count_dict: ' + str(count_dict))
-        logger.debug('is_test: ' + str(is_test))
+        logger.debug(' ----- batch_approve_grade_exam_rows -----')
+        logger.debug('grade_exams_tobe_updated_list:    ' + str(grade_exams_tobe_updated_list))
+        logger.debug('requsr_auth:    ' + str(requsr_auth))
+        # grade_exams_tobe_updated_list: [[22961, 146], [21701, 146], [22980, 146]]
+
+    updated_grade_exam_pk_list = []
+
+    if grade_exams_tobe_updated_list and requsr_auth and request.user:
+        # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
+
+        # dont update modified field when approving.
+        #  was: modifiedby_pk_str = str(request.user.pk)
+        #       modifiedat_str = str(timezone.now())
+        auth_field = ''.join(("ce_exam_", requsr_auth, 'by_id'))
+
+        """
+        # you can define the types by casting the values of the first row:
+        CREATE TEMP TABLE lookup (key, val) AS
+        VALUES 
+            (0::bigint, -99999::int), 
+            (1, 100) ;
+        """
+        # grade_exams_tobe_updated_list: [[22961, 146], [21701, 146], [22980, 146]]
+
+        try:
+            sql_list = ["CREATE TEMP TABLE gr_update (grade_id, auth_id) AS",
+                        "VALUES (0::INT, 0::INT)"]
+
+            for row in grade_exams_tobe_updated_list:
+                grade_id= str(row[0])
+                auth_id = str(row[1]) if row[1] else 'NULL'
+
+                sql_list.append(''.join((", (", grade_id, ", ", auth_id, ")")))
+
+            sql_list.extend((
+                "; UPDATE students_grade AS gr",
+                "SET", auth_field, "= gr_update.auth_id",
+                # dont update modified field when approving. Was: "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '" , modifiedat_str, "'",
+                "FROM gr_update",
+                "WHERE gr_update.grade_id = gr.id",
+                "RETURNING gr.id, gr.studentsubject_id;"
+                ))
+
+            sql = ' '.join(sql_list)
+
+            if logging_on:
+                logger.debug('@@@@@@@@@@@@@@@@@ sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+
+                for row in rows:
+                    updated_grade_exam_pk_list.append(row[0])
+                    if logging_on:
+                        logger.debug('............. row: ' + str(row))
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('updated_grade_exam_pk_list:' + str(updated_grade_exam_pk_list))
+    return updated_grade_exam_pk_list
+# - end of batch_approve_grade_exam_rows
+
+
+def create_exam_approve_submit_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test, is_grade_exam=False):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ----- create_exam_approve_submit_msg_list -----')
+        logger.debug('     count_dict: ' + str(count_dict))
+        logger.debug('     is_approve: ' + str(is_approve))
+        logger.debug('     is_test: ' + str(is_test))
+        logger.debug('     is_grade_exam: ' + str(is_grade_exam))
 
     exam_count = count_dict.get('count', 0)
-    committed = count_dict.get('committed', 0)
-    saved = count_dict.get('saved', 0)
-    saved_error = count_dict.get('saved_error', 0)
+    no_exam = count_dict.get('no_exam', 0)
+    exam_error = count_dict.get('exam_error', 0)
     already_published = count_dict.get('already_published', 0)
     has_blanks = count_dict.get('has_blanks', 0)
-    auth_missing = count_dict.get('auth_missing', 0)
+    reset = count_dict.get('reset', 0)
     already_approved = count_dict.get('already_approved', 0)
     double_approved = count_dict.get('double_approved', 0)
+    committed = count_dict.get('committed', 0)
+
+    saved = count_dict.get('saved', 0)
+    saved_error = count_dict.get('saved_error', 0)
+    auth_missing = count_dict.get('auth_missing', 0)
 
     if logging_on:
         logger.debug('.....exam_count: ' + str(exam_count))
@@ -2158,6 +2339,14 @@ def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, i
         logger.debug('.....auth_missing: ' + str(auth_missing))
         logger.debug('.....already_approved: ' + str(already_approved))
         logger.debug('.....double_approved: ' + str(double_approved))
+
+    def get_subjects_count_text(count):
+        exam_str = str(_('Subject') if count == 1 else _('Subjects')).lower()
+        count_str = str(pgettext_lazy('geen', 'no ') if not count else count)
+        return ' '.join((count_str, exam_str))
+
+    def get_subjects_have_text(count):
+        return ' '.join((get_subjects_count_text(count), ' ', get_have_txt(count)))
 
     def get_exam_count_text(count):
         exam_str = str(_('exam') if count == 1 else _('exams'))
@@ -2233,6 +2422,15 @@ def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, i
             else:
                 msg_list.append('<li>' + str(_("%(val)s already published") %
                                              {'val': get_exams_are_text(already_published)}) + ';</li>')
+
+        if no_exam:
+            msg_list.append('<li>' + str(_("%(val)s no exam") %
+                                         {'val': get_subjects_have_text(no_exam)}) + ';</li>')
+
+        if exam_error:
+            msg_list.append('<li>' + str(_("%(val)s errors in the exam") %
+                                         {'val': get_exams_have_text(exam_error)}) + ';</li>')
+
         if has_blanks:
             msg_list.append('<li>' + str(_("%(val)s no questions or blank questions") %
                                          {'val': get_exams_have_text(has_blanks)}) + ';</li>')
@@ -2346,13 +2544,13 @@ def create_exam_approve_msg_list(req_usr, count_dict, requsr_auth, is_approve, i
 
     msg_html = ''.join(msg_list)
     return msg_html
-# - end of create_exam_approve_msg_list
+# - end of create_exam_approve_submit_msg_list
 
 
 def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_pk_list, request):
     # PR2022-01-31
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_exam -----')
         logger.debug('requsr_auth:  ' + str(requsr_auth))
@@ -2455,21 +2653,26 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 # - end of approve_exam
 
 
-def get_approve_grade_exam_rows(examyear, school, department, examperiod, request):  #PR2022-03-11
-    logging_on = s.LOGGING_ON
+# def get_approve_grade_exam_rows(examyear, school, department, examperiod, request):  #PR2022-03-11
+
+def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod,
+                                  sel_lvlbase_pk=None, sel_subjbase_pk=None, sel_cluster_pk=None, grade_pk=None):
+    # PR2022-04-25
+
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- get_approve_grade_exam_rows -----')
 
     # ATTENTION: ce_exam is linked with curacao subject, while SXM students are connected with sxm subjects.
-    # therefore don't link grade
 
-    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'experiod': examperiod}
+    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk, 'experiod': sel_examperiod}
     sql_list = ["SELECT grd.id AS grade_id, grd.examperiod, grd.ce_exam_blanks, grd.ce_exam_result,",
                 "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id,",
                 "grd.ce_exam_published_id, grd.ce_exam_blocked,",
 
                 "depbase.code AS dep_code, lvlbase.code AS lvl_code,",
-                "ce_exam.id AS ceex_exam_id, ce_exam.amount AS ceex_exam_amount, subjbase.code AS ceex_subj_code, subjbase.code AS ceex_subj_code",
+                "ce_exam.id AS ceex_exam_id, ce_exam.amount AS ceex_amount, ce_exam.blanks AS ceex_blanks,",
+                "subjbase.code AS ceex_subj_code, subjbase.code AS ceex_subj_code",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -2489,21 +2692,10 @@ def get_approve_grade_exam_rows(examyear, school, department, examperiod, reques
                 "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
                 "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
-                "WHERE stud.school_id = %(sch_id)s::INT",
-                "AND stud.department_id = %(dep_id)s::INT",
-                "AND grd.examperiod = %(experiod)s::INT",
+                "WHERE school.base_id = %(sb_id)s::INT AND depbase.id = %(db_id)s::INT",
+                "AND ce_exam.ete_exam AND grd.examperiod = %(experiod)s::INT",
                 "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                 ]
-
-    # --- filter on usersetting
-    sel_lvlbase_pk, sel_sctbase_pk, sel_subjbase_pk, sel_cluster_pk, sel_student_pk = None, None, None, None, None
-    selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-    if selected_pk_dict:
-        sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
-        sel_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
-        sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
-        sel_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
-        sel_student_pk = selected_pk_dict.get(c.KEY_SEL_STUDENT_PK)
 
     if sel_lvlbase_pk:
         sql_keys['lvlbase_pk'] = sel_lvlbase_pk
@@ -2533,55 +2725,74 @@ def get_approve_grade_exam_rows(examyear, school, department, examperiod, reques
 # end of get_approve_grade_exam_rows
 
 
-def approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_pk_list, request):
-    # PR2022-03-11
-    # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
+def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_reset, count_dict, grade_exams_tobe_updated_list):
+    # PR2022-04-25
+    # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_grade_exam -----')
-        logger.debug('requsr_auth:  ' + str(requsr_auth))
-        logger.debug('is_reset:     ' + str(is_reset))
+        logger.debug('requsr_auth:    ' + str(requsr_auth))
+        logger.debug('is_reset:       ' + str(is_reset))
+        logger.debug('grade_exam_dict: ' + str(grade_exam_dict))
 
-    if grade_exam:
+    """
+    grade_exam_dict:  
+        {'grade_id': 22459, 'examperiod': 1, 
+        'ce_exam_blanks': None, 
+        'ce_exam_result': '0;39#1|1;2|2;3|3;4|4;5#3|1;a|2;b|3;b|4;0|5;1|6;x|7;x|8;x#4|1;1|2;1|3;1#6|1;1|2;a|3;1|4;1|5;1|6;a|7;x#7|1;1#9|1;a|2;1|3;1|4;a|5;x|6;c|7;1#10|1;6#12|1;a|2;a|3;a|4;1|5;1|6;a|7;a|8;1', 
+        'ce_exam_auth1by_id': None, 'ce_exam_auth2by_id': 498, 'ce_exam_published_id': None, 
+        'ce_exam_blocked': False, 'dep_code': 'Vsbo', 'lvl_code': 'PBL', 
+        'ceex_exam_id': 117, 'ceex_amount': 39,  'ceex_blanks': None,  'ceex_subj_code': 'bw'}
+    """
+    if grade_exam_dict:
         req_usr = request.user
 
         af.add_one_to_count_dict(count_dict, 'count')
 
 # - skip if this studsubj is already published
-        is_published = True if grade_exam.get('ce_exam_published_id') else False
+        no_exam = not grade_exam_dict.get('ceex_exam_id')
+        no_questions = not grade_exam_dict.get('ceex_amount')
+        has_blank_questions = True if grade_exam_dict.get('ceex_blanks') else False
+        is_published = True if grade_exam_dict.get('ce_exam_published_id') else False
         if logging_on:
+            logger.debug('no_exam:    ' + str(no_exam))
+            logger.debug('no_questions:    ' + str(no_questions))
+            logger.debug('has_blank_questions:    ' + str(has_blank_questions))
             logger.debug('is_published:    ' + str(is_published))
 
-        if is_published:
+        if no_exam:
+            af.add_one_to_count_dict(count_dict, 'no_exam')
+        elif no_questions or has_blank_questions:
+            af.add_one_to_count_dict(count_dict, 'exam_error')
+        elif is_published:
             af.add_one_to_count_dict(count_dict, 'already_published')
         else:
-            no_exam = True if grade_exam.get('ceex_exam_id') else False
-            no_questions = True if grade_exam.get('ceex_exam_amount') else False
-            has_blank_questions = True if grade_exam.get('ce_exam_blanks') else False
+            has_result = True if grade_exam_dict.get('ce_exam_result') else False
+            has_blank_answers = True if grade_exam_dict.get('ce_exam_blanks') else False
 
             if logging_on:
-                logger.debug('     no_exam: ' + str(no_exam))
-                logger.debug('     no_questions:      ' + str(no_questions))
-                logger.debug('     has_blank_questions:      ' + str(has_blank_questions))
+                logger.debug('     no_exam:             ' + str(no_exam))
+                logger.debug('     no_questions:        ' + str(no_questions))
+                logger.debug('     has_result:           ' + str(has_result))
+                logger.debug('     has_blank_answers: ' + str(has_blank_answers))
 
             # dont skip this when is_reset
-            if not is_reset and (no_questions or has_blank_questions):
+            if not is_reset and (not has_result or has_blank_answers):
                 af.add_one_to_count_dict(count_dict, 'has_blanks')
             else:
                 requsr_authby_field = 'ce_exam_' + requsr_auth + 'by_id'
 
     # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
-                auth1by = grade_exam.get('ce_exam_auth1by_id')
-                auth2by = grade_exam.get('ce_exam_auth2by_id')
+                auth1by = grade_exam_dict.get('ce_exam_auth1by_id')
+                auth2by = grade_exam_dict.get('ce_exam_auth2by_id')
                 if logging_on:
                     logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
                     logger.debug('auth1by:      ' + str(auth1by))
                     logger.debug('auth2by:      ' + str(auth2by))
-                    logger.debug('grade_exam:      ' + str(grade_exam))
 
                 save_changes = False
 
-                has_old_authby_value = True if grade_exam.get(requsr_authby_field) else False
+                has_old_authby_value = True if grade_exam_dict.get(requsr_authby_field) else False
 
     # - remove authby when is_reset
                 if is_reset:
@@ -2589,8 +2800,6 @@ def approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, u
                         # setattr(exam, requsr_authby_field, None)
                         af.add_one_to_count_dict(count_dict, 'reset')
                         save_changes = True
-                        #if exam.pk not in updated_exam_pk_list:
-                        #    updated_exam_pk_list.append(exam.pk)
                 else:
 
     # - skip if this exam is already approved
@@ -2627,23 +2836,37 @@ def approve_grade_exam(grade_exam, requsr_auth, is_test, is_reset, count_dict, u
                             logger.debug('     auth2by:     ' + str(auth2by))
     # - set value of requsr_authby_field
                 if save_changes:
-                    grade_pk = grade_exam.get('grade_id')
-                    if grade_pk not in updated_exam_pk_list:
-                        updated_exam_pk_list.append(grade_pk)
+                    grade_pk = grade_exam_dict.get('grade_id')
+                    if grade_pk not in grade_exams_tobe_updated_list:
+
+                        # NIU ce_exam has no field 'status'
+                        #   saved_status_sum = grade_exam_dict.get('status')
+
+                        new_auth_id = req_usr.pk if not is_reset else None
+                        if requsr_auth == 'auth1':
+                            auth1by_id = new_auth_id
+                        elif requsr_auth == 'auth2':
+                            auth2by_id = new_auth_id
+                        # grdade_exam doesnt have to be approved by examiner, maybe next year
+                        elif requsr_auth == 'auth3':
+                            auth3by_id = new_auth_id
+
+                        # NIU ce_exam has no field 'status'
+                        #   calculate status_sum from auth_id, not by changing saved status_sum
+
+                        # add pk and authby_id to tobe_updated_list
+                        tobe_updated = [grade_pk, new_auth_id]  # NIU: , new_status_sum]
+                        grade_exams_tobe_updated_list.append(tobe_updated)
 
                     if is_test:
                         af.add_one_to_count_dict(count_dict, 'committed')
                     else:
     # - save changes
-                        try:
-                            #exam.save(request=request)
-                            af.add_one_to_count_dict(count_dict, 'saved')
-                        except Exception as e:
-                            logger.error(getattr(e, 'message', str(e)))
-                            af.add_one_to_count_dict(count_dict, 'saved_error')
+                        af.add_one_to_count_dict(count_dict, 'saved')
 
     if logging_on:
         logger.debug('count_dict: ' + str(count_dict))
+
 # - end of approve_grade_exam
 
 

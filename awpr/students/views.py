@@ -1397,11 +1397,11 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
         if req_usr and req_usr.country and req_usr.schoolbase:
             permit_list = req_usr.permit_list('page_studsubj')
             if permit_list:
-                requsr_usergroup_list = req_usr.usergroup_list
                 # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-                is_auth1 = 'auth1' in requsr_usergroup_list
-                is_auth2 = 'auth2' in requsr_usergroup_list
+                requsr_usergroup_list = req_usr.usergroup_list
+                is_auth1 = (requsr_usergroup_list and 'auth1' in requsr_usergroup_list)
+                is_auth2 = (requsr_usergroup_list and'auth2' in requsr_usergroup_list)
                 if is_auth1 + is_auth2 == 1:
                     if is_auth1:
                         requsr_auth = 'auth1'

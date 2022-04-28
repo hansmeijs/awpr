@@ -257,10 +257,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('orderlist_rows'):
                     datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, request)
 
-# ----- grade_with_exam_rows
-                if datalist_request.get('grade_with_exam_rows'):
+# ----- grade_exam_rows
+                if datalist_request.get('grade_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
-                        datalists['grade_with_exam_rows'] = gr_vw.create_grade_with_ete_exam_rows(
+                        datalists['grade_exam_rows'] = gr_vw.create_grade_with_ete_exam_rows(
                             sel_examyear_pk=sel_examyear.pk,
                             sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
@@ -268,6 +268,18 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             setting_dict=new_setting_dict,
                             request=request
                         )
+
+# ----- grade_exam_result_rows
+                if datalist_request.get('grade_exam_result_rows'):
+                    if sel_examyear and sel_schoolbase and sel_depbase:
+                        datalists['grade_exam_result_rows'] = gr_vw.create_grade_exam_result_rows(
+                            sel_examyear_code=sel_examyear.code,
+                            sel_examperiod=sel_examperiod,
+                            sel_depbase_pk=sel_depbase.pk,
+                            request=request
+                        )
+
+
 # ----- grades
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:

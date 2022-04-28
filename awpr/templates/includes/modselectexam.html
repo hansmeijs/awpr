@@ -13,11 +13,17 @@
                 </div>
 
                 <div class="modal-body">
+
                     <div class="modal_container">
                         <table class="table tsa_tbl mx-1 my-1">
                             <tbody id="id_MSELEX_tblBody_select">
                             </tbody>
                         </table>
+                    </div>
+                    <div id="id_MSELEX_info_container">
+                        <p class="mx-2">
+                            <small>{% trans "If you want to enter the answers of the exam, you must close this window and click in the table on the name of the candidate." %}</small>
+                        </p>
                     </div>
                 </div>
 
@@ -27,7 +33,7 @@
                     </div>
                     <div class="content_subheader_right">
                         <button id="id_MSELEX_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                        <button id="id_MSELEX_btn_save" class="btn btn-primary">{% trans 'OK' %}</button>
+                        <button id="id_MSELEX_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
                     </div>
                 </div>
 

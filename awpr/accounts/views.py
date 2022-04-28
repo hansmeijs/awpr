@@ -689,10 +689,9 @@ def account_activation_sent(request):
 
 # === SignupActivateView ===================================== PR2020-09-29
 def SignupActivateView(request, uidb64, token):
-    #logger.debug('  === SignupActivateView =====')
-    #logger.debug('request: ' + str(request))
-    #logger.debug('uidb64: ' + str(uidb64))
-    #logger.debug('token: ' + str(token))
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  === SignupActivateView =====')
 
     # SignupActivateView is called when user clicks on link 'Activate your AWP-online account'
     # it returns the page 'signup_setpassword'
@@ -706,11 +705,14 @@ def SignupActivateView(request, uidb64, token):
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
         user = User.objects.get_or_none(pk=uid)
-    except (TypeError, ValueError, OverflowError):
+    except (TypeError, ValueError, OverflowError) as e:
+        logger.error(getattr(e, 'message', str(e)))
         user = None
-    #logger.debug('user: ' + str(user))
-    #logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
-    #logger.debug('user.activated: ' + str(user.activated))
+
+    if logging_on:
+        logger.debug('     user:             ' + str(user))
+        logger.debug('     is_authenticated: ' + str(user.is_authenticated))
+        logger.debug('     activated:        ' + str(user.activated))
 
 # - get language from user
     # PR2019-03-15 Debug: language gets lost, get request.user.lang again
@@ -747,7 +749,9 @@ def SignupActivateView(request, uidb64, token):
 
 # - check activation_token
         activation_token_ok = account_activation_token.check_token(user, token)
-        #logger.debug('activation_token_ok: ' + str(activation_token_ok))
+
+        if logging_on:
+            logger.debug('activation_token_ok: ' + str(activation_token_ok))
 
         if not activation_token_ok:
             update_wrap['msg_01'] = _('The link to active your account is no longer valid.')
@@ -756,23 +760,24 @@ def SignupActivateView(request, uidb64, token):
 
     # don't activate user and company until user has submitted valid password
     update_wrap['activation_token_ok'] = activation_token_ok
-    #logger.debug('update_wrap: ' + str(update_wrap))
 
     if request.method == 'POST':
-        #logger.debug('request.POST' + str(request.POST))
+        if logging_on:
+            logger.debug('request.POST' + str(request.POST))
+
         form = SetPasswordForm(user, request.POST)
-        #logger.debug('form: ' + str(form))
 
         form_is_valid = form.is_valid()
 
         non_field_errors = af.get_dict_value(form, ('non_field_errors',))
         field_errors = [(field.label, field.errors) for field in form]
-        #logger.debug('non_field_errors' + str(non_field_errors))
-        #logger.debug('field_errors' + str(field_errors))
-        #logger.debug('form_is_valid' + str(form_is_valid))
+
+        if logging_on:
+            logger.debug('     non_field_errors: ' + str(non_field_errors))
+            logger.debug('     field_errors:   ' + str(field_errors))
+            logger.debug('     form_is_valid:  ' + str(form_is_valid))
 
         if form_is_valid:
-            #logger.debug('form_is_valid' + str(form_is_valid))
             user = form.save()
             update_session_auth_hash(request, user)  # Important!
 
@@ -787,25 +792,21 @@ def SignupActivateView(request, uidb64, token):
             user.activatedat = datetime_activated
             user.save()
             newuser_activated = user.activated
-            #logger.debug('user.saved: ' + str(user))
+            if logging_on:
+                logger.debug('     newuser_activated: ' + str(newuser_activated))
 
-            #login_user = authenticate(username=user.username, password=password1)
-            #login(request, login_user)
             login(request, user)
-            #logger.debug('user.login' + str(user))
-            #if request.user:
-            #    update_wrap['msg_01'] = _("Congratulations.")
-            #    update_wrap['msg_02'] = _("Your account is succesfully activated.")
-           #     update_wrap['msg_03'] = _('You are now logged in to AWP-online.')
+
         else:
-            # TODO check if this is correct when user enters wrong password PR2021-02-05
-            form = SetPasswordForm(user)
-            #logger.debug('form: ' + str(form))
             update_wrap['form'] = form
+
+            if logging_on:
+                logger.debug('     form: ' + str(form))
+
     else:
         form = SetPasswordForm(user)
-        #logger.debug('form: ' + str(form))
         update_wrap['form'] = form
+
     update_wrap['newuser_activated'] = newuser_activated
     # PR2021-02-05 debug: when a new user tries to activat his account
     #                     and a different user is already logged in in the same browser,
@@ -813,12 +814,12 @@ def SignupActivateView(request, uidb64, token):
     #                     use variable 'newuser_activated' and add this error trap to form:
     #                     {% elif user.is_authenticated and user.activated and not newuser_activated %}
     #                     instead of  {% elif user.is_authenticated %}
-    #logger.debug('activation_token_ok: ' + str(activation_token_ok))
-    #logger.debug('user.is_authenticated: ' + str(user.is_authenticated))
-    #logger.debug('user.activated: ' + str(user.activated))
-    #logger.debug('newuser_activated: ' + str(newuser_activated))
-    #logger.debug('update_wrap: ' + str(update_wrap))
+
     # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
+
+    if logging_on:
+        logger.debug('update_wrap: ' + str(update_wrap))
+
     return render(request, 'signup_setpassword.html', update_wrap)
 # === end of SignupActivateView =====================================
 
@@ -2464,7 +2465,7 @@ def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None,
     #       else:
     #           --> no filter
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug('----- get_userfilter_allowed_cluster ----- ')

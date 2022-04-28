@@ -38,7 +38,14 @@ from upload import views as upload_views
 
 from accounts.forms import SchoolbaseAuthenticationForm
 
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
+
 urlpatterns = [
+
+# PR2022-04-26
+    path('sentry-debug/', trigger_error),
 # PR2018-03-20
     #url(r'^login/$', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
 # PR2020-09-25 redirects to schools/views/Loggedin
@@ -306,8 +313,8 @@ urlpatterns = [
         path('copy', subject_views.ExamCopyView.as_view(), name='url_exam_copy'),
 
         path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),
-        path('approve_publish_exam', subject_views.ExamApproveOrPublishView.as_view(), name='url_approve_publish_exam'),
-        path('approve_grade_exam', subject_views.ExamApproveGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
+        path('approve_publish_exam', subject_views.ExamApproveOrPublishExamView.as_view(), name='url_approve_publish_exam'),
+        path('approve_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 
         path('send_email_submit_exam', student_views.SendEmailSubmitExformView.as_view(),  name='url_send_email_submit_exam'),
 

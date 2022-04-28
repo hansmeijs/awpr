@@ -621,6 +621,7 @@ class Grade(sch_mod.AwpBaseModel):
 
     # TODO: field ce_exam_score tobe added, total_score is stored in pescore for now.
     #   the field ce_score stores score after submitting or calculated from n-term
+    #   addd field ce_exam_auth3by
     ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
     ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)

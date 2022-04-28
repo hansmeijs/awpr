@@ -130,12 +130,10 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Assignment_title'] = _('Assignment title')
     dict['Assignment_subjects'] = _('Assignment subjects')
 
-
     dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
     dict['a_candidate'] = _('a candidate')
-
 
     dict['Name'] = _('Name')
     dict['Department'] = _('Department')
@@ -976,6 +974,11 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Awp_calculates_amount'] = _('AWP calculates the number of questions.')
 
+        dict['Schoolcode_2lines'] = _('School\ncode')
+        dict['Number_of_exams'] = _('Number of exams')
+        dict['Submitted_exams'] = _('Number of submitted exams')
+        dict['Average_score_percentage'] = _('Average score percentage')
+
 
         dict['err_list'] = {
             'Amount': _("Amount"),
@@ -1006,7 +1009,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'This_exam_is_submitted': _('This exam is submitted.'),
             'This_exam_is_published': _('This exam is published.'),
+            'This_exam_is_approved': _('This exam is approved.'),
             'You_cannot_change_approval': _('You cannot change the approval.'),
+            'You_cannot_make_changes': _('You cannot make changes.'),
 
             'This_exam_has_no_data': _('This exam has no data.'),
             'You_cannot_approve_the_exam': _('You cannot approve the exam.'),

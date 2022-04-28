@@ -410,7 +410,7 @@ def draw_partex_header(canvas, border, coord, form_text, partex_dict):
 
 def draw_questions(canvas, border, coord, row_height, form_text, partex_assignment_keys_dict):
     # loop through rows of page_header
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_partex_header -----')
         logger.debug('partex_assignment_keys_dict: ' + str(partex_assignment_keys_dict))
@@ -430,6 +430,10 @@ def draw_questions(canvas, border, coord, row_height, form_text, partex_assignme
     amount = partex_assignment_keys_dict.get('amount', 0)
     questions_dict = partex_assignment_keys_dict.get('q')
     scores_dict = partex_assignment_keys_dict.get('s')
+
+    if logging_on:
+        logger.debug('questions_dict: ' + str(questions_dict))
+        logger.debug('scores_dict: ' + str(scores_dict))
 
 # calculate number of rows - 5 columns per row
     number_of_columns = 5
@@ -463,6 +467,12 @@ def draw_question_row(canvas, border, coord, form_text, number_of_columns, numbe
     # coord = [left, top]
     top, right, bottom, left = border[0], border[1], border[2], border[3]
 
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_question_row -----')
+        logger.debug('questions_dict: ' + str(questions_dict))
+        logger.debug('scores_dict: ' + str(scores_dict))
+
     line_height = row_height
     padding_left = 4 * mm
 
@@ -486,6 +496,10 @@ def draw_question_row(canvas, border, coord, form_text, number_of_columns, numbe
             if scores_dict and q_number in scores_dict:
                 score = scores_dict[q_number]
 
+            if logging_on:
+                logger.debug('score: ' + str(score) + str(type(score)))
+                logger.debug('isinstance(score, int): ' + str(isinstance(score, int)))
+
             # lookup in questions_dict
             x_label = left + col_index * col_width
             x_data = x_label + 10 * mm
@@ -505,9 +519,8 @@ def draw_question_row(canvas, border, coord, form_text, number_of_columns, numbe
             canvas.drawString(x_data, y, answer)
 
         # draw text score
-            hex_color = "#000080" if answer else "#000000"
             # score may have value 'n' or 'e'
-            if isinstance(score, int):
+            if score and score not in ('n', 'e'):
                 set_font_timesroman_11_black(canvas)
                 canvas.drawString(x_data + 15*mm , y, str(score))
     coord[1] = y
@@ -716,12 +729,8 @@ all_partex_assignment_keys_list: {
 # - end of get_all_partex_assignment_keys_dict
 
 
-
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-
 def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear, user_lang):  # PR2022-01-29
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_grade_exam -----')
         logger.debug('sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
@@ -753,11 +762,15 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
     amount = sel_exam_instance.amount if sel_exam_instance.amount else 0
 
 # create list of results
-    all_result_dict, total_score, total_blanks = grade_views.get_all_result_with_assignment_dict_from_string(
+    all_result_dict, total_score, total_blanks, has_errors = grade_views.get_all_result_with_assignment_dict_from_string(
         sel_grade_instance, sel_exam_instance)
     if logging_on:
         logger.debug('----- draw_grade_exam -----')
         logger.debug('sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
+        logger.debug('all_result_dict: ' + str(all_result_dict) + ' ' + str(type(all_result_dict)))
+        logger.debug('total_score: ' + str(total_score) + ' ' + str(type(total_score)))
+        logger.debug('total_blanks: ' + str(total_blanks) + ' ' + str(type(total_blanks)))
+        logger.debug('has_errors: ' + str(has_errors) + ' ' + str(type(has_errors)))
 
 # - get dep_abbrev from department
     dep_abbrev = '---'
@@ -827,8 +840,8 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
 
 
 def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all_result_dict):
-    # PR2022-01-29
-    logging_on = False  # s.LOGGING_ON
+    # PR2022-01-29 PR2022-04-27
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_grade_exam_page -----')
 
@@ -869,7 +882,7 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
 
     all_result_partex_dict = all_result_dict.get('partex')
 
-# create a list of partex_pk, sorted by partex names - TODO improve code
+# create a list of partex_pk, sorted by partex names - TODO improve code if possible
     partexpk_list_sorted = []
     partexname_list = []
     partexname_dict = {}
@@ -880,9 +893,12 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
             partexname_list.append(partex_name)
             partexname_dict[partex_name] = partex_pk
     partexname_list.sort()
+
     for partex_name in partexname_list:
         partex_pk = partexname_dict.get(partex_name)
         partexpk_list_sorted.append(partex_pk)
+
+    partex_count = len(partexpk_list_sorted)
 
     # was: for partex_pk, partex_dict in all_result_partex_dict.items():
     for partex_pk in partexpk_list_sorted:
@@ -915,7 +931,7 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
             ))
             draw_grade_exam_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
 
-        draw_grade_partex_header(canvas, border, coord, form_text, partex_dict)
+        draw_grade_partex_header(canvas, border, coord, form_text, partex_dict, partex_count)
 
         draw_questions(canvas, border, coord, row_height, form_text, partex_dict)
 
@@ -997,8 +1013,9 @@ def draw_grade_exam_page_header(canvas, border, coord, text_list, last_modified_
 # - end of draw_grade_exam_page_header
 
 
-def draw_grade_partex_header(canvas, border, coord, form_text, partex_dict):
-    # loop through rows of page_header
+def draw_grade_partex_header(canvas, border, coord, form_text, partex_dict, partex_count):
+    # loop through rows of page_header PR2022-04-27
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_grade_partex_header -----')
@@ -1026,28 +1043,30 @@ def draw_grade_partex_header(canvas, border, coord, form_text, partex_dict):
 
     y -= line_height
 
-# draw partex_name
+# draw partex_name - skip when there is only 1 aprtex
+
+    if partex_count > 1:
     # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
-    set_font_timesbold_11_black(canvas)
-    canvas.drawString(x, y, partex_dict.get('name', '---'))
+        set_font_timesbold_11_black(canvas)
+        canvas.drawString(x, y, partex_dict.get('name', '---'))
 
-# draw label 1
-    blanks = partex_dict.get('blanks', 0)
-    if blanks:
-        set_font_timesroman_11_black(canvas)
-        canvas.drawString(x + 114 * mm, y, form_text.get('blanks', '-') + ':')
+# draw label 1 - skip when there is only 1 aprtex
+        blanks = partex_dict.get('blanks', 0)
+        if blanks:
+            set_font_timesroman_11_black(canvas)
+            canvas.drawString(x + 114 * mm, y, form_text.get('blanks', '-') + ':')
 
-# draw text 1
-        set_font_arial_11_blue(canvas)
-        canvas.drawRightString(x + 144 * mm, y, str(blanks))
-    else:
-        score = partex_dict.get('score', 0)
-        set_font_timesroman_11_black(canvas)
-        canvas.drawString(x + 114 * mm, y, str(_('Score')) + ':')
+    # draw text 1
+            set_font_arial_11_blue(canvas)
+            canvas.drawRightString(x + 144 * mm, y, str(blanks))
+        else:
+            score = partex_dict.get('score', 0)
+            set_font_timesroman_11_black(canvas)
+            canvas.drawString(x + 114 * mm, y, str(_('Score')) + ':')
 
-        # draw text 1
-        set_font_arial_11_blue(canvas)
-        canvas.drawRightString(x + 144 * mm, y, str(score))
+            # draw text 1
+            set_font_arial_11_blue(canvas)
+            canvas.drawRightString(x + 144 * mm, y, str(score))
 
 # draw label amount_cpt
     # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.

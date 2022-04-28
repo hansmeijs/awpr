@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220424.js' %}"></script>
+    <script src="{% static 'js/exams220427.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import220421.js' %}"></script>
 
@@ -115,6 +115,7 @@
                     <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
                     <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'DUO exams' %}</button>
                     <button data-btn="btn_ntermen" class="btn btn-secondary ">{% trans 'N-termen tabel' %}</button>
+                    <button data-btn="btn_results" class="btn btn-secondary ">{% trans 'Submitted exams' %}</button>
                 {% else %}
                     <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
                     {% if not no_centralexam %}

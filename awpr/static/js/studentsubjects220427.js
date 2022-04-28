@@ -271,6 +271,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  MSEX MOD SELECT CLUSTER ------------------------------
         const el_MSELEX_header = document.getElementById("id_MSELEX_header");
+        const el_MSELEX_info_container = document.getElementById("id_MSELEX_info_container");
+
         const el_MSELEX_tblBody_select = document.getElementById("id_MSELEX_tblBody_select");
         const el_MSELEX_btn_cancel = document.getElementById("id_MSELEX_btn_cancel");
         const el_MSELEX_btn_save = document.getElementById("id_MSELEX_btn_save");
@@ -3984,6 +3986,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         el_MSELEX_header.innerText = loc.Select_cluster;
 
+        // info is for select exam, not when selecting cluster
+        add_or_remove_class(el_MSELEX_info_container, cls_hide, true);
+
+        console.log( "el_MSELEX_info_container", el_MSELEX_info_container);
+
         if (permit_dict.permit_crud && permit_dict.requsr_same_school){
             const tblRow = t_get_tablerow_selected(el_input)
             const stud_pk_int = get_attr_from_el_int(tblRow, "data-stud_pk");
@@ -4044,7 +4051,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSELEX_FillSelectTable  ================ PR2022-01-27
     function MSELEX_FillSelectTable() {
-        console.log( "===== MSELEX_FillSelectTable ========= ");
+        //console.log( "===== MSELEX_FillSelectTable ========= ");
 
         const tblBody_select = el_MSELEX_tblBody_select;
         tblBody_select.innerText = null;
@@ -4053,11 +4060,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  loop through cluster_rows
         if(cluster_rows && cluster_rows.length){
         console.log( "cluster_rows", cluster_rows);
-        console.log( "mod_MSELEX_dict.subj_pk", mod_MSELEX_dict.subj_pk);
+        //console.log( "mod_MSELEX_dict.subj_pk", mod_MSELEX_dict.subj_pk);
             for (let i = 0, data_dict; data_dict = cluster_rows[i]; i++) {
             // add only when cluster has same subject as studsubj
                 const show_row = (data_dict.subject_id === mod_MSELEX_dict.subj_pk);
-        console.log( "show_row", show_row);
+        //console.log( "show_row", show_row);
                 if (show_row){
                     row_count += 1;
                     MSELEX_FillSelectRow(data_dict, tblBody_select, -1);
@@ -4084,8 +4091,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSELEX_FillSelectRow  ================ PR2020-10-27
     function MSELEX_FillSelectRow(data_dict, tblBody_select, row_index) {
-        console.log( "===== MSELEX_FillSelectRow ========= ");
-        console.log( "data_dict: ", data_dict);
+        //console.log( "===== MSELEX_FillSelectRow ========= ");
+        //console.log( "data_dict: ", data_dict);
 
         const cluster_pk_int = data_dict.id;
         const code_value = (data_dict.name) ? data_dict.name : "---"

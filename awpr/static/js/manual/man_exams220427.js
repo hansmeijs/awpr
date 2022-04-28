@@ -20,7 +20,8 @@ const man_exams = {
                 "Alleen wanneer bij een vak meerdere examens beschikbaar zijn, dient de school het juiste examen te kiezen. ",
                 "Dit is het geval bij de praktijkexamens, die meerdere versies hebben;</li>",
                 "<li>De school vult alle antwoorden van de vragen in. AWP controleert of het ingevulde antwoord is toegestaan;</li>",
-                "<li>Nadat de antwoorden van alle examens zijn ingevoerd, dienen ze te worden goedgekeurd en ingediend. De procedure hiervoor is hetzelfde als bij het indienen van het Ex2-formulier;</li>",
+                "<li>Nadat de antwoorden van alle examens zijn ingevoerd, dienen ze te worden goedgekeurd en ingediend. ",
+                "De procedure hiervoor is hetzelfde als bij het indienen van het Ex1-formulier;</li>",
                 "<li>Na het indienen van de antwoorden vult AWP de totaal score in bij het betreffende vak van de kandidaat.</li></ul>",
 
                 "<p>De pagina <i>Examens</i> bevat een tabel met alle kandidaten, hun vakken en het bijbehorende examen. ",
@@ -99,16 +100,17 @@ const man_exams = {
 
         write_paragraph_header("id_submit_exams", "Examens goedkeuren en indienen"),
         write_paragraph_body("",
-            [
-                "<p>Nadat de antwoorden van alle examens zijn ingevoerd, dienen ze te worden goedgekeurd en ingediend. De procedure hiervoor is hetzelfde als bij het indienen van het Ex1- en Ex2-formulier. ",
+            ["<p>Nadat de antwoorden van alle examens zijn ingevoerd, dienen ze te worden goedgekeurd en ingediend. ",
+                "De procedure hiervoor is hetzelfde als bij het indienen van het Ex1-formulier. ",
                "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>hier</a> voor een gedetailleerde beschijving van deze procedure.</p>",
 
                 "<p class='mb-0 pb-0'>Het indienen van de examens gaat in twee stappen:</p>",
                 "<ul class='manual_bullet'><li>De eerste stap is het <b>goedkeuren</b> van de examens door de voorzitter en secretaris.</li>",
                 "<li>De tweede stap is het <b>indienen</b> van het Ex-formulier door de voorzitter of secretaris.</li></ul>",
 
-
-                "<p><b>Goedkeuren</b><br>Klik in de menubalk op <i>Examens goedkeuren</i>. Het venster <i>Examens goedkeuren</i> verschijnt. ",
+                "<p><b>Goedkeuren</b><br>",
+                "De voorzitter en secretaris moeten de examens goedkeuren. De examinator hoeft de examens niet goed te keuren.</p>",
+                "<p>Klik in de menubalk op <i>Examens goedkeuren</i>. Het venster <i>Examens goedkeuren</i> verschijnt. ",
                 "AWP controleert eerst de ingevulde gegevens en geeft een melding wanneer niet alle antwoorden zijn ingevuld. ",
                 "Klik op <i>Examens goedkeuren</i> om de examens goed te keuren. Het icoontje achter de goedgekeurde examens wordt nu half zwart. ",
                 "Ververs het scherm wanneer de goedkeuringen niet meteen zichtbaar zijn.</p>",
@@ -150,7 +152,8 @@ const man_exams = {
                 "The school should only choose the correct exam if several exams are available for a subject. ",
                 "This is the case with the practical exams, which have multiple versions;</li>",
                 "<li>The school fills in all the answers of the questions. AWP checks whether the entered answer is allowed;</li>",
-                "<li>After the answers of all exams have been entered, they must be approved and submitted. The procedure for this is the same as for submitting the Ex2 form;</li>",
+                "<li>After the answers of all exams have been entered, they must be approved and submitted. ",
+                "The procedure for this is the same as for submitting the Ex1 form;</li>",
                 "<li>After submitting the answers, AWP fills in the total score for the relevant subject of the candidate.</li></ul>",
 
                 "<p>The <i>Exams</i> page contains a table with all candidates, their subjects and the corresponding exam. ",
@@ -234,7 +237,8 @@ const man_exams = {
         write_paragraph_header("id_submit_exams", "Approve and submit exams"),
         write_paragraph_body("",
             [
-               "<p>After the answers of all exams have been entered, they must be approved and submitted. The procedure for this is the same as when submitting the Ex1 and Ex2 form.",
+               "<p>After the answers of all exams have been entered, they must be approved and submitted. ",
+               "The procedure for this is the same as when submitting the Ex1 form.",
                "Click <a href='#' class='awp_href' onclick='LoadPage(&#39approve&#39)'>here</a> for a detailed description of this procedure.</p>",
 
                 "<p class='mb-0 pb-0'>Submission of the exams is done in two steps:</p>",
@@ -242,7 +246,9 @@ const man_exams = {
                 "<li>The second step is the <b>submission</b> of the Ex-form by the chairperson or secretary.</li></ul>",
 
 
-                "<p><b>Approve</b><br>Click <i>Approve Exams</i> in the menu bar. The <i>Approve Exams</i> window appears. ",
+                "<p><b>Approve</b><br>",
+                "The chairman and secretary must approve the exams. The examiner does not have to approve the exams.</p>",
+                "<p>Click <i>Approve Exams</i> in the menu bar. The <i>Approve Exams</i> window appears. ",
                 "AWP first checks the entered data and notifies you when not all answers have been entered.",
                 "Click on <i>Approve exams</i> to approve the exams. The icon behind the approved exams will now turn half black. ",
                 "Refresh the screen if the approvals are not immediately visible.</p>",

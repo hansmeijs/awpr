@@ -17,30 +17,39 @@
 
                 <div class="modal-body px-4">
                     <div class="mx-4">{% trans 'AWP will create an Ex3 form for each selected subject.' %}</div>
-                        <div id="id_MEX3_input_container " class="border_bg_transparent m-2">
-                            <div class="flex_container">
+                    <div class="mx-4 px-4 my-0 py-0">
+                        <small>{% trans "First click on 'Ex3 back page' and print the amount of back pages you need." %}</small>
+                        <small>{% trans "Then print the Ex3 forms on the other side." %}</small>
+                        <small>{% trans "Finally, fill in the name of the subject manually on each back page." %}</small>
+                    </div>
+                    <div class="mx-4 px-4 my-0 py-0">
+                        <small>{% trans 'Use the AWP messaging service to upload the Ex3 form to the Inspectorate and the Division of Examinations.' %}</small>
+                    </div>
 
-                                <div class="flex_2 mx-2 mb-2">
-                                    <div class="label_margin_top_m2">{% trans 'Select a lay-out' %}:</div>
-                                    <select id="id_MEX3_select_layout" size="4" class="form-control tbl_hide_scrollbar"
+                    <div id="id_MEX3_input_container " class="border_bg_transparent m-2">
+                        <div class="flex_container">
 
-                                           autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                         <option value="none">{% trans 'No subdivision' %}</option>
-                                         <option id="id_MEX3_layout_option_level" value="level">{% trans 'Print each learning path on a separate form' %}</option>
-                                         <option value="class">{% trans 'Print each class on a separate form' %}</option>
-                                         <option value="cluster">{% trans 'Print each cluster on a separate form' %}</option>
-                                    </select>
-                                </div>
+                            <div class="flex_2 mx-2 mb-2">
+                                <div class="label_margin_top_m2">{% trans 'Select a lay-out' %}:</div>
+                                <select id="id_MEX3_select_layout" size="4" class="form-control tbl_hide_scrollbar"
 
-                                <div class="flex_2 mx-2 mb-2">
-                                    <div class="label_margin_top_m2">{% trans 'Select a learning path' %}:</div>
-                                        <select id="id_MEX3_select_level" size="4" class="form-control tbl_hide_scrollbar"
-                                                multiple
-                                           autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                    </select>
-                                </div>
+                                       autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                     <option value="none">{% trans 'No subdivision' %}</option>
+                                     <option id="id_MEX3_layout_option_level" value="level">{% trans 'Print each learning path on a separate form' %}</option>
+                                     <option value="class">{% trans 'Print each class on a separate form' %}</option>
+                                     <option value="cluster">{% trans 'Print each cluster on a separate form' %}</option>
+                                </select>
+                            </div>
+
+                            <div class="flex_2 mx-2 mb-2">
+                                <div class="label_margin_top_m2">{% trans 'Select a learning path' %}:</div>
+                                    <select id="id_MEX3_select_level" size="4" class="form-control tbl_hide_scrollbar"
+                                            multiple
+                                       autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                </select>
                             </div>
                         </div>
+                    </div>
 
                     <div id="id_MEX3_loader" class="display_hide mx-4 mt-2 ">
                         <div class="image_container">
@@ -51,13 +60,13 @@
                     <div class="content_header">
                          <div class="flex_4 p-2 ">
                              <h6 class="px-2">{% trans 'Available subjects' %}:</h6>
-                             <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h320_w_auto">
+                             <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h240_w_auto">
                                 <tbody id="id_MEX3_tblBody_available"></tbody>
                              </table>
                          </div>
                          <div class="flex_4 p-2">
                              <h6 class="px-2">{% trans 'Selected subjects' %}:</h6>
-                              <table class="tableX tsa_tbl border_bg_lightblue tbl_studsubj_h320_w_auto">
+                              <table class="tableX tsa_tbl border_bg_lightblue tbl_studsubj_h240_w_auto">
                                 <tbody id="id_MEX3_tblBody_selected"></tbody>
                               </table>
                         </div>
