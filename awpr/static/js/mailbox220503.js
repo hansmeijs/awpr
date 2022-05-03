@@ -700,11 +700,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01
     function UpdateField(el_div, map_dict) {
-        console.log("=========  UpdateField =========");
-        console.log("map_dict", map_dict);
+        //console.log("=========  UpdateField =========");
+        //console.log("map_dict", map_dict);
 
         const field_name = get_attr_from_el(el_div, "data-field");
-        console.log("field_name", field_name);
+        //console.log("field_name", field_name);
         
         if(el_div && field_name){
             let inner_text = null, title_text = null, filter_value = null;
@@ -724,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 filter_value = (map_dict.has_att) ? "1" : "0";
                 el_div.className = (map_dict.has_att) ? "note_1_8" : "tickmark_0_0";
 
-        console.log("map_dict.has_att", map_dict.has_att);
+        //console.log("map_dict.has_att", map_dict.has_att);
 
             } else if (["sender_school_abbrev", "sender_lastname", "header", "status", "name"].includes(field_name)){
                 inner_text = (map_dict[field_name]) ? map_dict[field_name] : "\xa0";  // Non-breakable space is char 0xa0 (160 dec), needed for eventhandler
@@ -733,9 +733,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     title_text = map_dict.body ;
                 };
             } else if (field_name === "ispublic") {
-        console.log("map_dict", map_dict);
+        //console.log("map_dict", map_dict);
                 const is_public = (!map_dict.user_id);
-        console.log("is_public", is_public);
+        //console.log("is_public", is_public);
                 // give value '1' when is_public, '0' when private
                 filter_value = (is_public) ? "1" : "0";
                 el_div.className = (is_public) ? "tickmark_1_2" : "tickmark_0_0";
@@ -1055,8 +1055,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
-    console.log("is_created", is_created);
-    console.log(".........update_dict.mapid", update_dict.mapid);
+    //console.log("is_created", is_created);
+    //console.log(".........update_dict.mapid", update_dict.mapid);
 
             // field_error_list is not in use (yet)
             let field_error_list = [];
@@ -1093,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  insert new item at end
                 data_rows.push(update_dict)
 
-    console.log("data_rows pushed", data_rows);
+    //console.log("data_rows pushed", data_rows);
 
     // ---  create row in table., insert in alphabetical order
                 // TODO show_inactive
@@ -1142,15 +1142,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                     data_dict[key] = new_value;
 
     // ---  add field to updated_columns list
-                                    if (field_names.includes(key) {
+                                    if (field_names.includes(key)) {
         // ---  add field to updated_columns list
-                                        updated_columns.push(key)
+                                        updated_columns.push(key);
                                     };
                                 };
                             };
                         };
 
-        console.log("updated_columns", updated_columns);
+        //console.log("updated_columns", updated_columns);
 
 
         // ---  update field in tblRow

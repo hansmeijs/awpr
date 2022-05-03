@@ -2925,6 +2925,7 @@ def create_grade_exam_result_rows(sel_examyear_code, sel_schoolbase_pk, sel_depb
         sql_keys = {'ey_code': sel_examyear_code, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
 
         sub_list = ["SELECT grd.id AS grd_id,",
+                    # note: grd.pescore contains total_score
                     "(grd.pescore::FLOAT / exam.scalelength::FLOAT) AS score_frac,",
                     "grd.pescore, exam.scalelength,"
                     "1 AS score_count",
@@ -2978,7 +2979,7 @@ def create_grade_exam_result_rows(sel_examyear_code, sel_schoolbase_pk, sel_depb
                     "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
                     "WHERE ey.code = %(ey_code)s::INT",
-                      "AND exam.ete_exam",
+                    "AND exam.ete_exam",
                     "AND grd.examperiod = %(experiod)s::INT",
                     "AND dep.base_id = %(depbase_id)s::INT",
                     "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
@@ -3025,7 +3026,7 @@ def create_grade_exam_result_rows(sel_examyear_code, sel_schoolbase_pk, sel_depb
 
     return result_rows
 
-###############################################
+
 
 def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, published_pk=None):
     # --- create rows of published records PR2021-01-21

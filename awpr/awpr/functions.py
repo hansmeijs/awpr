@@ -20,6 +20,7 @@ from accounts import views as acc_view
 from grades import views as grade_view
 from schools import models as sch_mod
 from subjects import models as subj_mod
+from students import models as stud_mod
 
 import pytz
 import logging
@@ -1170,7 +1171,10 @@ def system_updates(examyear, request):
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
 
-# PR2022-05-02 recalc amoiunt and scalelength in exams
+# PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
+    show_deleted_grades()
+
+# PR2022-05-02 recalc amount and scalelength in exams
     recalc_amount_and_scalelength_of_assignment(request)
 
 # PR2022-04-18 add usergroup 'download' to not 'read' en non null users
@@ -1192,6 +1196,39 @@ def system_updates(examyear, request):
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
+
+def show_deleted_grades():
+    #PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
+    # check other 36 grades that have tobedeleted=True
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- show_deleted_grades studentsubject__tobedeleted=False-------')
+        rows = stud_mod.Grade.objects.filter(
+            tobedeleted=True,
+            studentsubject__tobedeleted=False
+        )
+        for row in rows:
+            msg_txt = ' '.join((
+                    str(row.studentsubject.student.school.base.code),
+                    str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname) ,
+                    str(row.studentsubject.schemeitem.subject.base.code),
+                    'studsubj.del' , str(row.studentsubject.tobedeleted),
+                    ' stud.del', str(row.studentsubject.student.tobedeleted)))
+            logger.debug(msg_txt)
+
+        logger.debug(' ------- show_deleted_grades studentsubject__tobedeleted=True-------')
+        rows = stud_mod.Grade.objects.filter(
+            tobedeleted=True,
+            studentsubject__tobedeleted=True
+        )
+        for row in rows:
+            msg_txt = ' '.join((
+                str(row.studentsubject.student.school.base.code),
+                str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname),
+                str(row.studentsubject.schemeitem.subject.base.code),
+                'studsubj.del', str(row.studentsubject.tobedeleted),
+                ' stud.del', str(row.studentsubject.student.tobedeleted)))
+            logger.debug(msg_txt)
 
 
 def recalc_amount_and_scalelength_of_assignment(request):

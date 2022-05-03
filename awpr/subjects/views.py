@@ -3094,7 +3094,7 @@ def submit_grade_exam(grade_exam_instance, is_test, published_instance, count_di
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- submit_grade_exam -----')
-
+    """
     updated_grd_count = 0
     if exam:
         count_dict['count'] += 1
@@ -3163,7 +3163,7 @@ def submit_grade_exam(grade_exam_instance, is_test, published_instance, count_di
                                 if grd_count:
                                     count_dict['updated_grd_count'] += grd_count
 # - end of submit_grade_exam
-
+    """
 
 def create_exam_published_instance(exam, now_arr, request):  # PR2022-02-23
     logging_on = s.LOGGING_ON
@@ -5943,9 +5943,236 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
         if logging_on:
             logger.debug('===== ExamDownloadExamJsonView ===== ')
 
-        def get_exam_partex_dict_from_instance(sel_exam_instance):
+        def get_exam_rows(sel_examyear_code, sel_examperiod,
+                                          selected_pk_dict, request):
+            # --- create exam rows that have students with results, also SXM of this examyear PR2022-05-03
+
+            logging_on = s.LOGGING_ON
+            if logging_on:
+                logger.debug(' ----- get_grade_exam_result_rows -----')
+                logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+
+            # - only grades with ete exams are visible
+            # - only ce_exams that are submitted have results shown
+            # - group by exam and school
+
+            result_rows = []
+
+            req_usr = request.user
+            if req_usr.role == c.ROLE_064_ADMIN:
+                sel_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
+
+                sql_keys = {'ey_code': sel_examyear_code, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
+
+                sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+                if sel_lvlbase_pk:
+                    sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+
+                sel_subjbase_pk = None
+                # get sel_subjbase_pk from sel_subject_pk TODO deprecate, replace filter on sel_subject_pk by sel_subjbase_pk
+                sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+                if sel_subject_pk:
+                    subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
+                    if subject and subject.base.pk:
+                        sel_subjbase_pk = subject.base.pk
+                    else:
+                        sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+
+                if sel_subjbase_pk:
+                    sql_keys['sjb_pk'] = sel_subjbase_pk
+
+                sub_sql_list = ["SELECT exam.id",
+
+                            "FROM students_grade AS grd",
+                            "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+                            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+
+                            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                            "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                            "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+
+                            "WHERE ey.code = %(ey_code)s::INT",
+                            "AND exam.ete_exam",
+                            "AND grd.examperiod = %(experiod)s::INT",
+                            "AND dep.base_id = %(depbase_id)s::INT",
+                            # TODO add published_id IS NOT NULL
+                            # "AND exam.published_id IS NOT NULL",
+
+                            "AND grd.pescore IS NOT NULL",
+                            "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
+                            "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                            ]
+
+                if sel_lvlbase_pk:
+                    sub_sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+                if sel_subjbase_pk:
+                    sub_sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+
+                sub_sql_list.append("GROUP BY exam.id")
+
+                sub_sql = ' '.join(sub_sql_list)
+
+                sql_list = ["WITH grade_exams AS (" + sub_sql + ")",
+                            "SELECT exam.id AS exam_id,",
+                            "schoolbase.code AS schoolbase_code,",
+                            "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
+                            "subjbase.code AS subj_code, subj.name AS subj_name,",
+
+                            "exam.examperiod, exam.version, exam.amount, exam.scalelength,",
+                            "exam.partex, exam.assignment, exam.keys",
+
+                            "FROM subjects_exam AS exam",
+
+                            "INNER JOIN grade_exams ON (grade_exams.id = exam.id)",
+
+                            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+                            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                            "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+
+                            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                            "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                            "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id =school.base_id)",
+                            "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+
+                            "WHERE ey.code = %(ey_code)s::INT",
+                            "AND exam.ete_exam",
+                            "AND grd.examperiod = %(experiod)s::INT",
+                            "AND dep.base_id = %(depbase_id)s::INT",
+                            # "AND exam.published_id IS NOT NULL",
+
+                            "AND grd.pescore IS NOT NULL",
+                            "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
+                            "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                            ]
+
+                if sel_lvlbase_pk:
+                    sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+                if sel_subjbase_pk:
+                    sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+
+                sql = ' '.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+                    result_rows = af.dictfetchall(cursor)
+
+                if logging_on:
+                    logger.debug('sql_keys: ' + str(sql_keys))
+
+                if result_rows :
+                    if logging_on:
+                        logger.debug('len(grade_rows): ' + str(len(result_rows)))
+                    for row in result_rows:
+                        if logging_on:
+                            logger.debug('row: ' + str(row))
+
+            return result_rows
+
+        def get_grade_exam_result_rows(sel_examyear_code, sel_examperiod,
+                                          selected_pk_dict, request):
+            # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
+
+            logging_on = s.LOGGING_ON
+            if logging_on:
+                logger.debug(' ----- get_grade_exam_result_rows -----')
+                logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+
+            # - only grades with ete exams are visible
+            # - only ce_exams that are submitted have results shown
+            # - group by exam and school
+
+            result_rows = []
+
+            req_usr = request.user
+            if req_usr.role == c.ROLE_064_ADMIN:
+                sel_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
+                sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+
+
+                sql_keys = {'ey_code': sel_examyear_code, 'depbase_id': sel_depbase_pk, 'experiod': sel_examperiod}
+
+                sql_list = ["SELECT exam.id AS exam_id,",
+                            "schoolbase.code AS schoolbase_code,",
+                            "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
+                            "subjbase.code AS subj_code, subj.name AS subj_name,",
+                            "exam.examperiod, exam.version, exam.amount, exam.scalelength,",
+                            "exam.partex, exam.assignment, exam.keys",
+
+                            "FROM students_grade AS grd",
+                            "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+                            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+                            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                            "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+
+                            "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                            "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                            "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id =school.base_id)",
+                            "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+
+                            "WHERE ey.code = %(ey_code)s::INT",
+                            "AND exam.ete_exam",
+                            "AND grd.examperiod = %(experiod)s::INT",
+                            "AND dep.base_id = %(depbase_id)s::INT",
+                            # "AND exam.published_id IS NOT NULL",
+
+                            "AND grd.pescore IS NOT NULL",
+                            "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
+                            "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                            ]
+
+                sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+                if sel_lvlbase_pk:
+                    sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                    sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+                sel_subjbase_pk = None
+                # get sel_subjbase_pk from sel_subject_pk TODO deprecate, replace filter on sel_subject_pk by sel_subjbase_pk
+                sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+                if sel_subject_pk:
+                    subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
+                    if subject and subject.base.pk:
+                        sel_subjbase_pk = subject.base.pk
+                    else:
+                        sel_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+
+                if sel_subjbase_pk:
+                    sql_keys['sjb_pk'] = sel_subjbase_pk
+                    sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+
+                sql = ' '.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+                    result_rows = af.dictfetchall(cursor)
+
+                if logging_on:
+                    logger.debug('sql_keys: ' + str(sql_keys))
+
+                if result_rows and False:
+                    if logging_on:
+                        logger.debug('len(grade_rows): ' + str(len(result_rows)))
+                    for row in result_rows:
+                        if logging_on:
+                            logger.debug('row: ' + str(row))
+
+            return result_rows
+
+
+        def get_exam_partex_dict_from_row(row): # PR2022-05-03
             # this function converts the saved 'partex' into a dict
-            exam_partex = getattr(sel_exam_instance, 'partex')
+            exam_partex = row.get('partex')
             exam_partex_dict = {}
             if exam_partex:
                 exam_partex_arr = exam_partex.split('#')
@@ -5963,10 +6190,10 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                         }
             return exam_partex_dict
 
-        def get_exam_assignment_dict(sel_exam_instance):  # PR2022-03-16
+        def get_exam_assignment_dict_from_row(row):  # PR2022-05-03
             # this function converts the saved 'assignment' into a dict
             assignment_dict = {}
-            assignment = getattr(sel_exam_instance, 'assignment')
+            assignment = row.get('assignment')
             if assignment:
                 assignment_array = assignment.split('#')
                 for assign_partex in assignment_array:
@@ -6005,10 +6232,10 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                     """
             return assignment_dict
 
-        def get_exam_keys_dict(sel_exam_instance):  # PR2022-03-16
+        def get_exam_keys_dict_from_row(row):  # PR2022-05-03
             # this function converts the saved 'keys' into a dict
             keys_dict = {}
-            keys = getattr(sel_exam_instance, 'keys')
+            keys = row.get('keys')
             if keys:
                 for keys_partex in keys.split('#'):
                     keys_partex_arr = keys_partex.split('|')
@@ -6132,7 +6359,6 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                         7: {1: '5', 2: '2', 3: '1'}, 8: {1: '12'}, 9: {1: '15'}, 10: {1: '5'}}
                     """
 
-
                     if exam_result_dict:
                         result_dict = {}
                         score_dict = {}
@@ -6235,7 +6461,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
         response = None
         if request.user and request.user.country and request.user.schoolbase:
             req_usr = request.user
-
+            """
 # - reset language
             user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
             activate(user_lang)
@@ -6249,84 +6475,56 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             if sel_examperiod in (1, 2):
                 examenlijst = []
 
-                exam_instances = subj_mod.Exam.objects.filter(
-                    subject__examyear=sel_examyear,
-                    examperiod=sel_examperiod,
-                    ete_exam=True
-                )
+                selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 
-                if exam_instances:
-                    for exam_instance in exam_instances:
-                        exam_dict = {}
-                        subject = exam_instance.subject
+                grade_exam_result_rows = get_grade_exam_result_rows(sel_examyear.code, sel_examperiod,
+                                           selected_pk_dict, request)
 
-                        exam_partex_dict = get_exam_partex_dict_from_instance(exam_instance)
-                        if logging_on:
-                            logger.debug(' ----- get_assignment_list -----')
-                            logger.debug('exam_partex_dict: ' + str(exam_partex_dict))
-                        """
-                        exam_partex_dict: {1: {'pk': 1, 'tijdvak': 1, 'aantal vragen': 44, 'maximum score': 61, 'naam': 'Deelexamen 1'}}
-                        """
+                for row in grade_exam_result_rows:
+                    exam_dict = {}
 
-                        exam_assignment_dict = get_exam_assignment_dict(exam_instance)
-                        if logging_on:
-                            logger.debug('assignment_dict: ' + str(exam_assignment_dict))
-                        """
-                        exam_assignment_dict: {1: {1: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 
-                                              2: {'max_char': 'C', 'max_score': '', 'min_score': ''}, 
-                        """
+                    exam_partex_dict = get_exam_partex_dict_from_row(row)
+                    exam_assignment_dict = get_exam_assignment_dict_from_row(row)
+                    exam_keys_dict = get_exam_keys_dict_from_row(row)
 
-                        exam_keys_dict = get_exam_keys_dict(exam_instance)
-                        if logging_on:
-                            logger.debug('exam_keys_dict: ' + str(exam_keys_dict))
-                        """
-                        exam_keys_dict: {
-                            1: {1: 'a', 2: 'ab', 3: 'c', 4: 'b', 6: 'c', 7: 'a'}, 
-                            2: {1: 'b', 2: 'bd', 3: 'a', 4: 'c', 5: 'b', 8: 'c'}, 
-                            3: {2: 'd', 4: 'c', 5: 'b', 6: 'a', 7: 'c', 9: 'a', 10: 'a'}, 
-                            4: {2: 'c', 4: 'b', 5: 'c', 6: 'b', 7: 'c', 9: 'b'}, 
-                            5: {1: 'c', 2: 'c', 4: 'c', 6: 'c', 7: 'c'}, 
-                            6: {1: 'a', 2: 'd', 4: 'a', 6: 'b', 8: 'c'}
-                        }
-                        """
-                        assignment_list, partex_count, partex_schaallengte = \
-                            get_assignment_list(exam_partex_dict, exam_assignment_dict, exam_keys_dict)
-                        answers_list = get_answers_list(exam_instance, exam_partex_dict, exam_assignment_dict, exam_keys_dict)
+                    assignment_list, partex_count, partex_schaallengte = \
+                        get_assignment_list(exam_partex_dict, exam_assignment_dict, exam_keys_dict)
+                    answers_list = [] # get_answers_list(exam_instance, exam_partex_dict, exam_assignment_dict, exam_keys_dict)
 
-                        exam_dict['code'] = subject.base.code
-                        exam_dict['vak'] = subject.name
+                    exam_dict['code'] = subject.base.code
+                    exam_dict['vak'] = subject.name
 
-                # - create string with department abbrev
-                        exam_dict['afdeling'] = exam_instance.department.base.code
-                        if exam_instance.version:
-                            exam_dict['versie'] = exam_instance.version
+            # - create string with department abbrev
+                    exam_dict['afdeling'] = exam_instance.department.base.code
+                    if exam_instance.version:
+                        exam_dict['versie'] = exam_instance.version
 
-                # - create string with level abbrevs
-                        if exam_instance.level:
-                            exam_dict['leerweg'] = exam_instance.level.abbrev
+            # - create string with level abbrevs
+                    if exam_instance.level:
+                        exam_dict['leerweg'] = exam_instance.level.abbrev
 
-                        #exam_dict['examensoort'] = "---"  # c.get_examtype_caption(exam_instance.examtype)
-                        exam_dict['aantal vragen'] = exam_instance.amount if exam_instance.amount else 0
+                    #exam_dict['examensoort'] = "---"  # c.get_examtype_caption(exam_instance.examtype)
+                    exam_dict['aantal vragen'] = exam_instance.amount if exam_instance.amount else 0
 
-                # - when there is only 1 partex: use max_score of partex, use scalelength otherwise
-                        exam_dict['schaallengte'] = partex_schaallengte if partex_count == 1 \
-                            else exam_instance.scalelength if exam_instance.scalelength else None
+            # - when there is only 1 partex: use max_score of partex, use scalelength otherwise
+                    exam_dict['schaallengte'] = partex_schaallengte if partex_count == 1 \
+                        else exam_instance.scalelength if exam_instance.scalelength else None
 
-                        exam_dict['deelexamens'] = assignment_list
-                        exam_dict['kandidaten'] = answers_list
+                    exam_dict['deelexamens'] = assignment_list
+                    exam_dict['kandidaten'] = answers_list
 
-                        examenlijst.append(exam_dict)
+                    examenlijst.append(exam_dict)
 
-                examens_dict = {
-                    'examenjaar': sel_examyear.code,
-                    'tijdvak': c.get_examperiod_caption(sel_examperiod),
-                    'examens': examenlijst
-                }
+            examens_dict = {
+                'examenjaar': sel_examyear.code,
+                'tijdvak': c.get_examperiod_caption(sel_examperiod),
+                'examens': examenlijst
+            }
 
-                response = HttpResponse(json.dumps(examens_dict), content_type="application/json")
-                response['Content-Disposition'] = 'exam_dict; filename="testjson.json"'
-                #response['Content-Disposition'] = 'inline; filename="testjson.pdf"'
-
+            response = HttpResponse(json.dumps(examens_dict), content_type="application/json")
+            response['Content-Disposition'] = 'exam_dict; filename="testjson.json"'
+            #response['Content-Disposition'] = 'inline; filename="testjson.pdf"'
+            """
         # except Exception as e:
         #     logger.error(getattr(e, 'message', str(e)))
         #     raise Http404("Error creating Ex2A file")

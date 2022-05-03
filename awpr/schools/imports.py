@@ -2502,34 +2502,37 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_entriesli
             # row: ('2003031202', 9240, 'Albertus', 'Lyanne Stephany', None, 372, 'ne', False)
 
 # - get student_id, add as key to student_dict if it does not exists yet
-            id_number = row[0]
-            if double_entrieslist and id_number in double_entrieslist:
-                if logging_on:
-                    logger.debug('id_number found in double_entrieslist: ' + str(id_number))
-            else:
-                # student_pk = row[1]
-                if id_number not in subjectbase_pk_dict:
-                    subjectbase_pk_dict[id_number] = {'stud_id': row[1]}
-                student_dict = subjectbase_pk_dict[id_number]
+            # PR2022-05-03 debug Roland Girigori Lauffer cannot upload grade because difference in lowercase/uppercase
+            # must convert id_number from database to lowercase
+            if row[0]:
+                id_number = str(row[0]).lower()
+                if double_entrieslist and id_number in double_entrieslist:
+                    if logging_on:
+                        logger.debug('id_number found in double_entrieslist: ' + str(id_number))
+                else:
+                    # student_pk = row[1]
+                    if id_number not in subjectbase_pk_dict:
+                        subjectbase_pk_dict[id_number] = {'stud_id': row[1]}
+                    student_dict = subjectbase_pk_dict[id_number]
 
 # - get subjectbase_pk, add as key to scheme_dict if it does not exists yet
-                # rows is ordered by sjtpbase.sequence
-                # therefore the schemeitem_subject with the lowest sequence will be added
-                # a schemeitem_subject can only occur once in the subject_dict
+                    # rows is ordered by sjtpbase.sequence
+                    # therefore the schemeitem_subject with the lowest sequence will be added
+                    # a schemeitem_subject can only occur once in the subject_dict
 
-                subjectbase_pk = row[5]
-                subjectbase_code = row[6] if row[6] else '-'
-                has_pws = row[7] if row[7] else False
+                    subjectbase_pk = row[5]
+                    subjectbase_code = row[6] if row[6] else '-'
+                    has_pws = row[7] if row[7] else False
 
-                if has_pws:
-                    if 'has_pws_subjbase_pk' not in student_dict:
-                        student_dict['has_pws_subjbase_pk'] = subjectbase_pk
-                    else:
-                        # when multiple subjects with has_pws found: set has_pws_subjbase_pk = None
-                        student_dict['has_pws_subjbase_pk'] = None
+                    if has_pws:
+                        if 'has_pws_subjbase_pk' not in student_dict:
+                            student_dict['has_pws_subjbase_pk'] = subjectbase_pk
+                        else:
+                            # when multiple subjects with has_pws found: set has_pws_subjbase_pk = None
+                            student_dict['has_pws_subjbase_pk'] = None
 
-                if subjectbase_pk not in student_dict:
-                    student_dict[subjectbase_pk] = subjectbase_code
+                    if subjectbase_pk not in student_dict:
+                        student_dict[subjectbase_pk] = subjectbase_code
 
     if logging_on:
         logger.debug('subjectbase_pk_dict: ' + str(subjectbase_pk_dict))

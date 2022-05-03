@@ -978,92 +978,95 @@ def get_student_subj_grade_dict(school, department, sel_examperiod, examgradetyp
                 # row: ('2003031202', 9240, 'Albertus', 'Lyanne Stephany', None, 372, 'ne')
 
 # - get student_id, add as key to student_dict if it does not exists yet
-                id_number = row[0]
-                if not id_number:
-                    if logging_on:
-                        logger.debug('id_number is blank')
-                elif double_entrieslist and id_number in double_entrieslist:
-                    if logging_on:
-                        logger.debug('id_number found in double_entrieslist: ' + str(id_number))
-                else:
-                    student_pk = row[1]
-                    if id_number not in student_subj_grade_dict:
-                        student_subj_grade_dict[id_number] = {
-                            'stud_id': student_pk,
-                            #'idnr': id_number,
-                            'name': stud_fnc.get_lastname_firstname_initials(row[2], row[3], row[4]),
-                            'schm_id': row[5],
-                            'schm_name': row[6],
-                            'lvl_id': row[7],
-                            'sct_id': row[8],
-
-                            'schoolbase_id': row[9],
-                            'depbase_id': row[10],
-                            'lvlbase_id': row[11],
-
-                            'iseveningstudent': row[12],
-                            'islexstudent': row[13],
-                            'partial_exam': row[14],
-
-                            'isdayschool': row[15],
-                            'iseveningschool': row[16],
-                            'islexschool': row[17],
-
-                            'egt': examgradetype,
-                            'ep': sel_examperiod
-                        }
-
-                    student_dict = student_subj_grade_dict[id_number]
-
-    # - get subjectbase_pk, add as key to scheme_dict if it does not exists yet
-                    # rows is ordered by sjtpbase.sequence
-                    # therefore the schemeitem_subject with the lowest sequence will be added
-                    # a schemeitem_subject can only occur once in the subject_dict
-
-                    subjectbase_pk = row[18]
-                    if subjectbase_pk not in student_dict:
-                        subjbase_dict = {
-                            'sjb_id': subjectbase_pk,
-                            'sjb_code': row[19],
-                            'cluster_id': row[20],
-
-                            'is_extra_nocount': row[21],
-                            'is_extra_counts': row[22],
-                            'has_exemption': row[23],
-                            'has_sr': row[24],
-                            'has_reex': row[25],
-                            'has_reex03': row[26],
-                            'exem_year': row[27],
-
-                            'ss_si_id': row[28],   # studsubj.schemeitem_id
-                            'gr_id': row[29],
-                            'ss_id': row[30],
-                            'val': row[31],
-
-                            'pescore': row[32],
-                            'cescore': row[33],
-                            'segrade': row[34],
-                            'srgrade': row[35],
-                            'pegrade': row[36],
-                            'cegrade': row[37],
-
-                            'publ': row[38],
-                            'bl': row[39],
-                            'auth': row[40],
-
-                            'exam_id': row[41],
-                            'nex_id': row[42],
-                            'scalelength': row[43],
-                            'cesuur': row[44],
-                            'nterm': row[45],
-                            # 'examdate': row[41]
-                        }
-                        student_dict[subjectbase_pk] = subjbase_dict
+                # PR2022-05-03 debug Roland Girigori Lauffer cannot upload grade because difference in lowercase/uppercase
+                # must convert id_number from database to lowercase
+                if row[0]:
+                    id_number = str(row[0]).lower()
+                    if not id_number:
                         if logging_on:
-                            logger.debug('subjbase_dict: ' + str(subjbase_dict))
+                            logger.debug('id_number is blank')
+                    elif double_entrieslist and id_number in double_entrieslist:
+                        if logging_on:
+                            logger.debug('id_number found in double_entrieslist: ' + str(id_number))
                     else:
-                        # TODO error message when subject alreay exists (should not be possible
-                        pass
+                        student_pk = row[1]
+                        if id_number not in student_subj_grade_dict:
+                            student_subj_grade_dict[id_number] = {
+                                'stud_id': student_pk,
+                                #'idnr': id_number,
+                                'name': stud_fnc.get_lastname_firstname_initials(row[2], row[3], row[4]),
+                                'schm_id': row[5],
+                                'schm_name': row[6],
+                                'lvl_id': row[7],
+                                'sct_id': row[8],
+
+                                'schoolbase_id': row[9],
+                                'depbase_id': row[10],
+                                'lvlbase_id': row[11],
+
+                                'iseveningstudent': row[12],
+                                'islexstudent': row[13],
+                                'partial_exam': row[14],
+
+                                'isdayschool': row[15],
+                                'iseveningschool': row[16],
+                                'islexschool': row[17],
+
+                                'egt': examgradetype,
+                                'ep': sel_examperiod
+                            }
+
+                        student_dict = student_subj_grade_dict[id_number]
+
+        # - get subjectbase_pk, add as key to scheme_dict if it does not exists yet
+                        # rows is ordered by sjtpbase.sequence
+                        # therefore the schemeitem_subject with the lowest sequence will be added
+                        # a schemeitem_subject can only occur once in the subject_dict
+
+                        subjectbase_pk = row[18]
+                        if subjectbase_pk not in student_dict:
+                            subjbase_dict = {
+                                'sjb_id': subjectbase_pk,
+                                'sjb_code': row[19],
+                                'cluster_id': row[20],
+
+                                'is_extra_nocount': row[21],
+                                'is_extra_counts': row[22],
+                                'has_exemption': row[23],
+                                'has_sr': row[24],
+                                'has_reex': row[25],
+                                'has_reex03': row[26],
+                                'exem_year': row[27],
+
+                                'ss_si_id': row[28],   # studsubj.schemeitem_id
+                                'gr_id': row[29],
+                                'ss_id': row[30],
+                                'val': row[31],
+
+                                'pescore': row[32],
+                                'cescore': row[33],
+                                'segrade': row[34],
+                                'srgrade': row[35],
+                                'pegrade': row[36],
+                                'cegrade': row[37],
+
+                                'publ': row[38],
+                                'bl': row[39],
+                                'auth': row[40],
+
+                                'exam_id': row[41],
+                                'nex_id': row[42],
+                                'scalelength': row[43],
+                                'cesuur': row[44],
+                                'nterm': row[45],
+                                # 'examdate': row[41]
+                            }
+                            student_dict[subjectbase_pk] = subjbase_dict
+                            if logging_on:
+                                logger.debug('subjbase_dict: ' + str(subjbase_dict))
+                        else:
+                            # TODO error message when subject alreay exists (should not be possible
+                            pass
 
     """
      2003012406: {'st_id': 9340, 'idnr': '2003012406', 'name': 'Weyman, Natisha F.', 'schm_id': 555, 'lvl_id': 117, 'sct_id': 266, 'egt': 'segrade', 'ep': 1, 
