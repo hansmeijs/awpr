@@ -340,7 +340,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Published'] = _('Published')
         dict['Not_published'] = _('Not published')
-        dict['Published_at'] = _('Published at ')
+        dict['Published_at'] = TXT_Published_at
 
         dict['Activated'] = _('Activated')
         dict['Activated_on'] = _('Activated on')
@@ -612,7 +612,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['already_exists_in_departments'] = _(' already exists in one of the departments.')
 
-
         dict['Examyears_without_CE'] = _('Exam years without CE')
         dict['ModExemptionYear_info'] = {
             'line_01': _('In 2020 and 2021 not all subjects had a central exam because of the Covid-pandemic.'),
@@ -760,7 +759,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Authorized_secretary'] = _('Authorized\nsecretary')
         dict['Submitted'] = _('Submitted')
         dict['Authorized_by'] = _('Authorized by')
-        dict['Submitted_at'] = _('Submitted at')
+        dict['Submitted_at'] = TXT_Submitted_at
 
         dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary
@@ -918,8 +917,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['_by_'] = TXT__by_
         dict['Upload_ntermen'] = _("Upload N-termen tabel")
 
-        dict['Submitted_at'] = _('Submitted at ')
-        dict['Published_at'] = _('Published at ')
+        dict['Submitted_by'] = TXT_Submitted_by
+        dict['Published_by'] = TXT_Published_by
+
+        dict['Submitted_at'] = TXT_Submitted_at
+        dict['Published_at'] = TXT_Published_at
 
         dict['Request_verifcode'] = TXT_Request_verifcode
 
@@ -956,6 +958,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['is_not_entered'] = _(" is not entered.")
         dict['are_not_entered'] = _(" are not entered.")
         dict['are_entered'] = _(" questions are entered.")
+        dict['is_entered'] = _(" questions is entered.")
         dict['All_questions_are_entered'] = _("All questions are entered.")
 
         dict['No_exams_found'] = _("No exams found.")
@@ -974,6 +977,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Awp_calculates_amount'] = _('AWP calculates the number of questions.')
 
+        dict['Subjectcode_2lines'] = _('Subject\ncode')
         dict['Schoolcode_2lines'] = _('School\ncode')
         dict['Number_of_exams'] = _('Number of exams')
         dict['Submitted_exams'] = _('Number of submitted exams')
@@ -1012,6 +1016,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'This_exam_is_approved': _('This exam is approved.'),
             'You_cannot_change_approval': _('You cannot change the approval.'),
             'You_cannot_make_changes': _('You cannot make changes.'),
+            'You_cannot_change_exam': _('You cannot change the exam.'),
 
             'This_exam_has_no_data': _('This exam has no data.'),
             'You_cannot_approve_the_exam': _('You cannot approve the exam.'),
@@ -1117,6 +1122,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit'] = TXT_Submit
         dict['Show_fully_approved'] = _('Only the grades, that are fully approved or submitted, are shown.')
         dict['Show_not_fully_approved'] = _('Only the grades, that are not fully approved, are shown.')
+        dict['Show_blocked'] = _('Only the grades, that are blocked by the Inspectorate, are shown.')
 
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),
@@ -1158,7 +1164,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Ex3_btn_info_02'] = _("Open that page and click in the menu bar on the button <b>Ex3 Proces Verbaal</b> and <b>Ex3 back page</b>.")
 
         dict['Score'] = _('Score')
+        dict['This_score'] = _('This score')
         dict['Grade'] = _('Grade')
+        dict['This_grade'] = _('This grade')
+
         dict['PE_score'] = _('PE score')
         dict['CE_score'] = _('CE score')
         dict['SE_grade'] = _('SE grade')
@@ -1263,6 +1272,12 @@ def get_locale_dict(table_dict, user_lang, request):
             'Score_mustbe_between_0_and': _('The score must be a number between 0 and '),
 
             'no_permission': _("You don't have permission to enter grades."),
+            #'no_permission_cluster_01': _('This subject does not belong to the allowed clusters.'),
+            'no_permission_cluster_01': _("This subject does not belong to %(cpt)s.") % {'cpt': _('the allowed clusters')},
+            #'no_permission_cluster_02': _("You don't have permission to enter "),
+            'no_permission_edit_score': _("You don't have permission %(edit)s %(score)s.") % {'edit': _('to edit'), 'score': str(_('This score')).lower()},
+            'no_permission_edit_grade': _("You don't have permission %(edit)s %(score)s.") % {'edit': _('to edit'), 'score': str(_('This grade')).lower()},
+
             'grade_approved': _('This grade has already been approved.'),
             'needs_approvals_removed': _('You have to remove the approvals first.'),
             'Then_you_can_change_it': _('Then you can change it.'),
@@ -1286,6 +1301,9 @@ def get_locale_dict(table_dict, user_lang, request):
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
                                'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
         }
+
+        dict['No_cluster_block_permission'] =  _("You don't have permission to block grades of this cluster.")
+        dict['No_cluster_unblock_permission'] =  _("You don't have permission to unblock grades of this cluster.")
 
 # ====== PAGE RESULTS ========================= PR2021-11-15
     if 'page_result' in page_list:
@@ -1402,7 +1420,11 @@ TXT__of_ = _(' of ')
 TXT_Submit = _('Submit')
 
 TXT_Approved_by = _('Approved by')
-TXT_Submitted_at = _('Submitted at')
+TXT_Submitted_by = _('Submitted by')
+TXT_Published_by = _('Published by')
+
+TXT_Submitted_at = _('Submitted at ')
+TXT_Published_at = _('Published at ')
 
 TXT_Request_verifcode = _('Request verificationcode')
 

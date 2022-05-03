@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220421.js' %}"></script>
-    <script src="{% static 'js/grades220424.js' %}"></script>
+    <script src="{% static 'js/grades220502.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -142,7 +142,7 @@
                     data-download_published_url="{% url 'grades_download_published_url' %}"
                     data-url_grade_download_ex2="{% url 'url_grade_download_ex2' %}"
                     data-url_grade_download_ex2a="{% url 'url_grade_download_ex2a' %}"
-                    data-url_studsubj_send_email_exform="{% url 'url_studsubj_send_email_exform' %}"
+                    data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
                     data-url_studentsubjectnote_upload="{% url 'url_studentsubjectnote_upload' %}"
                     data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
                     data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"

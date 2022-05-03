@@ -17,6 +17,7 @@ from awpr import library as awpr_lib
 
 from accounts import models as acc_mod
 from accounts import views as acc_view
+from grades import views as grade_view
 from schools import models as sch_mod
 from subjects import models as subj_mod
 
@@ -1169,10 +1170,11 @@ def system_updates(examyear, request):
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
 
+# PR2022-05-02 recalc amoiunt and scalelength in exams
+    recalc_amount_and_scalelength_of_assignment(request)
 
 # PR2022-04-18 add usergroup 'download' to not 'read' en non null users
-    # TODO add download to usergroups
-    # add_usergroup_download(request)
+    add_usergroup_download(request)
 
 # PR2022-04-18 add no_ce_years = '2020' to_schemeitems
     add_no_ce_years_to_schemeitems(request)
@@ -1190,6 +1192,42 @@ def system_updates(examyear, request):
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
+
+
+def recalc_amount_and_scalelength_of_assignment(request):
+    # PR2022-05-02
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- recalc_amount_and_scalelength_of_assignment -------')
+
+    try:
+        key = 'recalc_assignment'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+
+        if not exists:
+            exams = subj_mod.Exam.objects.filter( ete_exam=True)
+            for exam in exams:
+                total_amount, total_maxscore, has_changed = grade_view.calc_amount_and_scalelength_of_assignment(exam)
+                if has_changed:
+                    setattr(exam, 'scalelength', total_maxscore)
+                    setattr(exam, 'amount', total_amount)
+                    exam.save()
+
+        # - add function to systemupdate, so it won't run again
+            key = 'recalc_assignment'
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
 
 def add_usergroup_download(request):

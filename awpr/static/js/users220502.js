@@ -280,8 +280,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 user_rows: {get: true},
                 department_rows: {get: true},
                 school_rows: {get: true},
-                level_rows: {get: true},
-                subject_rows: {get: true},
+                level_rows: {skip_allowed_filter: true},
+                subject_rows: {skip_allowed_filter: true},
                 cluster_rows: {get: true}
             };
 
@@ -1854,6 +1854,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById("id_MSM_hdr_multiple").innerText = header_text;
 
             const hide_msg = (get_attr_from_el(el_input, "data-field") === "allowed_clusterbases");
+        console.log("hide_msg", hide_msg) ;
         console.log("hide_msg", hide_msg) ;
             add_or_remove_class_by_id ("id_MSM_message_container", cls_hide, hide_msg);
 

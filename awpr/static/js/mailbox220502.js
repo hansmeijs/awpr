@@ -1134,25 +1134,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
                         let updated_columns = [];
-
-                        // col_field is the name of the column on page, not the db_field
-                        for (let i = 0, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            let has_changed = false;
-                            if (col_field in data_dict && col_field in update_dict){
-                                has_changed = (data_dict[col_field] !== update_dict[col_field] );
-                            };
-                            if (has_changed){
-        // ---  add field to updated_columns list
-                                updated_columns.push(col_field)
-                            };
-                        };
-        console.log("updated_columns", updated_columns);
-// ---  update fields in data_row
+    // ---  loop through fields in update_dict
                         for (const [key, new_value] of Object.entries(update_dict)) {
                             if (key in data_dict){
                                 if (new_value !== data_dict[key]) {
+    // ---  update field in data_row
                                     data_dict[key] = new_value;
-                        }}};
+
+    // ---  add field to updated_columns list
+                                    if (field_names.includes(key) {
+        // ---  add field to updated_columns list
+                                        updated_columns.push(key)
+                                    };
+                                };
+                            };
+                        };
+
+        console.log("updated_columns", updated_columns);
+
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
@@ -1161,8 +1160,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
-
-        console.log("tblRow", tblRow);
 
                             if(tblRow){
 

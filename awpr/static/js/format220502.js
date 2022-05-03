@@ -192,7 +192,6 @@
         //console.log(" --- f_format_percentage  -----")
         if (!number_of_decimals){number_of_decimals = 0};
 
-        console.log("rate_int", rate_int, typeof rate_int)
         let display_text = "";
 
         if (rate_int) {

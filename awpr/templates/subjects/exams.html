@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220427.js' %}"></script>
+    <script src="{% static 'js/exams220502.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import220421.js' %}"></script>
 
@@ -149,7 +149,7 @@
 
                 data-url_approve_publish_exam="{% url 'url_approve_publish_exam' %}"
                 data-url_approve_submit_grade_exam="{% url 'url_approve_submit_grade_exam' %}"
-                data-url_send_email_submit_exam="{% url 'url_send_email_submit_exam' %}"
+                data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
 
                 data-url_exam_download_exam_pdf="{% url 'url_exam_download_exam_pdf'  '-' %}"
                 data-url_exam_download_grade_exam_pdf="{% url 'url_exam_download_grade_exam_pdf'  '-' %}"

@@ -364,19 +364,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSI_header = document.getElementById("id_MSI_header")
 
         const el_MSI_deplvlsct_container = document.getElementById("id_MSI_deplvlsct_container");
+
         const el_MSI_department = document.getElementById("id_MSI_department");
-        const el_MSI_level = document.getElementById("id_MSI_level");
-        const el_MSI_sector = document.getElementById("id_MSI_sector");
         if(el_MSI_department){el_MSI_department.addEventListener("change", function() {MSI_InputChange(el_MSI_department)}, false )}
+
+        const el_MSI_level = document.getElementById("id_MSI_level");
         if(el_MSI_level){el_MSI_level.addEventListener("change", function() {MSI_InputChange(el_MSI_level)}, false )}
+
+        const el_MSI_sector = document.getElementById("id_MSI_sector");
         if(el_MSI_sector){el_MSI_sector.addEventListener("change", function() {MSI_InputChange(el_MSI_sector)}, false )}
 
         const el_MSI_btn_save = document.getElementById("id_MSI_btn_save")
-            el_MSI_btn_save.addEventListener("click", function() {MSI_Save()}, false);
+        if(el_MSI_btn_save){el_MSI_btn_save.addEventListener("click", function() {MSI_Save()}, false)};
 
         const el_tblBody_subjects = document.getElementById("id_MSI_tblBody_subjects");
         const el_tblBody_schemeitems = document.getElementById("id_MSI_tblBody_schemeitems");
-
 
 // ---  MODAL OTHER LANGUAGE ------------------------------------
         const el_MOL_header = document.getElementById("id_MOL_header")
@@ -1721,8 +1723,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleSBRselect  ================ PR2021-07-23 PR2021-08-28
     function HandleSBRselect(el_select) {
-        //console.log("===== HandleSBRselect =====");
-        //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        console.log("===== HandleSBRselect =====");
+        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
 
         // dont use setting_dict but selected to store selecttion, will not be saned on server
         const is_dep = (el_select.id === "id_SBR_select_department");
@@ -1738,6 +1740,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const sel_value = (Number(el_select.value)) ? Number(el_select.value) : null;
         selected[pk_key_str] =  sel_value;
         selected[caption_key_str] = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
+
+        console.log( "selected: ", selected)
 
     // check if level must be shown (only when depbase is null or vsbo
         if (is_dep) {
@@ -3304,7 +3308,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (permit_dict.permit_crud){
 
-            mod_MSI_dict = {}; // stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
+            mod_MSI_dict = {};
             mod_MSI_dict.subject_dict = {};   // stores all subjects of this scheme
             mod_MSI_dict.schemeitem_dict = {};  // stores schemeitems of this scheme
 
@@ -3355,6 +3359,7 @@ document.addEventListener('DOMContentLoaded', function() {
             MSI_SetInputFields(null, false);
 
             MSI_InputChange();
+
     // ---  set focus to el_MSTUD_abbrev
             //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
 
@@ -3414,23 +3419,47 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MSI_Save
 
-//========= MSI_InputChange  ============= PR2021-06-24 PR2021-07-07
-    function MSI_InputChange(){
-        //console.log( "===== MSI_InputChange  ========= ");
+//========= MSI_InputChange  ============= PR2021-06-24 PR2021-07-07 PR2022-04-29
+    function MSI_InputChange(el_input){
+        console.log( "===== MSI_InputChange  ========= ");
+        // values of data_field are: department_pk, lvl_pk, sct_pk 13
 
-        const department_pk = (Number(el_MSI_department.value)) ? Number(el_MSI_department.value) : null;
-        const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
-        const depbase_pk = get_dict_value(dep_dict, ["base_id"]);
-        const lvl_pk = (el_MSI_level.value) ? Number(el_MSI_level.value) : null
-        const sct_pk = (el_MSI_sector.value) ? Number(el_MSI_sector.value) : null
+        const data_field = get_attr_from_el(el_input, "data-field")
+        // get pk values from setting_dict when opening modal
 
-        MSI_MSJT_set_selectbox_level_sector("MSI", department_pk);
+        // el_input is undefined when called by MSI_Open, then values of mod_MSI_dict.department_pk are entered in MSI_Open
+        if (el_input){
+            const new_value = (el_input && el_input.value && Number(el_input.value)) ? Number(el_input.value) : null;
 
-        mod_MSI_dict.scheme_dict = get_scheme_dict(department_pk, lvl_pk, sct_pk);
+            if (new_value){
+                if (data_field === "department_pk" ) {
+                    mod_MSI_dict.department_pk = new_value;
+                    const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", mod_MSI_dict.department_pk);
+                    mod_MSI_dict.depbase_pk = get_dict_value(dep_dict, ["base_id"]);
+                } else if  (data_field === "lvl_pk") {
+                    mod_MSI_dict.lvl_pk = new_value;
+                } else if  (data_field === "sct_pk") {
+                    mod_MSI_dict.sct_pk = new_value;
+                };
+            };
+
+        };
+
+    console.log( "depbase_pk", mod_MSI_dict.depbase_pk);
+    console.log( "mod_MSI_dict.department_pk", mod_MSI_dict.department_pk);
+    console.log( "mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk);
+    console.log( "mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk);
+
+        MSI_MSJT_set_selectbox_level_sector("MSI", mod_MSI_dict.department_pk);
+
+        mod_MSI_dict.scheme_dict = get_scheme_dict(mod_MSI_dict.department_pk, mod_MSI_dict.lvl_pk, mod_MSI_dict.sct_pk);
         const scheme_pk = (mod_MSI_dict.scheme_dict) ? mod_MSI_dict.scheme_dict.id : null;
 
+    console.log( "scheme_pk", scheme_pk);
+    console.log( "mod_MSI_dict.scheme_dict", mod_MSI_dict.scheme_dict);
+
         MSI_set_headertext();
-        MSI_FillDicts(depbase_pk, department_pk, scheme_pk);
+        MSI_FillDicts(mod_MSI_dict.depbase_pk, mod_MSI_dict.department_pk, scheme_pk);
         MSI_FillTblSubjects();
         MSI_FillTblSchemeitems();
 
@@ -3439,9 +3468,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSI_set_headertext  ================  PR2021-06-24  PR2021-07-07
     function MSI_set_headertext() {
-        //console.log(" -----  MSI_set_headertext   ----")
+        console.log(" -----  MSI_set_headertext   ----")
+    console.log( "mod_MSI_dict", mod_MSI_dict);
+    console.log( "mod_MSI_dict.scheme_name", mod_MSI_dict.scheme_name);
     // ---  set header text
-        el_MSI_header.innerText =  (mod_MSI_dict.scheme_name) ? mod_MSI_dict.scheme_name : loc.Subject_scheme;
+        el_MSI_header.innerText = (mod_MSI_dict.scheme_dict && mod_MSI_dict.scheme_dict.name) ? mod_MSI_dict.scheme_dict.name : loc.Subject_scheme;
     }  // MSI_set_headertext
 
 //========= MSI_FillDicts  ============= PR2021-06-22

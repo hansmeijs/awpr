@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_grade_approve = get_attr_from_el(el_data, "data-url_grade_approve");
     urls.url_grade_approve_single = get_attr_from_el(el_data, "data-url_grade_approve_single");
     urls.url_grade_submit_ex2 = get_attr_from_el(el_data, "data-url_grade_submit_ex2");
-    urls.url_studsubj_send_email_exform = get_attr_from_el(el_data, "data-url_studsubj_send_email_exform");
+    urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
     urls.url_grade_block = get_attr_from_el(el_data, "data-url_grade_block");
 
     urls.url_download_grade_icons = get_attr_from_el(el_data, "data-download_grade_icons_url");
@@ -129,9 +129,9 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "input", "div", "div", "div",  // PR2022-03-03 entering cegrades not allowed:  set from input to div
                                 "div"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
-                                "text", "toggle", "text", "toggle",
-                                "text", "toggle", "text",
-                                "text", "toggle", "text",  "text",
+                                "text", "status", "text", "status",
+                                "text", "status", "text",
+                                "text", "status", "text",  "text",
                                 "toggle"],
                     field_width: ["020", "060", "240", "060", "060", "120", "075","240",
                                 "090", "020", "090", "020",
@@ -150,27 +150,21 @@ document.addEventListener("DOMContentLoaded", function() {
                                   "cescore", "ce_status", "cegrade", "note_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
                                 "input", "div",  "input", "div"],
-                    filter_tags: ["text", "text", "text", "text", "text", "text", "text","text",
-                                "text", "text", "text", "text"],
+                    filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
+                                "text", "status", "text", "text"],
                     field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
+
         btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
                                   "Third_period_score", "", "Third_period_grade", ""],
-                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "cluster_name","subj_code", "subj_name",
+                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "cluster_name", "subj_code", "subj_name",
                                   "cescore", "ce_status", "cegrade", "note_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
-                                    "input", "div",  "input", "div"],
+                                    "input", "status",  "input", "div"],
                     filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
                                     "text", "text", "text", "text"],
                     field_width: ["020", "060", "240", "060", "060", "120", "075","240", "090", "020", "090", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
-
-        published: {field_caption: ["", "Name_ex_form", "Exam_period", "Exam_type", "Date_submitted", "Download_Exform"],
-                    field_names: ["select", "name", "examperiod",  "examtype", "datepublished", "url"],
-                    field_tags: ["div", "div", "div", "div", "div", "a"],
-                    filter_tags: ["text", "text","text", "text",  "text", "text"],
-                    field_width: ["020", "480", "150", "150", "150", "120"],
-                    field_align: ["c", "r", "l", "c", "c", "c", "l"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -207,16 +201,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
-        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
@@ -1160,7 +1154,10 @@ document.addEventListener("DOMContentLoaded", function() {
                         const class_str = (permit_dict.permit_read_note) ? "note_0_1" : "note_0_0"
                         el_header.classList.add(class_str)
                     }
-if(j && !is_status_field){th_header.classList.add("border_left")};
+
+        // --- add left border, not when status field
+                    if(j && !is_status_field){th_header.classList.add("border_left")};
+
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
 
@@ -1175,11 +1172,23 @@ if(j && !is_status_field){th_header.classList.add("border_left")};
         // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
-if(j && !is_status_field){th_filter.classList.add("border_left")};
+
+        // --- add left border, not when status field
+                    if(j && !is_status_field){th_filter.classList.add("border_left")};
+
         // --- add EventListener to el_filter
                     if (["text", "number"].includes(filter_tag)) {
                         el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
                         add_hover(th_filter);
+
+                    } else if (filter_tag === "status") {
+                        // add EventListener for icon to th_filter, not el_filter
+                        th_filter.addEventListener("click", function(event){HandleFilterStatus(el_filter)});
+                        th_filter.classList.add("pointer_show");
+                    // default empty icon is necessary to set pointer_show
+                        el_filter.classList.add("diamond_3_4");  //  diamond_3_4 is blank img
+                        add_hover(th_filter);
+
                     } else if (filter_tag === "toggle") {
                         // add EventListener for icon to th_filter, not el_filter
                         th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
@@ -1301,7 +1310,8 @@ if(j && !is_status_field){th_filter.classList.add("border_left")};
                         el.classList.add("pr-2");
                     }
 
-if(j && !is_status_field){td.classList.add("border_left")};
+        // --- add left border, not when status field
+                    if(j && !is_status_field){td.classList.add("border_left")};
 
                     if (field_name.includes("status")){
     // --- add column with status icon
@@ -1340,7 +1350,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
         // --- add EventListener to td
                 if (["se_status", "sr_status", "pe_status", "ce_status"].includes(field_name)) {
-                    td.addEventListener("click", function() {UploadToggle(el)}, false)
+                    td.addEventListener("click", function() {UploadStatus(el)}, false)
                     add_hover(td);
                 } else if (field_name === "note_status"){
                     if(permit_dict.permit_read_note){
@@ -1480,7 +1490,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
             //                  (auth2by_id ) ? "3" :
             //                  (auth1by_id) ? "2" : "1"; // diamond_0_0 is outlined diamond
 
-            if(published_id){
+            if(is_blocked){
+                filter_value = "3";
+            } else if(published_id){
                 filter_value = "2";
             } else if (auth4_must_sign) {
                 filter_value = (auth1by_id && auth2by_id && auth3by_id && auth4by_id)  ? "2" : "1";
@@ -1674,13 +1686,24 @@ if(j && !is_status_field){td.classList.add("border_left")};
     console.log("fldName", fldName)
     console.log("data_dict", data_dict)
 
+            const is_allowed_cluster = get_is_allowed_cluster(data_dict.cluster_id);
+
             const has_permit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
-            if (!has_permit){
+            if (!is_allowed_cluster) {
+        // show message no_permission_cluster
+       // "This subject does not belong to the allowed clusters.")
+       // "You don't have permission to edit this %(score)s.")
+                const msg_html = ["<div class='p-2'>", loc.grade_err_list.no_permission_cluster_01, "<br>",
+                        (fldName.includes("score")) ? loc.grade_err_list.no_permission_edit_score : loc.grade_err_list.no_permission_edit_grade,
+                        "</div>"].join("");
+                b_show_mod_message_html(msg_html);
+        // put back old value  in el_input
+                el_input.value = old_value;
+            } else if (!has_permit){
         // show message no permission
                 b_show_mod_message_html(loc.grade_err_list.no_permission);
         // put back old value  in el_input
                 el_input.value = old_value;
-
             } else {
                 const blocked_field = fldName.slice(0, 2) + "_blocked";
                 const published_field = fldName.slice(0, 2) + "_published_id";
@@ -1695,7 +1718,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
     console.log("is_published", is_published)
     console.log("is_published", is_published)
 
-                if (is_submitted){
+                if (is_submitted && false){
                     // Note: if grade blocked: this means the inspection has given permission to change grade
                     // when blocking by Inspection the published and auth fields are reset to null
                     const msg_html = (!is_blocked) ? loc.grade_err_list.grade_submitted + "<br>" + loc.grade_err_list.need_permission_inspection :
@@ -1895,9 +1918,9 @@ if(j && !is_status_field){td.classList.add("border_left")};
      } // DownloadGradeStatusAndIcons
 
 /////////////////////////////////////////////
-//========= UploadToggle  ============= PR2020-07-31  PR2021-01-14 PR2022-03-20
-    function UploadToggle(el_input) {
-        console.log( " ==== UploadToggle ====");
+//========= UploadStatus  ============= PR2020-07-31  PR2021-01-14 PR2022-03-20
+    function UploadStatus(el_input) {
+        console.log( " ==== UploadStatus ====");
         console.log( "permit_dict", permit_dict);
         //console.log( "permit_dict.permit_approve_grade", permit_dict.permit_approve_grade);
 
@@ -2024,42 +2047,44 @@ if(j && !is_status_field){td.classList.add("border_left")};
                         };  // if(fldName in data_dict)
                     };  //  if(requsr_auth_index)
 
-    // +++ Inspectorate can block grades +++++++++++++++++++++
+// ++++++++++++++++ Inspectorate can block grades +++++++++++++++++++++
                 } else if(permit_dict.permit_block_grade ){
-                    if (is_published || is_blocked)  {
-                        mod_dict = {tblName: tblName,
-                                    fldName: fldName,
-                                    grade_pk: grade_pk,
-                                    examtype_2char: examtype_2char,
-                                    examperiod: examperiod,
-                                    is_published: is_published,
-                                    is_blocked: is_blocked,
-                                    data_dict: data_dict,
-                                    el_input: el_input};
 
-                        ModConfirmOpen("block_grade")
-                    };
+    // check if cluster is allowed
+                    const is_allowed_cluster = get_is_allowed_cluster(data_dict.cluster_id);
+
+                    console.log("is_allowed_cluster: ", is_allowed_cluster);
+                    if (is_published || is_blocked)  {
+                        if (!is_allowed_cluster){
+                            const msg_txt = (!is_blocked) ? loc.No_cluster_block_permission : loc.No_cluster_unblock_permission;
+                            const msg_html = ["<div class='p-2'>", msg_txt, "</div>"].join("");
+                            b_show_mod_message_html(msg_html);
+                        } else {
+                            mod_dict = {tblName: tblName,
+                                        fldName: fldName,
+                                        grade_pk: grade_pk,
+                                        examtype_2char: examtype_2char,
+                                        examperiod: examperiod,
+                                        is_published: is_published,
+                                        is_blocked: is_blocked,
+                                        data_dict: data_dict,
+                                        el_input: el_input};
+
+                            ModConfirmOpen("block_grade")
+                        };
+                    };  //  if (is_published || is_blocked)
                 };  // if(permit_dict.permit_approve_grade)
             }  //   if(!isEmpty(data_dict)){
         };  // if(permit_dict.permit_approve_grade){
-    };  // UploadToggle
+    };  // UploadStatus
 
 //========= UploadApproveGrade  ============= PR2022-03-12
     function UploadApproveGrade(tblName, fldName, examtype_2char, data_dict, auth_dict, requsr_auth_index,
                                 is_published, is_blocked, new_requsr_auth_approved, el_input) {
         console.log( " ==== UploadApproveGrade ====");
 // ---  change icon, before uploading
-        // check for allowed cluster - othet allowed not nedded because they are not downloaded
-        //const is_allowed_cluster = (!data_dict.cluster_id ||
-        //                            !permit_dict.requsr_allowed_clusters ||
-        //                            !permit_dict.requsr_allowed_clusters.length ||
-        //                            permit_dict.requsr_allowed_clusters.includes(data_dict.cluster_id));
-        let is_allowed_cluster = true;
-        if (permit_dict.requsr_allowed_clusters && permit_dict.requsr_allowed_clusters.length) {
-            if (!permit_dict.requsr_allowed_clusters.includes(data_dict.cluster_id)){
-                //is_allowed_cluster = false;
-            };
-        };
+
+        const is_allowed_cluster = get_is_allowed_cluster(data_dict.cluster_id);
         if (!is_allowed_cluster){
             b_show_mod_message_html(loc.approve_err_list.No_cluster_permission);
         } else {
@@ -2091,21 +2116,18 @@ if(j && !is_status_field){td.classList.add("border_left")};
 //========= UploadBlockGrade  ============= PR2022-04-16
     function UploadBlockGrade(new_is_blocked) {
         console.log( " ==== UploadBlockGrade ====");
+        console.log("new_is_blocked: ", new_is_blocked);
 
 // ---  change icon, before uploading
-        // check for allowed cluster - othet allowed not nedded because they are not downloaded
-        //const is_allowed_cluster = (!data_dict.cluster_id ||
-        //                            !permit_dict.requsr_allowed_clusters ||
-        //                            !permit_dict.requsr_allowed_clusters.length ||
-        //                            permit_dict.requsr_allowed_clusters.includes(data_dict.cluster_id));
-        let is_allowed_cluster = true;
-        if (permit_dict.requsr_allowed_clusters && permit_dict.requsr_allowed_clusters.length) {
-            if (!permit_dict.requsr_allowed_clusters.includes(data_dict.cluster_id)){
-                //is_allowed_cluster = false;
-            };
-        };
+
+        // check if cluster is allowed
+        const is_allowed_cluster = get_is_allowed_cluster(mod_dict.data_dict.cluster_id);
+
+        console.log("is_allowed_cluster: ", is_allowed_cluster);
         if (!is_allowed_cluster){
-            b_show_mod_message_html(loc.approve_err_list.No_cluster_permission);
+            const msg_txt = (new_is_blocked) ? loc.No_cluster_block_permission : loc.No_cluster_unblock_permission ;
+            const msg_html = ["<div class='p-2'>", msg_txt, "</div>"].join("");
+            b_show_mod_message_html(msg_html);
         } else {
             // "diamond_1_4" = red diamond: blocked by Inspectorate, published is removed to enable correction
             // "diamond_2_4" = orange diamond: published after blocked by Inspectorate
@@ -2199,10 +2221,11 @@ if(j && !is_status_field){td.classList.add("border_left")};
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2022-02-17 PR2022-04-17
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-            console.log("mode", mode )
+        console.log("mode", mode )
+        console.log("mod_dict", mod_dict )
         // values of mode are : "approve", "block_grade", "prelim_ex2"
 
-        // mode already has values, got it in UploadToggle
+        // mod_dict already has values, got it in UploadStatus
 
         mod_dict.mode = mode;
         let hide_btn_save = false;
@@ -2316,7 +2339,6 @@ if(j && !is_status_field){td.classList.add("border_left")};
 
         } else if (mod_dict.mode === "block_grade"){
                 const new_blocked = !mod_dict.is_blocked;
-
                 UploadBlockGrade(new_blocked) ;
 
         } else if (mod_dict.mode === "prelim_ex2"){
@@ -2602,7 +2624,7 @@ if(j && !is_status_field){td.classList.add("border_left")};
                 };
             } else {
                 if (mod_MAG_dict.step === 1 && mod_MAG_dict.test_is_ok){
-                    url_str = urls.url_studsubj_send_email_exform;
+                    url_str = urls.url_send_email_verifcode;
                 } else if (mod_MAG_dict.is_submit_ex2_mode || mod_MAG_dict.is_submit_ex2a_mode){
                     url_str = urls.url_grade_submit_ex2;
 
@@ -3364,26 +3386,26 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             const data_dict = get_gradedict_by_gradepk(grade_pk);
     //console.log("data_dict", data_dict);
 
+// ++++ updated row +++++++++++
 // ---  create list of updated fields
             if(!isEmpty(data_dict)){
                 for (const [key, new_value] of Object.entries(update_dict)) {
+
+    // ---  if value has changed: add field to updated_columns before updateing data_dict
                     const mapped_key = (key === "se_blocked") ? "se_status" :
                                         (key === "sr_blocked") ? "sr_status" :
                                         (key === "pe_blocked") ? "pe_status" :
                                         (key === "ce_blocked") ? "ce_status" : key;
+                    if (mapped_key in data_dict && new_value !== data_dict[mapped_key]) {
+                        updated_columns.push(mapped_key);
+                    };
 
-                    if (mapped_key in data_dict){
-                        if (new_value !== data_dict[mapped_key]) {
-                            updated_columns.push(mapped_key)
-
-        // ---  put updated map_dict back in data_map
-                        if(key in data_dict){
-                            data_dict[key] = update_dict[key];
-                        };
-
-                }}};
+    // ---  put updated value back in data_map
+                    if(key in data_dict && new_value !== data_dict[key]) {
+                        data_dict[key] = update_dict[key];
+                    };
+                };
     //console.log("updated_columns", updated_columns);
-
 
         // ---  make update in tblRow
                 const tblRow = document.getElementById(data_dict.mapid);
@@ -3533,6 +3555,54 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
 
     };  // HandleFilterToggle
+
+
+//========= HandleFilterStatus  =============== PR2022-05-01
+    function HandleFilterStatus(el_input) {
+        console.log( "===== HandleFilterStatus  ========= ");
+        console.log( "el_input", el_input);
+
+    // - get col_index  from  el_input
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+
+    // - get filter_tag from  el_input
+        // filter_tag is always 'status'
+        const filter_tag = "status";
+    console.log( "col_index", col_index);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : 0;
+
+    console.log( "filter_array", filter_array);
+    console.log( "filter_value", filter_value);
+
+        let icon_class = "diamond_3_4", title = "";
+        // default filter triple '0'; is show all, '1' is show not fully approved, '2' show fully approved / submitted '3' show blocked
+// - toggle filter value
+        const new_value = (filter_value < 3) ?  filter_value + 1 : 0;
+
+    console.log( "new_value", new_value);
+
+// - get new icon_class
+
+        icon_class = (new_value === 3) ? "diamond_1_4" : (new_value === 2) ? "diamond_3_3" : (new_value === 1) ? "diamond_1_1" : "diamond_3_4";
+        title = (new_value === 3) ? loc.Show_blocked : (new_value === 2) ? loc.Show_fully_approved : (new_value === 1) ?loc.Show_not_fully_approved : "";
+
+        el_input.className = icon_class;
+        el_input.title = title
+    console.log( "icon_class", icon_class);
+
+// - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+    console.log( "filter_dict", filter_dict);
+
+        t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
+
+    };  // HandleFilterStatus
 
 
 //========= ResetFilterRows  ====================================
@@ -4766,8 +4836,17 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         return tblName;
     }
 
-
-
-
+//========= get_is_allowed_cluster  ======== // PR2022-05-01
+    function get_is_allowed_cluster(cluster_id) {
+        // check if cluster is allowed
+        // check for other allowed field not necessarybecause they are not downloaded
+        const is_allowed_cluster =
+            (permit_dict.requsr_allowed_clusters) ?
+                (cluster_id) ?
+                    permit_dict.requsr_allowed_clusters.includes(cluster_id)
+                    : false
+                : true;
+        return is_allowed_cluster;
+    };
 
 })  // document.addEventListener('DOMContentLoaded', function()

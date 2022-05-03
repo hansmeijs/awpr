@@ -108,9 +108,13 @@
 
     }  // t_MMSED_Save
 
-//=========  t_MSED_FillSelectTable  ================ PR2020-08-21 PR2020-12-18 PR2021-05-10 PR2021-09-24
+//=========  t_MSED_FillSelectTable  ================ PR2020-08-21 PR2020-12-18 PR2021-05-10 PR2021-09-24 PR2022-04-30
     function t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries) {
         //console.log( "===== t_MSED_FillSelectTable ========= ");
+        //console.log( "tblName", tblName);
+        //console.log( "all_countries", all_countries);
+        //console.log( "permit_dict", permit_dict);
+        //console.log( "data_map", data_map);
 
         const tblBody_select = document.getElementById("id_MSED_tblBody_select");
         tblBody_select.innerText = null;
@@ -145,9 +149,12 @@
                     };
                 } else if(tblName === "department"){
                     if (!all_countries){
-                        if (permit_dict.allowed_depbases){
+                        // all_countries is only used in exams.js
+                        // all_countries = true, used to let ETE select all deps, schools must only be able to select their deps
+                        if (permit_dict.allowed_depbases && permit_dict.allowed_depbases.length){
                             skip_row = !permit_dict.allowed_depbases.includes(pk_int);
                         } else {
+                            // must set skip_row = false when allowed_depbases = []? Don't know, it seems to be OK like this
                             skip_row = true;
                         };
                     };
@@ -242,13 +249,16 @@
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
     //console.log( "el_MSSSS_input", el_MSSSS_input);
+                // PR2022-05-01 dont open modal when only 1 item in data_rows
+                if (data_rows && data_rows.length > 1){
         // --- fill select table
-                t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
-                el_MSSSS_input.value = null;
-        // ---  set focus to input element
-                set_focus_on_el_with_timeout(el_MSSSS_input, 50);
-        // ---  show modal
-                 $("#id_mod_select_school_subject_student").modal({backdrop: true});
+                    t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
+                    el_MSSSS_input.value = null;
+            // ---  set focus to input element
+                    set_focus_on_el_with_timeout(el_MSSSS_input, 50);
+            // ---  show modal
+                     $("#id_mod_select_school_subject_student").modal({backdrop: true});
+                 };
              };
          };
     }; // t_MSSSS_Open
@@ -341,6 +351,14 @@
                         (tblName === "cluster") ? loc.Clusters.toLowerCase() :
                         (tblName === "school") ? loc.Schools.toLowerCase() : "";
         return "<" + loc.All_ + caption + ">";
+    }
+    function t_MSSSS_NoItems_txt(tblName){
+        // PR2022-05-01
+        const caption = (tblName === "student") ? loc.Candidates.toLowerCase() :
+                        (tblName === "subject") ? loc.Subjects.toLowerCase() :
+                        (tblName === "cluster") ? loc.Clusters.toLowerCase() :
+                        (tblName === "school") ? loc.Schools.toLowerCase() : "";
+        return "<" + loc.No_ + caption + ">";
     }
 
     function t_MSSSS_AddAll_dict(tblName){
@@ -517,9 +535,6 @@
         //console.log( "tblName", tblName);
         //console.log( "selected_pk", selected_pk);
 
-        const add_all_txt = t_MSSSS_AddAll_txt(tblName);
-        //console.log( "add_all_txt", add_all_txt);
-
         if (tblName === "school") {
 
         } else if (["subject", "student", "cluster"].includes(tblName)) {
@@ -534,27 +549,40 @@
                                   (tblName === "subject") ? subject_rows :
                                   (tblName === "cluster") ? cluster_rows : [];
         //console.log( "data_rows", data_rows);
-                let display_txt = null;
+                let display_txt = null, data_dict = null;
                 // selected_pk = -1 when clicked on All
                 if(selected_pk > 0){
-                    const data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
-        //console.log( "data_dict", data_dict);
-                    const name_field = (tblName === "student") ? "name_first_init" : "name";
-                    const code_field = (tblName === "student") ? "name_first_init" : "code";
-                    display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 25) ? data_dict[name_field] :
-                                  (data_dict && code_field in data_dict) ? data_dict[code_field] : "---";
+                    data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
+                    display_txt = t_MSSSS_get_display_text(tblName, data_dict);
 
                 } else {
-                    display_txt = add_all_txt;
+                    if (data_rows){
+                        if (data_rows.length === 1){
+                            display_txt = t_MSSSS_get_display_text(tblName, data_rows[0]);
+                        } else {
+                            display_txt = t_MSSSS_AddAll_txt(tblName);
+                        }
+                    } else {
+                        display_txt = t_MSSSS_NoItems_txt(tblName);
+                    };
                 };
-
                 el_SBR_select.value = display_txt;
                 add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
             }
             const el_SBR_container_showall = document.getElementById("id_SBR_container_showall");
             add_or_remove_class(el_SBR_container_showall, cls_hide, false)
         };
-    }; // MSSSS_display_in_sbr
+    }; // t_MSSSS_display_in_sbr
+
+    function t_MSSSS_get_display_text(tblName, data_dict) {
+        // PR2022-05-01
+        const name_field = (tblName === "student") ? "name_first_init" : "name";
+        const code_field = (tblName === "student") ? "name_first_init" : "code";
+        const display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 25) ? data_dict[name_field] :
+                            (data_dict && code_field in data_dict) ? data_dict[code_field] : "---";
+        return display_txt
+    }
+
 
 // +++++++++++++++++ END OF MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 
@@ -962,15 +990,17 @@
         // used in studsubj.js
         const display_rows = []
         const has_items = (!!rows && !!rows.length);
+        const has_one_item = (has_items && rows.length === 1);
         const has_profiel = setting_dict.sel_dep_has_profiel;
 /*
-        console.log("=== t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase");
-        console.log("tblName", tblName);
-        console.log("rows", rows);
-        console.log("loc", loc);
-        console.log("setting_dict", setting_dict);
-        console.log("has_items", has_items);
-        console.log("has_profiel", has_profiel);
+    console.log("=== t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase");
+    console.log("tblName", tblName);
+    console.log("rows", rows);
+    console.log("loc", loc);
+    console.log("setting_dict", setting_dict);
+    console.log("has_items", has_items);
+    console.log("has_one_item", has_one_item);
+    console.log("has_profiel", has_profiel);
 */
         // when label has no id the text is Sector / Profiel, set in .html file
         const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label");
@@ -983,7 +1013,7 @@
              ) + "&#62";
 
         if (has_items){
-            if (rows.length === 1){
+            if (has_one_item){
                 // if only 1 level: make that the selected one
                 if (tblName === "department"){
                     setting_dict.sel_depbase_pk = rows.base_id;
@@ -992,7 +1022,7 @@
                 } else if (tblName === "sctbase"){
                     setting_dict.sel_sctbase_pk = rows.base_id
                 }
-            } else if (rows.length > 1){
+            } else {
                 //PR2022-01-08 caption_all = all_txt is necessary to skip all_txt in setting_dict.sel_sector_abbrev
                 caption_all = all_txt;
 
@@ -1007,6 +1037,8 @@
                              (tblName === "sctbase") ? row.name : row.abbrev
                 });
             };
+    //console.log("display_rows", display_rows);
+
             const selected_pk = (tblName === "department") ? setting_dict.sel_depbase_pk : (tblName === "lvlbase") ? setting_dict.sel_lvlbase_pk : (tblName === "sctbase") ? setting_dict.sel_sctbase_pk : null;
             const id_SBR_select = (tblName === "department") ? "id_SBR_select_department" : (tblName === "lvlbase") ? "id_SBR_select_level" : (tblName === "sctbase") ? "id_SBR_select_sector" : null;
             const el_SBR_select = (id_SBR_select) ? document.getElementById(id_SBR_select) : null;
@@ -1541,8 +1573,8 @@
 
 //========= t_Filter_TableRows  ==================================== PR2020-08-17  PR2021-08-10
     function t_Filter_TableRows(tblBody_datatable, filter_dict, selected, count_unit_sing, count_unit_plur ) {
-        //console.log( "===== t_Filter_TableRows  ========= ");
-        //console.log( "filter_dict", filter_dict);
+        console.log( "===== t_Filter_TableRows  ========= ");
+        console.log( "filter_dict", filter_dict);
 
         selected.item_count = 0
 // ---  loop through tblBody.rows
@@ -1581,7 +1613,6 @@
     function t_ShowTableRowExtended(filter_dict, tblRow, data_inactive_field) {
         //console.log( "===== t_ShowTableRowExtended  ========= ");
         //console.log( "filter_dict", filter_dict);
-        //console.log( "filter_dict", filter_dict);
         // filter_dict = {2: ["text", "r", ""], 4: ["text", "y", ""] }
         //  filter_row = [empty × 2, "acu - rif", empty, "agata mm"]
 
@@ -1599,7 +1630,7 @@
         if (tblRow){
 
 // --- PR2021-10-28 new way of filtering inactive rows: (for now: only used in mailbox - deleted)
-            // - set filter inactive before other filters, inactive value is stored in tblRow, "data-inactive", skio when data_inactive_field is null
+            // - set filter inactive before other filters, inactive value is stored in tblRow, "data-inactive", skip when data_inactive_field is null
             // - filter_dict has key 'showinactive', value is integer.
             // values of showinactive are:  '0'; is show all, '1' is show active only, '2' is show inactive only
             if (data_inactive_field){
@@ -1610,7 +1641,7 @@
                            (filter_showinactive === 2) ? (!is_inactive) : false
             };
 
-            if (!isEmpty(filter_dict)){
+            if (!hide_row && !isEmpty(filter_dict)){
     // ---  loop through filter_dict key = index_str, value = filter_arr
                for (const [index_str, filter_arr] of Object.entries(filter_dict)) {
 
@@ -1628,7 +1659,13 @@
                             if (el){
                                 const cell_value = get_attr_from_el(el, "data-filter")
 
-                                if (filter_tag === "toggle"){
+
+
+                                if (filter_tag === "status"){
+
+                                    // default filter status '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+                                    hide_row = (filter_value && filter_value !== Number(cell_value));
+                                } else if (filter_tag === "toggle"){
                                     // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                     if (filter_value === "2"){
                                         // only show rows without tickmark
@@ -1637,12 +1674,12 @@
                                         // only show rows with tickmark
                                          if (cell_value !== "1") { hide_row = true };
                                     }
-
-        //console.log("filter_tag", filter_tag);
-        //console.log("filter_value", filter_value, typeof filter_value);
-        //console.log("cell_value", cell_value, typeof cell_value);
-        //console.log("hide_row", hide_row);
-
+/*
+    console.log("filter_tag", filter_tag);
+    console.log("filter_value", filter_value, typeof filter_value);
+    console.log("cell_value", cell_value, typeof cell_value);
+    console.log("hide_row", hide_row);
+*/
                                 } else if(filter_tag === "multitoggle"){  // PR2021-08-21
                                     if (filter_value){
                                         hide_row = (cell_value !== filter_value);
@@ -1660,14 +1697,19 @@
                                      }
                                 } else if( filter_tag === "number") {
                                     // numeric columns: make blank cells zero
-
+/*
+    console.log( "filter_value", filter_value, typeof filter_value);
+    console.log( "Number(filter_value)", Number(filter_value), typeof Number(filter_value));
+    console.log( "cell_value", cell_value, typeof cell_value);
+    console.log( "Number(cell_value)", Number(cell_value), typeof Number(cell_value));
+*/
                                     if(!Number(filter_value)) {
                                         // hide all rows when filter is not numeric
                                         hide_row = true;
                                     } else {
                                         const filter_number = Number(filter_value);
                                         const cell_number = (Number(cell_value)) ? Number(cell_value) : 0;
-        //console.log( "cell_number", cell_number, typeof cell_number);
+    //console.log( "cell_number", cell_number, typeof cell_number);
                                         if ( filter_mode === "lte") {
                                             if (cell_number > filter_number) {hide_row = true};
                                         } else if ( filter_mode === "lt") {
@@ -1698,7 +1740,7 @@
                 };  // for (const [index_str, filter_arr] of Object.entries(filter_dict))
             }  // if (!isEmpty(filter_dict)
         }  // if (tblRow)
-        //console.log("hide_row", hide_row);
+    //console.log("hide_row", hide_row);
         return !hide_row
     }; // t_ShowTableRowExtended
 

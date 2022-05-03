@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_studsubj_multiple_occurrences = get_attr_from_el(el_data, "data-url_studsubj_multiple_occurrences");
     urls.url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
     urls.url_studsubj_approve_submit_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_submit_multiple");
-    urls.url_studsubj_send_email_exform = get_attr_from_el(el_data, "data-url_studsubj_send_email_exform");
+    urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
     urls.url_grade_download_ex1 = get_attr_from_el(el_data, "data-url_grade_download_ex1");
 
     urls.url_ex3_getinfo = get_attr_from_el(el_data, "data-url_ex3_getinfo");
@@ -4411,15 +4411,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
-            const error_columns = [];
 
-        console.log("map_id", map_id);
     // ---  get list of hidden columns
             // copy col_hidden from mod_MCOL_dict.cols_hidden
             const col_hidden = [];
             b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
 
-// ---  get list of columns that are not updated because of errors
+    // ---  get list of columns that are not updated because of errors
+            const error_columns = [];
             if (update_dict.err_fields){
                 // replace field 'subj_auth2by' by 'subj_status'
                 for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
@@ -4506,11 +4505,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
 
-// ---  first add updated fields to updated_columns list, before updating data_row
+    // ---  first add updated fields to updated_columns list, before updating data_row
                         let updated_columns = [];
                         // first column subj_error
                         for (let i = 0, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-// ---  'status' fields are not in data_row
+    // ---  'status' fields are not in data_row
                             if (col_field.includes("_status")){
                                 const [old_status_className, old_status_title] = UpdateFieldStatus(col_field, data_dict);
                                 const [new_status_className, new_status_title] = UpdateFieldStatus(col_field, update_dict);
@@ -5012,7 +5011,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     url_str = urls.url_studsubj_approve_submit_multiple;
                     upload_dict.mode = "submit_test";
                 } else if (mod_MASS_dict.step === 2){  //PR2022-04-05 debug Hilly Buitenweg: could not get verif code. Was: if (mod_MASS_dict.step === 2
-                    url_str = urls.url_studsubj_send_email_exform;
+                    url_str = urls.url_send_email_verifcode;
                     upload_dict.mode = "request_verif";
                 } else if (mod_MASS_dict.step === 4){
                     upload_dict.mode = "submit_save";

@@ -2004,11 +2004,11 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
                 logger.debug('fldName: ' + str(fldName))
 
             if fldName:
-                new_value = request.user if auth_bool_at_index else None
+                new_ce_exam_authby = request.user if auth_bool_at_index else None
                 if logging_on:
-                    logger.debug('new_value: ' + str(auth_index))
+                    logger.debug('new_ce_exam_authby: ' + str(new_ce_exam_authby))
 
-                setattr(grade_instance, fldName, new_value)
+                setattr(grade_instance, fldName, new_ce_exam_authby)
                 save_changes = True
 
 # --- end of for loop ---
@@ -2815,30 +2815,31 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
             sql_keys['grade_pk_arr'] = grade_pk_list
             sql_list.append("AND grd.id IN ( SELECT UNNEST( %(grade_pk_arr)s::INT[]))")
         else:
-            # get_userfilter_allowed_subjbase - filters on field subj.base_id
-            acc_view.get_userfilter_allowed_subjbase(
+
+            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK) if setting_dict else None
+            acc_view.get_userfilter_allowed_lvlbase(
+                request=request,
                 sql_keys=sql_keys,
                 sql_list=sql_list,
-                subjbase_pk=None, # filter on sel_subjbase_pk happens on client. Was: subjbase_pk=sel_subjbase_pk,
-                skip_allowed_filter=False,
-                request=request
+                lvlbase_pk=sel_lvlbase_pk,
+                skip_allowed_filter=False
             )
 
+            # get_userfilter_allowed_subjbase - filters on field subj.base_id
+            sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK) if setting_dict else None
+            acc_view.get_userfilter_allowed_subjbase(
+                request=request,
+                sql_keys=sql_keys,
+                sql_list=sql_list,
+                subjbase_pk=sel_subjbase_pk,
+                skip_allowed_filter=False
+            )
             if setting_dict:
+
                 sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
                 if sel_examperiod in (1, 2):
                     sql_keys['ep'] = sel_examperiod
                     sql_list.append("AND grd.examperiod = %(ep)s::INT")
-
-                sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-                if sel_lvlbase_pk:
-                    sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-                    sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
-                # filter on sel_subjbase_pk happens on client.
-                #sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
-                #if sel_subjbase_pk:
-                #    sql_keys['subjbase_pk'] = sel_subjbase_pk
-                #    sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
 
                 # filter on sel_cluster_pk happens on client.
                 #sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
@@ -2859,6 +2860,7 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
+
             cursor.execute(sql, sql_keys)
             grade_rows = af.dictfetchall(cursor)
 
@@ -2882,13 +2884,35 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
 # --- end of create_grade_with_ete_exam_rows
 
 
-def create_grade_exam_result_rows(sel_examyear_code, sel_examperiod, sel_depbase_pk, request):
+def create_grade_exam_result_rows(sel_examyear_code, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, setting_dict, request):
     # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
-
+        logger.debug('setting_dict: ' + str(setting_dict))
+    """
+    setting_dict: {
+        'user_lang': 'nl', 
+        'sel_page': 'page_exams', 
+        'sel_schoolbase_pk': 4, 
+        'sel_schoolbase_code': 'CUR03', 
+        'requsr_same_school': False, 
+        'sel_examyear_pk': 1, 
+        'sel_examyear_code': 2022, 
+        'sel_examyear_published': True, 'no_practexam': True, 
+        'sel_school_pk': 3, 'sel_school_name': 'Juan Pablo Duarte Vsbo', 'sel_school_abbrev': 'JPD', 'sel_school_depbases': '1', 
+        'sel_school_activated': True, 
+        'sel_depbase_pk': 1, 'sel_depbase_code': 'Vsbo', 
+        'sel_department_pk': 4, 
+        'sel_dep_level_req': True, 
+        'sel_dep_has_profiel': False, 'sel_examperiod': 1, 
+        'sel_examtype': 'se', 'sel_examtype_caption': 'Schoolexamen', 
+        'sel_auth_index': 2, 'sel_auth_function': 'Secretaris', 
+        'sel_lvlbase_pk': 6, 'sel_level_abbrev': 'PBL', 
+        'sel_subject_pk': 126, 'sel_subject_code': 'bw', 
+        'sel_subject_name': 'Bouw', 'sel_btn': 'btn_results'}
+    """
     # - only grades with ete exams are visible
     # - only ce_exams that are submitted have results shown
     # - group by exam and school
@@ -2910,7 +2934,7 @@ def create_grade_exam_result_rows(sel_examyear_code, sel_examperiod, sel_depbase
 
                     "WHERE exam.ete_exam",
                     "AND grd.examperiod = %(experiod)s::INT",
-                    "AND exam.published_id IS NOT NULL",
+                    #"AND exam.published_id IS NOT NULL",
                     #TODO set filter ce_exam_published_id
                     #"AND grd.ce_exam_published_id IS NOT NULL ",
                     "AND grd.pescore IS NOT NULL",
@@ -2922,10 +2946,16 @@ def create_grade_exam_result_rows(sel_examyear_code, sel_examperiod, sel_depbase
 
         sql_list = ["WITH grd_result AS (" + sub_grd_result + ")",
 
-                    "SELECT exam.id AS exam_id, school.id AS school_id, schoolbase.code AS schoolbase_code, school.name AS school_name,",
+                    "SELECT exam.id AS exam_id, ",
+                    "school.id AS school_id, schoolbase.code AS schoolbase_code, school.name AS school_name,",
                     "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
                     "subjbase.code AS subj_code, subj.name AS subj_name,",
                     "exam.version,",
+
+                    "CONCAT(subj.name,",
+                    "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
+                    "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+
                     "COUNT(grd.id) AS grd_count,",
                     "COUNT(grd_result.score_frac) AS result_count,",
                     "AVG(grd_result.score_frac) AS result_avg",
@@ -2948,13 +2978,33 @@ def create_grade_exam_result_rows(sel_examyear_code, sel_examperiod, sel_depbase
                     "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
                     "WHERE ey.code = %(ey_code)s::INT",
-                    "AND exam.ete_exam",
+                      "AND exam.ete_exam",
                     "AND grd.examperiod = %(experiod)s::INT",
                     "AND dep.base_id = %(depbase_id)s::INT",
-                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
-                    "GROUP BY exam.id, school.id, schoolbase.code, school.name, depbase.code, lvl.abbrev, subjbase.code, subj.name, exam.version"
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                     ]
 
+        if setting_dict:
+            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+            if sel_lvlbase_pk:
+                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+            sel_subjbase_pk = None
+            # get sel_subjbase_pk from sel_subject_pk TODO deprecate, replace filter on sel_subject_pk by sel_subjbase_pk
+            sel_subject_pk = setting_dict.get(c.KEY_SEL_SUBJECT_PK) if setting_dict else None
+            if sel_subject_pk:
+                subject = subj_mod.Subject.objects.get_or_none(pk=sel_subject_pk)
+                if subject and subject.base.pk:
+                    sel_subjbase_pk = subject.base.pk
+                else:
+                    sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
+
+            if sel_subjbase_pk :
+                sql_keys['sjb_pk'] = sel_subjbase_pk
+                sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+
+        sql_list.append("GROUP BY exam.id, school.id, schoolbase.code, school.name, depbase.code, lvl.abbrev, subjbase.code, subj.name, exam.version")
         sql_list.append('ORDER BY exam.id, school.id')
 
         sql = ' '.join(sql_list)
@@ -2966,7 +3016,7 @@ def create_grade_exam_result_rows(sel_examyear_code, sel_examperiod, sel_depbase
         if logging_on:
             logger.debug('sql_keys: ' + str(sql_keys))
 
-        if result_rows:
+        if result_rows and False:
             if logging_on:
                 logger.debug('len(grade_rows): ' + str(len(result_rows)))
             for row in result_rows:
@@ -3641,6 +3691,21 @@ def get_allassignment_detail_dict_from_string(assignment_str, keys_str):
 
     all_keys_dict = get_allkeys_dict_from_string(keys_str)
 
+    """
+    partex: "1;1;4;20;Praktijkexamen onderdeel A # 3;1;8;12;Minitoets 1 BLAUW onderdeel A # ...
+    format of partex_str is:
+        partex are divided by "#"
+            each item of partex contains: partex_pk ; partex_examperiod ; partex_amount ; max_score ; partex_name #
+
+    assignment: "1;4;20|1;;6;|2;;4;|3;;4;|4;;6; # 3;8;12|1;D;3;|2;C;2;|3;C;;|4;;1;|5;;1;|6;;1;|7;D;;|8;;2; # ...
+    format of assignment_str is:
+        partex are divided by "#"
+            first item of partex contains partex info: partex_pk ; partex_amount ; max_score |
+            other items =  | q_number ; max_char ; max_score ; min_score |
+
+    """
+
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -3852,5 +3917,92 @@ def get_allassignment_dict_from_string(assignment_str, keys_str):
     """
     return all_assignment_dict
 # - end of get_allassignment_dict_from_string
+
+###################################
+
+
+def calc_amount_and_scalelength_of_assignment(exam):
+    # PR2022-05-02
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('exam')
+
+    scalelength = getattr(exam, 'scalelength')
+    amount = getattr(exam, 'amount')
+    partex_str = getattr(exam, 'partex')
+    assignment_str = getattr(exam, 'assignment')
+    keys_str = {} # not needed
+
+    assignment_dict = get_all_partex_assignment_keys_detail_dict(partex_str, assignment_str, keys_str)
+
+    """
+     assignment_dict: {
+     1: {'amount': 7, 'max_score': 9, 'name': 'Minitoets 1 ROOD onderdeel A', 
+        'q': {1: {'max_char': 'C', 'max_score': '1', 'min_score': ''},  2: {'max_char': 'C', 'max_score': '1', 'min_score': ''},  3: {'max_char': 'D', 'max_score': '1', 'min_score': ''},  4: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 5: {'max_char': '', 'max_score': '3', 'min_score': ''},  6: {'max_char': 'C', 'max_score': '1', 'min_score': ''},  7: {'max_char': 'C', 'max_score': '1', 'min_score': ''}}}, 
+     3: {'amount': 6, 'max_score': 8, 'name': 'Minitoets 2 ROOD onderdeel B', 
+        'q': {1: {'max_char': '', 'max_score': '2', 'min_score': ''}, 2: {'max_char': '', 'max_score': '1', 'min_score': ''}, 3: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 4: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 5: {'max_char': '', 'max_score': '2', 'min_score': ''}, 6: {'max_char': '', 'max_score': '1', 'min_score': ''}}}, 
+     5: {'amount': 7, 'max_score': 9, 'name': 'Minitoets 3 ROOD onderdeel C', 
+        'q': {1: {'max_char': '', 'max_score': '2', 'min_score': ''}, 2: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 3: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 4: {'max_char': '', 'max_score': '2', 'min_score': ''}, 5: {'max_char': '', 'max_score': '1', 'min_score': ''}, 6: {'max_char': '', 'max_score': '1', 'min_score': ''}, 7: {'max_char': 'C', 'max_score': '1', 'min_score': ''}}}, 
+     7: {'amount': 7, 'max_score': 8, 'name': 'Minitoets 4 ROOD onderdeel D', 
+        'q': {1: {'max_char': '', 'max_score': '1', 'min_score': ''}, 2: {'max_char': '', 'max_score': '2', 'min_score': ''}, 3: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 4: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 5: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 6: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 7: {'max_char': 'C', 'max_score': '1', 'min_score': ''}}}, 
+     9: {'amount': 2, 'max_score': 23, 'name': 'Praktijkexamen onderdeel A ROOD', 
+        'q': {1: {'max_char': '', 'max_score': '5', 'min_score': ''}, 2: {'max_char': '', 'max_score': '18', 'min_score': ''}}}, 
+     10: {'amount': 3, 'max_score': 21, 'name': 'Praktijkexamen onderdeel B ROOD', 
+        'q': {1: {'max_char': '', 'max_score': '3', 'min_score': ''}, 2: {'max_char': '', 'max_score': '13', 'min_score': ''}, 3: {'max_char': '', 'max_score': '5', 'min_score': ''}}}, 
+     11: {'amount': 3, 'max_score': 23, 'name': 'Praktijkexamen onderdeel C ROOD', 
+        'q': {1: {'max_char': '', 'max_score': '5', 'min_score': ''}, 2: {'max_char': '', 'max_score': '7', 'min_score': ''}, 3: {'max_char': '', 'max_score': '11', 'min_score': ''}}}, 
+     12: {'amount': 2, 'max_score': 12, 'name': 'Praktijkexamen onderdeel D ROOD', 
+        'q': {1: {'max_char': '', 'max_score': '8', 'min_score': ''}, 2: {'max_char': '', 'max_score': '4', 'min_score': ''}}}}
+
+    partex_dict: {'amount': 7, 'max_score': 9, 'name': 'Minitoets 1 ROOD onderdeel A', 
+                    'q': {1: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 2: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 3: {'max_char': 'D', 'max_score': '1', 'min_score': ''}, 4: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 5: {'max_char': '', 'max_score': '3', 'min_score': ''}, 6: {'max_char': 'C', 'max_score': '1', 'min_score': ''}, 7: {'max_char': 'C', 'max_score': '1', 'min_score': ''}}}
+
+    """
+
+    total_amount = 0
+    total_maxscore = 0
+    has_error = False
+    has_changed = False
+
+    for partex_dict in assignment_dict.values():
+        p_amount = partex_dict.get('amount')
+        p_maxscore = partex_dict.get('max_score')
+        q_dict = partex_dict.get('q')
+
+        sub_amount = 0
+        sub_maxscore = 0
+        for q in q_dict.values():
+            sub_amount += 1
+            q_max_score = q.get('max_score')
+            if q_max_score:
+                q_maxscore_int = int(q_max_score)
+                sub_maxscore += q_maxscore_int
+
+        if sub_amount == p_amount:
+            total_amount += sub_amount
+        else:
+            has_error = True
+            logger.error('>>>> sub_amount: ' + str(sub_amount) + ' <> p_amount: ' + str(p_amount) + ' exam.pk: ' + str(exam.pk)  )
+
+        if sub_maxscore == p_maxscore:
+            total_maxscore += sub_maxscore
+        else:
+            has_error = True
+            logger.error('>>>> sub_maxscore: ' + str(sub_maxscore) + ' <> p_maxscore: ' + str(p_maxscore) + ' exam.pk: ' + str(exam.pk))
+
+    if logging_on:
+        logger.debug('amount:      ' + str(amount) +     ' total_amount:   ' + str(total_amount))
+        logger.debug('scalelength: ' + str(scalelength) + ' total_maxscore: ' + str(total_maxscore))
+
+    if not has_error:
+        if total_amount != amount or total_maxscore != scalelength:
+            has_changed = True
+    else:
+        total_amount = None
+        total_maxscore = None
+
+    return total_amount, total_maxscore, has_changed
+# - end of calc_amount_and_scalelength_of_assignment
+
 
 

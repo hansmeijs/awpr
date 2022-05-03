@@ -1229,7 +1229,11 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
         if row is not None:
             examnumber = row[0] or '---'
             # canvas.drawString(tab_list[0], y, examnumber)
-            canvas.drawCentredString(x + pl + pb, y + pb, examnumber)
+            # canvas.drawCentredString(x + pl + pb, y + pb, examnumber)
+
+            # PR2022-05-02 Hans Vlinkervleugel KAP: uses id as examnumbers, outline not good
+            pl_exnr = pb if len(examnumber) > 8 else pl
+            canvas.drawString(x + pl_exnr, y + pb, examnumber)
 
             x += col_width_list[0] * mm
             fullname = row[1] or '---'

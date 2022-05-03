@@ -736,21 +736,17 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25
             elif examperiod == c.EXAMPERIOD_SECOND:
                 caption = str(_('This re-examination'))
             elif examperiod == c.EXAMPERIOD_FIRST:
-                if se_sr_pe_ce == 'se':
-                    caption = str(_('This school exam'))
-                elif se_sr_pe_ce == 'sr':
-                    caption = str(_('This re-examination school exam'))
-                elif se_sr_pe_ce == 'pe':
-                    caption = str(_('This practical exam'))
-                elif se_sr_pe_ce == 'ce':
-                    caption = str(_('This cental exam'))
+                if se_sr_pe_ce in ('se', 'sr'):
+                    caption = str(_('This grade'))
+                elif se_sr_pe_ce in ('pe', 'ce'):
+                    caption = str(_('This score'))
 
             if is_publ:
                 err_list.append(str(_('%(cpt)s is already submitted.') % {'cpt': caption}))
                 err_list.append(str(_('You must ask the Inspectorate permission to make changes.')))
             elif is_auth:
-                err_list.append(str(_('%(cpt)s is already authorized.') % {'cpt': caption}))
-                err_list.append(str(_('You must first undo the authorization before you can make changes.')))
+                err_list.append(str(_('%(cpt)s is already approved.') % {'cpt': caption}))
+                err_list.append(str(_('You must first undo the approval before you can make changes.')))
 
     return err_list
 

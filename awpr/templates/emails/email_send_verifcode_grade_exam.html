@@ -1,0 +1,16 @@
+{% load i18n %}
+
+{% autoescape off %}
+{% trans 'Hello ' %}{{ user.username_sliced }},
+
+{% trans "You are about to submit exams." %}
+
+{% trans 'The verificationcode is:' %}
+
+{{ verificationcode }}
+
+{% trans "The verification code expires in 30 minutes." %}
+
+{% trans 'The AWP-online team' %}
+
+{% endautoescape %}

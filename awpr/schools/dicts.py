@@ -490,7 +490,7 @@ def create_department_rows(examyear):
     return rows
 # --- end of create_department_rows
 
-def create_level_rows(examyear, depbase, cur_dep_only, request):
+def create_level_rows(request, examyear, depbase, cur_dep_only, skip_allowed_filter):
     # --- create rows of all levels of this examyear / country PR2020-12-11 PR2021-03-08  PR2021-06-24
     logging_on = False  #s.LOGGING_ON
     if logging_on:
@@ -543,6 +543,7 @@ def create_level_rows(examyear, depbase, cur_dep_only, request):
             request=request,
             sql_keys=sql_keys,
             sql_list=sql_list,
+            skip_allowed_filter=skip_allowed_filter,
             lvlbase_pk=None
         )
 

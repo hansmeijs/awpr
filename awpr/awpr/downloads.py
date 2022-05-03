@@ -144,7 +144,14 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- levels
                 if datalist_request.get('level_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('level_rows', 'cur_dep_only'), False)
-                    datalists['level_rows'] = school_dicts.create_level_rows(sel_examyear, sel_depbase, cur_dep_only, request)
+                    skip_allowed_filter = af.get_dict_value(datalist_request, ('level_rows', 'skip_allowed_filter'), False)
+                    datalists['level_rows'] = school_dicts.create_level_rows(
+                        request=request,
+                        examyear=sel_examyear,
+                        depbase=sel_depbase,
+                        cur_dep_only=cur_dep_only,
+                        skip_allowed_filter=skip_allowed_filter
+                    )
 # ----- sectors
                 if datalist_request.get('sector_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('sector_rows', 'cur_dep_only'), False)
@@ -274,8 +281,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['grade_exam_result_rows'] = gr_vw.create_grade_exam_result_rows(
                             sel_examyear_code=sel_examyear.code,
-                            sel_examperiod=sel_examperiod,
+                            sel_schoolbase_pk=sel_schoolbase.pk,
                             sel_depbase_pk=sel_depbase.pk,
+                            sel_examperiod=sel_examperiod,
+                            setting_dict=new_setting_dict,
                             request=request
                         )
 

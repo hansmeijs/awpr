@@ -267,7 +267,7 @@ def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only
             depbase_pk = sel_depbase_pk
         )
 
-        sel_lvlbase_pk, sel_subjbase_pk = None, None
+        sel_lvlbase_pk = None
         if not skip_allowed_filter:
             sel_lvlbase_pk = setting_dict.get('sel_lvlbase_pk')
         acc_view.get_userfilter_allowed_lvlbase(
@@ -1382,7 +1382,6 @@ class ExamUploadView(View):
 # +++++ Update instance, also when it is created, not when is_delete
                             update_exam_instance(exam, upload_dict, error_list, examyear, request)
 
-
                     if logging_on:
                         logger.debug('---- exam: ' + str(exam))
 
@@ -1391,7 +1390,7 @@ class ExamUploadView(View):
                         update_wrap['updated_ete_exam_rows'] = [deleted_row]
 
                     else:
-                        if table == 'exam':
+                        if table == 'ete_exam':
                             updated_ete_exam_rows = create_ete_exam_rows(
                                 req_usr=req_usr,
                                 sel_examyear_pk=examyear.pk,
@@ -1951,13 +1950,19 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
 
         # --- put published_id in exam
         # --- and add exam_pk to grades when published, only when there is only 1 exam for this subject / dep / level / examperiod
-                                        publish_exam(exam, is_test, published_instance, count_dict, request)
+                                        publish_exam(
+                                            request=request,
+                                            exam_instance=exam,
+                                            published_instance=published_instance,
+                                            is_test=is_test,
+                                            count_dict=count_dict,
+                                            updated_exam_pk_list=updated_exam_pk_list)
 
                                 # - add rows to exam_rows, to be sent back to page
                                     # to increase speed, dont create return rows but refresh page after finishing this request
 
                         # +++++  end of loop through  exams
-                                update_wrap['approve_count_dict'] = count_dict
+                                #update_wrap['approve_count_dict'] = count_dict
 
 # - create msg_html with info of rows
                         msg_html = create_exam_approve_submit_msg_list(req_usr, count_dict, requsr_auth, is_approve, is_test)
@@ -1971,8 +1976,6 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                                 exam_pk_list=updated_exam_pk_list)
                             if rows:
                                 update_wrap['updated_ete_exam_rows'] = rows
-
-                            # +++++ create Ex1 form
 
                         if is_test:
                             committed = count_dict.get('committed', 0)
@@ -2028,13 +2031,6 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR202
                     logger.debug('     has_permit_submit:  ' + str(has_permit_submit))
                     logger.debug('     requsr_auth: ' + str(requsr_auth))
 
-        # NOT IN USE > can be removed??
-        #allowed_dict = {}
-        #dl.get_requsr_allowed(req_usr, allowed_dict)
-        #if logging_on:
-        #    logger.debug('permit_list: ' + str(permit_list))
-        #    logger.debug('allowed_dict: ' + str(allowed_dict))
-
         if has_permit_approve or has_permit_submit:
 
 # -  get user_lang
@@ -2075,6 +2071,7 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR202
                         request=request,
                         corr_insp_may_edit=False
                     )
+
 # - check if user is same_school
                 is_role_same_school = req_usr.is_role_school and sel_school and req_usr.schoolbase and req_usr.schoolbase.pk == sel_school.base_id
 
@@ -2108,9 +2105,9 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR202
 
 # +++ get selected grade_exam_rows
                     sel_examperiod = sel_examperiod if sel_examperiod in (1, 2) else None
-                    # exclude published rows??
-                    # when published_id has value it means that admin has published the exam, so it is visible for the schools.
-                    # submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
+                    # exclude published rows:
+                    #  - when published_id has value it means that admin has published the exam, so it is visible for the schools.
+                    #  - submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
 
                     grade_exam_rows = get_approve_grade_exam_rows(
                         sel_examyear_pk=sel_examyear.pk,
@@ -2122,31 +2119,20 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR202
                         sel_cluster_pk=sel_cluster_pk)
 
                     if logging_on:
-                        logger.debug('     sel_examperiod: ' + str(sel_examperiod))
-                        logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
-                        logger.debug('     sel_subject_pk: ' + str(sel_subject_pk))
+                        logger.debug('     sel_examperiod:      ' + str(sel_examperiod))
+                        logger.debug('     sel_lvlbase_pk:      ' + str(sel_lvlbase_pk))
+                        logger.debug('     sel_subject_pk:      ' + str(sel_subject_pk))
 
                         row_count = len(grade_exam_rows)
                         logger.debug('row_count:      ' + str(row_count))
                         if row_count:
                             for row in grade_exam_rows:
                                 logger.debug('row:      ' + str(row))
-                    """"
-                    row:   {'grade_id': 22459, 'examperiod': 1, 'ce_exam_blanks': None, 
-                            'ce_exam_result': '0;39#1|1;2|2;3|3;4|4;5#3|1;a|2;b|3;b|4;0|5;1|6;x|7;x|8;x#4|1;1|2;1|3;1#6|1;1|2;a|3;1|4;1|5;1|6;a|7;x#7|1;1#9|1;a|2;1|3;1|4;a|5;x|6;c|7;1#10|1;6#12|1;a|2;a|3;a|4;1|5;1|6;a|7;a|8;1',
-                             'ce_exam_auth1by_id': 719, 'ce_exam_auth2by_id': 498, 
-                             'ce_exam_published_id': None,  'ce_exam_blocked': False, 
-                             'dep_code': 'Vsbo', 'lvl_code': 'PBL', 
-                             'ceex_exam_id': 117, 'ceex_amount': 39, 'ceex_blanks': None, 'ceex_subj_code': 'bw'}
-                    row:   {'grade_id': 22539, 'examperiod': 1, 'ce_exam_blanks': None, 'ce_exam_result': None, 
-                            'ce_exam_auth1by_id': None, 'ce_exam_auth2by_id': None, 'ce_exam_published_id': None, 'ce_exam_blocked': False, 
-                            'dep_code': 'Vsbo', 'lvl_code': 'PBL', 
-                            'ceex_exam_id': 117, 'ceex_amount': 39, 'ceex_blanks': None, 'ceex_subj_code': 'bw'}
 
-                    """
                     grade_exams_tobe_updated_list = []
                     count_dict = {}
                     if grade_exam_rows:
+
 # +++ create new published_instance.
                         # only save it when it is not a test
                         # no file will be attached when submitting grade_exam. Published_id is only needed to indicate that exam is submitted and keep date submission
@@ -2188,22 +2174,51 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR202
                                 grade_exam_dict=grade_exam_dict,
                                 requsr_auth=requsr_auth,
                                 is_test=is_test,
+                                is_submit=is_submit,
                                 is_reset=is_reset,
                                 count_dict=count_dict,
                                 grade_exams_tobe_updated_list=grade_exams_tobe_updated_list
                             )
 # +++++  end of loop through  exams
-                    update_wrap['approve_count_dict'] = count_dict
+                    #update_wrap['approve_count_dict'] = count_dict
+
+                    """
+                    count_dict: {
+                        49: {'exam_id': 49,
+                            'subj_name': 'Engelse taal', 
+                            'subj_code': 'en', 
+                            'dep_code': 'Vsbo', 
+                            'lvl_code': 'PBL', 
+                            'version': None, 
+                            'exam_name': 'Engelse taal - PBL',
+                            'committed': 3, 
+                            'has_blanks': 13}
+                        }
+                    """
+# convert dict to sorted dictlist
+                    count_list = list(count_dict.values())
+
+                    if logging_on:
+                        logger.debug('count_list: ' + str(count_list))
+                        """
+                         count_list: [
+                            {'exam_id': 49, 'subj_name': 'Engelse taal', 'subj_code': 'en', 'dep_code': 'Vsbo', 'lvl_code': 'PBL', 
+                            'version': None, 'committed': 3, 'has_blanks': 13}]
+
+                        """
+# sort list to sorted dictlist
+        # PR2021-11-15 from https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-a-value-of-the-dictionary
+                    count_dictlist_sorted = sorted(count_list, key=lambda d: d['exam_name'])
+
+                    if logging_on:
+                        logger.debug('count_dictlist_sorted: ' + str(count_dictlist_sorted))
 
 # - create msg_html with info of rows
-                    is_approve = True
-                    msg_html = create_exam_approve_submit_msg_list(
+                    msg_html = create_grade_exam_submit_msg_list(
                         req_usr=req_usr,
-                        count_dict=count_dict,
+                        count_list=count_dictlist_sorted,
                         requsr_auth=requsr_auth,
-                        is_approve=is_approve,
-                        is_test=is_test,
-                        is_grade_exam=True
+                        is_test=is_test
                     )
     # get updated_rows
                     if not is_test and grade_exams_tobe_updated_list:
@@ -2340,43 +2355,6 @@ def create_exam_approve_submit_msg_list(req_usr, count_dict, requsr_auth, is_app
         logger.debug('.....already_approved: ' + str(already_approved))
         logger.debug('.....double_approved: ' + str(double_approved))
 
-    def get_subjects_count_text(count):
-        exam_str = str(_('Subject') if count == 1 else _('Subjects')).lower()
-        count_str = str(pgettext_lazy('geen', 'no ') if not count else count)
-        return ' '.join((count_str, exam_str))
-
-    def get_subjects_have_text(count):
-        return ' '.join((get_subjects_count_text(count), ' ', get_have_txt(count)))
-
-    def get_exam_count_text(count):
-        exam_str = str(_('exam') if count == 1 else _('exams'))
-        count_str = str(pgettext_lazy('geen', 'no ') if not count else count)
-        return ' '.join((count_str, exam_str))
-
-    def get_exams_are_text(count):
-        return ' '.join((get_exam_count_text(count), ' ', get_are_text(count)))
-
-    def get_exams_have_text(count):
-        return ' '.join((get_exam_count_text(count), ' ', get_have_txt(count)))
-
-    def get_are_text(count):
-        return str(pgettext_lazy('singular', 'is') if  count == 1 else pgettext_lazy('plural', 'are'))
-
-    def get_will_be_text(count):
-        return str(pgettext_lazy('singular', 'will be') if  count == 1 else pgettext_lazy('plural', 'will be'))
-
-    def get_willbe_or_are_txt(is_test, count):
-        return get_will_be_text(count) if is_test else get_are_text(count)
-
-    def get_have_txt(count):
-        return str(pgettext_lazy('singular', 'has') if count == 1 else pgettext_lazy('plural', 'have'))
-
-    def get_could_txt(count):
-        return str(pgettext_lazy('singular', 'could') if count == 1 else pgettext_lazy('plural', 'could'))
-
-    def get_have_has_been_txt(count):
-        return str(pgettext_lazy('singular', 'has been') if count == 1 else pgettext_lazy('plural', 'have been'))
-
 # -  get user_lang
     user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
     activate(user_lang)
@@ -2432,7 +2410,7 @@ def create_exam_approve_submit_msg_list(req_usr, count_dict, requsr_auth, is_app
                                          {'val': get_exams_have_text(exam_error)}) + ';</li>')
 
         if has_blanks:
-            msg_list.append('<li>' + str(_("%(val)s no questions or blank questions") %
+            msg_list.append('<li>' + str(_("%(val)s blank questions") %
                                          {'val': get_exams_have_text(has_blanks)}) + ';</li>')
         if auth_missing:
             msg_list.append('<li>' + str(_("%(val)s not fully approved") %
@@ -2547,6 +2525,155 @@ def create_exam_approve_submit_msg_list(req_usr, count_dict, requsr_auth, is_app
 # - end of create_exam_approve_submit_msg_list
 
 
+def create_grade_exam_submit_msg_list(req_usr, count_list, requsr_auth, is_test):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ----- create_exam_approve_submit_msg_list -----')
+        logger.debug('     count_list: ' + str(count_list))
+        logger.debug('     is_test: ' + str(is_test))
+
+    # loop through list of exams
+
+# -  get user_lang
+    user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+    activate(user_lang)
+
+    show_warning_msg = False
+    show_msg_first_approve_by_pres_secr = False
+    committed, auth_missing, double_approved, saved_error, saved = None, None, None, None, None
+
+
+
+    if is_test:
+        if committed:
+            if (is_test and auth_missing) or (is_test and double_approved):
+                class_str = 'border_bg_warning'
+            else:
+                class_str = 'border_bg_valid'
+        else:
+            class_str = 'border_bg_invalid'
+    else:
+        if saved_error:
+            class_str = 'border_bg_invalid'
+        elif saved:
+            class_str = 'border_bg_valid'
+        else:
+            class_str = 'border_bg_transpaprent'
+
+# - create first line with 'The selection contains 4 exams'
+    msg_list = ["<div class='p-2 ", class_str, "'>"]
+    if is_test:
+        msg_list.append(''.join(("<p class='pb-2'>",
+                                 str(_("The selection contains %(val)s.") % {'val': get_exam_count_text(len(count_list))}),
+                                 '</p>')))
+
+    for count_dict in count_list:
+
+        exam_count = count_dict.get('count', 0)
+        no_exam = count_dict.get('no_exam', 0)
+        exam_error = count_dict.get('exam_error', 0)
+        already_published = count_dict.get('already_published', 0)
+        has_blanks = count_dict.get('has_blanks', 0)
+        already_approved = count_dict.get('already_approved', 0)
+        double_approved = count_dict.get('double_approved', 0)
+        committed = count_dict.get('committed', 0)
+
+        saved = count_dict.get('saved', 0)
+        saved_error = count_dict.get('saved_error', 0)
+        auth_missing = count_dict.get('auth_missing', 0)
+
+        if logging_on:
+            logger.debug('.....exam_count: ' + str(exam_count))
+            logger.debug('.....committed: ' + str(committed))
+            logger.debug('.....already_published: ' + str(already_published))
+            logger.debug('.....auth_missing: ' + str(auth_missing))
+            logger.debug('.....already_approved: ' + str(already_approved))
+            logger.debug('.....double_approved: ' + str(double_approved))
+
+    # - if any exams skipped: create lines 'The following exams will be skipped' plus the reason
+        if is_test and committed < exam_count:
+            msg_list.append("<p class='pb-0'>" + str(_("The following exams %(willbe)s skipped")
+                                                     % {'willbe': get_willbe_or_are_txt(is_test, exam_count)}) + ':</p><ul>')
+            if already_published:
+                msg_list.append('<li>' + str(_("%(val)s already submitted") %
+                                             {'val': get_exams_are_text(already_published)}) + ';</li>')
+
+            if no_exam:
+                msg_list.append('<li>' + str(_("%(val)s no exam") %
+                                             {'val': get_subjects_have_text(no_exam)}) + ';</li>')
+
+            if exam_error:
+                msg_list.append('<li>' + str(_("%(val)s errors in the exam") %
+                                             {'val': get_exams_have_text(exam_error)}) + ';</li>')
+
+            if has_blanks:
+                msg_list.append('<li>' + str(_("%(val)s blank questions") %
+                                             {'val': get_exams_have_text(has_blanks)}) + ';</li>')
+            if auth_missing:
+                msg_list.append('<li>' + str(_("%(val)s not fully approved") %
+                                             {'val': get_exams_are_text(auth_missing)}) + ';</li>')
+                show_msg_first_approve_by_pres_secr = True
+            if already_approved:
+                msg_list.append('<li>' + get_exams_are_text(already_approved) + str(
+                    _(' already approved')) + ';</li>')
+            if double_approved:
+                other_function = str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
+                msg_list.append(''.join(('<li>', get_exams_are_text(double_approved),
+                                         str(_(' already approved by you as ')), other_function, '.<br>',
+                                         str(_("You cannot approve an exam both as chairperson and as secretary.")),
+                                         '</li>')))
+            msg_list.append('</ul>')
+
+    # - line with text how many exams will be approved / submitted
+        msg_list.append('<p>')
+        if is_test:
+            if not committed:
+                msg_str = _("The exams cannot be submitted.")
+            else:
+                approve_txt = str(_('submitted.'))
+                msg_str = ' '.join((
+                    get_exam_count_text(committed).capitalize(),
+                    get_will_be_text(committed), approve_txt))
+        else:
+            subject_error_count_txt = get_exams_are_text(saved_error)
+
+            # - line with text how many exams have been approved / submitted
+
+            not_str = '' if saved else str(_('not')) + ' '
+            msg_str = str(_("The exams have %(not)s been published.") % {'not': not_str})
+            if saved:
+                msg_str += '<br>' + str(_("It contains %(exam)s.") % {'exam': get_exam_count_text(saved)})
+        msg_list.append(str(msg_str))
+        msg_list.append('</p>')
+
+    # - warning if any exams are not fully approved
+    if show_warning_msg :
+        msg_list.append("<p class='pt-2'><b>")
+        msg_list.append(str(_('WARNING')))
+        msg_list.append(':</b> ')
+        msg_list.append(str(_('There are exams that are not fully approved.')))
+        msg_list.append(' ')
+
+        msg_list.append(str(_('They will not be submitted.')))
+        msg_list.append(' ')
+        msg_list.append(str(_('Are you sure you want to continue?')))
+        msg_list.append('</p>')
+
+    # - add line 'both chairperson and secretary must first approve all exams before you can submit the Ex form
+    if show_msg_first_approve_by_pres_secr:
+
+        msg_txt = ''.join(('<p>', str(_(
+            'The chairperson and the secretary must approve the exams before you can submit them.')),
+                           '</p>'))
+
+    msg_list.append('</div>')
+
+    msg_html = ''.join(msg_list)
+    return msg_html
+# - end of create_exam_approve_submit_msg_list
+
+
+
 def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_pk_list, request):
     # PR2022-01-31
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
@@ -2576,6 +2703,7 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
                 count_dict['has_blanks'] += 1
             else:
                 requsr_authby_field = requsr_auth + 'by'
+                requsr_authby_value = getattr(exam, requsr_authby_field)
 
     # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
                 auth1by = getattr(exam, 'auth1by')
@@ -2587,11 +2715,10 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 
                 save_changes = False
 
-                has_old_authby_value = True if getattr(exam, requsr_authby_field) else False
 
     # - remove authby when is_reset
                 if is_reset:
-                    if has_old_authby_value:
+                    if requsr_authby_value:
                         setattr(exam, requsr_authby_field, None)
                         count_dict['reset'] += 1
                         save_changes = True
@@ -2600,11 +2727,7 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
                 else:
 
     # - skip if this exam is already approved
-                    requsr_authby_field_already_approved = has_old_authby_value
-                    if logging_on:
-                        logger.debug('requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
-
-                    if requsr_authby_field_already_approved:
+                    if requsr_authby_value:
                         count_dict['already_approved'] += 1
                     else:
 
@@ -2627,10 +2750,11 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
                                 logger.debug('save_changes: ' + str(save_changes))
 
                         if logging_on:
-                            logger.debug('     double_approved: ' + str(double_approved))
-                            logger.debug('     requsr_authby_field_already_approved:    ' + str(requsr_authby_field_already_approved))
-                            logger.debug('     auth1by:     ' + str(auth1by))
-                            logger.debug('     auth2by:     ' + str(auth2by))
+                            logger.debug('     double_approved:     ' + str(double_approved))
+                            logger.debug('     requsr_authby_value: ' + str(requsr_authby_value))
+                            logger.debug('     auth1by:             ' + str(auth1by))
+                            logger.debug('     auth2by:             ' + str(auth2by))
+
     # - set value of requsr_authby_field
                 if save_changes:
                     if exam.pk not in updated_exam_pk_list:
@@ -2656,9 +2780,9 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 # def get_approve_grade_exam_rows(examyear, school, department, examperiod, request):  #PR2022-03-11
 
 def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod,
-                                  sel_lvlbase_pk=None, sel_subjbase_pk=None, sel_cluster_pk=None, grade_pk=None):
+                                  sel_lvlbase_pk=None, sel_subjbase_pk=None, sel_cluster_pk=None):
     # PR2022-04-25
-
+    # approving single grade_exam happens in UploadGrade
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- get_approve_grade_exam_rows -----')
@@ -2671,8 +2795,13 @@ def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "grd.ce_exam_published_id, grd.ce_exam_blocked,",
 
                 "depbase.code AS dep_code, lvlbase.code AS lvl_code,",
-                "ce_exam.id AS ceex_exam_id, ce_exam.amount AS ceex_amount, ce_exam.blanks AS ceex_blanks,",
-                "subjbase.code AS ceex_subj_code, subjbase.code AS ceex_subj_code",
+                "ce_exam.id AS ceex_exam_id, ce_exam.version AS ceex_exam_version,",
+                "ce_exam.amount AS ceex_amount, ce_exam.blanks AS ceex_blanks,",
+                "subj.name AS ceex_subj_name, subjbase.code AS ceex_subj_code,",
+
+                "CONCAT(subj.name,",
+                "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
+                "CASE WHEN ce_exam.version IS NULL OR ce_exam.version = '' THEN NULL ELSE CONCAT(' - ', ce_exam.version) END ) AS exam_name",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -2684,7 +2813,8 @@ def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                "LEFT JOIN subjects_exam AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+                # was: "LEFT JOIN subjects_exam AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
+                "INNER JOIN subjects_exam AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
 
                 "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                 "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
@@ -2720,34 +2850,47 @@ def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 
         if logging_on:
             logger.debug('len grade_exam_row: ' + str(len(grade_exam_rows)))
-
+            for row in grade_exam_rows:
+                logger.debug(str(row))
     return grade_exam_rows
 # end of get_approve_grade_exam_rows
 
 
-def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_reset, count_dict, grade_exams_tobe_updated_list):
+def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_submit, is_reset, count_dict, grade_exams_tobe_updated_list):
     # PR2022-04-25
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_grade_exam -----')
-        logger.debug('requsr_auth:    ' + str(requsr_auth))
-        logger.debug('is_reset:       ' + str(is_reset))
+        logger.debug('requsr_auth:     ' + str(requsr_auth))
+        logger.debug('is_test:         ' + str(is_test))
+        logger.debug('is_submit:       ' + str(is_submit))
         logger.debug('grade_exam_dict: ' + str(grade_exam_dict))
 
     """
-    grade_exam_dict:  
-        {'grade_id': 22459, 'examperiod': 1, 
-        'ce_exam_blanks': None, 
-        'ce_exam_result': '0;39#1|1;2|2;3|3;4|4;5#3|1;a|2;b|3;b|4;0|5;1|6;x|7;x|8;x#4|1;1|2;1|3;1#6|1;1|2;a|3;1|4;1|5;1|6;a|7;x#7|1;1#9|1;a|2;1|3;1|4;a|5;x|6;c|7;1#10|1;6#12|1;a|2;a|3;a|4;1|5;1|6;a|7;a|8;1', 
-        'ce_exam_auth1by_id': None, 'ce_exam_auth2by_id': 498, 'ce_exam_published_id': None, 
-        'ce_exam_blocked': False, 'dep_code': 'Vsbo', 'lvl_code': 'PBL', 
-        'ceex_exam_id': 117, 'ceex_amount': 39,  'ceex_blanks': None,  'ceex_subj_code': 'bw'}
+    grade_exam_dict: 
+        {'grade_id': 22442, 'examperiod': 1, 'ce_exam_blanks': None, 
+        'ce_exam_result': '0;26#1|1;2|2;1|3;b|4;a|5;1|6;1|7;1|8;1|9;1|10;1|11;1|12;1|13;a|14;1|15;a|16;1|17;1|18;1|19;1|20;1|21;a|22;a|23;a|24;1|25;1|26;x', 
+        'ce_exam_auth1by_id': 719, 'ce_exam_auth2by_id': 498, 
+        'ce_exam_published_id': None, 'ce_exam_blocked': False, 
+        'dep_code': 'Vsbo', 'lvl_code': 'PBL', 'ceex_exam_id': 49, 'ceex_exam_version': 'Versie BLAUW',
+        'ceex_amount': 26, 'ceex_blanks': None, 
+        'ceex_subj_name': 'Engelse taal', 
+        'ceex_subj_code': 'en'}
     """
     if grade_exam_dict:
         req_usr = request.user
 
-        af.add_one_to_count_dict(count_dict, 'count')
+        # af.add_one_to_count_dict(count_dict, 'count')
+
+        ceex_exam_id = grade_exam_dict.get('ceex_exam_id')
+
+        if ceex_exam_id not in count_dict:
+            count_dict[ceex_exam_id] = {
+                'exam_id': grade_exam_dict.get('ceex_exam_id'),
+                'exam_name': grade_exam_dict.get('exam_name')
+            }
+        exam_dict = count_dict[ceex_exam_id]
 
 # - skip if this studsubj is already published
         no_exam = not grade_exam_dict.get('ceex_exam_id')
@@ -2755,60 +2898,69 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_reset,
         has_blank_questions = True if grade_exam_dict.get('ceex_blanks') else False
         is_published = True if grade_exam_dict.get('ce_exam_published_id') else False
         if logging_on:
-            logger.debug('no_exam:    ' + str(no_exam))
+            logger.debug('no_exam:         ' + str(no_exam))
             logger.debug('no_questions:    ' + str(no_questions))
-            logger.debug('has_blank_questions:    ' + str(has_blank_questions))
+            logger.debug('has_blank_quest: ' + str(has_blank_questions))
             logger.debug('is_published:    ' + str(is_published))
 
         if no_exam:
-            af.add_one_to_count_dict(count_dict, 'no_exam')
+            # af.add_one_to_count_dict(count_dict, 'no_exam')
+            af.add_one_to_count_dict(exam_dict, 'no_exam')
         elif no_questions or has_blank_questions:
-            af.add_one_to_count_dict(count_dict, 'exam_error')
+            # af.add_one_to_count_dict(count_dict, 'exam_error')
+            af.add_one_to_count_dict(exam_dict, 'exam_error')
         elif is_published:
-            af.add_one_to_count_dict(count_dict, 'already_published')
+            # af.add_one_to_count_dict(count_dict, 'already_published')
+            af.add_one_to_count_dict(exam_dict, 'already_published')
         else:
             has_result = True if grade_exam_dict.get('ce_exam_result') else False
             has_blank_answers = True if grade_exam_dict.get('ce_exam_blanks') else False
 
             if logging_on:
-                logger.debug('     no_exam:             ' + str(no_exam))
-                logger.debug('     no_questions:        ' + str(no_questions))
-                logger.debug('     has_result:           ' + str(has_result))
-                logger.debug('     has_blank_answers: ' + str(has_blank_answers))
+                logger.debug('     has_result:          ' + str(has_result))
+                logger.debug('     has_blank_answers:   ' + str(has_blank_answers))
 
             # dont skip this when is_reset
             if not is_reset and (not has_result or has_blank_answers):
-                af.add_one_to_count_dict(count_dict, 'has_blanks')
+                # af.add_one_to_count_dict(count_dict, 'has_blanks')
+                af.add_one_to_count_dict(exam_dict, 'has_blanks')
             else:
                 requsr_authby_field = 'ce_exam_' + requsr_auth + 'by_id'
+                requsr_authby_value = grade_exam_dict.get(requsr_authby_field)
 
     # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
                 auth1by = grade_exam_dict.get('ce_exam_auth1by_id')
                 auth2by = grade_exam_dict.get('ce_exam_auth2by_id')
+
+                is_fully_approved = auth1by is not None and auth2by is not None
+
                 if logging_on:
-                    logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
-                    logger.debug('auth1by:      ' + str(auth1by))
-                    logger.debug('auth2by:      ' + str(auth2by))
+                    logger.debug('     requsr_authby_field: ' + str(requsr_authby_field))
+                    logger.debug('     auth1by:             ' + str(auth1by))
+                    logger.debug('     auth2by:             ' + str(auth2by))
+                    logger.debug('     requsr_authby_value: ' + str(requsr_authby_value))
+                    logger.debug('     is_fully_approved:   ' + str(is_fully_approved))
 
                 save_changes = False
 
-                has_old_authby_value = True if grade_exam_dict.get(requsr_authby_field) else False
-
     # - remove authby when is_reset
                 if is_reset:
-                    if has_old_authby_value:
+                    if requsr_authby_value:
                         # setattr(exam, requsr_authby_field, None)
-                        af.add_one_to_count_dict(count_dict, 'reset')
+                        # af.add_one_to_count_dict(count_dict, 'reset')
+                        af.add_one_to_count_dict(exam_dict, 'reset')
                         save_changes = True
                 else:
 
-    # - skip if this exam is already approved
-                    requsr_authby_field_already_approved = has_old_authby_value
-                    if logging_on:
-                        logger.debug('requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+    # - skip if this exam is already approved - only in approve mode
+                    if not is_submit and requsr_authby_value:
+                        # af.add_one_to_count_dict(count_dict, 'already_approved')
+                        af.add_one_to_count_dict(exam_dict, 'already_approved')
 
-                    if requsr_authby_field_already_approved:
-                        af.add_one_to_count_dict(count_dict, 'already_approved')
+    # - skip if this exam is not fully approved - only in submit mode
+                    elif is_submit and not is_fully_approved:
+                        # af.add_one_to_count_dict(count_dict, 'not_fully_approved')
+                        af.add_one_to_count_dict(exam_dict, 'not_fully_approved')
                     else:
 
     # - skip if this author (like 'chairperson') has already approved this studsubj
@@ -2821,7 +2973,8 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_reset,
                             double_approved = True if auth1by and auth1by == req_usr else False
 
                         if double_approved:
-                            af.add_one_to_count_dict(count_dict, 'double_approved')
+                            # af.add_one_to_count_dict(count_dict, 'double_approved')
+                            af.add_one_to_count_dict(exam_dict, 'double_approved')
                         else:
                             #setattr(exam, requsr_authby_field, req_usr)
 
@@ -2831,38 +2984,28 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_reset,
 
                         if logging_on:
                             logger.debug('     double_approved: ' + str(double_approved))
-                            logger.debug('     requsr_authby_field_already_approved:    ' + str(requsr_authby_field_already_approved))
                             logger.debug('     auth1by:     ' + str(auth1by))
                             logger.debug('     auth2by:     ' + str(auth2by))
+                            logger.debug('     requsr_authby_value:    ' + str(requsr_authby_value))
+
     # - set value of requsr_authby_field
                 if save_changes:
                     grade_pk = grade_exam_dict.get('grade_id')
                     if grade_pk not in grade_exams_tobe_updated_list:
 
-                        # NIU ce_exam has no field 'status'
-                        #   saved_status_sum = grade_exam_dict.get('status')
-
                         new_auth_id = req_usr.pk if not is_reset else None
-                        if requsr_auth == 'auth1':
-                            auth1by_id = new_auth_id
-                        elif requsr_auth == 'auth2':
-                            auth2by_id = new_auth_id
-                        # grdade_exam doesnt have to be approved by examiner, maybe next year
-                        elif requsr_auth == 'auth3':
-                            auth3by_id = new_auth_id
 
-                        # NIU ce_exam has no field 'status'
-                        #   calculate status_sum from auth_id, not by changing saved status_sum
-
-                        # add pk and authby_id to tobe_updated_list
+    # - add pk and authby_id to tobe_updated_list
                         tobe_updated = [grade_pk, new_auth_id]  # NIU: , new_status_sum]
                         grade_exams_tobe_updated_list.append(tobe_updated)
 
                     if is_test:
-                        af.add_one_to_count_dict(count_dict, 'committed')
+                        # af.add_one_to_count_dict(count_dict, 'committed')
+                        af.add_one_to_count_dict(exam_dict, 'committed')
                     else:
     # - save changes
-                        af.add_one_to_count_dict(count_dict, 'saved')
+                        # af.add_one_to_count_dict(count_dict, 'saved')
+                        af.add_one_to_count_dict(exam_dict, 'saved')
 
     if logging_on:
         logger.debug('count_dict: ' + str(count_dict))
@@ -2870,7 +3013,7 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_reset,
 # - end of approve_grade_exam
 
 
-def publish_exam(exam_instance, is_test, published_instance, count_dict, request):  # PR2022-02-23 PR2022-04-20
+def publish_exam(request, exam_instance, published_instance, is_test, count_dict, updated_exam_pk_list):  # PR2022-02-23 PR2022-04-20
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- publish_exam -----')
@@ -2920,7 +3063,7 @@ def publish_exam(exam_instance, is_test, published_instance, count_dict, request
                             exam_instance.save(request=request)
                             count_dict['saved'] += 1
                             update_exam_in_grades = True
-
+                            updated_exam_pk_list.append(exam_instance.pk)
                         except Exception as e:
                             logger.error(getattr(e, 'message', str(e)))
                             count_dict['saved_error'] += 1
@@ -5796,7 +5939,7 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
 class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
     def get(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('===== ExamDownloadExamJsonView ===== ')
 
@@ -6073,8 +6216,9 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
                             if a_list:
                                 result_dict[partex_pk] = a_list
-                            if score_list:
-                                score_dict[partex_pk] = score_list
+                            # score_list doesnt have to be added to json
+                            #if score_list:
+                            #    score_dict[partex_pk] = score_list
 
                         if logging_on:
                             logger.debug('result_dict: ' + str(result_dict) + ' ' + str(type(result_dict)))
@@ -6083,10 +6227,9 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                             '2': [2, -1, 4, 1, -1, 2, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '4': [0, 1, 1, 3, 2, 1, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '6': [2, 1, 1, 1, 1, -1, 1, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '7': [5, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '8': [12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '9': [15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], '10': [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]} <class 'dict'>
     
                         """
-                        answer_list.append({'school': school_code, 'responses': result_dict, 'score': score_dict} )
+                        answer_list.append({'school': school_code, 'responses': result_dict})  # was:, 'score': score_dict} )
 
             return answer_list
-
         # - end of get_answers_list
 
         response = None
@@ -6103,16 +6246,14 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
 
-            if sel_examperiod:
+            if sel_examperiod in (1, 2):
                 examenlijst = []
 
-                crit = Q(subject__examyear=sel_examyear)
-                # - exclude this subject base in case it is an existing subject
-                exam_pk = 28
-                if sel_examperiod in (1, 2):
-                    crit.add(Q(examperiod=sel_examperiod), crit.connector)
-                    crit.add(Q(pk=exam_pk), crit.connector)
-                exam_instances = subj_mod.Exam.objects.filter(crit)
+                exam_instances = subj_mod.Exam.objects.filter(
+                    subject__examyear=sel_examyear,
+                    examperiod=sel_examperiod,
+                    ete_exam=True
+                )
 
                 if exam_instances:
                     for exam_instance in exam_instances:
@@ -6148,7 +6289,6 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                             6: {1: 'a', 2: 'd', 4: 'a', 6: 'b', 8: 'c'}
                         }
                         """
-
                         assignment_list, partex_count, partex_schaallengte = \
                             get_assignment_list(exam_partex_dict, exam_assignment_dict, exam_keys_dict)
                         answers_list = get_answers_list(exam_instance, exam_partex_dict, exam_assignment_dict, exam_keys_dict)
@@ -7259,3 +7399,52 @@ def xl_col_to_name(col, col_abs=False):
         col_num = int((col_num - 1) / 26)
 
     return col_abs + col_str
+#---------------------------------------
+
+
+def get_subjects_count_text(count):
+    exam_str = str(_('Subject') if count == 1 else _('Subjects')).lower()
+    count_str = str(pgettext_lazy('geen', 'no ') if not count else count)
+    return ' '.join((count_str, exam_str))
+
+
+def get_subjects_have_text(count):
+    return ' '.join((get_subjects_count_text(count), ' ', get_have_txt(count)))
+
+
+def get_exam_count_text(count):
+    exam_str = str(_('exam') if count == 1 else _('exams'))
+    count_str = str(pgettext_lazy('geen', 'no ') if not count else count)
+    return ' '.join((count_str, exam_str))
+
+
+def get_exams_are_text(count):
+    return ' '.join((get_exam_count_text(count), ' ', get_are_text(count)))
+
+
+def get_exams_have_text(count):
+    return ' '.join((get_exam_count_text(count), ' ', get_have_txt(count)))
+
+
+def get_are_text(count):
+    return str(pgettext_lazy('singular', 'is') if  count == 1 else pgettext_lazy('plural', 'are'))
+
+
+def get_will_be_text(count):
+    return str(pgettext_lazy('singular', 'will be') if  count == 1 else pgettext_lazy('plural', 'will be'))
+
+
+def get_willbe_or_are_txt(is_test, count):
+    return get_will_be_text(count) if is_test else get_are_text(count)
+
+
+def get_have_txt(count):
+    return str(pgettext_lazy('singular', 'has') if count == 1 else pgettext_lazy('plural', 'have'))
+
+
+def get_could_txt(count):
+    return str(pgettext_lazy('singular', 'could') if count == 1 else pgettext_lazy('plural', 'could'))
+
+
+def get_have_has_been_txt(count):
+    return str(pgettext_lazy('singular', 'has been') if count == 1 else pgettext_lazy('plural', 'have been'))

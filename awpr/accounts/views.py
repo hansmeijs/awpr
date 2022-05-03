@@ -1124,7 +1124,6 @@ class AwpPasswordResetForm(forms.Form):
             if schoolbase:
                 schoolbase_id = schoolbase.pk
         logger.debug('     schoolcode: ' + str(schoolcode))
-        #logger.debug('schoolbase_id: ' + str(schoolbase_id))
 
         email = self.cleaned_data["email"]
         logger.debug('     email: ' + str(email))
@@ -1142,6 +1141,7 @@ class AwpPasswordResetForm(forms.Form):
         for user in self.get_users(schoolbase_id, email):
             user_email = getattr(user, email_field_name)
 
+            logger.debug('     username:  ' + str(getattr(user, 'username')))
             logger.debug('     user_email: ' + str(user_email))
 
             context = {
@@ -1265,6 +1265,7 @@ class AwpSetPasswordForm(forms.Form):
 
 class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
     #logger.debug(' ============= AwpPasswordResetConfirmView ============= ')
+
     form_class = AwpSetPasswordForm
     post_reset_login = False
     post_reset_login_backend = None
@@ -1284,24 +1285,37 @@ class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
         self.validlink = False
         self.user = self.get_user(kwargs['uidb64'])
 
-        if self.user is not None:
-            token = kwargs['token']
-            if token == self.reset_url_token:
-                session_token = self.request.session.get(INTERNAL_RESET_SESSION_TOKEN)
-                if self.token_generator.check_token(self.user, session_token):
-                    # If the token is valid, display the password reset form.
-                    self.validlink = True
-                    return super().dispatch(*args, **kwargs)
-            else:
-                if self.token_generator.check_token(self.user, token):
-                    # Store the token in the session and redirect to the
-                    # password reset form at a URL without the token. That
-                    # avoids the possibility of leaking the token in the
-                    # HTTP Referer header.
-                    self.request.session[INTERNAL_RESET_SESSION_TOKEN] = token
-                    redirect_url = self.request.path.replace(token, self.reset_url_token)
-                    return HttpResponseRedirect(redirect_url)
+        # PR2022-05-01 debug. User can change password and login when account is not activated
+        # add 'and self.user.activated' to if clause
 
+        if self.user is not None:
+            if not self.user.activated:
+                logger.debug('     user.activated: ' + str(self.user.activated))
+                # PR2022-05-01 debug. User can change password and login when account is not activated
+                # add 'and self.user.activated' to if clause
+
+                response = render_to_string('password_reset_notactivated.html')
+                return HttpResponse(response)
+
+            else:
+                token = kwargs['token']
+                if token == self.reset_url_token:
+                    session_token = self.request.session.get(INTERNAL_RESET_SESSION_TOKEN)
+                    if self.token_generator.check_token(self.user, session_token):
+                        # If the token is valid, display the password reset form.
+                        self.validlink = True
+                        return super().dispatch(*args, **kwargs)
+                else:
+                    if self.token_generator.check_token(self.user, token):
+                        # Store the token in the session and redirect to the
+                        # password reset form at a URL without the token. That
+                        # avoids the possibility of leaking the token in the
+                        # HTTP Referer header.
+                        self.request.session[INTERNAL_RESET_SESSION_TOKEN] = token
+                        redirect_url = self.request.path.replace(token, self.reset_url_token)
+                        return HttpResponseRedirect(redirect_url)
+
+        logger.debug('     self.get_context_data(): ' + str(self.get_context_data()))
         # Display the "Password reset unsuccessful" page.
         return self.render_to_response(self.get_context_data())
 

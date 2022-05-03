@@ -245,7 +245,7 @@ urlpatterns = [
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
         path('studsubj_approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_submit_multiple'),
-        path('studsubj_send_email_exform', student_views.SendEmailSubmitExformView.as_view(), name='url_studsubj_send_email_exform'),
+        path('send_email_verifcode', student_views.SendEmailSubmitExformView.as_view(), name='url_send_email_verifcode'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
@@ -316,7 +316,7 @@ urlpatterns = [
         path('approve_publish_exam', subject_views.ExamApproveOrPublishExamView.as_view(), name='url_approve_publish_exam'),
         path('approve_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 
-        path('send_email_submit_exam', student_views.SendEmailSubmitExformView.as_view(),  name='url_send_email_submit_exam'),
+        path('send_email_submit_exam', student_views.SendEmailSubmitExformView.as_view(), name='url_send_email_submit_exam'),
 
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='url_exam_download_exam_pdf'),
         path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='url_exam_download_grade_exam_pdf'),

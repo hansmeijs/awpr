@@ -1253,7 +1253,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
 
             if table == 'grade':
                 sel_page = 'page_grade'
-            elif mode in ('publish_exam', 'publish_grade_exam'):
+            elif mode in ('publish_exam', 'submit_grade_exam'):
                 sel_page = 'page_exams'
             else:
                 sel_page ='page_studsubj'
@@ -1268,7 +1268,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
                             has_permit = 'permit_submit_grade' in permit_list
                         elif mode == 'publish_exam':
                             has_permit = 'permit_publish_exam' in permit_list
-                        elif mode in ('publish_grade_exam'):
+                        elif mode in ('submit_grade_exam'):
                             has_permit = 'permit_submit_exam' in permit_list
                         else:
                             has_permit = 'permit_approve_subject' in permit_list
@@ -1286,7 +1286,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
                     formname = 'exam'
                     sel_school, sel_department = None, None
                     sel_examyear, may_edit, msg_list = dl.get_selected_examyear_from_usersetting(request)
-                elif mode == 'publish_grade_exam':
+                elif mode == 'submit_grade_exam':
                     formname = 'grade_exam'
                     sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                         dl.get_selected_ey_school_dep_from_usersetting(request)
@@ -1307,8 +1307,8 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
 
                         if mode == 'publish_exam':
                             template_str = 'email_send_verifcode_exam.html'
-                        elif mode == 'publish_grade_exam':
-                            template_str = 'email_send_verifcode_grade.html'
+                        elif mode == 'submit_grade_exam':
+                            template_str = 'email_send_verifcode_grade_exam.html'
                         else:
                             template_str = 'send_verifcode__ex1_email.html'
 
