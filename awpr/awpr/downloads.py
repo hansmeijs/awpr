@@ -288,7 +288,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             request=request
                         )
 
-
 # ----- grades
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -370,7 +369,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  #s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----------------- download_setting ---------------------- ')

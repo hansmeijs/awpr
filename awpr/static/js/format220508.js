@@ -201,8 +201,8 @@
             let value_str = value_percentage.toFixed(number_of_decimals)
 
             display_text = (user_lang !== "en") ? value_str.replace(".", ",") : value_str;
-            console.log("value_str", value_str)
-            console.log("display_text", display_text)
+    //console.log("value_str", value_str)
+    //console.log("display_text", display_text)
 
             display_text += "%"
         }  // if (!!value_int)

@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220502.js' %}"></script>
+    <script src="{% static 'js/exams220508.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import220421.js' %}"></script>
 
@@ -86,7 +86,9 @@
                 <div class="flex_container">
         <!-- header_text left -->
                     <div class="flex_2 p-2">
-                        <h5 id="id_header_left" class="mb-0"></h5>
+                        <div>
+                            <h5 id="id_header_left" class="mb-0"></h5>
+                        </div>
                     </div>
         <!-- loader -->
                     <div id="id_loader" class="py-2">
@@ -115,13 +117,14 @@
                     <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
                     <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'DUO exams' %}</button>
                     <button data-btn="btn_ntermen" class="btn btn-secondary ">{% trans 'N-termen tabel' %}</button>
-                    <button data-btn="btn_results" class="btn btn-secondary ">{% trans 'Submitted exams' %}</button>
                 {% else %}
                     <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
                     {% if not no_centralexam %}
                         <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
                     {% endif %}
                 {% endif %}
+
+                <button data-btn="btn_results" class="btn btn-secondary ">{% trans 'Overview exams' %}</button>
             </div>
 
 
@@ -153,6 +156,8 @@
 
                 data-url_exam_download_exam_pdf="{% url 'url_exam_download_exam_pdf'  '-' %}"
                 data-url_exam_download_grade_exam_pdf="{% url 'url_exam_download_grade_exam_pdf'  '-' %}"
+                data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
+
                 data-url_exam_download_exam_json="{% url 'url_exam_download_exam_json' %}"
 
                 data-url_grade_upload="{% url 'url_grade_upload' %}"

@@ -471,7 +471,9 @@ class DownloadEx3View(View):  # PR2021-10-07
                 buffer = io.BytesIO()
                 canvas = Canvas(buffer)
 
-                canvas.setLineWidth(0)
+                # PR2022-05-05 debug Oscap Panneflek Vpco lines not printing on Ex3
+                # turn off setLineWidth (0)
+                # canvas.setLineWidth(0)
 
                 max_rows = 30  # was:  24
                 line_height = 6.73 * mm  # was:  8 * mm
@@ -1003,8 +1005,9 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
     y = coord[1]
 
     canvas.setFont('Arial', 8, leading=None)
-
-    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
+    # PR2022-05-05 debug Oscap Panneflek Vpco lines not printing on Ex3
+    # turn off grey lines
+    #  canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
 
     for index in range(row_range[0], row_range[1]):  # range(start_value, end_value, step), end_value is not included!
         row_data = None

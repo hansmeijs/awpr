@@ -927,7 +927,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Print_exam'] = _("Print exam")
         dict['Blanks'] = _("Blanks")
-        dict['Download_PDF'] = _("Download PDF")
+        dict['Download_exam'] = _("Download exam")
+        dict['Download_conv_table'] = _("Download conversion table")
         dict['Download_JSON'] = _("Download JSON")
         dict['JSON_will_be_downloaded'] = _("The JSON file with exam results will be downloaded.")
         dict['will_be_unlinked'] = pgettext_lazy('singular', ' will be unlinked.')
@@ -948,6 +949,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Maximum_score'] = _('Maximum score')
         dict['Maximum_score_2lines'] = pgettext_lazy('2 lines', 'Maximum\nscore')
         dict['Sequence_2lines'] = TXT_Sequence_2lines
+        dict['Cesuur'] = _('Cesuur')
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
         dict['No_exam_linked_to_this_subject'] = _("There is no exam linked to this subject.")
@@ -1024,7 +1026,11 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'Approved_different_function': _('You have approved this grade already in a different function.'),
             'Approved_in_function_of': _('You have already approved this grade as '),
-            'You_cannot_approve_again': _('You cannot approve this grade again.')
+            'You_cannot_approve_again': _('You cannot approve this grade again.'),
+
+            'cesuur_mustbe': _('The cesuur must be a whole number between 0 and the maximum score.'),
+            'Exam_is_locked': _('This exam is locked.'),
+            'You_must_unlock': _('You must unlock it before you can make changes.')
         }
 
         dict['MASE_info'] = {
@@ -1191,7 +1197,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['SECE_weighing'] = _('SE-CE\nweighing')
         dict['Final_grade_twolines'] = _('Final\ngrade')
 
-        dict['Abbreviation_subject'] = '\n'.join((str(_('Abbreviation')), str(_('subject'))))
+        dict['Abbrev_subject_2lines'] = '\n'.join((str(_('Abbreviation')), str(_('subject'))))
         dict['Exemption_SE'] = ' '.join((str(_('Exemption')), str(_('SE-grade'))))
         dict['Exemption_CE'] = ' '.join((str(_('Exemption')), str(_('CE-grade'))))
         dict['Exemption_FINAL'] = ' '.join((str(_('Exemption')), str(_('Final grade'))))

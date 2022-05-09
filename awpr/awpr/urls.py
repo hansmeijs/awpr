@@ -320,6 +320,7 @@ urlpatterns = [
 
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='url_exam_download_exam_pdf'),
         path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='url_exam_download_grade_exam_pdf'),
+        path('download_conversion_pdf/<list>/', subject_views.ExamDownloadConversionView.as_view(), name='url_exam_download_conversion_pdf'),
         path('download_exam_json', subject_views.ExamDownloadExamJsonView.as_view(), name='url_exam_download_exam_json'),
     ])),
 

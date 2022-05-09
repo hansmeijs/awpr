@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const field_settings = {
         btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                   "exemption_year",  "segrade", "cegrade", "finalgrade", "note_status"], //  "ce_status" not in use yet PR2022-03-03
-                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
+                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                   "Exemption_year_twolines", "Exem_SE_twolines", "Exem_CE_twolines", "Exem_FINAL_twolines", ""],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
                                 "div", "input", "input", "div", "div"],
@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                    "pescore", "pe_status", "pegrade",
                                     "cescore", "ce_status", "cegrade", "finalgrade",
                                    "note_status"],
-                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
+                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                    "School_exam_2lines", "", "Herkansing_SE_grade_2lines", "",
                                   "PE_score", "", "PE_grade",
                                   "CE_score", "", "CE_grade", "Final_grade_twolines",
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "c", "c", "c", "c",
                                 "c"]},
 
-        btn_reex:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
+        btn_reex:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                   "Re-examination_score", "", "Re-examination_grade", ""],
                     field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                   "cescore", "ce_status", "cegrade", "note_status"],
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
 
-        btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbreviation_subject", "Subject",
+        btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                   "Third_period_score", "", "Third_period_grade", ""],
                     field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "cluster_name", "subj_code", "subj_name",
                                   "cescore", "ce_status", "cegrade", "note_status"],
@@ -796,7 +796,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  FillOptionsExamtype  ================ PR2021-03-08 PR2021-12-02 PR2022-04-13
     function FillOptionsExamtype() {
-        console.log("=== FillOptionsExamtype");
+        //console.log("=== FillOptionsExamtype");
         const has_practexam = !setting_dict.no_practexam;
         const sr_allowed = !!setting_dict.sr_allowed;
         const has_centralexam = !setting_dict.no_centralexam;
@@ -828,8 +828,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     //console.log("setting_dict.sel_btn", setting_dict.sel_btn);
     //console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod);
-    console.log("loc.options_examtype", loc.options_examtype);
-    console.log("examperiod", examperiod);
+    //console.log("loc.options_examtype", loc.options_examtype);
+    //console.log("examperiod", examperiod);
 
         if (el_SBR_select_examtype) {
 
@@ -1295,7 +1295,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- make el readonly when not requsr_requsr_same_school
                         el.readOnly = !permit_dict.requsr_same_school;
-                    }
+                    };
 
     // --- add width, text_align, right padding in examnumber
                     // >>> td.classList.add(class_width, class_align);
@@ -1312,11 +1312,22 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // --- add left border, not when status field
                     if(j && !is_status_field){td.classList.add("border_left")};
+/*
+    // --- add column with status icon, only when weigning > 0
+                    if (["se_status", "sr_status"].includes(field_name)){
+                        if(data_dict.weight_se){
+                            el.classList.add("stat_0_0")
+                        };
 
-                    if (field_name.includes("status")){
-    // --- add column with status icon
-                        el.classList.add("stat_0_0")
-                    } else if (field_name === "note_status"){
+                    } else if (["pe_status", "ce_status"].includes(field_name)){
+                    console.log("data_dict.weight_ce", data_dict.weight_ce, !!data_dict.weight_ce)
+                        if(data_dict.weight_ce){
+                            el.classList.add("stat_0_0")
+                        };
+
+                    } else
+          */
+                    if (field_name === "note_status"){
                         el.classList.add("note_0_0")
 
                     } else if (field_name === "filename"){
@@ -1349,9 +1360,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 td.appendChild(el);
 
         // --- add EventListener to td
-                if (["se_status", "sr_status", "pe_status", "ce_status"].includes(field_name)) {
+                // only show status when weight > 0
+                if ((["se_status", "sr_status"].includes(field_name) && data_dict.weight_se) ||
+                                (["pe_status", "ce_status"].includes(field_name) && data_dict.weight_ce)){
                     td.addEventListener("click", function() {UploadStatus(el)}, false)
                     add_hover(td);
+
                 } else if (field_name === "note_status"){
                     if(permit_dict.permit_read_note){
                         td.addEventListener("click", function() {ModNote_Open(el)}, false)
@@ -1359,6 +1373,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
                 //td.classList.add("pointer_show", "px-2");
+
+
     // --- put value in field
                 UpdateField(el, data_dict)
             }  //  if (columns_shown[field_name])
@@ -1425,8 +1441,14 @@ document.addEventListener("DOMContentLoaded", function() {
                         inner_text = loc.examperiod_caption[data_dict.examperiod];
                     } else if (field_name === "examtype"){
                         inner_text = loc.examtype_caption[data_dict.examtype];
-                    } else if (field_name === "datepublished"){
-                        inner_text = format_dateISO_vanilla (loc, data_dict.datepublished, true, false, true, false);
+
+                    } else if (["segrade", "srgrade", "pegrade", "cegrade"].includes(field_name)){
+                        if (fld_value){
+                            inner_text = (loc.user_lang === "en") ? fld_value : fld_value.replace(".", ",");
+                            filter_value = fld_value.toLowerCase();
+                        }
+                    //} else if (field_name === "datepublished"){
+                    //    inner_text = format_dateISO_vanilla (loc, data_dict.datepublished, true, false, true, false);
                     } else {
                         inner_text = fld_value;
                     }
@@ -1461,84 +1483,88 @@ document.addEventListener("DOMContentLoaded", function() {
             (fld_value.length === 3) ? fld_value : "0_1" : "0_0" )
 
         } else {
-            const field_auth1by_id = prefix_str + "_auth1by_id"
-            const field_auth2by_id = prefix_str + "_auth2by_id"
-            const field_auth3by_id = prefix_str + "_auth3by_id"
-            const field_auth4by_id = prefix_str + "_auth4by_id"
-            const field_published_id = prefix_str + "_published_id";
-            const field_blocked = prefix_str + "_blocked"
-            const field_status = prefix_str + "_status"
+            // only show status when weight > 0
+            const show_status = (["se_status", "sr_status"].includes(field_name) && data_dict.weight_se) ||
+                                (["pe_status", "ce_status"].includes(field_name) && data_dict.weight_ce);
+            if (show_status){
+                const field_auth1by_id = prefix_str + "_auth1by_id"
+                const field_auth2by_id = prefix_str + "_auth2by_id"
+                const field_auth3by_id = prefix_str + "_auth3by_id"
+                const field_auth4by_id = prefix_str + "_auth4by_id"
+                const field_published_id = prefix_str + "_published_id";
+                const field_blocked = prefix_str + "_blocked"
+                const field_status = prefix_str + "_status"
 
-            const auth1by_id = (data_dict[field_auth1by_id]) ? data_dict[field_auth1by_id] : null;
-            const auth2by_id = (data_dict[field_auth2by_id]) ? data_dict[field_auth2by_id] : null;
-            const auth3by_id = (data_dict[field_auth3by_id]) ? data_dict[field_auth3by_id] : null;
-            const auth4by_id = (data_dict[field_auth4by_id]) ? data_dict[field_auth4by_id] : null;
-            const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
-            const is_blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
-            const auth4_must_sign = ["pe_status", "ce_status"].includes(field_name);
+                const auth1by_id = (data_dict[field_auth1by_id]) ? data_dict[field_auth1by_id] : null;
+                const auth2by_id = (data_dict[field_auth2by_id]) ? data_dict[field_auth2by_id] : null;
+                const auth3by_id = (data_dict[field_auth3by_id]) ? data_dict[field_auth3by_id] : null;
+                const auth4by_id = (data_dict[field_auth4by_id]) ? data_dict[field_auth4by_id] : null;
+                const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
+                const is_blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
+                const auth4_must_sign = ["pe_status", "ce_status"].includes(field_name);
 
+        //console.log("field_blocked", field_blocked);
+        //console.log("is_blocked", is_blocked);
 
-    //console.log("field_blocked", field_blocked);
-    //console.log("is_blocked", is_blocked);
+                className = b_get_status_auth1234_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3by_id, auth4_must_sign, auth4by_id);
 
-            className = b_get_status_auth1234_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3by_id, auth4_must_sign, auth4by_id);
+        //console.log("className", className);
+                // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+                //filter_value = (published_id) ? "5" :
+                //                  (auth1by_id && auth2by_id) ? "4" :
+                //                  (auth2by_id ) ? "3" :
+                //                  (auth1by_id) ? "2" : "1"; // diamond_0_0 is outlined diamond
 
-    //console.log("className", className);
-            // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
-            //filter_value = (published_id) ? "5" :
-            //                  (auth1by_id && auth2by_id) ? "4" :
-            //                  (auth2by_id ) ? "3" :
-            //                  (auth1by_id) ? "2" : "1"; // diamond_0_0 is outlined diamond
-
-            if(is_blocked){
-                filter_value = "3";
-            } else if(published_id){
-                filter_value = "2";
-            } else if (auth4_must_sign) {
-                filter_value = (auth1by_id && auth2by_id && auth3by_id && auth4by_id)  ? "2" : "1";
-            } else {
-                filter_value = (auth1by_id && auth2by_id && auth3by_id)  ? "2" : "1";
-            };
-
-    //console.log("auth1by_id", auth1by_id);
-    //console.log("auth2by_id", auth2by_id);
-    //console.log("auth3by_id", auth3by_id);
-    //console.log("filter_value", filter_value);
-
-            let formatted_publ_modat = "";
-            if (published_id){
-                const field_publ_modat = prefix_str + "_publ_modat" // subj_publ_modat
-                const publ_modat = (data_dict[field_publ_modat]) ? data_dict[field_publ_modat] : null;
-                const modified_dateJS = parse_dateJS_from_dateISO(publ_modat);
-                formatted_publ_modat = format_datetime_from_datetimeJS(loc, modified_dateJS);
-            };
-            if (is_blocked) {
-                if (published_id){
-                    title_text = loc.blocked_11 + "\n" + loc.blocked_12 + formatted_publ_modat + "\n" + loc.blocked_13;
+                if(is_blocked){
+                    filter_value = "3";
+                } else if(published_id){
+                    filter_value = "2";
+                } else if (auth4_must_sign) {
+                    filter_value = (auth1by_id && auth2by_id && auth3by_id && auth4by_id)  ? "2" : "1";
                 } else {
-                    title_text = loc.blocked_01 + "\n" + loc.blocked_02 + "\n" + loc.blocked_03;
+                    filter_value = (auth1by_id && auth2by_id && auth3by_id)  ? "2" : "1";
                 };
-            } else if (published_id){
 
-                title_text = loc.Submitted_at + ":\n" + formatted_publ_modat;
+        //console.log("auth1by_id", auth1by_id);
+        //console.log("auth2by_id", auth2by_id);
+        //console.log("auth3by_id", auth3by_id);
+        //console.log("filter_value", filter_value);
 
-            } else if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
-                title_text = loc.Approved_by + ": ";
-                for (let i = 1; i < 5; i++) {
-                    const auth_id = (i === 1) ? auth1by_id :
-                                    (i === 2) ? auth2by_id :
-                                    (i === 3) ? auth3by_id :
-                                    (i === 4) ?  auth4by_id : null;
-                    const prefix_auth = prefix_str + "_auth" + i;
-                    if(auth_id){
-                        const function_str = (i === 1) ?  loc.Chairperson :
-                                            (i === 2) ? loc.Secretary :
-                                            (i === 3) ?  loc.Examiner :
-                                            (i === 4) ? loc.Corrector : "";
-                        const field_usr = prefix_auth + "by_usr";
-                        const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
+                let formatted_publ_modat = "";
+                if (published_id){
+                    const field_publ_modat = prefix_str + "_publ_modat" // subj_publ_modat
+                    const publ_modat = (data_dict[field_publ_modat]) ? data_dict[field_publ_modat] : null;
+                    const modified_dateJS = parse_dateJS_from_dateISO(publ_modat);
+                    formatted_publ_modat = format_datetime_from_datetimeJS(loc, modified_dateJS);
+                };
+                if (is_blocked) {
+                    if (published_id){
+                        title_text = loc.blocked_11 + "\n" + loc.blocked_12 + formatted_publ_modat + "\n" + loc.blocked_13;
+                    } else {
+                        title_text = loc.blocked_01 + "\n" + loc.blocked_02 + "\n" + loc.blocked_03;
+                    };
+                } else if (published_id){
 
-                        title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
+                    title_text = loc.Submitted_at + ":\n" + formatted_publ_modat;
+
+                } else if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
+                    title_text = loc.Approved_by + ": ";
+                    for (let i = 1; i < 5; i++) {
+                        const auth_id = (i === 1) ? auth1by_id :
+                                        (i === 2) ? auth2by_id :
+                                        (i === 3) ? auth3by_id :
+                                        (i === 4) ?  auth4by_id : null;
+                        const prefix_auth = prefix_str + "_auth" + i;
+                        if(auth_id){
+                            const function_str = (i === 1) ?  loc.Chairperson :
+                                                (i === 2) ? loc.Secretary :
+                                                (i === 3) ?  loc.Examiner :
+                                                (i === 4) ? loc.Corrector : "";
+                            const field_usr = prefix_auth + "by_usr";
+                            const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
+
+                            title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
+                        };
                     };
                 };
             };
@@ -1886,7 +1912,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= DownloadGradeStatusAndIcons ============= PR2021-04-30
     function DownloadGradeStatusAndIcons() {
-        console.log( " ==== DownloadGradeStatusAndIcons ====");
+        //console.log( " ==== DownloadGradeStatusAndIcons ====");
 
         const url_str = urls.url_download_grade_icons;
         const datalist_request = {grade_note_icons: {get: true}, grade_stat_icon: {get: true}};
@@ -1920,8 +1946,8 @@ document.addEventListener("DOMContentLoaded", function() {
 /////////////////////////////////////////////
 //========= UploadStatus  ============= PR2020-07-31  PR2021-01-14 PR2022-03-20
     function UploadStatus(el_input) {
-        console.log( " ==== UploadStatus ====");
-        console.log( "permit_dict", permit_dict);
+        //console.log( " ==== UploadStatus ====");
+        //console.log( "permit_dict", permit_dict);
         //console.log( "permit_dict.permit_approve_grade", permit_dict.permit_approve_grade);
 
         // only called by field 'se_status', 'sr_status', 'pe_status', 'ce_status'
@@ -2081,7 +2107,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= UploadApproveGrade  ============= PR2022-03-12
     function UploadApproveGrade(tblName, fldName, examtype_2char, data_dict, auth_dict, requsr_auth_index,
                                 is_published, is_blocked, new_requsr_auth_approved, el_input) {
-        console.log( " ==== UploadApproveGrade ====");
+        //console.log( " ==== UploadApproveGrade ====");
 // ---  change icon, before uploading
 
         const is_allowed_cluster = get_is_allowed_cluster(data_dict.cluster_id);
@@ -2115,15 +2141,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= UploadBlockGrade  ============= PR2022-04-16
     function UploadBlockGrade(new_is_blocked) {
-        console.log( " ==== UploadBlockGrade ====");
-        console.log("new_is_blocked: ", new_is_blocked);
+        //console.log( " ==== UploadBlockGrade ====");
+        //console.log("new_is_blocked: ", new_is_blocked);
 
 // ---  change icon, before uploading
 
         // check if cluster is allowed
         const is_allowed_cluster = get_is_allowed_cluster(mod_dict.data_dict.cluster_id);
 
-        console.log("is_allowed_cluster: ", is_allowed_cluster);
+        //console.log("is_allowed_cluster: ", is_allowed_cluster);
         if (!is_allowed_cluster){
             const msg_txt = (new_is_blocked) ? loc.No_cluster_block_permission : loc.No_cluster_unblock_permission ;
             const msg_html = ["<div class='p-2'>", msg_txt, "</div>"].join("");
@@ -3466,7 +3492,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         return data_list
     }  //  fill_data_list
 
-
 //=========  reset_element_with_errorclass  ================ PR2021-09-20
     function reset_element_with_errorclass(el_input, update_dict) {
         // make field red when error and reset old value after 2 seconds
@@ -3477,6 +3502,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             UpdateField(el_input, update_dict);
         }, 2000);
     }  //  reset_element_with_errorclass
+
 //###########################################################################
 // +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
 

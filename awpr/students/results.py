@@ -549,6 +549,29 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                 subj_dict = sjtp_dict[subj_id]
                 logger.debug('?############ row: ' + str(row))
                 logger.debug('?????????? sjtp_dict[' + str(subj_id) + ']: ' + str(sjtp_dict[subj_id]))
+
+                """
+                row: {'studsubj_id': 40093, 'stud_id': 5453, 'lastname': 'Boasman', 'firstname': 'Acemar, Hurbertho', 
+                    'prefix': None, 'examnumber': '402', 'gender': 'M', 'idnumber': '2005061871', 
+                    'birthdate': datetime.date(2005, 6, 18), 'birthcountry': 'Nederland', 'birthcity': 'Sint Maarten', 
+                    'grade_ce_avg': None, 'grade_combi_avg': None, 'grade_final_avg': None, 'result_status': 'Geen uitslag', 
+                    'school_name': 'Milton Peters College', 'school_article': 'het', 'islexschool': False, 
+                    'school_code': 'SXM01', 'depbase_code': 'Vsbo', 'lvlbase_code': 'TKL', 'examyear_txt': '2022', 
+                    'country': 'Sint Maarten', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
+                    'dep_abbrev': 'V.S.B.O.', 'level_req': True, 'has_profiel': False, 
+                    'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'sct_name': 'Techniek', 
+                    'cluster_name': None, 'classname': 'VT4A', 
+                    'gradelist_sesrgrade': None, 'gradelist_pecegrade': None, 'gradelist_finalgrade': None,
+                     'is_extra_nocount': False, 'is_extra_counts': False, 'gradelist_use_exem': False, 
+                     'pws_title': None, 'pws_subjects': None, 'is_combi': False, 'is_stg': False, 
+                     'is_wst': False, 'subj_id': 168, 'subj_name': 'Nederlandse taal', 
+                     'sjtp_name': 'Gemeenschappelijk deel', 'sjtpbase_sequence': 1, 'sjtpbase_code': 'gmd'}
+                     
+                sjtp_dict[168]: {'sjtp_code': 'gmd', 'subj_name': 'Nederlandse taal', 
+                    'segrade': None, 'pecegrade': None, 'finalgrade': None}
+
+                """
+
 # - add  pws_title and pws_subjects to subj_dict
                 pws_title = row.get('pws_title')
                 if pws_title:
@@ -700,11 +723,22 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, auth1_pk, auth2_pk,
         sjtp_dict = student_dict.get(sequence)
         if sjtp_dict:
             draw_gradelist_sjtp_header(canvas, coord, col_tab_list, library, sjtp_dict, student_dict)
-            logger.debug('@@@@@ sjtp_dict: ' + str(sjtp_dict))
+            if logging_on:
+                logger.debug('@@@@@ sjtp_dict: ' + str(sjtp_dict))
+
             for key, subj_dict in sjtp_dict.items():
-                logger.debug('@@@@@ subj_dict: ' + str(subj_dict))
+
                 if isinstance(key, int):
                     draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict)
+
+    """
+    sjtp_dict: {
+        'sjtp_name': 'Gemeenschappelijk deel', 
+        113: {'sjtp_code': 'gmd', 'subj_name': 'Nederlandse taal', 'segrade': '5.9', 'pecegrade': None, 'finalgrade': None}, 
+        118: {'sjtp_code': 'gmd', 'subj_name': 'Papiamentu', 'segrade': '7.6', 'pecegrade': None, 'finalgrade': None}, 
+        114: {'sjtp_code': 'gmd', 'subj_name': 'Engelse taal', 'segrade': '8.0', 'pecegrade': None, 'finalgrade': None}}
+    """
+
 
 # - get combi subjects
     # also check if combi contains werkstuk

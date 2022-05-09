@@ -4509,6 +4509,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         let updated_columns = [];
                         // first column subj_error
                         for (let i = 0, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+
     // ---  'status' fields are not in data_row
                             if (col_field.includes("_status")){
                                 const [old_status_className, old_status_title] = UpdateFieldStatus(col_field, data_dict);

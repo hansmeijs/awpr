@@ -711,8 +711,9 @@ def SignupActivateView(request, uidb64, token):
 
     if logging_on:
         logger.debug('     user:             ' + str(user))
-        logger.debug('     is_authenticated: ' + str(user.is_authenticated))
-        logger.debug('     activated:        ' + str(user.activated))
+        if user:
+            logger.debug('     is_authenticated: ' + str(user.is_authenticated))
+            logger.debug('     activated:        ' + str(user.activated))
 
 # - get language from user
     # PR2019-03-15 Debug: language gets lost, get request.user.lang again

@@ -16,6 +16,7 @@ from awpr import functions as af
 from awpr import settings as s
 from awpr import library as awpr_lib
 from grades import views as grade_views
+from grades import calc_score as calc_score
 
 import logging
 logger = logging.getLogger(__name__)
@@ -283,6 +284,7 @@ def get_page_count(number_of_columns, lines_per_page, all_partex_assignment_keys
 # - end of get_page_count
 
 
+
 def draw_exam_page_header(canvas, border, coord, text_list, last_modified_text, pagenumber_text):
     # loop through rows of page_header
     logging_on = False  # s.LOGGING_ON
@@ -430,10 +432,12 @@ def draw_questions(canvas, border, coord, row_height, form_text, partex_assignme
     amount = partex_assignment_keys_dict.get('amount', 0)
     questions_dict = partex_assignment_keys_dict.get('q')
     scores_dict = partex_assignment_keys_dict.get('s')
+    multiple_choice_list = partex_assignment_keys_dict.get('m')
 
     if logging_on:
         logger.debug('questions_dict: ' + str(questions_dict))
         logger.debug('scores_dict: ' + str(scores_dict))
+        logger.debug('multiple_choice_list: ' + str(multiple_choice_list))
 
 # calculate number of rows - 5 columns per row
     number_of_columns = 5
@@ -443,7 +447,7 @@ def draw_questions(canvas, border, coord, row_height, form_text, partex_assignme
 # +++ loop through rows of this partex
     for row_index in range(0, number_of_rows):  # range(start_value, end_value, step), end_value is not included!
 
-        draw_question_row(canvas, border, coord, form_text, number_of_columns, number_of_rows, row_index, row_height, amount, questions_dict, scores_dict)
+        draw_question_row(canvas, border, coord, form_text, number_of_columns, number_of_rows, row_index, row_height, amount, questions_dict, scores_dict, multiple_choice_list)
 
     # - draw horizontal line at bottom of header section
     x1, x2 = left, right
@@ -461,7 +465,9 @@ def draw_questions(canvas, border, coord, row_height, form_text, partex_assignme
         canvas.line(x, y1, x, y2)
 # - end of draw_questions
 
-def draw_question_row(canvas, border, coord, form_text, number_of_columns, number_of_rows, row_index, row_height, amount, questions_dict, scores_dict):
+def draw_question_row(canvas, border, coord, form_text,
+                      number_of_columns, number_of_rows, row_index, row_height, amount,
+                      questions_dict, scores_dict, multiple_choice_list):
 #  questions_dict = {1: '4', 2: 'D-b', 3: '6', 4: 'E-d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1'}},
     # border = [top, right, bottom, left]
     # coord = [left, top]
@@ -472,6 +478,7 @@ def draw_question_row(canvas, border, coord, form_text, number_of_columns, numbe
         logger.debug('----- draw_question_row -----')
         logger.debug('questions_dict: ' + str(questions_dict))
         logger.debug('scores_dict: ' + str(scores_dict))
+        logger.debug('multiple_choice_list: ' + str(multiple_choice_list))
 
     line_height = row_height
     padding_left = 4 * mm
@@ -496,19 +503,22 @@ def draw_question_row(canvas, border, coord, form_text, number_of_columns, numbe
             if scores_dict and q_number in scores_dict:
                 score = scores_dict[q_number]
 
+            multiple_choice_suffix = '*' if multiple_choice_list and q_number in multiple_choice_list else ''
+
             if logging_on:
                 logger.debug('score: ' + str(score) + str(type(score)))
                 logger.debug('isinstance(score, int): ' + str(isinstance(score, int)))
 
             # lookup in questions_dict
             x_label = left + col_index * col_width
-            x_data = x_label + 10 * mm
+            x_data = x_label + 14 * mm
+            x_score = x_data + 14 * mm
             # draw_red_cross(canvas, x_label, y)
 
         # draw label
             # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
             set_font_timesroman_11_black(canvas)
-            canvas.drawString(x_label, y, str(q_number) + ':')
+            canvas.drawString(x_label, y, str(q_number) + multiple_choice_suffix + ':')
 
         # draw text answer
             hex_color = "#000080" if answer else "#000000"
@@ -522,7 +532,7 @@ def draw_question_row(canvas, border, coord, form_text, number_of_columns, numbe
             # score may have value 'n' or 'e'
             if score and score not in ('n', 'e'):
                 set_font_timesroman_11_black(canvas)
-                canvas.drawString(x_data + 15*mm , y, str(score))
+                canvas.drawString(x_score, y, str(score))
     coord[1] = y
 # - end of draw_question_row
 
@@ -1085,7 +1095,404 @@ def draw_grade_partex_header(canvas, border, coord, form_text, partex_dict, part
 
     coord[1] = y
 # - end of draw_grade_partex_header
+########################################
 
+def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  # PR2022-05-08
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_conversion_table -----')
+        logger.debug('sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
+
+    is_ete_exam = sel_exam_instance.ete_exam
+    subject = sel_exam_instance.subject
+    examperiod = sel_exam_instance.examperiod
+    amount_int = sel_exam_instance.amount if sel_exam_instance.amount else 0
+    cesuur_int, nterm_str, nexid_str, version_nexid_txt = 0, '', '', ''
+    if is_ete_exam:
+        cesuur_int = sel_exam_instance.cesuur if sel_exam_instance.cesuur is not None else 0
+        if sel_exam_instance.cesuur:
+            cesuur_nterm_str = ' / '.join((str(sel_exam_instance.cesuur - 1), str(sel_exam_instance.cesuur)))
+        else:
+            cesuur_nterm_str = '-'
+        version_nexid_txt = sel_exam_instance.version
+    else:
+        cesuur_nterm_str = sel_exam_instance.nterm if sel_exam_instance.nterm else ''
+        nexid_str = str(sel_exam_instance.nex_id) if sel_exam_instance.nex_id else '-'
+        version_nexid_txt = str(sel_exam_instance.nex_id) if sel_exam_instance.nex_id else ''
+
+    scalelength_int = sel_exam_instance.scalelength
+    scalelength_str = str(scalelength_int) if scalelength_int else '-'
+
+# - get dep_abbrev from department
+    dep_abbrev = '---'
+    department = sel_exam_instance.department
+    if department:
+        dep_abbrev = department.abbrev
+
+# - get level_abbrev from level
+    level = sel_exam_instance.level
+    if level and level.abbrev:
+        dep_abbrev += ' - ' + level.abbrev
+
+# - get version
+    version = sel_exam_instance.version
+    # dont print last_modified_by
+    skip_modifiedby = True
+    last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang, skip_modifiedby)
+
+# - get form_text from examyearsetting
+    form_text = awpr_lib.get_library(sel_examyear, ['exform', 'exam'])
+    logger.debug('form_text: ' + str(form_text))
+
+    minond = form_text.get('minond', '-')
+    if is_ete_exam:
+        title = form_text.get('title_scoretable_ete', '-') + str(subject.examyear.code)
+    else:
+        title = form_text.get('title_scoretable_duo', '-') + str(subject.examyear.code)
+
+    examperiod_cpt = form_text.get('Central_exam', '-') if examperiod == 1 else \
+            form_text.get('Re_exam', '-') if examperiod == 2 else '-'
+
+    educationtype = form_text.get('educationtype', '-') + ':'
+    examtype = form_text.get('examtype', '-') + ':'
+    subject_cpt = form_text.get('subject', '-') + ':'
+
+    if is_ete_exam:
+        max_score = form_text.get('max_score', '-') + ':'
+        cesuur_nterm_lbl = form_text.get('cesuur', '-') + ':'
+        version_nexid_lbl = form_text.get('version', '-') + ':' if version else None
+    else:
+        max_score = form_text.get('scalelength', '-') + ':'
+        cesuur_nterm_lbl = form_text.get('n_term', '-') + ':'
+        version_nexid_lbl = form_text.get('nex_id', '-') + ':' if nexid_str else None
+
+    header_list = [
+        (minond, None, None, None),
+        (title, None, None, None),
+        (educationtype, dep_abbrev, version_nexid_lbl, version_nexid_txt),
+        (examtype, examperiod_cpt, max_score, scalelength_str),
+        (subject_cpt, subject.name, cesuur_nterm_lbl, cesuur_nterm_str)
+    ]
+
+    filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
+    try:
+        ttfFile = TTFont('Arial', filepath)
+        #logger.debug('ttfFile: ' + str(ttfFile))
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error('filepath: ' + str(filepath))
+        logger.error(getattr(e, 'message', str(e)))
+
+# create list of with score and grades
+    score_grade_dict = {}
+    for score_int in range(0, scalelength_int + 1):  # range(start_value, end_value, step), end_value is not included!
+        if is_ete_exam:
+            grade_str = calc_score.calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
+        else:
+            grade_str = calc_score.calc_grade_from_score_duo(score_int, scalelength_int, cesuur_int)
+        grade_with_comma = grade_str.replace('.', ',') if grade_str else '-'
+        score_grade_dict[score_int] = grade_with_comma
+
+    draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_list, last_modified_text, score_grade_dict)
+
+# - end of draw_conversion_table
+
+
+def draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_list, last_modified_text, score_grade_dict):
+    # PR2022-05-08
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_conversion_page -----')
+
+# +++ write header block
+    """
+    canvas.setLineWidth(.5)
+    # corners of the rectangle
+    top, right, bottom, left = 287 * mm, 200 * mm, 17 * mm, 10 * mm
+    page_width = right - left  # 190 mm
+    border = (top, right, bottom, left)
+    canvas.rect(left, bottom, page_width, height)
+    """
+
+    today_dte = af.get_today_dateobj()
+    today_formatted = af.format_WDMY_from_dte(today_dte, c.LANG_DEFAULT)
+
+    # - set the corners of the rectangle
+    top, right, bottom, left = 287 * mm, 200 * mm, 12 * mm, 10 * mm
+    # width = right - left  # 190 mm
+    # height = top - bottom  # 275 mm
+    border = [top, right, bottom, left]
+    coord = [left, top]
+    lines_per_page = 29
+    available_lines = lines_per_page
+    number_of_columns = 5
+    row_height = 7 * mm
+
+# create pagenumber_text
+    page_count = get_conversion_page_count (number_of_columns, lines_per_page, scalelength_int)
+
+    page_number = 1
+    pagenumber_text = ' '.join((
+            str(_('Page')), str(page_number),
+            'van', str(page_count) + ',',
+            today_formatted
+    ))
+    draw_exam_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
+
+    # calculate number of rows - 5 columns per row
+    number_of_columns = 5
+    number_of_rows = 1 + int((scalelength_int - 1) / number_of_columns) if scalelength_int > 0 else 0
+    needed_lines = 2 + number_of_rows
+
+    if needed_lines > available_lines:
+        canvas.showPage()
+
+        coord[0] = left
+        coord[1] = top # 287 * mm
+        available_lines = lines_per_page
+        page_number += 1
+        pagenumber_text = ' '.join((
+            str(_('Page')), str(page_number),
+            'van', str(page_count) + ',',
+            today_formatted
+        ))
+        draw_conversion_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
+
+    draw_conversion_questions(canvas, border, coord, row_height, form_text, scalelength_int, cesuur_int, score_grade_dict)
+    available_lines -= needed_lines
+# - end of draw_conversion_page
+
+
+def get_conversion_page_count(number_of_columns, lines_per_page, scalelength_int):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_page_count -----')
+
+    # calculate number of rows - 5 columns per row
+    number_of_rows = 1 + int((scalelength_int - 1) / number_of_columns) if scalelength_int > 0 else 0
+    needed_lines = 2 + number_of_rows
+
+    if logging_on:
+        logger.debug('    scalelength_int: ' + str(scalelength_int))
+        logger.debug('    number_of_rows: ' + str(number_of_rows))
+        logger.debug('    needed_lines: ' + str(needed_lines))
+    #TODO test it
+    page_count = 1 + int((needed_lines - 1) / (lines_per_page))
+
+    if logging_on:
+        logger.debug('    page_count: ' + str(page_count))
+
+    return page_count
+# - end of get_conversion_page_count
+
+
+def draw_conversion_page_header(canvas, border, coord, text_list, last_modified_text, pagenumber_text):
+    # loop through rows of page_header
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_conversion_page_header -----')
+        logger.debug('text_list: ' + str(text_list))
+
+# +++ write header block
+    canvas.setLineWidth(.5)
+
+# corners of the rectangle
+    top, right, bottom, left = border[0], border[1], border[2], border[3]
+    page_width = right - left  # 190 mm
+    height = top - bottom  # 275 mm
+
+    canvas.rect(left, bottom, page_width, height)
+
+    line_count = len(text_list)
+    line_height = 7 * mm
+    padding_left = 4 * mm
+
+    # coord = [left, top]
+    x = coord[0] + padding_left
+    y = coord[1]
+
+    for index in range(0, line_count):  # range(start_value, end_value, step), end_value is not included!
+        y -= line_height
+        label = text_list[index][0]
+        text = text_list[index][1]
+        label2 = text_list[index][2]
+        text2 = text_list[index][3]
+
+# draw label
+        # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+        set_font_timesbold_11_black(canvas)
+        canvas.drawString(x, y, label)
+
+# draw text (schoolname etc
+        if text:
+            set_font_arial_11_blue(canvas)
+            canvas.drawString(x + 38 * mm, y, text)
+
+# draw label 2
+        if label2:
+        # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+            set_font_timesbold_11_black(canvas)
+            canvas.drawString(x + 114 * mm, y, label2)
+
+# draw text 2
+        if text2:
+            set_font_arial_11_blue(canvas)
+            canvas.drawString(x + 152 * mm, y, text2)
+
+# - draw horizontal line at bottom of header section
+    x1, x2 = left, right
+    y -= 4 * mm
+    canvas.setStrokeColorRGB(0, 0, 0)
+    canvas.line(x1, y, x2, y)
+
+# - draw horizontal line at top of footer section
+    #y1 = bottom + 8 * mm
+    # canvas.line(x1, y1, x2, y1)
+
+    y1 = bottom + 2 * mm
+    set_font_timesroman_11_black(canvas)
+    canvas.drawString(x, y1, last_modified_text)
+
+    x1 = right - 4 * mm
+    canvas.drawRightString(x1 , y1, pagenumber_text)
+
+    coord[1] = y
+
+# - end of draw_conversion_page_header
+
+
+def draw_conversion_questions(canvas, border, coord, row_height, form_text, scalelength_int, cesuur_int, score_grade_dict):
+    # loop through rows of page_header
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_conversion_questions -----')
+
+    top, right, bottom, left = border[0], border[1], border[2], border[3]
+
+# calculate number of rows - 5 columns per row
+    number_of_columns = 5
+    number_of_rows = 1 + int( (scalelength_int - 1) / number_of_columns ) if scalelength_int > 0 else 0
+
+    section_top = coord[1]
+
+    draw_conversion_question_header_row(canvas, border, coord, number_of_columns, row_height)
+
+# +++ loop through rows of this partex
+    for row_index in range(0, number_of_rows):  # range(start_value, end_value, step), end_value is not included!
+
+        draw_conversion_question_row(canvas, border, coord, form_text, number_of_columns, number_of_rows,
+                                     row_index, row_height, scalelength_int, cesuur_int, score_grade_dict)
+
+    # - draw horizontal line at bottom of header section
+    x1, x2 = left, right
+    coord[1] -= 4 * mm
+    canvas.line(x1, coord[1], x2, coord[1])
+
+    section_bottom = coord[1]
+
+# - vertical lines - w_list contains width of columns
+    w_list = (38, 38, 38, 38)  # last col is 38 mm
+    x, y1, y2 = left, section_top, section_bottom
+
+    for w in w_list:
+        x += w * mm
+        canvas.line(x, y1, x, y2)
+# - end of draw_conversion_questions
+
+
+def draw_conversion_question_header_row(canvas, border, coord, number_of_columns, row_height):
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_conversion_question_row -----')
+
+    line_height = row_height
+    padding_left = 6 * mm
+
+    col_width = 38*mm
+    padding_x = 2*mm
+
+    left = border[3] + padding_left
+    y = coord[1]
+
+    y -= line_height
+
+# +++ loop through columns of this page
+    for col_index in range(0, number_of_columns):  # range(start_value, end_value, step), end_value is not included!
+        score_lbl = _('Score')
+        grade_lbl = _('Grade')
+
+        x_label = left + col_index * col_width
+        x_data = x_label + 14 * mm
+
+    # draw label
+        # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+        set_font_timesroman_11_black(canvas)
+        canvas.drawString(x_label, y, str(score_lbl))
+
+    # draw text answer
+        #hex_color = "#000080"
+        #canvas.setFillColor(colors.HexColor(hex_color))
+        #canvas.setFont('Arial', 11, leading=None)
+        canvas.drawString(x_data, y, str(grade_lbl))
+
+    coord[1] = y
+# - end of draw_conversion_question_header_row
+
+
+
+def draw_conversion_question_row(canvas, border, coord, form_text,
+                      number_of_columns, number_of_rows, row_index, row_height, scalelength_int, cesuur_int,
+                      score_grade_dict):
+#  questions_dict = {1: '4', 2: 'D-b', 3: '6', 4: 'E-d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1'}},
+    # border = [top, right, bottom, left]
+    # coord = [left, top]
+    top, right, bottom, left = border[0], border[1], border[2], border[3]
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- draw_conversion_question_row -----')
+
+    line_height = row_height
+    padding_left = 8 * mm
+
+    col_width = 38*mm
+    padding_x = 2*mm
+
+    left = border[3] + padding_left
+    y = coord[1]
+
+    y -= line_height
+
+# +++ loop through columns of this page
+    for col_index in range(0, number_of_columns):  # range(start_value, end_value, step), end_value is not included!
+        score_int = (row_index) + col_index * number_of_rows
+        if score_int <= scalelength_int:
+            grade = score_grade_dict[score_int] if score_int in score_grade_dict else None
+
+            cesuur_suffix = '*' if score_int == cesuur_int else ''
+
+            # lookup in questions_dict
+            x_label = left + col_index * col_width
+            x_data = x_label + 14 * mm
+            # draw_red_cross(canvas, x_label, y)
+
+        # draw label
+            # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+            set_font_timesroman_11_black(canvas)
+            canvas.drawString(x_label, y, str(score_int) + cesuur_suffix)
+
+        # draw text answer
+            hex_color = "#000080"
+            canvas.setFillColor(colors.HexColor(hex_color))
+            canvas.setFont('Arial', 11, leading=None)
+            canvas.drawString(x_data, y, grade)
+
+    coord[1] = y
+# - end of draw_conversion_question_row
+
+
+############################################
 
 def draw_red_cross(canvas, x, y):
     # draw red cross, for outlining while designing

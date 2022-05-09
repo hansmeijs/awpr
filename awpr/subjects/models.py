@@ -567,7 +567,6 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     scalelength = PositiveSmallIntegerField(null=True)
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
-    # PR2022-02-31 removed to fix migrate problem: examdate = DateField(null=True)
 
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
@@ -608,7 +607,6 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     scalelength = PositiveSmallIntegerField(null=True)
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
-    # PR2022-02-31 removed to fix migrate problem: examdate = DateField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

@@ -619,8 +619,8 @@ def format_modified_at(modifiedat, user_lang, month_abbrev=True):
     return datetime_formatted
 
 
-def get_modifiedby_formatted(instance, user_lang):
-    # Function returns 'Laatst gewijzigd door Hans Meijs op 6 mei 2021, 15.55 u'  PR2021-05-09
+def get_modifiedby_formatted(instance, user_lang, skip_modifiedby=False):
+    # Function returns 'Laatst gewijzigd door Hans Meijs op 6 mei 2021, 15.55 u'  PR2021-05-09 R2022-05-08
     last_modified_text, date_formatted, time_formatted = '', '', ''
     if instance:
         user_name = '-'
@@ -637,7 +637,10 @@ def get_modifiedby_formatted(instance, user_lang):
             time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
             datetime_formatted = date_formatted + ', ' + time_formatted
 
-        last_modified_text = ' '.join(( str(_('Last modified by')), user_name, str(_('at')), datetime_formatted))
+        if skip_modifiedby:
+            last_modified_text = ' '.join((str(_('Last modified at')), datetime_formatted))
+        else:
+            last_modified_text = ' '.join(( str(_('Last modified by')), user_name, str(_('at')), datetime_formatted))
 
     return last_modified_text
 
@@ -1172,7 +1175,7 @@ def system_updates(examyear, request):
     awpr_lib.update_library(examyear, request)
 
 # PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
-    show_deleted_grades()
+    show_deleted_grades(request)
 
 # PR2022-05-02 recalc amount and scalelength in exams
     recalc_amount_and_scalelength_of_assignment(request)
@@ -1197,15 +1200,16 @@ def system_updates(examyear, request):
 
 # - end of system_updates
 
-def show_deleted_grades():
+def show_deleted_grades(request):
     #PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
     # check other 36 grades that have tobedeleted=True
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ------- show_deleted_grades studentsubject__tobedeleted=False-------')
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:  # and request.user.role == c.ROLE_128_SYSTEM:
+        logger.debug(' ------- show_deleted_grades studsubj_tobedeleted=False, examperiod=1 -------')
         rows = stud_mod.Grade.objects.filter(
             tobedeleted=True,
-            studentsubject__tobedeleted=False
+            studentsubject__tobedeleted=False,
+            examperiod=1
         )
         for row in rows:
             msg_txt = ' '.join((
@@ -1216,10 +1220,11 @@ def show_deleted_grades():
                     ' stud.del', str(row.studentsubject.student.tobedeleted)))
             logger.debug(msg_txt)
 
-        logger.debug(' ------- show_deleted_grades studentsubject__tobedeleted=True-------')
+        logger.debug(' ------- show_deleted_grades studentsubject__tobedeleted=True, examperiod=1 -------')
         rows = stud_mod.Grade.objects.filter(
             tobedeleted=True,
-            studentsubject__tobedeleted=True
+            studentsubject__tobedeleted=True,
+            examperiod=1
         )
         for row in rows:
             msg_txt = ' '.join((
@@ -1248,7 +1253,7 @@ def recalc_amount_and_scalelength_of_assignment(request):
         if not exists:
             exams = subj_mod.Exam.objects.filter( ete_exam=True)
             for exam in exams:
-                total_amount, total_maxscore, has_changed = grade_view.calc_amount_and_scalelength_of_assignment(exam)
+                total_amount, total_maxscore, total_blanks, has_changed = grade_view.calc_amount_and_scalelength_of_assignment(exam)
                 if has_changed:
                     setattr(exam, 'scalelength', total_maxscore)
                     setattr(exam, 'amount', total_amount)

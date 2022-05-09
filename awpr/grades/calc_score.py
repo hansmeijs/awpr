@@ -2,11 +2,14 @@
 from decimal import Decimal
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import gettext_lazy as _
+from django.db import connection
+from django.utils import timezone
 
-from awpr import constants as c
 from awpr import settings as s
+from awpr import functions as af
 
 from grades import calculations as grade_calc
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -68,7 +71,7 @@ logger = logging.getLogger(__name__)
 '(4) C = 10 – (L – S) * (9 / L) * 0,5   bij N > 1,0
 
 """
-def calc_grade_from_score(score_int , scalelength_int , nterm_str , cesuur_int, is_ete_exam ):
+def calc_grade_from_score(score_int, scalelength_int , nterm_str , cesuur_int, is_ete_exam ):
     # from AWP Scores.CalcCijferTextFromScore PR2022-04-19
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -101,7 +104,7 @@ def calc_grade_from_score(score_int , scalelength_int , nterm_str , cesuur_int, 
                 caption = _('The cesuur')
                 err_txt = _('%(cpt)s must be fewer than or equal to %(val)s.') % {'cpt': caption, 'val': str(scalelength_int)}
             else:
-                grade = calc_grade_from_score_ETE(score_int, scalelength_int, cesuur_int)
+                grade = calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
         else:
             if not nterm_str:
                 err_txt = _('Nterm is not entered.')
@@ -123,10 +126,11 @@ def calc_grade_from_score(score_int , scalelength_int , nterm_str , cesuur_int, 
                 if compare_pece <= 0:
                     err_txt = _('N-term must be a number greater than zero.')
                 else:
-                    grade = calc_grade_from_score_CITO(score_int, scalelength_int, nterm_decimal)
+                    grade = calc_grade_from_score_duo(score_int, scalelength_int, nterm_str)
     return grade, err_txt
 
-def calc_grade_from_score_ETE(score_int, scalelength_int, cesuur_int):
+
+def calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int):
     """
     'PR2019-05-27 mail from Angela.Verschoor@cito.nl>
     ' Geachte heer Meijs,
@@ -156,6 +160,13 @@ def calc_grade_from_score_ETE(score_int, scalelength_int, cesuur_int):
         End If 'If crcCesuur > 0 And crcCesuur < intLschaal
     End If 'If intLschaal > 0
     """
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- calc_grade_from_score_ete -----')
+        logger.debug('     score_int:       ' + str(score_int))
+        logger.debug('     scalelength_int: ' + str(scalelength_int))
+        logger.debug('     cesuur_int:      ' + str(cesuur_int))
+
     score_dec = Decimal(score_int)
     scalelength_dec = Decimal(scalelength_int)
     cesuur_dec = Decimal(cesuur_int)
@@ -164,25 +175,37 @@ def calc_grade_from_score_ETE(score_int, scalelength_int, cesuur_int):
     dec_1 = Decimal('1')
     dec_4_45 = Decimal('4.45')
     dec_4_55 = Decimal('4.55')
-    dec_9 = Decimal('9')
     dec_10 = Decimal('10')
 
-
-# - bereken Laagtse functie, van score 0 tot L/2
+# - bereken Laagtse functie, van score 0 tot cesuur_int
     if score_int < cesuur_int:
+        #  crcCijfer =  1 + intScore  *     4.45 / (crcCesuur - 0.5)
         grade_dec = dec_1 + score_dec * dec_4_45 / (cesuur_dec - dec_0_5)
     else:
-
-#' - Bereken Hoogste functie, van score L/2 tot score L
+        if logging_on:
+            logger.debug(' ----- calc_grade_from_score_ete -----')
+            logger.debug('     cesuur_dec:       ' + str(cesuur_dec) + ' ' + str(type(cesuur_dec)))
+            logger.debug('     scalelength_dec:  ' + str(scalelength_dec) + ' ' + str(type(scalelength_dec)))
+            logger.debug('     dec_10:           ' + str(dec_10) + ' ' + str(type(dec_10)))
+            logger.debug('     dec_4_55:         ' + str(dec_4_55) + ' ' + str(type(dec_4_55)))
+            logger.debug('     dec_0_5:         ' + str(dec_0_5) + ' ' + str(type(dec_0_5)))
+#' - Bereken Hoogste functie, van score cesuur_int tot score L
+        # crcCijfer =   10 - (intLschaal - intScore) * 4.55           / (intLschaal - (crcCesuur - 0.5))
         grade_dec = dec_10 - (scalelength_dec - score_dec) * dec_4_55 / (scalelength_dec - (cesuur_dec - dec_0_5) )
+
+        if logging_on:
+            logger.debug('     grade_dec:       ' + str(grade_dec) + ' ' + str(type(grade_dec)))
 
 #' - afronden op 1 cijfer achter de komma
     grade_str = str(grade_calc.round_decimal(grade_dec, dec_1))
 
+    if logging_on:
+        logger.debug('   > grade_str:       ' + str(grade_str)+ ' ' + str(type(grade_dec)))
     return grade_str
+# - end of calc_grade_from_score_ete
 
 
-def calc_grade_from_score_CITO(score_int, scalelength_int, nterm_dec):
+def calc_grade_from_score_duo(score_int, scalelength_int, nterm_str):
     """
     If intLschaal > 0 Then
         If crcNterm >= 0 Then ' PR2019-06-29And crcNterm <= 2 Then
@@ -221,6 +244,16 @@ def calc_grade_from_score_CITO(score_int, scalelength_int, nterm_dec):
     End If 'If intLschaal > 0
     """
 
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- calc_grade_from_score_duo -----')
+
+# - replace comma in nterm by dot, convert to decimal
+    nterm_dot_nz = nterm_str.replace(',', '.')
+    nterm_decimal = Decimal(nterm_dot_nz)
+    if logging_on:
+        logger.debug('... nterm_decimal: ' + str(nterm_decimal) + ' ' + str(type(nterm_decimal)))
+
     score_dec = Decimal(score_int)
     scalelength_dec = Decimal(scalelength_int)
 
@@ -232,7 +265,7 @@ def calc_grade_from_score_CITO(score_int, scalelength_int, nterm_dec):
 
 # De hoofdrelatie geeft aldus het examencijfer als functie van de score:
 #     'C = 9,0 * (S/L) + N .......................................... (1)
-    grade_dec = dec_9 * (score_dec / scalelength_dec) + nterm_dec
+    grade_dec = dec_9 * (score_dec / scalelength_dec) + nterm_decimal
 
 # De grensrelaties worden gevormd door de volgende vier formules:
 
@@ -241,7 +274,7 @@ def calc_grade_from_score_CITO(score_int, scalelength_int, nterm_dec):
     a.compare(b) =  1  if a > b
     a.compare(b) = -1  if a < b
     """
-    nterm_compare = nterm_dec.compare(dec_1)
+    nterm_compare = nterm_decimal.compare(dec_1)
     if nterm_compare > 0:
 # bij N > 1,0 geldt voor de laagste scores de formule:
 #     'C = 1,0 + S * (9/L) * 2 ......................................... (2a)
@@ -279,6 +312,170 @@ def calc_grade_from_score_CITO(score_int, scalelength_int, nterm_dec):
     return grade_str
 
 ################################
+
+def calc_cegrade_from_ete_exam_score(exam, request):
+    # PR2022-05-07
+    # function calculates cegrade in grades based on cesuur and sclaelength of ete_exam
+    # IMPORTANT: pescore contains ce_exam_score, dont use this one to calc grade, becasue it is not submitted yet
+    # instead use cescore, this one contains submitted score.
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' --------- calc_cegrade_from_ete_exam_score -------------')
+        logger.debug('exam: ' + str(exam))
+
+    updated_cegrade_count = 0
+    if exam:
+        is_ete_exam = getattr(exam, 'ete_exam')
+        is_published = getattr(exam, 'published')
+
+        if is_ete_exam and is_published:
+
+# = get info from exam
+            scalelength_int = getattr(exam, 'scalelength')
+            cesuur_int = getattr(exam, 'cesuur')
+
+# - create list of all grades with this exam (CUR + SXM) who have submitted exam
+            grade_pk_list = create_gradelist_for_score_calc(exam.pk)
+
+            if logging_on:
+                logger.debug('grade_pk_list: ' + str(grade_pk_list))
+            """
+            grade_pk_list: [
+                {'id': 22539, 'pescore': 56, 'cegrade': None}, 
+                {'id': 22569, 'pescore': 57, 'cegrade': None}, 
+                {'id': 22459, 'pescore': 43, 'cegrade': None}]
+            """
+# - calculate cegrade of each grade
+            for row in grade_pk_list:
+                if logging_on:
+                    logger.debug('     row: ' + str(row))
+                # row = {id: 22345, cescore: 44, cegrade: None}
+
+                # IMPORTANT: pescore contains ce_exam_score, dont use this one to calc grade, becasue it is not submitted yet
+                # instead use cescore, this one contains submitted score.
+
+                score_int = row.get('cescore')
+                grade_str = calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
+                row['cegrade'] = grade_str if grade_str else None
+                if logging_on:
+                    logger.debug('       >> row: ' + str(row))
+
+# - update cegrade in all grades of grade_pk_list
+            updated_cegrade_count = batch_update_cegrade(grade_pk_list, request)
+
+    return updated_cegrade_count
+# - end of calc_cegrade_from_ete_exam_score
+
+
+def create_gradelist_for_score_calc(exam_pk):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --- create_gradelist_for_score_calc --- ')
+
+    # create list of grades with this exam, so cegrade can be calculated
+
+    # IMPORTANT: pescore contains ce_exam_score, dont use this one to calc grade, becasue it is not submitted yet
+    # instead use cescore, this one contains submitted score.
+
+    gradelist_for_score_calc = []
+    if exam_pk:
+        try:
+            sql_keys = {'exam_pk': exam_pk}
+            sql_list = [
+                "SELECT grd.id, grd.cescore, grd.cegrade",
+                "FROM students_grade AS grd",
+                "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+                "WHERE grd.ce_exam_id = %(exam_pk)s::INT",
+                "AND grd.examperiod = exam.examperiod",
+                # both exam and grd.ce_exam must be published to calc grade
+                "AND grd.ce_exam_published_id IS NOT NULL",
+                "AND exam.published_id IS NOT NULL"
+            ]
+            sql = ' '.join(sql_list)
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = af.dictfetchall(cursor)
+            if rows:
+                for row in rows:
+                    # row = {id: 22345, cescore: 44, cegrade: None}
+                    gradelist_for_score_calc.append(row)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return gradelist_for_score_calc
+# - end of create_gradelist_for_score_calc
+
+
+def batch_update_cegrade(grade_rows_tobe_updated, request):
+    #PR2022-05-07
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- batch_update_cegrade -----')
+        logger.debug('     grade_rows_tobe_updated:    ' + str(grade_rows_tobe_updated))
+        """
+            grade_rows_tobe_updated:    [
+            {'id': 22539, 'pescore': 56, 'cegrade': '5.9'}, 
+            {'id': 22569, 'pescore': 57, 'cegrade': '6.0'}, 
+            {'id': 22459, 'pescore': 43, 'cegrade': '4.7'}]
+        """
+    updated_cegrade_count = 0
+
+    if grade_rows_tobe_updated and request.user:
+
+        try:
+            # do not change modby, it will give user of admin
+            # to do: write as modifiedat = %(modat)s::TIMESTAMP, dont know how to do it yet
+            # modifiedat_str = str(timezone.now())
+            # sql_keys = {'modby_id': request.user.pk}
+
+            sql_list = ["CREATE TEMP TABLE gr_update (grade_id, cegrade) AS",
+                        "VALUES (0::INT, 0::INT)"]
+
+            for row in grade_rows_tobe_updated:
+                grade_id = str(row.get('id'))
+
+                cegrade = row.get('cegrade')
+                if not cegrade:
+                    cegrade = 'NULL'
+
+                sql_list.append(''.join((", (", grade_id, ", ", cegrade, ")")))
+
+            sql_list.extend((
+                "; UPDATE students_grade AS gr",
+                "SET cegrade = gr_update.cegrade",
+                #"modifiedby_id = %(modby_id)s::INT, modifiedat = '", modifiedat_str, "'",
+
+                "FROM gr_update",
+                "WHERE gr_update.grade_id = gr.id",
+                "RETURNING gr.id;"
+                ))
+
+            sql = ' '.join(sql_list)
+
+            if logging_on:
+                logger.debug('     sql:    ' + str(sql))
+
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+
+            updated_cegrade_count = len(rows)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return updated_cegrade_count
+# - end of batch_approve_grade_rows
+
+
 """
 
 Public Function CalcCijferFromScoreCITO(ByVal intScore As Integer, ByVal intLschaal As Integer, ByVal crcNterm As Currency) As Currency

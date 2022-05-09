@@ -1250,6 +1250,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
             req_usr = request.user
             mode = upload_dict.get('mode')
             table = upload_dict.get('table')
+            form = upload_dict.get('form')
 
             if table == 'grade':
                 sel_page = 'page_grade'
@@ -1283,7 +1284,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
 
             if has_permit:
                 if mode == 'publish_exam':
-                    formname = 'exam'
+                    formname = 'ete_exam'
                     sel_school, sel_department = None, None
                     sel_examyear, may_edit, msg_list = dl.get_selected_examyear_from_usersetting(request)
                 elif mode == 'submit_grade_exam':
@@ -1310,12 +1311,20 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
                         elif mode == 'submit_grade_exam':
                             template_str = 'email_send_verifcode_grade_exam.html'
                         else:
-                            template_str = 'send_verifcode__ex1_email.html'
+                            template_str = 'send_verifcode_exform_email.html'
 
+                        ex_form = ''
+                        if form =='ex1':
+                            ex_form = _('Ex1 form')
+                        elif form =='ex2':
+                            ex_form = _('Ex2 form')
+                        elif form =='ex2a':
+                            ex_form = _('Ex2A form')
                         message = render_to_string(template_str, {
                             'user': request.user,
                             'examyear': sel_examyear,
                             'school': sel_school,
+                            'ex_form': ex_form,
                             'department': sel_department,
                             'verificationcode': verif_code
                         })

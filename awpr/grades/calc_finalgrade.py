@@ -423,14 +423,15 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
 
 def get_score_from_inputscore(input_value, max_score):
     # PR2022-02-09
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_score_from_inputscore -----')
-        logger.debug('input_value: ' + str(input_value) + ' ' + str(type(input_value)))
+        logger.debug('     input_value: ' + str(input_value) + ' ' + str(type(input_value)))
+        logger.debug('     max_score: ' + str(max_score) + ' ' + str(type(max_score)))
     # function converts input_value to whole number PR2021-01-18
 
 # 1. reset output variables
-    input_number, output_text = 0, None
+    input_str = None
     err_list = []
 
 # 2. remove spaces before and after input_value
@@ -458,6 +459,8 @@ def get_score_from_inputscore(input_value, max_score):
                 logger.debug('Exception: ' + str(e))
         if logging_on:
             logger.debug('imput_trim: ' + str(imput_trim) + ' ' + str(type(imput_trim)))
+            logger.debug('input_number: ' + str(input_number) + ' ' + str(type(input_number)))
+            logger.debug('max_score: ' + str(max_score) + ' ' + str(type(max_score)))
 
 # - check if score is within range
         if not has_error:
@@ -493,7 +496,7 @@ def get_grade_number_from_input_str(input_str):
 # - remove spaces before and after input_value
     imput_trim = input_str.strip() if input_str else ''
     if logging_on:
-        logger.debug('imput_trim: >' + str(imput_trim) + '< ' + str(type(imput_trim)))
+        logger.debug('input_trim: >' + str(imput_trim) + '< ' + str(type(imput_trim)))
 
 # - exit if imput_trim has no value, without msg_err
     if imput_trim:

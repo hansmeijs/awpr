@@ -38,7 +38,7 @@ const man_exams = {
                 "<li>In de kolom <b>Niet ingevuld</b> staat het aantal vragen dat de school nog moet invullen en het totaal aantal vragen. ",
                 "Als het veld leeg is betekent dit dat alle vragen zijn ingevuld of dat er geen examen is geselecteerd.</li> ",
                 "<li>De kolom <b>Score</b> bevat de behaalde score. Dit veld is leeg als niet alle vragen zijn ingevuld.</li> ",
-                "<li>De kolom <b>PDF downloaden</b>. Klik hierop om een overzicht om een overzicht te downloaden van de ingevulde antwoorden.</li></ul> ",
+                "<li>De kolom <b>PDF downloaden</b>. Klik hierop om een overzicht te downloaden van de ingevulde antwoorden.</li></ul> ",
             ]),
         write_image("img_exams_table_ne"),
 

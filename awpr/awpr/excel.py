@@ -1071,43 +1071,47 @@ def create_Ex2_xlsx(published_instance, examyear, school, department, library, s
                     sheet.write(row_index + i - 1, 0, value, bold_format)
 
 # ---  digitally signed by
+        # PR2022-05-04 Lionel Mongen saw wrong secretary on Ex2,
+        # to be able to check: also add signed by on prelim Ex-form
+        # was:  if save_to_disk:
         auth_row = first_footnote_row
-        if save_to_disk:
-            sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
-            auth_row += 2
-     # - Chairperson
-            sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
-            auth1_list = grades_auth_dict.get('auth1')
-            if logging_on:
-                logger.debug('auth1_list: ' + str(auth1_list))
-            # auth1_list: ['Monique Beek', 'Hans Meijs']
-            if auth1_list:
-                for auth1 in auth1_list:
-                    if logging_on:
-                        logger.debug('auth1: ' + str(auth1) + ' ' + str(type(auth1)))
-                    if auth1:
-                        sheet.write(auth_row, first_subject_column + 4, auth1, normal_blue)
-                        auth_row += 1
-            else:
-                auth_row += 1
-            auth_row += 1
-    # - Secretary
-            sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
-            auth2_list = grades_auth_dict.get('auth2')
-            if logging_on:
-                logger.debug('auth2_list: ' + str(auth2_list))
+        sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
+        auth_row += 2
 
-            if auth2_list:
-                for auth2 in auth2_list:
-                    if logging_on:
-                        logger.debug('auth2: ' + str(auth2) + ' ' + str(type(auth2)))
-                    if auth2:
-                        sheet.write(auth_row, first_subject_column + 4, auth2, normal_blue)
-                        auth_row += 1
-            else:
-                auth_row += 1
-
+ # - Chairperson
+        sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
+        auth1_list = grades_auth_dict.get('auth1')
+        if logging_on:
+            logger.debug('auth1_list: ' + str(auth1_list))
+        # auth1_list: ['Monique Beek', 'Hans Meijs']
+        if auth1_list:
+            for auth1 in auth1_list:
+                if logging_on:
+                    logger.debug('auth1: ' + str(auth1) + ' ' + str(type(auth1)))
+                if auth1:
+                    sheet.write(auth_row, first_subject_column + 4, auth1, normal_blue)
+                    auth_row += 1
+        else:
             auth_row += 1
+        auth_row += 1
+
+# - Secretary
+        sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
+        auth2_list = grades_auth_dict.get('auth2')
+        if logging_on:
+            logger.debug('auth2_list: ' + str(auth2_list))
+
+        if auth2_list:
+            for auth2 in auth2_list:
+                if logging_on:
+                    logger.debug('auth2: ' + str(auth2) + ' ' + str(type(auth2)))
+                if auth2:
+                    sheet.write(auth_row, first_subject_column + 4, auth2, normal_blue)
+                    auth_row += 1
+        else:
+            auth_row += 1
+
+        auth_row += 1
 
     # -  place, date
         sheet.write(auth_row, first_subject_column, 'Plaats:')
@@ -1685,7 +1689,7 @@ class OrderlistDownloadView(View):  # PR2021-07-04
         if logging_on:
             logger.debug(' ============= OrderlistDownloadView ============= ')
             logger.debug('list: ' + str(list) + ' ' + str(type(list)))
-        # function creates, Ex1 xlsx file based on settings in usersetting
+        # function creates, xlsx file based on settings in usersetting
 
         response = None
 
@@ -1877,7 +1881,8 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, req
 # - end of create_orderlist_per_school_xlsx
 
 
-def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # PR2021-07-07 PR2021-08-20
+def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
+    # PR2021-07-07 PR2021-08-20 PR2022-05-08 'herexamen details' added
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_orderlist_xlsx -----')
@@ -1953,8 +1958,8 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # P
 
 # ++++++++++++ loop through sheets  ++++++++++++++++++++++++++++
         for ete_duo in ('ETE', 'DUO'):
-            for summary_detail in ('overzicht', 'details', 'herexamens'):
-                is_herexamens = (summary_detail == 'herexamens')
+            for summary_detail in ('overzicht', 'details', 'herexamens', 'herexamen details'):
+                is_herexamens = summary_detail in ('herexamens', 'herexamen details')
 
                 if ete_duo in count_dict:
                     ete_duo_dict = count_dict.get(ete_duo)
@@ -1979,18 +1984,18 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # P
                         sheet.set_column(i, i, width)
 
     # --- title row
-                    exam_str = summary_detail if (summary_detail == 'herexamens') else 'examens'
+                    exam_str = summary_detail if is_herexamens else 'examens'
                     title = ' '.join(('Bestellijst', ete_duo, exam_str, str(sel_examyear_instance.code)))
                     sheet.write(0, 0, settings['minond'], formats['bold_format'])
                     sheet.write(1, 0, now_formatted)
-                    if summary_detail in ('overzicht', 'details'):
+                    if not is_herexamens:
                         exta_txt = ' '.join (('   -  ',
                               str(sel_examyear_instance.order_extra_fixed),  str(_('extra exams plus')),
                               str(sel_examyear_instance.order_extra_perc) + '%,',  str(_('rounded up to')),
                               str(sel_examyear_instance.order_round_to) + '.'))
                         sheet.write(3, 0, str(_('Calulation of extra exams:')))
                         sheet.write(4, 0, exta_txt)
-                    elif summary_detail == 'herexamens':
+                    else:
                         tv2_txt = ' '.join (('   -  ',
                              str(sel_examyear_instance.order_tv2_multiplier), str(_('exams per')),
                              str(sel_examyear_instance.order_tv2_divisor), str(_('exams first exam period,')),
@@ -2000,7 +2005,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):  # P
 
                     row_index = 7
     #########################################################################
-                    if summary_detail == 'details':
+                    if summary_detail in ('details', 'herexamen details'):
                         write_orderlist_with_details(
                             sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
                             row_index, col_count, first_subject_column, list, title, field_names, field_captions,
