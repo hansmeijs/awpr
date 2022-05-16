@@ -100,11 +100,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
     columns_tobe_hidden.all = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
-        captions: ["Examnumber", "Leerweg", "Sector", "Cluster", "Subject"]};
+        examnumber: "Examnumber", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
+    };
     columns_tobe_hidden.btn_ep_01 = {
-        fields: ["sjtp_abbrev", "pws_title", "pws_subjects", "subj_status"],
-        captions: ["Character", "Assignment_title", "Assignment_subjects", "Approved"]}
+        sjtp_abbrev: "Character", pws_title: "Assignment_title", pws_subjects: "Assignment_subjects", subj_status: "Status"
+    };
 
     // don'/'t add exemption_year to columns_tobe_hidden PR2022-04-15
     // exemption_year only in use when iseveningschool or islexschool
@@ -428,18 +428,18 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
-        el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false);
+    if(el_worksheet_list){el_worksheet_list.addEventListener("change", MIMP_SelectWorksheet, false)};
     const el_MIMP_checkboxhasheader = document.getElementById("id_MIMP_hasheader");
-        el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged) //, false);
+    if(el_MIMP_checkboxhasheader){el_MIMP_checkboxhasheader.addEventListener("change", MIMP_CheckboxHasheaderChanged(), false)};
 
    const el_MIMP_btn_prev = document.getElementById("id_MIMP_btn_prev");
-        el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false )
+   if(el_MIMP_btn_prev){el_MIMP_btn_prev.addEventListener("click", function() {MIMP_btnPrevNextClicked("prev")}, false)};
    const el_MIMP_btn_next = document.getElementById("id_MIMP_btn_next");
-        el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false )
+   if(el_MIMP_btn_next){el_MIMP_btn_next.addEventListener("click", function() {MIMP_btnPrevNextClicked("next")}, false)};
    const el_MIMP_btn_test = document.getElementById("id_MIMP_btn_test");
-        el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false )
+   if(el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false)};
    const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
-        el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false )
+   if(el_MIMP_btn_upload){el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false)};
 
 // ---  MODAL MULTIPLE OCCURRENCES ------------------------------------
    const el_MMUOC_data_container = document.getElementById("id_MMUOC_data_container")

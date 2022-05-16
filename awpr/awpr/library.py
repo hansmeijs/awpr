@@ -59,9 +59,11 @@ def update_library(examyear, request):
         ('exam', 'version', 'Versie'),
         ('exam', 'number_questions', 'Aantal vragen'),
         ('exam', 'blanks', 'Niet ingevuld'),
+        ('exam', 'keys', 'sleutels'),
+        ('exam', 'max_scores', 'maximale scores'),
         ('exam', 'max_score', 'Maximale score'),
         ('exam', 'scalelength', 'Scale length'),
-        ('exam', 'total_score', 'Totaal score'),
+        ('exam', 'total_score', 'Behaalde score'),
         ('exam', 'cesuur', 'Cesuur'),
         ('exam', 'n_term', 'N-term'),
         ('exam', 'nex_id', 'nex_ID'),
@@ -79,7 +81,7 @@ def update_library(examyear, request):
         ('ex1', 'lex_footnote07', '   vóór 1 november inzenden naar de Onderwijs Inspectie.'),
         ('ex1', 'lex_footnote08', None),
 
-        ('ex2', 'title', 'Verzamellijst van cijfers van schoolexamens'),
+        ('ex2', 'ex2_title', 'Verzamellijst van cijfers van schoolexamens'),
         ('ex2', 'submit_before', 'Inzenden ten minste 3 dagen vóór aanvang van de centrale examens*'),
         ('ex2', 'footnote01', 'Ex. nr. en naam dienen in overeenstemming '),
         ('ex2', 'footnote02', 'te zijn met formulier EX.1'),
@@ -90,6 +92,7 @@ def update_library(examyear, request):
         ('ex2', 'lex_footnote06', ''),
         ('ex2', 'backpage01_eex', 'Digitale handtekening van de examinatoren voor akkoord cijfers schoolonderzoek als aan ommezijde vermeld.'),
         ('ex2', 'backpage01_lex', 'Digitale handtekening van de examinatoren voor akkoord cijfers commissie-examen (CIE) als aan ommezijde vermeld.'),
+        ('ex2', 'backpage01_ex2a', 'Digitale handtekening van de examinatoren en gecommitteerden voor akkoord scores als aan ommezijde vermeld.'),
         ('ex2', 'backpage02', 'Ieder voorzover het zijn kandidaten betreft'),
 
         ('ex2', 'backheader01', 'Naam examinator'),
@@ -97,10 +100,14 @@ def update_library(examyear, request):
         ('ex2', 'backheader03', 'Klas'),
         ('ex2', 'backheader04', 'Cluster'),
         ('ex2', 'backheader05', 'Handtekening'),
+        ('ex2', 'backheader01_ex2a', 'Naam gecommitteerde'),
 
-        ('ex2a', 'title', 'Lijst van cijfers'),
-        ('ex2a', 'eex_article', '(Artikel 20 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
-        ('ex2a', 'lex_article', '(Artikel 34 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex2a', 'ex2a_title', 'Verzamellijst van scores van '),
+        ('ex2a', 'ex2a_title_tv01', 'centrale examens'),
+        ('ex2a', 'ex2a_title_tv02', 'herexamens'),
+        ('ex2a', 'ex2a_title_tv03', 'herexamens 3e tijdvak'),
+        ('ex2a', 'ex2a_eex_article', '(Artikel 20 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex2a', 'ex2a_lex_article', '(Artikel 34 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
 
         ('ex3', 'proces_verbaal', 'Proces-verbaal'),
         ('ex3', 'title', 'Proces-verbaal van Toezicht'),
@@ -142,7 +149,7 @@ def update_library(examyear, request):
         ('ex3', 'back_hour', 'uur)'),
         ('ex3', 'backfooter_01', 'In elk lokaal dienen twee toezichthouders aanwezig te zijn. Elk moment dient derhalve door 2 handtekeningen gedekt te zijn.'),
 
-        ('ex4', 'title', 'Lijst van kandidaten voor het herexamen.'),
+        ('ex4', 'ex4_title', 'Lijst van kandidaten voor het herexamen.'),
         ('ex4', 'title_corona', 'Lijst van kandidaten voor herkansing.'),
         ('ex4', 'eex_article', '(Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
         ('ex4', 'lex_article', '(Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
@@ -153,10 +160,18 @@ def update_library(examyear, request):
         ('ex4', 'footer02', 'Ex. nr. en naam dienen in overeenstemming te zijn met formulier EX.1.'),
         ('ex4', 'verhinderd_header01', 'Kandidaten die om een geldige reden verhinderd waren het examen te voltooien.'),
         ('ex4', 'verhinderd_header02', '(Voortzetting schoolexamen aangeven met s en centraal examen met c).'),
+
+        ('ex5', 'ex5_title', 'Verzamellijst van cijfers.'),
         ('ex5', 'eex_inzenden', 'Inzenden binnen één week na de uitslag en na afloop van de herkansing, het ondertekend exemplaar inzenden naar de Onderwijs Inspectie en digitaal naar de Onderwijs Inspectie en het ETE.'),
         ('ex5', 'lex_inzenden', 'Inzenden binnen één week na de uitslag en na afloop van de herkansing, het ondertekend exemplaar en digitaal inzenden naar de Onderwijs Inspectie.'),
-        ('ex6', 'eex_article', '(Artikel 47 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
-        ('ex6', 'lex_article', '(Artikel 10 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+
+        ('ex5', 'geg_kand', 'GEGEVENS OMTRENT DE KANDIDATEN'),
+        ('ex5', 'cijf_kand', 'CIJFERS, AAN DE KANDIDATEN TOEGEKEND VOOR:'),
+        ('ex5', 'uitslag_ex', 'Uitslag van het examen'),
+        ('ex5', 'uitslag_reex', 'Uitslag na tweede tijdvak'),
+
+        ('ex6', 'ex6_eex_article', '(Artikel 47 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex6', 'ex6_lex_article', '(Artikel 10 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
 
         ('gradelist', 'preliminary', 'VOORLOPIGE CIJFERLIJST'),
 

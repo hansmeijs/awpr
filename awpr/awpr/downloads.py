@@ -212,8 +212,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('ete_exam_rows'):
                     datalists['ete_exam_rows'] = sj_vw.create_ete_exam_rows(
                         req_usr=request.user,
-                        sel_examyear_pk=sel_examyear.pk,
-                        sel_depbase_pk=sel_depbase.pk,
+                        sel_examyear=sel_examyear,
+                        sel_depbase=sel_depbase,
                         append_dict={},
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
@@ -221,8 +221,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- duo exams
                     if datalist_request.get('duo_exam_rows'):
                         datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
-                            sel_examyear_pk=sel_examyear.pk,
-                            sel_depbase_pk=sel_depbase.pk,
+                            sel_examyear=sel_examyear,
+                            sel_depbase=sel_depbase,
                             append_dict={},
                             setting_dict=new_setting_dict,
                             exam_pk_list=None
@@ -231,7 +231,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- ntermentable
                 if datalist_request.get('ntermentable_rows'):
                     datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(
-                        sel_examyear_pk=sel_examyear.pk,
+                        sel_examyear=sel_examyear,
                         sel_depbase=sel_depbase,
                         setting_dict=new_setting_dict
                     )
@@ -280,9 +280,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('grade_exam_result_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['grade_exam_result_rows'] = gr_vw.create_grade_exam_result_rows(
-                            sel_examyear_code=sel_examyear.code,
+                            sel_examyear=sel_examyear,
                             sel_schoolbase_pk=sel_schoolbase.pk,
-                            sel_depbase_pk=sel_depbase.pk,
+                            sel_depbase=sel_depbase,
                             sel_examperiod=sel_examperiod,
                             setting_dict=new_setting_dict,
                             request=request
@@ -299,6 +299,15 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             setting_dict=new_setting_dict,
                             request=request
                         )
+                        # PR2022-05-11 just added to answer question of Nancy Josefina
+                        #datalists['grade_rows_with_modby'] = gr_vw.create_grade_rows_with_modbyTEMP(
+                        #    sel_examyear_pk=sel_examyear.pk,
+                        #    sel_schoolbase_pk=sel_schoolbase.pk,
+                        #    sel_depbase_pk=sel_depbase.pk,
+                        #    sel_examperiod=sel_examperiod,
+                        #    setting_dict=new_setting_dict,
+                        #    request=request
+                        #)
 # ----- grade_note_icons
                 if datalist_request.get('grade_note_icons'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -986,7 +995,8 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request, corr_insp_may_edit=False, skip_check_activated=False):  # PR2021-01-13 PR2021-06-14 PR2022-02-05
+def get_selected_ey_school_dep_from_usersetting(request, corr_insp_may_edit=False, skip_check_activated=False):
+    # PR2021-01-13 PR2021-06-14 PR2022-02-05
     logging_on = False # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_ey_school_dep_from_usersetting ----- ' )
@@ -1066,6 +1076,8 @@ def get_selected_ey_school_dep_from_usersetting(request, corr_insp_may_edit=Fals
                 logger.debug('sel_school: ' + str(sel_school))
 
     # - add info to msg_list, will be sent back to client
+            # skip_check_activated is only used in StudentUploadView
+            # because school is_activated will be set True in create_student
             message_school_missing_locked_notactivated(sel_school, sel_examyear, skip_check_activated, msg_list)
 
 # ===== DEPBASE =======================
@@ -1114,9 +1126,8 @@ def get_selected_ey_school_dep_from_usersetting(request, corr_insp_may_edit=Fals
 # - end of get_selected_ey_school_dep_from_usersetting
 
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-def get_selected_examyear_from_usersetting(request):  # PR2021-09-08 PR2022-02-26 PR2022-04-16
+def get_selected_examyear_from_usersetting(request):
+    # PR2021-09-08 PR2022-02-26 PR2022-04-16
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
@@ -1175,7 +1186,11 @@ def message_examyear_missing_notpublished_locked(sel_examyear, msg_list):  # PR2
 # - end of message_examyear_missing_notpublished_locked
 
 
-def message_school_missing_locked_notactivated(sel_school, sel_examyear, skip_check_activated, msg_list):  # PR2021-12-04  PR2022-02-05
+def message_school_missing_locked_notactivated(sel_school, sel_examyear, skip_check_activated, msg_list):
+    # PR2021-12-04  PR2022-02-05
+    # skip_check_activated is only used in StudentUploadView
+    # because school is_activated will be set True in create_student
+
     if sel_school is None:
         msg_list.append(str(_('School not found in this exam year.')))
     elif sel_school.locked:

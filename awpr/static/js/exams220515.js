@@ -92,49 +92,44 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_exam_download_grade_exam_pdf = get_attr_from_el(el_data, "data-url_exam_download_grade_exam_pdf");
     urls.url_exam_download_conversion_pdf = get_attr_from_el(el_data, "data-url_exam_download_conversion_pdf");
 
-
     urls.url_exam_download_exam_json = get_attr_from_el(el_data, "data-url_exam_download_exam_json");
 
     urls.url_download_published = get_attr_from_el(el_data, "data-download_published_url");
 
     // const columns_tobe_hidden and mod_MCOL_dict are defined in tables.js
-    //const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
+    //const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
+    // PR2022-05-15 cols_skipped is dict with key: sel_btn and value: list of fieldnames to be skipped when filling tables with columns
 
     columns_tobe_hidden.btn_ete_exams = {
-        fields: ["subjbase_code", "subj_name", "lvl_abbrev", "version", ,
-                            "examperiod", "blanks", "status", "download_exam", "cesuur", "scalelength"],
-        captions: ["Abbreviation", "Subject", "Leerweg", "Version",
-                                "Exam_type", "Blanks", "", "Download_exam", "Cesuur", "Maximum_score_2lines"]}
-
+        subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version",
+        examperiod: "Exam_type", blanks: "Blanks", status: "Status", download_exam: "Download_exam",
+        cesuur: "Cesuur", scalelength: "Maximum_score", download_conv_table: "Download_conv_table"
+    };
     columns_tobe_hidden.btn_duo_exams = {
-        fields: ["subjbase_code", "subj_name", "lvl_abbrev", "version", "ntb_omschrijving",
-                            "examperiod"],
-        captions: ["Abbreviation", "Subject", "Leerweg", "Version", "DUO_description", "Exam_type"]}
-
+        subjbase_code: "Abbreviation", subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version",
+        ntb_omschrijving: "DUO_description", examperiod: "Exam_type"
+    };
     columns_tobe_hidden.btn_ntermen = {
-        fields: ["opl_code", "leerweg", "ext_code", "tijdvak", "nex_id",
-                  "omschrijving", "schaallengte", "n_term", "afnamevakid", "extra_vakcodes_tbv_wolf",
-                  "datum", "begintijd", "eindtijd"],
-        captions: ["opl_code", "leerweg", "ext_code", "tijdvak", "nex_id",
-                  "omschrijving", "schaallengte", "n_term", "afnamevakid", "extra_vakcodes_tbv_wolf",
-                  "datum", "begintijd", "eindtijd"]};
-
+        opl_code: "opl_code", leerweg: "leerweg", ext_code: "ext_code", tijdvak: "tijdvak", nex_id: "nex_id",
+        omschrijving: "omschrijving", schaallengte: "schaallengte", n_term: "n_term",
+        afnamevakid: "afnamevakid", extra_vakcodes_tbv_wolf: "extra_vakcodes_tbv_wolf",
+        datum: "datum", begintijd: "begintijd", eindtijd: "eindtijd"
+    };
     columns_tobe_hidden.btn_results = {
-        fields: ["subj_name", "lvl_abbrev", "version", "school_name", "grd_count","result_count", "result_avg"],
-        captions: ["Subject", "Leerweg", "Version", "School", "grd_count", "result_count", "result_avg"]};
-
+        subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version", school_name: "School",
+        grd_count: "Number_of_exams", result_count: "Submitted_exams",
+        result_avg: "Average_score_percentage", download_conv_table: "Download_conv_table"
+    };
     columns_tobe_hidden.btn_ep_01 = {
-        fields: ["examnumber", "lvl_abbrev", "cluster_name",
-                          "subj_name", "blanks", "pescore", "download_exam"],
-        captions: ["Examnumber", "Leerweg", "Cluster",
-                                "Subject", "Blanks", "Score", "Download_exam"]};
-
+        examnumber: "Examnumber", lvl_abbrev: "Leerweg", cluster_name: "Cluster",
+        subj_name: "Subject", blanks: "Blanks", ce_exam_score: "Score", download_exam: "Download_exam"
+    };
     columns_tobe_hidden.btn_reex = columns_tobe_hidden.btn_ep_01;
 
 // --- get field_settings
     const field_settings = {
         ete_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Leerweg", "Version",
-                                "Exam_type", "Blanks", "Maximum_score_2lines", "", "Download_exam", "Cesuur", "Download_conv_table"],
+                                "Exam_type", "Blanks", "Maximum_score_2lines", "", "Download_exam", "Cesuur", "Download_conv_table_2lines"],
                 field_names: ["select", "subjbase_code", "subj_name", "lvl_abbrev", "version",
                             "examperiod", "blanks", "scalelength", "status", "download_exam", "cesuur", "download_conv_table"],
                 field_tags: ["div", "div", "div", "div", "div",
@@ -142,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 filter_tags: ["text",  "text", "text", "text", "text",
                               "text", "text", "text","status", "text", "text", "text"],
                 field_width: ["020", "075", "240", "120", "120",
-                                "120", "075", "075","032", "090", "075", "090"],
+                                "120", "075", "075","032", "090", "075", "100"],
                 field_align: ["c",  "c", "l", "l", "l",
                                 "l", "c", "c", "c", "c", "c", "c"]},
 
@@ -158,7 +153,7 @@ document.addEventListener("DOMContentLoaded", function() {
         grades: {field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "Cluster", "Abbrev_subject_2lines",
                                 "Subject", "Exam", "Blanks", "Score", "", "Download_exam"],
             field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "cluster_name", "subj_code",
-                          "subj_name", "ceex_name", "blanks", "pescore", "status", "download_exam"],
+                          "subj_name", "ceex_name", "blanks", "ce_exam_score", "status", "download_exam"],
             field_tags: ["div", "div", "div", "div", "div", "div",
                         "div", "div", "div", "div","div", "a"],
             filter_tags: ["select", "text", "text",  "text", "text", "text",
@@ -169,19 +164,18 @@ document.addEventListener("DOMContentLoaded", function() {
                          "l", "l", "c", "c", "c", "c"]},
 
         results: {field_caption: ["", "Abbrev_subject_2lines", "Exam", "Exam_type",
-                                "Schoolcode_2lines", "School", "Number_of_exams", "Submitted_exams", "Average_score_percentage"],
-
+                                "Schoolcode_2lines", "School", "Number_of_exams", "Submitted_exams", "Average_score_percentage", "Download_conv_table_2lines"],
             field_names: ["select", "subj_code", "exam_name", "examperiod",
-                          "schoolbase_code", "school_name", "grd_count", "result_count", "result_avg" ],
+                          "schoolbase_code", "school_name", "grd_count", "result_count", "result_avg", "download_conv_table"],
 
             field_tags: ["div", "div", "div", "div",
-                        "div", "div", "div", "div", "div"],
+                        "div", "div", "div", "div", "div", "a"],
             filter_tags: ["select", "text", "text","text",
-                            "text", "text",  "text", "text", "text"],
+                            "text", "text",  "text", "text", "text", "text"],
             field_width:  ["020", "075", "280", "120",
-                            "075", "280", "090", "090","090"],
+                            "075", "280", "090", "090", "090", "100"],
             field_align: ["c", "c", "l", "l",
-                         "c", "l", "c", "c", "c"]},
+                         "c", "l", "c", "c", "c", "c"]},
 
         ntermen: {  field_caption: ["", "opl_code", "leerweg", "ext_code", "tijdvak", "nex_id",
                           "omschrijving", "schaallengte", "n_term", "afnamevakid", "extra_vakcodes_tbv_wolf",
@@ -300,7 +294,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
         }
         if (el_MSSSS_btn_save){
-            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
+            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSubjStud_Response)}, false );
         }
 
 // ---  MSELEX MOD SELECT EXAM ------------------------------
@@ -604,8 +598,17 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (Array.isArray(setting_dict.cols_hidden)) {
                              b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                         };
-                    };
 
+                        // PR2022-05-15 remove field "download_conv_table" from columns_tobe_hidden.btn_results when role != ROLE_008_SCHOOL
+                        // because this field is removed from table 'results' when user is admin
+                        if(permit_dict.requsr_role === 8 ){
+                            // when school: skip column 'school_name'
+                            mod_MCOL_dict.cols_skipped = {btn_results: ["school_name"]}
+                        } else {
+                            // when admin col 'download_conv_table' is shown in table exam, skip in table results
+                            mod_MCOL_dict.cols_skipped = {btn_results: ["download_conv_table"]}
+                        };
+                    };
                     must_update_headerbar = true;
                 };
 
@@ -725,9 +728,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14  PR2021-03-15 PR2022-01-31 PR2022-02-28
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ");
-        console.log( "data_btn", data_btn);
-        console.log( "skip_upload", skip_upload);
+        //console.log( "===== HandleBtnSelect ========= ");
+        //console.log( "data_btn", data_btn);
+        //console.log( "skip_upload", skip_upload);
 
         // function is called by MSSSS_Response, select_btn.click, DatalistDownload after response.setting_dict
         //  data_btn only inm use when requsr_role_admin
@@ -827,6 +830,8 @@ document.addEventListener("DOMContentLoaded", function() {
         const tblName = get_attr_from_el(tblRow, "data-table")
         const data_rows = get_datarows_from_tblName(tblName);
 
+        // PR2022-05-11 Sentry debug: Unhandled Expected identifier with IE11 on Windows 7
+        // leave it as it is, maybe error caused by IE 11
         const pk_int = get_attr_from_el_int(tblRow, "data-pk")
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
         const exam_pk = (!isEmpty(found_dict)) ? found_dict.id : null;
@@ -1052,9 +1057,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= UpdateHeaderLeftRight  ================== PR2021-03-14 PR2022-01-17
     function UpdateHeaderLeftRight(skip_upload){
-        console.log(" --- UpdateHeaderLeftRight ---" )
-        console.log("setting_dict", setting_dict)
-        console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
+        //console.log(" --- UpdateHeaderLeftRight ---" )
+        //console.log("setting_dict", setting_dict)
+        //console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
 
         const examperiod_caption = (setting_dict.sel_examperiod === 1) ? loc.Central_exam :
                                     (setting_dict.sel_examperiod === 2) ? loc.Re_examination : "";
@@ -1065,8 +1070,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         el_header_left.innerText = examperiod_caption + depbase_code + level_abbrev;
         add_or_remove_class(el_header_left.parentNode, cls_visible_hide, !skip_upload);
-
-    }   //  UpdateHeaderLeftRight
+    };   //  UpdateHeaderLeftRight
 
 //###########################################################################
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
@@ -1091,10 +1095,10 @@ document.addEventListener("DOMContentLoaded", function() {
 // - hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
-// - hide "schoolbase_code", "school_name", when role = ROLE_008_SCHOOL
-        if(permit_dict.requsr_role === 8 ){
-            col_hidden.push("schoolbase_code")
-            col_hidden.push("school_name")
+// - hide columns in mod_MCOL_dict.cols_skipped. cols_skipped got value in DatalistDownload
+        if (mod_MCOL_dict.cols_skipped.hasOwnProperty(selected_btn)){
+            const cols_skipped_list = mod_MCOL_dict.cols_skipped[selected_btn];
+            col_hidden.push(...cols_skipped_list);
         };
 
 // --- reset table
@@ -1329,12 +1333,37 @@ document.addEventListener("DOMContentLoaded", function() {
                         td.addEventListener("click", function() {HandleToggleApprove(tblName, el)}, false)
                         add_hover(td);
                     };
+                // --- add column with status icon
+                    el.classList.add("stat_0_1")
 
-                } else if (["download_exam", "download_conv_table"].includes(field_name)){
+                } else if (field_name === "download_exam"){
                     // td.class_align necessary to center align a-element
                     td.classList.add(class_align);
-                    add_hover(td);
 
+                    if (tblName === "ete_exam" || data_dict.ce_exam_id) {
+                        add_hover(td);
+
+                        el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
+                        // target="_blank opens file in new tab
+                        el.target = "_blank";
+                    };
+                } else if (field_name === "download_conv_table"){
+            // +++  create href and put it in button PR2021-05-07
+                    if (tblName === "ete_exam") {
+                        // td.class_align necessary to center align a-element
+                        td.classList.add(class_align);
+                        add_hover(td);
+                        el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
+                        // target="_blank opens file in new tab
+                        el.target = "_blank";
+                    } else if (tblName === "results" && data_dict.exam_id && data_dict.result_count) {
+                        // td.class_align necessary to center align a-element
+                        td.classList.add(class_align);
+                        add_hover(td);
+                        el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
+                        // target="_blank opens file in new tab
+                        el.target = "_blank";
+                    };
                 } else if (field_name === "ceex_name"){
                     td.addEventListener("click", function() {MSELEX_Open(el)}, false);
                     add_hover(td);
@@ -1354,26 +1383,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
                 //td.classList.add("pointer_show", "px-2");
 
+    // --- add left border
+                if(j){td.classList.add("border_left")};
+    // --- add width, text_align
+                el.classList.add(class_width, class_align);
 
-        // --- add left border
-                    if(j){td.classList.add("border_left")};
-        // --- add width, text_align
-                    el.classList.add(class_width, class_align);
-
-                    if (field_name === "status"){
-    // --- add column with status icon
-                        el.classList.add("stat_0_1")
-
-                    } else if (["download_exam", "download_conv_table"].includes(field_name)){
-
-                        el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
-                        //el.innerHTML = "&emsp;&emsp;&emsp;&#128438;&emsp;&emsp;&emsp;";
-                        // target="_blank opens file in new tab
-                        el.target = "_blank";
-                        //el.title = "loc.Print_exam";
-                        // add_hover(el);
-
-                    }
                 td.appendChild(el);
 
     // --- put value in field
@@ -1419,13 +1433,13 @@ document.addEventListener("DOMContentLoaded", function() {
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
 
                 } else if (field === "cesuur"){
-                    // show '0', therefore don't use ( data_dict.pescore) ?  data_dict.pescore : null
+                    // show '0', therefore don't use ( data_dict.ce_exam_score) ?  data_dict.ce_exam_score : null
                     inner_text = (data_dict[field] != null) ? data_dict[field] : null;
                     el_div.value = inner_text;
                     filter_value = inner_text;
 
-                } else if (field === "pescore"){
-                    // show '0', therefore don't use ( data_dict.pescore) ?  data_dict.pescore : null
+                } else if (field === "ce_exam_score"){
+                    // show '0', therefore don't use ( data_dict.ce_exam_score) ?  data_dict.ce_exam_score : null
                     inner_text = (data_dict[field] != null) ?  data_dict[field].toString() : null
                     el_div.innerHTML = (inner_text) ? inner_text : "&nbsp";
                     filter_value = (inner_text) ? inner_text : null;
@@ -1449,10 +1463,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 } else if (field === "download_conv_table"){
             // +++  create href and put it in button PR2021-05-07
-                    const href_str = data_dict.id.toString()
-                    el_div.href = (tblName === "ete_exam") ? urls.url_exam_download_conversion_pdf.replace("-", href_str) :
-                                                    urls.url_exam_download_conversion_pdf.replace("-", href_str) ;
-
+                    if (tblName === "ete_exam") {
+                        const href_str = data_dict.id.toString();
+                        el_div.href = urls.url_exam_download_conversion_pdf.replace("-", href_str);
+                    } else if (tblName === "results") {
+                        if (data_dict.exam_id && data_dict.result_count) {
+                            const href_str = data_dict.exam_id.toString();
+                            el_div.href = urls.url_exam_download_conversion_pdf.replace("-", href_str);
+                        };
+                    };
 
                 //} else if (field === "printjson"){
             // +++  create href and put it in button PR2021-05-07
@@ -1477,6 +1496,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     inner_text = (data_dict[field]) ? data_dict[field] : null;
                     el_div.innerHTML = (inner_text) ? inner_text : "&nbsp";
                     filter_value = (inner_text) ? inner_text.toString().toLowerCase() : null;
+                    if (field === "exam_name"){
+                        title_text = inner_text;
+                    }
                 }
                 add_or_remove_attr (el_div, "title", !!title_text, title_text);
 // ---  add attribute filter_value
@@ -1745,7 +1767,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // format of ce_exam_result_str is:
             // grade_dict.ce_exam_result = "1;35#2|2;a|3;a|4;a|5;a|6;1|7;x|8;a|9;0#4|1;1|2;a|3;1|4;a|5;a|6;a|7;a|8;x|9;a|10;1#6|1;a|2;a|3;1|4;a|5;1|6;a|7;1|8;a|9;1|10;1#7|1;1|2;1|3;1#8|1;1#9|1;5#10|1;7"
             //  - ce_exam_result starts with blanks; total_amount #
-            //  - Note: total score is stored in pescore (for now, to be moved to ce_exam_score)
+            //  - Note: total score was stored in pescore, is moved to ce_exam_score PR2022-05-15
             //  - partal exams are separated with #
             //  - partex = "2;2;4|1;C;;|2;D;3;"
             //      first array between || contains partex info : # partex_pk ; blanks ; total_amount /
@@ -3577,7 +3599,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // format of ce_exam_result_str is:
             // grade_dict.ce_exam_result = "1;35#2|2;a|3;a|4;a|5;a|6;1|7;x|8;a|9;0#4|1;1|2;a|3;1|4;a|5;a|6;a|7;a|8;x|9;a|10;1#6|1;a|2;a|3;1|4;a|5;1|6;a|7;1|8;a|9;1|10;1#7|1;1|2;1|3;1#8|1;1#9|1;5#10|1;7"
             //  - ce_exam_result starts with blanks; total_amount #
-            //  - Note: total score is stored in pescore (for now, to be moved to ce_exam_score)
+            //  - Note: total score was stored in pescore, is moved to ce_exam_score PR2022-05-15
             //  - partal exams are separated with #
             //  - partex = "2;2;4|1;C;;|2;D;3;"
             //      first array between || contains partex info : # partex_pk ; blanks ; total_amount /
@@ -4061,8 +4083,12 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MEXQ_input_scalelength.disabled = (is_locked || no_subject || no_level);
         };
         const msg_txt = (mod_MEX_dict.has_partex) ? loc.Awp_calculates_amount : loc.err_list.amount_mustbe_between_1_and_100;
-        add_or_remove_class(el_MEX_err_amount, "text-danger", false, "text-muted" )
-        el_MEX_err_amount.innerHTML = msg_txt;
+        add_or_remove_class(el_MEX_err_amount, "text-danger", false, "text-muted" );
+
+console.log("???? el_MEX_err_amount", el_MEX_err_amount)
+        //if (el_MEX_err_amount){
+            el_MEX_err_amount.innerHTML = msg_txt;
+        //};
         add_or_remove_attr(el_MEXQ_input_amount, "readOnly", mod_MEX_dict.has_partex, true);
 
 // ---  disable save button on error
@@ -4915,7 +4941,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // format of ce_exam_result_str is:
             // grade_dict.ce_exam_result = "1;35#2|2;a|3;a|4;a|5;a|6;1|7;x|8;a|9;0#4|1;1|2;a|3;1|4;a|5;a|6;a|7;a|8;x|9;a|10;1#6|1;a|2;a|3;1|4;a|5;1|6;a|7;1|8;a|9;1|10;1#7|1;1|2;1|3;1#8|1;1#9|1;5#10|1;7"
             //  - ce_exam_result starts with blanks; total_amount #
-            //  - Note: total score is stored in pescore (for now, to be moved to ce_exam_score)
+            //  - Note: total score was stored in pescore, is moved to ce_exam_score PR2022-05-15
             //  - partal exams are separated with #
             //  - partex = "2;2;4|1;C;;|2;D;3;"
             //      first array between || contains partex info : # partex_pk ; blanks ; total_amount /
@@ -6418,6 +6444,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log( "===== MSSSS_Response ========= ");
         console.log( "selected_dict", selected_dict);
         console.log( "selected_pk", selected_pk);
+        console.log( "tblName", tblName);
 
     // ---  upload new setting
         if(selected_pk === -1) { selected_pk = null};
@@ -6461,7 +6488,6 @@ document.addEventListener("DOMContentLoaded", function() {
 // also update text in header 2
             MEX_set_headertext2_subject();
 
-
     // --- fill select table
             MEXQ_FillSelectTableLevel()
 
@@ -6487,18 +6513,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 selected_pk_dict.sel_subject_pk = null;
                 setting_dict.sel_subject_pk = null;
                 new_selected_btn = "grade_by_student";
-            }
-
-        }
-    }  // MSSSS_Response
+            };
+        };
+    };  // MSSSS_Response
 
 
 //=========  MSSSubjStud_Response  ================ PR2022-02-01
     function MSSSubjStud_Response(mode, selected_dict, sel_pk_int) {
-        console.log( "===== MSSSubjStud_Response ========= ");
-        console.log( "sel_pk_int", sel_pk_int, typeof sel_pk_int);
-        console.log( "selected_dict", selected_dict);
-        console.log( "mode", mode);
+        //console.log( "===== MSSSubjStud_Response ========= ");
+        //console.log( "sel_pk_int", sel_pk_int, typeof sel_pk_int);
+        //console.log( "selected_dict", selected_dict);
+        //console.log( "mode", mode);
         // mode = "subject" or "student"
 
 // - put new value in setting_dict
@@ -6534,7 +6559,6 @@ document.addEventListener("DOMContentLoaded", function() {
             setting_dict.sel_student_pk = null;
             setting_dict.sel_student_name = null;
 
-
             upload_pk_dict.sel_cluster_pk = sel_pk_int;
             if(sel_pk_int) {
                 upload_pk_dict.sel_subject_pk = selected_dict.subject_id;
@@ -6548,32 +6572,26 @@ document.addEventListener("DOMContentLoaded", function() {
             setting_dict.sel_subject_pk = null;
             setting_dict.sel_subject_name = null;
             setting_dict.sel_cluster_pk = null;
-            setting_dict.sel_cluster_name = null
+            setting_dict.sel_cluster_name = null;
 
             upload_pk_dict.sel_student_pk = sel_pk_int;
             if(sel_pk_int) {
                 upload_pk_dict.sel_subject_pk = null;
                 setting_dict.sel_cluster_pk = null;
             };
-
         };
-        console.log("setting_dict", setting_dict);
+    //console.log("setting_dict", setting_dict);
 
         t_MSSSS_display_in_sbr("student", upload_pk_dict.sel_student_pk);
         t_MSSSS_display_in_sbr("subject", upload_pk_dict.sel_subject_pk);
 
 // ---  upload new setting
         const upload_dict = {selected_pk: upload_pk_dict};
+    //console.log("upload_dict", upload_dict);
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
-
-        FillTblRows()
-
-
-    }  // MSSSubjStud_Response
-
-
-
+        FillTblRows();
+    };  // MSSSubjStud_Response
 
 //========= MSSSS_display_in_sbr_reset  ====================================
     function MSSSS_display_in_sbr_reset() {

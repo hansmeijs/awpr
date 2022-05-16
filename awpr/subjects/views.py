@@ -14,7 +14,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
 from django.db.models import Q
 from django.db.models.functions import Lower
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect
 
 from django.shortcuts import render
 
@@ -150,23 +150,41 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
                         schemeitems = subj_mod.Schemeitem.get_schemeitem_list(scheme)
                         params.update({'schemeitems': schemeitems})
 
-                        # make list of all Subjects from this department and examyear (included in dep)
-                        subjects = subj_mod.Subject.get_subj_list(department)
-                        params.update({'subjects': subjects})
+                        # make list of all Subjects from this department and examyear (included in dep) #PR2022-05-14
+                        depbase_id_str = ';' + str(department.base.id) + ';'
+                        subjects = subj_mod.Subject.objects.filter(
+                            examyear=department.examyear,
+                            depbase_list__contains=depbase_id_str
+                        )
+                        subject_list = []
+                        for subject in subjects:
+                            subject_list.append({
+                                'subj_id': str(subject.id),
+                                'subj_name': subject.name,
+                                'subj_abbr': subject.abbrev,
+                                'subj_sequ': subject.sequence
+                            })
+                        params.update({'subjects': subject_list})
 
                         # make list of all Subjecttypes from this department and examyear (included in dep)
-                        subjecttypes = subj_mod.Subjecttype.get_subjtype_list( department)  # PR2019-01-18
-                        params.update({'subjecttypes': subjecttypes})
+                        # TODO fix
+                        #subjecttypes = subj_mod.Subjecttype.get_subjtype_list( department)  # PR2019-01-18 PR2022-05-14
+                        #params.update({'subjecttypes': subjecttypes})
 
                         # make list of all gradetypes
-
-                        # GRADETYPE_CHOICES = ((0, 'None'), (1, 'Number'), (2, 'Good/Sufficient/Insufficient'))
+                        """
+                        GRADETYPE_OPTIONS = {
+                            GRADETYPE_00_NONE:  _('None'),
+                            GRADETYPE_01_NUMBER: _('Number'),
+                            GRADETYPE_02_CHARACTER: _('Good/Sufficient/Insufficient')
+                        }
+                        """
                         gradetypes = []
-                        for item in c.GRADETYPE_CHOICES:
-                            if item[0] > 0:
+                        for grtp_id, name in c.GRADETYPE_OPTIONS.items():
+                            if grtp_id:
                                 gradetypes.append({
-                                    'grtp_id': item[0],
-                                    'name': item[1]
+                                    'grtp_id': grtp_id,
+                                    'name': name
                                 })
                         params.update({'gradetypes': gradetypes})
 
@@ -1225,7 +1243,7 @@ def get_subjecttypebase_instance(sjtpbase_pk, error_list, message_header, loggin
 class ExamListView(View):  # PR2021-04-04
 
     def get(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
 
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -1258,7 +1276,7 @@ class ExamListView(View):  # PR2021-04-04
 # ============= ExamUploadView ============= PR2021-04-04
 @method_decorator([login_required], name='dispatch')
 class ExamUploadView(View):
-
+    # PR2021-04-04 PR2022-05-14
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
@@ -1317,25 +1335,17 @@ class ExamUploadView(View):
                 # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
                 subject_pk = upload_dict.get('subject_pk')
 
-# - check if examyear exists and equals selected examyear from Usersetting
-                selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                examyear = None
-                if examyear_pk == selected_examyear_pk:
-                    examyear = sch_mod.Examyear.objects.get_or_none(
-                        id=examyear_pk,
-                        country=req_usr.country
-                    )
-                if logging_on:
-                    logger.debug('examyear:     ' + str(examyear))
+# - get selected examyear and from Usersetting
+                sel_examyear, sel_schoolNIU, sel_department, may_editNIU, msg_listNIU = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
 
                 # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
-                if examyear and not examyear.locked:
+                if sel_examyear and sel_department:
 
 # - get subject
                     subject = subj_mod.Subject.objects.get_or_none(
                         pk=subject_pk,
-                        examyear=examyear
+                        examyear=sel_examyear
                     )
                     if logging_on:
                         logger.debug('subject:     ' + str(subject))
@@ -1343,16 +1353,17 @@ class ExamUploadView(View):
 # +++++ Create new instance if is_create:
                     if mode == 'create':
                         department = sch_mod.Department.objects.get_or_none(
-                            base_id=depbase_pk,
-                            examyear=examyear
+                            base=sel_department.base,
+                            examyear=sel_examyear
                         )
                         level = subj_mod.Level.objects.get_or_none(
                             base_id=lvlbase_pk,
-                            examyear=examyear
+                            examyear=sel_examyear
                         )
                         if logging_on:
                             logger.debug('department:     ' + str(department))
                             logger.debug('level:     ' + str(level))
+
                         examperiod_int = upload_dict.get('examperiod')
                         ete_exam = True
                         exam, msg_err = create_exam_instance(subject, department, level, examperiod_int, ete_exam, request)
@@ -1384,7 +1395,7 @@ class ExamUploadView(View):
                             updated_cegrade_count = update_exam_instance(
                                 request=request,
                                 instance=exam,
-                                examyear=examyear,
+                                examyear=sel_examyear,
                                 upload_dict=upload_dict,
                                 error_list=error_list)
 
@@ -1411,8 +1422,8 @@ class ExamUploadView(View):
                         if table == 'ete_exam':
                             updated_ete_exam_rows = create_ete_exam_rows(
                                 req_usr=req_usr,
-                                sel_examyear_pk=examyear.pk,
-                                sel_depbase_pk=depbase_pk,
+                                sel_examyear=sel_examyear,
+                                sel_depbase=sel_department.base,
                                 append_dict=append_dict,
                                 exam_pk_list=[exam.pk]
                             )
@@ -1421,8 +1432,8 @@ class ExamUploadView(View):
 
                         elif table == 'duo_exam':
                             updated_duo_exam_rows = create_duo_exam_rows(
-                                sel_examyear_pk=examyear.pk,
-                                sel_depbase_pk=depbase_pk,
+                                sel_examyear=sel_examyear,
+                                sel_depbase=sel_department.base,
                                 append_dict=append_dict,
                                 exam_pk_list=[exam.pk]
                             )
@@ -1555,8 +1566,8 @@ class ExamCopyView(View):
                                     if new_exam:
                                         updated_ete_exam_rows = create_ete_exam_rows(
                                             req_usr=req_usr,
-                                            sel_examyear_pk=new_exam.department.examyear.pk,
-                                            sel_depbase_pk=new_exam.department.base.pk,
+                                            sel_examyear=new_exam.department.examyear,
+                                            sel_depbase=new_exam.department.base,
                                             append_dict={'created': True},
                                             exam_pk_list=[new_exam.pk]
                                         )
@@ -1719,8 +1730,8 @@ class ExamUploadDuoExamView(View):
     # 6. create list of updated exam
                             append_dict = {'created': True}
                             updated_duo_exam_rows = create_duo_exam_rows(
-                                sel_examyear_pk=examyear.pk,
-                                sel_depbase_pk=department.base_id,
+                                sel_examyear=examyear,
+                                sel_depbase=department.base,
                                 append_dict=append_dict,
                                 exam_pk_list=[exam.pk]
                             )
@@ -1995,8 +2006,8 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                         if not is_test and updated_exam_pk_list:
                             rows = create_ete_exam_rows(
                                 req_usr=req_usr,
-                                sel_examyear_pk=sel_examyear.pk,
-                                sel_depbase_pk=sel_department.base_id,
+                                sel_examyear=sel_examyear,
+                                sel_depbase=sel_department.base,
                                 append_dict={},
                                 exam_pk_list=updated_exam_pk_list)
                             if rows:
@@ -2015,7 +2026,8 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR2022-04-26 PR2022-05-06
+class ExamApproveOrSubmitGradeExamView(View):
+    # PR2021-04-04 PR2022-03-11 PR2022-04-26 PR2022-05-06
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -2135,9 +2147,9 @@ class ExamApproveOrSubmitGradeExamView(View):  # PR2021-04-04 PR2022-03-11 PR202
                     #  - submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
 
                     grade_exam_rows = get_approve_grade_exam_rows(
-                        sel_examyear_pk=sel_examyear.pk,
-                        sel_schoolbase_pk=sel_school.base.pk,
-                        sel_depbase_pk=sel_department.base.pk,
+                        sel_examyear=sel_examyear,
+                        sel_school=sel_school,
+                        sel_department=sel_department,
                         sel_examperiod=sel_examperiod,
                         sel_lvlbase_pk=sel_lvlbase_pk,
                         sel_subjbase_pk=sel_subjbase_pk,
@@ -2769,9 +2781,8 @@ def create_grade_exam_approve_submit_msg_list(req_usr, count_list, is_submit, is
                             has_been_approved_txt = str(_("%(count)s %(will_be)s approved.") % {
                                 'will_be': get_have_has_been_txt(grade_saved_count),
                                 'count': get_exam_count_text(grade_saved_count)})
-                            copied_txt = str(_('The scores have been copied to the CE score.'))
                             msg_list.append(''.join(("<div class='pl-2 border_bg_valid'>",
-                                                     has_been_approved_txt, ' ', copied_txt, '</div>')))
+                                                     has_been_approved_txt, '</div>')))
                     else:
                         has_been_approved_txt = str(_("No exams have been approved."))
                         msg_list.append(''.join(("<div class='pl-2'>", has_been_approved_txt, '</div>')))
@@ -2785,7 +2796,8 @@ def create_grade_exam_approve_submit_msg_list(req_usr, count_list, is_submit, is
                             msg_list.append(''.join(("<div class='pl-2 border_bg_invalid'>", err_txt, ' ', has_been_submitted_txt, '</div>')))
                         else:
                             has_been_submitted_txt = str(_("This exam %(has_been)s submitted.") % {'has_been': str(_('has been'))})
-                            msg_list.append(''.join(("<div class='pl-2 border_bg_valid'>", has_been_submitted_txt, '</div>')))
+                            copied_txt = str(_('The scores have been copied to the CE score.'))
+                            msg_list.append(' '.join(("<div class='pl-2 border_bg_valid'>", has_been_submitted_txt, copied_txt, '</div>')))
                     else:
                         has_been_submitted_txt = str(_("This exam %(has_been)s submitted.") % {'has_been': str(_('has not been'))})
                         msg_list.append(''.join(("<div class='pl-2'>", has_been_submitted_txt, '</div>')))
@@ -2921,7 +2933,7 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 
 # def get_approve_grade_exam_rows(examyear, school, department, examperiod, request):  #PR2022-03-11
 
-def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod,
+def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_examperiod,
                                   sel_lvlbase_pk=None, sel_subjbase_pk=None, sel_cluster_pk=None):
     # PR2022-04-25
     # approving single grade_exam happens in UploadGrade
@@ -2929,9 +2941,10 @@ def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
     if logging_on:
         logger.debug('  ----- get_approve_grade_exam_rows -----')
 
-    # ATTENTION: ce_exam is linked with curacao subject, while SXM students are connected with sxm subjects.
+    # Note: exams must also be assigned to students of SXM. Therefore don't filter on examyer.pk but on examyear.code
+    # it doesnt matter here because it doesnt filter on exam
 
-    sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk, 'experiod': sel_examperiod}
+    sql_keys = {'ey_id': sel_examyear.pk, 'school_id': sel_school.pk, 'dep_id': sel_department.pk, 'experiod': sel_examperiod}
     sql_list = ["SELECT grd.id AS grade_id, grd.examperiod, grd.ce_exam_blanks, grd.ce_exam_result,",
                 "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id,",
                 "grd.ce_exam_published_id, grd.ce_exam_blocked,",
@@ -2964,7 +2977,8 @@ def get_approve_grade_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
                 "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
                 "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
-                "WHERE school.base_id = %(sb_id)s::INT AND depbase.id = %(db_id)s::INT",
+                "WHERE school.id = %(school_id)s::INT AND dep.id = %(dep_id)s::INT",
+                "AND ey.id = %(ey_id)s::INT",
                 "AND ce_exam.ete_exam AND grd.examperiod = %(experiod)s::INT",
                 "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                 ]
@@ -3742,14 +3756,18 @@ def update_exam_instance(request, instance, examyear, upload_dict, error_list):
 # - end of update_exam_instance
 
 
-def create_ete_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
-    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
+def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
+    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
 
+    # PR2022-05-13 debug: Raymond Romney MPC: cannot open exam.
+    # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
+    # solved by: filter by examyear.code instead of examyear.pk
+
 # - only show published exams when user is school
-    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
+    sql_keys = {'ey_code': sel_examyear.code, 'depbase_id': sel_depbase.pk}
 
     sql_list = [
         "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
@@ -3784,7 +3802,7 @@ def create_ete_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, 
         "LEFT JOIN schools_published AS publ ON (publ.id = ex.published_id)",
 
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
-        "WHERE ey.id = %(ey_id)s::INT",
+        "WHERE ey.code = %(ey_code)s::INT",
         "AND ex.ete_exam"
     ]
 
@@ -3836,14 +3854,18 @@ def create_ete_exam_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, 
 # --- end of create_ete_exam_rows
 
 
-def create_duo_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
+def create_duo_exam_rows(sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-04-06
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
 
+    # PR2022-05-13 debug: Raymond Romney MPC: cannot open exam.
+    # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
+    # solved by: filter by examyear.code instead of examyear.pk
+
 # - only show published exams when user is school
-    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
+    sql_keys = {'ey_code': sel_examyear.code, 'depbase_id': sel_depbase.pk}
 
     sql_list = [
         "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
@@ -3885,7 +3907,7 @@ def create_duo_exam_rows(sel_examyear_pk, sel_depbase_pk, append_dict, setting_d
 
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
 
-        "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT AND NOT ex.ete_exam"
+        "WHERE ey.code = %(ey_code)s::INT AND depbase.id = %(depbase_id)s::INT AND NOT ex.ete_exam"
     ]
 
     if exam_pk_list:
@@ -3989,7 +4011,7 @@ def create_duo_subject_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dic
 # --- end of create_duo_subject_rows
 
 
-def create_ntermentable_rows(sel_examyear_pk, sel_depbase, setting_dict):
+def create_ntermentable_rows(sel_examyear, sel_depbase, setting_dict):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
     logging_on = False  #  s.LOGGING_ON
     if logging_on:
@@ -4003,7 +4025,7 @@ def create_ntermentable_rows(sel_examyear_pk, sel_depbase, setting_dict):
     elif sel_depbase.code == 'Vwo':
         sty_id = 1
     # - only show published exams when user is school
-    sql_keys = {'ey_id': sel_examyear_pk, 'sty_id': sty_id}
+    sql_keys = {'ey_code': sel_examyear.code, 'sty_id': sty_id}
 
     sql_list = [
         "SELECT nt.id, nt.nex_id, nt.sty_id, nt.opl_code, nt.leerweg, nt.ext_code, nt.tijdvak,"
@@ -4012,7 +4034,7 @@ def create_ntermentable_rows(sel_examyear_pk, sel_depbase, setting_dict):
 
         "FROM subjects_ntermentable AS nt",
         "INNER JOIN schools_examyear AS ey ON (ey.id = nt.examyear_id)",
-        "WHERE ey.id = %(ey_id)s::INT AND nt.sty_id = %(sty_id)s::INT"
+        "WHERE ey.code = %(ey_code)s::INT AND nt.sty_id = %(sty_id)s::INT"
     ]
     if setting_dict:
         sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
@@ -5982,10 +6004,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
                 buffer = io.BytesIO()
                 canvas = Canvas(buffer)
 
-                # Start writing the PDF here
                 printpdf.draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang)
-                #test_pdf(canvas)
-                # testParagraph_pdf(canvas)
 
                 if logging_on:
                     logger.debug('end of draw_exam')
@@ -6168,8 +6187,6 @@ class ExamDownloadConversionView(View):  # PR2022-05-08
 
                 # Start writing the PDF here
                 printpdf.draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang)
-                #test_pdf(canvas)
-                # testParagraph_pdf(canvas)
 
                 if logging_on:
                     logger.debug('end of draw_exam')
@@ -6178,9 +6195,6 @@ class ExamDownloadConversionView(View):  # PR2022-05-08
                 canvas.save()
 
                 pdf = buffer.getvalue()
-                # pdf_file = File(temp_file)
-
-                # was: buffer.close()
 
                 response = HttpResponse(content_type='application/pdf')
                 response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'

@@ -5,6 +5,7 @@ from random import randint
 
 from django.core.mail import send_mail
 from django.db import connection
+from django.db.models import Q
 from django.template.loader import render_to_string
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext_lazy as _
@@ -12,7 +13,6 @@ from django.utils import timezone
 
 from awpr import constants as c
 from awpr import settings as s
-from awpr import downloads as dl
 from awpr import library as awpr_lib
 
 from accounts import models as acc_mod
@@ -1174,20 +1174,31 @@ def system_updates(examyear, request):
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
 
+# PR2022-05-15 field pescore was temporary used to store ce_exam_score
+    # move value of pescore to field ce_exam_score, set pescore = null
+    move_pescore_to_ce_exam_score(request)
+
+# PR2022-05-15 # debug: Yolande van Erven Ancilla Domini : pescore not calculated. recalc missing pescore
+    # must come after move_pescore_to_ce_exam_score
+    recalc_ce_score(request)
+
+# PR2022-05-11 debug: Yolande van Erven Ancilla Domini: pescore not calculated. recalc missing pescore
+    #recalc_score_of_ce_result()
+
 # PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
-    show_deleted_grades(request)
+    # show_deleted_grades(request)
 
 # PR2022-05-02 recalc amount and scalelength in exams
-    recalc_amount_and_scalelength_of_assignment(request)
+    #recalc_amount_and_scalelength_of_assignment(request)
 
 # PR2022-04-18 add usergroup 'download' to not 'read' en non null users
-    add_usergroup_download(request)
+    #add_usergroup_download(request)
 
 # PR2022-04-18 add no_ce_years = '2020' to_schemeitems
-    add_no_ce_years_to_schemeitems(request)
+    #add_no_ce_years_to_schemeitems(request)
 
 # PR2022-04-17 add exemption_year 2021 when field exemption_year is empty
-    add_exemption_year(request)
+    #add_exemption_year(request)
 
     # PR2021-10-11 move otherlang from subject to schemitem, after this: must delete field otherlang from subject
     # transfer_otherlang_from_subj_to_schemeitem(request)
@@ -1199,6 +1210,123 @@ def system_updates(examyear, request):
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
+
+
+def move_pescore_to_ce_exam_score(request):
+    # PR2022-05-15 field pescore was temporary used to store ce_exam_score
+    # move value of pescore to field ce_exam_score, set pescore = null
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- move_pescore_to_ce_exam_score -------')
+
+    try:
+        key = 'move_pescore_to_ceexamscore'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+
+        if not exists:
+            sql_list = [
+                "UPDATE students_grade",
+                "SET ce_exam_score = pescore, pescore = null",
+                "WHERE ce_exam_id IS NOT NULL AND pescore IS NOT NULL",
+                "RETURNING ce_exam_score, pescore;"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+
+            if logging_on:
+                logger.debug('rows: ' + str(rows))
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# - end of move_pescore_to_ce_exam_score
+
+
+def recalc_ce_score(request):
+    # PR2022-05-15 # debug: Yolande van Erven Ancilla Domini : pescore not calculated. recalc missing pescore
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- recalc_score_of_ce_result -------')
+
+    try:
+        key = 'recalc_score_of_result'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+
+        if not exists:
+            crit = Q(ce_exam_id__isnull=False) & \
+                   Q(ce_exam_result__isnull=False) & \
+                   Q(ce_exam_score__isnull=True) & \
+                   ( Q(ce_exam_blanks__isnull=True) | Q(ce_exam_blanks=0) )
+
+            grades = stud_mod.Grade.objects.filter(crit)
+
+            for grade_instance in grades:
+                exam_instance = grade_instance.ce_exam
+                if exam_instance:
+                    stud_name = ' '.join((
+                        grade_instance.studentsubject.student.school.base.code or '',
+                        grade_instance.studentsubject.student.department.base.code or '',
+                        grade_instance.studentsubject.student.lastname or '',
+                        grade_instance.studentsubject.student.firstname or ''
+                    ))
+                    exam_name = ' '.join((
+                        exam_instance.subject.base.code or '',
+                        exam_instance.department.base.code or '',
+                        exam_instance.level.base.code or '',
+                        exam_instance.version or ''
+                    ))
+                    logger.debug(str(stud_name) + ': ' + exam_name)
+
+                    result_str = getattr(grade_instance, 'ce_exam_result')
+                    total_score, total_blanks, total_has_errors = \
+                        grade_view.get_all_result_with_assignment_dict_CALC_SCORE_BLANKS(
+                            partex_str=getattr(exam_instance, 'partex'),
+                            assignment_str=getattr(exam_instance, 'assignment'),
+                            keys_str=getattr(exam_instance, 'keys'),
+                            result_str=result_str
+                        )
+                    if logging_on:
+                        logger.debug('     total_score: ' + str(total_score))
+                        logger.debug('     total_blanks: ' + str(total_blanks))
+                        logger.debug('     total_has_errors: ' + str(total_has_errors))
+
+                    if not total_has_errors:
+                        setattr(grade_instance, 'ce_exam_score', total_score)
+                        setattr(grade_instance, 'ce_exam_blanks', total_blanks)
+                        grade_instance.save()
+                        logger.debug('     saved ce_exam_score: ' + str(getattr(grade_instance, 'ce_exam_score')))
+                    else:
+                        logger.debug('     ERRORS: ' + str(total_has_errors))
+
+            # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
 
 def show_deleted_grades(request):
     #PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
@@ -1238,7 +1366,7 @@ def show_deleted_grades(request):
 
 def recalc_amount_and_scalelength_of_assignment(request):
     # PR2022-05-02
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- recalc_amount_and_scalelength_of_assignment -------')
 
@@ -1260,7 +1388,6 @@ def recalc_amount_and_scalelength_of_assignment(request):
                     exam.save()
 
         # - add function to systemupdate, so it won't run again
-            key = 'recalc_assignment'
             systemupdate = sch_mod.Systemupdate(
                 name=key
             )

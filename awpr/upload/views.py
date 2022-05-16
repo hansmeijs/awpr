@@ -1308,9 +1308,9 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                             student.has_sere = True if row_data.get('has_sere') == 1 else False
                             student.withdrawn = True if row_data.get('withdrawn') == 1 else False
 
-                            student.grade_ce_avg = row_data.get('grade_ce_avg')
-                            student.grade_combi_avg = row_data.get('grade_combi_avg')
-                            student.grade_final_avg = row_data.get('grade_final_avg')
+                            student.gl_ce_avg = row_data.get('gl_ce_avg')
+                            student.gl_combi_avg = row_data.get('gl_combi_avg')
+                            student.gl_final_avg = row_data.get('gl_final_avg')
 
                             student.result_info = row_data.get('result_info', 0)
 

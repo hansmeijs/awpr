@@ -659,7 +659,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['is_too_long_max_article'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_SCHOOLABBREV}
         dict['is_too_long_max_name'] = _(" is too long. Maximum is %(max)s characters.") % {'max': c.MAX_LENGTH_NAME}
 
-
 # ====== PAGE STUDENTS ========================= PR2020-10-27
     if 'page_student' in page_list:
 
@@ -774,8 +773,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Request_verifcode'] = TXT_Request_verifcode
         dict['Submit_Ex1_form'] = _('Submit Ex1 form')
 
-        dict['Preliminary_Ex1_form'] = _('Preliminary Ex1')
-        dict['The_preliminary_Ex1_form'] = _('The preliminary Ex1 form')
+        dict['Preliminary_Ex1_form'] = _('Preliminary %(form)s') % {'form': 'Ex1'}
+        dict['The_preliminary_Ex1_form'] = _('The preliminary %(form)s form') % {'form': 'Ex1'}
         dict['Download_Ex_form'] = _('Download Ex form')
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
@@ -929,6 +928,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Blanks'] = _("Blanks")
         dict['Download_exam'] = _("Download exam")
         dict['Download_conv_table'] = _("Download conversion table")
+        dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', ' Download conversion table.')
         dict['Download_JSON'] = _("Download JSON")
         dict['JSON_will_be_downloaded'] = _("The JSON file with exam results will be downloaded.")
         dict['will_be_unlinked'] = pgettext_lazy('singular', ' will be unlinked.')
@@ -1097,8 +1097,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['_of_'] = TXT__of_
 
-        dict['Preliminary_Ex2'] = _('Preliminary Ex2')
-        dict['The_preliminary_Ex2_form'] = _('The preliminary Ex2 form')
+        dict['Preliminary_Ex2'] = _('Preliminary %(form)s') % {'form': 'Ex2'}
+        dict['Preliminary_Ex2A'] = _('Preliminary %(form)s') % {'form': 'Ex2A'}
+        dict['The_preliminary_ex2_form'] = _('The preliminary %(form)s form') % {'form': 'Ex2'}
+        dict['The_preliminary_ex2a_form'] = _('The preliminary %(form)s form') % {'form': 'Ex2A'}
         dict['Download_Ex_form'] = _('Download Ex form')
 
         dict['Name_ex_form'] = TXT_Name_ex_form
@@ -1115,7 +1117,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve_grades'] = _('Approve grades')
         dict['Block_grade'] = _('Block grade')
         dict['Unblock_grade'] = _('Unblock grade')
-        dict['Preliminary_Ex2A'] = _('Preliminary Ex2A')
 
         dict['Ex3_form'] = TXT_Ex3_form
         dict['Ex3_backpage'] = TXT_Ex3_backpage
@@ -1132,13 +1133,16 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),
-            'subheader_submit_ex2': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2'},
-            'subheader_submit_ex2a': _('An %(ex)s form with the following grades will be submitted:') % {'ex': 'Ex2A'},
-            'approve_0': _("Click 'Check grades' to check the selected grades before approving."),
+            'subheader_submit_ex2': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex2', 'sc_gr': _('grades')},
+            'subheader_submit_ex2a': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex2A', 'sc_gr': _('scores')},
+            'approve_0_ex2': _("Click 'Check grades' to check the selected grades before approving."),
+            'approve_0_ex2a': _("Click 'Check scores' to check the selected scores before approving."),
             'approve_1_ex2': _('After the grades are approved by the chairperson, secretary and examiner,'),
-            'approve_1_ex2a': _('After the grades are approved by the chairperson, secretary, examiner and corrector,'),
+            'approve_1_ex2a': _('After the scores are approved by the chairperson, secretary, examiner and corrector,'),
             'approve_2_ex2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2'},
             'approve_2_ex2a': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2A'},
+            'subheader_submit_ex2a_2': _('<b>ATTENTION:</b> From now on, the Ex2A form contains the scores of all subjects.'),
+            'subheader_submit_ex2a_3': _('Instead of submitting an Ex2A form per subject, you can submit it once at the end of each exam period.'),
 
             'corrector_cannot_approve_exem': _("As a corrector you don't have to approve %(et)s grades.") \
                                                 % {'et': str(_('Exemption')).lower()},
@@ -1316,7 +1320,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Results'] = _('Results')
         dict['Result'] = _('Result')
         dict['Preliminary_gradelist'] = _('Preliminary grade list')
+        dict['Preliminary_ex5_form'] = _('Preliminary %(form)s') % {'form': 'Ex5'}
+        dict['The_preliminary_ex5_form'] = _('The preliminary %(form)s form') % {'form': 'Ex5'}
+
         dict['Download_gradelist'] = _('Download grade list')
+        dict['Download_Ex_form'] = _('Download Ex form')
 
         dict['The_preliminary_gradelist_of'] = _('The preliminary grade list of')
         dict['The_final_gradelist_of'] = _('The final grade list of')
@@ -1351,9 +1359,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Number_of_submitted_subjects'] = _('Number of submitted subjects')
         dict['Date_submitted'] = _('Date submitted')
 
-        dict['Preliminary_orderlist'] = _('Preliminary orderlist')
-        dict['The_preliminary_orderlist'] = _('The preliminary orderlist')
-        dict['Downlaod_preliminary_orderlist'] = _('Download preliminary orderlist')
+        dict['Preliminary_orderlist'] = _('Preliminary %(form)s') % {'form': _('order list')}
+        dict['The_preliminary_orderlist'] = _('The preliminary order list')
+        dict['Downlaod_preliminary_orderlist'] = _('Download preliminary order list')
         dict['per_school'] = _(' per school')
 
         dict['Publish_orderlist'] = _('Publish orderlist')

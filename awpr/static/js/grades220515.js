@@ -92,11 +92,10 @@ document.addEventListener("DOMContentLoaded", function() {
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
     columns_tobe_hidden.all = {
-        fields: ["examnumber", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_name"],
-        captions: ["Examnumber", "Leerweg", "Sector", "Cluster", "Subject"]};
-    columns_tobe_hidden.btn_exem = {
-        fields: ["exemption_year"],
-        captions: ["Exemption_year"]};
+        examnumber: "Examnumber", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
+    };
+    columns_tobe_hidden.btn_exem = {exemption_year: "Exemption_year"};
+
 // --- get field_settings
     const field_settings = {
         btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
@@ -156,15 +155,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
 
         btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                                  "Third_period_score", "", "Third_period_grade", ""],
+                                  "Third_period_grade", "", ""],
                     field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "cluster_name", "subj_code", "subj_name",
-                                  "cescore", "ce_status", "cegrade", "note_status"],
+                                  "cegrade", "ce_status","note_status"], // 3d period has no score, is always 'geheim examen'
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
-                                    "input", "status",  "input", "div"],
+                                    "input", "status",  "div"],
                     filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
-                                    "text", "text", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075","240", "090", "020", "090", "032"],
-                    field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
+                                    "text", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075","240", "090", "020", "032"],
+                    field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c",  "c"]},
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -557,6 +556,7 @@ document.addEventListener("DOMContentLoaded", function() {
         let el_submenu = document.getElementById("id_submenu")
 
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2, function() {ModConfirmOpen("prelim_ex2")});
+        AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, function() {ModConfirmOpen("prelim_ex2a")});
 
         //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
         //AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
@@ -565,7 +565,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         if (permit_dict.permit_submit_grade){
             AddSubmenuButton(el_submenu, loc.Submit_Ex2_form, function() {MAG_Open("submit_ex2")});
-            //AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit_ex2a")});
+            AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit_ex2a")});
         };
 
         AddSubmenuButton(el_submenu, loc.Ex3_form, function() {ModConfirmOpen("ex3")});
@@ -760,7 +760,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  HandleSbrLevelSector  ================ PR2021-03-06 PR2021-12-03
     function HandleSbrLevelSector(mode, el_select) {
-        //console.log("=== HandleSbrLevelSector");
+        console.log("=== HandleSbrLevelSector");
         //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         // mode = "level" or "sector"
 
@@ -788,8 +788,16 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const datalist_request = {
             setting: new_setting_dict,
+
+            // PR2022-05-12 debug. subject_rows etc added. needs refresh to show subjects of the new level
+            subject_rows: {cur_dep_only: true},
+            cluster_rows: {cur_dep_only: true, allowed_only: true},
+            student_rows: {cur_dep_only: true},
+            studentsubject_rows: {cur_dep_only: true},
+
             grade_rows: {cur_dep_only: true}
         };
+
         DatalistDownload(datalist_request);
 
     }  // HandleSbrLevelSector
@@ -1285,16 +1293,19 @@ document.addEventListener("DOMContentLoaded", function() {
                         el.setAttribute("autocomplete", "off");
                         el.setAttribute("ondragstart", "return false;");
                         el.setAttribute("ondrop", "return false;");
-        // --- add EventListener
-                        el.addEventListener("change", function(){HandleInputChange(el)});
-                        el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
-
     // --- add class 'input_text' and text_align
                     // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                         el.classList.add("input_text");
 
-    // --- make el readonly when not requsr_requsr_same_school
-                        el.readOnly = !permit_dict.requsr_same_school;
+                        const may_edit = permit_dict.requsr_same_school && permit_dict.permit_crud;
+        // --- add EventListener
+                        if (may_edit){
+                            el.addEventListener("change", function(){HandleInputChange(el)});
+                            el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
+                        } else {
+    // --- make el readonly when not requsr_requsr_same_school or when not edit permission
+                            el.readOnly = !may_edit;  //el.setAttribute("readOnly", true)
+                        };
                     };
 
     // --- add width, text_align, right padding in examnumber
@@ -2249,7 +2260,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log(" -----  ModConfirmOpen   ----")
         console.log("mode", mode )
         console.log("mod_dict", mod_dict )
-        // values of mode are : "approve", "block_grade", "prelim_ex2"
+        // values of mode are : "approve", "block_grade", "prelim_ex2", "prelim_ex2a"
 
         // mod_dict already has values, got it in UploadStatus
 
@@ -2313,16 +2324,17 @@ document.addEventListener("DOMContentLoaded", function() {
         // show modal
             $("#id_mod_confirm").modal({backdrop: true});
 
-        } else if (mode === "prelim_ex2"){
+        } else if (["prelim_ex2", "prelim_ex2a"].includes(mode)){
             el_confirm_header.innerText = loc.Download_Ex_form;
             el_confirm_loader.classList.add(cls_visible_hide)
             el_confirm_msg_container.className = "p-3";
-
-            const msg_html = "<p>" + loc.The_preliminary_Ex2_form + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
+            const exform_txt = (mode === "prelim_ex2") ? loc.The_preliminary_Ex2a_form : loc.The_preliminary_ex2a_form;
+            const msg_html = "<p>" + exform_txt + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
             el_confirm_msg_container.innerHTML = msg_html;
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
-                el_modconfirm_link.setAttribute("href", urls.url_grade_download_ex2);
+                const url_str = (mode === "prelim_ex2") ? urls.url_grade_download_ex2 : urls.url_grade_download_ex2a;
+                el_modconfirm_link.setAttribute("href", url_str);
             };
 
             el_confirm_loader.className = cls_hide;
@@ -2337,7 +2349,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }, 500);
         // show modal
             $("#id_mod_confirm").modal({backdrop: true});
-
 
         } else if (mode === "ex3"){
             el_confirm_header.innerText = loc.Download_Ex_form;
@@ -2367,13 +2378,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 const new_blocked = !mod_dict.is_blocked;
                 UploadBlockGrade(new_blocked) ;
 
-        } else if (mod_dict.mode === "prelim_ex2"){
+        } else if (["prelim_ex2", "prelim_ex2a"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 el_modconfirm_link.click();
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
-
             };
         };
 
@@ -2746,10 +2756,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     console.log("mod_MAG_dict.step", mod_MAG_dict.step);
     console.log("show_input_verifcode.step", show_input_verifcode);
-    if (response){
-        console.log("response.approve_msg_html", response.approve_msg_html);
-        console.log("response.approve_msg_dict", response.approve_msg_dict);
-    };
+
         if (show_input_verifcode){
             show_msg_container = true;
 
@@ -2760,11 +2767,22 @@ document.addEventListener("DOMContentLoaded", function() {
 
             if (show_input_verifcode){set_focus_on_el_with_timeout(el_MAG_input_verifcode, 150)};
 
+        } else if (!response){
+            if (mod_MAG_dict.mode === "submit_ex2a" && !mod_MAG_dict.step){
+            el_MAG_msg_container.className = "mt-2 p-2 border_bg_warning";
+                el_MAG_msg_container.innerHTML = loc.MAG_info.subheader_submit_ex2a_2 + " " + loc.MAG_info.subheader_submit_ex2a_3;
+                show_msg_container = true;
+            };
+
         } else if (response && !isEmpty(response.approve_msg_dict)){
 
             const msg_dict = response.approve_msg_dict;
             console.log("msg_dict", msg_dict);
             console.log("response.test_is_ok", response.test_is_ok);
+
+            console.log("response.approve_msg_html", response.approve_msg_html);
+            console.log("response.approve_msg_dict", response.approve_msg_dict);
+
             //console.log("mod_MAG_dict", mod_MAG_dict);
 
             const test_is_ok = (!!response.test_is_ok)
@@ -2857,7 +2875,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             ( ["pe", "ce"].includes(setting_dict.sel_examtype) ) ? "ex2a" : "ex2";
         console.log("ex2_key", ex2_key) ;
             const keys = (mod_MAG_dict.is_approve_mode) ?
-                            ["approve_0", "approve_1_" + ex2_key, "approve_2_" + ex2_key] :
+                            ["approve_0_" + ex2_key, "approve_1_" + ex2_key, "approve_2_" + ex2_key] :
                             ["submit_0", "submit_1", "submit_2"];
             for (let i = 0, el, key; key = keys[i]; i++) {
                 inner_html += "<div><small>" + loc.MAG_info[key] + "</div></small>";
@@ -3736,7 +3754,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
             upload_pk_dict.sel_cluster_pk = sel_pk_int;
             if(sel_pk_int) {
-                upload_pk_dict.sel_subject_pk = selected_dict.subject_id;
+                upload_pk_dict.sel_subject_pk = setting_dict.sel_subject_pk;
                 upload_pk_dict.sel_student_pk = null;
             };
 

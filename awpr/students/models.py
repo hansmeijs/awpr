@@ -145,9 +145,19 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     #is_sr_cand = BooleanField(default=False)  # student who has done 'herkansing' (SE-reexamination)
     withdrawn = BooleanField(default=False)
 
-    grade_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    grade_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    grade_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep01_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep01_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ep01_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep01_result = PositiveSmallIntegerField(db_index=True,default=0)
+
+    ep02_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep02_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ep02_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep02_result = PositiveSmallIntegerField(db_index=True,default=0)
+
+    gl_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    gl_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gl_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
     result = PositiveSmallIntegerField(db_index=True,default=0)
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
@@ -272,9 +282,19 @@ class Student_log(sch_mod.AwpBaseModel):
     #is_sr_cand = BooleanField(default=False)  # student who has done 'herkansing' (SE-reexamination)
     withdrawn = BooleanField(default=False)
 
-    grade_ce_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    grade_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    grade_final_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep01_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep01_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ep01_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep01_result = PositiveSmallIntegerField(db_index=True,default=0)
+
+    ep02_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep02_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    ep02_final_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    ep02_result = PositiveSmallIntegerField(db_index=True,default=0)
+
+    gl_ce_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    gl_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    gl_final_avg = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
 
     result = PositiveSmallIntegerField(db_index=True, default=0)
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
@@ -287,8 +307,6 @@ class Student_log(sch_mod.AwpBaseModel):
     @property
     def mode_str(self):
         return c.get_mode_str(self)
-
-##########################################################################
 
 
 # PR2018-106-17 PR2021-07-02
@@ -616,6 +634,8 @@ class Grade(sch_mod.AwpBaseModel):
     pe_exam_result = CharField(max_length=2048, null=True)
     pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    # PR2022-05-14 added
+    pe_exam_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     pe_exam_blocked = BooleanField(default=False)
 
@@ -625,8 +645,11 @@ class Grade(sch_mod.AwpBaseModel):
     ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
     ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
+    ce_exam_score = PositiveSmallIntegerField(null=True)   # PR2022-05-14 added
+
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_exam_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)   # PR2022-05-14 added
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_blocked = BooleanField(default=False)
 
@@ -700,14 +723,18 @@ class Grade_log(sch_mod.AwpBaseModel):
     pe_exam_result = CharField(max_length=2048, null=True)
     pe_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    pe_exam_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pe_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     pe_exam_blocked = BooleanField(default=False)
 
     ce_exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', null=True, on_delete=SET_NULL)
     ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)
+    ce_exam_score = PositiveSmallIntegerField(null=True)   # PR2022-05-14 added
+
     ce_exam_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     ce_exam_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
+    ce_exam_auth3by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)   # PR2022-05-14 added
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_blocked = BooleanField(default=False)
 
@@ -715,8 +742,8 @@ class Grade_log(sch_mod.AwpBaseModel):
     #blanks = PositiveSmallIntegerField(null=True)
     #answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    # TODO deprecate?
     tobedeleted = BooleanField(default=False)
+
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)

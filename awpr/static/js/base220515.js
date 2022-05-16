@@ -1682,16 +1682,20 @@
 
 //=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01
     function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
-        //console.log("==== b_show_mod_message_dictlist  ======")
-        //console.log.log("msg_dictlist", msg_dictlist)
-        //console.log.log("skip_warning_messages", skip_warning_messages)
+        console.log("==== b_show_mod_message_dictlist  ======")
+        console.log("msg_dictlist", msg_dictlist)
+        //console.log("skip_warning_messages", skip_warning_messages)
 
-        //  [ { class: "alert-warning", header: 'Update this',
-        //      msg_html: "Deze loonperiode heeft 7 diensten."]
+        //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
 
         const el_container = document.getElementById("id_mod_message_container");
         if(el_container){
             if(msg_dictlist && msg_dictlist.length){
+
+            /*
+            msg_dict
+            */
+
                 // when skip_warning_messages = true:
                 // skip showing warning messages,
                 // in page grade msg 'Not current examyear' kept showing) PR2021-12-01
@@ -1703,6 +1707,7 @@
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
 
+        console.log("msg_dict", msg_dict)
                     let class_str = null;
                     if ("header" in msg_dict && msg_dict.header ) {
                         // msgbox only has 1 header. Use first occurring header
@@ -1715,8 +1720,10 @@
                         if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
                     };
 
-        //console.log.log("class_str", class_str)
-        //console.log.log("has_non_warning_msg", has_non_warning_msg)
+        console.log("class_str", class_str)
+        console.log("header_text", header_text)
+        console.log("msg_dict.msg_html", msg_dict.msg_html)
+        //console.log("has_non_warning_msg", has_non_warning_msg)
                     if ("msg_html" in msg_dict && msg_dict.msg_html ) {
             // --- create div element with alert border for each message in messages
                         const el_border = document.createElement("div");
@@ -1728,7 +1735,7 @@
                         el_container.appendChild(el_border);
                     };
                 };
-        //console.log.log("!skip_warning_messages || has_non_warning_msg", !skip_warning_messages || has_non_warning_msg)
+        //console.log("!skip_warning_messages || has_non_warning_msg", !skip_warning_messages || has_non_warning_msg)
                 if (!skip_warning_messages || has_non_warning_msg ){
                     const el_header = document.getElementById("id_mod_message_header");
                     if(el_header) {el_header.innerText = header_text};

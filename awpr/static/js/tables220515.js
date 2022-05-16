@@ -265,7 +265,7 @@
 
 //=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26
     function t_MSSSS_Save(el_input, MSSSS_Response) {
-        //console.log("===  t_MSSSS_Save =========");
+        console.log("===  t_MSSSS_Save =========");
         //console.log("el_input", el_input);
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
@@ -285,10 +285,11 @@
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
 
-        //console.log("selected_pk_int", selected_pk_int);
-        //console.log("selected_code", selected_code);
-        //console.log("selected_name", selected_name);
-        //console.log( "selected_dict", selected_dict);
+        console.log("selected_pk_int", selected_pk_int);
+        console.log("selected_code", selected_code);
+        console.log("selected_name", selected_name);
+        console.log( "selected_dict", selected_dict);
+        console.log( "tblName", tblName);
 
         //console.log( "===== t_MSSSS_display_in_sbr  ========= ");
         t_MSSSS_display_in_sbr(tblName, selected_pk_int);
@@ -1781,12 +1782,12 @@
 // mod_MCOL_dict.cols_hidden holds fields in modal before they are saved, columns_hidden holds saved fields
 
 // these function use selected_btn, columns_hidden[tblName], columns_tobe_hidden[tblName].fields;
-
+// PR2022-05-15 cols_skipped is dict with key: sel_btn and value: list of fieldnames to be skipped when filling tables with columns
 const columns_tobe_hidden = {};
-const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
+const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
 
 
-//=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02
+//=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02 PR2022-05-15
     function t_MCOL_Open(page) {
         console.log(" -----  t_MCOL_Open   ----")
         console.log("selected_btn", selected_btn)
@@ -1799,19 +1800,31 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
         // mod_MCOL_dict.cols_hidden is filled after loading page by b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
         mod_MCOL_dict.col_tobe_hidden_fields = [];
         mod_MCOL_dict.col_tobe_hidden_captions = [];
+
+        // PR2022-05-15 use dict instead of two arrays, to make removing field easier
+        mod_MCOL_dict.cols_tobe_hidden = {};
+
         // only get values from key 'all' and key selected_btn
         const merged_fields = [], merged_captions = [];
         for (const [key, col_tobe_hidden_dict] of Object.entries(columns_tobe_hidden)) {
             if (key === mod_MCOL_dict.selected_btn || key === 'all'){
+                if (!col_tobe_hidden_dict.hasOwnProperty("fields")){
+                    for (const [field, caption] of Object.entries(col_tobe_hidden_dict)) {
+                        if (!mod_MCOL_dict.cols_tobe_hidden.hasOwnProperty(field)){
+                            mod_MCOL_dict.cols_tobe_hidden[field] = caption;
+                        };
+                    };
+                };
                 // PR2022-03-01 extend existing array with new one
                 // was:  (doesn't add arrays)
                 //mod_MCOL_dict.col_tobe_hidden_fields = col_tobe_hidden_dict.fields;
                 //mod_MCOL_dict.col_tobe_hidden_captions = col_tobe_hidden_dict.captions;
                 // from https://stackoverflow.com/questions/1374126/how-to-extend-an-existing-javascript-array-with-another-array-without-creating
-                merged_fields.push(...col_tobe_hidden_dict.fields);
-                merged_captions.push(...col_tobe_hidden_dict.captions);
+                //merged_fields.push(...col_tobe_hidden_dict.fields);
+                //merged_captions.push(...col_tobe_hidden_dict.captions);
             };
         };
+
         // remove dulplicates
         b_copy_array_noduplicates(merged_fields, mod_MCOL_dict.col_tobe_hidden_fields);
         b_copy_array_noduplicates(merged_captions, mod_MCOL_dict.col_tobe_hidden_captions);
@@ -1847,32 +1860,41 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
         // in HTML: data-dismiss="modal"
     }  // t_MCOL_Save
 
-//=========  t_MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02 PR2021-12-14
+//=========  t_MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02 PR2021-12-14 PR2022-05-15
     function t_MCOL_FillSelectTable() {
-        //console.log("===  t_MCOL_FillSelectTable == ");
-        //console.log("selected_btn", selected_btn);
+        console.log("===  t_MCOL_FillSelectTable == ");
+        console.log("selected_btn", selected_btn);
         //console.log("field_settings", field_settings);
         //console.log("mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden);
-        //console.log("columns_tobe_hidden", columns_tobe_hidden);
+        console.log("mod_MCOL_dict.cols_tobe_hidden", mod_MCOL_dict.cols_tobe_hidden);
+        console.log("loc", loc);
 
         const el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
         const el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
         el_MCOL_tblBody_available.innerHTML = null;
         el_MCOL_tblBody_show.innerHTML = null;
 
-//+++ loop through list of fields
-        if(mod_MCOL_dict.col_tobe_hidden_fields && mod_MCOL_dict.col_tobe_hidden_fields.length){
-            for (let j = 0, field; field = mod_MCOL_dict.col_tobe_hidden_fields[j]; j++) {
-                const captions = mod_MCOL_dict.col_tobe_hidden_captions;
+//+++ loop through dict of fields
+        const cols_skipped_list = mod_MCOL_dict.cols_skipped[mod_MCOL_dict.selected_btn];
+
+        if(!isEmpty(mod_MCOL_dict.cols_tobe_hidden)){
+
+            for (const [field, caption] of Object.entries(mod_MCOL_dict.cols_tobe_hidden)) {
+                let skip_column = false;
+                if (mod_MCOL_dict.cols_skipped.hasOwnProperty(mod_MCOL_dict.selected_btn)){
+                    const cols_skipped_list = mod_MCOL_dict.cols_skipped[mod_MCOL_dict.selected_btn];
+                    skip_column = cols_skipped_list.includes(field);
+                };
 
     // - skip column 'Leerweg' when not sel_dep_level_req  || setting_dict.sel_dep_level_req
                 const skip_level = (["lvlbase_id", "lvl_abbrev"].includes(field) && !setting_dict.sel_dep_level_req);
-                if(!skip_level){
+
+                if(!skip_column && !skip_level){
 
     // - display 'Profiel' when sel_dep_has_profiel
-                    const caption = (field === "sct_abbrev") ?
+                    const caption_str = (field === "sct_abbrev") ?
                                     (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector :
-                                    (captions[j]) ? loc[captions[j]] : null;
+                                    (loc[caption]) ? loc[caption] : caption;
                     const is_hidden = (field && mod_MCOL_dict.cols_hidden.includes(field));
                     const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
 
@@ -1884,7 +1906,7 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: []}
                     add_hover(tblRow)
     // - insert td into tblRow
                     const td = tblRow.insertCell(-1);
-                    td.innerText = caption;
+                    td.innerText = caption_str;
                     td.classList.add("tw_240")
                 }
             }

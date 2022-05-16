@@ -438,22 +438,6 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     def __str__(self):
         return self.name
 
-#  ++++++++++  Class methods  +++++++++++++++++++++++++++
-    @classmethod
-    def get_subj_list(cls, department):  # PR2019-01-18
-        depbase_id_str = ';' + str(department.base.id) + ';'
-        subjects = cls.objects.filter(examyear=department.examyear, depbase_list__contains=depbase_id_str).all()
-        subject_list = []
-        for subject in subjects:
-            subject_list.append({
-                'subj_id': str(subject.id),
-                'subj_name': subject.name,
-                'subj_abbr': subject.abbrev,
-                'subj_sequ': subject.sequence
-            })
-        return subject_list
-
-
 # PR2018-06-05 Subject is the base Model of all subjects
 class Subject_log(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
@@ -568,6 +552,11 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
 
+    # PR2022-05-14 'Geheim examen': school gets grade from ETE.
+    # when  secret_exam = True: school can enter grade instead of scores.
+    # All 3rd periodexams are secret, part of 2nd period exams are secret
+    secret_exam = BooleanField(default=False)
+
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam possible ansewers per exam question
@@ -607,6 +596,8 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     scalelength = PositiveSmallIntegerField(null=True)
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
+
+    secret_exam = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

@@ -77,8 +77,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
     columns_tobe_hidden.all = {
-        fields: ["idnumber", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
-        captions: ["ID_number", "Prefix", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Bis_exam"]};
+        idnumber: "ID_number", prefix: "Prefix", gender: "Gender",
+        birthdate: "Birthdate", birthcountry: "Country_of_birth", birthcity: "Place_of_birth",
+        lvlbase_id:  "Leerweg",sctbase_id: "Sector",classname: "Class",
+        examnumber: "Examnumber", regnumber: "Regnumber", bis_exam: "Bis_exam"
+    };
 
 // --- get field_settings
     // declared as global: let field_settings = {};

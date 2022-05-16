@@ -321,7 +321,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         elif not sel_school_activated:
             # block certain pages when not sel_school_activated
-            if sel_page in ('page_student', 'page_studsubj', 'page_grade'):
+            # diable for now PR2022-05-13
+            if sel_page in ('page_studentXXX', 'page_studsubjXXX', 'page_gradeXXX'):
                 no_access_message = _("The school has not activated this examyear yet.")
                 messages.append(no_access_message)
 

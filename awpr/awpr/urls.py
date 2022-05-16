@@ -273,7 +273,7 @@ urlpatterns = [
 
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
         path('download_ex2', grade_excel.GradeDownloadEx2View.as_view(), name='url_grade_download_ex2'),
-        path('download_ex2a', grade_exfiles.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
+        path('download_ex2a', grade_excel.GradeDownloadEx2aView.as_view(), name='url_grade_download_ex2a'),
         path('download/', grade_exfiles.DownloadPublishedFile.as_view(), name='grades_download_published_url'),
     ])),
 
@@ -283,8 +283,8 @@ urlpatterns = [
 
         path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
         path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
-        path('calc_results/<list>/', grade_calc_res.CalcresultsView.as_view(), name='url_calc_results')
-
+        path('calc_results/<list>/', grade_calc_res.CalcresultsView.as_view(), name='url_calc_results'),
+        path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5')
     ])),
 
 # ===== ARCHIVES ========================== PR2022-03-09

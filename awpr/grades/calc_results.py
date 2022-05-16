@@ -121,7 +121,7 @@ logger = logging.getLogger(__name__)
 class CalcresultsView(View):  # PR2021-11-19
 
     def post(self, request, list):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= CalcresultsView ============= ')
 
@@ -458,7 +458,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
 # --- create student_ep_dicts with key ep1, ep2 and ep3 in student_dict[ep_key]
         if examperiod != c.EXAMPERIOD_EXEMPTION:
             # when student has reex or reex03 and this subject is not a reex,
-            # then this_examperiod_dict doe not exist
+            # then this_examperiod_dict does not exist
             # take in that case the values from the previous period_dict
             # use_examperiod is the examperiod that will be used - obviously
             use_examperiod = examperiod
@@ -477,10 +477,6 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
                 logger.debug('----- examperiod: ' + str(examperiod) + ' ----- use_examperiod: ' + str(use_examperiod))
 
 # --- calculate totals for ep1, ep2 and ep3 and put them in student_ep_dicts, not when exemption
-            # when student has reex or reex03 and this subject is not a reex,
-            # then this_examperiod_dict doe not exist
-            # take in that case the values from the previous period_dict
-            # use_examperiod is the examperiod that will be used - obviously
             if ep_key in student_dict:
 
 # - get the dict with key 'ep1' ep2' ep3' from student_dict to store totals
@@ -691,7 +687,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
     # PR2021-11-21 from AWP Calculations.CalcEindcijfer_Max
     # values of examperiod are: 1, 2, 3
 
-    # PR2020-05-18 Andere aanpak berekening Max cijfers per tijdvak: bereken meteen of Vrst gebruikt moet worden ipv eerst Max en dan Vrst. Aparte functie van gemaakt
+    # PR2020-05-18 Andere aanpak berekening Max cijfers per tijdvak: bereken meteen of Vrst gebruikt moet worden ipv eerst Max en dan Vrst.
     # - bereken eerst de 'kale' eindcijfers per tijdvak in CalcEindcijfer_CijferOvg
     # - doorloop Tv01, Tv02 en Tv03 om Max te bepalen, incl Vrst
     # - return values: MaxSE(), MaxPeCe(),  MaxEind(),  MaxUseVrst(),  MaxCheckVrst()
@@ -709,9 +705,9 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
 # - loop through examperiod: firstperiod, reex and reex03
 
 # - get previous exam period:
-    #   - if reex03:    get reex period if exists, get exemption otherwise, get firstperiod otherwise
-    #   - if reex:      get exemption if exist, get firstperiod otherwise
-    #   - if exemption: get firstperiod
+    #   - if reex03:      get reex period if exists, get firstperiod otherwise
+    #   - if reex:        get firstperiod otherwise
+    #   - if firstperiod: get exemption if exists, else None
     #   firstperiod should always exist
     previous_examperiod = None
     if this_examperiod == c.EXAMPERIOD_THIRD:
@@ -728,7 +724,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
     max_sesr, max_pece, max_final, max_ni, max_noin, max_use_exemption = None, None, None, [], [], False
     max_examperiod = None
 
-# previous_examperiod is None when :
+# previous_examperiod is None when:
     #  - this is exemption or
     #  - this is first examperiod and no exemption
 # when previous_examperiod is None
@@ -741,7 +737,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
         max_final = this_examperiod_dict.get('final')
         max_ni = this_examperiod_dict.get('ni') or []
         max_noin = this_examperiod_dict.get('noin') or []
-        max_use_exemption = (max_examperiod == c.EXAMPERIOD_EXEMPTION)
+        max_use_exemption = (this_examperiod == c.EXAMPERIOD_EXEMPTION)
     else:
 
 # - get previous examperiod_dict
@@ -762,7 +758,6 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
             # (exemption and firstperiod without exemption are already filtered out)
             # when exemption or first period have no input:
             #  - make exemption the max period
-            #   (exemption and firstperiod without exemption are already filtered out)
             # otherwise:
             #  - compare firstperiod and exemption
 
@@ -770,6 +765,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 # make max_use_exemption = True when exemption has no input
                 if logging_on:
                     logger.debug('prev_ni has no input')
+
                 max_examperiod = c.EXAMPERIOD_EXEMPTION
                 max_sesr = prev_examperiod_dict.get('sesr')
                 max_pece = prev_examperiod_dict.get('pece')
@@ -790,6 +786,8 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 max_noin = this_examperiod_dict.get('noin') or []
                 max_use_exemption = False
             elif prev_ni:
+                # if reex03: previous = reex if exists, else firstperiod
+                # if reex:   previous = firstperiod
                 max_examperiod = previous_examperiod
                 max_sesr = prev_examperiod_dict.get('max_sesr')
                 max_pece = prev_examperiod_dict.get('max_pece')
@@ -971,101 +969,64 @@ def save_max_grade_in_studsubj(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_e
 # - end of save_max_grade_in_studsubj
 
 
-def save_result_and_totals_in_studentXX(student_dict, last_student_ep_dict):  # PR2021-12-23
-
-    #grade_ce_avg = CharField(db_index=True, max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    #grade_combi_avg = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    # endgrade_avg = DecimalField(max_digits=5, decimal_places=2, default = 0)
-    """
-    RESULT_NORESULT = 0
-    RESULT_PASSED = 1
-    RESULT_FAILED = 2
-    RESULT_REEXAM = 3
-    RESULT_WITHDRAWN = 4
-    """
+def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dict, gradetype, multiplier, is_combi, is_extra_nocount, subj_code):
+    # function adds final-grade * multiplier to final.sum, adds multiplier to subj_count
 
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' -----  save_result_and_totals_in_student -----')
-        logger.debug('student_dict: ' + str(student_dict))
-        logger.debug('last_student_ep_dict: ' + str(last_student_ep_dict))
-
-    try:
-        last_ep_str = student_dict.get('last_ep')
-        last_ep_dict = student_dict.get(last_ep_str)
-
-        if last_student_ep_dict:
-            stud_pk = student_dict.get('stud_id')
-            student_instance = stud_mod.Student.objects.get_or_none(
-                pk=stud_pk
-            )
-            if student_instance:
-# - put value in 'grade_ce_avg', 'grade_combi_avg', 'grade_combi_avg'
-                for field in ('grade_ce_avg', 'grade_combi_avg', 'grade_combi_avg'):
-                    key_tuple =  ('pece', 'avg') if field == 'grade_ce_avg' else \
-                                 ('combi', 'final') if field == 'grade_combi_avg' else \
-                                 ('final', 'avg')
-
-                    value = af.get_dict_value(last_student_ep_dict, key_tuple)
-                    if value:
-                        if isinstance(value, int):
-                            value = str(value)
-                        value = value.replace('.', ',')
-
-                    setattr(student_instance, field, value)
-
-# - put value in result
-
-                student_instance.save()
-
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-# - end of save_result_and_totals_in_student
-
-
-def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dict, gradetype, multiplier, is_combi, is_extra_nocount, subj_code):
-    # function adds final-grade * multiplier to final-sum, adds multiplier to subj_count
-
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
         logger.debug(' -----  calc_sum_finalgrade_and_combi  -----')
         logger.debug('calc_student_ep_dict: ' + str(calc_student_ep_dict))
-
+    """
+    calc_student_ep_dict: {'ep': 1, 
+                           'final': {'sum': -5994, 'cnt': 6, 'info': ' ne:- pa:- en:- sp:- ec:- ac:-'}, 
+                           'combi': {'sum': 18, 'cnt': 3, 'info': ' mm1:5 cav:6 lo:7'}, 
+                           'pece': {'sumX10': -59994, 'cnt': 6, 'info': ' ne:- pa:- en:- sp:- ec:- ac:-'}, 
+                           'count': {'c3': 0, 'c4': 0, 'c5': 0, 'c6': 0, 'c7': 0, 'core4': 0, 'core5': 0}, 
+                           'noin': {
+                                'ce': ['ne', 'pa', 'en', 'sp', 'ec', 'ac'], 
+                                'pe': ['ac']}}
+    """
     try:
 # - calc only when gradetype is number
 # - calc only when subject is not 'is_extra_nocount'
         if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount:
             key_str = 'combi' if is_combi else 'final'
             ep_dict = calc_student_ep_dict[key_str]
-
+            """
+            'final': {'sum': -5994, 'cnt': 6, 'info': ' ne:- pa:- en:- sp:- ec:- ac:-'}, 
+            'combi': {'sum': 18, 'cnt': 3, 'info': ' mm1:5 cav:6 lo:7'}, 
+            """
+    # - add key with default value if key doesn't exist
             for key_str in ('sum', 'cnt', 'info'):
                 if key_str not in ep_dict:
                     default_value = '' if key_str == 'info' else 0
                     ep_dict[key_str] = default_value
 
     # - add multiplier to cnt_final, to cnt_combi when combi
-            # multiplier = 1, except when sectrorprogramma PBL
+            # multiplier = 1, except when sectorprogramma PBL CUR
             ep_dict['cnt'] += multiplier
 
             max_final_int = 0
+
+    # - make sum negative when no_input, to show '-' as combi grade or final sum  when one of the subejcts has noinput
             if max_ni:
-                # make sum negatve when no_input, to show '-' as combi grade or final sum  when one of the subejcts has noinput
                 max_final_int = -999
             else:
+    # - convert string to integer - final grade is integer of 'ovg'
                 if isinstance(max_final, int):
                     max_final_int = max_final
                 elif isinstance(max_final, str):
                     max_final_int = int(max_final)
 
-    # - add grade to sum_final, to sum_combi when combi
+    # - add final grade to sum_final, to sum_combi when combi
             if max_final_int:
                 ep_dict['sum'] += max_final_int * multiplier
 
-    # add subj_code and grade to info_pece:
+    # - add subj_code and final grade to info_pece:
             max_final_str = str(max_final_int) if max_final_int > 0 else '-'
             ep_dict['info'] += ''.join((' ', subj_code, ':', str(max_final_str)))
 
-        # add '2x','vr','h','h3' to grade
+    # - add '2x','vr','h','h3' to grade
             gradeinfo_extension = get_gradeinfo_extension(multiplier, max_ep)
             if gradeinfo_extension:
                 ep_dict['info'] += gradeinfo_extension
@@ -2314,7 +2275,7 @@ def save_student_batch(sql_student_list):  # PR2022-01-03
             sql_list.append(''.join((", (", sql_item, ")")))
         sql_list.extend((
             "; UPDATE students_student AS st",
-            "SET grade_ce_avg = tmp.avg_ce, grade_combi_avg = tmp.avg_combi, grade_final_avg = tmp.avg_final,",
+            "SET gl_ce_avg = tmp.avg_ce, gl_combi_avg = tmp.avg_combi, gl_final_avg = tmp.avg_final,",
             "result = tmp.index, result_status = tmp.status, result_info = tmp.info",
             "FROM tmp",
             "WHERE st.id = tmp.st_id",
@@ -2347,8 +2308,6 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
     if logging_on:
         logger.debug(' ----- get_students_with_grades_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
-
-    # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}
 
     # values of sel_layout are:"none", "level", "class", "cluster"
     # "none" or None: all students of subject on one form
@@ -2504,7 +2463,6 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
                                 if value:
                                     grade_dict[field] = value
                             studsubj_dict[examperiod] = grade_dict
-
 
 # convert dict to sorted dictlist
         grade_list = list(cascade_dict.values())

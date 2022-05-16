@@ -538,3 +538,7 @@ PAGE_LIST = {
     'archive': _('Archive')
 }
 
+# XLSWRITER FORMATS
+XF_FS8_FCBLUE_ALC_BORDER = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
+XF_FS8_BCLIGHTGREY_ALC_BORDER = {'font_size': 8, 'border': True, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+

@@ -722,7 +722,7 @@ class DownloadEx3BackpageView(View):  # PR2022-02-26
 
 
 @method_decorator([login_required], name='dispatch')
-class GradeDownloadEx2aView(View):  # PR2021-01-24
+class GradeDownloadEx2aViewXXX(View):  # PR2021-01-24
 
     def get(self, request):
         logging_on = s.LOGGING_ON

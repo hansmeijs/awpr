@@ -225,7 +225,7 @@ def create_mailbox_recipients_rows(examyear_pk, mailmessage_pk):
 
 def create_mailattachment_rows(examyear, request, mailattachment_pk=None):
     # --- create mail_inbox rows of this user this examyear PR2021-09-11
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_mailattachment_rows ============= ')
         logger.debug('examyear: ' + str(examyear))
@@ -233,7 +233,9 @@ def create_mailattachment_rows(examyear, request, mailattachment_pk=None):
         logger.debug('mailattachment_pk: ' + str(mailattachment_pk))
 
     mailattachment_rows = []
-
+    # PR2022-05-12 debug: Mireille Peterson-Regales MC mailbox attachment not showing.
+    # cause: attachments were filtered by examyear.pk, SXM has different examyear.pk from CUR
+    # solved by: add INNER JOIN exam year and filter by examyear.code
     try:
         filter_mailattachment_pk = "AND mail_att.id = " + str(mailattachment_pk) if mailattachment_pk else ''
 
@@ -250,9 +252,11 @@ def create_mailattachment_rows(examyear, request, mailattachment_pk=None):
 
             "FROM schools_mailattachment AS mail_att",
             "INNER JOIN schools_mailmessage AS msg ON (msg.id = mail_att.mailmessage_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = msg.examyear_id)",
 
-            "WHERE (msg.examyear_id = ", str(examyear.pk), ")",
-            # TODO change format recipients to list of all users (otherwise list may not reflexactual sender list)
+            "WHERE (ey.code = ", str(examyear.code), ")",
+
+            # TODO change format recipients to list of all users (otherwise list may not reflex actual sender list)
             #  increase max length of recipients (max 1.000 recipients * 5 char = 5k > 10k max
             #"AND ( msg.sender_user_id = ", str(request.user.pk),
             #"OR POSITION('" + str(req_usr_pk_str) + "' IN CONCAT(';', msg.recipients, ';')) > 0 )",

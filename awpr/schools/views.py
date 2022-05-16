@@ -1,7 +1,7 @@
 # PR2018-04-14
 from django.contrib.auth.decorators import login_required # PR2018-04-01
 from django.core.files import File
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from mimetypes import guess_type
 from os.path import basename
 
@@ -1252,12 +1252,18 @@ def send_email_message(examyear, userlist_dict, log_list, header, body_txt, requ
                     }
                     body_str = render_to_string(email_template_name, msg_dict)
 
+                    # PR2022-05-10 Pien van Dijk ETE: don't show email addresses in email. SOlved by using 'bcc' instead of 'to'
+                    # problem: Mailgun API response 400 (Bad Request): "to parameter is missing"
+                    # see https://stackoverflow.com/questions/69359664/how-to-use-mailguns-recipient-variables-with-django-smtp-mail-backend
+                    # and https://stackoverflow.com/questions/37948729/mailgun-smtp-batch-sending-with-recipient-variables-shows-all-recipients-in-to-f
+
                     # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                     reply_to = (request.user.email,)
                     email_message = EmailMessage(
                         subject=header,
                         body=body_str,
                         from_email=from_email,
+                        #bcc=to_email_list,
                         to=to_email_list,
                         reply_to=reply_to)
 
@@ -1265,7 +1271,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, body_txt, requ
                     # PR2021-10-31 from https://stackoverflow.com/questions/36351318/django-email-message-as-html
                     #  email_message.content_subtype = "html"
                     """
-                    don't add body and attachments to notification email
+                    don't add attachments to notification email
                     if mailattachments:
                         for mailattachment in mailattachments:
                             if mailattachment and mailattachment.file:

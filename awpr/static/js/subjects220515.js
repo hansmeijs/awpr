@@ -79,40 +79,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
     columns_tobe_hidden.btn_subject = {
-        fields: ["name", "depbases", "sequence", "addedbyschool"],
-        captions: ["Name", "Departments", "Sequence", "Added_by_school"]};
-    columns_tobe_hidden.btn_scheme = {
-        fields: ["depbase_code", "lvl_abbrev", "sct_abbrev", "min_subjects", "max_subjects",
-                "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
-                "rule_avg_pece_sufficient", "rule_avg_pece_notatevlex", "rule_core_sufficient", "rule_core_notatevlex",
-        ],
-        captions: ["Department", "Leerweg",  "SectorProfiel_twolines", "Minimum_subjects",  "Maximum_subjects",
-                    "Minimum_MVT_subjects", "Maximum_MVT_subjects", "Minimum_Wisk_subjects", "Maximum_Wisk_subjects",
-                    "Minimum_combi_subjects", "Maximum_combi_subjects", "Maximum_reex",
-                    "Average_CE_grade_rule", "Not_at_evening_lex_school", "Core_subject_rule", "Not_at_evening_lex_school",
-                    ]};
-    columns_tobe_hidden.btn_schemeitem = {
-        fields: ["subj_name", "sjtp_abbrev", "ete_exam", "otherlang",
-                "gradetype", "weight_se", "weight_ce", "multiplier", "is_mandatory", "is_mand_subj", "is_combi", "is_core_subject", "is_mvt", "is_wisk",
-                "rule_grade_sufficient", "rule_gradesuff_notatevlex",
-                "extra_count_allowed",  "extra_nocount_allowed",
-                 "has_practexam", "sr_allowed",
-                "max_reex", "thumb_rule",  "no_ce_years"],
-        captions: ["Subject", "Character", "ETE_exam", "Other_languages",
-                "Grade_type", "SE_weighing",  "CE_weighing", "Counts_double", "Mandatory", "Mandatory_if_subject", "Combination_subject", "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
-                "Subject_must_be_sufficient", "Not_at_evening_lex_school",
-                "Extra_count_allowed", "Extra_nocount_allowed",
-                "Has_practical_exam", "Herkansing_SE_allowed",
-                "Maximum_reex", "Thumbrule_applies", "Examyears_without_CE"]};
+        name: "Name", depbases: "Departments", sequence: "Sequence", addedbyschool:"Added_by_school"
+    };
 
+    columns_tobe_hidden.btn_scheme = {
+        depbase_code: "Department", lvl_abbrev: "Leerweg", sct_abbrev: "SectorProfiel_twolines",
+        min_subjects: "Minimum_subjects", max_subjects: "Maximum_subjects",
+        min_mvt: "Minimum_MVT_subjects", max_mvt: "Maximum_MVT_subjects",
+        min_wisk: "Minimum_Wisk_subjects", max_wisk: "Maximum_Wisk_subjects",
+        min_combi: "Minimum_combi_subjects", max_combi:  "Maximum_combi_subjects",
+        max_reex: "Maximum_reex",
+        rule_avg_pece_sufficient: "Average_CE_grade_rule", rule_avg_pece_notatevlex: "Not_at_evening_lex_school",
+        rule_core_sufficient: "Core_subject_rule", rule_core_notatevlex: "Not_at_evening_lex_school"
+    };
+
+    columns_tobe_hidden.btn_schemeitem = {
+        subj_name: "Subject", sjtp_abbrev: "Character", ete_exam: "ETE_exam", otherlang: "Other_languages",
+        gradetype: "Grade_type", weight_se: "SE_weighing", weight_ce: "CE_weighing",
+        multiplier: "Counts_double", is_mandatory: "Mandatory", is_mand_subj: "Mandatory_if_subject",
+        is_combi: "Combination_subject", is_core_subject: "Is_core_subject", is_mvt: "Is_MVT_subject", is_wisk: "Is_wiskunde_subject",
+        rule_grade_sufficient: "Subject_must_be_sufficient", rule_gradesuff_notatevlex: "Not_at_evening_lex_school",
+        extra_count_allowed: "Extra_count_allowed", extra_nocount_allowed: "Extra_nocount_allowed",
+        has_practexam: "Has_practical_exam", sr_allowed: "Herkansing_SE_allowed",
+        max_reex: "Maximum_reex", thumb_rule: "Thumbrule_applies", no_ce_years: "Examyears_without_CE"
+    };
     columns_tobe_hidden.btn_subjecttype = {
-        fields: ["name", "min_subjects",  "max_subjects", "min_extra_nocount" , "max_extra_nocount",
-                "min_extra_counts", "max_extra_counts", "has_pws"],
-        captions: ["Character_name", "Minimum_subjects",  "Maximum_subjects", "Minimum_extra_nocount",  "Maximum_extra_nocount",
-                    "Minimum_extra_counts",  "Maximum_extra_counts", "Has_assignment"]};
+        name: "Character_name", min_subjects: "Minimum_subjects",  max_subjects: "Maximum_subjects",
+        min_extra_nocount: "Minimum_extra_nocount", max_extra_nocount: "Maximum_extra_nocount",
+        min_extra_counts: "Minimum_extra_counts", max_extra_counts: "Maximum_extra_counts", has_pws: "Has_assignment"
+    };
     columns_tobe_hidden.btn_subjecttypebase = {
-        fields: [ "name", "abbrev", "sequence"],
-        captions: [ "Name", "Abbreviation",  "Sequence"]};
+        name: "Name", abbrev: "Abbreviation", sequence: "Sequence"
+    };
 
 // --- get field_settings
     field_settings.btn_subject = {field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence", "Added_by_school"],

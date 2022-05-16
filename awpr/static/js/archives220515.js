@@ -58,8 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // either 'all' or selected_btn are used in a page
 
     columns_tobe_hidden.all = {
-        fields: ["name", "datepublished", "url"],
-        captions: ["Name_ex_form", "Date_submitted", "Download_Exform"]};
+        name: "Name_ex_form", datepublished: "Date_submitted", url: "Download_Exform"
+    };
 
 // --- get field_settings
     const field_settings = {

@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_download_gradelist = get_attr_from_el(el_data, "data-url_download_gradelist");
     urls.url_calc_results = get_attr_from_el(el_data, "data-url_calc_results");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
+    urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
+    urls.url_result_download_ex5 = get_attr_from_el(el_data, "data-url_result_download_ex5");
 
     // columns_hidden and columns_tobe_hidden are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
     // columns_tobe_hidden contains the fields and captions that can be hidden
@@ -82,8 +84,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // either 'all' or selected_btn are used in a page
 
     columns_tobe_hidden.btn_student = {
-        fields: ["idnumber", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "result_status", "has_reex"],
-        captions: ["ID_number", "Leerweg", "Sector", "Class", "Examnumber", "Regnumber", "Result", "Re_examination"]};
+        idnumber: "ID_number", lvlbase_id: "Leerweg", sctbase_id: "Sector", classname: "Class",
+        examnumber: "Examnumber", regnumber: "Regnumber", result_status: "Result", has_reex: "Re_examination"
+    };
 
 // --- get field_settings
     // declared as global: let field_settings = {};
@@ -419,6 +422,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Calc_result, function() {Calc_result("prelim")});
         };
+
+        AddSubmenuButton(el_submenu, loc.Preliminary_ex5_form, function() {ModConfirmOpen("prelim_ex5")});
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_result")}, [], "id_submenu_columns");
         el_submenu.classList.remove(cls_hide);
 
@@ -1621,11 +1626,11 @@ function RefreshDataRowsAfterUpload(response) {
     }  // Calc_result
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23 PR2022-05-10
     function ModConfirmOpen(mode) {
-        //console.log(" -----  ModConfirmOpen   ----")
+        console.log(" -----  ModConfirmOpen   ----")
         // only called by menubtn Delete_candidate and mod MSTUD btn delete
-        // values of mode is : "delete" and "validate_scheme"
+        // values of mode are : "prelim_ex5",  "delete" , "validate_scheme", "correct_scheme"
 
         const tblName = "student";
         let show_modal = false;
@@ -1642,7 +1647,23 @@ function RefreshDataRowsAfterUpload(response) {
 // ---  create mod_dict
         mod_dict = {mode: mode};
         const has_selected_item = (!isEmpty(map_dict));
-        if(mode === "delete"){
+
+        console.log("mode", mode)
+        if(mode === "prelim_ex5"){
+
+
+            el_confirm_btn_save.innerText = loc.OK;
+            el_confirm_btn_cancel.innerText = loc.Cancel;
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
+
+        // set focus to save button
+            setTimeout(function (){
+                el_confirm_btn_save.focus();
+            }, 500);
+        // show modal
+            $("#id_mod_confirm").modal({backdrop: true});
+
+        } else if(mode === "delete"){
             show_modal = may_edit;
             if(has_selected_item ){
                 mod_dict.student_pk = map_dict.id;
@@ -1655,12 +1676,23 @@ function RefreshDataRowsAfterUpload(response) {
 
 // ---  put text in modal for
         let header_text = "";
+        let msg_html = "";
 
         let msg01_txt = null, msg02_txt = null, msg03_txt = null;
         let hide_save_btn = false;
 
         const full_name = (map_dict.fullname) ? map_dict.fullname  : "---";
-        if(mode === "delete"){
+        if(mode === "prelim_ex5"){
+            header_text = loc.Download_Ex_form;
+            msg_html = ["<p>", loc.The_preliminary_ex5_form, " ", loc.will_be_downloaded, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
+
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                const url_str = urls.url_result_download_ex5;
+                el_modconfirm_link.setAttribute("href", url_str);
+            };
+
+        } else if(mode === "delete"){
             header_text = loc.Delete_candidate;
             if(!has_selected_item){
                 msg01_txt = loc.Please_select_candidate_first;
@@ -1683,9 +1715,9 @@ function RefreshDataRowsAfterUpload(response) {
 
         el_confirm_header.innerText = header_text;
         el_confirm_loader.classList.add(cls_visible_hide)
+        add_or_remove_class(el_confirm_loader)
         el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
 
-        let msg_html = "";
         if (msg01_txt) {msg_html += "<p>" + msg01_txt + "</p>"};
         if (msg02_txt) {msg_html += "<p>" + msg02_txt + "</p>"};
         if (msg03_txt) {msg_html += "<p>" + msg03_txt + "</p>"};
@@ -1718,13 +1750,23 @@ function RefreshDataRowsAfterUpload(response) {
         const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
 // ---  Upload Changes
         let url_str = null;
-        const upload_dict = { table: "student", mode: mod_dict.mode}
-        if(mod_dict.mode === "delete"){
+        const upload_dict = {mode: mod_dict.mode};
+        if(mod_dict.mode === "prelim_ex5"){
+            upload_dict.table = "student";
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                el_modconfirm_link.click();
+            // show loader
+                el_confirm_loader.classList.remove(cls_visible_hide)
+            };
+
+        } else if (mod_dict.mode === "delete"){
             if(may_edit){
 // ---  when delete: make tblRow red, before uploading
                 let tblRow = document.getElementById(mod_dict.mapid);
                 ShowClassWithTimeout(tblRow, "tsa_tr_error");
                 url_str = urls.url_student_upload;
+                upload_dict.table = "student";
                 upload_dict.student_pk = mod_dict.student_pk;
                 upload_dict.mapid = mod_dict.mapid;
                 UploadChanges(upload_dict, url_str);
@@ -1734,6 +1776,7 @@ function RefreshDataRowsAfterUpload(response) {
         } else if (["validate_scheme", "correct_scheme"].includes(mod_dict.mode)){
             if(permit_dict.requsr_role_system){
                 url_str = urls.url_studsubj_validate_scheme;
+                upload_dict.table = "student";
                 if(mod_dict.mode === "correct_scheme"){
                     upload_dict.correct_errors = true;
                 };

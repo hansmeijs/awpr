@@ -57,15 +57,16 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_orderlist_publish = get_attr_from_el(el_data, "data-url_orderlist_publish");
 
     columns_tobe_hidden.btn_orderlist = {
-        fields: [ "school_abbrev", "total_students", "total", "publ_count", "datepublished"],
-        captions: ["School_name", "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted"]};
+        school_abbrev: "School_name", total_students: "Number_of_candidates",
+        total: "Number_of_entered_subjects", publ_count: "Number_of_submitted_subjects", datepublished: "Date_submitted"
+    };
 
 // --- get field_settings
     const field_settings = {
         orderlist: {field_caption: ["", "School_code", "School_name", "Number_of_candidates",
                                  "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted", "Download_Exform"],
-                    field_names: ["", "schbase_code", "school_abbrev",
-                                "total_students", "total", "publ_count", "datepublished", "url"],
+                    field_names: ["", "schbase_code", "school_abbrev", "total_students",
+                                 "total", "publ_count", "datepublished", "url"],
                     field_tags: ["div", "div", "div",
                                  "div", "div","div", "div", "a"],
                     filter_tags: ["select", "text", "text",

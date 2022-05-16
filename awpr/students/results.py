@@ -389,7 +389,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
     sql_list = ["SELECT studsubj.id AS studsubj_id, stud.id AS stud_id,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
                 "stud.birthdate, stud.birthcountry, stud.birthcity,"
-                "stud.grade_ce_avg, stud.grade_combi_avg, stud.grade_final_avg, stud.result_status,",
+                "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result_status,",
 
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
@@ -508,9 +508,9 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                     'classname':  row.get('classname'),
                     'cluster_name':  row.get('cluster_name'),
 
-                    'ce_avg': row.get('grade_ce_avg_text'),
-                    'combi_avg':  row.get('grade_combi_avg'),
-                    'finalgrade_avg':  row.get('grade_final_avg'),
+                    'ce_avg': row.get('gl_ce_avg_text'),
+                    'combi_avg':  row.get('gl_combi_avg'),
+                    'final_avg':  row.get('gl_final_avg'),
                     'result_status':  row.get('result_status'),
                 }
 
@@ -539,12 +539,16 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                 sjtp_dict = student_dict.get(sjtp_sequence)
                 subj_id = row.get('subj_id')
                 if subj_id not in sjtp_dict:
+                    segrade = row.get('gradelist_sesrgrade').replace('.', ',') if row.get('gradelist_sesrgrade') else None
+                    pecegrade = row.get('gradelist_pecegrade').replace('.', ',') if row.get('gradelist_pecegrade') else None
+                    finalgrade = row.get('gradelist_finalgrade')
+
                     sjtp_dict[subj_id] = {
                         'sjtp_code':  row.get('sjtpbase_code'),
                         'subj_name':  row.get('subj_name'),
-                        'segrade':  row.get('gradelist_sesrgrade'),
-                        'pecegrade':  row.get('gradelist_pecegrade'),
-                        'finalgrade':  row.get('gradelist_finalgrade'),
+                        'segrade':  segrade,
+                        'pecegrade': pecegrade,
+                        'finalgrade': finalgrade
                     }
                 subj_dict = sjtp_dict[subj_id]
                 logger.debug('?############ row: ' + str(row))
@@ -554,7 +558,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                 row: {'studsubj_id': 40093, 'stud_id': 5453, 'lastname': 'Boasman', 'firstname': 'Acemar, Hurbertho', 
                     'prefix': None, 'examnumber': '402', 'gender': 'M', 'idnumber': '2005061871', 
                     'birthdate': datetime.date(2005, 6, 18), 'birthcountry': 'Nederland', 'birthcity': 'Sint Maarten', 
-                    'grade_ce_avg': None, 'grade_combi_avg': None, 'grade_final_avg': None, 'result_status': 'Geen uitslag', 
+                    'gl_ce_avg': None, 'gl_combi_avg': None, 'gl_final_avg': None, 'result_status': 'Geen uitslag', 
                     'school_name': 'Milton Peters College', 'school_article': 'het', 'islexschool': False, 
                     'school_code': 'SXM01', 'depbase_code': 'Vsbo', 'lvlbase_code': 'TKL', 'examyear_txt': '2022', 
                     'country': 'Sint Maarten', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 

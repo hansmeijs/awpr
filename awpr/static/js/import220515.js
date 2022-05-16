@@ -63,6 +63,9 @@
         // PR2022-04-19 Sentry debug:  Unhandled: Const moet zijn geïnitialiseerd
         // was: for (const key of Object.keys(mimp)) {
         // mimp[key] = null;
+
+        // PR2022-05-11 Sentry debug: Unhandled Expected ';' with IE11 on Windows 7
+        // leave it as it is, Object.values not supported in IE 11
         for (let value of Object.values(mimp)) {
             value = null;
         };

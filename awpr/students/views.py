@@ -161,7 +161,7 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
                 "st.bis_exam, st.partial_exam,",
 
                 "st.linked, st.notlinked, st.sr_count, st.reex_count, st.reex03_count, st.withdrawn,",
-                "st.grade_ce_avg, st.grade_combi_avg, st.grade_final_avg,",
+                "st.gl_ce_avg, st.gl_combi_avg, st.gl_final_avg,",
 
                 "st.result, st.result_status, st.result_info, st.tobedeleted,",
 
@@ -224,13 +224,14 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
 
         except Exception as e:
             # - return msg_err when instance not created
+            #  msg format: [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred." }]
             logger.error(getattr(e, 'message', str(e)))
             # &emsp; add 4 'hard' spaces
             msg_html = '<br>'.join((
                 str(_('An error occurred')) + ':',
                 '&emsp;<i>' + str(e) + '</i>'
             ))
-            error_dict['nonfield_download'] = msg_html
+            error_dict = {'class': 'border_bg_invalid', 'msg_html': msg_html}
 
     return student_rows, error_dict
 # --- end of create_student_rows
@@ -635,13 +636,16 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                         skip_check_activated=True
                     )
 
+
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('sel_school:     ' + str(sel_school))
                     logger.debug('sel_department: ' + str(sel_department))
                     logger.debug('may_edit:       ' + str(may_edit))
                     logger.debug('sel_msg_list:       ' + str(sel_msg_list))
-
+                """
+                sel_msg_list = msg_list.append(str(_("You don't have permission to view department %(val)s.") % {'val': sel_depbase.code}))
+                """
                 if len(sel_msg_list):
                     msg_html = '<br>'.join(sel_msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
@@ -649,8 +653,17 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 
 # +++  Create new student
                     if is_create:
+                        err_list = []
                         student = create_student(sel_school, sel_department,
-                            upload_dict, messages, error_list, request, False)  # skip_save = False
+                            upload_dict, messages, err_list, request, False)  # skip_save = False
+                        """
+                        msg_html = '<br>'.join(msg_list)
+                        messages.append({'header': str(_('Add candidate')), 'class': "border_bg_invalid", 'msg_html': msg_html})
+                        error_list.extend(msg_list)
+                        """
+                        if err_list:
+                            messages.extend(err_list)
+
                         if student:
                             append_dict['created'] = True
                     else:
@@ -668,7 +681,10 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                     if student:
 # +++ Delete student
                         if is_delete:
-                            deleted_ok = delete_student(student, updated_rows, error_list, request)
+                            err_list = []
+                            deleted_ok = delete_student(student, updated_rows, err_list, request)
+                            if err_list:
+                                messages.extend(err_list)
 
 # +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
@@ -3565,14 +3581,14 @@ def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_l
     sql_student_values = []
     try:
         student_id = student_dict.get('stud_id')
-        grade_final_avg = af.get_dict_value(last_student_ep_dict, ('final', 'avg'))
-        grade_ce_avg = af.get_dict_value(last_student_ep_dict, ('pece', 'avg'))
-        grade_combi_avg = af.get_dict_value(last_student_ep_dict, ('combi', 'final'))
+        gl_ce_avg = af.get_dict_value(last_student_ep_dict, ('pece', 'avg'))
+        gl_combi_avg = af.get_dict_value(last_student_ep_dict, ('combi', 'final'))
+        gl_final_avg = af.get_dict_value(last_student_ep_dict, ('final', 'avg'))
         result_index = last_student_ep_dict.get('result_index') or 0
 
-        grade_ce_avg_str = ''.join(("'",  str(grade_ce_avg), "'")) if grade_ce_avg else 'NULL'
-        grade_combi_avg_str = ''.join(("'",  str(grade_combi_avg), "'")) if grade_combi_avg else 'NULL'
-        grade_final_avg_str = ''.join(("'",  str(grade_final_avg), "'")) if grade_final_avg else 'NULL'
+        gl_ce_avg_str = ''.join(("'",  str(gl_ce_avg), "'")) if gl_ce_avg else 'NULL'
+        gl_combi_avg_str = ''.join(("'",  str(gl_combi_avg), "'")) if gl_combi_avg else 'NULL'
+        gl_final_avg_str = ''.join(("'",  str(gl_final_avg), "'")) if gl_final_avg else 'NULL'
 
         result_index_str = str(result_index) if result_index else '0'
         result_status_str = ''.join(("'", c.RESULT_CAPTION[result_index], "'")) if c.RESULT_CAPTION[result_index] else 'NULL'
@@ -3581,18 +3597,19 @@ def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_l
         result_info_str = ''.join(("'",  result_info, "'")) if result_info else 'NULL'
 
         if logging_on:
-            logger.debug('grade_ce_avg_str: ' + str(grade_ce_avg_str))
-            logger.debug('grade_combi_avg_str: ' + str(grade_combi_avg_str))
-            logger.debug('grade_final_avg_str: ' + str(grade_final_avg_str))
+            logger.debug('gl_ce_avg_str: ' + str(gl_ce_avg_str))
+            logger.debug('gl_combi_avg_str: ' + str(gl_combi_avg_str))
+            logger.debug('gl_final_avg_str: ' + str(gl_final_avg_str))
+
             logger.debug('result_index_str: ' + str(result_index_str))
             logger.debug('result_status_str: ' + str(result_status_str))
             logger.debug('result_info_str: ' + str(result_info_str))
 
         sql_student_values = [
             str(student_id),
-            grade_ce_avg_str,
-            grade_combi_avg_str,
-            grade_final_avg_str,
+            gl_ce_avg_str,
+            gl_combi_avg_str,
+            gl_final_avg_str,
 
             result_index_str,
             result_status_str,
@@ -3603,9 +3620,9 @@ def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_l
         """
         sql_keys = {'stud_id': student_id}
         sql_list = ["UPDATE students_student AS stud",
-                    " SET grade_final_avg = ", grade_final_avg_str,
-                    ", grade_ce_avg = ", grade_ce_avg_str,
-                    ", grade_combi_avg = ", grade_combi_avg_str,
+                    " SET gl_ce_avg = ", gl_ce_avg_str,
+                    ", gl_combi_avg = ", gl_combi_avg_str,
+                    ", gl_final_avg = ", gl_final_avg_str,
                     ", result = ", str(result_index),
                     ", result_status = ", result_status_str,
                     ", result_info = ", result_info_str,
@@ -3790,35 +3807,48 @@ def delete_student(student_instance, updated_rows, err_list, request):
     this_txt = _("Candidate '%(tbl)s' ") % {'tbl': student_instance.fullname}
     header_txt = _("Delete candidate")
 
-# - check if student has submitted grades or school is locked or examyear is locked PR2021-08-21
-    # PR2022-02-15 student can always be deleted
+# - check if student has submitted subjects PR2021-08-21 PR2022-05-15
 
-    try:
-        # delete student will also cascade delete studsubj, Grades, Studentsubjectnote, Noteattachment
-        deleted_ok = sch_mod.delete_instance(student_instance, [], err_list, request, this_txt, header_txt)
-        if logging_on:
-            logger.debug('deleted_ok: ' + str(deleted_ok))
-
-
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
+    has_publ_studsubj = stud_mod.Studentsubject.objects.filter(
+        student=student_instance,
+        subj_published_id__isnull=False
+    ).exists()
+    if has_publ_studsubj:
+        msg_html = ''.join((
+            str(_('This candidate has submitted subjects.')), '<br>',
+            str(_('You cannot delete %(cpt)s.') % {'cpt': str(_('This candidate')).lower()})
+        ))
+        msg_dict = {'header': header_txt, 'class': 'border_bg_warning', 'msg_html': msg_html}
+        err_list.append(msg_dict)
     else:
-# - add deleted_row to updated_rows
-        deleted_ok = True
-        updated_rows.append(updated_row)
 
-# - check if this student also exists in other examyears.
-        # PR2022-02-15 deleting student_base not necessary, student will be set tobedeleted
-        #students_exist = stud_mod.Student.objects.filter(base_id=base_pk).exists()
-    # - If not: delete also subject_base
-        #if not students_exist:
-        #    student_base = stud_mod.Studentbase.objects.get_or_none(id=base_pk)
-        #    if student_base:
-        #        student_base.delete()
+        try:
 
-    if logging_on:
-        logger.debug('updated_rows' + str(updated_rows))
-        logger.debug('err_list' + str(err_list))
+            # delete student will also cascade delete studsubj, Grades, Studentsubjectnote, Noteattachment
+            deleted_ok = sch_mod.delete_instance(student_instance, [], err_list, request, this_txt, header_txt)
+            if logging_on:
+                logger.debug('deleted_ok: ' + str(deleted_ok))
+
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+        else:
+    # - add deleted_row to updated_rows
+            deleted_ok = True
+            updated_rows.append(updated_row)
+
+    # - check if this student also exists in other examyears.
+            # PR2022-02-15 deleting student_base not necessary, student will be set tobedeleted
+            #students_exist = stud_mod.Student.objects.filter(base_id=base_pk).exists()
+        # - If not: delete also subject_base
+            #if not students_exist:
+            #    student_base = stud_mod.Studentbase.objects.get_or_none(id=base_pk)
+            #    if student_base:
+            #        student_base.delete()
+
+        if logging_on:
+            logger.debug('updated_rows' + str(updated_rows))
+            logger.debug('err_list' + str(err_list))
 
     return deleted_ok
 # - end of delete_student
@@ -4318,7 +4348,6 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if not has_published_exemptions:
                             setattr(instance, field, new_value)
                             save_changes = True
-
 
             #except Exception as e:
             #    logger.error(getattr(e, 'message', str(e)))

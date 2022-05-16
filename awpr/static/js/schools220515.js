@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language", "Activated",  "Locked"],
                  field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "activated", "locked"],
                  filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle", "toggle"],
-                 field_width:  ["020", "075", "075", "360", "180", "120","120", "090","100", "100"],
+                 field_width:  ["020", "075", "075", "360", "180", "120", "150", "120", "100", "100"],
                  field_align: ["c", "l", "l", "l","l", "l", "l", "l", "c", "c"]}
         };
 
