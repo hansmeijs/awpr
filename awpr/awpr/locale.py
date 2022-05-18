@@ -277,8 +277,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Corrector'] = TXT_Corrector
         dict['Corrector_2lines'] = pgettext_lazy('2 lines', 'Corrector')
         dict['Examiner'] = TXT_Examiner
-        dict['Teacher'] =  _('Teacher')
+        dict['Teacher'] = _('Teacher')
         dict['Analyze'] = _('Analyze')
+        dict['Download'] = _('Download')
+        dict['Archive'] = _('Archive')
         dict['System_administrator'] = _('System administrator')
         dict['System_administrator_2lines'] = pgettext_lazy('2 lines', 'System\nadministrator')
 
@@ -881,7 +883,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_subject_selected'] = TXT_No_subject_selected
         dict['No_exam_selected'] = _('No exam selected.')
 
-        dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_12ONLY
+        dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_123ONLY
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         # dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
         #dict['examtype_caption'] = c.EXAMTYPE_CAPTION
@@ -950,10 +952,16 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Maximum_score_2lines'] = pgettext_lazy('2 lines', 'Maximum\nscore')
         dict['Sequence_2lines'] = TXT_Sequence_2lines
         dict['Cesuur'] = _('Cesuur')
+        dict['Secret_exam'] = _('Secret exam')
+        dict['not_applicable'] = _('N.A.')
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
         dict['No_exam_linked_to_this_subject'] = _("There is no exam linked to this subject.")
         dict['This_exam_has_no_questions'] = _("This exam has no questions.")
+        dict['This_is_a_secret_exam_01'] = _("This exam will be taken at the Division of Exams.")
+        dict['This_is_a_secret_exam_02'] = _("You cannot enter scores.")
+        dict['This_is_a_secret_exam_03'] = _("The grade of this exam will be provided by the Division of Exams.")
+        dict['This_is_a_secret_exam_04'] = _("You can enter this exam grade in the page 'Grades'.")
         dict['No_questions_of'] = _("No questions of ")
         dict['One_question_of'] = _("One question of ")
         dict['questions_of'] = _(" questions of ")
@@ -1072,12 +1080,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
         dict['from_available_list'] = _('from the list of available subjects.')
 
-        dict['Please_select_examperiod'] = _('Please select an exam period in the horizontal black bar.')
+        dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
         dict['Please_select_examtype'] = _('Please select one exam type in the vertical grey bar at the left.')
-
-
-        dict['Please_select_schoolexam'] = _("First select the exam type 'School exam' in the vertical grey bar at the left.")
-        dict['Please_select_correct_exam'] = _("First select the correct exam type in the vertical grey bar at the left.")
 
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
@@ -1113,6 +1117,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Submit_Ex2_form'] = _('Submit Ex2 form')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
+        dict['Submit_Ex2'] = _('Submit Ex2')
+        dict['Submit_Ex2A'] = _('Submit Ex2A')
+
         dict['Approve_grade'] = _('Approve grade')
         dict['Approve_grades'] = _('Approve grades')
         dict['Block_grade'] = _('Block grade')
@@ -1187,10 +1194,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Final_grade'] = _('Final grade')
 
         dict['Herkansing_SE_grade_2lines'] = _('Herkansing\nschool exam')
-        dict['Re-examination_score'] = _('Re-examination\nscore')
-        dict['Re-examination_grade'] = _('Re-examination\ngrade')
-        dict['Third_period_score'] = _('Third period\nscore')
-        dict['Third_period_grade'] = _('Third period\ngrade')
+        #dict['Re_examination_score'] = _('Re-examination score')
+        dict['Re_examination_score_2lines'] = _('Re-examination\nscore')
+        dict['Re_examination_grade_2lines'] = _('Re-examination\ngrade')
+        #dict['Third_period_score_2lines'] = _('Third period\nscore')
+        dict['Third_period_grade_2lines'] = _('Third period\ngrade')
 
         dict['PE_score_twolines'] = _('PE-\nscore')
         dict['CE_score_twolines'] = _('CE-\nscore')

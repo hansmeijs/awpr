@@ -1737,7 +1737,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 (is_sector) ? "sector_abbrev" : null;
         const sel_value = (Number(el_select.value)) ? Number(el_select.value) : null;
         selected[pk_key_str] =  sel_value;
-        selected[caption_key_str] = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
+        selected[caption_key_str] = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
         console.log( "selected: ", selected)
 
@@ -2305,7 +2305,7 @@ document.addEventListener('DOMContentLoaded', function() {
             MSJTP_FillTbls();
 
         } else if (fldName === "base_id"){
-            document.getElementById("id_MSJT_name").value = el_input.options[el_input.selectedIndex].text;
+            document.getElementById("id_MSJT_name").value = el_input.options[el_input.selectedIndex].innerText;
         };
 
     }; // MSJT_SelectChange
@@ -2334,7 +2334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             MSJT_set_headertext();
 
         } else if (fldName === "base_id"){
-            document.getElementById("id_MSJT_name").value = el_input.options[el_input.selectedIndex].text;
+            document.getElementById("id_MSJT_name").value = el_input.options[el_input.selectedIndex].innerText;
         };
         //MSJT_validate_and_disable();
     }; // MSJT_InputKeyup

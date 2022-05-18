@@ -1440,9 +1440,9 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
 
     if function_first_letter_lc:
         if function_first_letter_lc in ('v', 'p'): # 'Voorzitter', 'Chairperson'
-            usergroups = 'auth1;read'
+            usergroups = 'archive;auth1;download;read'
         elif function_first_letter_lc == 's': # 'Secretaris', 'Secretary'
-            usergroups = 'auth2;read'
+            usergroups = 'archive;auth2;download;read'
         elif function_first_letter_lc == 'e':  # 'Examiner'
             usergroups = 'auth3;read'
         elif function_first_letter_lc == 'g': # 'Gecommitteerde',

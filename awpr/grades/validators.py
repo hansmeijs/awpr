@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 #######################################################
 def validate_update_grade(grade_instance, examgradetype, input_value, sel_examyear, si_dict):
     # PR2021-01-18 PR2021-09-19 PR2021-12-15 PR2021-12-25 PR2022-02-09 PR2022-04-16
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     # examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade
     # calculated fields are: 'sesrgrade', 'pecegrade', 'finalgrade'
 
@@ -37,6 +37,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
     # gradetypes are: 0: None, 1: number, 2: character (g, o, v)
     gradetype = si_dict.get('gradetype')
     no_ce_years = si_dict.get('no_ce_years')
+
 
     # weight_se = si_dict.get('weight_se')
     # weight_ce = si_dict.get('weight_ce')
@@ -60,6 +61,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
     # deprecated, use partial_exam instead. Was: st_additional_exam = student.additional_exam  # when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
     max_score, nex_id, cesuur, nterm = None, None, None, None
+    is_secret_exam = False
     if is_pe:
         exam = grade_instance.pe_exam
     else:
@@ -67,6 +69,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
 
     if exam:
         max_score = exam.scalelength
+        is_secret_exam = exam.secret_exam
         # nex_id = exam.nex_id
         # cesuur = exam.cesuur
         # nterm = exam.nterm
@@ -99,6 +102,12 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
     err_list = validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype)
     if err_list:
         error_list.extend(err_list)
+
+# - check if it is allowed to enter a score / grade because of is_secret_exam
+    if not error_list:
+        err_list = validate_grade_secret_exam(examperiod, is_secret_exam, is_score, is_grade)
+        if err_list:
+            error_list.extend(err_list)
 
 # - check if grade is published or authorized
     if not error_list:
@@ -448,6 +457,43 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
 # - end of validate_import_grade
 
 
+def validate_grade_secret_exam(examperiod, is_secret_exam, is_score, is_grade):  # PR2022-05-17
+    # - check if it is allowed to enter a score / grade because of is_secret_exam
+
+    err_list = []
+    if is_secret_exam:
+        if is_score:
+            col_name = '-'
+            if examperiod == c.EXAMPERIOD_FIRST:
+                col_name = _('CE grade')
+            elif examperiod == c.EXAMPERIOD_SECOND:
+                col_name = _('Re-examination grade')
+            elif examperiod == c.EXAMPERIOD_THIRD:
+                col_name = _('Third period grade')
+
+            err_list.extend(((
+                str(_('This exam is taken at the Division of Exams.')),
+                str(_('You cannot enter scores in this exam.')),
+                str(_('The grade of this exam will be provided by the Division of Exams.')),
+                str(_("You can enter this grade in the column '%(cpt)s'.") % {'cpt': col_name}))))
+    else:
+        if is_grade:
+            col_name = '-'
+            if examperiod == c.EXAMPERIOD_FIRST:
+                col_name = _('CE score')
+            elif examperiod == c.EXAMPERIOD_SECOND:
+                col_name = _('Re-examination score')
+            elif examperiod == c.EXAMPERIOD_THIRD:
+                col_name = _('Third period score')
+
+            err_list.extend(((
+                str(_('You cannot enter grades in this exam.')),
+                str(_("Enter the score in the column '%(cpt)s'.") % {'cpt': col_name}),
+                str(_('AWP will calculate the grade when the conversion table has been published.')))))
+
+    return err_list
+
+# - en of validate_grade_secret_exam
 def validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype):  # PR2021-12-11 PR2021-12-25
     # functions checks if examyear has no_practexam, sr_allowed, no_centralexam, no_thirdperiod
     # values of examgradetype are:

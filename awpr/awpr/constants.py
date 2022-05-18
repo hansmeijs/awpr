@@ -163,9 +163,10 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
                         {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')},
                         {'value': EXAMPERIOD_EXEMPTION, 'caption': _('Exemption')}]
 
-EXAMPERIOD_OPTIONS_12ONLY = [{'value': 12, 'caption': ''.join(('&#60', str(_('All examtypes')), '&#62'))},
+EXAMPERIOD_OPTIONS_123ONLY = [{'value': 12, 'caption': ''.join(('&#60', str(_('All examtypes')), '&#62'))},
                              {'value': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
-                            {'value': EXAMPERIOD_SECOND, 'caption': _('Re-examination')}]
+                            {'value': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
+                            {'value': EXAMPERIOD_THIRD, 'caption': _('Re-ex 3rd period')}]
 
 # examgradetypes are: 'segrade', 'srgrade', 'pescore', 'pegrade', 'cescore', 'cegrade
 EXAMGRADE_OPTIONS = [
@@ -496,7 +497,8 @@ USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
 USERGROUP_AUTH3_EXAM = 'auth3'
 USERGROUP_AUTH4_COM = 'auth4'
-USERGROUP_DOWNLOAD = 'dwnl'
+USERGROUP_DOWNLOAD = 'download'
+USERGROUP_ARCHIVE = 'archive'
 USERGROUP_ANALYZE = 'anlz'
 USERGROUP_ADMIN = 'admin'
 
@@ -509,6 +511,7 @@ USERGROUP_TUPLE = (
     USERGROUP_AUTH3_EXAM,
     USERGROUP_AUTH4_COM,
     USERGROUP_DOWNLOAD,
+    USERGROUP_ARCHIVE,
     USERGROUP_ANALYZE,
     USERGROUP_ADMIN
 )
@@ -522,6 +525,7 @@ USERGROUP_CAPTION = {
     USERGROUP_AUTH3_EXAM: _('Examiner'),
     USERGROUP_AUTH4_COM: _('Corrector'),
     USERGROUP_DOWNLOAD: _('Download'),
+    USERGROUP_ARCHIVE: _('Archive'),
     USERGROUP_ANALYZE: _('Analyze'),
     USERGROUP_ADMIN: _('System administrator')
 }

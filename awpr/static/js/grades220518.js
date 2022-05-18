@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
                                 "input", "div",  "input", "div",
                                 "input", "div", "input",
-                                "input", "div", "div", "div",  // PR2022-03-03 entering cegrades not allowed:  set from input to div
+                                "input", "div", "input", "div",
                                 "div"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
                                 "text", "status", "text", "status",
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "c"]},
 
         btn_reex:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                                  "Re-examination_score", "", "Re-examination_grade", ""],
+                                  "Re_examination_score_2lines", "", "Re_examination_grade_2lines", ""],
                     field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                   "cescore", "ce_status", "cegrade", "note_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
 
         btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                                  "Third_period_grade", "", ""],
+                                  "Third_period_grade_2lines", "", ""],
                     field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "cluster_name", "subj_code", "subj_name",
                                   "cegrade", "ce_status","note_status"], // 3d period has no score, is always 'geheim examen'
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
@@ -556,16 +556,16 @@ document.addEventListener("DOMContentLoaded", function() {
         let el_submenu = document.getElementById("id_submenu")
 
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2, function() {ModConfirmOpen("prelim_ex2")});
-        AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, function() {ModConfirmOpen("prelim_ex2a")});
+        if (permit_dict.permit_submit_grade){
+            AddSubmenuButton(el_submenu, loc.Submit_Ex2, function() {MAG_Open("submit_ex2")});
+        };
 
-        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
-        //AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
         if (permit_dict.permit_approve_grade){
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")});
         }
+        AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, function() {ModConfirmOpen("prelim_ex2a")});
         if (permit_dict.permit_submit_grade){
-            AddSubmenuButton(el_submenu, loc.Submit_Ex2_form, function() {MAG_Open("submit_ex2")});
-            AddSubmenuButton(el_submenu, loc.Submit_Ex2A_form, function() {MAG_Open("submit_ex2a")});
+            AddSubmenuButton(el_submenu, loc.Submit_Ex2A, function() {MAG_Open("submit_ex2a")});
         };
 
         AddSubmenuButton(el_submenu, loc.Ex3_form, function() {ModConfirmOpen("ex3")});
@@ -709,14 +709,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  HandleSbrPeriod  ================ PR2020-12-20
     function HandleSbrPeriod(el_select) {
-        //console.log("=== HandleSbrPeriod");
+        console.log("=== HandleSbrPeriod");
         //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         const sel_examperiod = (Number(el_select.value)) ? Number(el_select.value) : null;
         const filter_value = sel_examperiod;
 
 // --- fill selectbox examtype with examtypes of this period
+        // t_FillOptionsFromList(el_select, data_list, value_field, caption_field, select_text, select_text_none, selected_value, filter_field, filter_value)
+        console.log("loc.options_examtype", loc.options_examtype);
+        console.log("setting_dict.sel_examtype", setting_dict.sel_examtype);
+
         t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, "value", "caption",
-            loc.Select_examtype, loc.No_examtypes_found, "filter", filter_value);
+            loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype, "filter", filter_value);
 
 // ---  upload new setting and retrieve the tables that have been changed because of the change in examperiod
         const datalist_request = {
@@ -729,17 +733,22 @@ document.addEventListener("DOMContentLoaded", function() {
         DatalistDownload(datalist_request);
     };  // HandleSbrPeriod
 
-//=========  HandleSbrExamtype  ================ PR2020-12-20
+//=========  HandleSbrExamtype  ================ PR2020-12-20  PR2022-05-16
     function HandleSbrExamtype(el_select) {
-        console.log("=== HandleSbrExamtype");
+        console.log("===== HandleSbrExamtype =====");
         console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
-        setting_dict.sel_examtype = el_select.value;
-        const filter_value = Number(el_select.value);
-        //t_FillOptionsFromList(el_SBR_select_examtype, loc.options_examtype, "value", "caption",
-        //    loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype, "filter", filter_value);
 
-        //console.log( "setting_dict.sel_examtype: ", setting_dict.sel_examtype, typeof setting_dict.sel_examtype)
+        upload_examtype(el_select.value);
+
+    }  // HandleSbrExamtype
+
+//=========  upload_examtype  ================ PR2020-12-20 PR2022-05-16
+    function upload_examtype(new_examtype) {
+        console.log("----- upload_examtype -----");
+
+        // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
+        setting_dict.sel_examtype = new_examtype;
 
 // - not necessary, but to be on the safe side:
         setting_dict.sel_examperiod = (setting_dict.sel_examtype === "reex03") ? 3 :
@@ -755,8 +764,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
+        FillOptionsExamtype();
         FillTblRows();
-    }  // HandleSbrExamtype
+    }  // upload_examtype
+
 
 //=========  HandleSbrLevelSector  ================ PR2021-03-06 PR2021-12-03
     function HandleSbrLevelSector(mode, el_select) {
@@ -769,7 +780,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // - get new value from el_select
         const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
-        const sel_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
+        const sel_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
 // - put new value in setting_dict
         const sel_pk_key_str = (mode === "sector") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
@@ -804,7 +815,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  FillOptionsExamtype  ================ PR2021-03-08 PR2021-12-02 PR2022-04-13
     function FillOptionsExamtype() {
-        //console.log("=== FillOptionsExamtype");
+        console.log("=== FillOptionsExamtype");
         const has_practexam = !setting_dict.no_practexam;
         const sr_allowed = !!setting_dict.sr_allowed;
         const has_centralexam = !setting_dict.no_centralexam;
@@ -855,7 +866,11 @@ document.addEventListener("DOMContentLoaded", function() {
                         display_rows.push(row);
                 };
             };
-        //console.log("display_rows", display_rows);
+        console.log("loc.options_examtype", loc.options_examtype);
+        console.log("setting_dict.sel_examtype", setting_dict.sel_examtype);
+
+        // t_FillOptionsFromList(el_select, data_list, value_field, caption_field, select_text, select_text_none, selected_value, filter_field, filter_value)
+
             t_FillOptionsFromList(el_SBR_select_examtype, display_rows, "value", "caption",
                 loc.Select_examtype + "...", loc.No_examtypes_found, setting_dict.sel_examtype);
             document.getElementById("id_SBR_container_examtype").classList.remove(cls_hide);
@@ -894,10 +909,11 @@ document.addEventListener("DOMContentLoaded", function() {
             const selected_pk = (tblName === "level") ? setting_dict.sel_lvlbase_pk : (tblName === "sector") ? setting_dict.sel_sctbase_pk : null;
             const el_SBR_select = (tblName === "level") ? el_SBR_select_level : (tblName === "sector") ? el_SBR_select_sector : null;
             if (el_SBR_select){
+
                 t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
             // put displayed text in setting_dict
-                const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
+                const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
                 if (tblName === "level"){
                     setting_dict.sel_level_abbrev = sel_abbrev;
                 } else if (tblName === "sector"){
@@ -1155,7 +1171,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // --- add right padding in examnumber
                     if(field_name === "examnumber"){
                         el_header.classList.add("pr-2")
-                    } else if (["se_status", "sr_status", "pe_status", "ce_status"].indexOf(field_name) > -1) {
+                    } else if (["se_status", "sr_status", "pe_status", "ce_status"].includes(field_name)) {
                         el_header.classList.add("diamond_0_0")
                     } else if(field_name === "note_status"){
                          // dont show note icon when user has no permit_read_note
@@ -1288,7 +1304,16 @@ document.addEventListener("DOMContentLoaded", function() {
                     el.setAttribute("data-field", field_name);
 
         // --- add data-field Attribute when input element
+
+
                     if (field_tag === "input") {
+
+                        const may_edit = permit_dict.requsr_same_school && permit_dict.permit_crud;
+                        const is_readonly = (!may_edit) ? true :
+                                            (data_dict.secret_exam) ?
+                                            (["pescore", "cescore"].includes(field_name)) :
+                                            (["pegrade", "cegrade"].includes(field_name))
+
                         el.setAttribute("type", "text")
                         el.setAttribute("autocomplete", "off");
                         el.setAttribute("ondragstart", "return false;");
@@ -1297,7 +1322,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                         el.classList.add("input_text");
 
-                        const may_edit = permit_dict.requsr_same_school && permit_dict.permit_crud;
         // --- add EventListener
                         if (may_edit){
                             el.addEventListener("change", function(){HandleInputChange(el)});
@@ -1310,7 +1334,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // --- add width, text_align, right padding in examnumber
                     // >>> td.classList.add(class_width, class_align);
-                    if(["fullname", "subj_name"].indexOf(field_name) > -1){
+                    if(["fullname", "subj_name"].includes(field_name)){
                         // dont set width in field student and subject, to adjust width to length of name
                         // >>> el.classList.add(class_align);
                         el.classList.add(class_width, class_align);
@@ -1661,7 +1685,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
         // This is not necessary: (event.key === "Tab" && event.shiftKey === true)
         // Tab and shift-tab move cursor already to next / prev element
-        if (["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.key) > -1) {
+        if (["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
 // --- get move_horizontal and move_vertical based on event.key and event.shiftKey
             // in page grades cursor goes down when clicked om Emter key
             let move_horizontal = (event.key === "ArrowRight") ? 1 :
@@ -2327,10 +2351,15 @@ document.addEventListener("DOMContentLoaded", function() {
         } else if (["prelim_ex2", "prelim_ex2a"].includes(mode)){
             el_confirm_header.innerText = loc.Download_Ex_form;
             el_confirm_loader.classList.add(cls_visible_hide)
-            el_confirm_msg_container.className = "p-3";
-            const exform_txt = (mode === "prelim_ex2") ? loc.The_preliminary_Ex2a_form : loc.The_preliminary_ex2a_form;
-            const msg_html = "<p>" + exform_txt + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
-            el_confirm_msg_container.innerHTML = msg_html;
+            const exform_txt = (mode === "prelim_ex2") ? loc.The_preliminary_ex2_form : loc.The_preliminary_ex2a_form;
+
+            let msg_html = ["<p>", exform_txt, loc.will_be_downloaded, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
+            if ((mode === "prelim_ex2a")){
+                msg_html += ["<div class='m-2 p-2 border_bg_message'>", loc.MAG_info.subheader_submit_ex2a_2,
+                             loc.MAG_info.subheader_submit_ex2a_3, "</div>"].join(" ");
+            };
+            el_confirm_msg_container.innerHTML = msg_html
+
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 const url_str = (mode === "prelim_ex2") ? urls.url_grade_download_ex2 : urls.url_grade_download_ex2a;
@@ -2451,21 +2480,44 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("===  MAG_Open  =====") ;
         console.log("mode", mode) ;
         console.log("setting_dict", setting_dict) ;
+        console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod, typeof setting_dict.sel_examperiod) ;
+        console.log("selected_btn", selected_btn, typeof selected_btn) ;
         // mode = 'approve' or 'submit_ex2' or 'submit_ex2a'
 
         b_clear_dict(mod_MAG_dict);
 
 // --- check sel_examperiod
+        let msg_html = null;
         if (![1,2,3].includes(setting_dict.sel_examperiod) ){
-            b_show_mod_message_html(loc.Please_select_examperiod);
+            msg_html = loc.Please_select_examperiod;
         // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
         } else if (!["se", "pe", "ce", "reex", "reex03", "exem"].includes(setting_dict.sel_examtype) ){
-            b_show_mod_message_html(loc.Please_select_examtype);
-        } else if (mode === "submit_ex2" && setting_dict.sel_examtype !== "se") {
-            b_show_mod_message_html(loc.Please_select_schoolexam);
-        } else if (mode === "submit_ex2a" && !["ce", "reex", "reex03"].includes(setting_dict.sel_examtype) ){
-            b_show_mod_message_html(loc.Please_select_correct_exam);
+            msg_html = loc.Please_select_examtype;
+        } else if (mode === "submit_ex2") {
+            if (setting_dict.sel_examtype !== "se") {
+                upload_examtype("se");
+            };
+        } else if (mode === "submit_ex2a") {
+            if (selected_btn === "btn_ep_01"){
+                if (setting_dict.sel_examtype !== "ce") {
+                    upload_examtype("ce");
+                };
+            } else if (selected_btn === "btn_reex"){
+                if (setting_dict.sel_examtype !== "reex") {
+                    upload_examtype("reex");
+                };
+            } else if (selected_btn === "btn_reex03"){
+                if (setting_dict.sel_examtype !== "reex03") {
+                    upload_examtype("reex03");
+                };
+            } else{
+                msg_html = loc.Please_select_examperiod;
+            };
+        };
+        if (msg_html) {
+            b_show_mod_message_html(msg_html);
         } else {
+
 
 // PR2022-03-13 debug: also check on allowed subjects, levels and clusters
 
@@ -4556,9 +4608,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
         // PR2021-05-02 field "srgrade" added, TODO no validations yet
         const err_list = loc.grade_err_list
-        const is_score = (["pescore", "cescore"].indexOf(fldName) > -1);
-        const is_grade = (["segrade", "srgrade", "pegrade", "cegrade"].indexOf(fldName) > -1);
-        const is_pe_or_ce = (["pescore", "pegrade", "cescore", "cegrade"].indexOf(fldName) > -1);
+        const is_score = (["pescore", "cescore"].includes(fldName));
+        const is_grade = (["segrade", "srgrade", "pegrade", "cegrade"].includes(fldName));
+        const is_pe_or_ce = (["pescore", "pegrade", "cescore", "cegrade"].includes(fldName));
         //const is_se = (fldName in ["segrade", "srgrade"]);
         //console.log("is_score", is_score, "is_grade", is_grade)
 
@@ -4596,7 +4648,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                     }
                 } else if(dict.is_combi){
 // 6. Corona: reexamination not allowed for combination subjects, except when combi_reex_allowed
-                    if([2, 3].indexOf(dict.examperiod) > -1) {
+                    if([2, 3].includes(dict.examperiod)) {
                         if(!combi_reex_allowed){
                             msg_html = err_list.reex_combi_notallowed;
                         }
@@ -4654,7 +4706,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                                 (fldName ==="pegrade") ? "Praktijkcijfer" :
                                 (fldName ==="cegrade") ? "CE-cijfer" : null;
                             msg_html = caption +  err_list.notallowed_in_combi;
-                        } else if([2, 3].indexOf(dict.examperiod) > -1) {
+                        } else if([2, 3].includes(dict.examperiod)) {
                             // 'PR2020-05-15 Corona: herkansing wel mogelijk bij combivakken
                             if(!combi_reex_allowed){
                                 msg_html = err_list.reex_notallowed_in_combi;

@@ -45,13 +45,13 @@ MENUS_ITEMS = {
 MENUS_DICT = {
     'page_examyear': {'caption': _('Exam year'), 'href': 'examyears_url', 'width': 100},
     'page_school': {'caption': _('School'), 'href': 'schools_url', 'width': 90},
-    'page_subject': {'caption': _('Subjects'), 'href': 'subjects_url', 'width': 100},
+    'page_subject': {'caption': _('Subject schemes'), 'href': 'subjects_url', 'width': 120},
     'page_student': {'caption': _('Candidates'), 'href': 'students_url', 'width': 120},
     'page_studsubj': {'caption': _('Subjects'), 'href': 'studentsubjects_url', 'width': 100},
-    'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 130},
-    'page_exams': {'caption': _('Exams'), 'href': 'exams_url', 'width': 130},
-    'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 120},
-    'page_result': {'caption': _('Results'), 'href': 'results_url', 'width': 120},
+    'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 120},
+    'page_exams': {'caption': _('Exams'), 'href': 'exams_url', 'width': 100},
+    'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 100},
+    'page_result': {'caption': _('Results'), 'href': 'results_url', 'width': 100},
     'page_report': {'caption': _('Reports'), 'href': 'url_archive', 'width': 120},
     'page_archive': {'caption': _('Archive'), 'href': 'url_archive', 'width': 90},
     'page_analysis': {'caption':  _('Analysis'), 'href': 'url_archive', 'width': 90}

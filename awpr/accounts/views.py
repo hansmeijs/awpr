@@ -296,7 +296,8 @@ class UserUploadView(View):
                             if is_same_schoolbase:
                                 new_usergroups = ';'.join((c.USERGROUP_READ, c.USERGROUP_EDIT))
                             else:
-                                new_usergroups = ';'.join((c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_ADMIN))
+                                new_usergroups = ';'.join((c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_DOWNLOAD,
+                                                           c.USERGROUP_ARCHIVE, c.USERGROUP_ADMIN))
 
                             new_user_pk, err_dict, ok_dict = \
                                 create_or_validate_user_instance(

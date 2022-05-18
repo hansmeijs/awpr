@@ -234,6 +234,8 @@ urlpatterns = [
         path('student_upload', student_views.StudentUploadView.as_view(), name='url_student_upload'),
         path('student_biscand', student_views.StudentLinkStudentView.as_view(), name='url_student_biscand'),
 
+        path('download_student_xlsx', grade_excel.StudentDownloadXlsxView.as_view(), name='url_download_student_xlsx'),
+
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
         path('studsubj_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
         path('studsubj_single_update', student_views.StudentsubjectSingleUpdateView.as_view(), name='url_studsubj_single_update'),

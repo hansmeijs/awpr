@@ -1049,7 +1049,7 @@
 
             //PR2022-01-08 dont put 'All profielen' etc in setting_dict > skip when caption_all has value
             if (!caption_all){
-                const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
+                const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
                 if (tblName === "lvlbase"){
                     setting_dict.sel_level_abbrev = sel_abbrev;
                 } else if (tblName === "sctbase"){
@@ -1420,7 +1420,7 @@
         //console.log("el_tagName", el_tagName);
                                     let el_value = null;
                                     if (el_tagName === "select"){
-                                        el_value = el.options[el.selectedIndex].text;
+                                        el_value = el.options[el.selectedIndex].innerText;
                                     } else if (el_tagName === "input"){
                                         el_value = el.value;
                                     } else if (el_tagName === "a"){
@@ -1574,8 +1574,8 @@
 
 //========= t_Filter_TableRows  ==================================== PR2020-08-17  PR2021-08-10
     function t_Filter_TableRows(tblBody_datatable, filter_dict, selected, count_unit_sing, count_unit_plur ) {
-        console.log( "===== t_Filter_TableRows  ========= ");
-        console.log( "filter_dict", filter_dict);
+        //console.log( "===== t_Filter_TableRows  ========= ");
+        //console.log( "filter_dict", filter_dict);
 
         selected.item_count = 0
 // ---  loop through tblBody.rows
@@ -1959,12 +1959,12 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
         let upload_dict = {};
         if (mode === "level"){
             setting_dict.sel_lvlbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
-            setting_dict.sel_level_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
+            setting_dict.sel_level_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
             upload_dict = {selected_pk: {sel_lvlbase_pk: setting_dict.sel_lvlbase_pk}};
         } else if (mode === "sector"){
             setting_dict.sel_sctbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
-            setting_dict.sel_sector_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].text : null;
+            setting_dict.sel_sector_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
             upload_dict = {selected_pk: {sel_sctbase_pk: setting_dict.sel_sctbase_pk}};
         }
@@ -2028,7 +2028,7 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
         t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
         // put displayed text in setting_dict
-        const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].text : null;
+        const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
         if (tblName === "level"){
             setting_dict.sel_level_abbrev = sel_abbrev;
         } else if (tblName === "sector"){

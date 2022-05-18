@@ -71,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
+    urls.url_download_student_xlsx = get_attr_from_el(el_data, "data-url_download_student_xlsx");
     urls.url_studsubj_validate_scheme = get_attr_from_el(el_data, "data-url_studsubj_validate_scheme");
 
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
@@ -439,7 +440,9 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open(loc, "import_student")}, null, "id_submenu_import");
+            //AddSubmenuButton(el_submenu, loc.Download_student_data, null, [], "id_submenu_download_studentxlsx", urls.url_download_student_xlsx, true);  // true = download
         };
+
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_student")}, [], "id_submenu_columns")
         el_submenu.classList.remove(cls_hide);
 

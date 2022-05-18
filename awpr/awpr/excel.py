@@ -23,6 +23,7 @@ from awpr import settings as s
 from awpr import library as awpr_lib
 
 from schools import models as sch_mod
+from students import views as stud_view
 from subjects import views as subj_view
 
 import xlsxwriter
@@ -861,7 +862,7 @@ class GradeDownloadEx2aView(View):  # PR2022-02-17 PR2022-05-09
     # - get text from examyearsetting
                     library = awpr_lib.get_library(sel_examyear, ['exform', 'ex2', 'ex2a'])
 
-# +++ create Ex2_xlsx
+# +++ create ex2_ex2a_xlsx
                     save_to_disk = False
                     # just to prevent PyCharm warning on published_instance=published_instance
                     published_instance = sch_mod.School.objects.get_or_none(pk=None)
@@ -950,7 +951,7 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, examp
     # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
     # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
     subject_row_count, subject_pk_list, subject_code_list, subjects_dict = \
-        create_exform_mapped_subject_rows(examyear, school, department)
+        create_exform_mapped_subject_rows(examyear, school, department, is_ex2a, False)  # is_ex5 = False)
 
     if logging_on:
         logger.debug('subject_row_count: ' + str(subject_row_count))
@@ -1123,11 +1124,17 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, examp
             # skip ex2_rows_dict_totals
             if isinstance(key, int):
                 # in subject column 'field_name' is subject_id
+
+                row_index += 2
+
+# ---  write level header if level exists
                 lvl_name = level_dict.get('lvl_name')
+                if lvl_name:
+                    sheet.write(row_index, 0, lvl_name, bold_format)
+                    row_index += 2
                 students_dict = level_dict.get('students')
 
-# ---  level header row
-                row_index += 2
+# ---  write table header
 
                 for i, field_caption in enumerate(ex2_formats['field_captions']):
                     sheet.write(row_index, i, field_caption, ex2_formats['header_formats'][i])
@@ -1163,17 +1170,17 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, examp
                                 logger.debug('value: ' + str(value))
                         sheet.write(row_index, i, value, exc_format)
 
-        # end of iterate through levels,
-# ++++++++++++++++++++++++++++
 
 # ---  table footer row
-        row_index += 1
-        for i, field_name in enumerate(ex2_formats['field_names']):
-            if i == 0:
-                sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
-            else:
-                sheet.write(row_index, i, ex2_formats['field_captions'][i], ex2_formats['header_formats'][i])
+                row_index += 1
+                for i, field_name in enumerate(ex2_formats['field_names']):
+                    if i == 0:
+                        sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
+                    else:
+                        sheet.write(row_index, i, ex2_formats['field_captions'][i], ex2_formats['header_formats'][i])
 
+        # end of iterate through levels,
+# ++++++++++++++++++++++++++++
 # ---  footnote row
         row_index += 2
         first_footnote_row = row_index
@@ -2012,8 +2019,11 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
                 "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ",
 
                 "st.regnumber AS regnr, st.diplomanumber AS dipnr, st.gradelistnumber AS glnr,",
-                "st.iseveningstudent AS evest, st.islexstudent AS lexst, st.bis_exam AS bisst, st.partial_exam AS partst,"
-                "st.withdrawn AS wdr, st.gl_ce_avg AS c_avg, st.gl_combi_avg AS combi_avg, st.gl_final_avg AS f_avg, st.result,"
+                "st.iseveningstudent AS evest, st.islexstudent AS lexst, st.bis_exam AS bisst, st.partial_exam AS partst, st.withdrawn AS wdr,"
+                
+                "st.ep01_ce_avg, st.ep01_combi_avg, st.ep01_final_avg, st.ep01_result,"
+                "st.ep02_ce_avg, st.ep02_combi_avg, st.ep02_final_avg, st.ep02_result,"
+                "st.gl_ce_avg, st.gl_combi_avg, st.gl_final_avg, st.result,"
 
                 "subj.id AS subj_id, grd_arr.e, grd_arr.s, grd_arr.c, grd_arr.f, ",
 
@@ -2112,9 +2122,20 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
                     'bisst': row.get('bisst', False),
                     'partst': row.get('partst', False),
                     'wdr': row.get('wdr', False),
-                    'c_avg': row.get('c_avg'),
-                    'combi_avg': row.get('combi_avg'),
-                    'f_avg': row.get('f_avg'),
+
+                    'ep01_ce_avg': row.get('ep01_ce_avg'),
+                    'ep01_combi_avg': row.get('ep01_combi_avg'),
+                    'ep01_final_avg': row.get('ep01_final_avg'),
+                    'ep01_result': row.get('ep01_result'),
+
+                    'ep02_ce_avg': row.get('ep02_ce_avg'),
+                    'ep02_combi_avg': row.get('ep02_combi_avg'),
+                    'ep02_final_avg': row.get('ep02_final_avg'),
+                    'ep02_result': row.get('ep02_result'),
+
+                    'gl_ce_avg': row.get('gl_ce_avg'),
+                    'gl_combi_avg': row.get('gl_combi_avg'),
+                    'gl_final_avg': row.get('gl_final_avg'),
                     'result': row.get('result')
                 },
                 'subj': {},
@@ -2195,12 +2216,23 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
 # --- end of create_ex5_rows_dict
 
 #@@@@@@@@@@@@@@@@@@@@@@@
-def create_exform_mapped_subject_rows(examyear, school, department):  # PR2021-08-08
+def create_exform_mapped_subject_rows(examyear, school, department, is_ex2a, is_ex5):  # PR2021-08-08 PR2022-05-16
     # function gets all subjects of studsubj of this dep, not tobedeleted
     # - creates list of subject_codes and list of subject_pk's
     # - both sorted by subjbase.code
     # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
     # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
+
+    #Pr2022-05-16 added: filter on weighing
+    filter_weighing = ''
+    # ex5 shows all subjects
+    if not is_ex5:
+        # ex2a shows only subjects with weight_ce > 0
+        if is_ex2a:
+            filter_weighing = 'AND si.weight_ce > 0'
+        else:
+        # ex2 shows only subjects with weight_se > 0 (all subjects have weight_se > 0)
+            filter_weighing = 'AND si.weight_se > 0'
 
     subject_code_list = []
     subject_pk_list = []
@@ -2215,7 +2247,9 @@ def create_exform_mapped_subject_rows(examyear, school, department):  # PR2021-0
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT AND NOT studsubj.tobedeleted",
+        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
+        "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted",
+        filter_weighing,
         "GROUP BY subj.id, subjbase.code",
         "ORDER BY LOWER(subjbase.code)"
     ]
@@ -2257,7 +2291,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
     # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
     # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
     subject_row_count, subject_pk_list, subject_code_list, subjects_dict = \
-        create_exform_mapped_subject_rows(examyear, school, department)
+        create_exform_mapped_subject_rows(examyear, school, department, False, True) # is_ex2a = False, is_ex5 = True)
 
     if logging_on:
         logger.debug('subject_row_count: ' + str(subject_row_count))
@@ -2396,7 +2430,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         #    sheet.write(row_index, i, ex5_formats['field_captions'][i], ex5_formats['header_formats'][i])
 
 # ++++++++++++++++++++++++++++
-# iterate through levels - levels don't have headers in Ex5
+# iterate through levels - levels have headers in Ex5
 
         for key, level_dict in ex5_rows_dict.items():
 
@@ -3692,6 +3726,307 @@ def create_formats(book):
 
     return formats
 # - end of create_formats
+
+
+############ DOWNLOAD STUDENT DATA ########################## PR2022-05-18
+@method_decorator([login_required], name='dispatch')
+class StudentDownloadXlsxView(View):  # PR2022-05-18
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= StudentDownloadXlsxView ============= ')
+        # function xlsx file with student data
+        response = None
+        #try:
+        if True:
+            if request.user and request.user.country and request.user.schoolbase:
+                req_user = request.user
+
+    # - reset language
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+    # - get selected examyear, school and department from usersettings
+                sel_examyear_instance, sel_scheme_pk = \
+                    dl.get_selected_examyear_scheme_pk_from_usersetting(request)
+
+                # TODO set sel_scheme_pk not working properly, set None for now
+                sel_scheme_pk = None
+
+    # - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if sel_examyear and sel_school and sel_department:
+
+    # +++ get dict of subjects of these studsubj_rows
+                    student_rows = stud_view.create_student_rows(
+                        sel_examyear=sel_examyear,
+                        sel_schoolbase=sel_school.base,
+                        sel_depbase=sel_department.base,
+                        append_dict={}
+                    )
+                    if student_rows:
+                        response = create_student_xlsx(sel_examyear_instance, student_rows, user_lang)
+
+        #except:
+        #    raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of StudentDownloadXlsxView
+
+
+# +++++++++++ Scheme list ++++++++++++
+def create_student_xlsx(examyear, student_rows, user_lang):  # PR2022-05-18
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_student_xlsx -----')
+        logger.debug('student_rows: ' + str(student_rows))
+
+    # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
+    # logger.debug('period_dict: ' + str(period_dict))
+    """
+     ([{'id': 5626, 'base_id': 5635, 's_id': 17, 's_locked': False, 'ey_locked': False, 'dep_id': 5, 
+     'lvl_id': None, 'sct_id': 11, 'scheme_id': 81, 'depbase_id': 2, 'lvlbase_id': None, 'sctbase_id': 11, 
+     'dep_abbrev': 'H.A.V.O.', 'db_code': 'Havo', 'lvl_req': False, 'lvl_abbrev': None, 'sct_req': True, 'sct_abbrev': 'c&m', 
+     'scheme_name': 'Havo - c&m', 'dep_has_profiel': True, 'mapid': 'student_5626', 
+     'fullname': 'Balentina, Sinai Ester Veronica', 'lastname': 'Balentina', 'firstname': 'Sinai Ester Veronica', 
+     'prefix': None, 'gender': 'V', 'idnumber': '2004021305', 
+     'birthdate': datetime.date(2004, 2, 13), 'birthcountry': 'Curacao', 'birthcity': 'Willemstad', 
+     'classname': '5', 'examnumber': '2', 'regnumber': 'CUR1822200021', 
+     'diplomanumber': None, 'gradelistnumber': None, 'has_dyslexie': False, 
+     'iseveningstudent': True, 'islexstudent': False, 'bis_exam': False, 'partial_exam': False, 
+     'linked': None, 'notlinked': None, 'sr_count': 0, 
+     'reex_count': 0, 'reex03_count': 0, 
+     'withdrawn': False, 'gl_ce_avg': None, 'gl_combi_avg': '7', 'gl_final_avg': None, 'result': 0, 
+     'result_status': 'Geen uitslag', 
+     'result_info': 'Uitslag:|     GEEN UITSLAG|     Centraal examen: pa,wa,ec,gs,sptl,netl,entl niet ingevuld', 'tobedeleted': False, 'modifiedby_id': 66, 'modifiedat': datetime.datetime(2022, 5, 12, 21, 0, 21, 621602, tzinfo=<UTC>), 'modby_username': 'M_Lacroes', 'name_first_init': 'Balentina, Sinai E.V.'}, {'id': 5627, 'base_id': 5636, 's_id': 17, 's_locked': False, 'ey_locked': False, 'dep_id': 5, 'lvl_id': None, 'sct_id': 11, 'scheme_id': 81, 'depbase_id': 2, 'lvlbase_id': None, 'sctbase_id': 11, 'dep_abbrev': 'H.A.V.O.', 'db_code': 'Havo', 'lvl_req': False, 'lvl_abbrev': None, 'sct_req': True, 'sct_abbrev': 'c&m', 'scheme_name': 'Havo - c&m', 'dep_has_profiel': True, 'mapid': 'student_5627', 'fullname': 'Attaf, Sayina Sakira Mary', 'lastname': 'Attaf', 'firstname': 'Sayina Sakira Mary', 'prefix': None, 'gender': 'V', 'idnumber': '2005053003', 'birthdate': datetime.date(2005, 5, 30), 'birthcountry': 'Curacao', 'birthcity': 'Willemstad', 'classname': '5', 'examnumber': '3', 'regnumber': 'CUR1822200031', 'diplomanumber': None, 'gradelistnumber': None, 'has_dyslexie': False, 'iseveningstudent': True, 'islexstudent': False, 'bis_exam': False, 'partial_exam': False, 'linked': None, 'notlinked': None, 'sr_count': 0, 'reex_count': 0, 'reex03_count': 0, 'withdrawn': False, 'gl_ce_avg': None, 'gl_combi_avg': '8', 'gl_final_avg': None, 'result': 0, 'result_status': 'Geen uitslag', 'result_info': 'Uitslag:|     GEEN UITSLAG|     Centraal examen: pa,wa,ec,gs,sptl,entl,netl niet ingevuld', 'tobedeleted': False, 'modifiedby_id': 66, 'modifiedat': datetime.datetime(2022, 5, 12, 18, 34, 13, 912165, tzinfo=<UTC>), 'modby_username': 'M_Lacroes', 'name_first_init': 'Attaf, Sayina S.M.'}, {'id': 5628, 'base_id': 5637, 's_id': 17, 's_locked': False, 'ey_locked': False, 'dep_id': 5, 'lvl_id': None, 'sct_id': 11, 'scheme_id': 81, 'depbase_id': 2, 'lvlbase_id': None, 'sctbase_id': 11, 'dep_abbrev': 'H.A.V.O.', 'db_code': 'Havo', 'lvl_req': False, 'lvl_abbrev': None, 'sct_req': True, 'sct_abbrev': 'c&m', 'scheme_name': 'Havo - c&m', 'dep_has_profiel': True, 'mapid': 'student_5628', 'fullname': 'Borgschot Bonifastia, Alexa Maxima', 'lastname': 'Borgschot Bonifastia', 'firstname': 'Alexa Maxima', 'prefix': None, 'gender': 'V', 'idnumber': '2003101704', 'birthdate': datetime.date(2003, 10, 17), 'birthcountry': 'Curacao', 'birthcity': 'Willemstad', 'classname': '5', 'examnumber': '4', 'regnumber': 'CUR1822200041', 'diplomanumber': None, 'gradelistnumber': None, 'has_dyslexie': False, 'iseveningstudent': True, 'islexstudent': False, 'bis_exam': False, 'partial_exam': False, 'linked': None, 'notlinked': None, 'sr_count': 0, 'reex_count': 0, 'reex03_count': 0, 'withdrawn': False, 'gl_ce_avg': None, 'gl_combi_avg': None, 'gl_final_avg': None, 'result': 0, 'result_status': None, 'result_info': None, 'tobedeleted': False, 'modifiedby_id': 66, 'modifiedat': datetime.datetime(2022, 5, 12, 21, 0, 38, 525399, tzinfo=<UTC>), 'modby_username': 'M_Lacroes', 'name_first_init': 'Borgschot Bonifastia, Alexa M.'}, {'id': 5629, 'base_id': 5638, 's_id': 17, 's_locked': False, 'ey_locked': False, 'dep_id': 5, 'lvl_id': None, 'sct_id': 11, 'scheme_id': 81, 'depbase_id': 2, 'lvlbase_id': None, 'sctbase_id': 11, 'dep_abbrev': 'H.A.V.O.', 'db_code': 'Havo', 'lvl_req': False, 'lvl_abbrev': None, 'sct_req': True, 'sct_abbrev': 'c&m', 'scheme_name': 'Havo - c&m', 'dep_has_profiel': True, 'mapid': 'student_5629', 'fullname': 'Cijntje, Nemice', 'lastname': 'Cijntje', 'firstname': 'Nemice', 'prefix': None, 'gender': 'V', 'idnumber': '20000000', 'birthdate': None, 'birthcountry': None, 'birthcity': None, 'classname': '5', 'examnumber': '5', 'regnumber': 'CUR1822200051', 'diplomanumber': None, 'gradelistnumber': None, 'has_dyslexie': False, 'iseveningstudent': True, 'islexstudent': False, 'bis_exam': False, 'partial_exam': False, 'linked': None, 'notlinked': None, 'sr_count': 0, 'reex_count': 0, 'reex03_count': 0, 'withdrawn': False, 'gl_ce_avg': None, 'gl_combi_avg': None, 'gl_final_avg': None, 'result': 0, 'result_status': None, 'result_info': None, 'tobedeleted': False, 'modifiedby_id': 66, 'modifiedat': datetime.datetime(2022, 5, 12, 21, 0, 45, 140564, tzinfo=<UTC>), 'modby_username': 'M_Lacroes', 'name_first_init': 'Cijntje, Nemice'}, {'id': 5630, 'base_id': 5639, 's_id': 17, 's_locked': False, 'ey_locked': False, 'dep_id': 5, 'lvl_id': None, 'sct_id': 11, 'scheme_id': 81, 'depbase_id': 2, 'lvlbase_id': None, 'sctbase_id': 11, 'dep_abbrev': 'H.A.V.O.', 'db_code': 'Havo', 'lvl_req': False, 'lvl_abbrev': None, 'sct_req': True, 'sct_abbrev': 'c&m', 'scheme_name': 'Havo - c&m', 'dep_has_profiel': True, 'mapid': 'student_5630', 'fullname': 'Evertsz, Terrence Raymond ', 'lastname': 'Evertsz', 'firstname': 'Terrence Raymond ', 'prefix': None, 'gender': 'M', 'idnumber': '2003140705', 'birthdate': None, 'birthcountry': 'Curacao', 'birthcity': 'Willemstad', 'classname': '5', 'examnumber': '6', 'regnumber': 'CUR1812200061', 'diplomanumber': None, 'gradelistnumber': None, 'has_dyslexie': False, 'iseveningstudent': True, 'islexstudent': False, 'bis_exam': False, 'partial_exam': False, 'linked': None, 'notlinked': None, 'sr_count': 0, 'reex_count': 0, 'reex03_count': 0, 'withdrawn': False, 'gl_ce_avg': None, 'gl_combi_avg': None, 'gl_final_avg': None, 'result': 0, 'result_status': None, 'result_info': None, 'tobedeleted': False, 'modifiedby_id': 66, 'modifiedat': datetime.datetime(2022, 5, 12, 21, 0, 55, 920957, tzinfo=<UTC>), 'modby_username': 'M_Lacroes', 'name_first_init': 'Evertsz, Terrence R.'}, {'id': 5631, 'base_id': 5640, 's_id': 17, 's_locked': False, 'ey_locked': False, 'dep_id': 5, 'lvl_id': None, 'sct_id': 10, 'scheme_id': 80, 'depbase_id': 2, 'lvlbase_id': None, 'sctbase_id': 10, 'dep_abbrev': 'H.A.V.O.', 'db_code': 'Havo', 'lvl_req': False, 'lvl_abbrev': None, 'sct_req': True, 'sct_abbrev': 'e&m', 'scheme_name': 'Havo - e&m', 'dep_has_profiel': True, 'mapid': 'student_5631', 'fullname': 'Gomes Baltazar, Sukayla Clemensa', 'lastname': 'Gomes Baltazar', 'firstname': 'Sukayla Clemensa', 'prefix': None, 'gender': 'V', 'idnumber': '2004091705', 'birthdate':
+    """
+    response = None
+
+    def get_student_rows(self, sel_examyear, sel_schoolbase, sel_depbase):
+        # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-05-18
+        # - show only students that are not tobedeleted
+        if logging_on:
+            logger.debug(' ----- get_student_rows -----')
+
+        student_rows = []
+
+        sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
+        sql_list = ["SELECT stud.id, stud.base_id, stud.school_id AS s_id,",
+                    "sch.locked AS s_locked, ey.locked AS ey_locked, ",
+                    "stud.department_id AS dep_id, stud.level_id AS lvl_id, stud.sector_id AS sct_id, stud.scheme_id,",
+                    "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id, "
+                    "dep.abbrev AS dep_abbrev, db.code AS db_code,",
+                    "dep.level_req AS lvl_req, lvl.abbrev AS lvl_abbrev,",
+                    "dep.sector_req AS sct_req, sct.abbrev AS sct_abbrev, scheme.name AS scheme_name,",
+                    "dep.has_profiel AS dep_has_profiel, sct.abbrev AS sct_abbrev,",
+                    "CONCAT('student_', stud.id::TEXT) AS mapid,",
+
+                    "CONCAT_WS (' ', stud.prefix, CONCAT(stud.lastname, ','), stud.firstname) AS fullname,",
+                    "stud.lastname, stud.firstname, stud.prefix, stud.gender,",
+                    "stud.idnumber, stud.birthdate, stud.birthcountry, stud.birthcity,",
+
+                    "stud.classname, stud.examnumber, stud.regnumber, stud.diplomanumber, stud.gradelistnumber,",
+                    "stud.has_dyslexie, stud.iseveningstudent, stud.islexstudent,",
+                    "stud.bis_exam, stud.partial_exam,",
+
+                    "st.modifiedby_id, st.modifiedat,",
+                    "SUBSTRING(au.username, 7) AS modby_username",
+
+                    "FROM students_student AS st",
+                    "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                    "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                    "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
+                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+                    "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+                    "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
+                    "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
+                    "WHERE sch.base_id = %(sb_id)s::INT",
+                    "AND sch.examyear_id = %(ey_id)s::INT",
+                    "AND dep.base_id = %(db_id)s::INT",
+                    "AND NOT st.tobedeleted",
+                    "ORDER BY st.id"]
+
+        # order by id necessary to make sure that lookup function on client gets the right row
+        sql_list.append("ORDER BY st.id")
+
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            student_rows = af.dictfetchall(cursor)
+
+        if logging_on and False:
+            logger.debug('student_rows: ' + str(student_rows))
+            # logger.debug('connection.queries: ' + str(connection.queries))
+
+        # - add lastname_firstname_initials to rows
+        if student_rows:
+            for row in student_rows:
+                first_name = row.get('firstname')
+                last_name = row.get('lastname')
+                prefix = row.get('prefix')
+                #row['name_first_init'] = stud_fnc.get_lastname_firstname_initials(last_name, first_name,  prefix)
+
+
+        return student_rows
+    # --- end of create_student_rows
+
+
+    if student_rows:
+        # ---  create file Name and worksheet Name
+        today_dte = af.get_today_dateobj()
+        today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+        title = ''.join((str(_('Candidates')), ' ', str(examyear), ' dd ', today_dte.isoformat()))
+        file_name = title + ".xlsx"
+        worksheet_name = str(_('Candidates'))
+
+        # create the HttpResponse object ...
+        # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # response['Content-Disposition'] = "attachment; filename=" + file_name
+
+        # Create an in-memory output file for the new workbook.
+        output = io.BytesIO()
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        #  book = xlsxwriter.Workbook(response, {'in_memory': True})
+        book = xlsxwriter.Workbook(output)
+
+        sheet = book.add_worksheet(worksheet_name)
+        sheet.hide_gridlines(2)  # 2 = Hide screen and printed gridlines
+
+        # cell_format = book.add_format({'bold': True, 'font_color': 'red'})
+        bold_format = book.add_format({'bold': True})
+
+        # th_format.set_bg_color('#d8d8d8') #   #d8d8d8;  /* light grey 218 218 218 100%
+        # or: th_format = book.add_format({'bg_color': '#d8d8d8'
+        th_align_center = book.add_format(
+            {'font_size': 8, 'border': True, 'bold': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        th_align_center.set_bottom()
+        th_align_center.set_bg_color('#d8d8d8')  # #d8d8d8;  /* light grey 218 218 218 100%
+
+        th_rotate = book.add_format(
+            {'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
+
+        th_merge_bold = book.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter'})
+        th_merge_bold.set_left()
+        th_merge_bold.set_bottom()
+
+        row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter', 'border': True})
+        row_align_center = book.add_format(
+            {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
+
+        totalrow_align_center = book.add_format(
+            {'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
+        totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
+        totalrow_merge = book.add_format({'border': True, 'align': 'right', 'valign': 'vcenter'})
+
+        # get number of columns
+
+        field_width = [25, 12, 12, 12,
+                       12, 12, 12, 12, 12, 12,
+                       15, 15,
+                       12, 12, 12,
+                       12, 12, 12,
+                       12,15,
+                       15, 15
+                       ]
+
+# --- set column width
+        for i, width in enumerate(field_width):
+            sheet.set_column(i, i, width)
+
+        row_index = 0
+
+# --- title row
+        title = ''.join((str(_('Candidates')), ' ', str(examyear)))
+        sheet.write(row_index, 0, title, bold_format)
+
+        row_index += 3
+        for row in student_rows:
+            student_pk = row.get('id')
+
+    # ---  table subject scheme
+            row_index = create_student_paragraph_xlsx(row_index, sheet, row, bold_format,
+                                         th_align_center, row_align_left, row_align_center, user_lang)
+
+        book.close()
+
+# - Rewind the buffer.
+        output.seek(0)
+
+# - Set up the Http response.
+        response = HttpResponse(
+            output,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+    # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # response['Content-Disposition'] = "attachment; filename=" + file_name
+    return response
+# --- end of create_student_xlsx
+
+def create_student_paragraph_xlsx(row_index, sheet, row, bold_format,
+                                 th_align_center, row_align_left, row_align_center, user_lang):  # PR2021-07-13
+
+    # get number of columns
+    field_names = ['name', 'dep_abbrev', 'lvl_abbrev', 'sct_abbrev',
+                   'min_subjects', 'max_subjects',
+                   'min_mvt', 'max_mvt',
+                   'min_combi', 'max_combi',
+                   'modifiedat', 'modby_username']
+    field_captions = [str(_('Subject scheme')), str(_('Department')), str(_('Level')), str(_('Sector / Profiel')),
+                      str(_('Minimum amount of subjects')), str(_('Maximum amount of subjects')),
+                      str(_('Minimum amount of MVT subjects')), str(_('Maximum amount of MVT subjects')),
+                      str(_('Minimum amount of combination subjects')),
+                      str(_('Maximum amount of combination subjects')),
+                      str(_('Last modified on ')), str(_('Last modified by'))]
+    header_format = th_align_center
+    row_formats = [row_align_left, row_align_center, row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_center, row_align_center,
+                   row_align_left, row_align_left
+                   ]
+
+    col_count = len(field_names)
+
+    row_index += 3
+    # --- title row
+    title = row.get('name', '')
+    sheet.write(row_index, 0, title, bold_format)
+
+    row_index += 2
+
+    # ---  table header row
+    for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        sheet.write(row_index, i, field_captions[i], header_format)
+
+    # ---  loop through scheme rows
+    if row:
+        row_index += 1
+        for i, field_name in enumerate(field_names):
+            if field_name == 'modifiedat':
+                modified_dte = row.get(field_name, '')
+                value = af.format_modified_at(modified_dte, user_lang)
+            else:
+                value = row.get(field_name, '')
+            sheet.write(row_index, i, value, row_formats[i])
+
+    return row_index
+# --- end of create_scheme_paragraph_xlsx
+
+
 
 ############ SCHEME LIST ##########################
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

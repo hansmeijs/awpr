@@ -316,7 +316,8 @@ def calc_grade_from_score_duo(score_int, scalelength_int, nterm_str):
 def calc_cegrade_from_ete_exam_score(exam, request):
     # PR2022-05-07
     # function calculates cegrade in grades based on cesuur and sclaelength of ete_exam
-    # IMPORTANT: pescore contains ce_exam_score, dont use this one to calc grade, becasue it is not submitted yet
+    # IMPORTANT: ce_exam_score contains the calculated total of the exam,
+    #  dont use this one to calc grade, because it is not submitted yet
     # instead use cescore, this one contains submitted score.
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -352,7 +353,8 @@ def calc_cegrade_from_ete_exam_score(exam, request):
                     logger.debug('     row: ' + str(row))
                 # row = {id: 22345, cescore: 44, cegrade: None}
 
-                # IMPORTANT: pescore contains ce_exam_score, dont use this one to calc grade, becasue it is not submitted yet
+                # IMPORTANT: ce_exam_score contains the calculated total of the exam,
+                #  dont use this one to calc grade, because it is not submitted yet
                 # instead use cescore, this one contains submitted score.
 
                 score_int = row.get('cescore')

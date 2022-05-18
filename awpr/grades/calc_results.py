@@ -2295,6 +2295,23 @@ def save_student_batch(sql_student_list):  # PR2022-01-03
             logger.debug('............................................')
             for row in rows:
                 logger.debug('row: ' + str(row))
+        """
+         {'fullname': 'Ahoua, Ahoua Bryan Blanchard', 'stud_id': 3747, 'country': 'Curaçao', 'examyear_txt': '2022', 
+         'school_name': 'Juan Pablo Duarte Vsbo', 'school_code': 'CUR03', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
+         'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 'lvl_name': 'Praktisch Basisgerichte Leerweg', 
+         'lvlbase_code': 'PBL', 'level_req': True, 'sct_name': 'Economie', 'dep_id': 4, 'lvl_id': 6, 'sct_id': 13, 
+         'scheme_id': 76, 'examnumber': '2101', 'bis_exam': True, 
+         'exemption_count': 3, 
+         21179: {'si_id': 1782, 'subj': 'ne', 'has_exemption': True, 'exemption_year':  2021, 
+                    4: {'subj': 'ne', 'se': '7.7', 'sesr': '7.7', 'final': '8'}, 
+                    1: {'subj': 'ne', 'se': '5.9', 'sesr': '5.9'}}, 
+         21184: {'si_id': 1787, 'subj': 'pa', 
+                    1: {'subj': 'pa', 'se': '7.6', 'sesr': '7.6'}}, 
+         21180: {'si_id': 1783, 'subj': 'en', 1: {'subj': 'en', 'se': '8.0', 'sesr': '8.0'}}, 21509: {'si_id': 1788, 'subj': 'sp', 1: {'subj': 'sp', 'se': '8.0', 'sesr': '8.0'}}, 21188: {'si_id': 1793, 'subj': 'ec', 1: {'subj': 'ec', 'se': '6.1', 'sesr': '6.1'}}, 21181: {'si_id': 1784, 'subj': 'mm1', 1: {'subj': 'mm1', 'se': '5.4', 'sesr': '5.4', 'final': '5'}}, 23033: {'si_id': 1786, 'subj': 'cav', 'has_exemption': True, 'exemption_year': 2021, 4: {'subj': 'cav', 'se': '7.6', 'sesr': '7.6', 'final': '8'}, 1: {'subj': 'cav', 'se': '6.1', 'sesr': '6.1', 'final': '6'}}, 21182: {'si_id': 1785, 'subj': 'lo', 1: {'subj': 'lo', 'se': '7.0', 'sesr': '7.0', 'final': '7'}}, 21186: {'si_id': 1791, 'subj': 'ac', 'has_exemption': True, 'exemption_year': 2021, 1: {'subj': 'ac', 'se': '6.4', 'sesr': '6.4'}, 4: {'subj': 'ac', 'se': '6.0', 'sesr': '6.0', 'final': '6'}}, 21187: {'si_id': 1792, 'subj': 'stg', 1: {'subj': 'stg', 'se': 'g', 'sesr': 'g', 'final': 'g'}}}
+
+        """
+
+
 # - end of save_student_batch
 
 
@@ -2304,7 +2321,7 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
     # TODO grades that are not published are only visible when 'same_school' (or not??)
     # also add grades of each period
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_students_with_grades_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
@@ -2318,9 +2335,10 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
     student_field_list = ('stud_id', 'country', 'examyear_txt', 'school_name', 'school_code', 'islexschool',
                           'dep_name', 'depbase_code', 'dep_abbrev', 'lvl_name', 'lvlbase_code',  'level_req', 'sct_name',
                           'dep_id', 'lvl_id', 'sct_id', 'scheme_id',
-                          'has_profiel', 'examnumber', 'iseveningstudent', 'islexstudent',
+                          'has_profiel', 'examnumber', 'iseveningstudent', 'islexstudent', 'bis_exam', 'partial_exam',
                           'exemption_count', 'sr_count', 'reex_count', 'reex03_count', 'withdrawn',
                           )  # 'fullname is also added to dict
+
 
     studsubj_field_list = ('si_id', 'subj', 'is_extra_nocount', 'is_extra_counts',
                            'has_exemption', 'has_sr', 'has_reex', 'has_reex03', 'exemption_year')
@@ -2365,7 +2383,7 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
 
                 "SELECT stud.id AS stud_id, studsubj.id AS studsubj_id, studsubj.si_id,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.classname,",
-                "stud.iseveningstudent, stud.islexstudent, stud.partial_exam,",
+                "stud.iseveningstudent, stud.islexstudent, stud.bis_exam, stud.partial_exam,",
                 "stud.exemption_count, stud.sr_count, stud.reex_count, stud.reex03_count, stud.withdrawn,",
 
                 "school.name AS school_name, school.islexschool,",

@@ -1174,13 +1174,18 @@ def system_updates(examyear, request):
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
 
+    show_deleted_grades(request)
+
+# PR2022-05-16 add usergroup 'download' to all users with usergroups other than 'read'
+    # add_usergroup_download_archive(request)
+
 # PR2022-05-15 field pescore was temporary used to store ce_exam_score
     # move value of pescore to field ce_exam_score, set pescore = null
-    move_pescore_to_ce_exam_score(request)
+    #move_pescore_to_ce_exam_score(request)
 
 # PR2022-05-15 # debug: Yolande van Erven Ancilla Domini : pescore not calculated. recalc missing pescore
     # must come after move_pescore_to_ce_exam_score
-    recalc_ce_score(request)
+    #recalc_ce_score(request)
 
 # PR2022-05-11 debug: Yolande van Erven Ancilla Domini: pescore not calculated. recalc missing pescore
     #recalc_score_of_ce_result()
@@ -1333,35 +1338,41 @@ def show_deleted_grades(request):
     # check other 36 grades that have tobedeleted=True
     logging_on = False  # s.LOGGING_ON
     if logging_on:  # and request.user.role == c.ROLE_128_SYSTEM:
-        logger.debug(' ------- show_deleted_grades studsubj_tobedeleted=False, examperiod=1 -------')
+        logger.debug(' ------- show_deleted_grades, examperiod=1 -------')
         rows = stud_mod.Grade.objects.filter(
             tobedeleted=True,
             studentsubject__tobedeleted=False,
             examperiod=1
-        )
-        for row in rows:
-            msg_txt = ' '.join((
-                    str(row.studentsubject.student.school.base.code),
-                    str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname) ,
-                    str(row.studentsubject.schemeitem.subject.base.code),
-                    'studsubj.del' , str(row.studentsubject.tobedeleted),
-                    ' stud.del', str(row.studentsubject.student.tobedeleted)))
-            logger.debug(msg_txt)
+        ).order_by('studentsubject__student__school__base__code', 'studentsubject__student__lastname')
+        if rows:
+            if logging_on:
+                logger.debug(' ------- grade_tobedeleted = True, studsubj_tobedeleted = False')
+                for row in rows:
+                    msg_txt = ' '.join((
+                            str(row.studentsubject.student.school.base.code),
+                            str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname) ,
+                            str(row.studentsubject.schemeitem.subject.base.code),
+                            'studsubj.del', str(row.studentsubject.tobedeleted),
+                            ' stud.del', str(row.studentsubject.student.tobedeleted)))
+                    logger.debug(msg_txt)
 
         logger.debug(' ------- show_deleted_grades studentsubject__tobedeleted=True, examperiod=1 -------')
         rows = stud_mod.Grade.objects.filter(
-            tobedeleted=True,
             studentsubject__tobedeleted=True,
             examperiod=1
-        )
-        for row in rows:
-            msg_txt = ' '.join((
-                str(row.studentsubject.student.school.base.code),
-                str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname),
-                str(row.studentsubject.schemeitem.subject.base.code),
-                'studsubj.del', str(row.studentsubject.tobedeleted),
-                ' stud.del', str(row.studentsubject.student.tobedeleted)))
-            logger.debug(msg_txt)
+        ).order_by('studentsubject__student__school__base__code', 'studentsubject__student__lastname')
+
+        if rows:
+            for row in rows:
+                msg_txt = ' '.join((
+                    str(row.studentsubject.student.school.base.code),
+                    str(row.studentsubject.student.school.name), '-',
+                    str(row.studentsubject.student.pk), '-',
+                    str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname),
+                    str(row.studentsubject.schemeitem.subject.name),
+                    'studsubj.del', str(row.studentsubject.tobedeleted),
+                    ' stud.del', str(row.studentsubject.student.tobedeleted)))
+                logger.debug(msg_txt)
 
 
 def recalc_amount_and_scalelength_of_assignment(request):
@@ -1399,35 +1410,34 @@ def recalc_amount_and_scalelength_of_assignment(request):
         logger.error(getattr(e, 'message', str(e)))
 
 
-def add_usergroup_download(request):
-    # PR2022-04-19 add usergroup 'download' to all users with usergroups other than 'read'
+def add_usergroup_download_archive(request):
+    # PR2022-05-16 add usergroup 'download' and archive to all users with usergroups other than 'read'
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_usergroup_download -------')
     try:
-        key = 'add_ug_download'
+        key = 'add_ug_archive'
         exists = sch_mod.Systemupdate.objects.filter(
             name=key
         ).exists()
         if logging_on:
             logger.debug('exists: ' + str(exists))
         if not exists:
+            # skip users whose usergroups is empty or only 'read'
             users = acc_mod.User.objects.filter(
             ).exclude(usergroups__isnull=True).exclude(usergroups__exact='').exclude(usergroups__exact='read')
             if users:
                 for user in users:
-                    if logging_on:
-                        logger.debug('user.usergroups: ' + str(user.usergroups))
 
                     arr = user.usergroups.split(';')
-                    arr.append('download')
+                    if 'download' not in arr:
+                        arr.append('download')
                     arr.sort()
+
                     usergroups_str = ';'.join(arr)
 
                     setattr(user,'usergroups', usergroups_str)
-                    if logging_on:
-                        logger.debug('     usergroups: ' + str(user.usergroups))
                     user.save()
 
         # - add function to systemupdate, so it won't run again

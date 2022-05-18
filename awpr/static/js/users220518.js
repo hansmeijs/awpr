@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get field_settings
     field_settings.btn_user = {
                     field_caption: ["", "School_code", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Inactive"],
-                    field_names: ["select", "sb_code", "school_abbrev", "username", "last_name", "email",  "activated", "last_login", "is_active"],
+                    field_names: ["select", "sb_code", "school_abbrev", "username", "last_name", "email", "activated", "last_login", "is_active"],
                     field_tags: ["div", "div", "div", "div", "div",  "div", "div","div", "div"],
                     filter_tags: ["select", "text", "text",  "text",  "text", "text",  "toggle", "text", "inactive"],
                     field_width:  ["020", "090", "150", "150",  "180", "240",  "100", "180", "090"],
@@ -82,12 +82,15 @@ document.addEventListener('DOMContentLoaded', function() {
     field_settings.btn_usergroup = {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
                                     "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
-                                    "Analyze",  "System_administrator_2lines", "Inactive"],
+                                    "System_administrator_2lines"],
+                                    //"Download", "Archive", "System_administrator_2lines"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
-                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4", "group_anlz", "group_admin", "is_active"],
+                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4",
+                                    "group_admin"],
+                                    //"group_download", "group_archive", "group_admin"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text",  "toggle", "toggle", "toggle",
-                                    "toggle", "toggle", "toggle",  "toggle", "toggle", "inactive"],
+                    filter_tags: ["select", "text", "text", "text", "toggle", "toggle", "toggle",
+                                    "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
                     field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090", "090", "090"],
                     field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]};
 

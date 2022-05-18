@@ -636,7 +636,6 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                         skip_check_activated=True
                     )
 
-
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('sel_school:     ' + str(sel_school))
@@ -1666,6 +1665,7 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
 
     def delete_tobedeleted_from_studsubj(self, published_instance, sel_examyear, sel_school, sel_department, request):
         # PR2021-09-30
@@ -4624,6 +4624,7 @@ def update_scheme_in_studsubj(student, request):
             if new_scheme is None:
                 # delete studsubj when no scheme
                 # check if studsubj is submitted, set tobedeleted = True if submitted
+                #PR2022-05-18 debug: Omega College: grades have disappeared
                 set_studsubj_tobedeleted_or_tobechanged(studsubj, True, None, request)  # True = tobedeleted
             else:
                 old_subject = studsubj.schemeitem.subject
@@ -4671,24 +4672,45 @@ def update_scheme_in_studsubj(student, request):
                                 studsubj.save(request=request)
 
 
-def set_studsubj_tobedeleted_or_tobechanged(studsubj, tobedeleted, new_schemeitem, request):  # PR2021-08-23
+def set_studsubj_tobedeleted_or_tobechanged(studsubj, tobedeleted, new_schemeitem, request):
+    # PR2021-08-23
     # delete studsubj when no scheme
     # check if studsubj is submitted, set delete = True if submitted
+    # called by  update_scheme_in_studsubj 3 times
+
+    #PR2022-05-18 CAL, Omega: all subjects disappear.
+    # Cause: tobedeleted is set True. Dont know why yet
     subj_published = getattr(studsubj, 'subj_published')
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' >>>>>>>>>>>> ----- set_studsubj_tobedeleted_or_tobechanged ----- ')
+        logger.debug('studsubj: ' + str(studsubj))
+        logger.debug('tobedeleted: ' + str(tobedeleted))
+        logger.debug('new_schemeitem: ' + str(new_schemeitem))
 
     if tobedeleted:
         field = 'tobedeleted'
         if subj_published is None:
             studsubj.delete(request=request)
+
+            if logging_on:
+                logger.debug('studsubj.delete: ' + str(field))
     else:
         field = 'tobechanged'
         setattr(studsubj, 'schemeitem', new_schemeitem)
+
+        if logging_on:
+            logger.debug('tobechanged: ' + str(field))
 
     if subj_published:
         setattr(studsubj, field, True)
         setattr(studsubj,'prev_auth1by', getattr(studsubj, 'subj_auth1by'))
         setattr(studsubj,'prev_auth2by', getattr(studsubj, 'subj_auth2by'))
         setattr(studsubj,'prev_published', subj_published)
+
+        if logging_on:
+            logger.debug('if subj_published: ' + str(field))
 
         studsubj.save(request=request)
 # - end of set_studsubj_tobedeleted_or_tobechanged

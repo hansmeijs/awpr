@@ -2267,7 +2267,6 @@ class ExamApproveOrSubmitGradeExamView(View):
                             tobe_submitted_ete_exams: [49]
                             """
 
-
                     has_error = False
                     if not is_test and grade_exams_tobe_updated_list:
     #  - approve grade_exams
@@ -2449,7 +2448,7 @@ def batch_submit_grade_exam_rows(req_usr, published_pk, grade_exams_tobe_updated
         sql_list.extend((
             "; UPDATE students_grade AS gr",
             "SET ce_exam_published_id = %(publ_id)s::INT,",
-            "cescore = pescore,",
+            "cescore = ce_exam_score,",
 
             "modifiedby_id = %(modby_id)s::INT, modifiedat = '", modifiedat_str, "'",
 
@@ -3601,7 +3600,7 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05 PR2022
 # - end of delete_exam_instance
 
 
-def update_exam_instance(request, instance, examyear, upload_dict, error_list):
+def update_exam_instance(request, exam_instance, examyear, upload_dict, error_list):
     # PR2021-04-05 PR2022-01-24 PR2022-05-06
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -3611,7 +3610,7 @@ def update_exam_instance(request, instance, examyear, upload_dict, error_list):
         # 'exam_pk': 138, 'subject_pk': 2137, 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True}
 
     updated_cegrade_count = 0
-    if instance:
+    if exam_instance:
         save_changes = False
         calc_amount_and_scalelength = False
         calc_cegrade_from_ete_exam_score = False
@@ -3624,7 +3623,7 @@ def update_exam_instance(request, instance, examyear, upload_dict, error_list):
 
 # ---   save changes in field 'depbases', 'levelbases', 'sectorbases'
             elif field in ('depbases', 'levelbases', 'sectorbases'):
-                old_value = getattr(instance, field)
+                old_value = getattr(exam_instance, field)
                 uploaded_field_arr = []
                 if field == 'depbases':
                     uploaded_field_arr = new_value.split(';') if new_value else []
@@ -3651,7 +3650,7 @@ def update_exam_instance(request, instance, examyear, upload_dict, error_list):
                         checked_field_arr.sort()
                         checked_field_str = ';'.join(checked_field_arr)
                 if checked_field_str != old_value:
-                    setattr(instance, field, new_value)
+                    setattr(exam_instance, field, new_value)
                     save_changes = True
 
             elif field in ('amount', 'blanks', 'scalelength'):
@@ -3662,16 +3661,16 @@ def update_exam_instance(request, instance, examyear, upload_dict, error_list):
                 # save None instead of  '' or 0
                 if not new_value:
                     new_value = None
-                max_score = getattr(instance, 'scalelength')
+                max_score = getattr(exam_instance, 'scalelength')
 
                 new_value_str, err_list = grade_calc_final.get_score_from_inputscore(new_value, max_score)
                 if err_list:
                     error_list.extend(err_list)
                 else:
                     new_value_int = int(new_value_str) if new_value_str else None
-                    old_value = getattr(instance, field)
+                    old_value = getattr(exam_instance, field)
                     if new_value_int != old_value:
-                        setattr(instance, field, new_value_int)
+                        setattr(exam_instance, field, new_value_int)
                         save_changes = True
                         calc_cegrade_from_ete_exam_score = True
 
@@ -3684,19 +3683,33 @@ def update_exam_instance(request, instance, examyear, upload_dict, error_list):
                 # save None instead of  '' or 0
                 if not new_value:
                     new_value = None
-                old_value = getattr(instance, field)
+                old_value = getattr(exam_instance, field)
                 if new_value != old_value:
-                    setattr(instance, field, new_value)
+                    setattr(exam_instance, field, new_value)
                     save_changes = True
                     if field in ('partex', 'assignment', 'keys', 'amount', 'blanks', 'scalelength'):
                         calc_amount_and_scalelength = True
 
+            elif field == 'secret_exam':
+                if not new_value:
+                    new_value = False
+
+                if logging_on:
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: ' + str(new_value))
+
+                old_value = getattr(exam_instance, field, False)
+                if new_value != old_value:
+                    setattr(exam_instance, field, new_value)
+                    save_changes = True
+                    logger.debug('save_changes: ' + str(save_changes))
+
             elif field == 'has_partex':
                 if not new_value:
                     new_value = False
-                old_value = getattr(instance, field, False)
+                old_value = getattr(exam_instance, field, False)
                 if new_value != old_value:
-                    setattr(instance, field, new_value)
+                    setattr(exam_instance, field, new_value)
                     save_changes = True
                     calc_amount_and_scalelength = True
 
@@ -3715,40 +3728,43 @@ def update_exam_instance(request, instance, examyear, upload_dict, error_list):
                     if logging_on:
                         logger.debug('new_value: ' + str(auth_index))
 
-                    setattr(instance, fldName, new_value)
+                    setattr(exam_instance, fldName, new_value)
                     save_changes = True
 
             elif field == 'published':
                 pass
 
-# - save instance
+# - save exam_instance
         if save_changes:
             try:
-                instance.save(request=request)
+                exam_instance.save(request=request)
                 if logging_on:
-                    logger.debug('instance saved: ' + str(instance))
+                    logger.debug('exam_instance saved: ' + str(exam_instance))
+                    logger.debug('calc_amount_and_scalelength: ' + str(calc_amount_and_scalelength))
 
 # - save to log after saving emplhour and orderhour, also when emplhour is_created
-                if calc_amount_and_scalelength:
+                # error: conversion from NoneType to Decimal is not supported
+                if calc_amount_and_scalelength and False:
                     total_amount, total_maxscore, total_blanks, has_changed = \
-                        grade_view.calc_amount_and_scalelength_of_assignment(instance)
+                        grade_view.calc_amount_and_scalelength_of_assignment(exam_instance)
                     if logging_on:
-                        logger.debug('     total_amount:  ' + str(total_amount))
-                        logger.debug('     total_maxscore: ' + str(total_maxscore))
-                        logger.debug('     total_blanks:   ' + str(total_blanks))
-                        logger.debug('     has_changed:    ' + str(has_changed))
+                        logger.debug('     total_amount:  ' + str(total_amount)  + ' ' + str(type(total_amount)))
+                        logger.debug('     total_maxscore: ' + str(total_maxscore) + ' ' + str(type(total_maxscore)))
+                        logger.debug('     total_blanks:   ' + str(total_blanks) + ' ' + str(type(total_blanks)))
+                        logger.debug('     has_changed:    ' + str(has_changed) + ' ' + str(type(has_changed)))
 
                     if has_changed:
-                        setattr(instance, 'amount', total_amount)
-                        setattr(instance, 'scalelength', total_maxscore)
-                        setattr(instance, 'blanks', total_blanks)
-                        instance.save(request=request)
+                        setattr(exam_instance, 'amount', total_amount)
+                        setattr(exam_instance, 'scalelength', total_maxscore)
+                        setattr(exam_instance, 'blanks', total_blanks)
+                        exam_instance.save(request=request)
 
                 if calc_cegrade_from_ete_exam_score:
-                    updated_cegrade_count = calc_score.calc_cegrade_from_ete_exam_score(instance, request)
+                    updated_cegrade_count = calc_score.calc_cegrade_from_ete_exam_score(exam_instance, request)
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
+                # error: conversion from NoneType to Decimal is not supported
                 msg_err = _('An error occurred. This exam could not be updated.')
                 error_list.append(msg_err)
 
@@ -3779,7 +3795,7 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "ex.ete_exam, ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
-        "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm,",
+        "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm, ex.secret_exam,",
 
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
         "sb.code AS subjbase_code, subj.name AS subj_name,",
@@ -3819,10 +3835,9 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
         if setting_dict:
             sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
-            if sel_examperiod in(1, 2):
-                # examperiod = 12 means ce and reex
+            if sel_examperiod in (1, 2, 3):
                 sql_keys['ep'] = sel_examperiod
-                sql_list.append("AND (ex.examperiod = %(ep)s::INT OR ex.examperiod = 12)")
+                sql_list.append("AND (ex.examperiod = %(ep)s::INT)")
 
             sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
             if sel_lvlbase_pk:
@@ -3868,16 +3883,16 @@ def create_duo_exam_rows(sel_examyear, sel_depbase, append_dict, setting_dict=No
     sql_keys = {'ey_code': sel_examyear.code, 'depbase_id': sel_depbase.pk}
 
     sql_list = [
-        "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
-        "CONCAT('exam_', ex.id::TEXT) AS mapid,",
+        "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
+        "CONCAT('exam_', exam.id::TEXT) AS mapid,",
         "CONCAT(subj.name,",
         "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-        "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
+        "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
         "CONCAT('n', ntb.id, 'd', dep.id, 's', subj.id, 'l', lvl.id) AS ndsl_pk,",
-        "ex.examperiod, ex.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
-        "ex.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-        "ex.version, ex.nex_id, ex.scalelength, ex.nterm,",
+        "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
+        "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+        "exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.secret_exam,",
         "sb.code AS subjbase_code, subj.name AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
 
@@ -3885,48 +3900,48 @@ def create_duo_exam_rows(sel_examyear, sel_depbase, append_dict, setting_dict=No
         "ntb.tijdvak AS ntb_tijdvak, ntb.omschrijving AS ntb_omschrijving, ntb.schaallengte AS ntb_schaallengte, ntb.n_term AS ntb_nterm,",
         "ntb.datum AS ntb_datum,"
 
-        "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
+        "exam.status, exam.auth1by_id, exam.auth2by_id, exam.published_id, exam.locked, exam.modifiedat,",
         "au.last_name AS modby_username,",
 
         "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, publ.modifiedat AS publ_modat",
 
-        "FROM subjects_exam AS ex",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = ex.subject_id)",
+        "FROM subjects_exam AS exam",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
         "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
 
-        "INNER JOIN schools_department AS dep ON (dep.id = ex.department_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = ex.level_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
 
-        "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = ex.ntermentable_id)",
+        "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
 
-        "LEFT JOIN accounts_user AS auth1 ON (auth1.id = ex.auth1by_id)",
-        "LEFT JOIN accounts_user AS auth2 ON (auth2.id = ex.auth2by_id)",
-        "LEFT JOIN schools_published AS publ ON (publ.id = ex.published_id)",
+        "LEFT JOIN accounts_user AS auth1 ON (auth1.id = exam.auth1by_id)",
+        "LEFT JOIN accounts_user AS auth2 ON (auth2.id = exam.auth2by_id)",
+        "LEFT JOIN schools_published AS publ ON (publ.id = exam.published_id)",
 
-        "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
+        "LEFT JOIN accounts_user AS au ON (au.id = exam.modifiedby_id)",
 
-        "WHERE ey.code = %(ey_code)s::INT AND depbase.id = %(depbase_id)s::INT AND NOT ex.ete_exam"
+        "WHERE ey.code = %(ey_code)s::INT AND depbase.id = %(depbase_id)s::INT AND NOT exam.ete_exam"
     ]
 
     if exam_pk_list:
         sql_keys['pk_arr'] = exam_pk_list
-        sql_list.append("AND ex.id IN ( SELECT UNNEST( %(pk_arr)s::INT[]))")
+        sql_list.append("AND exam.id IN ( SELECT UNNEST( %(pk_arr)s::INT[]))")
 
     elif setting_dict:
         sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
         if sel_examperiod in(1, 2):
             # examperiod = 12 means ce and reex
             sql_keys['ep'] = sel_examperiod
-            sql_list.append("AND (ex.examperiod = %(ep)s::INT)")
+            sql_list.append("AND (exam.examperiod = %(ep)s::INT)")
 
         sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
         if sel_lvlbase_pk:
             sql_keys['lvlbase_pk'] = sel_lvlbase_pk
             sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-    sql_list.append("ORDER BY ex.id")
+    sql_list.append("ORDER BY exam.id")
 
     sql = ' '.join(sql_list)
     if logging_on:
@@ -6278,11 +6293,11 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                             "AND exam.ete_exam",
                             "AND grd.examperiod = %(experiod)s::INT",
                             "AND dep.base_id = %(depbase_id)s::INT",
-                            # TODO add published_id IS NOT NULL
-                            # "AND exam.published_id IS NOT NULL",
-                            # "AND grd.ce_exam_published IS NOT NULL",
 
-                            "AND grd.pescore IS NOT NULL",
+                            "AND exam.published_id IS NOT NULL",
+                            "AND grd.ce_exam_published IS NOT NULL",
+
+                            "AND grd.ce_exam_score IS NOT NULL",
                             "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                             ]
 
@@ -6403,10 +6418,10 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                             "AND exam.ete_exam",
                             "AND grd.examperiod = %(experiod)s::INT",
                             "AND dep.base_id = %(depbase_id)s::INT",
-                            # "AND exam.published_id IS NOT NULL",
-                            # "AND grd.ce_exam_published IS NOT NULL",
+                            "AND exam.published_id IS NOT NULL",
+                            "AND grd.ce_exam_published IS NOT NULL",
 
-                            "AND grd.pescore IS NOT NULL",
+                            "AND grd.ce_exam_score IS NOT NULL",
                             "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
                             "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                             ]

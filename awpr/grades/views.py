@@ -1605,7 +1605,7 @@ class GradeUploadView(View):
     # PR2020-12-16 PR2021-01-15 PR2021-12-15 PR2022-01-24 PR2022-03-18
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= GradeUploadView ============= ')
@@ -1799,7 +1799,7 @@ class GradeUploadView(View):
         if msg_list:
             #msg_html = '<br>'.join(msg_list)
             #update_wrap['msg_html'] = msg_html
-            header_txt = str(_('Edit score') if is_score else _('Edit grade')),
+            header_txt = str(_('Enter score') if is_score else _('Enter grade')),
             update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': header_txt,
                                         'msg_html': '<br>'.join(msg_list)}]
 
@@ -2532,7 +2532,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "studsubj.has_exemption, studsubj.exemption_year, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
 
                     grades, final_grade, status,
-                    "grd.examperiod,",
+                    "grd.examperiod, COALESCE(exam.secret_exam, FALSE) AS secret_exam,",
                     "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_auth4by_id, grd.se_published_id, grd.se_blocked,",
                     "grd.sr_auth1by_id, grd.sr_auth2by_id, grd.sr_auth3by_id, grd.sr_auth4by_id, grd.sr_published_id, grd.sr_blocked,",
                     "grd.pe_auth1by_id, grd.pe_auth2by_id, grd.pe_auth3by_id, grd.pe_auth4by_id, grd.pe_published_id, grd.pe_blocked,",
@@ -2570,6 +2570,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
                     "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+
+                    "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
 
                     "LEFT JOIN schools_published AS se_published ON (se_published.id = grd.se_published_id)",
                     "LEFT JOIN schools_published AS sr_published ON (sr_published.id = grd.sr_published_id)",
@@ -2744,8 +2746,9 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
                     "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
                     "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
-                    "exam.examperiod, exam.ete_exam, exam.version, exam.has_partex, exam.partex, exam.amount, exam.blanks, exam.assignment, exam.keys,",
-                    "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm",
+                    "exam.examperiod, exam.ete_exam, exam.version, exam.has_partex, exam.partex, ",
+                    "exam.amount, exam.blanks, exam.assignment, exam.keys,",
+                    "exam.nex_id, exam.scalelength, exam.cesuur, exam.nterm, exam.secret_exam",
 
                     "FROM subjects_exam AS exam",
                     "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
@@ -2775,7 +2778,7 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
                     "ce_exam.has_partex AS ceex_has_partex, ce_exam.partex AS ceex_partex,",
                     "ce_exam.blanks AS ceex_blanks, ce_exam.assignment AS ceex_assignment,",
                     "ce_exam.nex_id AS ceex_nex_id, ce_exam.scalelength AS ceex_scalelength,",
-                    "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm,",
+                    "ce_exam.cesuur AS ceex_cesuur, ce_exam.nterm AS ceex_nterm, ce_exam.secret_exam,",
 
                     # examkeys_fields,
 
@@ -2900,7 +2903,7 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
 def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, sel_examperiod, setting_dict, request):
     # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('setting_dict: ' + str(setting_dict))
@@ -4201,7 +4204,7 @@ def get_allassignment_dict_from_string(assignment_str, keys_str):
 
 def calc_amount_and_scalelength_of_assignment(exam):
     # PR2022-05-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' --------- calc_amount_and_scalelength_of_assignment -------------')
