@@ -160,47 +160,52 @@ def calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int):
         End If 'If crcCesuur > 0 And crcCesuur < intLschaal
     End If 'If intLschaal > 0
     """
-    logging_on = False  #s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- calc_grade_from_score_ete -----')
         logger.debug('     score_int:       ' + str(score_int))
         logger.debug('     scalelength_int: ' + str(scalelength_int))
         logger.debug('     cesuur_int:      ' + str(cesuur_int))
 
-    score_dec = Decimal(score_int)
-    scalelength_dec = Decimal(scalelength_int)
-    cesuur_dec = Decimal(cesuur_int)
+    grade_str = None
 
-    dec_0_5 = Decimal('0.5')
-    dec_1 = Decimal('1')
-    dec_4_45 = Decimal('4.45')
-    dec_4_55 = Decimal('4.55')
-    dec_10 = Decimal('10')
+    # PR2022-05-19 debug: cannot cal Decimal from None. Add if not None
+    if score_int is not None and scalelength_int is not None and cesuur_int is not None:
+        score_dec = Decimal(score_int)
+        scalelength_dec = Decimal(scalelength_int)
+        cesuur_dec = Decimal(cesuur_int)
 
-# - bereken Laagtse functie, van score 0 tot cesuur_int
-    if score_int < cesuur_int:
-        #  crcCijfer =  1 + intScore  *     4.45 / (crcCesuur - 0.5)
-        grade_dec = dec_1 + score_dec * dec_4_45 / (cesuur_dec - dec_0_5)
-    else:
-        if logging_on:
-            logger.debug(' ----- calc_grade_from_score_ete -----')
-            logger.debug('     cesuur_dec:       ' + str(cesuur_dec) + ' ' + str(type(cesuur_dec)))
-            logger.debug('     scalelength_dec:  ' + str(scalelength_dec) + ' ' + str(type(scalelength_dec)))
-            logger.debug('     dec_10:           ' + str(dec_10) + ' ' + str(type(dec_10)))
-            logger.debug('     dec_4_55:         ' + str(dec_4_55) + ' ' + str(type(dec_4_55)))
-            logger.debug('     dec_0_5:         ' + str(dec_0_5) + ' ' + str(type(dec_0_5)))
-#' - Bereken Hoogste functie, van score cesuur_int tot score L
-        # crcCijfer =   10 - (intLschaal - intScore) * 4.55           / (intLschaal - (crcCesuur - 0.5))
-        grade_dec = dec_10 - (scalelength_dec - score_dec) * dec_4_55 / (scalelength_dec - (cesuur_dec - dec_0_5) )
+        dec_0_5 = Decimal('0.5')
+        dec_1 = Decimal('1')
+        dec_4_45 = Decimal('4.45')
+        dec_4_55 = Decimal('4.55')
+        dec_10 = Decimal('10')
 
-        if logging_on:
-            logger.debug('     grade_dec:       ' + str(grade_dec) + ' ' + str(type(grade_dec)))
+    # - bereken Laagtse functie, van score 0 tot cesuur_int
+        if score_int < cesuur_int:
+            #  crcCijfer =  1 + intScore  *     4.45 / (crcCesuur - 0.5)
+            grade_dec = dec_1 + score_dec * dec_4_45 / (cesuur_dec - dec_0_5)
+        else:
+            if logging_on:
+                logger.debug(' ----- calc_grade_from_score_ete -----')
+                logger.debug('     cesuur_dec:       ' + str(cesuur_dec) + ' ' + str(type(cesuur_dec)))
+                logger.debug('     scalelength_dec:  ' + str(scalelength_dec) + ' ' + str(type(scalelength_dec)))
+                logger.debug('     dec_10:           ' + str(dec_10) + ' ' + str(type(dec_10)))
+                logger.debug('     dec_4_55:         ' + str(dec_4_55) + ' ' + str(type(dec_4_55)))
+                logger.debug('     dec_0_5:         ' + str(dec_0_5) + ' ' + str(type(dec_0_5)))
+    #' - Bereken Hoogste functie, van score cesuur_int tot score L
+            # crcCijfer =   10 - (intLschaal - intScore) * 4.55           / (intLschaal - (crcCesuur - 0.5))
+            grade_dec = dec_10 - (scalelength_dec - score_dec) * dec_4_55 / (scalelength_dec - (cesuur_dec - dec_0_5) )
 
-#' - afronden op 1 cijfer achter de komma
-    grade_str = str(grade_calc.round_decimal(grade_dec, dec_1))
+            if logging_on:
+                logger.debug('     grade_dec:       ' + str(grade_dec) + ' ' + str(type(grade_dec)))
+
+    #' - afronden op 1 cijfer achter de komma
+        grade_str = str(grade_calc.round_decimal(grade_dec, dec_1))
 
     if logging_on:
-        logger.debug('   > grade_str:       ' + str(grade_str)+ ' ' + str(type(grade_dec)))
+        logger.debug('   > grade_str:       ' + str(grade_str))
+
     return grade_str
 # - end of calc_grade_from_score_ete
 
@@ -338,9 +343,6 @@ def calc_cegrade_from_ete_exam_score(exam, request):
 
 # - create list of all grades with this exam (CUR + SXM) who have submitted exam
             grade_pk_list = create_gradelist_for_score_calc(exam.pk)
-
-            if logging_on:
-                logger.debug('grade_pk_list: ' + str(grade_pk_list))
             """
             grade_pk_list: [
                 {'id': 22539, 'pescore': 56, 'cegrade': None}, 
@@ -353,15 +355,21 @@ def calc_cegrade_from_ete_exam_score(exam, request):
                     logger.debug('     row: ' + str(row))
                 # row = {id: 22345, cescore: 44, cegrade: None}
 
-                # IMPORTANT: ce_exam_score contains the calculated total of the exam,
-                #  dont use this one to calc grade, because it is not submitted yet
+                # IMPORTANT: ce_exam_score contains the calculated total score of the exam,
+                #  dont use this one to calc grade, because it is not submitted yet and may have been changed by the school
                 # instead use cescore, this one contains submitted score.
 
                 score_int = row.get('cescore')
+                if logging_on:
+                    logger.debug('     score_int: ' + str(score_int) + ' ' + str(type(score_int)))
+
                 grade_str = calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
+                if logging_on:
+                    logger.debug('     grade_str: ' + str(grade_str) + ' ' + str(type(grade_str)))
+
                 row['cegrade'] = grade_str if grade_str else None
                 if logging_on:
-                    logger.debug('       >> row: ' + str(row))
+                    logger.debug('       >> row with cegrade: ' + str(row))
 
 # - update cegrade in all grades of grade_pk_list
             updated_cegrade_count = batch_update_cegrade(grade_pk_list, request)
@@ -371,7 +379,7 @@ def calc_cegrade_from_ete_exam_score(exam, request):
 
 
 def create_gradelist_for_score_calc(exam_pk):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_gradelist_for_score_calc --- ')
 
@@ -415,7 +423,7 @@ def create_gradelist_for_score_calc(exam_pk):
 
 def batch_update_cegrade(grade_rows_tobe_updated, request):
     #PR2022-05-07
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_update_cegrade -----')
         logger.debug('     grade_rows_tobe_updated:    ' + str(grade_rows_tobe_updated))
@@ -454,7 +462,7 @@ def batch_update_cegrade(grade_rows_tobe_updated, request):
 
                 "FROM gr_update",
                 "WHERE gr_update.grade_id = gr.id",
-                "RETURNING gr.id;"
+                "RETURNING gr.id, gr.cegrade;"
                 ))
 
             sql = ' '.join(sql_list)
@@ -471,8 +479,14 @@ def batch_update_cegrade(grade_rows_tobe_updated, request):
 
             updated_cegrade_count = len(rows)
 
+            if logging_on:
+                logger.debug('     rows:    ' + str(rows))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('     updated_cegrade_count:    ' + str(updated_cegrade_count))
 
     return updated_cegrade_count
 # - end of batch_approve_grade_rows

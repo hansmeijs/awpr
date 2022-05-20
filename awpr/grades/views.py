@@ -1849,7 +1849,7 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, schoolbase_pk, depb
 def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, msg_list,
                               is_approve=False, is_score=False, is_grade_exam=False):
     # PR2022-03-20
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),

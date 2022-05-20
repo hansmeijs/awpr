@@ -1663,6 +1663,7 @@
         if(el_msg_btn_cancel){set_focus_on_el_with_timeout(el_msg_btn_cancel, 150 )};
 
         $("#id_mod_message").modal({backdrop: false});
+
         /*
         'hide.bs.modal' executes when the .modal (modal window) gets closed.
          So, whenever you open a modal window with the class modal (obviously),

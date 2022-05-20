@@ -95,7 +95,10 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Yes_delete'] = _('Yes, delete')
     dict['Yes_make_inactive'] = _('Yes, make inactive')
     dict['Yes_make_active'] = _('Yes, make active')
+    dict['Yes_calculate'] = _('Yes, calculate')
+
     dict['Yes_copy'] = _('Yes, copy')
+    dict['Yes_save'] = _('Yes, save')
     dict['Make_inactive'] = _('Make inactive')
     dict['No_cancel'] = _('No, cancel')
     dict['Cancel'] = _('Cancel')
@@ -670,6 +673,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_bis_exam'] = _('The bis-exam')
         dict['The_evening_student_label'] = _("Label 'evening student'")
         dict['Remove_evening_student_label'] = _("Remove label 'evening student'")
+        dict['Download_candidate_data'] = _('Download candidate data')
 
         dict['_of_'] = TXT__of_
         dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
@@ -896,7 +900,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['omschrijving'] = _("Omschrijving")
         dict['schaallengte'] = _("Schaallengte")
-        dict['n_term'] = _("N-term")
+        dict['schaallengte_2lines'] = _("Schaal-\nlengte")
+        dict['N_term'] = _("N-term")
         dict['afnamevakid'] = _("AfnameVakID")
         dict['extra_vakcodes_tbv_wolf'] = _("Extra vakcodes tbv Wolf")
 
@@ -912,6 +917,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Copy_exam'] = _("Copy exam")
         dict['Link_DUO_exams'] = _("Link DUO exams")
         dict['Unlink_DUO_exam'] = _("Unlink DUO exam")
+
+
         dict['Publish_exams'] = _("Publish exams")
         dict['Submit_exams'] = _("Submit exams")
         dict['Approve_exams'] = _("Approve exams")
@@ -936,6 +943,20 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['will_be_unlinked'] = pgettext_lazy('singular', ' will be unlinked.')
         dict['Yes_download'] = _("Yes, download")
         dict['Yes_unlink'] = _("Yes, unlink")
+        dict['Yes_link'] = _("Yes, link")
+
+        dict['Enter_cesuur'] = _("Enter cesuur")
+        dict['Enter_cesuur_01'] = _("You are about to enter cesuur '")
+        dict['Enter_cesuur_02'] = _("' for exam:")
+        dict['Enter_cesuur_03'] = _("The grades of all candidates with this exam will be calculated.")
+
+        dict['Link_DUO_to_grade_exam'] = _("Link DUO exam to candidates")
+        dict['Link_DUO_to_grade_exam_01'] = _("You are about to link exam:")
+        dict['Link_DUO_to_grade_exam_02'] = _("to the corresponding subjects of all candidates.")
+
+        dict['Calculate_grades'] = _("Calculate grades")
+        dict['Calculate_grades_01'] = _("AWP is about to calculate the grades of exam:")
+        dict['Calculate_grades_02'] = _("in the corresponding subjects of all candidates.")
 
         dict['Key'] = _("Key")
         dict['Version'] = _("Version")
@@ -1037,8 +1058,10 @@ def get_locale_dict(table_dict, user_lang, request):
             'You_cannot_approve_again': _('You cannot approve this grade again.'),
 
             'cesuur_mustbe': _('The cesuur must be a whole number between 0 and the maximum score.'),
-            'Exam_is_locked': _('This exam is locked.'),
-            'You_must_unlock': _('You must unlock it before you can make changes.')
+            'scalelength_mustbe': _('The scalelength must be a whole number greater than 0.'),
+            'nterm_mustbe': _('The N-term must be a number greater than 0 with 1 decimal.'),
+            'Exam_is_not_published': _('This exam is not published.'),
+            'Must_publish_before_enter_cesuur': _('You must publish the exam first, before you can enter a cesuur.')
         }
 
         dict['MASE_info'] = {

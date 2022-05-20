@@ -421,7 +421,7 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
 # --- end of calc_pece_decimal
 
 
-def get_score_from_inputscore(input_value, max_score):
+def get_score_from_inputscore(input_value, max_score=None):
     # PR2022-02-09
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -448,8 +448,9 @@ def get_score_from_inputscore(input_value, max_score):
         input_no_dots = input_no_comma.replace(',', '')
         if logging_on:
             logger.debug('input_no_dots: ' + str(input_no_dots) + ' ' + str(type(input_no_dots)))
-# cast input_with_dots to decimal, exit if not numeric
+# cast input_with_dots to integer
         # '', ' ' and non-numeric give InvalidOperation error
+        # '1.7'   gives error: invalid literal for int() with base 10: '1.7'
         input_number = None
         try:
             input_number = int(input_no_dots)

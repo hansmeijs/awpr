@@ -215,11 +215,11 @@ def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_parte
     coord = [left, top]
     lines_per_page = 29
     available_lines = lines_per_page
-    number_of_columns = 5
+    columns_per_page = 5
     row_height = 7 * mm
 
 # create pagenumber_text
-    page_count = get_page_count(number_of_columns, lines_per_page, all_partex_assignment_keys_dict)
+    page_count = get_page_count(columns_per_page, lines_per_page, all_partex_assignment_keys_dict)
 
     page_number = 1
     pagenumber_text = ' '.join((
@@ -235,8 +235,8 @@ def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_parte
         # calculate necessary lines: 2 for partex_header, 1 for each line
         amount = int(partex_dict.get('amount', 0))
         # calculate number of rows - 5 columns per row
-        number_of_columns = 5
-        number_of_rows = 1 + int((amount - 1) / number_of_columns) if amount > 0 else 0
+        columns_per_page = 5
+        number_of_rows = 1 + int((amount - 1) / columns_per_page) if amount > 0 else 0
         needed_lines = 2 + number_of_rows
 
         if needed_lines > available_lines:
@@ -260,7 +260,7 @@ def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_parte
 # - end of draw_exam_page
 
 
-def get_page_count(number_of_columns, lines_per_page, all_partex_assignment_keys_dict):
+def get_page_count(columns_per_page, lines_per_page, all_partex_assignment_keys_dict):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_page_count -----')
@@ -273,7 +273,7 @@ def get_page_count(number_of_columns, lines_per_page, all_partex_assignment_keys
         amount = int(partex_dict.get('amount', 0))
 
         # calculate number of rows - 5 columns per row
-        number_of_rows = 1 + int((amount - 1) / number_of_columns) if amount > 0 else 0
+        number_of_rows = 1 + int((amount - 1) / columns_per_page) if amount > 0 else 0
         needed_lines = 2 + number_of_rows
 
         if logging_on:
@@ -457,14 +457,14 @@ def draw_questions(canvas, border, coord, row_height, form_text, partex_assignme
         logger.debug('multiple_choice_list: ' + str(multiple_choice_list))
 
 # calculate number of rows - 5 columns per row
-    number_of_columns = 5
-    number_of_rows = 1 + int( (amount - 1) / number_of_columns ) if amount > 0 else 0
+    columns_per_page = 5
+    number_of_rows = 1 + int( (amount - 1) / columns_per_page ) if amount > 0 else 0
 
     section_top = coord[1]
 # +++ loop through rows of this partex
     for row_index in range(0, number_of_rows):  # range(start_value, end_value, step), end_value is not included!
 
-        draw_question_row(canvas, border, coord, form_text, number_of_columns, number_of_rows, row_index, row_height, amount, questions_dict, scores_dict, multiple_choice_list)
+        draw_question_row(canvas, border, coord, form_text, columns_per_page, number_of_rows, row_index, row_height, amount, questions_dict, scores_dict, multiple_choice_list)
 
     # - draw horizontal line at bottom of header section
     x1, x2 = left, right
@@ -483,7 +483,7 @@ def draw_questions(canvas, border, coord, row_height, form_text, partex_assignme
 # - end of draw_questions
 
 def draw_question_row(canvas, border, coord, form_text,
-                      number_of_columns, number_of_rows, row_index, row_height, amount,
+                      columns_per_page, number_of_rows, row_index, row_height, amount,
                       questions_dict, scores_dict, multiple_choice_list):
 #  questions_dict = {1: '4', 2: 'D-b', 3: '6', 4: 'E-d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1'}},
     # border = [top, right, bottom, left]
@@ -509,7 +509,7 @@ def draw_question_row(canvas, border, coord, form_text,
     y -= line_height
 
 # +++ loop through columns of this page
-    for col_index in range(0, number_of_columns):  # range(start_value, end_value, step), end_value is not included!
+    for col_index in range(0, columns_per_page):  # range(start_value, end_value, step), end_value is not included!
         q_number = (1 + row_index) + col_index * number_of_rows
         if q_number <= amount:
             answer = None
@@ -909,7 +909,7 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
     row_height = 7 * mm
 
 # create pagenumber_text
-    page_count = 1 # get_page_count(number_of_columns, lines_per_page, all_result_dict)
+    page_count = 1 # get_page_count(columns_per_page, lines_per_page, all_result_dict)
 
     page_number = 1
     pagenumber_text = ' '.join((
@@ -952,8 +952,8 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
         if logging_on:
             logger.debug('amount: ' + str(amount))
         # calculate number of rows - 5 columns per row
-        number_of_columns = 5
-        number_of_rows = 1 + int((amount - 1) / number_of_columns) if amount > 0 else 0
+        columns_per_page = 5
+        number_of_rows = 1 + int((amount - 1) / columns_per_page) if amount > 0 else 0
         needed_lines = 2 + number_of_rows
 
         if logging_on:
@@ -1140,6 +1140,7 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
     examperiod = sel_exam_instance.examperiod
     amount_int = sel_exam_instance.amount if sel_exam_instance.amount else 0
     cesuur_int, nterm_str, nexid_str, version_nexid_txt = 0, '', '', ''
+
     if is_ete_exam:
         cesuur_int = sel_exam_instance.cesuur if sel_exam_instance.cesuur is not None else 0
         if sel_exam_instance.cesuur:
@@ -1255,77 +1256,95 @@ def draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_
     # height = top - bottom  # 275 mm
     border = [top, right, bottom, left]
     coord = [left, top]
-    lines_per_page = 29
-    available_lines = lines_per_page
-    number_of_columns = 5
+    lines_per_page = 30
+    columns_per_page = 5
     row_height = 7 * mm
 
 # create pagenumber_text
-    page_count = get_conversion_page_count (number_of_columns, lines_per_page, scalelength_int)
-
-    page_number = 1
-    pagenumber_text = ' '.join((
-            str(_('Page')), str(page_number),
-            'van', str(page_count) + ',',
-            today_formatted
-    ))
-    draw_exam_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
-
-    # calculate number of rows - 5 columns per row
-    number_of_columns = 5
-    number_of_rows = 1 + int((scalelength_int - 1) / number_of_columns) if scalelength_int > 0 else 0
-    needed_lines = 2 + number_of_rows
-
-    if needed_lines > available_lines:
-        canvas.showPage()
-
-        coord[0] = left
-        coord[1] = top # 287 * mm
-        available_lines = lines_per_page
-        page_number += 1
-        pagenumber_text = ' '.join((
-            str(_('Page')), str(page_number),
-            'van', str(page_count) + ',',
-            today_formatted
-        ))
-        draw_conversion_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
-
-    if cesuur_int:
-        draw_conversion_questions(canvas, border, coord, row_height, form_text, scalelength_int, cesuur_int, score_grade_dict)
-
-    available_lines -= needed_lines
-# - end of draw_conversion_page
-
-
-def get_conversion_page_count(number_of_columns, lines_per_page, scalelength_int):
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug('----- get_page_count -----')
-
-    # calculate number of rows - 5 columns per row
-    number_of_rows = 1 + int((scalelength_int - 1) / number_of_columns) if scalelength_int > 0 else 0
-    needed_lines = 2 + number_of_rows
+    number_of_rows, page_count = get_conversion_page_count(columns_per_page, lines_per_page, scalelength_int)
 
     if logging_on:
         logger.debug('    scalelength_int: ' + str(scalelength_int))
+        logger.debug('    columns_per_page: ' + str(columns_per_page))
         logger.debug('    number_of_rows: ' + str(number_of_rows))
-        logger.debug('    needed_lines: ' + str(needed_lines))
-    #TODO test it
-    page_count = 1 + int((needed_lines - 1) / (lines_per_page))
-
-    if logging_on:
+        logger.debug('    lines_per_page: ' + str(lines_per_page))
         logger.debug('    page_count: ' + str(page_count))
+        logger.debug('    cesuur_int: ' + str(cesuur_int))
 
-    return page_count
-# - end of get_conversion_page_count
+    page_number = 0
+
+    row_index_on_this_page = 0
+    number_of_rows_on_this_page = 0
+    first_score_on_page = 0
+
+    new_page = True
+    skip_show_page = True
+    for row_number_minus1 in range(0, number_of_rows):  # range(start_value, end_value, step), end_value is not included!
+
+        if logging_on:
+            logger.debug('---- row_number_minus1: ' + str(row_number_minus1))
+
+        #if page_row > lines_per_page and False:
+        if new_page:
+            # skip new page at first page
+            if skip_show_page:
+                skip_show_page = False
+            else:
+                canvas.showPage()
+
+            new_page = False
+
+            # calculate number of rows on this page
+            row_index_on_this_page = 0
+            page_number += 1
+
+            already_printed_rows = (page_number -1) * lines_per_page
+            tobe_printed_rows = number_of_rows - already_printed_rows
+            number_of_rows_on_this_page = tobe_printed_rows if tobe_printed_rows < lines_per_page else  lines_per_page
+            first_score_on_page = already_printed_rows * columns_per_page
+
+            if logging_on:
+                logger.debug('---- already_printed_rows: ' + str(already_printed_rows))
+                logger.debug('---- tobe_printed_rows: ' + str(tobe_printed_rows))
+                logger.debug('---- number_of_rows_on_this_page: ' + str(number_of_rows_on_this_page))
+
+            draw_conversion_page_header(canvas, border, coord, left, top, header_list,
+                                        page_number, page_count, last_modified_text, today_formatted)
+
+            draw_conversion_question_header_row(canvas, border, coord, columns_per_page, row_height)
+
+        if cesuur_int:
+
+            if logging_on:
+                logger.debug('    page_number: ' + str(page_number))
+
+            draw_conversion_question_row(canvas, border, coord, columns_per_page,
+                                         row_index_on_this_page, number_of_rows_on_this_page, first_score_on_page,
+                                        row_height, scalelength_int, cesuur_int, score_grade_dict)
+
+            row_index_on_this_page += 1
+            if row_index_on_this_page >= lines_per_page:
+                new_page = True
+
+    #available_lines -= needed_lines
+# - end of draw_conversion_page
 
 
-def draw_conversion_page_header(canvas, border, coord, text_list, last_modified_text, pagenumber_text):
+def draw_conversion_page_header(canvas, border, coord, left, top, text_list,
+                                page_number, page_count, last_modified_text, today_formatted):
     # loop through rows of page_header
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_conversion_page_header -----')
-        logger.debug('text_list: ' + str(text_list))
+
+    coord[0] = left
+    coord[1] = top # 287 * mm
+
+    pagenumber_text = ' '.join((
+        str(_('Page')), str(page_number),
+        'van', str(page_count) + ',',
+        today_formatted
+    ))
 
 # +++ write header block
     canvas.setLineWidth(.5)
@@ -1376,64 +1395,30 @@ def draw_conversion_page_header(canvas, border, coord, text_list, last_modified_
 # - draw horizontal line at bottom of header section
     x1, x2 = left, right
     y -= 4 * mm
-    canvas.setStrokeColorRGB(0, 0, 0)
     canvas.line(x1, y, x2, y)
 
-# - draw horizontal line at top of footer section
-    #y1 = bottom + 8 * mm
-    # canvas.line(x1, y1, x2, y1)
+# - vertical lines
+    y_top_footer = bottom + 8 * mm
+    y_txt_footer = bottom + 2 * mm
+    w = 38 * mm
+    for i in range(1, 5):  # range(start_value, end_value, step), end_value is not included!
+        col_x = i * w + left
+        canvas.line(col_x, y, col_x, y_top_footer)
 
-    y1 = bottom + 2 * mm
+# - draw horizontal line at top of footer section
+    canvas.line(x1, y_top_footer, x2, y_top_footer)
+
     set_font_timesroman_11_black(canvas)
-    canvas.drawString(x, y1, last_modified_text)
+    canvas.drawString(x, y_txt_footer, last_modified_text)
 
     x1 = right - 4 * mm
-    canvas.drawRightString(x1 , y1, pagenumber_text)
+    canvas.drawRightString(x1, y_txt_footer, pagenumber_text)
 
     coord[1] = y
 # - end of draw_conversion_page_header
 
 
-def draw_conversion_questions(canvas, border, coord, row_height, form_text, scalelength_int, cesuur_int, score_grade_dict):
-    # loop through rows of page_header
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug('----- draw_conversion_questions -----')
-
-    top, right, bottom, left = border[0], border[1], border[2], border[3]
-
-# calculate number of rows - 5 columns per row
-    number_of_columns = 5
-    number_of_rows = 1 + int( (scalelength_int - 1) / number_of_columns ) if scalelength_int > 0 else 0
-
-    section_top = coord[1]
-
-    draw_conversion_question_header_row(canvas, border, coord, number_of_columns, row_height)
-
-# +++ loop through rows of this partex
-    for row_index in range(0, number_of_rows):  # range(start_value, end_value, step), end_value is not included!
-
-        draw_conversion_question_row(canvas, border, coord, form_text, number_of_columns, number_of_rows,
-                                     row_index, row_height, scalelength_int, cesuur_int, score_grade_dict)
-
-    # - draw horizontal line at bottom of header section
-    x1, x2 = left, right
-    coord[1] -= 4 * mm
-    canvas.line(x1, coord[1], x2, coord[1])
-
-    section_bottom = coord[1]
-
-# - vertical lines - w_list contains width of columns
-    w_list = (38, 38, 38, 38)  # last col is 38 mm
-    x, y1, y2 = left, section_top, section_bottom
-
-    for w in w_list:
-        x += w * mm
-        canvas.line(x, y1, x, y2)
-# - end of draw_conversion_questions
-
-
-def draw_conversion_question_header_row(canvas, border, coord, number_of_columns, row_height):
+def draw_conversion_question_header_row(canvas, border, coord, columns_per_page, row_height):
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1442,8 +1427,7 @@ def draw_conversion_question_header_row(canvas, border, coord, number_of_columns
     line_height = row_height
     padding_left = 6 * mm
 
-    col_width = 38*mm
-    padding_x = 2*mm
+    col_width = 38 * mm
 
     left = border[3] + padding_left
     y = coord[1]
@@ -1451,7 +1435,7 @@ def draw_conversion_question_header_row(canvas, border, coord, number_of_columns
     y -= line_height
 
 # +++ loop through columns of this page
-    for col_index in range(0, number_of_columns):  # range(start_value, end_value, step), end_value is not included!
+    for col_index in range(0, columns_per_page):  # range(start_value, end_value, step), end_value is not included!
         score_lbl = _('Score')
         grade_lbl = _('Grade')
 
@@ -1464,44 +1448,43 @@ def draw_conversion_question_header_row(canvas, border, coord, number_of_columns
         canvas.drawString(x_label, y, str(score_lbl))
 
     # draw text answer
-        #hex_color = "#000080"
-        #canvas.setFillColor(colors.HexColor(hex_color))
-        #canvas.setFont('Arial', 11, leading=None)
         canvas.drawString(x_data, y, str(grade_lbl))
 
     coord[1] = y
 # - end of draw_conversion_question_header_row
 
 
-
-def draw_conversion_question_row(canvas, border, coord, form_text,
-                      number_of_columns, number_of_rows, row_index, row_height, scalelength_int, cesuur_int,
-                      score_grade_dict):
-#  questions_dict = {1: '4', 2: 'D-b', 3: '6', 4: 'E-d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1'}},
-    # border = [top, right, bottom, left]
-    # coord = [left, top]
-    top, right, bottom, left = border[0], border[1], border[2], border[3]
+def draw_conversion_question_row(canvas, border, coord, columns_per_page,
+                                 row_index_on_this_page, number_of_rows_on_this_page, first_score_on_page,
+                                 row_height, scalelength_int, cesuur_int, score_grade_dict):
+    #  questions_dict = {1: '4', 2: 'D-b', 3: '6', 4: 'E-d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1'}},
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_conversion_question_row -----')
+        logger.debug('     row_index_on_this_page: ' + str(row_index_on_this_page))
+        logger.debug('     number_of_rows_on_this_page: ' + str(number_of_rows_on_this_page))
+        logger.debug('     first first_score_on_page: ' + str(first_score_on_page))
 
     line_height = row_height
     padding_left = 8 * mm
 
     col_width = 38*mm
-    padding_x = 2*mm
 
     left = border[3] + padding_left
     y = coord[1]
 
     y -= line_height
+    # create more lien spacing between score 10 and 11 etc
+    if row_index_on_this_page and int(row_index_on_this_page / 10) == row_index_on_this_page / 10:
+        y -= line_height / 2
 
 # +++ loop through columns of this page
-    for col_index in range(0, number_of_columns):  # range(start_value, end_value, step), end_value is not included!
-        score_int = (row_index) + col_index * number_of_rows
+    for col_index in range(0, columns_per_page):  # range(start_value, end_value, step), end_value is not included!
+        score_int = first_score_on_page + row_index_on_this_page + col_index * number_of_rows_on_this_page
+
         if score_int <= scalelength_int:
-            grade = score_grade_dict[score_int] if score_int in score_grade_dict else None
+            grade = score_grade_dict[score_int] if score_int in score_grade_dict else ''
 
             cesuur_suffix = '*' if score_int == cesuur_int else ''
 
@@ -1523,6 +1506,30 @@ def draw_conversion_question_row(canvas, border, coord, form_text,
 
     coord[1] = y
 # - end of draw_conversion_question_row
+
+
+def get_conversion_page_count(columns_per_page, lines_per_page, scalelength_int):
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_page_count -----')
+
+    # calculate number of rows - 5 columns per row
+
+    #number_of_rows = 1 + int((scalelength_int - 1) / columns_per_page) if scalelength_int > 0 else 0
+    # there are scalelength_int + 1 grades to be printed ( 0 thru scalelength_int)
+    number_of_rows = 1 + int((scalelength_int + 1) / columns_per_page)
+
+    page_count = 1 + int((number_of_rows - 1) / (lines_per_page))
+
+    if logging_on:
+        logger.debug('    scalelength_int: ' + str(scalelength_int))
+        logger.debug('    columns_per_page: ' + str(columns_per_page))
+        logger.debug('    number_of_rows: ' + str(number_of_rows))
+        logger.debug('    lines_per_page: ' + str(lines_per_page))
+        logger.debug('    page_count: ' + str(page_count))
+
+    return number_of_rows, page_count
+# - end of get_conversion_page_count
 
 
 ############################################

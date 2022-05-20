@@ -38,7 +38,6 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
     gradetype = si_dict.get('gradetype')
     no_ce_years = si_dict.get('no_ce_years')
 
-
     # weight_se = si_dict.get('weight_se')
     # weight_ce = si_dict.get('weight_ce')
     # is_combi = si_dict.get('is_combi')
@@ -83,7 +82,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
         logger.debug('     input_value:   "' + str(input_value) + '" ' + str(type(input_value)))
         logger.debug('     is_score:      ' + str(is_score))
         logger.debug('     is_grade:      ' + str(is_grade))
-        logger.debug('     is_pe: '        + str(is_pe))
+        logger.debug('     is_pe:         ' + str(is_pe))
 
 # =======================================================================================
 # - reset output parameters
@@ -105,7 +104,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
 
 # - check if it is allowed to enter a score / grade because of is_secret_exam
     if not error_list:
-        err_list = validate_grade_secret_exam(examperiod, is_secret_exam, is_score, is_grade)
+        err_list = validate_grade_secret_exam(examperiod, gradetype, is_secret_exam)
         if err_list:
             error_list.extend(err_list)
 
@@ -232,8 +231,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
                     error_list.extend(err_list)
     if logging_on:
         logger.debug("output_value: " + str(output_value) + ' ' + str(type(output_value)))
-        if error_list:
-            logger.debug("error_list: " + str(error_list))
+        logger.debug("error_list: " + str(error_list))
 
     return output_value, error_list
 # - end of validate_update_grade
@@ -457,43 +455,54 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
 # - end of validate_import_grade
 
 
-def validate_grade_secret_exam(examperiod, is_secret_exam, is_score, is_grade):  # PR2022-05-17
+def validate_grade_secret_exam(examperiod, examgradetype, is_secret_exam):  # PR2022-05-20
     # - check if it is allowed to enter a score / grade because of is_secret_exam
 
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- validate_grade_secret_exam ----- ')
+        logger.debug('     examperiod: ' + str(examperiod))
+        logger.debug('     is_secret_exam: ' + str(is_secret_exam))
+        logger.debug('     examgradetype: ' + str(examgradetype))
+
+    # examgradetypes are: 'segrade', 'srgrade', 'pescore', 'pegrade', 'cescore', 'cegrade'
+
     err_list = []
+    col_name = None
     if is_secret_exam:
-        if is_score:
-            col_name = '-'
+        if examgradetype in ('pescore', 'cescore'):
             if examperiod == c.EXAMPERIOD_FIRST:
                 col_name = _('CE grade')
             elif examperiod == c.EXAMPERIOD_SECOND:
                 col_name = _('Re-examination grade')
             elif examperiod == c.EXAMPERIOD_THIRD:
                 col_name = _('Third period grade')
-
-            err_list.extend(((
-                str(_('This exam is taken at the Division of Exams.')),
-                str(_('You cannot enter scores in this exam.')),
-                str(_('The grade of this exam will be provided by the Division of Exams.')),
-                str(_("You can enter this grade in the column '%(cpt)s'.") % {'cpt': col_name}))))
+            if col_name:
+                err_list.extend(((
+                    str(_('This exam is taken at the Division of Exams.')),
+                    str(_('You cannot enter scores in this exam.')),
+                    str(_('The grade of this exam will be provided by the Division of Exams.')),
+                    str(_("You can enter this grade in the column '%(cpt)s'.") % {'cpt': col_name}))))
     else:
-        if is_grade:
-            col_name = '-'
+        if examgradetype in ('pegrade', 'cegrade'):
             if examperiod == c.EXAMPERIOD_FIRST:
                 col_name = _('CE score')
             elif examperiod == c.EXAMPERIOD_SECOND:
                 col_name = _('Re-examination score')
             elif examperiod == c.EXAMPERIOD_THIRD:
                 col_name = _('Third period score')
+            if col_name:
+                err_list.extend(((
+                    str(_('You cannot enter grades in this exam.')),
+                    str(_("Enter the score in the column '%(cpt)s'.") % {'cpt': col_name}),
+                    str(_('AWP will calculate the grade when the conversion table has been published.')))))
 
-            err_list.extend(((
-                str(_('You cannot enter grades in this exam.')),
-                str(_("Enter the score in the column '%(cpt)s'.") % {'cpt': col_name}),
-                str(_('AWP will calculate the grade when the conversion table has been published.')))))
-
+    if logging_on:
+        logger.debug('     err_list: ' + str(err_list))
     return err_list
-
 # - en of validate_grade_secret_exam
+
+
 def validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype):  # PR2021-12-11 PR2021-12-25
     # functions checks if examyear has no_practexam, sr_allowed, no_centralexam, no_thirdperiod
     # values of examgradetype are:
@@ -793,7 +802,12 @@ def validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field):  # PR
 # --- end of validate_exem_sr_reex_reex03_delete_allowed
 
 
-def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25
+def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR2022-05-20
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_grade_auth_publ -------')
+
     err_list = []
     if grade_instance:
         # note: don't check on blocked:
@@ -809,6 +823,10 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25
                 is_auth = getattr(grade_instance, key_str)
                 if is_auth:
                     break
+
+        if logging_on:
+            logger.debug('is_publ: ' + str(is_publ))
+            logger.debug('is_auth: ' + str(is_auth))
 
         if is_publ or is_auth:
             caption = '-'

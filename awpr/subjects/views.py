@@ -1243,7 +1243,7 @@ def get_subjecttypebase_instance(sjtpbase_pk, error_list, message_header, loggin
 class ExamListView(View):  # PR2021-04-04
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -1394,12 +1394,12 @@ class ExamUploadView(View):
 # +++++ Update instance, also when it is created, not when is_delete
                             updated_cegrade_count = update_exam_instance(
                                 request=request,
-                                instance=exam,
+                                exam_instance=exam,
                                 examyear=sel_examyear,
                                 upload_dict=upload_dict,
                                 error_list=error_list)
 
-        # - return message when CE-grades are calculatred after entering cesuur or scalelength
+        # - return message when CE-grades are calculated after entering cesuur or scalelength
                             if updated_cegrade_count:
                                 if updated_cegrade_count == 1:
                                     msg_html = str(_('1 CE grade has been calculated from the score.'))
@@ -1413,6 +1413,7 @@ class ExamUploadView(View):
 
                     if logging_on:
                         logger.debug('---- exam: ' + str(exam))
+                        logger.debug('---- table: ' + str(table))
 
     # 6. create list of deleted exam
                     if deleted_row:
@@ -1659,6 +1660,7 @@ class ExamUploadDuoExamView(View):
                     # PR2022-04-09 version not in use yet, to be added when multiple exams per level are possible
                     version = upload_dict.get('version')
                     # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
+                    # warning: it uses CUR subject, make sure SXM connects the exam correctly
                     subject_pk = upload_dict.get('subject_pk')
 
                     if logging_on:
@@ -1727,6 +1729,8 @@ class ExamUploadDuoExamView(View):
                                 logger.debug('created exam: ' + str(exam))
                                 logger.debug('append_dict: ' + str(append_dict))
 
+    # TODO link grades to this exam
+
     # 6. create list of updated exam
                             append_dict = {'created': True}
                             updated_duo_exam_rows = create_duo_exam_rows(
@@ -1783,10 +1787,10 @@ def delete_duo_exam_instance(exam_instance, error_list, request):  # PR2022-04-0
 # - end of delete_duo_exam_instance
 
 
-def validate_exam_has_grades(exam_instance):
+def validate_exam_has_grades(exam_instance): # PR2022-04-09
     count_grades = 0
 
-    # - check if grades connected to this exam
+# - check if any grades are connected to this exam
     sql_keys = {'exam_id': exam_instance.pk}
     sql_list = [
         "SELECT COUNT(grd.ce_exam_id)",
@@ -3601,7 +3605,7 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05 PR2022
 
 
 def update_exam_instance(request, exam_instance, examyear, upload_dict, error_list):
-    # PR2021-04-05 PR2022-01-24 PR2022-05-06
+    # PR2021-04-05 PR2022-01-24 PR2022-05-06 PR2022-05-20
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --------- update_exam_instance -------------')
@@ -3614,6 +3618,7 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
         save_changes = False
         calc_amount_and_scalelength = False
         calc_cegrade_from_ete_exam_score = False
+        calc_cegrade_from_duo_exam_score = False
 
         for field, new_value in upload_dict.items():
 
@@ -3653,16 +3658,72 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                     setattr(exam_instance, field, new_value)
                     save_changes = True
 
-            elif field in ('amount', 'blanks', 'scalelength'):
+            elif field in ('amount', 'blanks'):
                 # these are calculated fields and will be calculated in calc_amount_and_scalelength
                 pass
+
+            elif field == 'nterm':
+                # only in DUO exams the nterm can be entered
+                is_ete_exam = getattr(exam_instance, 'ete_exam', False)
+
+                if not is_ete_exam:
+                    # save None instead of  '' or 0
+                    if not new_value:
+                        new_value = None
+
+                    # - get_grade_number_from_input_str returns None when new_value has no value, without msg_err
+                    new_value_str, err_list = grade_calc_final.get_grade_number_from_input_str(new_value)
+
+                    if err_list:
+                        error_list.extend(err_list)
+                    else:
+                        old_value = getattr(exam_instance, field)
+                        if new_value_str != old_value:
+                            setattr(exam_instance, field, new_value_str)
+                            save_changes = True
+                            calc_cegrade_from_duo_exam_score = True
+
+                        if logging_on:
+                            logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                            logger.debug('old_value: ' + str(old_value) + ' ' + str(type(old_value)))
+                            logger.debug('save_changes: ' + str(save_changes))
+
+            elif field == 'scalelength':
+                # only in DUO exams the scalelength can be entered
+                is_ete_exam = getattr(exam_instance, 'ete_exam', False)
+
+                if not is_ete_exam:
+                    # save None instead of  '' or 0
+                    if not new_value:
+                        new_value = None
+
+                    # - get_score_from_inputscore returns None when new_value has no value, without msg_err
+                    new_value_str, err_list = grade_calc_final.get_score_from_inputscore(new_value)
+
+                    if err_list:
+                        error_list.extend(err_list)
+                    else:
+                        # check if new_value_str gves valid integer is done in get_score_from_inputscore
+                        new_value_int = int(new_value_str) if new_value_str else None
+
+                        old_value = getattr(exam_instance, field)
+
+                        if new_value_int != old_value:
+                            setattr(exam_instance, field, new_value_int)
+                            save_changes = True
+                            calc_cegrade_from_duo_exam_score = True
+
+                        if logging_on:
+                            logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                            logger.debug('old_value: ' + str(old_value) + ' ' + str(type(old_value)))
+                            logger.debug('save_changes: ' + str(save_changes))
 
             elif field == 'cesuur':
                 # save None instead of  '' or 0
                 if not new_value:
                     new_value = None
                 max_score = getattr(exam_instance, 'scalelength')
-
+                # - get_score_from_inputscore returns None when new_value has no value, without msg_err
                 new_value_str, err_list = grade_calc_final.get_score_from_inputscore(new_value, max_score)
                 if err_list:
                     error_list.extend(err_list)
@@ -3679,16 +3740,23 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                         logger.debug('old_value: ' + str(old_value) + ' ' + str(type(old_value)))
                         logger.debug('save_changes: ' + str(save_changes))
 
-            elif field in ('partex', 'assignment', 'keys', 'version', 'examperiod', 'nex_id', 'nterm'):
+            elif field in ('partex', 'assignment', 'keys', 'version', 'examperiod', 'nex_id'):
                 # save None instead of  '' or 0
                 if not new_value:
                     new_value = None
                 old_value = getattr(exam_instance, field)
-                if new_value != old_value:
-                    setattr(exam_instance, field, new_value)
-                    save_changes = True
-                    if field in ('partex', 'assignment', 'keys', 'amount', 'blanks', 'scalelength'):
-                        calc_amount_and_scalelength = True
+
+                if logging_on:
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: ' + str(new_value))
+                    logger.debug('old_value: ' + str(old_value))
+                    logger.debug('new_value != old_value: ' + str(new_value != old_value))
+
+                # always calculate and save result, to be on the safe side. Was: if new_value != saved_value:
+                setattr(exam_instance, field, new_value)
+                save_changes = True
+                if field in ('partex', 'assignment', 'keys', 'amount', 'blanks', 'scalelength'):
+                    calc_amount_and_scalelength = True
 
             elif field == 'secret_exam':
                 if not new_value:
@@ -3740,7 +3808,6 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                 exam_instance.save(request=request)
                 if logging_on:
                     logger.debug('exam_instance saved: ' + str(exam_instance))
-                    logger.debug('calc_amount_and_scalelength: ' + str(calc_amount_and_scalelength))
 
 # - save to log after saving emplhour and orderhour, also when emplhour is_created
                 # error: conversion from NoneType to Decimal is not supported
@@ -3762,6 +3829,10 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                 if calc_cegrade_from_ete_exam_score:
                     updated_cegrade_count = calc_score.calc_cegrade_from_ete_exam_score(exam_instance, request)
 
+                if calc_cegrade_from_duo_exam_score:
+                    #TODO
+                    # updated_cegrade_count = calc_score.calc_cegrade_from_duo_exam_score(exam_instance, request)
+                    pass
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 # error: conversion from NoneType to Decimal is not supported
@@ -3991,7 +4062,8 @@ def create_duo_subject_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dic
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
 
         "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT",
-        "AND NOT si.ete_exam"
+        #PR2022-05-19 added: AND si.weight_ce > 0", because subjects without CE were showing
+        "AND NOT si.ete_exam AND si.weight_ce > 0"
     ]
 
     if setting_dict:
