@@ -6745,8 +6745,8 @@ console.log("exam_dict", exam_dict);
                 const upload_dict = { table: "grades",
                                        mode: "update",
                                        grade_pk: mod_dict.grade_pk,
-                                       //examyear_pk: mod_dict.examyear_pk,
-                                       //subject_pk: mod_dict.subject_pk,
+                                       examyear_pk: mod_dict.examyear_pk,
+                                       subject_pk: mod_dict.subject_pk,
                                        student_pk: mod_dict.student_pk,
                                        ce_exam_published: null,
                                        return_grades_with_exam: true
@@ -6763,7 +6763,7 @@ console.log("exam_dict", exam_dict);
                                        mode: "update",
                                        exam_pk: mod_dict.exam_pk,
                                        examyear_pk: mod_dict.examyear_pk,
-                                       student_pk: mod_dict.student_id,
+                                       subject_pk: mod_dict.subject_pk,
                                        published: null
                                     };
         console.log("upload_dict: ", upload_dict);
