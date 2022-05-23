@@ -541,7 +541,7 @@ def format_WDMY_from_dte(dte, user_lang, month_abbrev=True):  # PR2020-10-20
     return date_WDMY
 
 
-def format_DMY_from_dte(dte, lang, month_abbrev):  # PR2019-06-09  # PR2020-10-20 PR2021-08-10
+def format_DMY_from_dte(dte, lang, month_abbrev=True):  # PR2019-06-09  # PR2020-10-20 PR2021-08-10 PR2022-05-22
     #logger.debug('... format_DMY_from_dte: ' + str(dte) + ' type:: ' + str(type(dte)) + ' lang: ' + str(lang))
     # returns '16 juni 2019'
     date_DMY = ''
@@ -644,6 +644,51 @@ def get_modifiedby_formatted(instance, user_lang, skip_modifiedby=False):
 
     return last_modified_text
 
+
+def get_published_at_formatted(exam_instance, user_lang):
+    # Function returns 'Gepubliceerd op 6 mei 2021, 15.55 u'  P R2022-05-08
+    published_at_text, date_formatted, time_formatted = '', '', ''
+    if exam_instance:
+        published = exam_instance.published
+        if published:
+
+            datetime_formatted = ''
+            if published.modifiedat:
+                # local timezone is set to 'America/Curacao' by default
+                datetime_local = get_datetimelocal_from_datetime_utc(published.modifiedat)
+                last_modified_date = datetime_local.date()
+                date_formatted = format_DMY_from_dte(last_modified_date, user_lang, True)  # True = month_abbrev
+
+                time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
+                datetime_formatted = date_formatted + ', ' + time_formatted
+
+            published_at_text = str(_('Published at ')) + datetime_formatted
+        else:
+            published_at_text = str(_('This exam is not published'))
+    return published_at_text
+
+
+def get_submitted_at_formatted(grade_instance, user_lang):
+    # Function returns 'Ingediend op 6 mei 2021, 15.55 u'  P R2022-05-08
+    published_at_text, date_formatted, time_formatted = '', '', ''
+    if grade_instance:
+        published = grade_instance.ce_exam_published
+        if published:
+
+            datetime_formatted = ''
+            if published.modifiedat:
+                # local timezone is set to 'America/Curacao' by default
+                datetime_local = get_datetimelocal_from_datetime_utc(published.modifiedat)
+                last_modified_date = datetime_local.date()
+                date_formatted = format_DMY_from_dte(last_modified_date, user_lang, True)  # True = month_abbrev
+
+                time_formatted = format_HM_from_dt_local(datetime_local, True, True, '24h', user_lang)
+                datetime_formatted = date_formatted + ', ' + time_formatted
+
+            published_at_text = str(_('Submitted at ')) + datetime_formatted
+        else:
+            published_at_text = str(_('This exam is not submitted.'))
+    return published_at_text
 # ----------  end of Date functions ---------------
 
 
@@ -1261,7 +1306,7 @@ def move_pescore_to_ce_exam_score(request):
 # - end of move_pescore_to_ce_exam_score
 
 
-def recalc_ce_score(request):
+def recalc_grade_ce_examscoreXXX(request):
     # PR2022-05-15 # debug: Yolande van Erven Ancilla Domini : pescore not calculated. recalc missing pescore
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -1376,8 +1421,8 @@ def show_deleted_grades(request):
 
 
 def recalc_amount_and_scalelength_of_assignment(request):
-    # PR2022-05-02
-    logging_on = False  # s.LOGGING_ON
+    # PR2022-05-02  PR2022-05-20
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- recalc_amount_and_scalelength_of_assignment -------')
 
@@ -1392,7 +1437,7 @@ def recalc_amount_and_scalelength_of_assignment(request):
         if not exists:
             exams = subj_mod.Exam.objects.filter( ete_exam=True)
             for exam in exams:
-                total_amount, total_maxscore, total_blanks, has_changed = grade_view.calc_amount_and_scalelength_of_assignment(exam)
+                total_amount, total_maxscore, total_blanks, total_keys_missing, has_changed = grade_view.calc_amount_and_scalelength_of_assignment(exam)
                 if has_changed:
                     setattr(exam, 'scalelength', total_maxscore)
                     setattr(exam, 'amount', total_amount)

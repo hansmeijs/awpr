@@ -72,7 +72,8 @@ def draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang):  # PR2021-05-
     keys: "1 # 3|1;ac|2;b|3;ab|7;d # ...
     format of keys_str is:
         partex are divided by "#"
-            first item of partex contains partex_pk ; partex_amount ; max_score |
+            first item of partex contains partex_pk |
+            other items =  | q_number ; keys |      
     """
     partex_str = sel_exam_instance.partex
     assignment_str = sel_exam_instance.assignment
@@ -93,10 +94,11 @@ def draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang):  # PR2021-05-
     version = sel_exam_instance.version
 
     last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang)
+    published_at_text = af.get_published_at_formatted(sel_exam_instance, user_lang)
 
 # - get form_text from examyearsetting
     form_text = awpr_lib.get_library(sel_examyear, ['exform', 'exam'])
-    if logging_on:
+    if logging_on and False:
         logger.debug('form_text: ' + str(form_text))
 
     minond = form_text.get('minond', '-')
@@ -123,23 +125,27 @@ def draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang):  # PR2021-05-
         logger.error(getattr(e, 'message', str(e)))
 
 # create list of questions
-    all_partex_assignment_keys_dict, no_key_count, no_max_score_count = get_all_partex_assignment_keys_dict(partex_str, assignment_str, keys_str)
-    blanks_or_cesuur_str = ''
+    exam_partex_assignment_keys_dict, no_key_count, no_max_score_count = \
+        get_exam_partex_assignment_keys_dict(partex_str, assignment_str, keys_str)
+
+    blanks_or_cesuur_cpt, blanks_or_cesuur_str = '', ''
     if no_key_count or no_max_score_count:
         blanks_or_cesuur_cpt = form_text.get('blanks', '-') + ':'
-        if no_key_count:
-            blanks_or_cesuur_str = ' '.join((str(no_key_count), form_text.get('keys', '')))
-            if no_max_score_count:
-                blanks_or_cesuur_str += ', '
         if no_max_score_count:
-            blanks_or_cesuur_str += ' '.join((str(no_max_score_count), form_text.get('max_scores', '')))
+            caption = _('score') if no_max_score_count == 1 else _('scores')
+            blanks_or_cesuur_str = ' '.join((str(no_max_score_count), str(caption)))
+            if no_key_count:
+                blanks_or_cesuur_str += ', '
+        if no_key_count:
+            caption = _('key') if no_key_count == 1 else _('keys')
+            blanks_or_cesuur_str += ' '.join((str(no_key_count), str(caption)))
 
     elif sel_exam_instance.cesuur and not sel_exam_instance.blanks:
         blanks_or_cesuur_cpt = form_text.get('cesuur', '-') + ':'
         blanks_or_cesuur_str = str(sel_exam_instance.cesuur) if sel_exam_instance.cesuur else '---'
-    else:
-        blanks_or_cesuur_cpt = form_text.get('blanks', '-') + ':'
-        blanks_or_cesuur_str = str(amount) if amount else '---'
+    #else:
+   #     blanks_or_cesuur_cpt = form_text.get('blanks', '-') + ':'
+    #    blanks_or_cesuur_str = str(amount) if amount else '---'
 
     header_list = [
         (minond, None, None, None),
@@ -149,20 +155,20 @@ def draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang):  # PR2021-05-
         (subject_cpt, subject.name, blanks_or_cesuur_cpt, blanks_or_cesuur_str)
     ]
 
-    draw_exam_page(canvas, form_text, header_list, last_modified_text, all_partex_assignment_keys_dict)
+    draw_exam_page(canvas, form_text, header_list, last_modified_text, published_at_text, exam_partex_assignment_keys_dict)
 
 # - end of draw_exam
 
 
-def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_partex_assignment_keys_dict,):
+def draw_exam_page(canvas, form_text, header_list, last_modified_text, published_at_text, exam_partex_assignment_keys_dict,):
     # PR2021-05-10 PR2022-01-29 PR2022-04-23
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_exam_page -----')
-        logger.debug('all_partex_assignment_keys_dict' + str(all_partex_assignment_keys_dict))
+        logger.debug('exam_partex_assignment_keys_dict' + str(exam_partex_assignment_keys_dict))
 
     """
-    all_partex_assignment_keys_dict{
+    exam_partex_assignment_keys_dict{
         1: {'amount': 4, 'max_score': 20, 'name': 'Praktijkexamen onderdeel A', 'q': {1: '6', 2: '4', 3: '4', 4: '6'}}, 
         3: {'amount': 8, 'max_score': 12, 'name': 'Minitoets 1 BLAUW onderdeel A', 'q': {1: 'D - ac - 3', 2: 'C - b - 2', 3: 'C - ab', 4: '1', 5: '1', 6: '1', 7: 'D - d', 8: '2'}}, 
         4: {'amount': 3, 'max_score': 22, 'name': 'Praktijkexamen onderdeel B', 'q': {1: '6', 2: '6', 3: '10'}}, 
@@ -178,7 +184,7 @@ def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_parte
     partexname_list = []
     partexname_dict = {}
 
-    for partex_pk, partex_dict in all_partex_assignment_keys_dict.items():
+    for partex_pk, partex_dict in exam_partex_assignment_keys_dict.items():
         partex_name = partex_dict.get('name')
         if partex_name:
             partexname_list.append(partex_name)
@@ -219,21 +225,19 @@ def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_parte
     row_height = 7 * mm
 
 # create pagenumber_text
-    page_count = get_page_count(columns_per_page, lines_per_page, all_partex_assignment_keys_dict)
+    page_count = get_page_count(columns_per_page, lines_per_page, exam_partex_assignment_keys_dict)
 
     page_number = 1
-    pagenumber_text = ' '.join((
-            str(_('Page')), str(page_number),
-            'van', str(page_count) + ',',
-            today_formatted
-    ))
-    draw_exam_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
+    # pagenumber_text = ' '.join(( str(_('Page')), str(page_number), 'van', str(page_count) + ',', today_formatted))
 
-    #for partex_pk, partex_dict in all_partex_assignment_keys_dict.items():
+    draw_exam_page_header(canvas, border, coord, header_list, last_modified_text, published_at_text)
+
+    #for partex_pk, partex_dict in exam_partex_assignment_keys_dict.items():
     for partex_pk in partexpk_list_sorted:
-        partex_dict = all_partex_assignment_keys_dict.get(partex_pk)
+        partex_dict = exam_partex_assignment_keys_dict.get(partex_pk)
         # calculate necessary lines: 2 for partex_header, 1 for each line
         amount = int(partex_dict.get('amount', 0))
+
         # calculate number of rows - 5 columns per row
         columns_per_page = 5
         number_of_rows = 1 + int((amount - 1) / columns_per_page) if amount > 0 else 0
@@ -246,29 +250,25 @@ def draw_exam_page(canvas, form_text, header_list, last_modified_text, all_parte
             coord[1] = top # 287 * mm
             available_lines = lines_per_page
             page_number += 1
-            pagenumber_text = ' '.join((
-                str(_('Page')), str(page_number),
-                'van', str(page_count) + ',',
-                today_formatted
-            ))
-            draw_exam_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
+            # pagenumber_text = ' '.join(( str(_('Page')), str(page_number), 'van', str(page_count) + ',', today_formatted ))
+            draw_exam_page_header(canvas, border, coord, header_list, last_modified_text, published_at_text)
 
-        draw_partex_header(canvas, border, coord, form_text, partex_dict)
+        draw_exam_partex_header(canvas, border, coord, form_text, partex_dict)
 
         draw_questions(canvas, border, coord, row_height, form_text, partex_dict)
         available_lines -= needed_lines
 # - end of draw_exam_page
 
 
-def get_page_count(columns_per_page, lines_per_page, all_partex_assignment_keys_dict):
+def get_page_count(columns_per_page, lines_per_page, exam_partex_assignment_keys_dict):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_page_count -----')
-        logger.debug('all_partex_assignment_keys_dict: ' + str(all_partex_assignment_keys_dict) + ' ' + str(type(all_partex_assignment_keys_dict)))
+        logger.debug('exam_partex_assignment_keys_dict: ' + str(exam_partex_assignment_keys_dict) + ' ' + str(type(exam_partex_assignment_keys_dict)))
 
     page_count = 1
     available_lines = lines_per_page
-    for partex_pk, partex_dict in all_partex_assignment_keys_dict.items():
+    for partex_pk, partex_dict in exam_partex_assignment_keys_dict.items():
         # calculate necessary lines: 2 for partex_header, 1 for each line
         amount = int(partex_dict.get('amount', 0))
 
@@ -300,7 +300,7 @@ def get_page_count(columns_per_page, lines_per_page, all_partex_assignment_keys_
 
 
 
-def draw_exam_page_header(canvas, border, coord, text_list, last_modified_text, pagenumber_text):
+def draw_exam_page_header(canvas, border, coord, text_list, last_modified_text, published_at_text):
     # loop through rows of page_header
     # called by draw_exam_page (2x) and draw_conversion_page
 
@@ -370,18 +370,19 @@ def draw_exam_page_header(canvas, border, coord, text_list, last_modified_text, 
     canvas.drawString(x, y1, last_modified_text)
 
     x1 = right - 4 * mm
-    canvas.drawRightString(x1 , y1, pagenumber_text)
+    canvas.drawRightString(x1 , y1, published_at_text)
 
     coord[1] = y
 
 # - end of draw_exam_page_header
 
 
-def draw_partex_header(canvas, border, coord, form_text, partex_dict):
+def draw_exam_partex_header(canvas, border, coord, form_text, partex_dict):
     # loop through rows of page_header
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----- draw_partex_header -----')
+        logger.debug('----- draw_exam_partex_header -----')
+        logger.debug('partex_dict: ' + str (partex_dict))
 
     # border = [top, right, bottom, left]
     # coord = [left, top]
@@ -400,22 +401,41 @@ def draw_partex_header(canvas, border, coord, form_text, partex_dict):
     set_font_timesbold_11_black(canvas)
     canvas.drawString(x, y, partex_dict.get('name', '---'))
 
-# draw label 1
-    set_font_timesroman_11_black(canvas)
-    canvas.drawRightString(x + 115 * mm, y, form_text.get('max_score', '-') + ':')
-
-# draw text 1
-    set_font_arial_11_blue(canvas)
-    canvas.drawString(x + 120 * mm, y, str(partex_dict.get('max_score', '-')))
-
 # draw label amount_cpt
-    # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
     set_font_timesroman_11_black(canvas)
-    canvas.drawRightString(x + 170 * mm, y, form_text.get('number_questions', '-') + ':')
+    canvas.drawRightString(x + 109 * mm, y, form_text.get('number_questions', '-') + ':')
 
 # draw text amount
     set_font_arial_11_blue(canvas)
-    canvas.drawString(x + 175 * mm, y, str(partex_dict.get('amount', '-')))
+    canvas.drawString(x + 114 * mm, y, str(partex_dict.get('amount', '-')))
+
+# text max_score / no_score / no_key
+    no_score = int(partex_dict.get('no_score', 0))
+    no_key = int(partex_dict.get('no_key', 0))
+
+    blanks_or_maxscore_str = ''
+    if no_key or no_score:
+        blanks_or_maxscore_cpt = form_text.get('blanks', '-')
+        if no_score:
+            caption = _('score') if no_score == 1 else _('scores')
+            blanks_or_maxscore_str = ' '.join((str(no_score), str(caption)))
+            if no_key:
+                blanks_or_maxscore_str += ', '
+        if no_key:
+            caption = _('key') if no_key == 1 else _('keys')
+            blanks_or_maxscore_str += ' '.join((str(no_key), str(caption)))
+
+    else:
+        blanks_or_maxscore_cpt = form_text.get('max_score', '-')
+        blanks_or_maxscore_str = str(partex_dict.get('max_score', '-'))
+
+# draw label max_score
+    set_font_timesroman_11_black(canvas)
+    canvas.drawRightString(x + 147 * mm, y, blanks_or_maxscore_cpt + ':')
+
+# draw text max_score
+    set_font_arial_11_blue(canvas)
+    canvas.drawString(x + 152 * mm, y, blanks_or_maxscore_str)
 
 # - draw horizontal line at bottom of header section
     x1, x2 = left, right
@@ -424,14 +444,14 @@ def draw_partex_header(canvas, border, coord, form_text, partex_dict):
     canvas.line(x1, y, x2, y)
 
     coord[1] = y
-# - end of draw_partex_header
+# - end of draw_exam_partex_header
 
 
 def draw_questions(canvas, border, coord, row_height, form_text, partex_assignment_keys_dict):
     # loop through rows of page_header
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----- draw_partex_header -----')
+        logger.debug('----- draw_questions -----')
         logger.debug('partex_assignment_keys_dict: ' + str(partex_assignment_keys_dict))
 
     """
@@ -554,6 +574,10 @@ def draw_question_row(canvas, border, coord, form_text,
 # - end of draw_question_row
 
 
+def set_font_arial_11_red(canvas):
+    canvas.setFont('Arial', 11, leading=None)
+    canvas.setFillColorRGB(1,0,0)
+
 def set_font_arial_11_blue(canvas):
     canvas.setFont('Arial', 11, leading=None)
     canvas.setFillColor(colors.HexColor("#000080"))
@@ -569,130 +593,10 @@ def set_font_timesbold_11_black(canvas):
     canvas.setFillColor(colors.HexColor("#000000"))
 
 
-#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
-def draw_pdf_upload_log(canvas, sel_exam_instance, user_lang):  # PR2021-07-16
-    logging_on = False  # s.LOGGING_ON
+def get_exam_partex_assignment_keys_dict(partex_str, assignment_str, keys_str):
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----- draw_exam -----')
-        logger.debug('sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
-
-    # pagesize A4  = (595.27, 841.89) points, 1 point = 1/72 inch
-    # move the origin up and to the left
-    # c.translate(inch,inch)
-
-    # filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Garamond.ttf'
-
-    # filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
-    # logger.debug('filepath: ' + str(filepath))
-    # pdfmetrics.registerFont(TTFont('Palace_Script_MT', filepath))
-
-    # c.setFont('Palace_Script_MT', 36)
-    # c.drawString(10, 650, "Some text encoded in UTF-8")
-    # c.drawString(10, 600, "In the Palace_Script_MT TT Font!")
-
-    # choose some colors
-    # c.setStrokeColorRGB(0.2,0.5,0.3)
-    # c.setFillColorRGB(1,0,1)
-
-    # draw a rectangle
-    # canvas.rect(x, y, width, height, stroke=1, fill=0)
-
-    subject = sel_exam_instance.subject
-    examyear = subject.examyear
-    examperiod = sel_exam_instance.examperiod
-    examtype = sel_exam_instance.examtype
-
-    amount = sel_exam_instance.amount if sel_exam_instance.amount else 0
-    amount_str = str(amount) if amount else '---'
-
-    blanks_str = str(sel_exam_instance.blanks) if sel_exam_instance.blanks else '-'
-
-    examyear_code = str(examyear.code)
-
-    subject_name = subject.name
-    examperiod_caption = c.get_examperiod_caption(examperiod)
-    examtype_caption = c.get_examtype_caption(examtype)
-
-# create list of questions
-    assignment_keys_dict = get_all_partex_assignment_keys_dict(
-        partex_str=sel_exam_instance.partex,
-        assignment_str=sel_exam_instance.assignment,
-        keys_str=sel_exam_instance.keys
-    )
-    if logging_on:
-        logger.debug('assignment_keys_dict: ' + str(assignment_keys_dict) + ' ' + str(type(assignment_keys_dict)))
-
-# - get dep_abbrev from department
-    dep_abbrev = '---'
-    department = sel_exam_instance.department
-    if department:
-        dep_abbrev = department.abbrev
-
-# - get level_abbrev from level
-    level_abbrev = None
-    level = sel_exam_instance.level
-    if level and level.abbrev:
-        dep_abbrev += ' - ' + level.abbrev
-
-# - get version
-    version = sel_exam_instance.version
-
-    last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang)
-
-# NIU: sector_abbrevs = get_sector_abbrevs(sel_exam_instance, examyear)
-
-    header_list = ("MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT",
-                 "Examenvragen voor het examenjaar " + examyear_code)
-
-    data_list = [( str(_('Education type')) + ':', dep_abbrev) ]
-    data_list.append( (str(_('Exam type')) + ':', ' '.join( (examtype_caption, examperiod_caption) ) ) )
-    data_list.append((str(_('Subject')) + ':', subject_name) )
-    if version:
-        data_list.append( (str(_('Version')) + ':', version) )
-    question_list = [ ( str(_('Number of questions')) + ':', amount_str ),
-                      ( str(_('Blanks')) + ':', blanks_str )
-                    ]
-    filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
-    try:
-        ttfFile = TTFont('Arial', filepath)
-        #logger.debug('ttfFile: ' + str(ttfFile))
-        pdfmetrics.registerFont(ttfFile)
-    except Exception as e:
-        logger.error('filepath: ' + str(filepath))
-        logger.error(getattr(e, 'message', str(e)))
-
-# +++ loop through pages (max pages = 2
-    max_rows_per_page = 25
-    max_questions_per_page = max_rows_per_page * 5
-    page_count = 1
-    if amount:
-        page_count = 1 + int( (amount - 1) / max_questions_per_page )
-
-    if logging_on:
-        logger.debug('amount: ' + str(amount))
-        logger.debug('page_count: ' + str(page_count))
-
-    for page_number in range(1, 6):  # range(start_value, end_value, step), end_value is not included!
-
-# create 2 frames per column: 1 for label and 1 for values
-        first_q_number_on_page = (page_number -1) * max_questions_per_page
-        if logging_on:
-            logger.debug('first_q_number_on_page: ' + str(first_q_number_on_page))
-
-        if first_q_number_on_page < amount:
-            # go to new page
-            if page_number > 1:
-                canvas.showPage()
-            #write_page(canvas, header_list, data_list, question_list, assignment_keys_dict,
-            #           amount, page_number, page_count, max_rows_per_page, last_modified_text)
-# - end of draw_exam
-
-
-def get_all_partex_assignment_keys_dict(partex_str, assignment_str, keys_str):
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug('----- get_all_partex_assignment_keys_dict -----')
+        logger.debug('----- get_exam_partex_assignment_keys_dict -----')
         logger.debug('partex_str: ' + str(partex_str))
         logger.debug('assignment_str: ' + str(assignment_str))
         logger.debug('keys_str: ' + str(keys_str))
@@ -712,15 +616,17 @@ def get_all_partex_assignment_keys_dict(partex_str, assignment_str, keys_str):
     keys: "1 # 3|1;ac|2;b|3;ab|7;d # ...
     format of keys_str is:
         partex are divided by "#"
-            first item of partex contains partex_pk ; partex_amount ; max_score |
+            first item of partex contains partex_pk |
+            other items =  | q_number ; keys |
     """
 
 # - create dict with assignments PR2021-05-08
-    all_assignment_dict, no_key_count, no_max_score_count = grade_views.get_allassignment_dict_from_string(assignment_str, keys_str)
+    all_assignment_dict, no_key_count, no_max_score_count = \
+        grade_views.get_exam_assignment_detail_dict(assignment_str, keys_str)
 
 #  create dict from partex
-    all_partex_assignment_keys_dict = {}
-    p_partex_dict = {}
+    exam_partex_assignment_keys_dict = {}
+
     if partex_str:
         for pp in partex_str.split('#'):
             if pp:
@@ -730,29 +636,47 @@ def get_all_partex_assignment_keys_dict(partex_str, assignment_str, keys_str):
                 partex_dict = {
                     'amount': int(pp_arr[2]),
                     'max_score': int(pp_arr[3]),
-                    'name': pp_arr[4],
+                    'name': pp_arr[4]
                 }
-                if partex_pk in all_assignment_dict:
-                    partex_dict['q'] = all_assignment_dict[partex_pk]
 
-                all_partex_assignment_keys_dict[partex_pk] = partex_dict
+                p_dict = all_assignment_dict.get(partex_pk)
+                if p_dict:
+                    if logging_on:
+                        logger.debug('*******? p_dict: ' + str(p_dict))
+
+                    for key_str in ('no_score', 'no_key'):
+                        value = p_dict.get(key_str)
+                        if logging_on:
+                            logger.debug('*******? value: ' + str(value))
+                        if value:
+                            partex_dict[key_str] = value
+                            p_dict.pop(key_str)
+
+                    partex_dict['q'] = p_dict
+
+                exam_partex_assignment_keys_dict[partex_pk] = partex_dict
 
     if logging_on:
-        logger.debug( 'all_partex_assignment_keys_dict: ' + str(all_partex_assignment_keys_dict) + ' ' + str(type(all_partex_assignment_keys_dict)))
+        logger.debug( '?????????????? exam_partex_assignment_keys_dict: ' + str(exam_partex_assignment_keys_dict) + ' ' + str(type(exam_partex_assignment_keys_dict)))
 
     """
-all_partex_assignment_keys_list: {
-    1: {'amount': 31, 'max_score': 24, 'name': 'Praktijktoets blauw', 
-            'q': {1: '4', 2: 'D - b', 3: '6', 4: 'E - d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1', 10: '5'}}, 
-    2: {'amount': 31, 'max_score': 12, 'name': 'Minitoets rood', 
-            'q': {1: '2', 2: 'D - a', 3: 'B - b', 4: 'E - c', 5: '6'}}, 
-    3: {'amount': 41, 'max_score': 13, 'name': 'Minitoets groen', 
-            'q': {1: '2', 2: 'C - ab', 3: 'D - d', 4: '3', 5: 'E - a', 6: '2', 7: '2'}}, 
-    4: {'amount': 99, 'max_score': 0, 'name': 'Deelexamen 4', 'q': {}}
-}
+    exam_partex_assignment_keys_dict: {
+        1: {'amount': 3, 'max_score': 25, 'name': 'Praktijkexamen onderdeel A', 
+            'q': {1: '12', 2: '8', 3: '5'}}, 
+        2: {'amount': 1, 'max_score': 30, 'name': 'Praktijkexamen onderdeel B', 
+            'q': {1: '30'}}, 
+        3: {'amount': 4, 'max_score': 45, 'name': 'Praktijkexamen onderdeel C', 
+            'q': {1: '11', 2: '8', 3: '6', 4: '20'}}, 
+        5: {'amount': 10, 'max_score': 0, 'name': 'Minitoets 1 BLAUW Onderdeel A', 'no_score': 1, 
+            'q': {1: '1', 2: 'D - d - 1', 3: 'D - c - 1', 4: 'D - c - 1', 6: '1', 7: '1', 8: '1', 9: 'C - c - 1', 10: 'C - b - 1'}}, 
+        7: {'amount': 10, 'max_score': 10, 'name': 'Minitoets 2 BLAUW Onderdeel B', 
+            'q': {1: '1', 2: 'C - c - 1', 3: 'C - a - 1', 4: '1', 5: '1', 6: 'D - b - 1', 7: '1', 8: 'D - a - 1', 9: 'D - a - 1', 10: '1'}}, 
+        9: {'amount': 9, 'max_score': 0, 'name': 'Minitoets 3 BLAUW Onderdeel C', 'no_key': 1, 
+            'q': {1: 'C - a - 1', 2: 'F - a - 1', 3: 'C - a - 1', 4: 'C - a - 1', 5: '1', 6: '2', 7: 'C - a - 1', 8: 'D', 9: '1'}}} 
+
     """
-    return all_partex_assignment_keys_dict, no_key_count, no_max_score_count
-# - end of get_all_partex_assignment_keys_dict
+    return exam_partex_assignment_keys_dict, no_key_count, no_max_score_count
+# - end of get_exam_partex_assignment_keys_dict
 
 
 def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear, user_lang):  # PR2022-01-29
@@ -787,8 +711,8 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
     examperiod = sel_grade_instance.examperiod
 
 # create list of results
-    all_result_dict, total_amount, max_score, total_score, total_blanks, has_errors = \
-        grade_views.get_assignment_with_results_dict(
+    all_result_dict, total_amount, max_score, total_score, total_blanks, total_no_score, total_no_key = \
+        grade_views.get_grade_assignment_with_results_dict(
             partex_str=sel_exam_instance.partex,
             assignment_str=sel_exam_instance.assignment,
             keys_str=sel_exam_instance.keys,
@@ -801,8 +725,35 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
         logger.debug('     max_score: ' + str(max_score) + ' ' + str(type(max_score)))
         logger.debug('     total_score: ' + str(total_score) + ' ' + str(type(total_score)))
         logger.debug('     total_blanks: ' + str(total_blanks) + ' ' + str(type(total_blanks)))
-        logger.debug('     has_errors: ' + str(has_errors) + ' ' + str(type(has_errors)))
-
+        logger.debug('     total_no_score: ' + str(total_no_score) + ' ' + str(type(total_no_score)))
+        logger.debug('     total_no_key: ' + str(total_no_key) + ' ' + str(type(total_no_key)))
+    """       
+    all_result_dict: {
+        'amount': 39,
+        'blanks': 0, 
+        'max_score': 0, 
+        'score': None, 
+        'no_score': 2, 
+        'no_key': 2,
+         'errors': ['no max_score for question 1', 'no max_score for question 4', 'no max_score for question 1', 'no max_score for question 5']}
+        'partex': {
+            1: {'blanks': 0, 
+                'q': {1: '6', 2: '4', 3: '3', 4: '5'}, 
+                's': {1: '6', 2: '4', 3: '3', 4: '5'}, 
+                'm': [], 
+                'name': 'Praktijkexamen onderdeel A', 
+                'amount': 4, 'max_score': 20, 'score': 18, 
+                'no_score': 0}, 
+            3: {'blanks': 2, 
+                'q': {1: 'a', 2: 'b', 3: 'c', 4: '0', 5: '0', 6: '1', 7: 'd', 8: '2'}, 
+                's': {2: '1', 6: '1', 7: '1', 8: '2'}, 
+                'm': [2, 3, 7], 
+                'name': 'Minitoets 1 BLAUW onderdeel A', 
+                'amount': 8, 'max_score': 0, 
+                'no_score': 1, 
+                'no_key': 1, 
+                'score': None}, 
+    """
 # - get dep_abbrev from department
     dep_abbrev = '---'
     department = sel_exam_instance.department
@@ -818,6 +769,7 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
     version = sel_exam_instance.version
 
     last_modified_text = af.get_modifiedby_formatted(sel_grade_instance, user_lang)
+    submitted_at_text = af.get_submitted_at_formatted(sel_grade_instance, user_lang)
 
 # - get form_text from examyearsetting
     form_text = awpr_lib.get_library(sel_examyear, ['exform', 'exam'])
@@ -837,30 +789,35 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
     full_name = sel_grade_instance.studentsubject.student.fullname
     exam_number = sel_grade_instance.studentsubject.student.examnumber
 
-    # was: total_score_str = "---"
-    #       if 'total_score' in all_result_dict:
-    #           total_score_str = str(all_result_dict.get('total_score'))
-    total_score_cpt, total_score_str = '-', '---'
-    if total_score:
-        total_score_str = str(total_score) if total_score else '---'
-        total_score_cpt = form_text.get('total_score', '-') + ':'
-    elif total_blanks:
-        total_score_str = str(total_blanks) if total_blanks else '---'
-        total_score_cpt = form_text.get('blanks', '-') + ':'
-
     max_score_str = str(max_score) if max_score else '---'
-    max_score_cpt = form_text.get('max_score', '-') + ':'
+
+    if total_no_score or total_no_key:
+        max_score_cpt = str(_('There is an error in this exam.'))
+    else:
+        max_score_cpt = form_text.get('max_score', '-') + ':'
 
     total_amount_str = str(total_amount) if total_amount else '---'
     total_amount_cpt = form_text.get('number_questions', '-') + ':'
+
+    score_blanks_error_cpt, score_blanks_error_str = '', ''
+    has_error = False
+    if total_no_score or total_no_key:
+        score_blanks_error_cpt = str(_('Please contact the ETE.'))
+        has_error = True
+    elif total_blanks:
+        score_blanks_error_cpt = form_text.get('blanks', '-') + ':'
+        score_blanks_error_str = str(total_blanks)
+    else:
+        score_blanks_error_cpt = form_text.get('total_score', '-') + ':'
+        score_blanks_error_str = str(total_score) if total_score else '---'
 
     header_list = [
         (minond, None, None, None),
         (title, None, version_cpt, version),
         (school_cpt, school, educationtype_cpt, dep_abbrev),
         (candidate_cpt, full_name, total_amount_cpt, total_amount_str),
-        (exam_number_cpt, exam_number, max_score_cpt, max_score_str),
-        (subject_cpt, subject.name, total_score_cpt, total_score_str)
+        (exam_number_cpt, exam_number, max_score_cpt, max_score_str, has_error),
+        (subject_cpt, subject.name, score_blanks_error_cpt, score_blanks_error_str, has_error)
     ]
 
     filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
@@ -872,12 +829,12 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
         logger.error('filepath: ' + str(filepath))
         logger.error(getattr(e, 'message', str(e)))
 
-    draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all_result_dict)
+    draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, submitted_at_text, all_result_dict)
 
 # - end of draw_grade_exam
 
 
-def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all_result_dict):
+def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, submitted_at_text, all_result_dict):
     # PR2022-01-29 PR2022-04-27
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -912,12 +869,8 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
     page_count = 1 # get_page_count(columns_per_page, lines_per_page, all_result_dict)
 
     page_number = 1
-    pagenumber_text = ' '.join((
-            str(_('Page')), str(page_number),
-            'van', str(page_count) + ',',
-            today_formatted
-    ))
-    draw_grade_exam_page_header(canvas, border, coord, header_list, last_modified_text, pagenumber_text)
+    # pagenumber_text = ' '.join(( str(_('Page')), str(page_number), 'van', str(page_count) + ',', today_formatted))
+    draw_grade_exam_page_header(canvas, border, coord, header_list, last_modified_text, submitted_at_text)
 
     all_result_partex_dict = all_result_dict.get('partex')
 
@@ -981,12 +934,12 @@ def draw_grade_exam_page(canvas, form_text, header_list, last_modified_text, all
 # - end of draw_grade_exam_page
 
 
-def draw_grade_exam_page_header(canvas, border, coord, text_list, last_modified_text, pagenumber_text):
+def draw_grade_exam_page_header(canvas, border, coord, text_list, last_modified_text, submitted_at_text):
     # loop trhrough rows of page_header
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_grade_exam_page_header -----')
-        logger.debug('text_list: ' + str(text_list))
+        #logger.debug('text_list: ' + str(text_list))
 
 # +++ write header block
     canvas.setLineWidth(.5)
@@ -1012,27 +965,33 @@ def draw_grade_exam_page_header(canvas, border, coord, text_list, last_modified_
         text = text_list[index][1]
         label2 = text_list[index][2]
         text2 = text_list[index][3]
+        has_error = False
 
-# draw label
-        # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+        if index >= line_count - 2:
+            if len(text_list[index]) == 5:
+                has_error = text_list[index][4]
+
+# draw label 1
         set_font_timesbold_11_black(canvas)
         canvas.drawString(x, y, label)
-
 # draw text (schoolname etc
         if text:
             set_font_arial_11_blue(canvas)
             canvas.drawString(x + 38 * mm, y, text)
 
 # draw label 2
-        if label2:
-        # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
-            set_font_timesbold_11_black(canvas)
+        if has_error:
+            set_font_arial_11_red(canvas)
             canvas.drawString(x + 114 * mm, y, label2)
-
+        else:
+            set_font_timesbold_11_black(canvas)
+            if label2:
+                set_font_timesbold_11_black(canvas)
+                canvas.drawString(x + 114 * mm, y, label2)
 # draw text 2
-        if text2:
-            set_font_arial_11_blue(canvas)
-            canvas.drawString(x + 152 * mm, y, text2)
+            if text2:
+                set_font_arial_11_blue(canvas)
+                canvas.drawString(x + 152 * mm, y, text2)
 
 # - draw horizontal line at bottom of header section
     x1, x2 = left, right
@@ -1049,7 +1008,7 @@ def draw_grade_exam_page_header(canvas, border, coord, text_list, last_modified_
     canvas.drawString(x, y1, last_modified_text)
 
     x1 = right - 4 * mm
-    canvas.drawRightString(x1 , y1, pagenumber_text)
+    canvas.drawRightString(x1 , y1, submitted_at_text)
 
     coord[1] = y
 # - end of draw_grade_exam_page_header
@@ -1058,21 +1017,25 @@ def draw_grade_exam_page_header(canvas, border, coord, text_list, last_modified_
 def draw_grade_partex_header(canvas, border, coord, form_text, partex_dict, partex_count):
     # loop through rows of page_header PR2022-04-27
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_grade_partex_header -----')
         logger.debug('partex_dict: ' + str(partex_dict))
         #logger.debug('form_text: ' + str(form_text))
     """
-    partex_dict: 
-        {'blanks': 0, 
-            'q': {1: 'a', 2: 'a', 3: 'b', 4: '0', 5: '1', 6: 'x', 7: 'x', 8: 'x'}, 
-            's': {1: 3, 3: 1, 5: 1, 6: 'x', 7: 'x', 8: 'x'}, 
+    partex_dict: {
         'name': 'Minitoets 1 BLAUW onderdeel A', 
+        'blanks': 2, 
         'amount': 8, 
-        'score': 5}
-
+        'max_score': 7, 
+        'score': None,
+        'no_score': 1, 
+        'no_key': 1, 
+        'q': {1: 'a', 2: 'b', 3: 'c', 4: '0', 5: '0', 6: '1', 7: 'd', 8: '2'}, 
+        's': {2: '1', 6: '1', 7: '1', 8: '2'}, 
+        'm': [2, 3, 7]}
     """
+
     # border = [top, right, bottom, left]
     # coord = [left, top]
     top, right, bottom, left = border[0], border[1], border[2], border[3]
@@ -1088,44 +1051,69 @@ def draw_grade_partex_header(canvas, border, coord, form_text, partex_dict, part
 # draw partex_name - skip when there is only 1 aprtex
 
     if partex_count > 1:
-    # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
+
+# draw partex_name
+        # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
         set_font_timesbold_11_black(canvas)
         canvas.drawString(x, y, partex_dict.get('name', '---'))
 
-# draw label 1 - skip when there is only 1 aprtex
-        blanks = partex_dict.get('blanks', 0)
-        if blanks:
-            set_font_timesroman_11_black(canvas)
-            canvas.drawString(x + 114 * mm, y, form_text.get('blanks', '-') + ':')
-
-    # draw text 1
-            set_font_arial_11_blue(canvas)
-            canvas.drawRightString(x + 144 * mm, y, str(blanks))
-        else:
-            score = partex_dict.get('score', 0)
-            set_font_timesroman_11_black(canvas)
-            canvas.drawString(x + 114 * mm, y, str(_('Score')) + ':')
-
-            # draw text 1
-            set_font_arial_11_blue(canvas)
-            canvas.drawRightString(x + 144 * mm, y, str(score))
-
 # draw label amount_cpt
-    # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
-    set_font_timesroman_11_black(canvas)
-    canvas.drawString(x + 152 * mm, y, form_text.get('number_questions', '-') + ':')
+        set_font_timesroman_11_black(canvas)
+        canvas.drawRightString(x + 109 * mm, y, form_text.get('number_questions', '-') + ':')
 
 # draw text amount
-    set_font_arial_11_blue(canvas)
-    canvas.drawRightString(x + 183 * mm, y, str(partex_dict.get('amount', '-')))
+        set_font_arial_11_blue(canvas)
+        canvas.drawString(x + 114 * mm, y, str(partex_dict.get('amount', '-')))
 
-# - draw horizontal line at bottom of header section
-    x1, x2 = left, right
-    y -= 4 * mm
-    #canvas.setStrokeColorRGB(1, 0, 0)
-    canvas.line(x1, y, x2, y)
+# text max_score / no_score / no_key
+        blanks = partex_dict.get('blanks') or 0
+        score = partex_dict.get('score') or 0
+        no_score = partex_dict.get('no_score') or 0
+        no_key = partex_dict.get('no_key') or 0
 
-    coord[1] = y
+
+        if no_key or no_score:
+            blanks_or_score_cpt = str(_('Missing'))
+        elif blanks:
+            blanks_or_score_cpt = form_text.get('blanks', '-')
+        else:
+            blanks_or_score_cpt = str(_('Score'))
+
+        blanks_or_score_str = ''
+        if no_key or no_score:
+            if no_score:
+                caption = _('score') if no_score == 1 else _('scores')
+                blanks_or_score_str = ' '.join((str(no_score), str(caption)))
+                if no_key:
+                    blanks_or_score_str += ', '
+            if no_key:
+                caption = _('key') if no_key == 1 else _('keys')
+                blanks_or_score_str += ' '.join((str(no_key), str(caption)))
+
+        elif blanks:
+            blanks_or_score_str = str(blanks)
+        else:
+            blanks_or_score_str = str(score)
+
+# draw label max_score
+        set_font_timesroman_11_black(canvas)
+        canvas.drawRightString(x + 147 * mm, y, blanks_or_score_cpt + ':')
+
+# draw text max_score
+        if no_key or no_score:
+            set_font_arial_11_red(canvas)
+        else:
+            set_font_arial_11_blue(canvas)
+
+        canvas.drawString(x + 152 * mm, y, blanks_or_score_str)
+
+    # - draw horizontal line at bottom of header section
+        x1, x2 = left, right
+        y -= 4 * mm
+        #canvas.setStrokeColorRGB(1, 0, 0)
+        canvas.line(x1, y, x2, y)
+
+        coord[1] = y
 # - end of draw_grade_partex_header
 
 
@@ -1218,13 +1206,14 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
 
 # create list of with score and grades
     score_grade_dict = {}
-    for score_int in range(0, scalelength_int + 1):  # range(start_value, end_value, step), end_value is not included!
-        if is_ete_exam:
-            grade_str = calc_score.calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
-        else:
-            grade_str = calc_score.calc_grade_from_score_duo(score_int, scalelength_int, cesuur_int)
-        grade_with_comma = grade_str.replace('.', ',') if grade_str else '-'
-        score_grade_dict[score_int] = grade_with_comma
+    if scalelength_int:
+        for score_int in range(0, scalelength_int + 1):  # range(start_value, end_value, step), end_value is not included!
+            if is_ete_exam:
+                grade_str = calc_score.calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
+            else:
+                grade_str = calc_score.calc_grade_from_score_duo(score_int, scalelength_int, cesuur_int)
+            grade_with_comma = grade_str.replace('.', ',') if grade_str else '-'
+            score_grade_dict[score_int] = grade_with_comma
 
     draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_list, last_modified_text, score_grade_dict)
 
@@ -1517,16 +1506,9 @@ def get_conversion_page_count(columns_per_page, lines_per_page, scalelength_int)
 
     #number_of_rows = 1 + int((scalelength_int - 1) / columns_per_page) if scalelength_int > 0 else 0
     # there are scalelength_int + 1 grades to be printed ( 0 thru scalelength_int)
-    number_of_rows = 1 + int((scalelength_int + 1) / columns_per_page)
+    number_of_rows = 1 + int((scalelength_int + 1) / columns_per_page) if scalelength_int else 1
 
     page_count = 1 + int((number_of_rows - 1) / (lines_per_page))
-
-    if logging_on:
-        logger.debug('    scalelength_int: ' + str(scalelength_int))
-        logger.debug('    columns_per_page: ' + str(columns_per_page))
-        logger.debug('    number_of_rows: ' + str(number_of_rows))
-        logger.debug('    lines_per_page: ' + str(lines_per_page))
-        logger.debug('    page_count: ' + str(page_count))
 
     return number_of_rows, page_count
 # - end of get_conversion_page_count

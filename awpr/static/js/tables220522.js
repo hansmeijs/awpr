@@ -265,7 +265,7 @@
 
 //=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26
     function t_MSSSS_Save(el_input, MSSSS_Response) {
-        console.log("===  t_MSSSS_Save =========");
+        //console.log("===  t_MSSSS_Save =========");
         //console.log("el_input", el_input);
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
@@ -284,15 +284,16 @@
                         (tblName === "student") ? student_rows : null;
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
-
+/*
         console.log("selected_pk_int", selected_pk_int);
         console.log("selected_code", selected_code);
         console.log("selected_name", selected_name);
         console.log( "selected_dict", selected_dict);
         console.log( "tblName", tblName);
-
+*/
         //console.log( "===== t_MSSSS_display_in_sbr  ========= ");
         t_MSSSS_display_in_sbr(tblName, selected_pk_int);
+
         // reset other select elements
         if (tblName === "subject") {
             t_MSSSS_display_in_sbr("cluster", null);

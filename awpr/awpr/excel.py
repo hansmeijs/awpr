@@ -23,7 +23,6 @@ from awpr import settings as s
 from awpr import library as awpr_lib
 
 from schools import models as sch_mod
-from students import views as stud_view
 from subjects import views as subj_view
 
 import xlsxwriter
@@ -324,7 +323,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 # end of iterate through levels,
 # ++++++++++++++++++++++++++++
 
-        total_dict = ex1_rows_dict.get('total', {})
+        total_dict = ex1_rows_dict.get('total') or {}
 # ---  table total row
         row_index += 1
         if department.level_req:
@@ -3802,10 +3801,10 @@ def create_student_xlsx(sel_examyear, sel_school, sel_department, user_lang):  #
                     "stud.idnumber, stud.birthdate, stud.birthcountry, stud.birthcity,",
 
                     "stud.classname, stud.examnumber, stud.regnumber,",
-                    "CASE WHEN stud.iseveningstudent THEN 'o' ELSE NULL,",
-                    "CASE WHEN stud.islexstudent THEN 'o' ELSE NULL,",
-                    "CASE WHEN stud.bis_exam THEN 'o' ELSE NULL,",
-                    "CASE WHEN stud.partial_exam THEN 'o' ELSE NULL,",
+                    "CASE WHEN stud.iseveningstudent THEN 'x' ELSE NULL END AS iseveningstudent,",
+                    "CASE WHEN stud.islexstudent THEN 'x' ELSE NULL END AS islexstudent,",
+                    "CASE WHEN stud.bis_exam THEN 'x' ELSE NULL END AS bis_exam,",
+                    "CASE WHEN stud.partial_exam THEN 'x' ELSE NULL END AS partial_exam,",
 
                     "stud.modifiedby_id, stud.modifiedat,",
                     "au.last_name AS modby_name",

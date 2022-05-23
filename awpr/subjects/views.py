@@ -1291,26 +1291,36 @@ class ExamUploadView(View):
         user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-# - add edit permit
-        has_permit = False
-        if req_usr and req_usr.country:
-            permit_list = req_usr.permit_list('page_exams')
-            if permit_list:
-                has_permit = 'permit_crud' in permit_list
-            if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
-
-        if not has_permit:
-            err_html = str(_("You don't have permission to perform this action."))
-        else:
-
 # - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            if logging_on:
+                logger.debug('upload_dict' + str(upload_dict))
+
+            # values of table are 'ete_exam', 'duo_exam',
+            table = upload_dict.get('table')
+            mode = upload_dict.get('mode')
+
+# - add edit permit
+            has_permit = False
+            if req_usr and req_usr.country:
+                permit_list = req_usr.permit_list('page_exams')
+                if permit_list:
+                    # unpublish only allowed when permit_publish_exam
+                    if mode == 'undo_published':
+                        has_permit = 'permit_publish_exam' in permit_list
+                    else:
+                        has_permit = 'permit_crud' in permit_list
+
                 if logging_on:
-                    logger.debug('upload_dict' + str(upload_dict))
+                    logger.debug('permit_list: ' + str(permit_list))
+                    logger.debug('has_permit: ' + str(has_permit))
+
+            if not has_permit:
+                err_txt = _("You don't have permission to perform this action.")
+                err_html= ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
+            else:
 
                 error_list = []
                 append_dict = {}
@@ -1324,9 +1334,6 @@ class ExamUploadView(View):
 
                 """
                 # don't get it from usersettings, get it from upload_dict instead
-                # values of table are 'ete_exam', 'duo_exam',
-                table = upload_dict.get('table')
-                mode = upload_dict.get('mode')
                 examyear_pk = upload_dict.get('examyear_pk')
                 depbase_pk = upload_dict.get('depbase_pk')
                 lvlbase_pk = upload_dict.get('lvlbase_pk')
@@ -1982,8 +1989,7 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                                                 logger.debug('published_instance_pk' + str(published_instance_pk))
 
         # --- put published_id in exam
-        # --- and add exam_pk to grades when published, only when there is only 1 exam for this subject / dep / level / examperiod
-                                        publish_exam(
+                                        update_exam_in_grades = publish_exam(
                                             request=request,
                                             exam_instance=exam,
                                             published_instance=published_instance,
@@ -1991,11 +1997,31 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                                             count_dict=count_dict,
                                             updated_exam_pk_list=updated_exam_pk_list)
 
+        # --- and add exam_pk to grades when published, only when there is only 1 exam for this subject / dep / level / examperiod
+                                        if update_exam_in_grades:  # is_publish_exam and not is_test:
+                                            if exam.examperiod in (1, 2, 3):
+                                                # - skip when there is more than 1 exam for this subject / dep / level / examperiod
+                                                crit = Q(subject=exam.subject) & \
+                                                       Q(department=exam.department) & \
+                                                       Q(examperiod=exam.examperiod)
+                                                if exam.level:
+                                                    crit.add(Q(level=exam.level), crit.connector)
+
+                                                count_exams = subj_mod.Exam.objects.filter(crit).count()
+                                                if count_exams == 1:
+                                                    grd_count = add_published_exam_to_grades(exam)
+                                                    if grd_count:
+                                                        count_dict['updated_grd_count'] += grd_count
+
                                 # - add rows to exam_rows, to be sent back to page
                                     # to increase speed, dont create return rows but refresh page after finishing this request
 
-                        # +++++  end of loop through  exams
+
+        # +++++  end of loop through  exams
                                 #update_wrap['approve_count_dict'] = count_dict
+
+                        # recalc score of grade-exams when exam has changed and there are grade-exams PR2022-05-22
+                                grade_view.recalc_grade_ce_exam_score(updated_exam_pk_list)
 
 # - create msg_html with info of rows
                         msg_html = create_exam_approve_publish_msg_list(
@@ -2714,7 +2740,7 @@ def create_grade_exam_approve_submit_msg_list(req_usr, count_list, is_submit, is
                 if no_questions_count or blank_questions_count :
                     blank_no = str(pgettext_lazy('geen', 'no') if no_questions_count else _('blank'))
                     msg_list.append(' '.join(("<div class='pl-2 border_bg_invalid'>",
-                                            str(_('This exam has %(blank_no)s questions.') % {'blank_no': blank_no}),
+                                            str(_('This exam has errors.')),
                                             str(_('Please contact the Division of Exams.')), '</div>')))
                 else:
 
@@ -3153,7 +3179,9 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_submit
 # - end of approve_grade_exam
 
 
-def publish_exam(request, exam_instance, published_instance, is_test, count_dict, updated_exam_pk_list):  # PR2022-02-23 PR2022-04-20
+def publish_exam(request, exam_instance, published_instance, is_test, count_dict, updated_exam_pk_list):
+    # PR2022-02-23 PR2022-04-20
+    # function puts published in exam and set flag update_exam_in_grades when saved
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- publish_exam -----')
@@ -3179,6 +3207,7 @@ def publish_exam(request, exam_instance, published_instance, is_test, count_dict
                 logger.debug('auth1by: ' + str(auth1by))
                 logger.debug('auth2by: ' + str(auth2by))
                 logger.debug('auth_missing: ' + str(auth_missing))
+
             if auth_missing:
                 count_dict['auth_missing'] += 1
             else:
@@ -3202,14 +3231,17 @@ def publish_exam(request, exam_instance, published_instance, is_test, count_dict
 # - save changes
                             exam_instance.save(request=request)
                             count_dict['saved'] += 1
+
                             update_exam_in_grades = True
                             updated_exam_pk_list.append(exam_instance.pk)
+
                         except Exception as e:
                             logger.error(getattr(e, 'message', str(e)))
                             count_dict['saved_error'] += 1
 
 # --- add exam_pk to grades when published
-                        if update_exam_in_grades:  # is_publish_exam and not is_test:
+                        # moved outside ths function
+                        if update_exam_in_grades and False:  # is_publish_exam and not is_test:
     # only in first and second exam period
                             if exam_instance.examperiod in (1, 2):
     # - skip when there are more than 1 exam for this subject / dep / level / examperiod
@@ -3605,7 +3637,7 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05 PR2022
 
 
 def update_exam_instance(request, exam_instance, examyear, upload_dict, error_list):
-    # PR2021-04-05 PR2022-01-24 PR2022-05-06 PR2022-05-20
+    # PR2021-04-05 PR2022-01-24 PR2022-05-06 PR2022-05-22
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --------- update_exam_instance -------------')
@@ -3625,38 +3657,6 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
 # --- skip fields that don't contain new values
             if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examtype'):
                 pass
-
-# ---   save changes in field 'depbases', 'levelbases', 'sectorbases'
-            elif field in ('depbases', 'levelbases', 'sectorbases'):
-                old_value = getattr(exam_instance, field)
-                uploaded_field_arr = []
-                if field == 'depbases':
-                    uploaded_field_arr = new_value.split(';') if new_value else []
-                elif field == 'levelbases':
-                    uploaded_field_arr = new_value.split(';') if new_value else []
-                elif field == 'sectorbases':
-                    uploaded_field_arr = new_value.split(';') if new_value else []
-
-                checked_field_arr = []
-                checked_field_str = None
-                if uploaded_field_arr:
-                    for base_pk_str in uploaded_field_arr:
-                        base_pk_int = int(base_pk_str)
-                        base_instance = None
-                        if field == 'depbases':
-                            base_instance = sch_mod.Department.objects.get_or_none(base=base_pk_int,examyear=examyear)
-                        elif field == 'levelbases':
-                            base_instance = subj_mod.Level.objects.get_or_none(base=base_pk_int,examyear=examyear)
-                        elif field == 'sectorbases':
-                            base_instance = subj_mod.Sector.objects.get_or_none(base=base_pk_int,examyear=examyear)
-                        if base_instance:
-                            checked_field_arr.append(base_pk_str)
-                    if checked_field_arr:
-                        checked_field_arr.sort()
-                        checked_field_str = ';'.join(checked_field_arr)
-                if checked_field_str != old_value:
-                    setattr(exam_instance, field, new_value)
-                    save_changes = True
 
             elif field in ('amount', 'blanks'):
                 # these are calculated fields and will be calculated in calc_amount_and_scalelength
@@ -3746,16 +3746,10 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                     new_value = None
                 old_value = getattr(exam_instance, field)
 
-                if logging_on:
-                    logger.debug('field: ' + str(field))
-                    logger.debug('new_value: ' + str(new_value))
-                    logger.debug('old_value: ' + str(old_value))
-                    logger.debug('new_value != old_value: ' + str(new_value != old_value))
-
                 # always calculate and save result, to be on the safe side. Was: if new_value != saved_value:
                 setattr(exam_instance, field, new_value)
                 save_changes = True
-                if field in ('partex', 'assignment', 'keys', 'amount', 'blanks', 'scalelength'):
+                if field in ('partex', 'assignment', 'keys'):
                     calc_amount_and_scalelength = True
 
             elif field == 'secret_exam':
@@ -3800,24 +3794,31 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                     save_changes = True
 
             elif field == 'published':
-                pass
+                # can only remove published. ALso remove auth1, auth2. PR2022-05-21
+                setattr(exam_instance, field, None)
+                setattr(exam_instance, 'auth1by', None)
+                setattr(exam_instance, 'auth2by', None)
+                setattr(exam_instance, 'auth3by', None)
+                save_changes = True
 
 # - save exam_instance
         if save_changes:
-            try:
+            #try:
+            if True:
                 exam_instance.save(request=request)
                 if logging_on:
                     logger.debug('exam_instance saved: ' + str(exam_instance))
 
-# - save to log after saving emplhour and orderhour, also when emplhour is_created
+# - calculate amount and scalelength
                 # error: conversion from NoneType to Decimal is not supported
-                if calc_amount_and_scalelength and False:
-                    total_amount, total_maxscore, total_blanks, has_changed = \
+                if calc_amount_and_scalelength:
+                    total_amount, total_maxscore, total_blanks, total_keys_missing, has_changed = \
                         grade_view.calc_amount_and_scalelength_of_assignment(exam_instance)
                     if logging_on:
                         logger.debug('     total_amount:  ' + str(total_amount)  + ' ' + str(type(total_amount)))
                         logger.debug('     total_maxscore: ' + str(total_maxscore) + ' ' + str(type(total_maxscore)))
                         logger.debug('     total_blanks:   ' + str(total_blanks) + ' ' + str(type(total_blanks)))
+                        logger.debug('     total_keys_missing:   ' + str(total_keys_missing) + ' ' + str(type(total_keys_missing)))
                         logger.debug('     has_changed:    ' + str(has_changed) + ' ' + str(type(has_changed)))
 
                     if has_changed:
@@ -3826,6 +3827,7 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                         setattr(exam_instance, 'blanks', total_blanks)
                         exam_instance.save(request=request)
 
+# copy exam score to ce-score when cesuur has changed
                 if calc_cegrade_from_ete_exam_score:
                     updated_cegrade_count = calc_score.calc_cegrade_from_ete_exam_score(exam_instance, request)
 
@@ -3833,11 +3835,11 @@ def update_exam_instance(request, exam_instance, examyear, upload_dict, error_li
                     #TODO
                     # updated_cegrade_count = calc_score.calc_cegrade_from_duo_exam_score(exam_instance, request)
                     pass
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
-                # error: conversion from NoneType to Decimal is not supported
-                msg_err = _('An error occurred. This exam could not be updated.')
-                error_list.append(msg_err)
+            #except Exception as e:
+            #    logger.error(getattr(e, 'message', str(e)))
+            #    # error: conversion from NoneType to Decimal is not supported
+            #    msg_err = _('An error occurred. This exam could not be updated.')
+            #    error_list.append(msg_err)
 
     return updated_cegrade_count
 # - end of update_exam_instance
@@ -6082,33 +6084,55 @@ class ExamDownloadExamView(View):  # PR2021-05-06
                 if logging_on:
                     logger.debug('sel_exam_instance: ' + str(sel_exam_instance))
 
-                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+                if sel_exam_instance:
+                    # ---  create file Name and worksheet Name
 
-                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
-                #temp_file = tempfile.TemporaryFile()
-                # canvas = Canvas(temp_file)
+                    file_name = ' '.join(( str(_('Exam')),
+                        c.EXAMPERIOD_CAPTION.get(sel_exam_instance.examperiod, ''),
+                        sel_exam_instance.subject.name,
+                        sel_exam_instance.department.base.code
+                    ))
+                    if sel_exam_instance.level:
+                        file_name += ' ' + sel_exam_instance.level.base.code
+                    if sel_exam_instance.version:
+                        file_name += ' ' + sel_exam_instance.version
 
-                buffer = io.BytesIO()
-                canvas = Canvas(buffer)
+                    today_formatted = af.format_DMY_from_dte(af.get_today_dateobj(), user_lang)
+                    file_name += ' dd ' + today_formatted + '.pdf'
 
-                printpdf.draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang)
+                    # create the HttpResponse object ...
+                    response = HttpResponse(
+                        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                    response['Content-Disposition'] = "attachment; filename=" + file_name
 
-                if logging_on:
-                    logger.debug('end of draw_exam')
+                    # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
-                canvas.showPage()
-                canvas.save()
+                    # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+                    #temp_file = tempfile.TemporaryFile()
+                    # canvas = Canvas(temp_file)
 
-                pdf = buffer.getvalue()
-                # pdf_file = File(temp_file)
+                    buffer = io.BytesIO()
+                    canvas = Canvas(buffer)
 
-                # was: buffer.close()
+                    printpdf.draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang)
 
-                response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
-                #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+                    if logging_on:
+                        logger.debug('end of draw_exam')
 
-                response.write(pdf)
+                    canvas.showPage()
+                    canvas.save()
+
+                    pdf = buffer.getvalue()
+                    # pdf_file = File(temp_file)
+
+                    # was: buffer.close()
+
+                    response = HttpResponse(content_type='application/pdf')
+                    #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+                    #response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                    response['Content-Disposition'] = "inline; filename=" + file_name
+
+                    response.write(pdf)
 
         #except Exception as e:
        #     logger.error(getattr(e, 'message', str(e)))
@@ -6177,7 +6201,26 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
                 if logging_on:
                     logger.debug('sel_ce_exam_instance: ' + str(sel_ce_exam_instance))
 
-                if sel_ce_exam_instance:
+                # dont print grade_exam when exam is not published (can happen when ETE has tuned of 'published' PR2022-05-22
+                if sel_ce_exam_instance and sel_ce_exam_instance.published is not None:
+
+                    student_name = sel_grade_instance.studentsubject.student.fullnamewithinitials
+
+                    file_name = ' '.join(( str(_('Exam')),
+                        c.EXAMPERIOD_CAPTION.get(sel_ce_exam_instance.examperiod, ''),
+                        sel_ce_exam_instance.subject.name,
+                        sel_ce_exam_instance.department.base.code
+                    ))
+                    if sel_ce_exam_instance.level:
+                        file_name += ' ' + sel_ce_exam_instance.level.base.code
+                    if sel_ce_exam_instance.version:
+                        file_name += ' ' + sel_ce_exam_instance.version
+                    if student_name:
+                        file_name += ' ' + student_name
+
+                    today_formatted = af.format_DMY_from_dte(af.get_today_dateobj(), user_lang)
+                    file_name += ' dd ' + today_formatted + '.pdf'
+
                     # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
                     #temp_file = tempfile.TemporaryFile()
                     # canvas = Canvas(temp_file)
@@ -6187,8 +6230,6 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
 
                     # Start writing the PDF here
                     printpdf.draw_grade_exam(canvas, sel_grade_instance, sel_ce_exam_instance, sel_examyear, user_lang)
-                    #test_pdf(canvas)
-                    # testParagraph_pdf(canvas)
 
                     if logging_on:
                         logger.debug('end of draw_exam')
@@ -6202,7 +6243,8 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
                     # was: buffer.close()
 
                     response = HttpResponse(content_type='application/pdf')
-                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                    # response['Content-Disposition'] = "inline; filename=" + file_name
+                    response['Content-Disposition'] = "inline; filename='examen.pdf'"
                     #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
                     response.write(pdf)
@@ -6284,7 +6326,7 @@ class ExamDownloadConversionView(View):  # PR2022-05-08
                 pdf = buffer.getvalue()
 
                 response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                response['Content-Disposition'] = 'inline; filename="omzettingstabel.pdf"'
                 #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
                 response.write(pdf)

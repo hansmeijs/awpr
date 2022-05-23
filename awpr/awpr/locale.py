@@ -917,6 +917,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Copy_exam'] = _("Copy exam")
         dict['Link_DUO_exams'] = _("Link DUO exams")
         dict['Unlink_DUO_exam'] = _("Unlink DUO exam")
+        dict['Unlink_DUO_exam'] = _("Remove published from exam")
 
 
         dict['Publish_exams'] = _("Publish exams")
@@ -924,6 +925,14 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve_exams'] = _("Approve exams")
         dict['_by_'] = TXT__by_
         dict['Upload_ntermen'] = _("Upload N-termen tabel")
+
+        dict['Undo_published'] = _("Undo 'Published'")
+        dict['Remove_published_from_exam'] = _("Remove 'Published' from exam")
+        dict['Published_will_be_removed_from_exam'] = _("'Published' will be removed from exam:")
+
+        dict['Undo_submitted'] = _("Undo 'Submitted'")
+        dict['Remove_submitted_from_exam'] = _("Remove 'submitted' from exam")
+        dict['Submitted_will_be_removed_from_exam'] = _("'Submitted' will be removed from exam:")
 
         dict['Submitted_by'] = TXT_Submitted_by
         dict['Published_by'] = TXT_Published_by

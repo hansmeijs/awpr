@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Upload_candidates, function() {MIMP_Open(loc, "import_student")}, null, "id_submenu_import");
-            //AddSubmenuButton(el_submenu, loc.Download_candidate_data, null, [], "id_submenu_download_studentxlsx", urls.url_download_student_xlsx, true);  // true = download
+            AddSubmenuButton(el_submenu, loc.Download_candidate_data, null, [], "id_submenu_download_studentxlsx", urls.url_download_student_xlsx, true);  // true = download
         };
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_student")}, [], "id_submenu_columns")
