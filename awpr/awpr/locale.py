@@ -917,8 +917,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Copy_exam'] = _("Copy exam")
         dict['Link_DUO_exams'] = _("Link DUO exams")
         dict['Unlink_DUO_exam'] = _("Unlink DUO exam")
-        dict['Unlink_DUO_exam'] = _("Remove published from exam")
-
 
         dict['Publish_exams'] = _("Publish exams")
         dict['Submit_exams'] = _("Submit exams")
@@ -948,7 +946,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Download_conv_table'] = _("Download conversion table")
         dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', ' Download conversion table.')
         dict['Download_JSON'] = _("Download JSON")
-        dict['JSON_will_be_downloaded'] = _("The JSON file with exam results will be downloaded.")
+        dict['JSON_will_be_downloaded'] = _("The JSON file with the following exam results will be downloaded:")
         dict['will_be_unlinked'] = pgettext_lazy('singular', ' will be unlinked.')
         dict['Yes_download'] = _("Yes, download")
         dict['Yes_unlink'] = _("Yes, unlink")
@@ -960,8 +958,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Enter_cesuur_03'] = _("The grades of all candidates with this exam will be calculated.")
 
         dict['Link_DUO_to_grade_exam'] = _("Link DUO exam to candidates")
-        dict['Link_DUO_to_grade_exam_01'] = _("You are about to link exam:")
-        dict['Link_DUO_to_grade_exam_02'] = _("to the corresponding subjects of all candidates.")
+        dict['Link_DUO_to_grade_exam_01'] = _("The DUO exam below will be linked")
+        dict['Link_DUO_to_grade_exam_02'] = _("to the corresponding subjects of all candidates:")
 
         dict['Calculate_grades'] = _("Calculate grades")
         dict['Calculate_grades_01'] = _("AWP is about to calculate the grades of exam:")

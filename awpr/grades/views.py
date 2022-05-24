@@ -1954,6 +1954,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 # - validate if ce_exam is approved or submitted:
             is_approved_or_submitted = getattr(grade_instance, 'ce_exam_auth1by') or \
                                        getattr(grade_instance, 'ce_exam_auth2by') or \
+                                       getattr(grade_instance, 'ce_exam_auth3by') or \
                                        getattr(grade_instance, 'ce_exam_published')
             if not is_approved_or_submitted:
                 # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again
@@ -1983,6 +1984,8 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
 
                     setattr(grade_instance, "ce_exam_auth1by", None)
                     setattr(grade_instance, "ce_exam_auth2by", None)
+                    setattr(grade_instance, "ce_exam_auth3by", None)
+
                     setattr(grade_instance, "ce_exam_published", None)
                     setattr(grade_instance, "ce_exam_blocked", False)
 
@@ -2057,7 +2060,14 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_school,
         elif field == 'auth_index':
             auth_index = upload_dict.get(field)
             auth_bool_at_index = upload_dict.get('auth_bool_at_index', False)
-            fldName = 'ce_exam_auth1by' if auth_index == 1 else 'ce_exam_auth2by' if auth_index == 2 else None
+            if auth_index == 1:
+                fldName = 'ce_exam_auth1by'
+            elif auth_index == 2:
+                fldName = 'ce_exam_auth2by'
+            elif auth_index == 3:
+                fldName = 'ce_exam_auth3by'
+            else:
+                fldName = None
 
             if logging_on:
                 logger.debug('auth_index: ' + str(auth_index))
@@ -2922,7 +2932,7 @@ def create_grade_with_ete_exam_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depb
 def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, sel_examperiod, setting_dict, request):
     # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('setting_dict: ' + str(setting_dict))

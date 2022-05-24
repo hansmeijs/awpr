@@ -313,6 +313,7 @@ urlpatterns = [
         path('exam', subject_views.ExamListView.as_view(), name='exams_url'),
         path('upload', subject_views.ExamUploadView.as_view(), name='url_exam_upload'),
         path('copy', subject_views.ExamCopyView.as_view(), name='url_exam_copy'),
+        path('link_duo_exam_to_grade', subject_views.ExamLinkDuoExamToGradeView.as_view(), name='url_link_duo_exam_to_grade'),
 
         path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),
         path('approve_publish_exam', subject_views.ExamApproveOrPublishExamView.as_view(), name='url_approve_publish_exam'),

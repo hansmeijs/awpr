@@ -464,7 +464,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     // if sel_subject_pk has value, set sel_student_pk null
                     if (setting_dict.sel_subject_pk) {setting_dict.sel_student_pk = null;}
 
-                    FillOptionsExamtype();
+                    //PR2022-05-23 dont show SBR_examtype
+                    //FillOptionsExamtype();
                     MSSSS_display_in_sbr_reset();
 
         // ---  fill cols_hidden
@@ -738,7 +739,6 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("===== HandleSbrExamtype =====");
         console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
-
         upload_examtype(el_select.value);
 
     }  // HandleSbrExamtype
@@ -764,7 +764,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
-        FillOptionsExamtype();
+        //PR2022-05-23 dont show SBR_examtype
+        //FillOptionsExamtype();
         FillTblRows();
     }  // upload_examtype
 
@@ -873,7 +874,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
             t_FillOptionsFromList(el_SBR_select_examtype, display_rows, "value", "caption",
                 loc.Select_examtype + "...", loc.No_examtypes_found, setting_dict.sel_examtype);
-            document.getElementById("id_SBR_container_examtype").classList.remove(cls_hide);
+            //PR2022-05-23 dont show SBR_examtype
+            //document.getElementById("id_SBR_container_examtype").classList.remove(cls_hide);
         };
 
     }  // FillOptionsExamtype
@@ -1072,7 +1074,9 @@ document.addEventListener("DOMContentLoaded", function() {
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
 // - show only columns of sel_examtype
-        //console.log( "setting_dict.sel_examtype", setting_dict.sel_examtype);
+        // dont show examtype, Richard Westerink ATC didnt see that select btn.
+        /*
+        console.log( "setting_dict.sel_examtype", setting_dict.sel_examtype);
         if(setting_dict.sel_examtype === "se"){
             col_hidden.push("srgrade", "sr_status",
                                "pescore", "pe_status", "pegrade",
@@ -1089,6 +1093,8 @@ document.addEventListener("DOMContentLoaded", function() {
                                    "pescore", "pe_status", "pegrade",
                                     "finalgrade");
         };
+        */
+        col_hidden.push( "srgrade", "sr_status", "pescore", "pe_status", "pegrade");
         //console.log( "col_hidden", col_hidden);
 
 // --- reset table
@@ -1305,7 +1311,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // --- add data-field Attribute when input element
 
-
                     if (field_tag === "input") {
 
                         const may_edit = permit_dict.requsr_same_school && permit_dict.permit_crud;
@@ -1314,6 +1319,9 @@ document.addEventListener("DOMContentLoaded", function() {
                                             (["pescore", "cescore"].includes(field_name)) :
                                             (["pegrade", "cegrade"].includes(field_name))
 
+        //console.log(">>>>>> field_name", field_name);
+        //console.log(">>>>>> data_dict.secret_exam", data_dict.secret_exam);
+        //console.log(">>>>>>>>>> is_readonly", is_readonly);
                         el.setAttribute("type", "text")
                         el.setAttribute("autocomplete", "off");
                         el.setAttribute("ondragstart", "return false;");
@@ -1328,8 +1336,11 @@ document.addEventListener("DOMContentLoaded", function() {
                             el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
                         } else {
     // --- make el readonly when not requsr_requsr_same_school or when not edit permission
-                            el.readOnly = !may_edit;  //el.setAttribute("readOnly", true)
+                            //el.readOnly = is_readonly;  //
+                            //el.setAttribute("readOnly", true)
                         };
+                        //el.setAttribute("readOnly", is_readonly)
+                        el.readOnly = is_readonly;
                     };
 
     // --- add width, text_align, right padding in examnumber
@@ -1408,7 +1419,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
                 //td.classList.add("pointer_show", "px-2");
-
 
     // --- put value in field
                 UpdateField(el, data_dict)

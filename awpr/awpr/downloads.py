@@ -228,6 +228,15 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             exam_pk_list=None
                         )
 
+# ----- duo exams_count
+                    if datalist_request.get('duo_exam_count_rows'):
+                        datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
+                            sel_examyear=sel_examyear,
+                            sel_depbase=sel_depbase,
+                            append_dict={},
+                            setting_dict=new_setting_dict,
+                            exam_pk_list=None
+                        )
 # ----- ntermentable
                 if datalist_request.get('ntermentable_rows'):
                     datalists['ntermentable_rows'] = sj_vw.create_ntermentable_rows(

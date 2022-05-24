@@ -86,6 +86,9 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_approve_submit_grade_exam = get_attr_from_el(el_data, "data-url_approve_submit_grade_exam");
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
 
+
+    urls.url_link_duo_exam_to_grade = get_attr_from_el(el_data, "data-url_link_duo_exam_to_grade");
+
     urls.url_grade_upload = get_attr_from_el(el_data, "data-url_grade_upload");
 
     urls.url_exam_download_exam_pdf = get_attr_from_el(el_data, "data-url_exam_download_exam_pdf");
@@ -680,7 +683,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25 PR2021-05-25
     function CreateSubmenu() {
-        //console.log("===  CreateSubmenu == ");
+        console.log("===  CreateSubmenu == ");
         //console.log("permit_dict.permit_submit_exam", permit_dict.permit_submit_exam);
         //console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
@@ -824,12 +827,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  HandleTblRowClicked  ================ PR2020-08-03 PR2021-05-22
     function HandleTblRowClicked(tblRow) {
-        console.log("=== HandleTblRowClicked");
-        console.log( "tblRow: ", tblRow);
-
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        //DeselectHighlightedRows(tblRow, cls_selected);
-        //tblRow.classList.add(cls_selected);
+        //console.log("=== HandleTblRowClicked");
+        //console.log( "tblRow: ", tblRow);
 
 // ---  deselect all highlighted rows, select clicked row
         t_td_selected_toggle(tblRow, true);  // select_single = True
@@ -841,13 +840,12 @@ document.addEventListener("DOMContentLoaded", function() {
         // PR2022-05-11 Sentry debug: Unhandled Expected identifier with IE11 on Windows 7
         // leave it as it is, maybe error caused by IE 11
         const data_pk = get_attr_from_el_int(tblRow, "data-pk")
-        const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", data_pk);
-        const pk_int = (!isEmpty(found_dict)) ? found_dict.id : null;
+        const school_pk = get_attr_from_el_int(tblRow, "data-school_pk")
+        const lookup_1_field = (tblName === "results") ? "exam_id" : "id";
+        const lookup_2_field = (tblName === "results") ? "school_id" : null;
 
-    //console.log( "found_dict: ", found_dict);
-    console.log( "tblName: ", tblName);
-    console.log( "data_pk: ", pk_int, typeof data_pk);
-    console.log( "found_dict: ", found_dict);
+        const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, data_pk, lookup_2_field, school_pk);
+        const pk_int = (!isEmpty(found_dict)) ?  (tblName === "results") ? found_dict.exam_id : found_dict.id : null;
 
 // ---  update setting_dict.pk_int
         if (tblName === "duo_exam"){
@@ -856,7 +854,11 @@ document.addEventListener("DOMContentLoaded", function() {
             setting_dict.sel_exam_pk = (pk_int) ? pk_int : null;
         } else if (tblName === "grades"){
             setting_dict.sel_grade_exam_pk = (pk_int) ? pk_int : null;
+
+        } else if (tblName === "results"){
+            setting_dict.sel_exam_pk = (pk_int) ? pk_int : null;
         };
+
     };  // HandleTblRowClicked
 
 //=========  HandleSbrPeriod  ================ PR2020-12-20 PR2022-02-21
@@ -1285,7 +1287,11 @@ document.addEventListener("DOMContentLoaded", function() {
         tblRow.id = map_id;
 
 // --- add data attributes to tblRow
-        tblRow.setAttribute("data-pk", data_dict.id);
+        const pk_int = (tblName === "results") ? data_dict.exam_id : data_dict.id;
+        tblRow.setAttribute("data-pk", pk_int);
+        if (tblName === "results") {
+            tblRow.setAttribute("data-school_pk", data_dict.school_id);
+        };
         tblRow.setAttribute("data-table", tblName);
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
@@ -6376,7 +6382,7 @@ console.log("data_dict", data_dict);
 
 //=========  ModConfirm_LinkDuo_exam_grade_Open  ================ PR2022-05-19
     function ModConfirm_LinkDuo_exam_grade_Open() {
-            console.log(" -----  ModConfirm_LinkDuo_exam_grade_Open   ----")
+        console.log(" -----  ModConfirm_LinkDuo_exam_grade_Open   ----")
 
         // values of mode are : "delete", 'json', 'copy', 'save'
         // values of table are : "ete_exam" "duo_exam" 'duo_grade_exam'
@@ -6426,11 +6432,10 @@ console.log("exam_dict", exam_dict);
                 msg_list.push( ["<p class='pb-2'>", loc.No_exam_selected, "</p>"].join("") );
                 hide_save_btn = true;
             } else {
-                msg_list.push( ["<p class='pb-2'>", loc.Link_DUO_to_grade_exam_01, "</p><p>",
+                msg_list.push( ["<p>", loc.Link_DUO_to_grade_exam_01, "<br>", loc.Link_DUO_to_grade_exam_02, "</p><p class='py-2'>",
                                 "&emsp;", exam_dict.exam_name, "<br>",
-                                "&emsp;", exam_dict.ntb_omschrijving, "</p><p class='py-2'>",
-                                loc.Link_DUO_to_grade_exam_02, "</p><p>",
-                                loc.Do_you_want_to_continue, "</p>"
+                                "&emsp;", exam_dict.ntb_omschrijving, "</p>",
+                                "<p>", loc.Do_you_want_to_continue, "</p>"
                                 ].join(""));
             };
             const msg_html = msg_list.join("");
@@ -6536,7 +6541,6 @@ console.log("exam_dict", exam_dict);
         // TODO print_exam not in use: remove, add 'publish'
 
         const is_delete = (mode === "delete");
-        const is_json = (mode === "json");
         const is_copy = (mode === "copy");
         const is_undo_published = (mode === "undo_published");
         mod_dict = {mode: mode};
@@ -6620,14 +6624,24 @@ console.log("exam_dict", exam_dict);
         } else if (permit_dict.permit_crud && permit_dict.requsr_role_admin && permit_dict.requsr_country_pk === 1 ) {
 
     // ---  get header_text
-            if (is_json){
+            if (mode === "json"){
                 header_text = loc.Download_JSON;
+
                 if (loc.examperiod_caption && setting_dict.sel_examperiod) {
                     header_text += " - " + loc.examperiod_caption[setting_dict.sel_examperiod];
-                }
+                };
         // ---  put text in modal form
-                msg_html = ["<p class='pb-2'>", loc.JSON_will_be_downloaded, "</p><p class='py-2'>",
-                            loc.Do_you_want_to_continue, "</p>"].join("");
+                let dep_lvl_str = setting_dict.sel_depbase_code;
+                if (setting_dict.sel_dep_level_req){
+                    const lvl_str = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : loc.All_levels;
+                    dep_lvl_str += " - " + lvl_str;
+                }
+                const subject_name = (setting_dict.sel_subject_pk) ?
+                                    (setting_dict.sel_subject_name) ? setting_dict.sel_subject_name : "---" : loc.All_subjects;
+                msg_html = ["<div class='pb-2'>", loc.JSON_will_be_downloaded, "</div>",
+                                    "<div>&emsp;", dep_lvl_str, "</div>",
+                                    "<div>&emsp;", subject_name, "</div>",
+                                    "<div class='py-2'>", loc.Do_you_want_to_continue, "</div>"].join("");
 
     // +++  create href and put it in save button PR2021-05-06
                 btn_save_txt = loc.Yes_download;
@@ -6772,15 +6786,13 @@ console.log("exam_dict", exam_dict);
             } else if (mod_dict.mode === "link_duo_exam_grade"){
 
             // mod_dict gets value in HandleInputChanged
-                const upload_dict = { table: "ete_exam",
-                                       mode: "update",
+                const upload_dict = { mode: "link_duo_exam_grade",
                                        exam_pk: mod_dict.exam_pk,
                                        examyear_pk: mod_dict.examyear_pk,
-                                       subject_pk: mod_dict.subject_pk,
-                                       cesuur: mod_dict.cesuur // cesuur is string, will be converted on server
+                                       subject_pk: mod_dict.subject_pk
                                     };
 
-                UploadChanges(upload_dict, urls.url_exam_upload);
+                UploadChanges(upload_dict, urls.url_link_duo_exam_to_grade);
                 // mod_dict.save_value prevents putting back the old value in el_input
                 mod_dict.dont_rest_input_value = true;
 
@@ -7107,12 +7119,12 @@ console.log("exam_dict", exam_dict);
 
 // - put new value in setting_dict
 
-
         // reset sel_student_pk when selecting sel_subject_pk and vice versa
         if(sel_pk_int === -1) { sel_pk_int = null};
 
         const upload_pk_dict = {};
         if (mode === "subject") {
+            // note: sel_pk_int is subject_pk, not subjbase_pk
             setting_dict.sel_subject_pk = sel_pk_int;
             setting_dict.sel_subject_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
             if(sel_pk_int) {
@@ -7122,11 +7134,28 @@ console.log("exam_dict", exam_dict);
                 setting_dict.sel_student_name = null;
             };
 
-            upload_pk_dict.sel_subject_pk = sel_pk_int;
-            if(sel_pk_int) {
-                upload_pk_dict.sel_cluster_pk = null;
-                upload_pk_dict.sel_student_pk = null;
+    // ---  download data when changing subject
+            let new_setting = {page: 'page_exams', sel_subject_pk: setting_dict.sel_subject_pk};
+            if(setting_dict.sel_cluster_pk) {
+                new_setting.sel_cluster_pk = null;
+                new_setting.sel_student_pk = null;
             };
+    // also retrieve the tables that have been changed because of the change in examperiod
+            const datalist_request = {setting: new_setting,
+                    duo_subject_rows: {get: true},
+                    ete_exam_rows: {get: true},
+                    duo_exam_rows: {get: true},
+                    grade_exam_rows: {get: true},
+                    grade_exam_result_rows: {get: true},
+                    ntermentable_rows: {get: true},
+                    published_rows: {get: true}
+            };
+
+        console.log( ">>> new_setting", new_setting);
+        console.log( ">>> sel_pk_int", sel_pk_int);
+        console.log( ">>> setting_dict.sel_subject_pk", setting_dict.sel_subject_pk);
+        console.log( ">>> setting_dict.sel_subject_name", setting_dict.sel_subject_name);
+            DatalistDownload(datalist_request);
 
         } else if (mode === "cluster") {
             setting_dict.sel_cluster_pk = sel_pk_int;
@@ -7144,6 +7173,15 @@ console.log("exam_dict", exam_dict);
                 upload_pk_dict.sel_student_pk = null;
             };
 
+            t_MSSSS_display_in_sbr("student", upload_pk_dict.sel_student_pk);
+            t_MSSSS_display_in_sbr("subject", upload_pk_dict.sel_subject_pk);
+
+    // ---  upload new setting
+            const upload_dict = {selected_pk: upload_pk_dict};
+
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+            FillTblRows();
         } else if (mode === "student") {
             setting_dict.sel_student_pk = sel_pk_int;
             setting_dict.sel_student_name = (selected_dict && selected_dict.fullname) ? selected_dict.fullname : null;
@@ -7158,18 +7196,16 @@ console.log("exam_dict", exam_dict);
                 upload_pk_dict.sel_subject_pk = null;
                 setting_dict.sel_cluster_pk = null;
             };
+
+            t_MSSSS_display_in_sbr("student", upload_pk_dict.sel_student_pk);
+            t_MSSSS_display_in_sbr("subject", upload_pk_dict.sel_subject_pk);
+
+    // ---  upload new setting
+            const upload_dict = {selected_pk: upload_pk_dict};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+            FillTblRows();
         };
-    //console.log("setting_dict", setting_dict);
-
-        t_MSSSS_display_in_sbr("student", upload_pk_dict.sel_student_pk);
-        t_MSSSS_display_in_sbr("subject", upload_pk_dict.sel_subject_pk);
-
-// ---  upload new setting
-        const upload_dict = {selected_pk: upload_pk_dict};
-    //console.log("upload_dict", upload_dict);
-        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
-
-        FillTblRows();
     };  // MSSSubjStud_Response
 
 //========= MSSSS_display_in_sbr_reset  ====================================
