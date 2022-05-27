@@ -89,6 +89,7 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_studentsubjectnote_download = get_attr_from_el(el_data, "data-studentsubjectnote_download_url");
     urls.url_noteattachment_download = get_attr_from_el(el_data, "data-noteattachment_download_url");
 
+    urls.url_exam_download_conversion_pdf = get_attr_from_el(el_data, "data-url_exam_download_conversion_pdf");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
     columns_tobe_hidden.all = {
@@ -115,44 +116,44 @@ document.addEventListener("DOMContentLoaded", function() {
                                    "segrade", "se_status", "srgrade", "sr_status",
                                    "pescore", "pe_status", "pegrade",
                                     "cescore", "ce_status", "cegrade", "finalgrade",
-                                   "note_status"],
+                                   "note_status", "download_conv_table"],
                     field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                    "School_exam_2lines", "", "Herkansing_SE_grade_2lines", "",
                                   "PE_score", "", "PE_grade",
                                   "CE_score", "", "CE_grade", "Final_grade_twolines",
-                                  ""],
+                                  "", "Download_conv_table_2lines"],
 
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
                                 "input", "div",  "input", "div",
                                 "input", "div", "input",
                                 "input", "div", "input", "div",
-                                "div"],
+                                "div", "a"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
                                 "text", "status", "text", "status",
                                 "text", "status", "text",
                                 "text", "status", "text",  "text",
-                                "toggle"],
+                                "toggle", "text", ],
                     field_width: ["020", "060", "240", "060", "060", "120", "075","240",
                                 "090", "020", "090", "020",
                                 "090", "020", "090",
                                 "090", "020", "090", "090",
-                                 "032"],
+                                 "032", "100"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c","l",
                                 "c", "c", "c", "c",
                                 "c", "c", "c",
                                 "c", "c", "c", "c",
-                                "c"]},
+                                "c", "c"]},
 
         btn_reex:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                                  "Re_examination_score_2lines", "", "Re_examination_grade_2lines", ""],
+                                  "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Download_conv_table_2lines"],
                     field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
-                                  "cescore", "ce_status", "cegrade", "note_status"],
+                                  "cescore", "ce_status", "cegrade", "note_status", "download_conv_table"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
-                                "input", "div",  "input", "div"],
+                                "input", "div",  "input", "div", "a"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
-                                "text", "status", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032"],
-                    field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c"]},
+                                "text", "status", "text", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "100"],
+                    field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]},
 
         btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                   "Third_period_grade_2lines", "", ""],
@@ -1250,10 +1251,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09 PR2021-12-02
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-12-02 PR2022-05-24
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        //console.log("=========  CreateTblRow =========");
-        //console.log("data_dict", data_dict);
+        console.log("=========  CreateTblRow =========");
+        console.log("data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -1319,13 +1320,11 @@ document.addEventListener("DOMContentLoaded", function() {
                                             (["pescore", "cescore"].includes(field_name)) :
                                             (["pegrade", "cegrade"].includes(field_name))
 
-        //console.log(">>>>>> field_name", field_name);
-        //console.log(">>>>>> data_dict.secret_exam", data_dict.secret_exam);
-        //console.log(">>>>>>>>>> is_readonly", is_readonly);
                         el.setAttribute("type", "text")
                         el.setAttribute("autocomplete", "off");
                         el.setAttribute("ondragstart", "return false;");
                         el.setAttribute("ondrop", "return false;");
+
     // --- add class 'input_text' and text_align
                     // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                         el.classList.add("input_text");
@@ -1349,6 +1348,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         // dont set width in field student and subject, to adjust width to length of name
                         // >>> el.classList.add(class_align);
                         el.classList.add(class_width, class_align);
+
+
                     } else {
                         el.classList.add(class_width, class_align);
                     };
@@ -1393,6 +1394,19 @@ document.addEventListener("DOMContentLoaded", function() {
                             add_hover(td);
                         }
                         */
+
+                    } else if (field_name === "download_conv_table"){
+
+        console.log("data_dict", data_dict);
+                // +++  create href and put it in button PR2021-05-07
+                        if (data_dict.ce_exam_id) {
+                            // td.class_align necessary to center align a-element
+                            td.classList.add(class_align);
+                            add_hover(td);
+                            el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
+                            // target="_blank opens file in new tab
+                            el.target = "_blank";
+                        };
                     } else if (field_name === "url"){
                          el.innerHTML = "download &#8681;";
                          el.target = "_blank";
@@ -1451,9 +1465,11 @@ document.addEventListener("DOMContentLoaded", function() {
             if(field_name){
                 let title_text = null, filter_value = null;
                 if (["cescore", "pescore"].includes(field_name)){
-                    el_div.value = (fld_value) ? fld_value : null;
-                    filter_value = (fld_value) ? fld_value : null;
+                    el_div.value = fld_value;
+                    filter_value = fld_value;
+
                 } else if (el_div.nodeName === "INPUT"){
+
                     //PR2022-04-17 Sentry error: Object doesn't support property or method 'replaceAll'
                     // tried to solve by adding 'typeof, but
                     // replaceAll is not supported by Internet Explorere,
@@ -1480,6 +1496,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     //el_div.innerHTML = "&#8681;";
                 } else if (field_name === "url"){
                     el_div.href = fld_value;
+
+                } else if (field_name === "download_conv_table"){
+            // +++  create href and put it in button PR2021-05-07
+                    const href_str = (data_dict.ce_exam_id) ? data_dict.ce_exam_id.toString() : null;
+                    el_div.href = (href_str) ? urls.url_exam_download_conversion_pdf.replace("-", href_str) : null;
                 } else {
                     let inner_text = null;
                     if (field_name === "examperiod"){
@@ -1616,6 +1637,32 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         return [className, title_text, filter_value]
     };  // UpdateFieldStatus
+
+
+
+//=========  UpdateFieldDownloadExam  ================ PR2022-05-17
+    function UpdateFieldDownloadExam(tblName, el_div, data_dict) {
+
+        const show_href = (tblName === "ete_exam" || (data_dict.ce_exam_id && !data_dict.secret_exam && data_dict.ceex_published_id) );
+        if (show_href){
+            // EventListener "mouseenter" and "mouseleave" will be added each time this function is called.
+            // better solution is class with and without hover. No time to figure this out yet PR2022-05-17
+            add_hover(el_div.parentNode);
+        };
+        const inner_html = (show_href) ? "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;" : null;
+        el_div.innerHTML = inner_html;
+        el_div.target = (show_href) ? "_blank" : null;
+
+// +++  create href and put it in button PR2021-05-07
+        const pk_str = (data_dict.id) ? data_dict.id.toString() : null;
+        const href_str = (!show_href || !pk_str) ? null :
+                            (tblName === "ete_exam") ? urls.url_exam_download_exam_pdf.replace("-", pk_str) :
+                                                       urls.url_exam_download_grade_exam_pdf.replace("-", pk_str) ;
+        el_div.href = href_str;
+    };  // UpdateFieldDownloadExam
+
+
+
 
 //========= set_columns_shown  ====== PR2021-03-08
     function set_columns_shown() {
@@ -1782,21 +1829,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 const is_published = (data_dict[published_field]) ? true : false;
                 const is_submitted = data_dict[published_field] ? true : false;
 
-    console.log("old_value", old_value)
-    console.log("blocked_field", blocked_field)
-    console.log("published_field", published_field)
-    console.log("is_blocked", is_blocked)
-    console.log("is_published", is_published)
-    console.log("is_published", is_published)
-
                 if (is_submitted && false){
                     // Note: if grade blocked: this means the inspection has given permission to change grade
                     // when blocking by Inspection the published and auth fields are reset to null
                     const msg_html = (!is_blocked) ? loc.grade_err_list.grade_submitted + "<br>" + loc.grade_err_list.need_permission_inspection :
                                                       loc.grade_err_list.grade_approved + "<br>" + loc.grade_err_list.needs_approvals_removed+ "<br>" + loc.grade_err_list.Then_you_can_change_it;
 
-    console.log("is_submitted", is_submitted)
-    console.log("msg_html", msg_html)
             // show message
                     b_show_mod_message_html(msg_html);
             // put back old value  in el_input
@@ -3466,10 +3504,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows, skip_show_ok) {
-        //console.log(" --- RefreshDatarowItem  ---");
+        console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-        //console.log("update_dict", update_dict);
+        console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -3490,7 +3528,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // +++ get existing data_dict from data_rows. data_rows is ordered by grade.id'
             const grade_pk = update_dict.id;
             const data_dict = get_gradedict_by_gradepk(grade_pk);
-    //console.log("data_dict", data_dict);
+    console.log("grade_pk", grade_pk);
+    console.log("data_dict", data_dict);
 
 // ++++ updated row +++++++++++
 // ---  create list of updated fields
@@ -3498,12 +3537,16 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 for (const [key, new_value] of Object.entries(update_dict)) {
 
     // ---  if value has changed: add field to updated_columns before updateing data_dict
-                    const mapped_key = (key === "se_blocked") ? "se_status" :
-                                        (key === "sr_blocked") ? "sr_status" :
-                                        (key === "pe_blocked") ? "pe_status" :
-                                        (key === "ce_blocked") ? "ce_status" : key;
+                    // PR2022-05-25 this doesnt work: se_blocked is boolean, se_status is int.
+                    const mapped_key = key;  // (key === "se_blocked") ? "se_status" :
+                                            //(key === "sr_blocked") ? "sr_status" :
+                                            //(key === "pe_blocked") ? "pe_status" :
+                                            //(key === "ce_blocked") ? "ce_status" : key;
+    console.log("new_value", new_value);
+    console.log("mapped_key", mapped_key, data_dict[mapped_key]);
                     if (mapped_key in data_dict && new_value !== data_dict[mapped_key]) {
                         updated_columns.push(mapped_key);
+    console.log(">>>>> updated_columns", updated_columns);
                     };
 
     // ---  put updated value back in data_map

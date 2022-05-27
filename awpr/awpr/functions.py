@@ -1219,7 +1219,11 @@ def system_updates(examyear, request):
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
 
-    show_deleted_grades(request)
+    # PR 2022-05-26 one time function to set thumb_rule = True for Havo/Vwo excluding core subjects
+    set_thumb_rule(request)
+
+#PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
+    #show_deleted_grades(request)
 
 # PR2022-05-16 add usergroup 'download' to all users with usergroups other than 'read'
     # add_usergroup_download_archive(request)
@@ -1260,6 +1264,54 @@ def system_updates(examyear, request):
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
+
+
+
+
+def set_thumb_rule(request):
+    # PR 2022-05-26 one time function to set thumb_rule = True for Havo/Vwo excluding core subjects
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- set_thumb_rule -------')
+    try:
+        key = 'set_thumb_rule'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            sql_list = [
+                "WITH sub_sql AS (",
+                    "SELECT subj_si.id",
+                    "FROM subjects_schemeitem AS subj_si",
+                    "INNER JOIN subjects_scheme AS scheme ON (scheme.id = subj_si.scheme_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                    "WHERE NOT subj_si.is_core_subject",
+                    "AND (depbase.code = 'Havo' OR depbase.code = 'Vwo')",
+                ")",
+                "UPDATE subjects_schemeitem",
+                "SET thumb_rule = TRUE",
+                "FROM sub_sql",
+                "WHERE subjects_schemeitem.id = sub_sql.id"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -e nd of set_thumb_rule
 
 
 def move_pescore_to_ce_exam_score(request):

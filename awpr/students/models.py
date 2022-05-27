@@ -138,6 +138,7 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     sr_count = PositiveSmallIntegerField(default=0)
     reex_count = PositiveSmallIntegerField(default=0)
     reex03_count = PositiveSmallIntegerField(default=0)
+    thumbrule_count = PositiveSmallIntegerField(default=0)
 
     # TODO deprecate is_reex_cand etc, replaced by reex_count
     #is_reex_cand = BooleanField(default=False)
@@ -275,6 +276,7 @@ class Student_log(sch_mod.AwpBaseModel):
     sr_count = PositiveSmallIntegerField(default=0)
     reex_count = PositiveSmallIntegerField(default=0)
     reex03_count = PositiveSmallIntegerField(default=0)
+    thumbrule_count = PositiveSmallIntegerField(default=0)
 
     # TODO deprecate is_reex_cand is_reex03_cand, is_sr_cand -> is replaced by reex_count
     #is_reex_cand = BooleanField(default=False)
@@ -359,6 +361,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
+    is_thumbrule = BooleanField(default=False)
 
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)
@@ -448,6 +451,7 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
 
     is_extra_nocount = BooleanField(default=False)
     is_extra_counts = BooleanField(default=False)
+    is_thumbrule = BooleanField(default=False)
 
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)

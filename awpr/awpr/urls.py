@@ -285,7 +285,7 @@ urlpatterns = [
 
         path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
         path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
-        path('calc_results/<list>/', grade_calc_res.CalcresultsView.as_view(), name='url_calc_results'),
+        path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
         path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5')
     ])),
 

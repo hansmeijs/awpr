@@ -126,7 +126,7 @@ class UploadImportSettingView(View):   # PR2020-12-05
 @method_decorator([login_required], name='dispatch')
 class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23 PR2021-07-17
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
@@ -168,10 +168,10 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23 PR2021-07-17
 
                     #if importtable == 'import_student':
                     #    update_dict = import_students(upload_dict, user_lang, request)
-                   # elif importtable == 'import_studsubj':
-                   #     update_dict = import_studentsubjects(upload_dict, user_lang, logging_on, request)
-                   # elif importtable == 'import_permit':
-                   #     update_dict = import_permits(upload_dict, user_lang, logging_on, request)
+                    # elif importtable == 'import_studsubj':
+                    #     update_dict = import_studentsubjects(upload_dict, user_lang, logging_on, request)
+                    # elif importtable == 'import_permit':
+                    #     update_dict = import_permits(upload_dict, user_lang, logging_on, request)
 
         if logging_on:
             logger.debug('update_dict: ' + str(update_dict) + ' ' + str(type(update_dict)))
@@ -3443,7 +3443,6 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
                     pegrade = output_str if db_field == 'pegrade' else saved_studsubj_dict.get('pegrade')
                     cegrade = output_str if db_field == 'cegrade' else saved_studsubj_dict.get('cegrade')
 
-                    is_ep_exemption = examgradetype in ('exemsegrade', 'exemsegrade'),
                     has_sr = saved_studsubj_dict.get('has_sr', False)
                     exemption_year = saved_studsubj_dict.get('exem_year')
 
@@ -3457,7 +3456,7 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
                     sesr_grade, pece_grade, finalgrade, delete_cegrade = \
                         calc_final.calc_sesr_pece_final_grade(
                             si_dict=si_dict,
-                            is_ep_exemption=is_ep_exemption,
+                            examperiod=examperiod,
                             has_sr=has_sr,
                             exemption_year=exemption_year,
                             se_grade=segrade,

@@ -11,13 +11,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exemption_year, se_grade, sr_grade, pe_grade, ce_grade):
-    # PR2021-12-28 PR2022-04-11
+def calc_sesr_pece_final_grade(si_dict, examperiod, has_sr, exemption_year, se_grade, sr_grade, pe_grade, ce_grade):
+    # PR2021-12-28 PR2022-04-11  PR2022-05-26
     # called by GradeUploadView.recalc_finalgrade_in_grade_and_save and by import_studsubj_grade_from_datalist
     # this function does not save the calculated dields
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- calc_sesr_pece_final_grade -------')
+        logger.debug('si_dict: ' + str(si_dict))
 
     # - when second or third examperiod: get se_grade and pe_grade from first examperiod,
     # and store them in second or third examperiod
@@ -29,21 +30,27 @@ def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exemption_year,
 
     sesr_grade, pece_grade, finalgrade, delete_cegrade = None, None, None, False
     try:
-
+        sjb_code = si_dict.get('subj_code', '-')
         has_practexam = si_dict.get('has_practexam', False)
         gradetype = si_dict.get('gradetype', 0)
         weight_se = si_dict.get('weight_se', 0)
         weight_ce = si_dict.get('weight_ce', 0)
         no_ce_years = si_dict.get('no_ce_years')
 
+        # Practical exam does not exist any more. Set has_practexam = False PR2022-05-26
+        # was: has_practexam = si_dict.get('has_practexam', False)
+        has_practexam = False
+
         if logging_on:
-            logger.debug('gradetype: ' + str(gradetype))
-            logger.debug('weight_se: ' + str(weight_se))
-            logger.debug('weight_ce: ' + str(weight_ce))
-            logger.debug('se_grade: ' + str(se_grade) + ' ' + str(type(se_grade)))
-            logger.debug('sr_grade: ' + str(sr_grade) + ' ' + str(type(sr_grade)))
-            logger.debug('pe_grade: ' + str(pe_grade) + ' ' + str(type(pe_grade)))
-            logger.debug('ce_grade: ' + str(ce_grade) + ' ' + str(type(ce_grade)))
+            logger.debug('     examperiod: ' + str(examperiod))
+            logger.debug('     sjb_code:   ' + str(sjb_code))
+            logger.debug('     gradetype:  ' + str(gradetype))
+            logger.debug('     weight_se:  ' + str(weight_se))
+            logger.debug('     weight_ce:  ' + str(weight_ce))
+            logger.debug('     se_grade:   ' + str(se_grade) + ' ' + str(type(se_grade)))
+            logger.debug('     sr_grade:   ' + str(sr_grade) + ' ' + str(type(sr_grade)))
+            logger.debug('     pe_grade:   ' + str(pe_grade) + ' ' + str(type(pe_grade)))
+            logger.debug('     ce_grade:   ' + str(ce_grade) + ' ' + str(type(ce_grade)))
 
 # ++++  calculate finalgrade when gradetype is character
         if gradetype == c.GRADETYPE_02_CHARACTER:
@@ -56,13 +63,13 @@ def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exemption_year,
         elif gradetype == c.GRADETYPE_01_NUMBER:
 
     # - calculate se_sr
-            sesr_decimal, se_noinput, sr_noinput = calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se)
+            sesr_decimal, se_noinput, sr_noinput = calc_sesr_decimal(examperiod, se_grade, sr_grade, has_sr, weight_se)
             sesr_grade = str(sesr_decimal) if sesr_decimal else None
 
     # - calculate pe_ce
             # also check if no_exemption_ce
-            pece_decimal, pe_noinput, ce_noinput, delete_cegrade = calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce,
-                                                                     has_practexam, exemption_year, no_ce_years)
+            pece_decimal, pe_noinput, ce_noinput, delete_cegrade = calc_pece_decimal(examperiod, ce_grade, pe_grade, weight_ce,
+                                                                     has_practexam, exemption_year, no_ce_years, sjb_code)
             pece_grade = str(pece_decimal) if pece_decimal else None
 
     # - sesr_noinput = True if als weight_se > 0 and  se_noinput = True or sr_noinput = True
@@ -80,9 +87,9 @@ def calc_sesr_pece_final_grade(si_dict, is_ep_exemption, has_sr, exemption_year,
         logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
-        logger.debug('sesr_grade: ' + str(sesr_grade))
-        logger.debug('pece_grade: ' + str(pece_grade))
-        logger.debug('finalgrade: ' + str(finalgrade))
+        logger.debug(' >>> sesr_grade: ' + str(sesr_grade))
+        logger.debug(' >>> pece_grade: ' + str(pece_grade))
+        logger.debug(' >>> finalgrade: ' + str(finalgrade))
 
     return sesr_grade, pece_grade, finalgrade, delete_cegrade
 # --- end of calc_sesr_pece_final_grade
@@ -93,10 +100,10 @@ def calc_final_grade_number(sesr_decimal, pece_decimal, sesr_noinput, pece_noinp
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- calc_final_grade_number -----')
-        logger.debug('sesr_decimal: ' + str(sesr_decimal) + ' ' + str(type(sesr_decimal)))
-        logger.debug('pece_decimal: ' + str(pece_decimal) + ' ' + str(type(pece_decimal)))
-        logger.debug('sesr_noinput: ' + str(sesr_noinput))
-        logger.debug('pece_noinput: ' + str(pece_noinput))
+        logger.debug('     sesr_decimal: ' + str(sesr_decimal) + ' ' + str(type(sesr_decimal)))
+        logger.debug('     pece_decimal: ' + str(pece_decimal) + ' ' + str(type(pece_decimal)))
+        logger.debug('     sesr_noinput: ' + str(sesr_noinput))
+        logger.debug('     pece_noinput: ' + str(pece_noinput))
 
     """
     #'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -145,19 +152,19 @@ def calc_final_grade_number(sesr_decimal, pece_decimal, sesr_noinput, pece_noinp
         else:
             final_decimal_notrounded = None
         if logging_on:
-            logger.debug('final_decimal_notrounded: ' + str(final_decimal_notrounded) + ' ' + str(type(final_decimal_notrounded)))
+            logger.debug('     final_decimal_notrounded: ' + str(final_decimal_notrounded) + ' ' + str(type(final_decimal_notrounded)))
 
         if final_decimal_notrounded:
             final_decimal_rounded = final_decimal_notrounded.quantize(Decimal("1"), rounding='ROUND_HALF_UP')
             if logging_on:
-                logger.debug('final_decimal_rounded: ' + str(final_decimal_rounded) + ' ' + str(type(final_decimal_rounded)))
+                logger.debug('     final_decimal_rounded: ' + str(final_decimal_rounded) + ' ' + str(type(final_decimal_rounded)))
             # final_decimal_rounded is integer , so no need for: final_grade = final_dot.replace('.', ',')
             final_grade = str(final_decimal_rounded)
         else:
             final_grade = None
 
     if logging_on:
-        logger.debug('final_grade: ' + str(final_grade) + ' ' + str(type(final_grade)))
+        logger.debug(' >>> final_grade: ' + str(final_grade) + ' ' + str(type(final_grade)))
 
     return final_grade
 # --- end of calc_final_grade_number
@@ -167,7 +174,10 @@ def calc_finalgrade_char(sesr_grade, se_noinput, sr_noinput, weight_se):  # PR20
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- calc_finalgrade_char -----')
-        logger.debug('sesr_grade: ' + str(sesr_grade) + ' se_noinput: ' + str(se_noinput) + ' sr_noinput: ' + str(sr_noinput) + ' weight_se: ' + str(weight_se))
+        logger.debug('     sesr_grade: ' + str(sesr_grade) + ' ' + str(type(sesr_grade)))
+        logger.debug('     se_noinput: ' + str(se_noinput))
+        logger.debug('     sr_noinput: ' + str(sr_noinput))
+        logger.debug('     weight_se: ' + str(weight_se) + ' ' + str(type(weight_se)))
 
     final_grade = None
     if weight_se:
@@ -176,7 +186,7 @@ def calc_finalgrade_char(sesr_grade, se_noinput, sr_noinput, weight_se):  # PR20
             final_grade = sesr_grade
 
     if logging_on:
-        logger.debug( 'final_grade: ' + str(final_grade))
+        logger.debug( ' >>> final_grade: ' + str(final_grade) + ' ' + str(type(final_grade)))
     return final_grade
 # --- end of calc_finalgrade_char
 
@@ -186,6 +196,13 @@ def calc_sesr_char(se_grade, sr_grade, has_sr, weight_se):  # PR2021-12-15
     if logging_on:
         logger.debug(' ----- calc_sesr_char -----')
         logger.debug('se_grade: ' + str(se_grade) + ' sr_grade: ' + str(sr_grade) + ' has_sr: ' + str(has_sr))
+
+    if logging_on:
+        logger.debug(' ----- calc_sesr_char -----')
+        logger.debug('     se_grade: ' + str(se_grade) + ' ' + str(type(se_grade)))
+        logger.debug('     sr_grade: ' + str(sr_grade) + ' ' + str(type(sr_grade)))
+        logger.debug('     has_sr: ' + str(has_sr))
+        logger.debug('     weight_se: ' + str(weight_se) + ' ' + str(type(weight_se)))
 
     # PR2020-05-15 Corona: Herkansing mogelijk bij ovg vakken. her-cijfer wordt in cegrade gezet
     # berekening:
@@ -234,21 +251,22 @@ def calc_sesr_char(se_grade, sr_grade, has_sr, weight_se):  # PR2021-12-15
                         # gemiddeld eindcijfer o + v > v
                         sesr_grade = 'v'
     if logging_on:
-        logger.debug( 'sesr_grade: ' + str(sesr_grade))
+        logger.debug(' >>> sesr_grade: ' + str(sesr_grade))
+
     return sesr_grade, se_noinput, sr_noinput
 # --- end of calc_sesr_char
 
 
-def calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se):  # PR2021-12-13
+def calc_sesr_decimal(examperiod, se_grade, sr_grade, has_sr, weight_se):  # PR2021-12-13
     # from AWP Calculations.CalcEindcijfer_SeFinal PR2021-04-12
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- calc_sesr_decimal -----')
-        logger.debug('... is_ep_exemption:  ' + str(is_ep_exemption))
-        logger.debug('... se_grade: ' + str(se_grade) + ' ' + str(type(se_grade)))
-        logger.debug('... sr_grade: ' + str(sr_grade) + ' ' + str(type(sr_grade)))
-        logger.debug('... has_sr: ' + str(has_sr))
-        logger.debug('... weight_se: ' + str(weight_se))
+        logger.debug('     examperiod:  ' + str(examperiod))
+        logger.debug('     se_grade: ' + str(se_grade) + ' ' + str(type(se_grade)))
+        logger.debug('     sr_grade: ' + str(sr_grade) + ' ' + str(type(sr_grade)))
+        logger.debug('     has_sr: ' + str(has_sr))
+        logger.debug('     weight_se: ' + str(weight_se))
 
 # - reset output variabelen
     se_noinput = False
@@ -271,11 +289,9 @@ def calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se):  
 # - in se_grade: replace comma by dot, convert to decimal
             se_dot_nz = se_grade.replace(',', '.') if se_grade else "0"
             se_decimal_A = Decimal(se_dot_nz)
-            if logging_on:
-                logger.debug('... se_decimal_A: ' + str(se_decimal_A) + ' ' + str(type(se_decimal_A)))
 
 # if examperiod exemption: sesr_grade = se_grade
-            if is_ep_exemption:
+            if examperiod == c.EXAMPERIOD_EXEMPTION:
                 sesr_decimal = se_decimal_A
             else:
 
@@ -294,9 +310,6 @@ def calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se):  
 
 # - check if sr_grade > se_grade:
                     compare_se_sr = sr_decimal_B.compare(se_decimal_A)
-                    if logging_on:
-                        logger.debug('... sr_decimal_B: ' + str(sr_decimal_B) + ' ' + str(type(sr_decimal_B)))
-                        logger.debug('... compare_se_sr: ' + str(compare_se_sr))
 
 # - if sr_grade > se_grade:
                     if compare_se_sr == 1:  # b.compare(a) == 1 means b > a
@@ -312,26 +325,27 @@ def calc_sesr_decimal(is_ep_exemption, se_grade, sr_grade, has_sr, weight_se):  
                         sesr_decimal = se_decimal_A
 
     if logging_on:
-        logger.debug('... sesr_decimal: ' + str(sesr_decimal) + ' ' + str(type(sesr_decimal)))
-        logger.debug('... se_noinput: ' + str(se_noinput) + ' sr_noinput: ' + str(sr_noinput))
+        logger.debug(' >>> sesr_decimal: ' + str(sesr_decimal) + ' ' + str(type(sesr_decimal)))
+        logger.debug(' >>> se_noinput: ' + str(se_noinput) + ' sr_noinput: ' + str(sr_noinput))
     return sesr_decimal, se_noinput, sr_noinput
 # - end of calc_sesr_decimal
 
 
-def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practexam, exemption_year, no_ce_years):
+def calc_pece_decimal(examperiod, ce_grade, pe_grade, weight_ce, has_practexam, exemption_year, no_ce_years, sjb_code):
     # PR2021-01-18 PR2021-09-18 PR2021-12-14 PR2022-04-12
     # PR2022-04-12 no_ce_years = '2020;2021' has list of examyears that had no CE. This is used to skip no_input_ce when calculating exemption endgrade
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- calc_pece_decimal -----')
-        logger.debug('... is_ep_exemption:  ' + str(is_ep_exemption))
-        logger.debug('... ce_grade: ' + str(ce_grade) + ' ' + str(type(ce_grade)))
-        logger.debug('... pe_grade: ' + str(pe_grade) + ' ' + str(type(pe_grade)))
-        logger.debug('... weight_ce: ' + str(weight_ce))
-        logger.debug('... has_practexam: ' + str(has_practexam))
-        logger.debug('... exemption_year: ' + str(exemption_year))
-        logger.debug('... no_ce_years: ' + str(no_ce_years))
+        logger.debug('     sjb_code:       ' + str(sjb_code))
+        logger.debug('     examperiod:     ' + str(examperiod))
+        logger.debug('     ce_grade:       ' + str(ce_grade) + ' ' + str(type(ce_grade)))
+        logger.debug('     pe_grade:       ' + str(pe_grade) + ' ' + str(type(pe_grade)))
+        logger.debug('     weight_ce:      ' + str(weight_ce))
+        logger.debug('     has_practexam:  ' + str(has_practexam))
+        logger.debug('     exemption_year: ' + str(exemption_year))
+        logger.debug('     no_ce_years:    ' + str(no_ce_years))
 
     """
     #'+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -357,10 +371,14 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
 
 # - check if this subject had central exam, only when is_ep_exemption
         is_exemption_without_ce = False
-        if is_ep_exemption and exemption_year and no_ce_years:
+        if examperiod == c.EXAMPERIOD_EXEMPTION and exemption_year and no_ce_years:
             # no_ce_years = '2020;2021', value in schemeitem
             # exemption_year = 2020, value in studentsubject
             no_ce_years_arr = no_ce_years.split(';')
+            if logging_on:
+                logger.debug('     no_ce_years_arr: ' + str(no_ce_years_arr))
+                logger.debug('     is_exemption_without_ce: ' + str(str(exemption_year) in no_ce_years_arr))
+
             if str(exemption_year) in no_ce_years_arr:
                 is_exemption_without_ce = True
         # - in case ce_grade has value: remove value from ce_grade
@@ -372,24 +390,20 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
 
 # - check if ce_grade has value, if not: set ce_noinput = True, except when is_exemption_without_ce
         if not ce_grade:
-
             if not is_exemption_without_ce:
                 ce_noinput = True
 
-            if logging_on:
-                logger.debug('... ce_noinput = True')
         else:
-
 # - in ce_grade: replace comma by dot, convert to decimal
             ce_dot_nz = ce_grade.replace(',', '.') if ce_grade else "0"
             ce_decimal_A = Decimal(ce_dot_nz)
             if logging_on:
-                logger.debug('... ce_dot_nz: ' + str(ce_dot_nz) + ' ' + str(type(ce_dot_nz)))
-                logger.debug('... ce_decimal_A: ' + str(ce_decimal_A) + ' ' + str(type(ce_decimal_A)))
+                logger.debug('     ce_dot_nz: ' + str(ce_dot_nz) + ' ' + str(type(ce_dot_nz)))
+                logger.debug('     ce_decimal_A: ' + str(ce_decimal_A) + ' ' + str(type(ce_decimal_A)))
 
 # if subject has no practical exam: pece_grade = ce_grade
 # also if exemption: pece_grade = ce_grade
-            if not has_practexam or is_ep_exemption:
+            if not has_practexam or examperiod == c.EXAMPERIOD_EXEMPTION:
                 pece_decimal = ce_decimal_A
 
 # - check if pe_grade has value, if not: set pe_noinput = True
@@ -408,36 +422,37 @@ def calc_pece_decimal(is_ep_exemption, ce_grade, pe_grade, weight_ce, has_practe
 # round to one digit after dot
                 pece_decimal = grade_calc.round_decimal(pece_decimal_not_rounded, 1)
                 if logging_on:
-                    logger.debug('... pe_dot_nz: ' + str(pe_dot_nz) + ' ' + str(type(pe_dot_nz)))
-                    logger.debug('... pe_decimal_B: ' + str(pe_decimal_B) + ' ' + str(type(pe_decimal_B)))
-                    logger.debug('... pece_decimal_not_rounded: ' + str(pece_decimal_not_rounded) + ' ' + str(type(pece_decimal_not_rounded)))
+                    logger.debug('     pe_dot_nz: ' + str(pe_dot_nz) + ' ' + str(type(pe_dot_nz)))
+                    logger.debug('     pe_decimal_B: ' + str(pe_decimal_B) + ' ' + str(type(pe_decimal_B)))
+                    logger.debug('     pece_decimal_not_rounded: ' + str(pece_decimal_not_rounded) + ' ' + str(type(pece_decimal_not_rounded)))
 
     if logging_on:
-        logger.debug('... pece_decimal: ' + str(pece_decimal) + ' ' + str(type(pece_decimal)))
-        logger.debug('... pe_noinput: ' + str(pe_noinput) + ' ' + str(type(pe_noinput)))
-        logger.debug('... ce_noinput: ' + str(ce_noinput) + ' ' + str(type(ce_noinput)))
+        logger.debug(' >>> pece_decimal: ' + str(pece_decimal) + ' ' + str(type(pece_decimal)))
+        logger.debug(' >>> pe_noinput: ' + str(pe_noinput) + ' ' + str(type(pe_noinput)))
+        logger.debug(' >>> ce_noinput: ' + str(ce_noinput) + ' ' + str(type(ce_noinput)))
 
     return pece_decimal, pe_noinput, ce_noinput, delete_cegrade
 # --- end of calc_pece_decimal
 
 
 def get_score_from_inputscore(input_value, max_score=None):
-    # PR2022-02-09
+    # PR2022-02-09 PR2022-05-25
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_score_from_inputscore -----')
         logger.debug('     input_value: ' + str(input_value) + ' ' + str(type(input_value)))
-        logger.debug('     max_score: ' + str(max_score) + ' ' + str(type(max_score)))
+        logger.debug('     max_score:   ' + str(max_score) + ' ' + str(type(max_score)))
     # function converts input_value to whole number PR2021-01-18
 
 # 1. reset output variables
+    input_number = None
     input_str = None
     err_list = []
 
 # 2. remove spaces before and after input_value
     imput_trim = input_value.strip() if input_value else ''
     if logging_on:
-        logger.debug('imput_trim: ' + str(imput_trim) + ' ' + str(type(imput_trim)))
+        logger.debug('     imput_trim: ' + str(imput_trim) + ' ' + str(type(imput_trim)))
 
 # - exit if imput_trim has no value, without msg_err
     if imput_trim:
@@ -447,11 +462,11 @@ def get_score_from_inputscore(input_value, max_score=None):
         input_no_comma = imput_trim.replace(',', '')
         input_no_dots = input_no_comma.replace(',', '')
         if logging_on:
-            logger.debug('input_no_dots: ' + str(input_no_dots) + ' ' + str(type(input_no_dots)))
+            logger.debug('     input_no_dots: ' + str(input_no_dots) + ' ' + str(type(input_no_dots)))
 # cast input_with_dots to integer
         # '', ' ' and non-numeric give InvalidOperation error
         # '1.7'   gives error: invalid literal for int() with base 10: '1.7'
-        input_number = None
+
         try:
             input_number = int(input_no_dots)
         except Exception as e:
@@ -459,9 +474,9 @@ def get_score_from_inputscore(input_value, max_score=None):
             if logging_on:
                 logger.debug('Exception: ' + str(e))
         if logging_on:
-            logger.debug('imput_trim: ' + str(imput_trim) + ' ' + str(type(imput_trim)))
-            logger.debug('input_number: ' + str(input_number) + ' ' + str(type(input_number)))
-            logger.debug('max_score: ' + str(max_score) + ' ' + str(type(max_score)))
+            logger.debug('     imput_trim: ' + str(imput_trim) + ' ' + str(type(imput_trim)))
+            logger.debug('     input_number: ' + str(input_number) + ' ' + str(type(input_number)))
+            logger.debug('     max_score: ' + str(max_score) + ' ' + str(type(max_score)))
 
 # - check if score is within range
         if not has_error:
@@ -478,11 +493,14 @@ def get_score_from_inputscore(input_value, max_score=None):
             else:
                 err_list.append(str(_("The score must be a whole number.")))
 
-        if logging_on:
-            logger.debug('input_number: ' + str(input_number) + ' ' + str(type(input_number)))
-
         input_str = str(input_number) if input_number is not None else None
-    return input_str, err_list
+
+    if logging_on:
+        logger.debug(' >>> input_number: ' + str(input_number) + ' ' + str(type(input_number)))
+        logger.debug(' >>> input_str: ' + str(input_str) + ' ' + str(type(input_str)))
+        logger.debug(' >>> err_list: ' + str(err_list))
+
+    return input_number, input_str, err_list
 # --- end of get_score_from_inputscore
 
 
@@ -494,6 +512,7 @@ def get_grade_number_from_input_str(input_str):
 
     output_str = None
     err_list = []
+
 # - remove spaces before and after input_value
     imput_trim = input_str.strip() if input_str else ''
     if logging_on:
@@ -555,7 +574,7 @@ def get_grade_number_from_input_str(input_str):
 
 
 def get_grade_char_from_input_str(input_str):
-    logging_on = False
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_grade_char_from_input_str -----')
         logger.debug('input_value: ' + str(input_str) + ' ' + str(type(input_str)))
@@ -582,3 +601,4 @@ def get_grade_char_from_input_str(input_str):
 
     return output_str, err_list
 # - end of get_grade_char_from_input_str
+

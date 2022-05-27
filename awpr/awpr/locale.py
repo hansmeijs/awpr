@@ -1120,6 +1120,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
         dict['ID_number'] = _('ID number')
+        dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', ' Download conversion table.')
 
         dict['All_subjects'] = TXT_All_subjects
         dict['All_candidates'] = TXT_All_candidates

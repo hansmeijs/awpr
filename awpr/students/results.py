@@ -29,32 +29,21 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
-from reportlab.lib.units import inch, mm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Image
-
 
 from accounts import models as acc_mod
-from accounts import views as acc_view
-from awpr import menus as awpr_menu, excel as grd_exc
+from awpr import menus as awpr_menu
 from awpr import constants as c
 from awpr import settings as s
-from awpr import validators as av
 from awpr import functions as af
 from awpr import downloads as dl
 from awpr import library as awpr_lib
 
-from grades import views as grd_vw
+from grades import calc_score as calc_score
 
-from schools import models as sch_mod
-from students import models as stud_mod
 from students import functions as stud_fnc
-from subjects import models as subj_mod
-from students import validators as stud_val
-from grades import views as gr_vw
 
-from os import path
 import io
 import json
 
@@ -267,6 +256,15 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 auth1_pk = upload_dict.get('auth1_pk')
                 auth2_pk = upload_dict.get('auth2_pk')
                 printdate = upload_dict.get('printdate')
+
+                # print Herexamen instead of AFgewezen, only when prlim gradelist is printed
+                print_reex = upload_dict.get('print_reex', False) if is_prelim else False
+
+
+                if logging_on:
+                    logger.debug('VVVVVVVVVV print_reex: ' + str(upload_dict.get('print_reex', False)))
+                    logger.debug('VVVVVVVVVV is_prelim: ' + str(is_prelim))
+
                 student_pk_list = upload_dict.get('student_pk_list')
 
                 settings_key = c.KEY_GRADELIST
@@ -316,7 +314,11 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 canvas = Canvas(buffer)
 
                 for student_dict in student_list:
-                    draw_gradelist(canvas, library, student_dict, is_prelim, auth1_pk, auth2_pk, printdate, request)
+
+                    # recalc result before printing the gradelist
+
+
+                    draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, request)
                     canvas.showPage()
 
                 canvas.save()
@@ -365,7 +367,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_grade_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
@@ -389,7 +391,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
     sql_list = ["SELECT studsubj.id AS studsubj_id, stud.id AS stud_id,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
                 "stud.birthdate, stud.birthcountry, stud.birthcity,"
-                "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result_status,",
+                "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
 
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
@@ -612,7 +614,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
 # - end of get_grade_dictlist
 
 
-def draw_gradelist(canvas, library, student_dict, is_prelim, auth1_pk, auth2_pk, printdate, request):
+def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_gradelist -----')
@@ -704,7 +706,7 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, auth1_pk, auth2_pk,
         logger.debug('left: ' + str(left))
         logger.debug('coord: ' + str(coord))
         logger.debug('1 * mm: ' + str(1 * mm))
-    canvas.setLineWidth(0)
+    canvas.setLineWidth(0.5)
     canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
 
     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
@@ -790,7 +792,7 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, auth1_pk, auth2_pk,
     draw_gradelist_avg_final_row(canvas, coord, col_tab_list, library, student_dict)
 
 # - draw 'Uitslag op grond van de resultaten:' row
-    draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict)
+    draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict, print_reex)
 
 # - draw page footer
     draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexschool)
@@ -1143,13 +1145,21 @@ def draw_gradelist_avg_final_row(canvas, coord, col_tab_list, library, student_d
 # - end of draw_gradelist_avg_final_row
 
 
-def draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict):
+def draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict, print_reex):
     label = library.get('result', '---')
-    result = student_dict.get('result_status', '---')
+    result_status = student_dict.get('result_status', '---')
+    result = student_dict.get('result', 0)
+    #TODO add result (integer) to student_dict
+    if print_reex and result_status == 'Afgewezen':
+        result_status = 'Herexamen'
+
+    logger.debug('print_reex: ' + str(print_reex))
+    logger.debug('result: ' + str(result))
+    logger.debug('result_status: ' + str(result_status))
 
     txt_list = [
         {'txt':label, 'font': 'Times-Bold', 'padding': 4, 'x': coord[0] + col_tab_list[0] * mm},
-        {'txt': result, 'font': 'Times-Bold', 'padding': 3, 'align': 'r', 'x': coord[0] + col_tab_list[5] * mm}
+        {'txt': result_status, 'font': 'Times-Bold', 'padding': 3, 'align': 'r', 'x': coord[0] + col_tab_list[5] * mm}
     ]
     vertical_lines = (0, 5)
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)

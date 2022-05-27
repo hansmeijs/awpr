@@ -237,6 +237,159 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
 # --- end of create_student_rows
 
 
+
+#/////////////////////////////////////////////////////////////////
+def create_results_per_school_rows(sel_examyear, sel_depbase=None, sel_schoolbase=None, sel_lvlbase_pk=None):
+    # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
+    # - show only students that are not tobedeleted
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_student_rows -----')
+
+    student_rows = []
+    error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
+
+    if sel_examyear and sel_schoolbase and sel_depbase:
+        try:
+
+            if logging_on:
+                logger.debug(' ----- create_student_rows -----')
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                logger.debug('sel_depbase: ' + str(sel_depbase))
+                logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                """
+
+                        "st.result",
+                """
+
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
+            sql_list = ["SELECT db.code AS db_code, sb.code as sb_code, sch.name as sch_name,",
+
+                "SUM((st.gender = 'M')::INT) AS M,",
+                "SUM((st.gender = 'V')::INT) AS V,",
+                "SUM(1) AS T,",
+
+                        "SUM((st.gender = 'M' AND st.ep01_result = 0)::INT) AS ep1_M_nores,",
+                        "SUM((st.gender = 'V' AND st.ep01_result = 0)::INT) AS ep1_V_nores,",
+                        "SUM((st.ep01_result = 0)::INT) AS ep1_T_nores,",
+
+                        "SUM((st.gender = 'M' AND st.ep01_result = 1)::INT) AS ep1_M_pass,",
+                        "SUM((st.gender = 'V' AND st.ep01_result = 1)::INT) AS ep1_V_pass,",
+                        "SUM((st.ep01_result = 1)::INT) AS ep1_T_pass,",
+
+                        "SUM((st.gender = 'M' AND st.ep01_result = 2)::INT) AS ep1_M_fail,",
+                        "SUM((st.gender = 'V' AND st.ep01_result = 2)::INT) AS ep1_V_fail,",
+                        "SUM((st.ep01_result = 2)::INT) AS ep1_T_fail,",
+
+                        "SUM((st.gender = 'M' AND st.ep01_result = 3)::INT) AS ep1_M_reex,",
+                        "SUM((st.gender = 'V' AND st.ep01_result = 3)::INT) AS ep1_V_reex,",
+                        "SUM((st.ep01_result = 3)::INT) AS ep1_T_reex,",
+
+                        "SUM((st.gender = 'M' AND st.ep01_result = 4)::INT) AS ep1_M_wdr,",
+                        "SUM((st.gender = 'V' AND st.ep01_result = 4)::INT) AS ep1_V_wdr,",
+                        "SUM((st.ep01_result = 4)::INT) AS ep1_T_wdr,",
+
+
+
+                        "SUM((st.gender = 'M' AND st.ep02_result = 0)::INT) AS ep2_M_nores,",
+                        "SUM((st.gender = 'V' AND st.ep02_result = 0)::INT) AS ep2_V_nores,",
+                        "SUM((st.ep02_result = 0)::INT) AS ep2_T_nores,",
+
+                        "SUM((st.gender = 'M' AND st.ep02_result = 1)::INT) AS ep2_M_pass,",
+                        "SUM((st.gender = 'V' AND st.ep02_result = 1)::INT) AS ep2_V_pass,",
+                        "SUM((st.ep02_result = 1)::INT) AS ep2_T_pass,",
+
+                        "SUM((st.gender = 'M' AND st.ep02_result = 2)::INT) AS ep2_M_fail,",
+                        "SUM((st.gender = 'V' AND st.ep02_result = 2)::INT) AS ep2_V_fail,",
+                        "SUM((st.ep02_result = 2)::INT) AS ep2_T_fail,",
+
+                        "SUM((st.gender = 'M' AND st.ep02_result = 3)::INT) AS ep2_M_reex,",
+                        "SUM((st.gender = 'V' AND st.ep02_result = 3)::INT) AS ep2_V_reex,",
+                        "SUM((st.ep02_result = 3)::INT) AS ep2_T_reex,",
+
+                        "SUM((st.gender = 'M' AND st.ep02_result = 4)::INT) AS ep2_M_wdr,",
+                        "SUM((st.gender = 'V' AND st.ep02_result = 4)::INT) AS ep2_V_wdr,",
+                        "SUM((st.ep02_result = 4)::INT) AS ep2_T_wdr,",
+
+
+
+
+                "SUM((st.gender = 'M' AND st.result = 0)::INT) AS M_nores,",
+                "SUM((st.gender = 'V' AND st.result = 0)::INT) AS V_nores,",
+                "SUM((st.result = 0)::INT) AS T_nores,",
+
+                "SUM((st.gender = 'M' AND st.result = 1)::INT) AS M_pass,",
+                "SUM((st.gender = 'V' AND st.result = 1)::INT) AS V_pass,",
+                "SUM((st.result = 1)::INT) AS T_pass,",
+
+                "SUM((st.gender = 'M' AND st.result = 2)::INT) AS M_fail,",
+                "SUM((st.gender = 'V' AND st.result = 2)::INT) AS V_fail,",
+                "SUM((st.result = 2)::INT) AS T_fail,",
+
+                "SUM((st.gender = 'M' AND st.result = 3)::INT) AS M_reex,",
+                "SUM((st.gender = 'V' AND st.result = 3)::INT) AS V_reex,",
+                "SUM((st.result = 3)::INT) AS T_reex,",
+
+                "SUM((st.gender = 'M' AND st.result = 4)::INT) AS M_wdr,",
+                "SUM((st.gender = 'V' AND st.result = 4)::INT) AS V_wdr,",
+                "SUM((st.result = 4)::INT) AS T_wdr",
+
+
+
+
+                "FROM students_student AS st",
+                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+                "WHERE sch.examyear_id = %(ey_id)s::INT",
+                "AND NOT st.tobedeleted"]
+
+            if sel_depbase:
+                sql_keys['db_id'] = sel_depbase.pk
+                #sql_list.append('AND dep.base_id = %(db_id)s::INT')
+
+            if sel_schoolbase:
+                sql_keys['sb_id'] = sel_schoolbase.pk
+                #sql_list.append('AND sch.base_id = %(sb_id)s::INT')
+
+            if sel_lvlbase_pk:
+                sql_keys['lvlbase_id'] = sel_lvlbase_pk
+                #sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
+
+            # order by id necessary to make sure that lookup function on client gets the right row
+            sql_list.append("GROUP BY dep.sequence, db.code, sb.code, sch.name")
+            sql_list.append("ORDER BY dep.sequence, sb.code")
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                student_rows = af.dictfetchall(cursor)
+
+            if logging_on and False:
+                logger.debug('student_rows: ' + str(student_rows))
+                # logger.debug('connection.queries: ' + str(connection.queries))
+
+
+        except Exception as e:
+            # - return msg_err when instance not created
+            #  msg format: [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred." }]
+            logger.error(getattr(e, 'message', str(e)))
+            # &emsp; add 4 'hard' spaces
+            msg_html = '<br>'.join((
+                str(_('An error occurred')) + ':',
+                '&emsp;<i>' + str(e) + '</i>'
+            ))
+            error_dict = {'class': 'border_bg_invalid', 'msg_html': msg_html}
+
+    return student_rows, error_dict
+# --- end of create_student_rows
+
+
 @method_decorator([login_required], name='dispatch')
 class ClusterUploadView(View):  # PR2022-01-06
 
@@ -3557,7 +3710,7 @@ def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_l
 
     # function saves result and grade info in student record
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------- save_result_etc_in_student ----------- ')
         logger.debug('last_student_ep_dict: ' + str(last_student_ep_dict))
@@ -3639,6 +3792,7 @@ def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_l
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
+
     return sql_student_values
 # --- end of save_result_etc_in_student
 

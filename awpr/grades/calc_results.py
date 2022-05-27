@@ -14,11 +14,11 @@ from awpr import settings as s
 from awpr import functions as af
 from awpr import downloads as dl
 
-from grades import calculations as grade_calc
 
+from grades import calculations as grade_calc
+from grades import calc_score as calc_score
 from students import functions as stud_fnc
 from students import views as stud_view
-from students import models as stud_mod
 
 from decimal import Decimal
 
@@ -118,12 +118,12 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator([login_required], name='dispatch')
-class CalcresultsView(View):  # PR2021-11-19
+class CalcResultsView(View):  # PR2021-11-19
 
     def post(self, request, list):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
-            logger.debug(' ============= CalcresultsView ============= ')
+            logger.debug(' ============= CalcResultsView ============= ')
 
         update_wrap = {}
         messages = []
@@ -168,66 +168,98 @@ class CalcresultsView(View):  # PR2021-11-19
                     messages.append(msg_dict)
                 else:
 
-# - get_scheme_dict
-                    sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
-                    scheme_dict = get_scheme_dict(sel_examyear, sel_department)
-
-# - get_schemeitems_dict
-                    schemeitems_dict = get_schemeitems_dict(sel_examyear, sel_department)
-
+# +++ calc_batch_student_result
+                    sel_lvlbase_pk, sel_sctbase_pkNIU = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
                     student_pk_list = upload_dict.get('student_pk_list')
 
-# +++  get_students_with_grades_dictlist
-                    student_dictlist = get_students_with_grades_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list)
-                    if logging_on and False:
-                        logger.debug('############################### ')
-                        logger.debug('student_dictlist: ' + str(student_dictlist))
+                    log_list = calc_batch_student_result(
+                        sel_examyear=sel_examyear,
+                        sel_school=sel_school,
+                        sel_department=sel_department,
+                        student_pk_list=student_pk_list,
+                        sel_lvlbase_pk=sel_lvlbase_pk,
+                        user_lang=user_lang
+                    )
 
-# - create log_list with header
-                    log_list = log_list_header(sel_school, sel_department, sel_examyear, user_lang)
-                    sql_studsubj_list = []
-                    sql_student_list = []
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-# loop through student_dictlist - ordered list of students with grades
-
-                    for student_dict in student_dictlist:
-                        calc_student_result(sel_examyear, sel_department, student_dict, scheme_dict, schemeitems_dict, log_list, sql_studsubj_list, sql_student_list)
-        # - save calculated fields in studsubj
-                    if sql_studsubj_list:
-                        save_studsubj_batch(sql_studsubj_list)
-
-        # - save calculated fields in student
-                    if sql_student_list:
-                        save_student_batch(sql_student_list)
-                        update_wrap['updated_student_rows'], error_dict = stud_view.create_student_rows(
-                            sel_examyear=sel_examyear,
-                            sel_schoolbase=sel_school.base,
-                            sel_depbase=sel_department.base,
-                            append_dict={})
-
-                        if error_dict:
-                            update_wrap['messages'] = [error_dict]
-
-                    if not student_dictlist:
-                        log_list.append(''.join((c.STRING_SPACE_05, str(_('There are no candidates.')))))
-
-                    log_list.append(c.STRING_SINGLELINE_80)
+                    update_wrap['updated_student_rows'], error_dict = stud_view.create_student_rows(
+                        sel_examyear=sel_examyear,
+                        sel_schoolbase=sel_school.base,
+                        sel_depbase=sel_department.base,
+                        append_dict={})
 
                     update_wrap['log_list'] = log_list
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 # - return html with log_list
         if messages:
             update_wrap['messages'] = messages
+
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of CalcresultsView
+# - end of CalcResultsView
+
+
+def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
+    # PR2022-05-26
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ---------------  calc_batch_student_result  ---------------')
+
+# - get_scheme_dict
+    scheme_dict = get_scheme_dict(sel_examyear, sel_department)
+
+# - get_schemeitems_dict
+    schemeitems_dict = get_schemeitems_dict(sel_examyear, sel_department)
+
+# +++  recalculate and save the final grades of the subjects of each student in student_pk_list PR2022-05-25
+    calc_score.batch_update_finalgrade(
+        sel_examyear=sel_examyear,
+        sel_department=sel_department,
+        student_pk_list=student_pk_list)
+
+# +++  get_students_with_grades_dictlist
+    student_dictlist = get_students_with_grades_dictlist(
+        examyear = sel_examyear,
+        school = sel_school,
+        department = sel_department,
+        student_pk_list = student_pk_list,
+        lvlbase_pk = sel_lvlbase_pk
+    )
+
+    if logging_on and False:
+        logger.debug('############################### ')
+        logger.debug('student_dictlist: ' + str(student_dictlist))
+
+    # - create log_list with header
+    log_list = log_list_header(sel_school, sel_department, sel_examyear, user_lang)
+    sql_studsubj_list = []
+    sql_student_list = []
+
+# loop through student_dictlist - ordered list of students with grades
+    for student_dict in student_dictlist:
+        calc_student_result(sel_examyear, sel_department, student_dict, scheme_dict, schemeitems_dict, log_list,
+                            sql_studsubj_list, sql_student_list)
+
+# - save calculated fields in studsubj
+    if sql_studsubj_list:
+        save_studsubj_batch(sql_studsubj_list)
+
+# - save calculated fields in student
+    if sql_student_list:
+        save_student_batch(sql_student_list)
+
+    if not student_dictlist:
+        log_list.append(''.join((c.STRING_SPACE_05, str(_('There are no candidates.')))))
+
+    log_list.append(c.STRING_SINGLELINE_80)
+
+    return log_list
+# - end of calc_batch_student_result
 
 
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict, log_list, sql_studsubj_list, sql_student_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -246,7 +278,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
     """
     'A. Validate
         'a. exit if no student_id >> done in getting students
-        'b. exit if locked >> done by may_edit in CalcresultsView.
+        'b. exit if locked >> done by may_edit in CalcResultsView.
         'c. exit if no scheme  >> done in this function
     """
     skip_student = False
@@ -267,7 +299,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
     # Note" tel k_CountCijfers(OnvoldoendesInSectordeelProfieldeel,Tv01) telt aantal onvoldoendes in vakType Profieldeel,
     # werd alleen gebruikt bij PassFailedHavoVwo Oude Stijl PR2015-04-08
 
-    # Count Eindcijfers: tel hoe vaak eindcijfers voorkomen (niet voor combinatievakken)
+    # Count Eindcijfers: tel hoe vaak eindcijfers voorkomen (niet voor combinatievakken (> apart voor combi))
     #  - wordt ook doorlopen bij CijferType_OVG, voor controle of stage. LO en cav voldoende zijn
     #  - Niet bij VakType06_Stage, telt niet mee voor uitslag
     #  - Niet bij combinatievakken, cijfer van combivak wordt aan het einde opgeteld bij Count Eindcijfers PR2016-12-29
@@ -311,7 +343,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         # studsubj_dict contains dicts with key '1' etc to store info per subject
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# - loop through studsubjects from student, getschemeitem
+# - loop through studsubjects from student, get schemeitem
         has_subjects = False
         for studsubj_pk, studsubj_dict in student_dict.items():
         # - get info from schemeitems_dict
@@ -356,9 +388,11 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dict, si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_studsubj_result  -----')
+        logger.debug('     studsubj_dict: ' + str(studsubj_dict))
+        logger.debug('     si_dict: ' + str(si_dict))
 
     subj_code = si_dict.get('subj_code', '-')
     subj_name = si_dict.get('subj_name', '-')
@@ -368,10 +402,15 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
     weight_ce = si_dict.get('weight_ce', 0)
     is_combi = si_dict.get('is_combi', False)
     is_core = si_dict.get('is_core_subject', False)
-    has_practexam = si_dict.get('has_practexam', False)
+    no_ce_years = si_dict.get('no_ce_years')
+    thumb_rule_applies = si_dict.get('thumb_rule', False)
+
+    # Practical exam does not exist any more. Set has_practexam = False PR2022-05-26
+    # was: has_practexam = si_dict.get('has_practexam', False)
+    has_practexam = False
 
     if logging_on:
-        logger.debug('subj_code: ' + str(subj_code))
+        logger.debug('     subj_code: ' + str(subj_code))
 
 # - put subject name + combi, core if appl. in log_list
     subj_name_str = subj_name
@@ -388,8 +427,6 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
     if log_list is not None:
         log_list.append(subj_name_str)
 
-    has_exemption = studsubj_dict.get('has_exemption', False)
-    exemption_year = studsubj_dict.get('exemption_year')
     has_sr = studsubj_dict.get('has_sr', False)
     has_reex = studsubj_dict.get('has_reex', False)
     has_reex03 = studsubj_dict.get('has_reex03', False)
@@ -399,10 +436,23 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
         if log_list is not None:
             log_list.append(''.join((c.STRING_SPACE_05, str(_('Extra subject, does not count for the result.')))))
 
+    is_thumbrule = studsubj_dict.get('is_thumbrule', False) if thumb_rule_applies else False
+    if is_thumbrule:
+        if log_list is not None:
+            log_list.append(''.join((c.STRING_SPACE_05, str(_('Thumb rule applies, subject does not count for the result.')))))
+
+    exemp_no_ce = False
+    has_exemption = studsubj_dict.get('has_exemption', False)
+    if has_exemption:
+        exemption_year = studsubj_dict.get('exemption_year')
+        no_ce_years = si_dict.get('no_ce_years')
+        exemp_no_ce = calc_exemp_noce(exemption_year, no_ce_years)
+
     if logging_on:
         logger.debug(' ')
         logger.debug(' =====================  ' + str(subj_name) + '   =====================')
-        #logger.debug(str(studsubj_dict))
+        logger.debug('     has_exemption: ' + str(has_exemption))
+        logger.debug('     has_reex: ' + str(has_reex))
 
     # gl_max_examperiod contains the examperiod that must be stored in studsubj, to be shown on gradelist
     gl_max_examperiod = c.EXAMPERIOD_FIRST
@@ -418,7 +468,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
 # - these calculations are only made when examperiod exists in studsubj_dict
         if examperiod in studsubj_dict:
             this_examperiod_dict = studsubj_dict.get(examperiod)
-            if logging_on and False:
+            if logging_on :
                 logger.debug('--------------- this examperiod: ' + str(examperiod) + ' ---------------')
 
 # --- check for '-noinput': if grade should have value, add '-noinput if required value not entered
@@ -427,11 +477,16 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
             # also noin_dict is added, is used in log_list
             # 'noin': {'vr': {'cav': ['se']}, 'pe': {'bw': ['se', 'ce']}, 'se': ['mm1'], 'ce': ['ec'], 'h3': ['ac']}
             calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has_practexam,
-                         has_exemption, has_sr, has_reex, has_reex03, exemption_year)
+                         has_exemption, has_sr, has_reex, has_reex03, exemp_no_ce)
             if logging_on:
-                logger.debug(' this_examperiod_dict ni: ' + str(this_examperiod_dict.get('ni')))
-                logger.debug(' this_examperiod_dict noin: ' + str(this_examperiod_dict.get('noin')))
-
+                logger.debug('    this_examperiod_dict: ' + str(this_examperiod_dict))
+                logger.debug('    this_examperiod_dict ni: ' + str(this_examperiod_dict.get('ni')))
+                logger.debug('    this_examperiod_dict noin: ' + str(this_examperiod_dict.get('noin')))
+                """
+                this_examperiod_dict: {'subj': 'pa', 'se': '6.8', 'sesr': '6.8', 'final': '7', 'noin': {'vr': {'pa': ['CE']}}, 'ni': ['ce']}
+                this_examperiod_dict ni: ['ce']
+                this_examperiod_dict noin: {'vr': {'pa': ['CE']}}
+                """
 # --- calculate max values, maximum grade when comparing exemption, ep_1, ep_2, ep_3
             #  calc_max_grades stores these keys to this_examperiod_dict:
             #  'max_ep' 'max_sesr''max_pece' 'max_final', 'max_ni' 'max_use_exem'
@@ -445,8 +500,8 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
                     gl_max_ni = max_ni
         # end of "if examperiod in studsubj_dict"
 
-            if logging_on and False:
-                logger.debug('this_examperiod_dict: ' + str(this_examperiod_dict))
+            if logging_on:
+                logger.debug('    this_examperiod_dict: ' + str(this_examperiod_dict))
 
 # add subj_grade_str to log_subj_grade_dict
             # subj_grade_str: '     Vrijstelling: SE:9,7 CE:6,0 Eindcijfer:8'
@@ -473,7 +528,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
 
             ep_key = 'ep' + str(examperiod)
 
-            if logging_on and False:
+            if logging_on:
                 logger.debug('----- examperiod: ' + str(examperiod) + ' ----- use_examperiod: ' + str(use_examperiod))
 
 # --- calculate totals for ep1, ep2 and ep3 and put them in student_ep_dicts, not when exemption
@@ -488,8 +543,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
                 max_ni = use_studsubj_ep_dict.get('max_ni')
                 max_noin = use_studsubj_ep_dict.get('max_noin')
 
-                if logging_on and False:
-                    logger.debug('examperiod: ' + str(examperiod))
+                if logging_on:
                     logger.debug('     max_ep: ' + str(max_ep))
                     logger.debug('     max_pece: ' + str(max_pece) + ' ' + str(type(max_pece)))
                     logger.debug('     max_final: ' + str(max_final)+ ' ' + str(type(max_final)))
@@ -505,11 +559,11 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
 
 # - calculate sum of final grades, separate for combi subjects
                 calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dict,
-                                gradetype, multiplier, is_combi, is_extra_nocount, subj_code)
+                                gradetype, multiplier, is_combi, is_extra_nocount, is_thumbrule, subj_code)
 
 # - calculate CE-sum with subject_count
                 calc_sum_pece(max_pece, max_ep, max_ni, calc_student_ep_dict,
-                                gradetype, multiplier, weight_ce, is_extra_nocount, subj_code)
+                                gradetype, multiplier, weight_ce, exemp_no_ce, is_extra_nocount, is_thumbrule, subj_code)
 
 # - after adding max_grades: check result requirements
                 calc_rule_issufficient(si_dict, use_studsubj_ep_dict, calc_student_ep_dict,
@@ -557,7 +611,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
 
 
 def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has_practexam,
-                 has_exemption, has_sr, has_reex, has_reex03, exemption_year):
+                 has_exemption, has_sr, has_reex, has_reex03, exemp_no_ce):
     # PR2021-11-21 PR2021-12-27 PR2022-01-05
     # only called by calc_studsubj_result
 
@@ -569,8 +623,10 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
     """"""
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('---------  calc_noinput  --------- examperiod: ' + str(examperiod))
+        logger.debug('---------  calc_noinput  --------- ')
+        logger.debug('   examperiod: ' + str(examperiod))
         logger.debug('   subj_code: ' + str(subj_code))
+        logger.debug('   exemp_no_ce: ' + str(exemp_no_ce))
     """
     67838: {'si_id': 9734, 'subj': 'ec', 'is_extra_nocount': True, 'has_exemption': True, 
         1: {'subj': 'ec', 'se': '7,4', 'sesr': '7.4', 'ni': ['ce'], 'max_ep': 4, 'max_sesr': None, 'max_pece': None, 'max_final': None, 
@@ -590,7 +646,6 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
             (examperiod == c.EXAMPERIOD_FIRST):
 
         this_examperiod_dict = studsubj_dict.get(examperiod)
-        first_examperiod_dict = studsubj_dict.get(c.EXAMPERIOD_FIRST)
 
 # - get grade info from this_examperiod_dict
         examtype_tuple = ('se', 'ce') if examperiod == c.EXAMPERIOD_EXEMPTION else \
@@ -622,14 +677,12 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
                         if weight_ce > 0:
                             if examperiod == c.EXAMPERIOD_EXEMPTION:
                                 # CORONA: in 2020 there was no central exam, therefore:
-                                #  - in 2021: don't check on cegrade input of exemptions
-                                #  - in 2021 - 2030 don't check on cegrade input of exemptions when evening / lex student
-                                # because in 2020 there was no central exam
-                                # Note: This rule is hard-coded. Not the best practice, but hopefully
-                                #  it won't happen again that the central exams are cancelled PR2022-01-15
-                                if exemption_year == 2020:
-                                    pass
-                                else:
+                                #         in 2021: for certain subjects no central exam
+                                # table 'schemeitem' contains field 'no_ce_years' with string with years without ce: "2020;2021"
+                                # table 'studsubj' contains field 'exemption_year' with year of the exemption
+
+                                # skip 'no_input' if exemption has no ce PR2022-05-26
+                                if not exemp_no_ce:
                                     has_no_input = True
                             else:
                                 has_no_input = True
@@ -681,6 +734,35 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
                             logger.debug('   ni: ' + str(this_examperiod_dict['ni']))
                             logger.debug('   noin: ' + str(this_examperiod_dict['noin']))
 # - end of calc_noinput
+
+def calc_exemp_noce(exemption_year, no_ce_years):
+# PR2022-05-26 calculate if exemption has ce
+    # PR2022-05-26:
+    # in studsubj field 'exemption_year' contains the examyear of the exemption
+    # the schemeitem field 'no_ce_years' contains string with examyears without CE, i.e. '2020;2021'
+    # if exemption_year is in no_ce_years: no_ce_exam = True
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----------  calc_exemp_noce  ----------')
+        logger.debug('   exemption_year: ' + str(exemption_year))
+        logger.debug('no_ce_years: ' + str(no_ce_years))
+
+    no_ce_exam = False
+    if exemption_year and no_ce_years:
+        no_ce_years_arr = no_ce_years.split(';')
+        if logging_on:
+            logger.debug('   no_ce_years_arr: ' + str(no_ce_years_arr))
+        if str(exemption_year) in no_ce_years_arr:
+            no_ce_exam = True
+
+            if str(exemption_year) in no_ce_years_arr:
+                no_ce_exam = True
+    if logging_on:
+        logger.debug(' >>> no_ce_exam: ' + str(no_ce_exam))
+
+    return no_ce_exam
+# end of calc_exemp_noce
 
 
 def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradetype):  # PR2021-12-21
@@ -969,13 +1051,14 @@ def save_max_grade_in_studsubj(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_e
 # - end of save_max_grade_in_studsubj
 
 
-def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dict, gradetype, multiplier, is_combi, is_extra_nocount, subj_code):
+def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dict, gradetype, multiplier,
+                                  is_combi, is_extra_nocount, is_thumbrule, subj_code):
     # function adds final-grade * multiplier to final.sum, adds multiplier to subj_count
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  calc_sum_finalgrade_and_combi  -----')
-        logger.debug('calc_student_ep_dict: ' + str(calc_student_ep_dict))
+        logger.debug('     calc_student_ep_dict: ' + str(calc_student_ep_dict))
     """
     calc_student_ep_dict: {'ep': 1, 
                            'final': {'sum': -5994, 'cnt': 6, 'info': ' ne:- pa:- en:- sp:- ec:- ac:-'}, 
@@ -989,7 +1072,7 @@ def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dic
     try:
 # - calc only when gradetype is number
 # - calc only when subject is not 'is_extra_nocount'
-        if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount:
+        if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount and not is_thumbrule:
             key_str = 'combi' if is_combi else 'final'
             ep_dict = calc_student_ep_dict[key_str]
             """
@@ -1032,7 +1115,7 @@ def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dic
                 ep_dict['info'] += gradeinfo_extension
 
             if logging_on:
-                logger.debug('ep_dict: ' + str(ep_dict))
+                logger.debug('     ep_dict: ' + str(ep_dict))
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -1040,26 +1123,37 @@ def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dic
 
 
 def calc_sum_pece(max_pece, max_ep, max_ni, calc_student_ep_dict,
-                  gradetype, multiplier, weight_ce, is_extra_nocount, subj_code):  # PR2021-12-22
+                  gradetype, multiplier, weight_ce, exemp_no_ce, is_extra_nocount, is_thumbrule, subj_code):  # PR2021-12-22
     # function adds CE-grade * multiplier to CE-sum, adds final-grade * multiplier to final-sum, adds multiplier to subj_count
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  calc_sum_pece  -----')
-        logger.debug('max_ep: ' + str(max_ep))
-        logger.debug('max_pece: ' + str(max_pece) + ' ' + str(type(max_pece)))
-        logger.debug('max_ni: ' + str(max_ni))
-        logger.debug('multiplier: ' + str(multiplier))
-        logger.debug('weight_ce: ' + str(weight_ce))
+        logger.debug('     max_ep: ' + str(max_ep))
+        logger.debug('     max_pece: ' + str(max_pece) + ' ' + str(type(max_pece)))
+        logger.debug('     max_ni: ' + str(max_ni))
+        logger.debug('     multiplier: ' + str(multiplier))
+        logger.debug('     weight_ce: ' + str(weight_ce))
 
-        logger.debug('calc_student_ep_dict: ' + str(calc_student_ep_dict))
+        logger.debug('     calc_student_ep_dict: ' + str(calc_student_ep_dict))
 
-    try:
-# - calc only when gradetype is number
-# - calc only when weight_ce > 0
-# - calc only when subject is not 'is_extra_nocount'
-        if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount and weight_ce > 0:
+    """
+    calc_student_ep_dict: {'ep': 1, 
+        'final': {'sum': 42, 'cnt': 7, 'info': ' ne:5 pa:7(vr) en:6 wk:6 nask1:5 nask2:6 ta:7'}, 
+        'combi': {'sum': 19, 'cnt': 3, 'info': ' mm1:5 cav:8(vr) lo:6(vr)'}, 
+        'pece': {'sumX10': 372, 'cnt': 7, 'info': ' ne:4,1 pa:-(vr) en:6,2 wk:5,6 nask1:5,8 nask2:6,9 ta:8,6'}, 
+        'count': {'c3': 0, 'c4': 0, 'c5': 2, 'c6': 3, 'c7': 2, 'core4': 0, 'core5': 0}}
+    """
 
+    # calc only when :
+    #  - gradetype is number
+    #  - weight_ce > 0
+    #  - TODO exemption has no ce
+    #  - subject is not 'is_extra_nocount'
+    #  - subject is not 'is_thumbrule'
+
+    if gradetype == c.GRADETYPE_01_NUMBER and weight_ce > 0 and not exemp_no_ce and not is_extra_nocount and not is_thumbrule:
+        try:
             pece_dict = calc_student_ep_dict['pece']
 
             for key_str in ('sumX10', 'cnt', 'info'):
@@ -1068,16 +1162,16 @@ def calc_sum_pece(max_pece, max_ep, max_ni, calc_student_ep_dict,
                     pece_dict[key_str] = default_value
 
             if logging_on:
-                logger.debug('pece_dict: ' + str(pece_dict) + ' ' + str(type(pece_dict)))
-                logger.debug('max_ep: ' + str(max_ep) + ' ' + str(type(max_ep)))
-                logger.debug('max_pece: ' + str(max_pece) + ' ' + str(type(max_pece)))
-                logger.debug('multiplier: ' + str(multiplier) + ' ' + str(type(multiplier)))
+                logger.debug('     pece_dict: ' + str(pece_dict) + ' ' + str(type(pece_dict)))
+                logger.debug('     max_ep: ' + str(max_ep) + ' ' + str(type(max_ep)))
+                logger.debug('     max_pece: ' + str(max_pece) + ' ' + str(type(max_pece)))
+                logger.debug('     multiplier: ' + str(multiplier) + ' ' + str(type(multiplier)))
 
     # - add multiplier to count dict (multiplier =1, except when sectorprogramma PBL
             pece_dict['cnt'] += multiplier
 
             if logging_on:
-                logger.debug('############# pece_dict[cnt]: ' + str(pece_dict['cnt']) + ' ' + str(type(pece_dict['cnt'])))
+                logger.debug('     pece_dict[cnt]: ' + str(pece_dict['cnt']) + ' ' + str(type(pece_dict['cnt'])))
 
             max_pece_x10_int = 0
             max_pece_str = '-'
@@ -1094,7 +1188,7 @@ def calc_sum_pece(max_pece, max_ep, max_ni, calc_student_ep_dict,
                 max_pece_x10_int = int(max_pece_dot)
 
             if logging_on:
-                logger.debug('max_pece_x10_int: ' + str(max_pece_x10_int) + ' ' + str(type(max_pece_x10_int)))
+                logger.debug('     max_pece_x10_int: ' + str(max_pece_x10_int) + ' ' + str(type(max_pece_x10_int)))
 
     # - add pece_x10_int * multiplier to this_sum_int (multiplier =1, except when sectorprogramma PBL
             if max_pece_x10_int:
@@ -1109,9 +1203,10 @@ def calc_sum_pece(max_pece, max_ep, max_ni, calc_student_ep_dict,
                 pece_dict['info'] += gradeinfo_extension
 
             if logging_on:
-                logger.debug('pece_dict: ' + str(pece_dict))
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
+                logger.debug('     pece_dict: ' + str(pece_dict))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
 # - end of calc_sum_pece
 
 
@@ -1287,11 +1382,11 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
 
 
 def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
-    logging_on = False  # s.LOGGING_ON
+    logging_on = False   # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  calc_pece_avg  -----')
-        logger.debug('examperiod: ' + str(examperiod))
-        logger.debug('student_ep_dict: ' + str(student_ep_dict))
+        logger.debug('     examperiod: ' + str(examperiod))
+        logger.debug('     student_ep_dict: ' + str(student_ep_dict))
 
     """
     student_ep_dict: {
@@ -1593,7 +1688,7 @@ def calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, de
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
     # is reex03 when reex03 student, reex when reex student, firstperiod otherwise
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
@@ -1655,7 +1750,7 @@ def calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, de
             if withdrawn:
                 student_ep_dict['result_index'] = c.RESULT_WITHDRAWN
                 if logging_on:
-                    logger.debug('withdrawn: ' + str(withdrawn))
+                    logger.debug('     withdrawn: ' + str(withdrawn))
             elif not has_subjects:
                 student_ep_dict['result_index'] = c.RESULT_NORESULT
             else:
@@ -1668,7 +1763,7 @@ def calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, de
                 result_no_input = calc_passfailed_noinput(student_ep_dict)
                 # student_ep_dict['result_index'] = c.RESULT_NORESULT gets value in calc_passfailed_noinput
                 if logging_on:
-                    logger.debug('result_no_input: ' + str(result_no_input))
+                    logger.debug('     result_no_input: ' + str(result_no_input))
 
     # - if no_input: create dict with key 'noresult' if it does not exist
                 if not result_no_input:
@@ -1677,12 +1772,16 @@ def calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, de
                     # calc_rule_issufficient is already called in subj loop
                     # student_ep_dict['result_index'] = c.RESULT_FAILED gets value in calc_passfailed
                     if depbase_is_vsbo:
-                        calc_passfailed_count6_vsbo(student_ep_dict)
+                        has_failed = calc_passfailed_count6_vsbo(student_ep_dict)
                     else:
-                        calc_passfailed_count6_havovwo(student_ep_dict)
+                        has_failed = calc_passfailed_count6_havovwo(student_ep_dict)
 
-                    calc_passfailed_pece_avg_rule(student_ep_dict)
-                    calc_passfailed_core_rule(student_ep_dict)
+                    if not has_failed:
+                        has_failed =calc_passfailed_core_rule(student_ep_dict)
+                    if not has_failed:
+                        has_failed =calc_passfailed_pece_avg_rule(student_ep_dict)
+                    if not has_failed:
+                        student_ep_dict['result_index'] = c.RESULT_PASSED
 
             if logging_on:
                 logger.debug('student_ep_dict: ' + str(student_ep_dict))
@@ -1707,14 +1806,28 @@ def calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, de
 # - calc_student_passedfailed
 
 
-def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04
+def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04 PR2022-05-26
     # examperiod = ep1, ep2, ep3
     # noinput_dict: {1: {'sr': ['ne'], 'ce': ['ne', 'ec']}, 2: {'ce': ['ac']}, 3: {'ce': ['ac']}}
-    logging_on = s.LOGGING_ON
+    #  - function returns 'no_input',
+    #  - puts result_index = 0 in student_ep_dict['result_index']
+    #  -  puts info in student_ep_dict['noin_info']
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('############################ -----  calc_passfailed_noinput  -----')
-        logger.debug('student_ep_dict: ' + str(student_ep_dict))
+        logger.debug('@@@@@@@@@@@@@@ -----  calc_passfailed_noinput  -----')
+        logger.debug('     student_ep_dict: ' + str(student_ep_dict))
+    """
+    student_ep_dict: {
+        'ep': 1, 
+        'final': {'sum': 48, 'cnt': 8, 'info': ' ne:5 pa:7(vr) en:6 wk:6 nask1:5 nask2:6 ta:7 combi:6', 'avg': '6.0', 
+                    'result': 'Gemiddeld eindcijfer: 6.0 (48/8) '}, 
+        'combi': {'sum': 19, 'cnt': 3, 'info': ' mm1:5 cav:8(vr) lo:6(vr)', 'final': 6, 
+                    'result': 'Combinatiecijfer: 6 (19/3) '}, 
+        'pece': {'sumX10': 372, 'cnt': 6, 'info': ' ne:4,1 en:6,2 wk:5,6 nask1:5,8 nask2:6,9 ta:8,6',  'avg': None, 
+                    'result': 'Gemiddeld CE-cijfer: 6,2 (37,2/6) '}, 
+        'count': {'c3': 0, 'c4': 0, 'c5': 2, 'c6': 4, 'c7': 2, 'core4': 0, 'core5': 0}}
 
+    """
     no_input = False
     noinput_list = []
 
@@ -1754,10 +1867,10 @@ def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04
                 if key == 'vr':
                     for subj_code, subvalue in value.items():
                         if logging_on:
-                            logger.debug( 'value:     ' + str(value))
+                            logger.debug('     value:     ' + str(value))
                             # value:     {'en': ['se', 'ce'], 'ec': ['se', 'ce'], 'mm12': ['se'], 'cav': ['se']}
-                            logger.debug( 'subj_code: ' + str(subj_code))
-                            logger.debug( 'subvalue:  ' + str(subvalue))
+                            logger.debug('     subj_code: ' + str(subj_code))
+                            logger.debug('     subvalue:  ' + str(subvalue))
                         et_list = ','.join(subvalue)
 
                         noin_info_str += ''.join((subj_code, '(', et_list, ') '))
@@ -1768,7 +1881,7 @@ def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04
                     noin_info_str += ' ' + str(_('Not entered')).lower()
 
                 if logging_on:
-                    logger.debug('noin_info_str: ' + str(noin_info_str))
+                    logger.debug('     noin_info_str: ' + str(noin_info_str))
 
                 noinput_list.append(noin_info_str)
 
@@ -1781,7 +1894,7 @@ def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04
             student_ep_dict['noin_info'].extend(noinput_list)
 
         if logging_on:
-            logger.debug('student_ep_dict: ' + str(student_ep_dict))
+            logger.debug('     student_ep_dict: ' + str(student_ep_dict))
         """
         student_ep_dict: {'ep': 1, 
             'final': {'sum': -1964, 'cnt': 8, 'info': ' ne:6 pa:6 en:5 wk:6 ec:4 ac:-(2x) combi:7', 'avg': None, 
@@ -1796,15 +1909,14 @@ def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04
             'noin_info': []}
         """
 
-
     return no_input
 # - end of calc_passfailed_noinput
 
 
-def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24
-    logging_on = False  # s.LOGGING_ON
+def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug( '  -----  calc_passfailed_count6_vsbo  -----')
+        logger.debug('  -----  calc_passfailed_count6_vsbo  -----')
 
     """
     'PR: slagingsregeling Vsbo
@@ -1888,15 +2000,17 @@ def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24
         passed_dict['cnt3457'] = result_info
 
     if logging_on:
-        logger.debug('student_ep_dict: ' + str(student_ep_dict))
+        logger.debug('     student_ep_dict: ' + str(student_ep_dict))
+
+    return has_failed
 # end of calc_passfailed_count6_vsbo
 
 
-def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30
+def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30  PR2022-05-26
     # add result to combi_dict result:
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug( '  -----  calc_passfailed_count6_havovwo  -----')
+        logger.debug('-----  calc_passfailed_count6_havovwo  -----')
 
     count_dict = student_ep_dict['count']
     c3 = count_dict.get('c3', 0)
@@ -1986,11 +2100,13 @@ def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30
 
     if logging_on:
         logger.debug('student_ep_dict: ' + str(student_ep_dict))
+
+    return has_failed
 # end of calc_passfailed_count6_havovwo
 
 
-def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24    logging_on = s.LOGGING_ON
-    logging_on = False  # s.LOGGING_ON
+def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24 PR2022-05-26
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-----  calc_passfailed_pece_avg_rule  -----')
         logger.debug( '>>>>>>>>>>> student_ep_dict: ' + str(student_ep_dict))
@@ -2040,14 +2156,16 @@ def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24    logging_o
             passed_dict['avgce55'] = result_info
 
     if logging_on:
-        logger.debug('student_ep_dict: ' + str(student_ep_dict))
+        logger.debug('     student_ep_dict: ' + str(student_ep_dict))
+
+    return has_failed
 # end of calc_passfailed_pece_avg_rule
 
 
-def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24
-    logging_on = False  # s.LOGGING_ON
+def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24  PR2022-05-26
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug( ' -----  calc_passfailed_core_rule  -----')
+        logger.debug('-----  calc_passfailed_core_rule  -----')
 # 'count': {'c3': 0, 'c4': 1, 'c5': 1, 'c6': 2, 'c7': 2, 'core4': 0, 'core5': 0}
 
     """
@@ -2087,6 +2205,8 @@ def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24
 
     if logging_on:
         logger.debug('student_ep_dict: ' + str(student_ep_dict))
+
+    return has_failed
 # end of calc_passfailed_core_rule
 
 
@@ -2315,7 +2435,8 @@ def save_student_batch(sql_student_list):  # PR2022-01-03
 # - end of save_student_batch
 
 
-def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):  # PR2021-11-19
+def get_students_with_grades_dictlist(examyear, school, department, student_pk_list, lvlbase_pk=None):
+    # PR2021-11-19 PR2022-05-26
 
     # NOTE: don't forget to filter studsubj.deleted = False and grade.deleted = False!! PR2021-03-15
     # TODO grades that are not published are only visible when 'same_school' (or not??)
@@ -2429,12 +2550,9 @@ def get_students_with_grades_dictlist(examyear, school, department, sel_lvlbase_
         sql_keys['student_pk_arr'] = student_pk_list
         sql_list.append("AND stud.id IN ( SELECT UNNEST( %(student_pk_arr)s::INT[]))")
     else:
-        if sel_lvlbase_pk:
-            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+        if lvlbase_pk:
+            sql_keys['lvlbase_pk'] = lvlbase_pk
             sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
-        if sel_sctbase_pk:
-            sql_keys['sctbase_pk'] = sel_sctbase_pk
-            sql_list.append("AND sct.base_id = %(sctbase_pk)s::INT")
 
     sql = ' '.join(sql_list)
 
@@ -2809,7 +2927,7 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
         logger.debug('     grade_str: ' + str(grade_str))
     subj_grade_str = ''.join((str(ep_str), sesr_display, pece_display, grade_str))
     return subj_grade_str
-
+# - end of log_list_subject_grade
 
 """
 from AWP function CalcPassedFailed PR2021-11-19

@@ -111,6 +111,7 @@ document.addEventListener("DOMContentLoaded", function() {
     columns_tobe_hidden.btn_duo_exams = {
         subjbase_code: "Abbreviation", subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version",
         ntb_omschrijving: "DUO_description", examperiod: "Exam_type", nterm: "N_term", scalelength: "schaallengte",
+        download_conv_table: "Download_conv_table"
     };
     columns_tobe_hidden.btn_ntermen = {
         opl_code: "opl_code", leerweg: "leerweg", ext_code: "ext_code", tijdvak: "tijdvak", nex_id: "nex_id",
@@ -147,12 +148,12 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "l", "c", "c","c", "c", "c", "c", "c"]},
 
         duo_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Leerweg", "DUO_description",
-                                "Exam_type", "N_term", "schaallengte_2lines", ""],
+                                "Exam_type", "N_term", "schaallengte_2lines", "Download_conv_table_2lines"],
                 field_names: ["select", "subjbase_code", "subj_name", "lvl_abbrev", "ntb_omschrijving",
-                            "examperiod", "nterm", "scalelength", "status"],
-                field_tags: ["div", "div", "div", "div", "div", "div", "input", "input","div"],
-                filter_tags: ["text",  "text", "text", "text", "text", "text",  "text", "text","status"],
-                field_width: ["020", "075", "240", "120",  "300", "120", "090","090", "032"],
+                            "examperiod", "nterm", "scalelength", "download_conv_table"],
+                field_tags: ["div", "div", "div", "div", "div", "div", "input", "input","a"],
+                filter_tags: ["text",  "text", "text", "text", "text", "text",  "text", "text", "text"],
+                field_width: ["020", "075", "240", "120",  "300", "120", "090","090", "100"],
                 field_align: ["c",  "c", "l", "l", "l", "l", "c", "c", "c"]},
 
         grades: {field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "Cluster", "Abbrev_subject_2lines",
@@ -695,7 +696,7 @@ document.addEventListener("DOMContentLoaded", function() {
             AddSubmenuButton(el_submenu, loc.Copy_exam, function() {ModConfirmOpen("ete_exam", "copy")}, ["tab_show", "tab_btn_ete_exams"]);
             AddSubmenuButton(el_submenu, loc.Link_DUO_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
             AddSubmenuButton(el_submenu, loc.Unlink_DUO_exam, function() {ModConfirmOpen("duo_exam", "delete")}, ["tab_show", "tab_btn_duo_exams"]);
-            //AddSubmenuButton(el_submenu, loc.Link_DUO_to_grade_exam, function() {ModConfirm_LinkDuo_exam_grade_Open()}, ["tab_show", "tab_btn_duo_exams"]);
+            AddSubmenuButton(el_submenu, loc.Link_DUO_to_grade_exam, function() {ModConfirm_LinkDuo_exam_grade_Open()}, ["tab_show", "tab_btn_duo_exams"]);
             //AddSubmenuButton(el_submenu, loc.Calculate_grades, function() {ModConfirm_calculate_grades_Open()}, ["tab_show", "tab_btn_ete_exams", "tab_btn_duo_exams"]);
         }
 
@@ -1364,7 +1365,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 } else if (field_name === "download_conv_table"){
             // +++  create href and put it in button PR2021-05-07
-                    if (tblName === "ete_exam") {
+                    if (["ete_exam", "duo_exam"].includes(tblName)) {
                         // td.class_align necessary to center align a-element
                         td.classList.add(class_align);
                         add_hover(td);
@@ -1453,7 +1454,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     el_div.value = inner_text;
                     filter_value = inner_text;
 
-                } else if (["cesuur", "scalelength"].includes(field_name)){
+                } else if (field_name === "cesuur"){
+                    el_div.value = data_dict[field_name];
+                    filter_value = data_dict[field_name];
+
+                } else if (field_name === "scalelength"){
                     // show '0', therefore don't use ( data_dict.ce_exam_score) ?  data_dict.ce_exam_score : null
                     inner_text = (data_dict[field_name] != null) ? data_dict[field_name] : null;
                     if (tblName === "duo_exam"){
@@ -1463,6 +1468,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     };
                     filter_value = inner_text;
 
+                } else if (["cesuur", "scalelength"].includes(field_name)){
+                    // show '0', therefore don't use ( data_dict.ce_exam_score) ?  data_dict.ce_exam_score : null
+                    inner_text = (data_dict[field_name] != null) ? data_dict[field_name] : null;
+                    if (tblName === "duo_exam"){
+                        el_div.value = inner_text;
+                    } else {
+                        el_div.innerHTML = (inner_text) ? inner_text : "&nbsp";
+                    };
+                    filter_value = inner_text;
                 } else if (field_name === "ce_exam_score"){
                     const [inner_txt, title_txt] = UpdateFieldScore(loc, data_dict)
                     el_div.innerHTML = (inner_txt) ? inner_txt : "&nbsp";
@@ -1491,7 +1505,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 } else if (field_name === "download_conv_table"){
             // +++  create href and put it in button PR2021-05-07
-                    if (tblName === "ete_exam") {
+                    if (["ete_exam", "duo_exam"].includes(tblName)) {
                         const href_str = data_dict.id.toString();
                         el_div.href = urls.url_exam_download_conversion_pdf.replace("-", href_str);
                     } else if (tblName === "results") {
@@ -1561,11 +1575,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateFieldScore  ================ PR2022-05-17
     function UpdateFieldScore(loc, data_dict) {
+        //console.log("=========  UpdateFieldScore =========");
+        //console.log("data_dict.ce_exam_score", data_dict.ce_exam_score);
 
         const inner_text = (data_dict.secret_exam) ? loc.not_applicable :
                (data_dict.ce_exam_score != null) ? data_dict.ce_exam_score.toString() : null;
 
-        const title_text = (data_dict.secret_exam) ?
+        const title_text = (!data_dict.secret_exam) ?
                             [loc.This_is_a_secret_exam_01, loc.This_is_a_secret_exam_02,
                             loc.This_is_a_secret_exam_03, loc.This_is_a_secret_exam_04].join("\n")
                             : null;
@@ -2438,7 +2454,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (fldName === "cesuur"){
                             if(!value_number && value_number != 0){
                                 msg_html = loc.err_list.cesuur_mustbe;
-                            } else if (value_number < 0) {
+                            } else if (value_number <= 0) {
                                 msg_html = loc.err_list.cesuur_mustbe; // "Score moet een getal groter dan nul zijn."
                             } else if (value_number % 1 !== 0 ) {
                                 // the remainder / modulus operator (%) returns the remainder after (integer) division.
@@ -2449,7 +2465,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         } else if (fldName === "scalelength"){
                             if(!value_number && value_number != 0){
                                 msg_html = loc.err_list.scalelength_mustbe;
-                            } else if (value_number < 0) {
+                            } else if (value_number <= 0) {
                                 msg_html = loc.err_list.scalelength_mustbe; // "Score moet een getal groter dan nul zijn."
                             } else if (value_number % 1 !== 0 ) {
                                 // the remainder / modulus operator (%) returns the remainder after (integer) division.
@@ -7134,6 +7150,10 @@ console.log("exam_dict", exam_dict);
                 setting_dict.sel_student_name = null;
             };
 
+            t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
+            t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
+            t_MSSSS_display_in_sbr("cluster", setting_dict.sel_cluster_pk);
+
     // ---  download data when changing subject
             let new_setting = {page: 'page_exams', sel_subject_pk: setting_dict.sel_subject_pk};
             if(setting_dict.sel_cluster_pk) {
@@ -7151,10 +7171,6 @@ console.log("exam_dict", exam_dict);
                     published_rows: {get: true}
             };
 
-        console.log( ">>> new_setting", new_setting);
-        console.log( ">>> sel_pk_int", sel_pk_int);
-        console.log( ">>> setting_dict.sel_subject_pk", setting_dict.sel_subject_pk);
-        console.log( ">>> setting_dict.sel_subject_name", setting_dict.sel_subject_name);
             DatalistDownload(datalist_request);
 
         } else if (mode === "cluster") {
@@ -7169,12 +7185,16 @@ console.log("exam_dict", exam_dict);
 
             upload_pk_dict.sel_cluster_pk = sel_pk_int;
             if(sel_pk_int) {
-                upload_pk_dict.sel_subject_pk = selected_dict.subject_id;
+                upload_pk_dict.sel_subject_pk = setting_dict.sel_subject_pk;
                 upload_pk_dict.sel_student_pk = null;
             };
+        console.log( ">>> sel_pk_int", sel_pk_int);
+        console.log( ">>> setting_dict.sel_subject_pk", setting_dict.sel_subject_pk);
+        console.log( ">>> setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
 
-            t_MSSSS_display_in_sbr("student", upload_pk_dict.sel_student_pk);
-            t_MSSSS_display_in_sbr("subject", upload_pk_dict.sel_subject_pk);
+            t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
+            t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
+            t_MSSSS_display_in_sbr("cluster", setting_dict.sel_cluster_pk);
 
     // ---  upload new setting
             const upload_dict = {selected_pk: upload_pk_dict};
@@ -7199,6 +7219,7 @@ console.log("exam_dict", exam_dict);
 
             t_MSSSS_display_in_sbr("student", upload_pk_dict.sel_student_pk);
             t_MSSSS_display_in_sbr("subject", upload_pk_dict.sel_subject_pk);
+            t_MSSSS_display_in_sbr("cluster", upload_pk_dict.sel_cluster_pk);
 
     // ---  upload new setting
             const upload_dict = {selected_pk: upload_pk_dict};

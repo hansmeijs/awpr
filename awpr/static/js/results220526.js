@@ -13,6 +13,7 @@ let urls = {};
 let selected = {student_pk: null, student_dict: {}};
 
 let student_rows = [];
+let results_per_school_rows = [];
 let pres_secr_dict = {};
 let school_rows = [];
 
@@ -288,6 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 student_rows: {cur_dep_only: true},
+                results_per_school_rows: {get: true},
                 pres_secr_rows: {get: true}
             };
 
@@ -384,13 +386,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_fill_datamap(sector_map, response.sector_rows);
                     t_SBR_filloptions_level_sector("sector", response.sector_rows);
                 };
-
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
-                }
+                };
+                if ("results_per_school_rows" in response) {
+                    results_per_school_rows = response.results_per_school_rows;
+                };
                 if ("pres_secr_rows" in response) {
                     pres_secr_dict = response.pres_secr_rows;
-                }
+                };
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
             },
@@ -436,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
         if (!data_btn) {data_btn = selected_btn};
-        if (data_btn && ["btn_student"].includes(data_btn)) {
+        if (data_btn && ["btn_student", "btn_overview"].includes(data_btn)) {
             selected_btn = data_btn;
         } else {
             selected_btn = "btn_student";
@@ -848,13 +852,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 //=========   OpenLogfile   ====================== PR2021-11-20
     function OpenLogfile(log_list) {
-        console.log(" ========== OpenLogfile ===========");
+        //console.log(" ========== OpenLogfile ===========");
 
         if (!!log_list && log_list.length) {
             const today = new Date();
             const this_month_index = 1 + today.getMonth();
             const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
-            let filename = "Log calculate results dd " + date_str + ".pdf";
+            let filename = "Log calculate results dd " + get_now_formatted() + ".pdf";
 
             printPDFlogfile(log_list, filename )
         };
@@ -1549,7 +1553,8 @@ function RefreshDataRowsAfterUpload(response) {
         let href = null;
         const upload_dict = {
             mode: mod_dict.mode,
-            print_all: mod_dict.print_all
+            print_all: mod_dict.print_all,
+            print_reex: el_MGL_print_reex.checked
         };
         if (mod_dict.student_pk_list) { upload_dict.student_pk_list = mod_dict.student_pk_list};
         if (mod_dict.print_all) { upload_dict.print_all = mod_dict.print_all};

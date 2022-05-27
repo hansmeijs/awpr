@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 
 from django.db import connection
 
-from accounts import views as acc_view
 from awpr import constants as c
 from awpr import settings as s
 from grades import calc_finalgrade as calc_final
@@ -16,10 +15,102 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-#######################################################
-def validate_update_grade(grade_instance, examgradetype, input_value, sel_examyear, si_dict):
+def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, msg_list,
+                              is_approve=False, is_score=False, is_grade_exam=False):
+    # PR2022-03-20
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_grade_is_allowed -------')
+        logger.debug('     schoolbase_pk: ' + str(schoolbase_pk))
+        logger.debug('     depbase_pk: ' + str(depbase_pk))
+        logger.debug('     lvlbase_pk: ' + str(lvlbase_pk))
+        logger.debug('     subjbase_pk: ' + str(subjbase_pk))
+        logger.debug('     cluster_pk: ' + str(cluster_pk))
+
+    not_allowed = False
+    caption = None
+    if request.user.allowed_clusterbases:
+        if logging_on:
+            logger.debug('     request.user.allowed_clusterbases: ' + str(request.user.allowed_clusterbases))
+            logger.debug('     request.user.allowed_clusterbases.split: ' + str(request.user.allowed_clusterbases.split(';')))
+            logger.debug('     cluster_pk: ' + str(cluster_pk))
+
+        if not cluster_pk or str(cluster_pk) not in request.user.allowed_clusterbases.split(';'):
+            caption = _('the allowed clusters')
+
+    if caption is None and request.user.allowed_subjectbases:
+        if not subjbase_pk or str(subjbase_pk) not in request.user.allowed_subjectbases.split(';'):
+            caption = _('the allowed subjects')
+
+    if caption is None and request.user.allowed_schoolbases:
+        if not schoolbase_pk or str(schoolbase_pk) not in request.user.allowed_schoolbases.split(';'):
+            caption = _('the allowed schools')
+
+    if caption is None and request.user.allowed_levelbases:
+        if not lvlbase_pk or str(lvlbase_pk) not in request.user.allowed_levelbases.split(';'):
+            caption = _('the allowed learning paths')
+
+    if caption is None and request.user.allowed_depbases:
+        if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
+            caption = _('the allowed departments')
+
+    if caption:
+        not_allowed = True
+        msg_list.append(str(_("This subject does not belong to %(cpt)s.") % {'cpt': caption}))
+        edit_txt = _('to approve') if is_approve else _('to edit')
+        score_txt = str(_('This exam') if is_grade_exam else _('This score') if is_score else _('This grade')).lower()
+        msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
+
+    if logging_on:
+        logger.debug('     caption: ' + str(caption))
+        logger.debug('     not_allowed: ' + str(not_allowed))
+
+    return not not_allowed
+# - end of validate_grade_is_allowed
+
+
+def validate_grade_multiple_is_allowed(request, requsr_auth, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk):
+    # PR2022-04-07
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_grade_is_allowed -------')
+        logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
+                               'lvlbase_pk:', str(lvlbase_pk), 'subjbase_pk:', str(subjbase_pk),
+                               'cluster_pk:', str(cluster_pk))))
+    not_allowed = False
+
+    # PR2022-04-20 tel Bruno New Song: chairpeson is also examiner.
+    # must be able to approve all subjects as chairperson.
+    # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
+
+    if requsr_auth not in ('auth1', 'auth2'):
+        if request.user.allowed_clusterbases:
+            if not cluster_pk or str(cluster_pk) not in request.user.allowed_clusterbases.split(';'):
+                not_allowed = True
+
+    if not not_allowed and request.user.allowed_subjectbases:
+        if not subjbase_pk or str(subjbase_pk) not in request.user.allowed_subjectbases.split(';'):
+            not_allowed = True
+
+    if not not_allowed is None and request.user.allowed_schoolbases:
+        if not schoolbase_pk or str(schoolbase_pk) not in request.user.allowed_schoolbases.split(';'):
+            not_allowed = True
+
+    if not not_allowed is None and request.user.allowed_levelbases:
+        if not lvlbase_pk or str(lvlbase_pk) not in request.user.allowed_levelbases.split(';'):
+            not_allowed = True
+
+    if not not_allowed is None and request.user.allowed_depbases:
+        if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
+            not_allowed = True
+
+    return not not_allowed
+# - end of validate_grade_multiple_is_allowed
+
+
+def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_examyear, si_dict):
     # PR2021-01-18 PR2021-09-19 PR2021-12-15 PR2021-12-25 PR2022-02-09 PR2022-04-16
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     # examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade
     # calculated fields are: 'sesrgrade', 'pecegrade', 'finalgrade'
 
@@ -75,7 +166,7 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
 
     if logging_on:
         logger.debug(' ')
-        logger.debug(' ------- validate_update_grade -------')
+        logger.debug(' ------- validate_grade_input_value -------')
         logger.debug('     subj_code:     ' + str(subj_code))
         logger.debug('     student:       ' + str(student))
         logger.debug('     examgradetype: ' + str(examgradetype))
@@ -101,12 +192,16 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
     err_list = validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype)
     if err_list:
         error_list.extend(err_list)
+        if logging_on:
+            logger.debug('     validate_grade_examgradetype_in_examyear:     ' + str(err_list))
 
 # - check if it is allowed to enter a score / grade because of is_secret_exam
     if not error_list:
         err_list = validate_grade_secret_exam(examperiod, gradetype, is_secret_exam)
         if err_list:
             error_list.extend(err_list)
+            if logging_on:
+                logger.debug('     validate_grade_secret_exam:     ' + str(err_list))
 
 # - check if grade is published or authorized
     if not error_list:
@@ -114,6 +209,8 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
         err_list = validate_grade_auth_publ(grade_instance, se_sr_pe_ce)
         if err_list:
             error_list.extend(err_list)
+            if logging_on:
+                logger.debug('     validate_grade_auth_publ:     ' + str(err_list))
 
 # - check if it is allowed to enter this examgradetype in this schemeitem
     # schemitem variables are has_practexam sr_allowed. Deprecated: max_reex no_thirdperiod no_exemption_ce
@@ -129,13 +226,19 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
         err_list = validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dict, input_value)
         if err_list:
             error_list.extend(err_list)
+            if logging_on:
+                logger.debug('     validate_grade_examgradetype_in_schemeitem:     ' + str(err_list))
 
 # - check if exemption cegrade has value when there is no ce in that exemption
     # checking if empy grade is allowed is done in calc_sesr_pece_final_grade.calc_pece_decimal
     if not error_list:
         # - check if this subject had central exam, only when is_ep_exemption
-        validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years,
-                                           studsubj.exemption_year, input_value, error_list)
+        err_list = validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years,
+                                           studsubj.exemption_year, input_value)
+        if err_list:
+            error_list.extend(err_list)
+            if logging_on:
+                logger.debug('     validate_cegrade_in_exemption_year:     ' + str(err_list))
 
     # - exit if examgradetype not allowed for this studsubject
     # checks if:
@@ -157,6 +260,8 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
             )
         if err_list:
             error_list.extend(err_list)
+            if logging_on:
+                logger.debug('     validate_grade_examgradetype_in_studsubj:     ' + str(err_list))
 
 # - check if:
     #  - grade is already authorized, published or blocked
@@ -201,11 +306,11 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
             # strMsgText = "Er kunnen geen scores ingevuld worden in examenjaar " & ExkExamenjaar & "."
             #PR2015-12-27 debug: vervang komma door punt, anders wordt komma genegeerd
 
-            input_str, err_list = calc_final.get_score_from_inputscore(input_value, max_score)
+            input_number, input_str, err_list = calc_final.get_score_from_inputscore(input_value, max_score)
             if err_list:
                 error_list.extend(err_list)
             else:
-                output_value = input_str
+                output_value = input_number
 
 # B. CIJFER
         elif is_grade:
@@ -230,15 +335,16 @@ def validate_update_grade(grade_instance, examgradetype, input_value, sel_examye
                 if err_list:
                     error_list.extend(err_list)
     if logging_on:
-        logger.debug("output_value: " + str(output_value) + ' ' + str(type(output_value)))
-        logger.debug("error_list: " + str(error_list))
+        logger.debug("     output_value: " + str(output_value) + ' ' + str(type(output_value)))
+        logger.debug("     error_list: " + str(error_list))
 
     return output_value, error_list
-# - end of validate_update_grade
+# - end of validate_grade_input_value
 
 
 def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, examperiod, examgradetype, grade_str, is_test):
     # PR2021-12-11 PR2022-02-09 PR2022-04-17
+    # only called by import_studsubj_grade_from_datalist
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_import_grade ----- ')
@@ -317,10 +423,15 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
         # - check if this subject had central exam, only when is_ep_exemption
         exemption_year = studsubj_dict.get('exem_year')
         input_value = grade_str
-        validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years,
-                                           exemption_year, input_value, error_list)
-        if error_list:
+        err_list = validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years,
+                                           exemption_year, input_value)
+        if err_list:
             has_error = True
+            error_list.extend(err_list)
+
+            if logging_on:
+                logger.debug("err_list: " + str(err_list))
+
 
 # - exit als dit vak bewijs van kennis heeft. Dan is invoer gegevens geblokkeerd.
     #  PR2010-06-10 mail Lorraine Wieske: kan geen PE cjfers corrigeren. Weghalen
@@ -389,7 +500,7 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
                 cesuur = studsubj_dict.get('cesuur')
                 nterm = studsubj_dict.get('nterm')
 
-            input_str, err_lst = calc_final.get_score_from_inputscore(grade_str, max_score)
+            input_number, input_str, err_lst = calc_final.get_score_from_inputscore(grade_str, max_score)
             if err_lst:
                 has_error = True
                 error_list.extend(err_lst)
@@ -458,7 +569,7 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
 def validate_grade_secret_exam(examperiod, examgradetype, is_secret_exam):  # PR2022-05-20
     # - check if it is allowed to enter a score / grade because of is_secret_exam
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_grade_secret_exam ----- ')
         logger.debug('     examperiod: ' + str(examperiod))
@@ -536,11 +647,12 @@ def validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype):  # PR
 
 def validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dict, input_value):
     # PR2021-12-11 PR2021-12-25 PR2022-02-09 PR2022-04-15
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_grade_examgradetype_in_schemeitem ----- ')
         logger.debug('     examperiod:    ' + str(examperiod))
         logger.debug('     examgradetype: ' + str(examgradetype))
+        logger.debug('xxxxxxxxxx     si_dict: ' + str(si_dict))
 
     # NIU: reex_combi_allowed
     # - Corona: reexamination not allowed for combination subjects, except when combi_reex_allowed
@@ -586,6 +698,7 @@ def validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dic
             elif 'ce' in examgradetype:
                 caption = str(_('Central exam')).lower()
             if caption:
+                error_list.append(str(_("%(cpt)s is a combination subject.") % {'cpt': si_dict.get('subj_name', '-')}))
                 error_list.append(str(_("A combination subject doesn't have a %(cpt)s.") % {'cpt': caption }))
 
 # - check if weighing > 0
@@ -610,12 +723,12 @@ def validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dic
 # - end of validate_grade_examgradetype_in_schemeitem
 
 
-def validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years, exemption_year, input_value, error_list):
+def validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years, exemption_year, input_value):
     # PR2022-04-16
     # - check if exemption cegrade has value when there is no ce in that exemption
     # checking if empy grade is allowed is done in calc_sesr_pece_final_grade.calc_pece_decimal
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_cegrade_in_exemption_year -------')
         logger.debug('     examgradetype:    ' + str(examgradetype))
@@ -623,6 +736,8 @@ def validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years, e
         logger.debug('     no_ce_years:    ' + str(no_ce_years))
         logger.debug('     exemption_year: ' + str(exemption_year))
         logger.debug('     input_value:    ' + str(input_value) + ' ' + str(type(input_value)))
+
+    error_list = []
 
     # - check if this subject had central exam, only when is_ep_exemption
     # examgradetype might be 'cegrade' or 'exemcegrade'
@@ -648,6 +763,8 @@ def validate_cegrade_in_exemption_year(examperiod, examgradetype, no_ce_years, e
 
     if logging_on:
         logger.debug('     error_list:     ' + str(error_list))
+
+    return error_list
 # - end of validate_cegrade_in_exemption_year
 
 
@@ -655,11 +772,11 @@ def validate_grade_examgradetype_in_studsubj(examperiod, examgradetype,
     ss_has_sr, ss_has_exemption, ss_has_reex, ss_has_reex03, is_test):
     # PR2021-12-17 PR2022-02-09
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_grade_examgradetype_in_studsubj ----- ')
 
-    # called by validate_update_grade and validate_import_grade
+    # called by validate_grade_input_value and validate_import_grade
     # NIU: reex_combi_allowed
     # - Corona: reexamination not allowed for combination subjects, except when combi_reex_allowed
     #  'PR2020-05-15 Corona: herkansing wel mogelijk bij combivakken
@@ -712,7 +829,7 @@ def validate_grade_examgradetype_in_studsubj(examperiod, examgradetype,
 
 def validate_grade_auth_publ_from_dict(studsubj_dict, this_item_cpt):
     # PR2021-12-11 PR2021-12-26 PR2022-04-17
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_grade_auth_publ_from_dict ----- ')
 
@@ -725,9 +842,9 @@ def validate_grade_auth_publ_from_dict(studsubj_dict, this_item_cpt):
     is_auth = studsubj_dict.get('auth', False)
 
     if logging_on:
-        logger.debug('is_published: ' + str(is_published))
-        logger.debug('is_auth: ' + str(is_auth))
-        logger.debug('subj_dict: ' + str(studsubj_dict))
+        logger.debug('     is_published: ' + str(is_published))
+        logger.debug('     is_auth: ' + str(is_auth))
+        logger.debug('     subj_dict: ' + str(studsubj_dict))
 
     if is_published or is_auth:
         publ_appr_cpt = str(_('Published')) if is_published else str(_('Approved'))
@@ -736,7 +853,7 @@ def validate_grade_auth_publ_from_dict(studsubj_dict, this_item_cpt):
         err_list.append(str(_('%(cpt)s is already %(publ_appr_cpt)s.') % {'cpt': this_item_cpt, 'publ_appr_cpt': publ_appr_cpt_lc}))
 
     if logging_on:
-        logger.debug('err_list: ' + str(err_list))
+        logger.debug('     err_list: ' + str(err_list))
 
     return err_list
 # - end of validate_grade_auth_publ_from_dict
@@ -752,7 +869,7 @@ def validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field):  # PR
 
     #  Note: 'se' and 'pe' don't have to be checked, because they have no 'is_se_cand" or 'is_pe_cand"
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_exem_sr_reex_reex03_delete_allowed -------')
 
@@ -804,7 +921,7 @@ def validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field):  # PR
 
 def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR2022-05-20
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_auth_publ -------')
 

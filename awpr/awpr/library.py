@@ -62,11 +62,12 @@ def update_library(examyear, request):
         #('exam', 'keys', 'sleutels'),
         #('exam', 'scores', 'scores'),
         ('exam', 'max_score', 'Maximale score'),
-        ('exam', 'scalelength', 'Scale length'),
+        ('exam', 'scalelength', 'Schaallengte'),
         ('exam', 'total_score', 'Behaalde score'),
         ('exam', 'cesuur', 'Cesuur'),
         ('exam', 'n_term', 'N-term'),
         ('exam', 'nex_id', 'nex_ID'),
+        ('exam', 'duo_exam', 'DUO examen'),
 
         ('ex1', 'title', 'Genummerde alfabetische naamlijst van de kandidaten'),
         ('ex1', 'submit_before', 'Inzenden vóór 1 november *'),

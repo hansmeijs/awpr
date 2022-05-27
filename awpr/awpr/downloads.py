@@ -328,6 +328,18 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             studsubj_pk=None,
                             request=request
                         )
+
+
+# ----- results_per_school_rows
+                if datalist_request.get('results_per_school_rows'):
+                    datalists['results_per_school_rows'], error_dict = stud_view.create_results_per_school_rows(
+                        sel_examyear= sel_examyear,
+                        sel_schoolbase=sel_schoolbase,
+                        sel_depbase=sel_depbase)
+                    if error_dict:
+                        datalists['messages'] = [error_dict]
+
+
 # ----- published
                 if datalist_request.get('published_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:

@@ -250,7 +250,9 @@
                 el_MSSSS_input.setAttribute("data-table", tblName);
     //console.log( "el_MSSSS_input", el_MSSSS_input);
                 // PR2022-05-01 dont open modal when only 1 item in data_rows
-                if (data_rows && data_rows.length > 1){
+                // PR2022-05-25 is confusing when modal doesn't open., >1 removed
+                //if (data_rows && data_rows.length > 1){
+                if (data_rows && data_rows.length){
         // --- fill select table
                     t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
                     el_MSSSS_input.value = null;
@@ -1790,10 +1792,10 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
 
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02 PR2022-05-15
     function t_MCOL_Open(page) {
-        console.log(" -----  t_MCOL_Open   ----")
-        console.log("selected_btn", selected_btn)
-        console.log("columns_tobe_hidden", columns_tobe_hidden)
-        console.log("mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden)
+        //console.log(" -----  t_MCOL_Open   ----")
+        //console.log("selected_btn", selected_btn)
+        //console.log("columns_tobe_hidden", columns_tobe_hidden)
+        //console.log("mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden)
 
         mod_MCOL_dict.page = page;
         mod_MCOL_dict.selected_btn = selected_btn;
@@ -1840,7 +1842,7 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
 
 //=========  t_MCOL_Save  ================ PR2021-08-02 PR2021-12-02
     function t_MCOL_Save(url_usersetting_upload, HandleBtnSelect) {
-        console.log(" -----  t_MCOL_Save   ----")
+        //console.log(" -----  t_MCOL_Save   ----")
         const upload_dict = {};
         const upload_colhidden_list = []
         if (mod_MCOL_dict.cols_hidden && mod_MCOL_dict.cols_hidden.length){
@@ -1851,8 +1853,8 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
             };
         };
         upload_dict[mod_MCOL_dict.page] = {cols_hidden: upload_colhidden_list}
-    console.log("upload_dict", upload_dict);
-    console.log("url_usersetting_upload", url_usersetting_upload);
+    //console.log("upload_dict", upload_dict);
+    //console.log("url_usersetting_upload", url_usersetting_upload);
 
         b_UploadSettings (upload_dict, url_usersetting_upload);
 
@@ -1863,12 +1865,12 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
 
 //=========  t_MCOL_FillSelectTable  ================ PR2021-07-07 PR2021-08-02 PR2021-12-14 PR2022-05-15
     function t_MCOL_FillSelectTable() {
-        console.log("===  t_MCOL_FillSelectTable == ");
-        console.log("selected_btn", selected_btn);
+        //console.log("===  t_MCOL_FillSelectTable == ");
+        //console.log("selected_btn", selected_btn);
         //console.log("field_settings", field_settings);
         //console.log("mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden);
-        console.log("mod_MCOL_dict.cols_tobe_hidden", mod_MCOL_dict.cols_tobe_hidden);
-        console.log("loc", loc);
+        //console.log("mod_MCOL_dict.cols_tobe_hidden", mod_MCOL_dict.cols_tobe_hidden);
+        //console.log("loc", loc);
 
         const el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
         const el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");

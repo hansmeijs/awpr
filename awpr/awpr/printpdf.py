@@ -1121,28 +1121,24 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_conversion_table -----')
-        logger.debug('sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
+        logger.debug('     sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
 
     is_ete_exam = sel_exam_instance.ete_exam
     subject = sel_exam_instance.subject
     examperiod = sel_exam_instance.examperiod
-    amount_int = sel_exam_instance.amount if sel_exam_instance.amount else 0
-    cesuur_int, nterm_str, nexid_str, version_nexid_txt = 0, '', '', ''
 
+    cesuur_int = None
     if is_ete_exam:
         cesuur_int = sel_exam_instance.cesuur if sel_exam_instance.cesuur is not None else 0
         if sel_exam_instance.cesuur:
             cesuur_nterm_str = ' / '.join((str(sel_exam_instance.cesuur - 1), str(sel_exam_instance.cesuur)))
         else:
             cesuur_nterm_str = '---'
-        version_nexid_txt = sel_exam_instance.version
     else:
-        cesuur_nterm_str = sel_exam_instance.nterm if sel_exam_instance.nterm else ''
-        nexid_str = str(sel_exam_instance.nex_id) if sel_exam_instance.nex_id else '-'
-        version_nexid_txt = str(sel_exam_instance.nex_id) if sel_exam_instance.nex_id else ''
+        cesuur_nterm_str = sel_exam_instance.nterm.replace('.', ',') if sel_exam_instance.nterm else '---'
 
     scalelength_int = sel_exam_instance.scalelength
-    scalelength_str = str(scalelength_int) if scalelength_int else '-'
+    scalelength_str = str(scalelength_int) if scalelength_int else '---'
 
 # - get dep_abbrev from department
     dep_abbrev = '---'
@@ -1155,8 +1151,6 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
     if level and level.abbrev:
         dep_abbrev += ' - ' + level.abbrev
 
-# - get version
-    version = sel_exam_instance.version
     # dont print last_modified_by
     skip_modifiedby = True
     last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang, skip_modifiedby)
@@ -1181,19 +1175,31 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
     if is_ete_exam:
         max_score = form_text.get('max_score', '-') + ':'
         cesuur_nterm_lbl = form_text.get('cesuur', '-') + ':'
-        version_nexid_lbl = form_text.get('version', '-') + ':' if version else None
+
     else:
         max_score = form_text.get('scalelength', '-') + ':'
         cesuur_nterm_lbl = form_text.get('n_term', '-') + ':'
-        version_nexid_lbl = form_text.get('nex_id', '-') + ':' if nexid_str else None
+
+
+    version_lbl, version_txt = None, None
+    if is_ete_exam and sel_exam_instance.version:
+        version_lbl = form_text.get('version', '-') + ':'
+        version_txt = sel_exam_instance.version
 
     header_list = [
         (minond, None, None, None),
         (title, None, None, None),
-        (educationtype, dep_abbrev, version_nexid_lbl, version_nexid_txt),
+        (educationtype, dep_abbrev, version_lbl, version_txt),
         (examtype, examperiod_cpt, max_score, scalelength_str),
         (subject_cpt, subject.name, cesuur_nterm_lbl, cesuur_nterm_str)
     ]
+    if not is_ete_exam:
+        omschrijving_txt = '---'
+        if sel_exam_instance.ntermentable and sel_exam_instance.ntermentable.omschrijving:
+            omschrijving_txt = sel_exam_instance.ntermentable.omschrijving
+        header_list.append((
+            form_text.get('duo_exam', '-') + ':',
+            omschrijving_txt, None, None))
 
     filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
     try:
@@ -1206,23 +1212,41 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
 
 # create list of with score and grades
     score_grade_dict = {}
-    if scalelength_int:
+    if is_ete_exam:
+        hide_table = not scalelength_int or not cesuur_int
+    else:
+        # test if nterm is number
+        try:
+            nterm_test = int(cesuur_nterm_str.strip().replace(',', '', 1).replace('.', '', 1))
+        except:
+            hide_table = True
+        else:
+            hide_table = not scalelength_int or not cesuur_nterm_str
+
+    if logging_on:
+        logger.debug('     is_ete_exam: ' + str(is_ete_exam))
+        logger.debug('     scalelength_int: ' + str(scalelength_int))
+        logger.debug('     cesuur_int: ' + str(cesuur_int))
+        logger.debug('     cesuur_nterm_str: ' + str(cesuur_nterm_str))
+        logger.debug('     hide_table: ' + str(hide_table) + ' ' + str(type(hide_table)))
+
+    if not hide_table:
         for score_int in range(0, scalelength_int + 1):  # range(start_value, end_value, step), end_value is not included!
             if is_ete_exam:
                 grade_str = calc_score.calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
             else:
-                grade_str = calc_score.calc_grade_from_score_duo(score_int, scalelength_int, cesuur_int)
+                grade_str = calc_score.calc_grade_from_score_duo(score_int, scalelength_int, cesuur_nterm_str)
             grade_with_comma = grade_str.replace('.', ',') if grade_str else '-'
             score_grade_dict[score_int] = grade_with_comma
 
-    draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_list, last_modified_text, score_grade_dict)
+    draw_conversion_page(canvas, scalelength_int, cesuur_int, hide_table, header_list, last_modified_text, score_grade_dict)
 
 # - end of draw_conversion_table
 
 
-def draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_list, last_modified_text, score_grade_dict):
+def draw_conversion_page(canvas, scalelength_int, cesuur_int, hide_table, header_list, last_modified_text, score_grade_dict):
     # PR2022-05-08
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_conversion_page -----')
 
@@ -1254,11 +1278,8 @@ def draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_
 
     if logging_on:
         logger.debug('    scalelength_int: ' + str(scalelength_int))
-        logger.debug('    columns_per_page: ' + str(columns_per_page))
         logger.debug('    number_of_rows: ' + str(number_of_rows))
-        logger.debug('    lines_per_page: ' + str(lines_per_page))
         logger.debug('    page_count: ' + str(page_count))
-        logger.debug('    cesuur_int: ' + str(cesuur_int))
 
     page_number = 0
 
@@ -1269,9 +1290,6 @@ def draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_
     new_page = True
     skip_show_page = True
     for row_number_minus1 in range(0, number_of_rows):  # range(start_value, end_value, step), end_value is not included!
-
-        if logging_on:
-            logger.debug('---- row_number_minus1: ' + str(row_number_minus1))
 
         #if page_row > lines_per_page and False:
         if new_page:
@@ -1289,24 +1307,21 @@ def draw_conversion_page(canvas, form_text, scalelength_int, cesuur_int, header_
 
             already_printed_rows = (page_number -1) * lines_per_page
             tobe_printed_rows = number_of_rows - already_printed_rows
-            number_of_rows_on_this_page = tobe_printed_rows if tobe_printed_rows < lines_per_page else  lines_per_page
+            number_of_rows_on_this_page = tobe_printed_rows if tobe_printed_rows < lines_per_page else lines_per_page
+
             first_score_on_page = already_printed_rows * columns_per_page
 
             if logging_on:
-                logger.debug('---- already_printed_rows: ' + str(already_printed_rows))
-                logger.debug('---- tobe_printed_rows: ' + str(tobe_printed_rows))
-                logger.debug('---- number_of_rows_on_this_page: ' + str(number_of_rows_on_this_page))
+                logger.debug('     already_printed_rows: ' + str(already_printed_rows))
+                logger.debug('     tobe_printed_rows: ' + str(tobe_printed_rows))
+                logger.debug('     number_of_rows_on_this_page: ' + str(number_of_rows_on_this_page))
 
             draw_conversion_page_header(canvas, border, coord, left, top, header_list,
                                         page_number, page_count, last_modified_text, today_formatted)
 
             draw_conversion_question_header_row(canvas, border, coord, columns_per_page, row_height)
 
-        if cesuur_int:
-
-            if logging_on:
-                logger.debug('    page_number: ' + str(page_number))
-
+        if not hide_table:
             draw_conversion_question_row(canvas, border, coord, columns_per_page,
                                          row_index_on_this_page, number_of_rows_on_this_page, first_score_on_page,
                                         row_height, scalelength_int, cesuur_int, score_grade_dict)
@@ -1362,8 +1377,9 @@ def draw_conversion_page_header(canvas, border, coord, left, top, text_list,
 
 # draw label
         # leading: This is the spacing between adjacent lines of text; a good rule of thumb is to make this 20% larger than the point size.
-        set_font_timesbold_11_black(canvas)
-        canvas.drawString(x, y, label)
+        if label:
+            set_font_timesbold_11_black(canvas)
+            canvas.drawString(x, y, label)
 
 # draw text (schoolname etc
         if text:
@@ -1448,7 +1464,7 @@ def draw_conversion_question_row(canvas, border, coord, columns_per_page,
                                  row_height, scalelength_int, cesuur_int, score_grade_dict):
     #  questions_dict = {1: '4', 2: 'D-b', 3: '6', 4: 'E-d', 5: '2', 6: '1', 7: '1', 8: '1', 9: '1'}},
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_conversion_question_row -----')
         logger.debug('     row_index_on_this_page: ' + str(row_index_on_this_page))
