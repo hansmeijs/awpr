@@ -1219,7 +1219,19 @@ def system_updates(examyear, request):
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
 
-    # PR 2022-05-26 one time function to set thumb_rule = True for Havo/Vwo excluding core subjects
+# PR 2022-05-28 one time function to set rule_avg_pece_sufficient = TRUE, rule_core_notatevlex = FALSE
+    # for all departments SXM and CUR departments Havo/Vwo
+    set_ce_avg_rule(request)
+
+# PR 2022-05-28 one time function to set rule_core_sufficient = TRUE, rule_core_notatevlex = FALSE
+    # for departments Havo/Vwo
+    set_core_sufficient_rule(request)
+
+# PR 2022-05-28 one time function to set rule_grade_sufficient = TRUE, rule_gradesuff_notatevlex = TRUE
+    # subjects 'cav' and 'lo' in 'Havo' and 'Vwo'
+    set_cav_lo_sufficient_rule(request)
+
+# PR 2022-05-26 one time function to set thumb_rule = True for Havo/Vwo excluding core subjects
     set_thumb_rule(request)
 
 #PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
@@ -1265,12 +1277,167 @@ def system_updates(examyear, request):
 
 # - end of system_updates
 
+def set_ce_avg_rule(request):
+    # PR 2022-05-28 one time function to set rule_avg_pece_sufficient = TRUE, rule_core_notatevlex = FALSE
+    # for all departments SXM and CUR departments Havo/Vwo
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- set_ce_avg_rule -------')
+    try:
+        name = 'ce_avg_rule'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            # reset values
+            sql = "UPDATE subjects_scheme SET rule_avg_pece_sufficient=FALSE, rule_avg_pece_notatevlex=FALSE"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
 
+            sql_list = [
+                "WITH sub_sql AS (",
+                    "SELECT scheme.id",
+                    "FROM subjects_scheme AS scheme",
+                    "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+                    "INNER JOIN schools_country AS country ON (country.id = ey.country_id)",
+                    "WHERE (depbase.code = 'Havo') OR (depbase.code = 'Vwo') OR (depbase.code = 'Vsbo' AND country.abbrev = 'Sxm')",
+                ")",
+                "UPDATE subjects_scheme",
+                "SET rule_avg_pece_sufficient = TRUE, rule_avg_pece_notatevlex = FALSE",
+                "FROM sub_sql",
+                "WHERE subjects_scheme.id = sub_sql.id"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -e nd of set_ce_avg_rule
+
+
+def set_core_sufficient_rule(request):
+    # PR 2022-05-28 one time function to set rule_core_sufficient = TRUE, rule_core_notatevlex = FALSE
+    # for departments Havo/Vwo
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- set_core_sufficient_rule -------')
+    try:
+        key = 'core_sufficient'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            # reset values
+            sql = "UPDATE subjects_scheme SET rule_core_sufficient = FALSE, rule_core_notatevlex = FALSE"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+            sql_list = [
+                "WITH sub_sql AS (",
+                    "SELECT scheme.id",
+                    "FROM subjects_scheme AS scheme",
+                    "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                    "WHERE (depbase.code = 'Havo' OR depbase.code = 'Vwo')",
+                ")",
+                "UPDATE subjects_scheme",
+                "SET rule_core_sufficient = TRUE, rule_core_notatevlex = FALSE",
+                "FROM sub_sql",
+                "WHERE subjects_scheme.id = sub_sql.id"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -e nd of set_core_sufficient_rule
+
+
+def set_cav_lo_sufficient_rule(request):
+    # PR 2022-05-28 one time function to set rule_grade_sufficient = TRUE, rule_gradesuff_notatevlex = TRUE
+    # subjects 'cav' and 'lo' in 'Havo' and 'Vwo'
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- set_cav_lo_sufficient_rule -------')
+    try:
+        key = 'cav_lo_sufficient'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            # reset values
+            sql = "UPDATE subjects_schemeitem SET rule_grade_sufficient = FALSE, rule_gradesuff_notatevlex = FALSE"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+            sql_list = [
+                "WITH sub_sql AS (",
+                    "SELECT subj_si.id",
+
+                    "FROM subjects_schemeitem AS subj_si",
+                    "INNER JOIN subjects_subject AS subj ON (subj.id = subj_si.subject_id)",
+                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                    "INNER JOIN subjects_scheme AS scheme ON (scheme.id = subj_si.scheme_id)",
+                    "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                    "WHERE subjbase.code='lo' OR subjbase.code='cav'"
+                    "AND (depbase.code = 'Havo' OR depbase.code = 'Vwo')",
+                ")",
+                "UPDATE subjects_schemeitem",
+                "SET rule_grade_sufficient = TRUE, rule_gradesuff_notatevlex = TRUE",
+                "FROM sub_sql",
+                "WHERE subjects_schemeitem.id = sub_sql.id"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -e nd of set_cav_lo_sufficient_rule
 
 
 def set_thumb_rule(request):
     # PR 2022-05-26 one time function to set thumb_rule = True for Havo/Vwo excluding core subjects
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- set_thumb_rule -------')
     try:
@@ -1281,6 +1448,11 @@ def set_thumb_rule(request):
         if logging_on:
             logger.debug('exists: ' + str(exists))
         if not exists:
+            # reset values
+            sql = "UPDATE subjects_schemeitem SET thumb_rule = FALSE"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
             sql_list = [
                 "WITH sub_sql AS (",
                     "SELECT subj_si.id",

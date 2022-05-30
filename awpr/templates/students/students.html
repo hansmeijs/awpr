@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220515.js' %}"></script>
-    <script src="{% static 'js/students220522.js' %}"></script>
+    <script src="{% static 'js/students220529.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -98,6 +98,7 @@
 
     <!-- END OF CONTENT BODY -->
             <div id="id_data"
+                 data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_student_upload="{% url 'url_student_upload' %}"

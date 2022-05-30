@@ -68,6 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
+    urls.url_user_modmsg_hide = get_attr_from_el(el_data, "data-url_user_modmsg_hide");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_student_upload = get_attr_from_el(el_data, "data-url_student_upload");
@@ -295,6 +296,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
+
+// ---  MOD MESSAGE ------------------------------------
+        const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
+        if(el_mod_message_btn_hide){
+            el_mod_message_btn_hide.addEventListener("click", function() {ModMessageHide()});
+        };
 
 // ---  set selected menu button active
         const btn_clicked = document.getElementById("id_plg_page_student")
@@ -1743,6 +1750,13 @@ function RefreshDataRowsAfterUpload(response) {
             $("#id_mod_confirm").modal("hide");
         }
     }  // ModConfirmResponse
+
+//=========  ModMessageHide  ================ PR2022-05-28
+    function ModMessageHide() {
+        console.log(" --- ModMessageHide --- ");
+        const upload_dict = {hide_msg: true};
+        UploadChanges(upload_dict, urls.url_user_modmsg_hide)
+    }  // ModMessageHide
 
 // #################################
 

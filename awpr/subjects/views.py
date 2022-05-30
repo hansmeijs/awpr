@@ -1407,6 +1407,8 @@ class ExamUploadView(View):
                                 upload_dict=upload_dict,
                                 error_list=error_list
                             )
+                            if logging_on:
+                                logger.debug('---- updated_cegrade_count: ' + str(updated_cegrade_count))
 
         # - return message when CE-grades are calculated after entering cesuur or scalelength
                             if updated_cegrade_count:
@@ -3755,9 +3757,6 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
         calc_cegrade_from_exam_score = False
 
         for field, new_value in upload_dict.items():
-            if logging_on:
-                logger.debug('     field: ' + str(field))
-                logger.debug('     new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
 # --- skip fields that don't contain new values
             if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examtype'):
@@ -3796,7 +3795,6 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                             logger.debug('     new_value_str:    ' + str(new_value_str) + ' ' + str(type(new_value_str)))
                             logger.debug('     old_value:    ' + str(old_value) + ' ' + str(type(old_value)))
                             logger.debug('     save_changes: ' + str(save_changes))
-
 
             elif field == 'scalelength':
                 # only in DUO exams the scalelength can be entered
@@ -3941,7 +3939,11 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 # copy exam score to ce-score when scalelength, nterm or  cesuur has changed
                 if calc_cegrade_from_exam_score:
-                    updated_cegrade_count = calc_score.calc_cegrade_from_exam_score(request, sel_examyear, sel_department, exam_instance)
+                    updated_cegrade_count, updated_cegrade_listNIU = calc_score.batch_update_finalgrade(
+                        sel_examyear=sel_examyear,
+                        sel_department=sel_department,
+                        exam_pk=exam_instance.pk
+                    )
 
             #except Exception as e:
             #    logger.error(getattr(e, 'message', str(e)))
@@ -6486,7 +6488,7 @@ class ExamDownloadConversionView(View):  # PR2022-05-08
             if sel_examyear and exam_pk:
                 sel_exam_instance = subj_mod.Exam.objects.get_or_none(
                     pk=exam_pk,
-                    subject__examyear=sel_examyear)
+                    subject__examyear__code=sel_examyear.code)
                 if logging_on:
                     logger.debug('sel_exam_instance: ' + str(sel_exam_instance))
 

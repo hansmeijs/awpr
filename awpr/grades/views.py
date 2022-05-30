@@ -1738,6 +1738,7 @@ class GradeUploadView(View):
                                     grade_instance=grade,
                                     upload_dict=upload_dict,
                                     sel_examyear=sel_examyear,
+                                    sel_department=sel_department,
                                     si_dict=si_dict,
                                     request=request)
                             if err_list:
@@ -1803,7 +1804,7 @@ class GradeUploadView(View):
 
 #######################################################
 
-def update_grade_instance(grade_instance, upload_dict, sel_examyear, si_dict, request):
+def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_department, si_dict, request):
     # --- update existing grade PR2020-12-16 PR2021-12-13 PR2021-12-25 PR2022-04-24
     # add new values to update_dict (don't reset update_dict, it has values)
     logging_on = s.LOGGING_ON
@@ -1853,6 +1854,8 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, si_dict, re
                     setattr(grade_instance, field, validated_value)
                     save_changes = True
                     recalc_finalgrade = True
+
+                    # - when reex or reex03: update segrade, srgrade and pegrade in reex grade_instance
                     must_recalc_reex_reex03 = field in ('segrade', 'srgrade', 'pegrade')
 
  # when score has changed: update grade when cesuur/nterm is given
@@ -2010,10 +2013,6 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, si_dict, re
 
 # --- end of for loop ---
 
-# +++ if one of the input fields has changed: recalc calculated fields
-    if recalc_finalgrade:
-        recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, True) # True = skip_save, will be saved further in this function
-
 # 5. save changes`
     if save_changes:
 
@@ -2028,24 +2027,19 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, si_dict, re
             err_list.append(str(_('An error occurred. The changes have not been saved.')))
         else:
 
+# +++ if one of the input fields has changed: recalc final grade
+            if recalc_finalgrade:
+                calc_score.batch_update_finalgrade(
+                    sel_examyear=sel_examyear,
+                    sel_department=sel_department,
+                    grade_pk_list=[grade_instance.pk]
+                )
+
 # - recalculate gl_sesr, gl_pece, gl_final, gl_use_exem in studsubj record
             # TODO also update these fields when scores are changed or nterm entered
             if must_recalc_reex_reex03:
     # - when field = 'segrade', 'srgrade', 'pegrade': also update and save grades in reex, reex03, if exist
                 recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
-            # TODO add field needs_recalc to student and recalc results only when opening result page, to speed up
-            #if recalc_finalgrade:
-            #    sql_studsubj_list, sql_student_list = \
-            #        update_studsubj_and_recalc_student_result(
-            #            sel_examyear, sel_school, sel_department, student)
-            #    if sql_studsubj_list:
-            #        calc_res.save_studsubj_batch(sql_studsubj_list)
-            #
-            #    # save calculated fields in student
-            #    if sql_student_list:
-            #        calc_res.save_student_batch(sql_student_list)
-
-
 
     return err_list
 # --- end of update_grade_instance
@@ -2093,7 +2087,7 @@ def recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict):  #
     #  - check if there is a reex or reex03 grade: if so, recalc final grade in reex or reex03
     #  - only when first examperiod ( is filtered in update_grade_instance)
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- recalc_finalgrade_in_reex_reex03_grade_and_save -----')
         logger.debug('grade_instance: ' + str(grade_instance) + ' ep: ' + str(grade_instance.examperiod))
@@ -2169,7 +2163,6 @@ def recalc_finalgrade_in_grade_and_save(grade_instance, si_dict, skip_save=False
                 se_grade = grade_instance.segrade
                 sr_grade = grade_instance.srgrade
                 pe_grade = grade_instance.pegrade
-
 
 # - get ce_grade always from grade_instance
             ce_grade = grade_instance.cegrade
@@ -2561,14 +2554,15 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
 
 # --- filter on usersetting
         # TODO replace all sel_subject_pk filters by sel_subjbase_pk filters
+
+        # PR2022-05-29 dont filter on sel_student_pk any more
         else:
-            sel_lvlbase_pk, sel_sctbase_pk, sel_subjbase_pk, sel_cluster_pk, sel_student_pk = None, None, None, None, None
+            sel_lvlbase_pk, sel_sctbase_pk, sel_subjbase_pk, sel_cluster_pk = None, None, None, None
             if setting_dict:
                 sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
                 sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
                 sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
                 sel_cluster_pk = setting_dict.get(c.KEY_SEL_CLUSTER_PK)
-                sel_student_pk = setting_dict.get(c.KEY_SEL_STUDENT_PK)
 
             # PR2022-04-05 use get_userfilter_allowed_lvlbase instead of only sel_lvlbase_pk
             #if sel_lvlbase_pk:
@@ -2589,10 +2583,6 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
             if sel_cluster_pk:
                 sql_keys['cluster_pk'] = sel_cluster_pk
                 sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
-
-            if sel_student_pk:
-                sql_keys['student_pk'] = sel_student_pk
-                sql_list.append("AND stud.id = %(student_pk)s::INT")
 
 # --- filter on allowed
         acc_view.get_userfilter_allowed_subjbase(
@@ -2875,28 +2865,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('setting_dict: ' + str(setting_dict))
-    """
-    setting_dict: {
-        'user_lang': 'nl', 
-        'sel_page': 'page_exams', 
-        'sel_schoolbase_pk': 4, 
-        'sel_schoolbase_code': 'CUR03', 
-        'requsr_same_school': False, 
-        'sel_examyear_pk': 1, 
-        'sel_examyear_code': 2022, 
-        'sel_examyear_published': True, 'no_practexam': True, 
-        'sel_school_pk': 3, 'sel_school_name': 'Juan Pablo Duarte Vsbo', 'sel_school_abbrev': 'JPD', 'sel_school_depbases': '1', 
-        'sel_school_activated': True, 
-        'sel_depbase_pk': 1, 'sel_depbase_code': 'Vsbo', 
-        'sel_department_pk': 4, 
-        'sel_dep_level_req': True, 
-        'sel_dep_has_profiel': False, 'sel_examperiod': 1, 
-        'sel_examtype': 'se', 'sel_examtype_caption': 'Schoolexamen', 
-        'sel_auth_index': 2, 'sel_auth_function': 'Secretaris', 
-        'sel_lvlbase_pk': 6, 'sel_level_abbrev': 'PBL', 
-        'sel_subject_pk': 126, 'sel_subject_code': 'bw', 
-        'sel_subject_name': 'Bouw', 'sel_btn': 'btn_results'}
-    """
+
     # - only grades with ete exams are visible
     # - only ce_exams that are submitted have results shown
     # - group by exam and school
@@ -2905,7 +2874,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
 
     req_usr = request.user
     # PR2022-05-25 debug: no records were showing because ep = exemption, set to default if not in [1,2]
-    if sel_examperiod not in (1, 2):
+    if sel_examperiod not in (1, 2, 3):
         sel_examperiod = c.EXAMPERIOD_FIRST
     sql_keys = {'ey_code': sel_examyear.code, 'depbase_id': sel_depbase.pk, 'experiod': sel_examperiod}
 

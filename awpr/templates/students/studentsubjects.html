@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220515.js' %}"></script>
-    <script src="{% static 'js/studentsubjects220518.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220529.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -138,6 +138,7 @@
     <!-- END OF CONTENT BODY -->
 
             <div id="id_data"
+                 data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_student_biscand="{% url 'url_student_biscand' %}"
@@ -152,7 +153,10 @@
                 data-url_studsubj_approve="{% url 'url_studsubj_approve' %}"
                 data-url_studsubj_approve_submit_multiple="{% url 'url_studsubj_approve_submit_multiple' %}"
                 data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
-                data-url_grade_download_ex1="{% url 'url_grade_download_ex1' %}"
+
+                data-url_download_ex1="{% url 'url_download_ex1' %}"
+                data-url_download_ex4="{% url 'url_download_ex4' %}"
+
                 data-url_ex3_getinfo="{% url 'url_ex3_getinfo' %}"
                 data-url_ex3_download="{% url 'url_ex3_download' '-' %}"
                 data-url_ex3_backpage="{% url 'url_ex3_backpage' %}"

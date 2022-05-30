@@ -1353,13 +1353,31 @@ class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
                 'validlink': False,
             })
         return context
-
 # === end of class AwpPasswordResetConfirmView =====================================
-
-
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
+@method_decorator([login_required], name='dispatch')
+class UserModMessageHideView(View):
+    #  PR2022-05-29
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserModMessageHideView ===============')
+
+        update_wrap = {}
+
+        if request.user and request.user.country and request.user.schoolbase:
+            set_usersetting_dict(c.KEY_OPENARGS, {'show_msg': False, 'hide_msg': True}, request)
+
+        if logging_on:
+            logger.debug(str(get_usersetting_dict(c.KEY_OPENARGS, request)))
+
+# - return update_wrap
+        update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
+        return HttpResponse(update_wrap_json)
+# end of UserModMessageHideView
 
 def create_user_rows(request, user_pk=None):
     # --- create list of all users of this school, or 1 user with user_pk PR2020-07-31
@@ -2012,7 +2030,6 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
         logger.debug('key_str: ' + str(key_str))
         logger.debug('setting_dict: ' + str(setting_dict))
 
-
     #  json.dumps converts a dict in a json object
     #  json.loads retrieves a dict (or other type) from a json object
 
@@ -2202,6 +2219,7 @@ def replace_value_in_dict(settings_dict, key_str, new_value): # PR2021-08-19 PR2
         logger.debug('settings_dict: ' + str(settings_dict))
     return item_has_changed
 
+
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
 def get_usr_schoolname_with_article(user):  # PR2019-03-09 PR2021-01-25 PR2021-08-16
 
@@ -2237,6 +2255,7 @@ def get_username_dict():  # PR2021-12-19
 
     return username_dict
 # - end of get_username_dict
+
 
 def get_userfilter_allowed_depbase(request, sql_keys, sql_list, depbase_pk=None, skip_allowed_filter=False):
     # PR2022-03-14
@@ -2291,7 +2310,6 @@ def get_userfilter_allowed_depbase(request, sql_keys, sql_list, depbase_pk=None,
     elif filter_none:
         sql_list.append("AND FALSE")
 # - end of get_userfilter_allowed_depbase
-
 
 
 def get_userfilter_allowed_schoolbase(request, sql_keys, sql_list, schoolbase_pk=None, skip_allowed_filter=False, table=None):

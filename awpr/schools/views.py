@@ -91,7 +91,7 @@ def home(request):
 
 
 def Loggedin(request):
-    #logger.debug('  ==========  Loggedin ==========')
+    logger.debug('  ==========  Loggedin ==========')
     # redirect to saved_href of last selected menubutton # PR2018-12-25 # PR2020-10-22 PR2021-01-25
 
 # retrieve last opened page from, so at next login this page will open. Uses in LoggedIn
@@ -99,12 +99,24 @@ def Loggedin(request):
     if request and request.user:
         req_usr = request.user
         #logger.debug('req_usr: ' + str(req_usr))
-        sel_page_dict = acc_view.get_usersetting_dict('sel_page', request)
-        #logger.debug('sel_page_dict: ' + str(sel_page_dict))
+        sel_page_dict = acc_view.get_usersetting_dict(c.KEY_SEL_PAGE, request)
+        logger.debug('sel_page_dict: ' + str(sel_page_dict))
 
         if sel_page_dict is not None:
             sel_page = sel_page_dict.get('page')
-# get page_url of sel_page, returns 'page_student' when not found
+
+# ----- display opening message ------ PR2022-05-28
+        usersetting_dict = acc_view.get_usersetting_dict(c.KEY_OPENARGS, request)
+        # skip displaying opening message when user has ticked off 'Dont show message again'
+        hide_msg = False
+        if usersetting_dict:
+            hide_msg = usersetting_dict.get('hide_msg')
+        if not hide_msg:
+            # set 'show_msg' = True to show message.
+            # 'show_msg' will be set to False after first display, to prevent showing multiple times in one session
+            acc_view.set_usersetting_dict(c.KEY_OPENARGS, {'show_msg': True}, request)
+
+    # get page_url of sel_page, returns 'page_student' when not found
     page_url = awpr_menu.get_saved_page_url(sel_page, request)
     #logger.debug('page_url: ' + str(page_url))
 

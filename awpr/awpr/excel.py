@@ -5,7 +5,7 @@ from django.core.files import File
 from django.db import connection
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect #, Http404, HttpResponseNotFound, FileResponse
+from django.http import HttpResponse, HttpResponseRedirect  # , Http404, HttpResponseNotFound, FileResponse
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext_lazy as _
@@ -28,6 +28,7 @@ from subjects import views as subj_view
 import xlsxwriter
 from zipfile import ZipFile
 import io
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -42,39 +43,82 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09
         # function creates, Ex1 xlsx file based on settings in usersetting
 
         response = None
-        #try:
-        if True:
-            if request.user and request.user.country and request.user.schoolbase:
-                req_user = request.user
 
-# - reset language
-                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
-                activate(user_lang)
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
 
-# - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+            # - reset language
+            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+            activate(user_lang)
 
-                if sel_examyear and sel_school and sel_department :
+            # - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
 
-# - get text from examyearsetting
-                    settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
+            if sel_examyear and sel_school and sel_department:
+                # - get text from examyearsetting
+                settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
 
-# +++ create ex1_xlsx
-                    save_to_disk = False
-                    # just to prevent PyCharm warning on published_instance=published_instance
-                    published_instance = sch_mod.School.objects.get_or_none(pk=None)
-                    response = create_ex1_xlsx(
-                        published_instance=published_instance,
-                        examyear=sel_examyear,
-                        school=sel_school,
-                        department=sel_department,
-                        settings=settings,
-                        save_to_disk=save_to_disk,
-                        request=request,
-                        user_lang=user_lang)
-        #except:
-        #    raise Http404("Error creating Ex2A file")
+                # +++ create ex1_xlsx
+                save_to_disk = False
+                # just to prevent PyCharm warning on published_instance=published_instance
+                published_instance = sch_mod.School.objects.get_or_none(pk=None)
+                response = create_ex1_xlsx(
+                    published_instance=published_instance,
+                    examyear=sel_examyear,
+                    school=sel_school,
+                    department=sel_department,
+                    settings=settings,
+                    save_to_disk=save_to_disk,
+                    request=request,
+                    user_lang=user_lang)
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+# - end of StudsubjDownloadEx1View
+
+
+@method_decorator([login_required], name='dispatch')
+class StudsubjDownloadEx4View(View):  # PR2022-05-27
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= StudsubjDownloadEx1View ============= ')
+        # function creates, Ex1 xlsx file based on settings in usersetting
+
+        response = None
+
+        if request.user and request.user.country and request.user.schoolbase:
+            req_user = request.user
+
+            # - reset language
+            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+            # - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+
+            if sel_examyear and sel_school and sel_department:
+
+                # +++ create ex4_xlsx
+                save_to_disk = False
+                # just to prevent PyCharm warning on published_instance=published_instance
+                published_instance = sch_mod.School.objects.get_or_none(pk=None)
+                response = create_ex4_xlsx(
+                    published_instance=published_instance,
+                    examyear=sel_examyear,
+                    school=sel_school,
+                    department=sel_department,
+                    save_to_disk=save_to_disk,
+                    request=request,
+                    user_lang=user_lang)
 
         if response:
             return response
@@ -83,29 +127,32 @@ class StudsubjDownloadEx1View(View):  # PR2021-01-24 PR2021-08-09
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of StudsubjDownloadEx1View
 
-#//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-def create_ex1_xlsx(published_instance, examyear, school, department, settings, save_to_disk, request, user_lang):  # PR2021-02-13 PR2021-08-14
+
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def create_ex1_xlsx(published_instance, examyear, school, department, settings, save_to_disk, request,
+                    user_lang):  # PR2021-02-13 PR2021-08-14
     # called by create_Ex1_form, StudsubjDownloadEx1View
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_xlsx -----')
 
-# +++ get mapped_subject_rows    '
+    # +++ get mapped_subject_rows    '
     # function gets all subjects of studsubj of this dep, not tobedeleted
     # - creates list of subject_codes and list of subject_pk's
     # - both sorted by subjbase.code
     # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
     # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
     subject_row_count, subject_pk_list, subject_code_list = \
-        create_ex1_mapped_subject_rows(examyear, school, department)
+        create_ex1_Ex4_mapped_subject_rows(examyear, school, department)
 
     if logging_on:
         logger.debug('subject_row_count: ' + str(subject_row_count))
         logger.debug('subject_pk_list: ' + str(subject_pk_list))
         logger.debug('subject_code_list: ' + str(subject_code_list))
 
-# +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
-    ex1_rows_dict = create_ex1_rows_dict(examyear, school, department, save_to_disk, published_instance)
+    # +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
+    is_reex = False
+    ex1_rows_dict = create_ex1_ex4_rows_dict(examyear, school, department, save_to_disk, is_reex, published_instance)
 
     """
      ex1_rows_dict: {'total': {1050: 171, ..., 1069: 30},
@@ -119,7 +166,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
     """
 
     # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
-    #logger.debug('period_dict: ' + str(period_dict))
+    # logger.debug('period_dict: ' + str(period_dict))
 
     """
         'Regel 0:   DEPARTEMENT VAN ONDERWIJS                                                                      EX.1
@@ -132,7 +179,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
         'Regel 7:   School: Milton Peters College
         'Regel 8:
         'Regel 9:  header kolommen
-        
+
          ex1_dict: 
         {'total': {1047: 175, ..., 1057: 7}, 
         'level_86': {'lvl_name': 'Praktisch Basisgerichte Leerweg', 
@@ -147,6 +194,347 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
     response = None
 
     if settings and ex1_rows_dict:
+
+        # PR2021-07-28 changed to file_dir = 'published/'
+        # this one gives path: awpmedia / awpmedia / media / private / published
+        # PR2021-08-06 create different folders for country and examyear
+        # this one gives path: awpmedia / awpmedia / media / private / cur / 2022 / published
+        # published_instance is None when downloading preliminary Ex1 form
+
+        examyear_str = str(examyear.code)
+
+        file_path = None
+        if published_instance:
+
+            # ---  create file_path
+            # PR2021-08-07 changed to file_dir = 'country/examyear/published/'
+            # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+            requsr_school = sch_mod.School.objects.get_or_none(
+                base=request.user.schoolbase,
+                examyear=examyear
+            )
+            requsr_schoolcode = requsr_school.base.code if requsr_school.base.code else '---'
+            country_abbrev = examyear.country.abbrev.lower()
+            file_dir = '/'.join((country_abbrev, examyear_str, requsr_schoolcode, 'exfiles'))
+            file_path = '/'.join((file_dir, published_instance.filename))
+            file_name = published_instance.name
+
+            if logging_on:
+                logger.debug('file_dir: ' + str(file_dir))
+                logger.debug('file_name: ' + str(file_name))
+                logger.debug('filepath: ' + str(file_path))
+
+        # ---  create file Name and worksheet Name
+        today_dte = af.get_today_dateobj()
+        today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
+        title = ' '.join(('Ex1', str(examyear), school.base.code, today_dte.isoformat()))
+        file_name = title + ".xlsx"
+        worksheet_name = str(_('Ex1'))
+
+        # - Create an in-memory output file for the new workbook.
+        # from https://docs.python.org/3/library/tempfile.html
+        temp_file = tempfile.TemporaryFile()
+
+        output = temp_file if save_to_disk else io.BytesIO()
+        # Even though the final file will be in memory the module uses temp
+        # files during assembly for efficiency. To avoid this on servers that
+        # don't allow temp files, for example the Google APP Engine, set the
+        # 'in_memory' Workbook() constructor option as shown in the docs.
+        #  book = xlsxwriter.Workbook(response, {'in_memory': True})
+        book = xlsxwriter.Workbook(output)
+        sheet = book.add_worksheet(worksheet_name)
+        if logging_on:
+            logger.debug('output: ' + str(output))
+            logger.debug('book: ' + str(book))
+            logger.debug('sheet: ' + str(sheet))
+
+        # --- create format of Ex1 sheet
+        ex1_formats = create_ex1_ex4_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list)
+        field_width = ex1_formats.get('field_width')
+        bold_format = ex1_formats.get('bold_format')
+        bold_blue = ex1_formats.get('bold_blue')
+        normal_blue = ex1_formats.get('normal_blue')
+        th_merge_bold = ex1_formats.get('th_merge_bold')
+        th_exists = ex1_formats.get('th_exists')
+        th_prelim = ex1_formats.get('th_prelim')
+        totalrow_merge = ex1_formats.get('totalrow_merge')
+        col_count = len(ex1_formats['field_width'])
+        first_subject_column = ex1_formats.get('first_subject_column', 0)
+
+        # --- set column width
+        for i, width in enumerate(field_width):
+            sheet.set_column(i, i, width)
+
+        # --- title row
+        # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
+        sheet.write(0, 0, settings['minond'], bold_format)
+        sheet.write(1, 0, settings['title'], bold_format)
+
+        lb_rgl01_key = 'lex_lb_rgl01' if school.islexschool else 'eex_lb_rgl01'
+        lb_rgl02_key = 'lex_lb_rgl02' if school.islexschool else 'eex_lb_rgl02'
+        sheet.write(2, 0, settings[lb_rgl01_key], bold_format)
+        sheet.write(3, 0, settings[lb_rgl02_key], bold_format)
+
+        sheet.write(5, 0, settings['submit_before'], bold_format)
+        lb_ex_key = 'lex' if school.islexschool else 'eex'
+        lb_ex_key_str = ' '.join((settings[lb_ex_key], department.abbrev, settings['in_examyear'], examyear_str))
+
+        sheet.write(6, 0, lb_ex_key_str, bold_format)
+        lb_school_key = 'school' if school.islexschool else 'school'
+        sheet.write(7, 0, settings[lb_school_key], bold_format)
+        sheet.write(7, 2, school.name, bold_blue)
+
+        # - put Ex1 in right upper corner
+        #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
+        sheet.merge_range(0, col_count - 5, 1, col_count - 1, 'EX.1', th_merge_bold)
+
+        row_index = 9
+        if not save_to_disk:
+            prelim_txt = 'VOORLOPIG Ex1 FORMULIER'
+            sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
+            row_index += 1
+
+        # if has_published_ex1_rows(examyear, school, department):
+        #    exists_txt = str(_('Attention: an Ex1 form has already been submitted. The subjects in that form are not included in this form.'))
+        #    sheet.merge_range(row_index, 0, row_index, col_count - 1, exists_txt, th_exists)
+        #    row_index += 1
+
+        # ---  table header row
+        # for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
+        #    sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+
+        # ++++++++++++++++++++++++++++
+        # iterate through levels, if more than 1 exist
+
+        for key, level_dict in ex1_rows_dict.items():
+            # skip ex1_rows_dict_totals
+            if isinstance(key, int):
+                # in subject column 'field_name' is subject_id
+                lvl_name = level_dict.get('lvl_name')
+                stud_list = level_dict.get('stud_list', [])
+                lvl_totals = level_dict.get('total')
+
+                # ---  level header row
+                row_index += 2
+                # sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)    first_subject_column = col_count
+
+                for i, field_caption in enumerate(ex1_formats['field_captions']):
+                    sheet.write(row_index, i, field_caption, ex1_formats['header_formats'][i])
+
+                if len(stud_list):
+                    for row in stud_list:
+
+                        # ---  student rows
+                        # row: {'idnr': '2004101103', 'exnr': '21024', 'name': 'Balentien, Rayviendall',
+                        # 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
+                        row_index += 1
+                        for i, field_name in enumerate(ex1_formats['field_names']):
+                            exc_format = ex1_formats['row_formats'][i]
+                            value = ''
+                            if isinstance(field_name, int):
+                                # in subject column 'field_name' is subject_id
+                                # subj_id_list = row.get('subj', [])
+                                # if subj_id_list and field_name in subj_id_list:
+                                #    value = 'x'
+
+                                subj_nondel_list = row.get('subj_nondel', [])
+                                if subj_nondel_list and field_name in subj_nondel_list:
+                                    value = 'x'
+                                    # PR2022-03-05 tobedeleted is deprecated. Was:
+                                    # value = 'o'
+                                # subj_del_list = row.get('subj_del', [])
+                                # if subj_del_list and field_name in subj_del_list:
+                                #    value = 'x'
+                                #    exc_format = ex1_formats['row_align_center_red']
+                            else:
+                                value = row.get(field_name, '')
+                            sheet.write(row_index, i, value, exc_format)
+
+                # ---  level subtotal row
+                # skip subtotal row in Havo/vwo,
+                if department.level_req:
+                    row_index += 1
+                    for i, field_name in enumerate(ex1_formats['field_names']):
+                        value = ''
+                        if field_name == 'exnr':
+                            #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
+                            sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL ' + lvl_name,
+                                              totalrow_merge)
+                        else:
+                            if isinstance(field_name, int):
+                                if field_name in lvl_totals:
+                                    value = lvl_totals.get(field_name)
+                            sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                            # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+
+        # end of iterate through levels,
+        # ++++++++++++++++++++++++++++
+
+        total_dict = ex1_rows_dict.get('total') or {}
+        # ---  table total row
+        row_index += 1
+        if department.level_req:
+            row_index += 1
+        for i, field_name in enumerate(ex1_formats['field_names']):
+            # logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
+            value = ''
+            if field_name == 'exnr':
+                #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
+                sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL', totalrow_merge)
+            else:
+                if isinstance(field_name, int):
+                    if field_name in total_dict:
+                        value = total_dict.get(field_name)
+                sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
+
+        # ---  table footer row
+        row_index += 1
+        for i, field_name in enumerate(ex1_formats['field_names']):
+            if i == 0:
+                sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
+            else:
+                sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+
+        # ---  footnote row
+        row_index += 2
+        first_footnote_row = row_index
+        for i in range(1, 9):
+            if school.islexschool and 'lex_footnote0' + str(i) in settings:
+                key = 'lex_footnote0' + str(i)
+            else:
+                key = 'footnote0' + str(i)
+            if key in settings:
+                value = settings.get(key)
+                if value:
+                    sheet.write(row_index + i - 1, 0, value, bold_format)
+
+        # ---  digitally signed by
+        auth_row = first_footnote_row
+        if save_to_disk:
+            sheet.write(auth_row, first_subject_column, str(_('Digitally signed by')) + ':')
+            auth_row += 2
+            # - Chairperson
+            sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
+            auth1_list = ex1_rows_dict.get('auth1')
+            if auth1_list:
+                for auth1_pk in auth1_list:
+                    auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
+                    if auth1:
+                        sheet.write(auth_row, first_subject_column + 4, auth1.last_name, normal_blue)
+                        auth_row += 1
+            else:
+                auth_row += 1
+            auth_row += 1
+            # - Secretary
+            sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
+            auth2_list = ex1_rows_dict.get('auth2')
+            if auth2_list:
+                for auth2_pk in auth2_list:
+                    auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
+                    if auth2:
+                        sheet.write(auth_row, first_subject_column + 4, auth2.last_name, normal_blue)
+                        auth_row += 1
+            else:
+                auth_row += 1
+
+            auth_row += 1
+
+        # -  place, date
+        sheet.write(auth_row, first_subject_column, 'Plaats:')
+        sheet.write(auth_row, first_subject_column + 4, str(school.examyear.country.name),
+                    normal_blue)
+        sheet.write(auth_row, first_subject_column + 8, 'Datum:')
+        sheet.write(auth_row, first_subject_column + 11, today_formatted, normal_blue)
+
+        book.close()
+
+        # +++ save file to disk
+        if save_to_disk:
+            excel_file = File(temp_file)
+
+            published_instance.file.save(file_path, excel_file)
+
+            # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
+            published_instance.save(request=request)
+
+            logger.debug('file_path: ' + str(file_path))
+            # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
+            # stored in dir:
+            logger.debug('published_instance.file: ' + str(published_instance.file))
+        else:
+            # Rewind the buffer.
+            output.seek(0)
+
+            # Set up the Http response.
+            response = HttpResponse(
+                output,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+
+            response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+    # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # response['Content-Disposition'] = "attachment; filename=" + file_name
+    return response
+
+
+# --- end of create_ex1_xlsx
+
+
+#//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def create_ex4_xlsx(published_instance, examyear, school, department, save_to_disk, request, user_lang):  # PR2021-02-13 PR2021-08-14
+    # called by create_Ex1_form, StudsubjDownloadEx1View
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_ex4_xlsx -----')
+
+# +++ get mapped_subject_rows    '
+    # function gets all subjects of studsubj of this dep, not tobedeleted
+    # - creates list of subject_codes and list of subject_pk's
+    # - both sorted by subjbase.code
+    # subject_code_list: ['adm&co', 'bi', 'cav', ..., 'sp', 'stg', 'sws', 'wk', 'zwi']
+    # subject_pk_list: [1067, 1057, 1051, ..., 1054, 1070, 1069, 1055, 1065]
+    subject_row_count, subject_pk_list, subject_code_list = \
+        create_ex1_Ex4_mapped_subject_rows(examyear, school, department, True)  # is_reex=True
+
+    if logging_on:
+        logger.debug('subject_row_count: ' + str(subject_row_count))
+        logger.debug('subject_pk_list: ' + str(subject_pk_list))
+        logger.debug('subject_code_list: ' + str(subject_code_list))
+
+# +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
+    is_reex = True
+    ex4_rows_dict = create_ex1_ex4_rows_dict(examyear, school, department, save_to_disk, is_reex, published_instance)
+
+    if logging_on:
+        logger.debug('ex4_rows_dict: ' + str(ex4_rows_dict))
+    """
+     ex1_rows_dict: {'total': {1050: 171, ..., 1069: 30},
+      'auth1': [48], 'auth2': [57], 
+      86: {'lvl_name': 'Praktisch Basisgerichte Leerweg', 
+            'total': {1050: 89, ..., 1058: 56}, 
+            'stud_list': [
+                    {'idnr': '1998041505', 'exnr': 'V021', 'name': 'Albertus, Dinaida Lilian Jearette', 
+                     'lvl': 'PBL', 'sct': 'z&w', 'cls': '4V2', 
+                     'subj': [1050, 1055, 1051, 1047, 1065, 1057, 1054, 1052, 1048, 1070]},  
+
+         ex1_dict: 
+        {'total': {1047: 175, ..., 1057: 7}, 
+        'level_86': {'lvl_name': 'Praktisch Basisgerichte Leerweg', 
+                    'total': {1047: ..., 1063: 23}, 
+                    'stud_list': [
+                        {'idnr': '2004101103', 'exnr': '21024', 'name': 'Balentien, Rayviendall', 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 
+                            'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}, 
+                        {'idnr': '2002090102', 'exnr': '21025', 'name': 'Baromeo, Norshel', 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 
+                            'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}, ...}, 
+    """
+
+    response = None
+
+    # - get text from examyearsetting
+    settings = awpr_lib.get_library(examyear, ['exform', 'ex4'])
+
+    if settings and ex4_rows_dict:
 
         # PR2021-07-28 changed to file_dir = 'published/'
         # this one gives path: awpmedia / awpmedia / media / private / published
@@ -180,9 +568,9 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
         today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
-        title = ' '.join( ('Ex1', str(examyear), school.base.code, today_dte.isoformat() ) )
+        title = ' '.join( ('Ex4', str(examyear), school.base.code, today_dte.isoformat() ) )
         file_name = title + ".xlsx"
-        worksheet_name = str(_('Ex1'))
+        worksheet_name = str(_('Ex4'))
 
 # - Create an in-memory output file for the new workbook.
         # from https://docs.python.org/3/library/tempfile.html
@@ -202,33 +590,49 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
             logger.debug('sheet: ' + str(sheet))
 
 # --- create format of Ex1 sheet
-        ex1_formats = create_ex1_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list)
-        field_width = ex1_formats.get('field_width')
-        bold_format = ex1_formats.get('bold_format')
-        bold_blue = ex1_formats.get('bold_blue')
-        normal_blue = ex1_formats.get('normal_blue')
-        th_merge_bold = ex1_formats.get('th_merge_bold')
-        th_exists = ex1_formats.get('th_exists')
-        th_prelim  = ex1_formats.get('th_prelim')
-        totalrow_merge = ex1_formats.get('totalrow_merge')
-        col_count = len(ex1_formats['field_width'])
-        first_subject_column =  ex1_formats.get('first_subject_column', 0)
+        ex4_formats = create_ex1_ex4_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list)
+        field_width = ex4_formats.get('field_width')
+        bold_format = ex4_formats.get('bold_format')
+        bold_blue = ex4_formats.get('bold_blue')
+        normal_blue = ex4_formats.get('normal_blue')
+        th_merge_bold = ex4_formats.get('th_merge_bold')
+        th_exists = ex4_formats.get('th_exists')
+        th_prelim  = ex4_formats.get('th_prelim')
+        totalrow_merge = ex4_formats.get('totalrow_merge')
+        col_count = len(ex4_formats['field_width'])
+        first_subject_column =  ex4_formats.get('first_subject_column', 0)
+        th_align_center = ex4_formats.get('th_align_center')
+
 
 # --- set column width
         for i, width in enumerate(field_width):
             sheet.set_column(i, i, width)
 
+        """
+        'Regel 0:   MINISTERIE VAN ONDERWIJS, WETENSCHAP, CULTUUR EN SPORT
+        'Regel 1:   Lijst van kandidaten voor het herexamen.
+        'Regel 2:   (Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54).
+        'Regel 3:   Tevens lijst van kandidaten, die om een geldige reden verhinderd waren het examen te voltooien.
+        'Regel 4:   Direct na elke uitslag inzenden naar de Onderwijs Inspectie en digitaal naar het ETE
+        'Regel 5:   
+        'Regel 6:   EINDEXAMEN H.A.V.O. in het examenjaar 2021
+        'Regel 7:   School:
+        'Regel 8:
+        'Regel 9:  "Examen Nr"
+        """
 # --- title row
         # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
         sheet.write(0, 0, settings['minond'], bold_format)
-        sheet.write(1, 0, settings['title'], bold_format)
+        sheet.write(1, 0, settings['ex4_title'], bold_format)
 
-        lb_rgl01_key = 'lex_lb_rgl01' if school.islexschool else 'eex_lb_rgl01'
-        lb_rgl02_key = 'lex_lb_rgl02' if school.islexschool else 'eex_lb_rgl02'
-        sheet.write(2, 0, settings[lb_rgl01_key], bold_format)
-        sheet.write(3, 0, settings[lb_rgl02_key], bold_format)
+        key_str = 'ex4_lex_article' if school.islexschool else 'ex4_eex_article'
+        sheet.write(2, 0, settings[key_str], bold_format)
 
-        sheet.write(5, 0, settings['submit_before'], bold_format)
+        sheet.write(3, 0, settings['ex4_tevens_lijst'], bold_format)
+
+        key_str = 'ex4_lex_submit' if school.islexschool else 'ex4_eex_submit'
+        sheet.write(4, 0, settings[key_str], bold_format)
+
         lb_ex_key = 'lex' if school.islexschool else 'eex'
         lb_ex_key_str = ' '.join((  settings[lb_ex_key], department.abbrev, settings['in_examyear'], examyear_str))
 
@@ -239,11 +643,11 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
 # - put Ex1 in right upper corner
         #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
-        sheet.merge_range(0, col_count - 5, 1, col_count -1, 'EX.1', th_merge_bold)
+        sheet.merge_range(0, col_count - 5, 1, col_count -1, 'EX.4', th_merge_bold)
 
         row_index = 9
         if not save_to_disk:
-            prelim_txt = 'VOORLOPIG Ex1 FORMULIER'
+            prelim_txt = 'VOORLOPIG Ex4 FORMULIER'
             sheet.merge_range(row_index, 0, row_index, col_count - 1, prelim_txt, th_prelim)
             row_index += 1
 
@@ -254,13 +658,13 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
 
 # ---  table header row
         #for i in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-        #    sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+        #    sheet.write(row_index, i, ex4_formats['field_captions'][i], ex4_formats['header_formats'][i])
 
 # ++++++++++++++++++++++++++++
 # iterate through levels, if more than 1 exist
 
-        for key, level_dict in ex1_rows_dict.items():
-            # skip ex1_rows_dict_totals
+        for key, level_dict in ex4_rows_dict.items():
+            # skip ex4_rows_dict_totals
             if isinstance(key, int):
                 # in subject column 'field_name' is subject_id
                 lvl_name = level_dict.get('lvl_name')
@@ -271,9 +675,8 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                 row_index += 2
                 #sheet.merge_range(row_index, 0, row_index, col_count - 1, lvl_name, th_level)    first_subject_column = col_count
 
-
-                for i, field_caption in enumerate(ex1_formats['field_captions']):
-                     sheet.write(row_index, i,field_caption, ex1_formats['header_formats'][i])
+                for i, field_caption in enumerate(ex4_formats['field_captions']):
+                     sheet.write(row_index, i, field_caption, ex4_formats['header_formats'][i])
 
                 if len(stud_list):
                     for row in stud_list:
@@ -282,8 +685,8 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                         # row: {'idnr': '2004101103', 'exnr': '21024', 'name': 'Balentien, Rayviendall',
                         # 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
                         row_index += 1
-                        for i, field_name in enumerate(ex1_formats['field_names']):
-                            exc_format = ex1_formats['row_formats'][i]
+                        for i, field_name in enumerate(ex4_formats['field_names']):
+                            exc_format = ex4_formats['row_formats'][i]
                             value = ''
                             if isinstance(field_name, int):
                                 # in subject column 'field_name' is subject_id
@@ -299,7 +702,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                                 #subj_del_list = row.get('subj_del', [])
                                 #if subj_del_list and field_name in subj_del_list:
                                 #    value = 'x'
-                                #    exc_format = ex1_formats['row_align_center_red']
+                                #    exc_format = ex4_formats['row_align_center_red']
                             else:
                                 value = row.get(field_name, '')
                             sheet.write(row_index, i, value, exc_format)
@@ -308,7 +711,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                 # skip subtotal row in Havo/vwo,
                 if department.level_req:
                     row_index += 1
-                    for i, field_name in enumerate(ex1_formats['field_names']):
+                    for i, field_name in enumerate(ex4_formats['field_names']):
                         value = ''
                         if field_name == 'exnr':
                             #  merge_range(first_row, first_col, last_row, last_col, data[, cell_format])
@@ -317,18 +720,19 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                             if isinstance(field_name, int):
                                 if field_name in lvl_totals:
                                     value = lvl_totals.get(field_name)
-                            sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                            sheet.write(row_index, i, value, ex4_formats['totalrow_formats'][i])
                             # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
 
 # end of iterate through levels,
 # ++++++++++++++++++++++++++++
 
-        total_dict = ex1_rows_dict.get('total') or {}
+        total_dict = ex4_rows_dict.get('total') or {}
+
 # ---  table total row
         row_index += 1
         if department.level_req:
             row_index += 1
-        for i, field_name in enumerate(ex1_formats['field_names']):
+        for i, field_name in enumerate(ex4_formats['field_names']):
             #logger.debug('field_name: ' + str(field_name) + ' ' + str(type(field_name)))
             value = ''
             if field_name == 'exnr':
@@ -338,16 +742,29 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
                 if isinstance(field_name, int):
                     if field_name in total_dict:
                         value = total_dict.get(field_name)
-                sheet.write(row_index, i, value, ex1_formats['totalrow_formats'][i])
+                sheet.write(row_index, i, value, ex4_formats['totalrow_formats'][i])
                 # sheet.write_formula(A1, '=SUBTOTAL(3;H11:H19)')
 
 # ---  table footer row
         row_index += 1
-        for i, field_name in enumerate(ex1_formats['field_names']):
+        for i, field_name in enumerate(ex4_formats['field_names']):
             if i == 0:
                 sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, '', totalrow_merge)
             else:
-                sheet.write(row_index, i, ex1_formats['field_captions'][i], ex1_formats['header_formats'][i])
+                sheet.write(row_index, i, ex4_formats['field_captions'][i], ex4_formats['header_formats'][i])
+
+
+# table 'verhinderd
+        row_index += 2
+
+        sheet.merge_range(row_index, 0, row_index, col_count -1, settings['ex4_verhinderd_header01'], th_align_center)
+        row_index += 1
+        sheet.merge_range(row_index, 0, row_index, col_count -1, settings['ex4_verhinderd_header02'], th_align_center)
+
+        for x in range(0, 5):
+            row_index += 1
+            for i in range(0, col_count -1):
+                sheet.write(row_index, i, '', th_align_center)
 
 # ---  footnote row
         row_index += 2
@@ -369,7 +786,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
             auth_row += 2
     # - Chairperson
             sheet.write(auth_row, first_subject_column, str(_('Chairperson')) + ':')
-            auth1_list = ex1_rows_dict.get('auth1')
+            auth1_list = ex4_rows_dict.get('auth1')
             if auth1_list:
                 for auth1_pk in auth1_list:
                     auth1 = acc_mod.User.objects.get_or_none(pk=auth1_pk)
@@ -381,7 +798,7 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
             auth_row += 1
     # - Secretary
             sheet.write(auth_row, first_subject_column, str(_('Secretary')) + ':')
-            auth2_list = ex1_rows_dict.get('auth2')
+            auth2_list = ex4_rows_dict.get('auth2')
             if auth2_list:
                 for auth2_pk in auth2_list:
                     auth2 = acc_mod.User.objects.get_or_none(pk=auth2_pk)
@@ -429,13 +846,13 @@ def create_ex1_xlsx(published_instance, examyear, school, department, settings, 
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
     return response
-# --- end of create_ex1_xlsx
+# --- end of create_ex4_xlsx
 
 
-def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list): # PR2021-08-10
+def create_ex1_ex4_format_dict(book, sheet, school, department, subject_pk_list, subject_code_list): # PR2021-08-10
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_ex1_format_dict -----')
+        logger.debug(' ----- create_ex1_ex4_format_dict -----')
 
     sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
 
@@ -555,23 +972,22 @@ def create_ex1_format_dict(book, sheet, school, department, subject_pk_list, sub
     ex1_formats['field_width'] = field_width
 
     return ex1_formats
-# - end of create_ex1_format_dict
+# - end of create_ex1_ex4_format_dict
 
 
-def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_instance):  # PR2021-08-15
+def create_ex1_ex4_rows_dict(examyear, school, department, save_to_disk, is_reex, published_instance):  # PR2021-08-15
     # this function is only called by create_ex1_xlsx
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_ex1_rows_dict -----')
+        logger.debug(' ----- create_ex1_ex4_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
     #  key 'subj_id_arr' contains list of all studentsubjects of this student, not tobedeleted
     #  skip studsubjects that are not fully approved
     level_req = department.level_req
 
-    # dont show students without subjects when Ex-form is submitted
-    exclude_students_without_subjects = save_to_disk
-    inner_or_left_join_studsubj = "INNER JOIN" if exclude_students_without_subjects else "LEFT JOIN"
-
+    # only show students without subjects in preliminary Ex1 form
+    include_students_without_subjects = not save_to_disk and not is_reex
+    inner_or_left_join_studsubj = "LEFT JOIN"  if include_students_without_subjects else "INNER JOIN"
 
 # PR2021-08-10 dont include null in  ARRAY_AGG
 # from https://stackoverflow.com/questions/13122912/how-to-exclude-null-values-in-array-agg-like-in-string-agg-using-postgres
@@ -599,6 +1015,9 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         # was: "WHERE NOT studsubj.tobedeleted"
     ]
+    if is_reex:
+        sql_studsubj_agg_list.append("WHERE studsubj.has_reex")
+
     if save_to_disk:
         # when submitting an Ex1 form published_instance is already saved, therefore published_instance.pk has a value
         # studsubj.subj_published_id also has a value: the id of the new published_instance
@@ -621,13 +1040,16 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
     sql_list = ["WITH studsubj AS (" , sql_studsubj_agg, ")",
         "SELECT st.id, st.idnumber, st.examnumber, st.lastname, st.firstname, st.prefix, st.classname,",
         "st.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev,",
-        "studsubj.subj_id_arr, studsubj.subj_id_arr_nondel, studsubj.subj_id_arr_del, studsubj.subj_auth1_arr, studsubj.subj_auth2_arr",
+        "studsubj.subj_id_arr, studsubj.subj_id_arr_nondel, studsubj.subj_id_arr_del,",
+        "studsubj.subj_auth1_arr, studsubj.subj_auth2_arr",
+
         "FROM students_student AS st",
         inner_or_left_join_studsubj, "studsubj ON (studsubj.student_id = st.id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
         "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
         "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
     ]
+
     if level_req:
         sql_list.append("ORDER BY LOWER(lvl.abbrev), LOWER(st.lastname), LOWER(st.firstname)")
     else:
@@ -732,10 +1154,10 @@ def create_ex1_rows_dict(examyear, school, department, save_to_disk, published_i
  
     """
     return ex1_rows_dict
-# --- end of create_ex1_rows_dict
+# --- end of create_ex1_ex4_rows_dict
 
 
-def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-08
+def create_ex1_Ex4_mapped_subject_rows(examyear, school, department, is_reex=False):  # PR2021-08-08
     # function gets all subjects of studsubj of this dep, not tobedeleted
     # - creates list of subject_codes and list of subject_pk's
     # - both sorted by subjbase.code
@@ -744,6 +1166,8 @@ def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-0
 
     subject_code_list = []
     subject_pk_list = []
+    is_reex_clause = "AND studsubj.has_reex" if is_reex else ""
+
     sql_list = [
         "SELECT subj.id, subjbase.code",
 
@@ -753,7 +1177,9 @@ def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-0
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT AND NOT studsubj.tobedeleted",
+        "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
+        "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted",
+        is_reex_clause,
         "GROUP BY subj.id, subjbase.code",
         "ORDER BY LOWER(subjbase.code)"
     ]
@@ -772,7 +1198,9 @@ def create_ex1_mapped_subject_rows(examyear, school, department):  # PR2021-08-0
             row_count += 1
 
     return row_count, subject_pk_list, subject_code_list
-# --- end of create_ex1_mapped_subject_rows
+# --- end of create_ex1_Ex4_mapped_subject_rows
+
+
 
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 

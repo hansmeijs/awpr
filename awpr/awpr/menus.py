@@ -288,7 +288,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
 # ------- set message -------- PR2021-03-25
         # messages block access to the page.
-        # warnigs must be given via DatalistDownloadView
+        # warnings must be given via DatalistDownloadView
         messages = []
         if no_examyears:
             no_access_message = _("There are no exam years yet.")

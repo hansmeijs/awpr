@@ -151,6 +151,7 @@ urlpatterns = [
         path('usersetting_upload', account_views.UserSettingsUploadView.as_view(), name='url_usersetting_upload'),
         path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),
 
+        path('user_modmsg_hide', account_views.UserModMessageHideView.as_view(), name='url_user_modmsg_hide'),
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
     ])),
 
@@ -253,7 +254,8 @@ urlpatterns = [
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
 
-        path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_grade_download_ex1'),
+        path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_download_ex1'),
+        path('download_ex4', grade_excel.StudsubjDownloadEx4View.as_view(), name='url_download_ex4'),
 
         path('ex3_getinfo/', grade_exfiles.GetEx3infoView.as_view(), name='url_ex3_getinfo'),
         path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download'),

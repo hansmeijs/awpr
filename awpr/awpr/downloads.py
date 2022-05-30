@@ -40,14 +40,15 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = False  #s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
 
         starttime = timer()
         datalists = {}
-        messages = []
+        message_list = []
+
         if request.user and request.user.country and  request.user.schoolbase:
             if request.POST['download']:
 
@@ -66,8 +67,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if logging_on:
                     logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
 
-                new_setting_dict, permit_dict, sel_examyear, sel_schoolbase, sel_depbase, sel_examperiod, sel_examtype = \
-                    download_setting(request_item_setting, messages, user_lang, request)
+                new_setting_dict, permit_dict, sel_examyear, sel_schoolbase, sel_depbase, \
+                    sel_examperiod, sel_examtype, msg_list = \
+                    download_setting(request_item_setting, user_lang, request)
+                if msg_list:
+                    message_list.extend(msg_list)
 
                 requsr_same_school = permit_dict.get('requsr_same_school', False)
 
@@ -84,23 +88,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['permit_dict'] = permit_dict
                 if logging_on:
                     logger.debug('new_setting_dict: ' + str(new_setting_dict) + ' ' + str(type(new_setting_dict)))
-                    logger.debug('messages: ' + str(messages) + ' ' + str(type(messages)))
-
-                if messages:
-                    # messages" [{'msg_list':
-                    # ['Waarschuwing: het geselecteerde examenjaar 2021 is niet gelijk aan het huidige examenjaar.'],
-                    # 'class': 'border_bg_warning'}]
-                    message_html = ''
-                    for message in messages:
-                        msg_list = message.get('msg_list')
-                        class_str = message.get('class', '')
-                        if msg_list:
-                            msg_html = ' '.join(("<div class'm-2 p-2", class_str, "'>"))
-                            for msg_txt in msg_list:
-                                msg_html += ''.join(("<p>", msg_txt, "</p>"))
-                            msg_html += "</div>"
-                            message_html += msg_html
-                    datalists['messages'] = messages
 
 # ----- get school settings (includes import settings)
                 request_item_schoolsetting = datalist_request.get('schoolsetting')
@@ -252,7 +239,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_depbase=sel_depbase,
                         append_dict={})
                     if error_dict:
-                        datalists['messages'] = [error_dict]
+                        message_list.append(error_dict)
 # ----- studentsubjects
                 if datalist_request.get('studentsubject_rows'):
                     datalists['studentsubject_rows'] = stud_view.create_studentsubject_rows(
@@ -337,7 +324,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_schoolbase=sel_schoolbase,
                         sel_depbase=sel_depbase)
                     if error_dict:
-                        datalists['messages'] = [error_dict]
+                        message_list.append(error_dict)
 
 
 # ----- published
@@ -382,6 +369,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     )
                     datalists['mailbox_usergroup_rows'] = school_dicts.create_mailbox_usergroup_rows()
 
+        if message_list:
+            datalists['messages'] = message_list
+
         elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
         datalists['elapsed_seconds'] = elapsed_seconds
         if logging_on:
@@ -393,13 +383,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # - end of DatalistDownloadView
 
 
-def download_setting(request_item_setting, messages, user_lang, request):
+def download_setting(request_item_setting, user_lang, request):
     # PR2020-07-01 PR2020-1-14 PR2021-08-12 PR2021-12-03
 
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----------------- download_setting ---------------------- ')
@@ -407,15 +397,21 @@ def download_setting(request_item_setting, messages, user_lang, request):
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
-    # datalist_request_item 'setting' can have several key/values that will be saved in usersettings:
-    #   - key 'page', required, stores selected page in usersetting key 'sel_page': sel_page = {page: "page_grade"}
-    #   - key 'sel_btn' saves selected button in usersetting key 'page_grade' = {'sel_btn' = 'btn_ep_01}
-    #   - key 'sel_depbase_pk' saves selected depbase_pk in usersetting key 'selected_pk' = {'sel_depbase_pk' = 1}
-    #   - key 'sel_examperiod' saves selected examperiod in usersetting key 'selected_pk' = {'sel_examperiod' = 1}
-    #   -  cols_hidden is stored in key 'page_grade' {"sel_btn": "btn_ep_01", "cols_hidden": ["examnumber", "lvl_abbrev", "sct_abbrev", "subj_name"]}
-    #   - key 'selected_pk' saves selected values that are used in different pages (like examyear, schoolbase, depbase)
-    #                       - key 'selected_pk' = {sel_examyear_pk: 1, sel_schoolbase_pk: 13 etc }
-    #       selected_pk = {"sel_examyear_pk": 1, "sel_depbase_pk": 1, "sel_examtype": "reex", "sel_examperiod": 2, "sel_lvlbase_pk": 5}
+    # datalist_request_item 'setting' can have several key/dict values that will be saved in usersettings:
+    #   - key 'sel_page', required, stores selected page: sel_page = {page: "page_grade"}
+    #   - key 'page_<pagename>'
+    #       ' page dict may contain the following keys:
+    #           - key 'sel_btn': saves the selected button {'sel_btn' = 'btn_ep_01}
+    #       - key 'cols_hidden' saves hidden columns of page {"cols_hidden": ["examnumber", "lvl_abbrev", "sct_abbrev", "subj_name"]}
+
+    #   - key 'selected_pk' saves selected values that are used in different pages (like examyear, depbase)
+    #       ' selected_pk dict may contain the following keys:
+    #       - key 'sel_depbase_pk' saves selected depbase_pk {'sel_depbase_pk' = 1} et cetera
+    #       - key 'sel_examperiod' saves selected examperiod  {'sel_examperiod' = 1}
+    #   - key 'ex3'
+    #   - key 'verificationcode'
+    #   - key 'open_args' stores if opening message must be shown after login {"show_msg": true}
+
     """
     # examples :
     # PR2021-12-03 grades.js: on opening page: 
@@ -426,7 +422,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
         datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
     """
     req_user = request.user
-
+    msg_list = []
 # ----- get page name from request_item_setting
     # request_item_setting: {'page': 'page_grade', 'sel_examperiod': 4}
     page = request_item_setting.get('page')
@@ -516,7 +512,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
             setting_dict['sel_examyear_locked'] = sel_examyear_instance.locked
 
 # - add message when school is locked PR22021-12-04
-            messages.append({'msg_html': [
+            msg_list.append({'msg_html': [
                 '<br>'.join((str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
                              str(_('You cannot make changes.'))))
             ], 'class': 'border_bg_warning'})
@@ -533,12 +529,26 @@ def download_setting(request_item_setting, messages, user_lang, request):
 # - add message when logged in to testsite
     message = val.message_testsite()  # PR2022-01-12
     if message:
-        messages.append(message)
+        msg_list.append(message)
 
-    # - add message when examyear is different from this eaxamyear
+# ----- display opening message ------ PR2022-05-28
+    usersetting_dict = acc_view.get_usersetting_dict(c.KEY_OPENARGS, request)
+    # skip displaying opening message when user has ticked off 'Dont show message again'
+    # set 'show_msg' = False to prevent showing this messages when changing page.
+    # 'show_msg' will be set to False after first display, to prevent showing multiple times in one session
+    hide_msg = usersetting_dict.get('hide_msg')
+    if not hide_msg:
+        if usersetting_dict.get('show_msg'):
+            message = val.message_openargs()
+            if message:
+                msg_list.append(message)
+            acc_view.set_usersetting_dict(c.KEY_OPENARGS, {'show_msg': False}, request)
+
+
+# - add message when examyear is different from this eaxamyear
     message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
     if message:
-        messages.append(message)
+        msg_list.append(message)
 
 # ===== SCHOOL =======================
 # - only roles insp, admin and system may select other schools
@@ -572,7 +582,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
         if sel_school.locked:
             setting_dict['sel_school_locked'] = True
 # - add message when school is locked PR22021-12-04
-            messages.append( {'msg_html': [
+            msg_list.append( {'msg_html': [
                     '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {'exyr': str(sel_school.examyear.code)}),
                                  str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
 
@@ -759,9 +769,9 @@ def download_setting(request_item_setting, messages, user_lang, request):
     if logging_on:
         logger.debug('++++++++++++  DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, CLUSTER ++++++++++++++++++++++++')
         logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
-
+    # PR2022-05-29 dont save sel_student_pk, but only filter locally. Was: , c.KEY_SEL_STUDENT_PK):
     for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,
-                    c.KEY_SEL_STUDBASE_PK, c.KEY_SEL_CLUSTER_PK, c.KEY_SEL_SUBJECT_PK, c.KEY_SEL_STUDENT_PK):
+                    c.KEY_SEL_STUDBASE_PK, c.KEY_SEL_CLUSTER_PK, c.KEY_SEL_SUBJECT_PK):
 
         if logging_on:
             logger.debug('........... key_str: ' + str(key_str))
@@ -807,23 +817,23 @@ def download_setting(request_item_setting, messages, user_lang, request):
                     setting_dict['sel_subject_name'] = subject.name
 
             # use studentbase_pk instead of student_pk PR2022-02-07
-            elif key_str == c.KEY_SEL_STUDBASE_PK:
-                student = stud_mod.Student.objects.get_or_none(
-                    base_id=saved_pk_int,
-                    examyear=sel_examyear_instance
-                )
-                if student:
-                    setting_dict['sel_student_name'] = stud_fnc.get_full_name(student.lastname, student.firstname, student.prefix)
-                    setting_dict['sel_student_name_init'] = stud_fnc.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
+            #elif key_str == c.KEY_SEL_STUDBASE_PK:
+            #    student = stud_mod.Student.objects.get_or_none(
+            #        base_id=saved_pk_int,
+            #        examyear=sel_examyear_instance
+            #    )
+            #    if student:
+            #        setting_dict['sel_student_name'] = stud_fnc.get_full_name(student.lastname, student.firstname, student.prefix)
+            #        setting_dict['sel_student_name_init'] = stud_fnc.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
 
-            # TODO to be deprecated
-            elif key_str == c.KEY_SEL_STUDENT_PK:
-                student = stud_mod.Student.objects.get_or_none(
-                    pk=saved_pk_int
-                )
-                if student:
-                    setting_dict['sel_student_name'] = stud_fnc.get_full_name(student.lastname, student.firstname, student.prefix)
-                    setting_dict['sel_student_name_init'] = stud_fnc.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
+            # TO DO to be deprecated
+            #elif key_str == c.KEY_SEL_STUDENT_PK:
+            #    student = stud_mod.Student.objects.get_or_none(
+            #        pk=saved_pk_int
+            #    )
+            #    if student:
+            #        setting_dict['sel_student_name'] = stud_fnc.get_full_name(student.lastname, student.firstname, student.prefix)
+            #        setting_dict['sel_student_name_init'] = stud_fnc.get_lastname_firstname_initials(student.lastname, student.firstname, student.prefix)
 
             elif key_str == c.KEY_SEL_DEPBASE_PK:
                 department = sch_mod.Department.objects.get_or_none(
@@ -924,7 +934,7 @@ def download_setting(request_item_setting, messages, user_lang, request):
         logger.debug('......................... ')
 
     return setting_dict, permit_dict, sel_examyear_instance, sel_schoolbase_instance, sel_depbase_instance, \
-            sel_examperiod, sel_examtype
+            sel_examperiod, sel_examtype, msg_list
 # - end of download_setting
 
 

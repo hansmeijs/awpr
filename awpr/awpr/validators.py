@@ -269,6 +269,27 @@ def message_testsite():  #PR2022-01-12
 
     return awp_message
 
+def message_openargs():  #PR2022-05-28
+    # check if selected examyear is the same as this examyear,
+    # return warning when examyear is different from this_examyear
+
+    msg = ''.join(('<b>', str(_('Anouncement')).upper(), '</b><br>',
+        str(_('The ETE will soon publish the cesuur and conversion tables of the practical exams.')),'<br>',
+        str(_('AWP will then automatically calculate the grades. They are shown in the column <i>CE grade</i> on the page <i>Grades</i>.')),'<br>',
+        str(_('To download the conversion table, click the down array in the column <i>Download conversion table</i>.')),'<br><br>',
+# class='pb-0'><span class='man_underline'>Voorbeeld</span>
+        str(_("For candidates whose exam was removed because of a mixture of blue and red 'minitoetsen':")),"<br>",
+
+        str(_("AWP can only calculate the CE-grade of an ETE exam when an exam is selected in the page 'Exams'")), ' ',
+        str(_("Therefore you must still select an exam in the page 'Exams'.")), "<br>",
+        str(_('Since the cesuur for the blue and read version of an exam are the same, you can select either version.')), ' ',
+        str(_("You must enter the score in the column 'CE-score' on the page 'Grades', not in the page 'Exams'.")),
+    ))
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+
 # ============ SUBJECTS
 def validate_subject_code_exists(code, cur_subject=None):  # PR2020-12-11 PR2021-06-22
     logging_on = False  # s.LOGGING_ON

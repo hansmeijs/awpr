@@ -1123,124 +1123,124 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
         logger.debug('----- draw_conversion_table -----')
         logger.debug('     sel_exam_instance: ' + str(sel_exam_instance) + ' ' + str(type(sel_exam_instance)))
 
-    is_ete_exam = sel_exam_instance.ete_exam
-    subject = sel_exam_instance.subject
-    examperiod = sel_exam_instance.examperiod
+    if sel_exam_instance:
+        is_ete_exam = sel_exam_instance.ete_exam
+        subject = sel_exam_instance.subject
+        examperiod = sel_exam_instance.examperiod
 
-    cesuur_int = None
-    if is_ete_exam:
-        cesuur_int = sel_exam_instance.cesuur if sel_exam_instance.cesuur is not None else 0
-        if sel_exam_instance.cesuur:
-            cesuur_nterm_str = ' / '.join((str(sel_exam_instance.cesuur - 1), str(sel_exam_instance.cesuur)))
-        else:
-            cesuur_nterm_str = '---'
-    else:
-        cesuur_nterm_str = sel_exam_instance.nterm.replace('.', ',') if sel_exam_instance.nterm else '---'
-
-    scalelength_int = sel_exam_instance.scalelength
-    scalelength_str = str(scalelength_int) if scalelength_int else '---'
-
-# - get dep_abbrev from department
-    dep_abbrev = '---'
-    department = sel_exam_instance.department
-    if department:
-        dep_abbrev = department.abbrev
-
-# - get level_abbrev from level
-    level = sel_exam_instance.level
-    if level and level.abbrev:
-        dep_abbrev += ' - ' + level.abbrev
-
-    # dont print last_modified_by
-    skip_modifiedby = True
-    last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang, skip_modifiedby)
-
-# - get form_text from examyearsetting
-    form_text = awpr_lib.get_library(sel_examyear, ['exform', 'exam'])
-    logger.debug('form_text: ' + str(form_text))
-
-    minond = form_text.get('minond', '-')
-    if is_ete_exam:
-        title = form_text.get('title_scoretable_ete', '-') + str(subject.examyear.code)
-    else:
-        title = form_text.get('title_scoretable_duo', '-') + str(subject.examyear.code)
-
-    examperiod_cpt = form_text.get('Central_exam', '-') if examperiod == 1 else \
-            form_text.get('Re_exam', '-') if examperiod == 2 else '-'
-
-    educationtype = form_text.get('educationtype', '-') + ':'
-    examtype = form_text.get('examtype', '-') + ':'
-    subject_cpt = form_text.get('subject', '-') + ':'
-
-    if is_ete_exam:
-        max_score = form_text.get('max_score', '-') + ':'
-        cesuur_nterm_lbl = form_text.get('cesuur', '-') + ':'
-
-    else:
-        max_score = form_text.get('scalelength', '-') + ':'
-        cesuur_nterm_lbl = form_text.get('n_term', '-') + ':'
-
-
-    version_lbl, version_txt = None, None
-    if is_ete_exam and sel_exam_instance.version:
-        version_lbl = form_text.get('version', '-') + ':'
-        version_txt = sel_exam_instance.version
-
-    header_list = [
-        (minond, None, None, None),
-        (title, None, None, None),
-        (educationtype, dep_abbrev, version_lbl, version_txt),
-        (examtype, examperiod_cpt, max_score, scalelength_str),
-        (subject_cpt, subject.name, cesuur_nterm_lbl, cesuur_nterm_str)
-    ]
-    if not is_ete_exam:
-        omschrijving_txt = '---'
-        if sel_exam_instance.ntermentable and sel_exam_instance.ntermentable.omschrijving:
-            omschrijving_txt = sel_exam_instance.ntermentable.omschrijving
-        header_list.append((
-            form_text.get('duo_exam', '-') + ':',
-            omschrijving_txt, None, None))
-
-    filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
-    try:
-        ttfFile = TTFont('Arial', filepath)
-        #logger.debug('ttfFile: ' + str(ttfFile))
-        pdfmetrics.registerFont(ttfFile)
-    except Exception as e:
-        logger.error('filepath: ' + str(filepath))
-        logger.error(getattr(e, 'message', str(e)))
-
-# create list of with score and grades
-    score_grade_dict = {}
-    if is_ete_exam:
-        hide_table = not scalelength_int or not cesuur_int
-    else:
-        # test if nterm is number
-        try:
-            nterm_test = int(cesuur_nterm_str.strip().replace(',', '', 1).replace('.', '', 1))
-        except:
-            hide_table = True
-        else:
-            hide_table = not scalelength_int or not cesuur_nterm_str
-
-    if logging_on:
-        logger.debug('     is_ete_exam: ' + str(is_ete_exam))
-        logger.debug('     scalelength_int: ' + str(scalelength_int))
-        logger.debug('     cesuur_int: ' + str(cesuur_int))
-        logger.debug('     cesuur_nterm_str: ' + str(cesuur_nterm_str))
-        logger.debug('     hide_table: ' + str(hide_table) + ' ' + str(type(hide_table)))
-
-    if not hide_table:
-        for score_int in range(0, scalelength_int + 1):  # range(start_value, end_value, step), end_value is not included!
-            if is_ete_exam:
-                grade_str = calc_score.calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
+        cesuur_int = None
+        if is_ete_exam:
+            cesuur_int = sel_exam_instance.cesuur if sel_exam_instance.cesuur is not None else 0
+            if sel_exam_instance.cesuur:
+                cesuur_nterm_str = ' / '.join((str(sel_exam_instance.cesuur - 1), str(sel_exam_instance.cesuur)))
             else:
-                grade_str = calc_score.calc_grade_from_score_duo(score_int, scalelength_int, cesuur_nterm_str)
-            grade_with_comma = grade_str.replace('.', ',') if grade_str else '-'
-            score_grade_dict[score_int] = grade_with_comma
+                cesuur_nterm_str = '---'
+        else:
+            cesuur_nterm_str = sel_exam_instance.nterm.replace('.', ',') if sel_exam_instance.nterm else '---'
 
-    draw_conversion_page(canvas, scalelength_int, cesuur_int, hide_table, header_list, last_modified_text, score_grade_dict)
+        scalelength_int = sel_exam_instance.scalelength
+        scalelength_str = str(scalelength_int) if scalelength_int else '---'
 
+    # - get dep_abbrev from department
+        dep_abbrev = '---'
+        department = sel_exam_instance.department
+        if department:
+            dep_abbrev = department.abbrev
+
+    # - get level_abbrev from level
+        level = sel_exam_instance.level
+        if level and level.abbrev:
+            dep_abbrev += ' - ' + level.abbrev
+
+        # dont print last_modified_by
+        skip_modifiedby = True
+        last_modified_text = af.get_modifiedby_formatted(sel_exam_instance, user_lang, skip_modifiedby)
+
+    # - get form_text from examyearsetting
+        form_text = awpr_lib.get_library(sel_examyear, ['exform', 'exam'])
+        logger.debug('form_text: ' + str(form_text))
+
+        minond = form_text.get('minond', '-')
+        if is_ete_exam:
+            title = form_text.get('title_scoretable_ete', '-') + str(subject.examyear.code)
+        else:
+            title = form_text.get('title_scoretable_duo', '-') + str(subject.examyear.code)
+
+        examperiod_cpt = form_text.get('Central_exam', '-') if examperiod == 1 else \
+                form_text.get('Re_exam', '-') if examperiod == 2 else '-'
+
+        educationtype = form_text.get('educationtype', '-') + ':'
+        examtype = form_text.get('examtype', '-') + ':'
+        subject_cpt = form_text.get('subject', '-') + ':'
+
+        if is_ete_exam:
+            max_score = form_text.get('max_score', '-') + ':'
+            cesuur_nterm_lbl = form_text.get('cesuur', '-') + ':'
+
+        else:
+            max_score = form_text.get('scalelength', '-') + ':'
+            cesuur_nterm_lbl = form_text.get('n_term', '-') + ':'
+
+
+        version_lbl, version_txt = None, None
+        if is_ete_exam and sel_exam_instance.version:
+            version_lbl = form_text.get('version', '-') + ':'
+            version_txt = sel_exam_instance.version
+
+        header_list = [
+            (minond, None, None, None),
+            (title, None, None, None),
+            (educationtype, dep_abbrev, version_lbl, version_txt),
+            (examtype, examperiod_cpt, max_score, scalelength_str),
+            (subject_cpt, subject.name, cesuur_nterm_lbl, cesuur_nterm_str)
+        ]
+        if not is_ete_exam:
+            omschrijving_txt = '---'
+            if sel_exam_instance.ntermentable and sel_exam_instance.ntermentable.omschrijving:
+                omschrijving_txt = sel_exam_instance.ntermentable.omschrijving
+            header_list.append((
+                form_text.get('duo_exam', '-') + ':',
+                omschrijving_txt, None, None))
+
+        filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
+        try:
+            ttfFile = TTFont('Arial', filepath)
+            #logger.debug('ttfFile: ' + str(ttfFile))
+            pdfmetrics.registerFont(ttfFile)
+        except Exception as e:
+            logger.error('filepath: ' + str(filepath))
+            logger.error(getattr(e, 'message', str(e)))
+
+    # create list of with score and grades
+        score_grade_dict = {}
+        if is_ete_exam:
+            hide_table = not scalelength_int or not cesuur_int
+        else:
+            # test if nterm is number
+            try:
+                nterm_test = int(cesuur_nterm_str.strip().replace(',', '', 1).replace('.', '', 1))
+            except:
+                hide_table = True
+            else:
+                hide_table = not scalelength_int or not cesuur_nterm_str
+
+        if logging_on:
+            logger.debug('     is_ete_exam: ' + str(is_ete_exam))
+            logger.debug('     scalelength_int: ' + str(scalelength_int))
+            logger.debug('     cesuur_int: ' + str(cesuur_int))
+            logger.debug('     cesuur_nterm_str: ' + str(cesuur_nterm_str))
+            logger.debug('     hide_table: ' + str(hide_table) + ' ' + str(type(hide_table)))
+
+        if not hide_table:
+            for score_int in range(0, scalelength_int + 1):  # range(start_value, end_value, step), end_value is not included!
+                if is_ete_exam:
+                    grade_str = calc_score.calc_grade_from_score_ete(score_int, scalelength_int, cesuur_int)
+                else:
+                    grade_str = calc_score.calc_grade_from_score_duo(score_int, scalelength_int, cesuur_nterm_str)
+                grade_with_comma = grade_str.replace('.', ',') if grade_str else '-'
+                score_grade_dict[score_int] = grade_with_comma
+
+        draw_conversion_page(canvas, scalelength_int, cesuur_int, hide_table, header_list, last_modified_text, score_grade_dict)
 # - end of draw_conversion_table
 
 

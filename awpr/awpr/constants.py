@@ -295,10 +295,12 @@ KEY_SEL_STUDENT_PK = 'sel_student_pk'
 
 KEY_SEL_SCHEME_PK = 'sel_scheme_pk'
 KEY_SEL_BTN = 'sel_btn'
+KEY_SEL_PAGE = 'sel_page'
 KEY_COLS_HIDDEN = 'cols_hidden'
 KEY_VERIFICATIONCODE = 'verificationcode'
 KEY_EX3 = 'ex3'
 KEY_GRADELIST = 'gradelist'
+KEY_OPENARGS = 'open_args'
 
 # SCHOOL SETTING KEYS PR2018-12-03  PR2020-12-04
 

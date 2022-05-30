@@ -776,12 +776,23 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['_for_'] = TXT__for_
 
         dict['Approve_subjects'] = _('Approve subjects')
+        dict['Approve_reex'] = _('Approve re-examinations')
         dict['Request_verifcode'] = TXT_Request_verifcode
-        dict['Submit_Ex1_form'] = _('Submit Ex1 form')
+
+        dict['Submit_Ex1_form'] = _('Submit %(form)s form') % {'form': 'Ex1'}
+        dict['Submit_Ex4_form'] = _('Submit %(form)s form') % {'form': 'Ex4'}
 
         dict['Preliminary_Ex1_form'] = _('Preliminary %(form)s') % {'form': 'Ex1'}
         dict['The_preliminary_Ex1_form'] = _('The preliminary %(form)s form') % {'form': 'Ex1'}
+
+        dict['Preliminary_Ex4_form'] = _('Preliminary %(form)s') % {'form': 'Ex4'}
+        dict['The_preliminary_Ex4_form'] = _('The preliminary %(form)s form') % {'form': 'Ex4'}
+
         dict['Download_Ex_form'] = _('Download Ex form')
+
+        dict['Download_Ex1_form'] = _('Download %(form)s') % {'form': 'Ex1'}
+        dict['Download_Ex4_form'] = _('Download %(form)s') % {'form': 'Ex4'}
+
         dict['Approve'] = _('Approve')
         dict['Check_grades'] = _('Check grades')
         dict['Submit'] = TXT_Submit
@@ -1112,6 +1123,11 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
         dict['Please_select_examtype'] = _('Please select one exam type in the vertical grey bar at the left.')
+
+
+        dict['reex_msg_01'] = _("Only the re-examination subjects will be shown.")
+        dict['reex_msg_02'] = _("Go to the page 'Subjects' and tick off 'Re-examination' to add a re-examination subject.")
+
 
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber

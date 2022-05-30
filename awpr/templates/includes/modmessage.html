@@ -3,7 +3,7 @@
 
 <!-- =================== MODAL MESSAGE  =================== -->
 <div id="id_mod_message" class="modal" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md " role="document">
+    <div id="id_mod_message_size" class="modal-dialog modal-dialog-centered modal-md" role="document">
         <div class="modal-content">
 
             <div class="modal-header tsa_bc_lightlightgrey">
@@ -17,10 +17,14 @@
                 <div id="id_mod_message_container">
                 </div>
             </div>
-
-            <div class="modal-footer">
-                <button id="id_mod_message_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Close' %}</button>
-            </div>
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1">
+                        <button id="id_mod_message_btn_hide" class="btn btn-outline-secondary display_hide" data-dismiss="modal">{% trans "Don't show this message again" %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_mod_message_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Close' %}</button>
+                    </div>
+                </div>
         </div>
     </div>
 </div>

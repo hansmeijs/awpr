@@ -3132,6 +3132,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         # upload_dict: {'student_pk': 9226, 'studsubj_pk': 67836, 'subj_auth2by': True}
 
     save_changes = False
+    recalc_reex_grade = False
     recalc_finalgrade = False
 
     for field, new_value in upload_dict.items():
@@ -3285,6 +3286,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 # +++++ add or delete exemption, reex, reex03
     # - toggle value of has_exemption, has_reex or has_reex03
     # - when add: add grade with examperiod = 4, 2 or 3
+    # - when reex or reex03: add segrade, srgrade and pegrade in reex grade_instance
     # - when delete: set 'tobedeleted' = True and reset all values of grade
     # - recalc max_ etc in studsubj
     # - recalc result in student
@@ -3310,6 +3312,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
+                        recalc_reex_grade = field in ('has_reex', 'has_reex03')
 
     # - when setting exemption: fill in previous examyear as exemption_year PR2022-04-15
                         if field == 'has_exemption':
@@ -3345,6 +3348,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                             setattr(studsubj_instance, 'exemption_year', None)
 
 # --- add exem, reex, reex03 grade or make grade 'tobedeleted'
+            # when adding: also pu values of segrade, srgrade and pegrade in new grade_instance
             if recalc_finalgrade:
                 err_list = add_or_delete_grade_exem_reex_reex03(
                             field, studsubj_instance, new_value, request)
@@ -3467,11 +3471,11 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
             examperiod=exam_period
         ).first()
 
+# +++ add or undelete grade
+        # when new_value = True: add or undelete grade
         if new_value:
             save_changes = True
 
-# +++ add or undelete grade
-    # when new_value = True: add or undelete grade
             if grade:
         # - if grade exists: it must be deleted row. Undelete
                 setattr(grade, 'tobedeleted', False)
@@ -3483,9 +3487,14 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
 
     # if 2nd or 3rd period: get se sr pe from first period and put them in new grade
             # PR2022-01-05 dont save se, sr, pe in reex reex03 any more
-            #if exam_period in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
-            #    put_se_sr_pe_from_ep1_in_grade_reex_nosaveNIU(studsubj_instance, grade)
-
+            # PR2022-05-29 changed my mind: due to batch update needs nthosegardes in reex_grade to calc final grade
+            # must make sure that values in reex_grade are updated when update them in ep 1
+            if exam_period in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+                found, segrade, srgrade, pegrade = get_se_sr_pe_from_grade_ep1(studsubj_instance)
+                if found:
+                    setattr(grade, 'segrade', segrade)
+                    setattr(grade, 'srgrade', srgrade)
+                    setattr(grade, 'pegrade', pegrade)
         else:
             if grade:
 # +++ set grade tobedeleted
@@ -3530,59 +3539,58 @@ def clear_grade_fields(grade_instance):  # PR2021-12-24
 # - end of clear_grade_fields
 
 
-def put_se_sr_pe_from_ep1_in_grade_reex_nosaveNIU(studentsubject, grade_reex_reex03):  # PR2021-12-25
-    # functions gets value of se, sr, pe from first period, and puts it in grade of 2nd or 3rd period
+def get_se_sr_pe_from_grade_ep1(studentsubject):  # PR2021-12-25 PR2022-05-29
+    # functions returns value of se, sr, pe from first period,
     # called when creating grade of 2nd or 3rd period
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- put_se_sr_pe_from_ep1_in_grade_reex_nosaveNIU -------')
+        logger.debug(' ------- put_se_sr_pe_from_ep1_in_grade_reex_nosave -------')
         logger.debug('studentsubject: ' + str(studentsubject))
 
-    if grade_reex_reex03:
+    segrade, srgrade, pegrade = None, None, None
+    found = False
+
 # get grade of first examperiod
-        # Note: with .values a dict is returned, not a model instance
-        # grade_first_period: {'segrade': '5,7', 'srgrade': None, 'pegrade': '4.3'}
-        grades_first_period = stud_mod.Grade.objects.filter(
-            studentsubject=studentsubject,
-            examperiod=c.EXAMPERIOD_FIRST
-        ).values('segrade', 'srgrade', 'pegrade')
+    # Note: with .values a dict is returned, not a model instance
+    # grade_first_period: {'segrade': '5,7', 'srgrade': None, 'pegrade': '4.3'}
+    grades_first_period = stud_mod.Grade.objects.filter(
+        studentsubject=studentsubject,
+        examperiod=c.EXAMPERIOD_FIRST
+    ).values('segrade', 'srgrade', 'pegrade')
 
-        grade_first_period = None
-        found, multiple_found = False, False
-        if grades_first_period:
-            for row in grades_first_period:
-                if logging_on:
-                    logger.error('row: ' + str(row))
+    grade_first_period = None
+    found, multiple_found = False, False
+    if grades_first_period:
+        for row in grades_first_period:
+            if logging_on:
+                logger.error('row: ' + str(row))
 
-                if not found:
-                    found = True
-                    grade_first_period = row
-                else:
-                    multiple_found = True
-                    break
+            if not found:
+                found = True
+                grade_first_period = row
+            else:
+                multiple_found = True
+                break
 
 # - give error when there are zero or multiple grade rows with first examperiod, should not be possible
-        if grade_first_period is None:
-            logger.error('ERROR: ' + ('multiple' if multiple_found else 'no' ) + ' grades found in first examperiod.')
-            logger.error('       studentsubject: ' + str(studentsubject))
-            logger.error('       student: ' + str(studentsubject.student))
-        else:
+    if grade_first_period is None:
+        logger.error('ERROR: ' + ('multiple' if multiple_found else 'no' ) + ' grades found in first examperiod.')
+        logger.error('       studentsubject: ' + str(studentsubject))
+        logger.error('       student: ' + str(studentsubject.student))
+    else:
+        found = True
+        segrade = grade_first_period.get('segrade')
+        srgrade = grade_first_period.get('srgrade')
+        pegrade = grade_first_period.get('pegrade')
 
-            if logging_on:
-                logger.error('grade_first_period: ' + str(grade_first_period))
+    if logging_on:
+        logger.error(' >>> segrade: ' + str(segrade))
+        logger.error(' >>> srgrade: ' + str(srgrade))
+        logger.error(' >>> pegrade: ' + str(pegrade))
 
-# - put value of se, sr, pe in grade of 2nd or 3rd period
-            for field in ('segrade', 'srgrade', 'pegrade'):
-                value = grade_first_period.get(field)
-                if logging_on:
-                    logger.error('value: ' + str(value))
-                setattr(grade_reex_reex03, field,value)
-
-                if logging_on:
-                    logger.debug('grade.' + field + ': ' + str(value))
-
-# - end of put_se_sr_pe_from_ep1_in_grade_reex_nosaveNIU
+    return found, segrade, srgrade, pegrade
+# - end of put_se_sr_pe_from_ep1_in_grade_reex_nosave
 
 # NOT IN USE
 def copy_grade_fields_from_firstperiod(grade_instance):  # PR2021-12-25
@@ -5036,7 +5044,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year, studsubj.pok_validthru,",
             "si.subject_id, si.subjecttype_id, si.gradetype,",
             "subjbase.id AS subjbase_id, subjbase.code AS subj_code, subj.name AS subj_name,",
-            "si.weight_se AS si_se, si.weight_ce AS si_ce,",
+            "si.weight_se, si.weight_ce,",
             "si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
             "si.has_practexam,",
 
@@ -5133,7 +5141,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "studsubj.is_mandatory, studsubj.is_mand_subj_id, studsubj.is_combi,",
             "studsubj.extra_count_allowed, studsubj.extra_nocount_allowed,",
             "studsubj.sjtp_id, studsubj.sjtp_abbrev, studsubj.sjtp_has_prac, studsubj.sjtp_has_pws,",
-
+            "studsubj.weight_se, studsubj.weight_ce,",
             "studsubj.subj_auth1by_id, studsubj.subj_auth1_usr,",
             "studsubj.subj_auth2by_id, studsubj.subj_auth2_usr,",
             "studsubj.subj_published_id, studsubj.subj_publ_modat,",

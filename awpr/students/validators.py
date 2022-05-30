@@ -1923,9 +1923,16 @@ def validate_gender(value):
 
 
 # Not in use, maybe can be used for warning
+
+# don't check if the amount of re-examinations equals or exceeds the maximum
+#   students that have been sick may do multiple reex
+#   was: if not err_list:
+
 def validate_reex_count(studsubj_instance, si_dict):  # PR2021-12-19
     err_list = []
     max_reex = si_dict.get('scheme_max_reex', 1)
+
+
 
     logging_on = s.LOGGING_ON
     if logging_on:

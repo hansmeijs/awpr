@@ -76,6 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
+    urls.url_user_modmsg_hide = get_attr_from_el(el_data, "data-url_user_modmsg_hide");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_student_biscand = get_attr_from_el(el_data, "data-url_student_biscand");
@@ -90,7 +91,9 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
     urls.url_studsubj_approve_submit_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_submit_multiple");
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
-    urls.url_grade_download_ex1 = get_attr_from_el(el_data, "data-url_grade_download_ex1");
+
+    urls.url_download_ex1 = get_attr_from_el(el_data, "data-url_download_ex1");
+    urls.url_download_ex4 = get_attr_from_el(el_data, "data-url_download_ex4");
 
     urls.url_ex3_getinfo = get_attr_from_el(el_data, "data-url_ex3_getinfo");
     urls.url_ex3_download = get_attr_from_el(el_data, "data-url_ex3_download");
@@ -472,6 +475,12 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
         if(el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
+// ---  MOD MESSAGE ------------------------------------
+        const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
+        if(el_mod_message_btn_hide){
+            el_mod_message_btn_hide.addEventListener("click", function() {ModMessageHide()});
+        };
+
 // ---  set selected menu button active
         //SetMenubuttonActive(document.getElementById("id_hdr_users"));
     if(may_view_page){
@@ -654,19 +663,23 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_submenu = document.getElementById("id_submenu")
         if(el_submenu){
             if(permit_dict.requsr_same_school){
+                // btns are btn_exem btn_ep_01 btn_reex btn_reex03 btn_pok
                 if(permit_dict.permit_crud){
-                    AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, function() {ModConfirmOpen("prelim_ex1")});
+                    AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, function() {ModConfirmOpen("prelim_ex1")}, ["tab_show", "tab_btn_ep_01"]);
+                    AddSubmenuButton(el_submenu, loc.Preliminary_Ex4_form, function() {ModConfirmOpen("prelim_ex4")}, ["tab_show", "tab_btn_reex"]);
                 };
                 if (permit_dict.permit_approve_subject){
-                    AddSubmenuButton(el_submenu, loc.Approve_subjects, function() {MASS_Open("approve")});
+                    AddSubmenuButton(el_submenu, loc.Approve_subjects, function() {MASS_Open("approve")}, ["tab_show", "tab_btn_ep_01"]);
+                    AddSubmenuButton(el_submenu, loc.Approve_reex, function() {MASS_Open("approve_reex")}, ["tab_show", "tab_btn_reex"]);
                 }
                 if (permit_dict.permit_submit_subject){
-                    AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")});
+                    AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")}, ["tab_show", "tab_btn_ep_01"]);
+                    AddSubmenuButton(el_submenu, loc.Submit_Ex4_form, function() {MASS_Open("submit_ex4")}, ["tab_show", "tab_btn_reex"]);
                 };
-                AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()});
-                AddSubmenuButton(el_submenu, loc.Ex3_backpage, function() {MEX3_Backpage()});
+                AddSubmenuButton(el_submenu, loc.Ex3_form, function() {MEX3_Open()}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
+                AddSubmenuButton(el_submenu, loc.Ex3_backpage, function() {MEX3_Backpage()}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex"]);
                 if(permit_dict.permit_crud){
-                    AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, null, "id_submenu_import");
+                    AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, ["tab_show", "tab_btn_ep_01"], "id_submenu_import");
                     AddSubmenuButton(el_submenu, loc.Clusters, function() {MCL_Open()});
                 };
             };
@@ -714,8 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
         b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
 
 // ---  show only the elements that are used in this tab
-        const selected_tab = selected_btn.replace("btn", "tab");
-        b_show_hide_selected_elements_byClass("tab_show", selected_tab);
+        b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
 // ---  update header
         UpdateHeaderText();
@@ -798,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function() {
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
                 const map_id = data_dict.mapid;
                 const bis_exam = data_dict.bis_exam;
-                 let show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
+                let show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
                                 (!setting_dict.sel_sctbase_pk || data_dict.sctbase_id === setting_dict.sel_sctbase_pk) &&
                                 (!setting_dict.sel_student_pk || data_dict.stud_id === setting_dict.sel_student_pk) &&
                                 (!setting_dict.sel_cluster_pk || data_dict.cluster_id === setting_dict.sel_cluster_pk) &&
@@ -806,8 +818,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // when exemption: only show students with bis_exam
                  // PR2022-04-11 tel Richard Westerink: exemptions also allowed when when evening / lex students
-                if (show_row && selected_btn === "btn_exem" ){
-                   show_row = (data_dict.bis_exam || data_dict.iseveningstudent || data_dict.islexstudent );
+                if (show_row){
+                    if (selected_btn === "btn_exem" ){
+                       show_row = (data_dict.bis_exam || data_dict.iseveningstudent || data_dict.islexstudent );
+                    } else if (["btn_reex", "btn_reex03"].includes(selected_btn)){
+                       show_row = (data_dict.weight_ce);
+                    };
                 };
                 if (show_row){
                     CreateTblRow(tblName, field_setting, map_id, data_dict, col_hidden)
@@ -1504,9 +1520,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const new_value = (!old_value);
             if(new_value){
+
      // ---  change icon, before uploading
-                // don't, because of validation on server side
-                //add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+                // when validation on server side fails, the old value is reset by RefreshDataRowItem PR2022-05-27
+                // updated_studsubj_rows must contain ie err_fields: ['has_reex']
+                add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
 
     // ---  upload changes
                 const upload_dict = {
@@ -3737,7 +3755,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 lvlbase_pk_list: sel_lvlbase_pk_list
             };
 
-        // convert dict to jason and add as parameter in link
+        // convert dict to json and add as parameter in link
             const upload_str = JSON.stringify(upload_dict);
             const href_str = urls.url_ex3_download.replace("-", upload_str);
 
@@ -4181,17 +4199,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // show modal
             $("#id_mod_confirm").modal({backdrop: true});
 
-        } else if (mode === "prelim_ex1"){
-            el_confirm_header.innerText = loc.Download_Ex_form;
-            el_confirm_loader.classList.add(cls_visible_hide)
-            el_confirm_msg_container.className = "p-3";
+        } else if (["prelim_ex1", "prelim_ex4"].includes(mode)){
 
-            const msg_html = "<p>" + loc.The_preliminary_Ex1_form + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
+            const header_txt = (mode === "prelim_ex4") ? loc.Download_Ex4_form : loc.Download_Ex1_form
+            el_confirm_header.innerText = header_txt;
+            el_confirm_msg_container.className = "p-3";
+            const caption = (mode === "prelim_ex4") ? loc.The_preliminary_Ex4_form : loc.The_preliminary_Ex1_form
+            const msg_html = "<p>" + caption + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
             el_confirm_msg_container.innerHTML = msg_html;
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
-                el_modconfirm_link.setAttribute("href", urls.url_grade_download_ex1);
-            };
+
 
             el_confirm_loader.className = cls_hide;
 
@@ -4258,21 +4274,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        //console.log(" --- ModConfirmSave --- ");
-        //console.log("mod_dict: ", mod_dict);
+        console.log(" --- ModConfirmSave --- ");
+        console.log("mod_dict: ", mod_dict);
 
         let close_modal = false;
 
         if (mod_dict.mode === "delete_cluster"){
             MCL_delete_cluster(mod_MCL_dict.sel_cluster_dict);
             close_modal = true;
-        } else if (mod_dict.mode === "prelim_ex1"){
+        } else if (["prelim_ex1", "prelim_ex4"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
+
+                const href_str = (mod_dict.mode === "prelim_ex4") ? urls.url_download_ex4 : urls.url_download_ex1;
+                el_modconfirm_link.setAttribute("href", href_str);
                 el_modconfirm_link.click();
+
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
-
             // close modal after 5 seconds
                 setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
             };
@@ -4346,6 +4365,13 @@ document.addEventListener('DOMContentLoaded', function() {
             $("#id_mod_confirm").modal("hide");
         }
     }  // ModConfirmResponse
+
+//=========  ModMessageHide  ================ PR2022-05-28
+    function ModMessageHide() {
+        console.log(" --- ModMessageHide --- ");
+        const upload_dict = {hide_msg: true};
+        UploadChanges(upload_dict, urls.url_user_modmsg_hide)
+    }  // ModMessageHide
 
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA ROWS +++++++++++++++++++++++++++++++++++++++

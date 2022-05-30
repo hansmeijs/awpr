@@ -384,7 +384,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 @method_decorator([login_required], name='dispatch')
 class DownloadEx3View(View):  # PR2021-10-07
 
-    def get(self, request, list):
+    def get(self, request, list_str):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= DownloadEx3View ============= ')
@@ -400,8 +400,8 @@ class DownloadEx3View(View):  # PR2021-10-07
 
         response = None
 
-        if request.user and request.user.country and request.user.schoolbase and list:
-            upload_dict = json.loads(list)
+        if request.user and request.user.country and request.user.schoolbase and list_str:
+            upload_dict = json.loads(list_str)
 
             req_user = request.user
 

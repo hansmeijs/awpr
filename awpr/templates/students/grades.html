@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220515.js' %}"></script>
-    <script src="{% static 'js/grades220526.js' %}"></script>
+    <script src="{% static 'js/grades220529.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -128,6 +128,7 @@
     <!-- =================== END DATA TABLE  =================== -->
     <!-- END OF CONTENT BODY -->
                 <div id="id_data"
+                    data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
                     data-url_datalist_download="{% url 'url_datalist_download' %}"
                     data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                     data-url_student_upload="{% url 'url_student_upload' %}"
@@ -147,6 +148,7 @@
                     data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
                     data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
                     data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
+
                 >
                 </div>
         {% endif %}

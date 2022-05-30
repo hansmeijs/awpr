@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 def calc_sesr_pece_final_grade(si_dict, examperiod, has_sr, exemption_year, se_grade, sr_grade, pe_grade, ce_grade):
     # PR2021-12-28 PR2022-04-11  PR2022-05-26
     # called by GradeUploadView.recalc_finalgrade_in_grade_and_save and by import_studsubj_grade_from_datalist
-    # this function does not save the calculated dields
-    logging_on = s.LOGGING_ON
+    # this function does not save the calculated fields
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- calc_sesr_pece_final_grade -------')
         logger.debug('si_dict: ' + str(si_dict))
@@ -26,16 +26,15 @@ def calc_sesr_pece_final_grade(si_dict, examperiod, has_sr, exemption_year, se_g
 
     # PR2022-04-12 no_ce_years = '2020;2021' has list of examyears that had no CE. This is used to skip no_input_ce when calculating exemption endgrade
     # PR2022-04-12 thumb_rule = True: may skip this subject when calculating result
-    # TODO thumb_rule = si_dict.get('thumb_rule')
 
     sesr_grade, pece_grade, finalgrade, delete_cegrade = None, None, None, False
     try:
         sjb_code = si_dict.get('subj_code', '-')
-        has_practexam = si_dict.get('has_practexam', False)
         gradetype = si_dict.get('gradetype', 0)
         weight_se = si_dict.get('weight_se', 0)
         weight_ce = si_dict.get('weight_ce', 0)
         no_ce_years = si_dict.get('no_ce_years')
+        #has_practexam = si_dict.get('has_practexam', False)
 
         # Practical exam does not exist any more. Set has_practexam = False PR2022-05-26
         # was: has_practexam = si_dict.get('has_practexam', False)
@@ -335,7 +334,7 @@ def calc_pece_decimal(examperiod, ce_grade, pe_grade, weight_ce, has_practexam, 
     # PR2021-01-18 PR2021-09-18 PR2021-12-14 PR2022-04-12
     # PR2022-04-12 no_ce_years = '2020;2021' has list of examyears that had no CE. This is used to skip no_input_ce when calculating exemption endgrade
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- calc_pece_decimal -----')
         logger.debug('     sjb_code:       ' + str(sjb_code))

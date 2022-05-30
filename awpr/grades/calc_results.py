@@ -121,8 +121,9 @@ logger = logging.getLogger(__name__)
 class CalcResultsView(View):  # PR2021-11-19
 
     def post(self, request, list):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
+            logger.debug(' ')
             logger.debug(' ============= CalcResultsView ============= ')
 
         update_wrap = {}
@@ -200,7 +201,7 @@ class CalcResultsView(View):  # PR2021-11-19
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
@@ -365,12 +366,13 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
                 #   save_max_grade_in_studsubj(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem, gl_ni_se, gl_ni_sr, gl_ni_pe, gl_ni_ce, gl_examperiod)
 
         if logging_on:
-            logger.debug('>>>>>>>>>>>>  end of loop through studsubjects')
-            logger.debug('>>>>>>>>>>>>  sql_studsubj_list: ' + str(sql_studsubj_list))
+            logger.debug('    end of loop through studsubjects')
+            logger.debug('    sql_studsubj_list: ' + str(sql_studsubj_list))
 
 # - end of loop through studsubjects
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # calc_student_passedfailed:
+
+# +++ calc_student_passedfailed:
         # - calculates combi grade for each examperiod and add it to final and count dict in student_ep_dict
         # - calculates passed / failed for each exam period (ep1, ep2, ep3)
         # - puts calculated result of the last examperiod in log_list
@@ -378,7 +380,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, depbase_is_vsbo, log_list, sql_student_list)
 
         if logging_on:
-            logger.debug('>>>>>>>>>>>>  sql_student_list: ' + str(sql_student_list))
+            logger.debug('     sql_student_list: ' + str(sql_student_list))
 
         if not has_subjects and log_list is not None:
             log_list.append(''.join((c.STRING_SPACE_05, str(_('This candidate has no subjects.')))))
@@ -566,6 +568,8 @@ def calc_studsubj_result(student_dict, isevlexstudent, studsubj_pk, studsubj_dic
                                 gradetype, multiplier, weight_ce, exemp_no_ce, is_extra_nocount, is_thumbrule, subj_code)
 
 # - after adding max_grades: check result requirements
+                # when failed: 'failed' info is added to student_ep_dict
+                # 'failed': {'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 'Sectorwerkstuk is onvoldoende.'],
                 calc_rule_issufficient(si_dict, use_studsubj_ep_dict, calc_student_ep_dict,
                                 isevlexstudent, is_extra_nocount, subj_name)
 
@@ -1382,11 +1386,13 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
 
 
 def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
-    logging_on = False   # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  calc_pece_avg  -----')
         logger.debug('     examperiod: ' + str(examperiod))
         logger.debug('     student_ep_dict: ' + str(student_ep_dict))
+    # see https://www.examenblad.nl/veel-gevraagd/hoe-moeten-cijfers-worden-afgerond/2013
+    # Een gemiddelde van 5,48333 is lager dan 5,5.
 
     """
     student_ep_dict: {
@@ -1405,34 +1411,46 @@ def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
         pece_cnt_int = pece_dict.get('cnt', 0)
         pece_sumX10_int = pece_dict.get('sumX10', 0)
         pece_cnt_str, pece_sum_str = None, None
-        pece_avg_decimal_rounded_dot, pece_avg_rounded_comma = None, None
+        pece_avg_dot, pece_avg_comma = None, '-'
         if pece_cnt_int > 0:
             pece_cnt_str = str(pece_cnt_int)
             if pece_sumX10_int > 0:
-                pece_sum_decimal = Decimal(str(pece_sumX10_int)) / Decimal('10')
+                pece_sumX10_decimal = Decimal(str(pece_sumX10_int))
+                pece_sum_decimal = pece_sumX10_decimal / Decimal(10)
                 pece_sum_str = str(pece_sum_decimal).replace('.', ',')
 
-                pece_avg_decimal_not_rounded = pece_sum_decimal / Decimal(pece_cnt_str)
+                # PR20220-05-27 DO NOT ROUND !!!
+                #   Een gemiddelde van 5,48333 is lager dan 5,5.
 
-# - round to one digit after dot
-                pece_avg_decimal_rounded = grade_calc.round_decimal(pece_avg_decimal_not_rounded, 1)
-                pece_avg_rounded_dot = str(pece_avg_decimal_rounded)
-                pece_avg_rounded_comma = pece_avg_rounded_dot.replace('.', ',')
+                # was:
+                # - round to one digit after dot
+                #   pece_avg_decimal_rounded = grade_calc.round_decimal(pece_avg_decimal_not_rounded, 1)
+                #   pece_avg_rounded_dot = str(pece_avg_decimal_rounded)
+                #   pece_avg_rounded_comma = pece_avg_rounded_dot.replace('.', ',')
 
+                # no need to use decimal
+                pece_avg_dot = str(int(pece_sumX10_int / pece_cnt_int ) / 10)
+                pece_avg_comma = pece_avg_dot.replace('.', ',')
+
+                if logging_on:
+                    logger.debug('     pece_avg_dot: ' + str(pece_avg_dot))
+
+        if logging_on:
+            logger.debug('     pece_avg_dot: ' + str(pece_avg_dot))
         # put avg in student_ep_dict.pece.avg
-        pece_dict['avg'] = pece_avg_decimal_rounded_dot
+        pece_dict['avg'] = pece_avg_dot
 
         pece_dict['result'] = ''.join((
             # used in result_info
             str(_('Average CE grade')), ': ',
-            pece_avg_rounded_comma if pece_avg_rounded_comma else '-',
+            pece_avg_comma if pece_avg_comma else '-',
             ' (', pece_sum_str if pece_sum_str else '-',
             '/', pece_cnt_str if pece_cnt_str else '-',
             ') '
         ))
 
         if logging_on:
-            logger.debug('pece_dict: ' + str(pece_dict))
+            logger.debug(' >>> pece_dict: ' + str(pece_dict))
 # - end of calc_pece_avg
 
 
@@ -1463,7 +1481,9 @@ def calc_final_avg(student_ep_dict):  # PR2021-12-23
         final_count_str = str(final_cnt)
         if final_sum > 0:
             final_sum_str = str(final_sum)
-            final_avg = Decimal(final_sum_str) / Decimal(final_count_str)
+
+            # final_avg will be rounded with 1 digit (unlike calc_pece_avg that is not rounded)
+            final_avg = Decimal(final_sum) / Decimal(final_cnt)
             if final_avg > 0:
                 final_rounded_str = str(grade_calc.round_decimal_from_str(final_avg, digits=1))
     # put avg in student_ep_dict.final.avg
@@ -1629,10 +1649,14 @@ def put_noinput_in_student_ep_dict(is_combi, use_studsubj_ep_dict, calc_student_
 
 def calc_rule_issufficient(si_dict, use_studsubj_ep_dict, student_ep_dict, isevlexstudent,
                            is_extra_nocount, subj_name):  # PR2021-11-23
-    # function checks if max final grade is sufficient
+    # function checks if max final grade is sufficient (
     # - only when 'rule_grade_sufficient' for this subject is set True in schemeitem
     # - skip when evlex student and notatevlex = True
     # - skip when subject is 'is_extra_nocount'
+
+    # rule 2022 Havo/VWO CUR + SXM
+    # - voor de vakken cav en lo een voldoende of goed is behaald
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug( ' -----  calc_rule_issufficient  -----')
@@ -1767,21 +1791,34 @@ def calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, de
 
     # - if no_input: create dict with key 'noresult' if it does not exist
                 if not result_no_input:
-                    if logging_on:
-                        logger.debug('not result_no_input: ' + str(not result_no_input))
+                    has_failed = False
                     # calc_rule_issufficient is already called in subj loop
                     # student_ep_dict['result_index'] = c.RESULT_FAILED gets value in calc_passfailed
                     if depbase_is_vsbo:
-                        has_failed = calc_passfailed_count6_vsbo(student_ep_dict)
+                        has_failed_count6 = calc_passfailed_count6_vsbo(student_ep_dict)
                     else:
-                        has_failed = calc_passfailed_count6_havovwo(student_ep_dict)
+                        has_failed_count6 = calc_passfailed_count6_havovwo(student_ep_dict)
+                    if has_failed_count6:
+                        has_failed = True
 
-                    if not has_failed:
-                        has_failed =calc_passfailed_core_rule(student_ep_dict)
-                    if not has_failed:
-                        has_failed =calc_passfailed_pece_avg_rule(student_ep_dict)
+                    if logging_on:
+                        logger.debug('     has_failed_count6: ' + str(has_failed_count6))
+
+                    failed_core = calc_passfailed_core_rule(student_ep_dict)
+                    if failed_core:
+                        has_failed = True
+
+                    if logging_on:
+                        logger.debug('     failed_core: ' + str(failed_core))
+
+                    failed_pece_avg = calc_passfailed_pece_avg_rule(student_ep_dict)
+                    if failed_pece_avg:
+                        has_failed = True
                     if not has_failed:
                         student_ep_dict['result_index'] = c.RESULT_PASSED
+
+                    if logging_on:
+                        logger.debug('     failed_pece_avg: ' + str(failed_pece_avg))
 
             if logging_on:
                 logger.debug('student_ep_dict: ' + str(student_ep_dict))
@@ -1797,8 +1834,8 @@ def calc_student_passedfailed(ep_list, student_dict, withdrawn, has_subjects, de
     if last_examperiod:
         last_student_ep_dict = student_dict[last_ep_str]
 
-        result_info_list = calc_add_result_to_log(last_examperiod, last_student_ep_dict)
-        log_list.extend(result_info_list)
+        result_info_list, result_info_log_list = calc_add_result_to_log(last_examperiod, last_student_ep_dict)
+        log_list.extend(result_info_log_list)
         sql_student_values = stud_view.save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_list, sql_student_list)
 
         if sql_student_values:
@@ -1914,7 +1951,7 @@ def calc_passfailed_noinput(student_ep_dict):  # PR2021-12-27 PR2022-01-04 PR202
 
 
 def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_passfailed_count6_vsbo  -----')
 
@@ -2008,9 +2045,10 @@ def calc_passfailed_count6_vsbo(student_ep_dict):  #  PR2021-12-24 PR2022-05-26
 
 def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30  PR2022-05-26
     # add result to combi_dict result:
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  calc_passfailed_count6_havovwo  -----')
+        logger.debug('student_ep_dict: ' + str(student_ep_dict))
 
     count_dict = student_ep_dict['count']
     c3 = count_dict.get('c3', 0)
@@ -2019,11 +2057,16 @@ def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30  PR2022-05
     # NIU: c6 = count_dict.get('c6', 0)
     c7 = count_dict.get('c7', 0)
 
-    avgfinal = 0
-    avgfinal_str = ''
+    final_dict = student_ep_dict['final']
+    avgfinal_str = final_dict.get('avg','')
+    avgfinal_lt_6 = True
+    if avgfinal_str:
+        avgfinal_lt_6 = (Decimal(avgfinal_str).compare(Decimal(6)) < 0)
+        # PR2022-05-29 debug: replace dot after Decimal(avgfinal_str), otherwise you get error ConversionSyntax
+        avgfinal_str = avgfinal_str.replace('.', ',')
 
     has_failed = False
-
+    result_info = ''
     if c3:  # 1 of meer drieën of lager
         has_failed = True
         three_str = ' '.join((str(c3), str( _('three or lower') if c3 == 1 else _('threes or lower'))))
@@ -2041,34 +2084,32 @@ def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30  PR2022-05
 
         elif c4 == 1:
             # 'kandidaat heeft 1 vier, de rest vijven of hoger
-
+            result_info = ''.join((four_str, str(_(' and ')), five_str))
             if c5 > 1:
                 # '1 vier en 2 of meer vijven
                 has_failed = True
-                result_info = ''.join((four_str, str(_(' and ')), five_str, '.'))
             elif c5 == 1:
                 # een vier en een vijf: geslaagd als gemiddeld een 6 of hoger is behaald
-                if avgfinal < 6:
+                if avgfinal_lt_6:
                     has_failed = True
-                result_info = ''.join((four_str, str(_(' and ')), five_str, ', average final grade is ', avgfinal_str, '.'))
+                result_info += ''.join((', ', str(_('average final grade is ')), avgfinal_str))
             else: # 1 vier geen vijven
                 # geslaagd als gemiddeld een 6 of hoger is behaald
-                if avgfinal < 6:
+                if avgfinal_lt_6:
                     has_failed = True
-                result_info = ''.join((four_str, str(_(' and ')), five_str, ', average final grade is ', avgfinal_str, '.'))
+                result_info += ''.join((', ', str(_('average final grade is ')), avgfinal_str))
 
         else:
             # 'kandidaat heeft geen vieren, alleen vijven of hoger
             if c5 > 2:
                 # '3 of meer vijven
                 has_failed = True
-                result_info = ''.join((five_str, '.'))
-
+                result_info = five_str
             elif c5 == 2: # 2 vijven, rest zessen of hoger
                 # geslaagd als gemiddeld een 6 of hoger is behaald
-                if avgfinal < 6:
+                if avgfinal_lt_6:
                     has_failed = True
-                result_info = ''.join((five_str, ', average final grade is ', avgfinal_str, '.'))
+                result_info += ''.join((', ', str(_('average final grade is ')), avgfinal_str))
 
             elif c5 == 1:
                 # 'kandidaat heeft 1 vijf, rest zessen of hoger
@@ -2091,7 +2132,7 @@ def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30  PR2022-05
         failed_dict['cnt3457'] = result_info
     else:
         # - if not has_failed: create dict with key 'passed' if it does not exist
-        # note: student might have failed beacsuse of other rules
+        # note: student might have failed because of other rules
         if 'passed' not in student_ep_dict:
             student_ep_dict['passed'] = {}
         passed_dict = student_ep_dict.get('passed')
@@ -2099,71 +2140,16 @@ def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30  PR2022-05
         passed_dict['cnt3457'] = result_info
 
     if logging_on:
-        logger.debug('student_ep_dict: ' + str(student_ep_dict))
+        logger.debug(' >>> has_failed: ' + str(has_failed))
+        logger.debug(' >>> result_info: ' + str(result_info))
+        logger.debug(' >>> student_ep_dict: ' + str(student_ep_dict))
 
     return has_failed
 # end of calc_passfailed_count6_havovwo
 
 
-def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24 PR2022-05-26
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug('-----  calc_passfailed_pece_avg_rule  -----')
-        logger.debug( '>>>>>>>>>>> student_ep_dict: ' + str(student_ep_dict))
-
-    has_failed = False
-
-    pece_dict = student_ep_dict['pece']
-    if logging_on:
-        logger.debug( 'pece_dict' + str(pece_dict))
-
-    avg = pece_dict.get('avg')
-    if avg:
-        avg_str = str(avg)
-        avg_display = avg_str.replace('.', ',')
-        result_info = ''.join((str(_('Average CE grade')), str(_(' is ')), avg_display))
-        if logging_on:
-            logger.debug( 'avg_str' + str(avg_str))
-
-        avg_decimal_A = Decimal(avg_str)
-        if logging_on:
-            logger.debug( 'avg_decimal_A' + str(avg_decimal_A))
-        avg_55_B = Decimal('5.5')
-        # a.compare(b) == -1 means a < b
-        if avg_decimal_A.compare(avg_55_B) == -1:  # a.compare(b) == -1 means a < b
-            has_failed = True
-            result_info += str(_(', must be 5,5 or higher.'))
-        else:
-            result_info += '.'
-
-# - if has_failed: create dict with key 'failed' if it does not exist
-        if has_failed:
-            student_ep_dict['result_index'] = c.RESULT_FAILED
-            if 'failed' not in student_ep_dict:
-                student_ep_dict['failed'] = {}
-            failed_dict = student_ep_dict.get('failed')
-# - add key 'avgce55' with value 'result_info'
-            failed_dict['avgce55'] = result_info
-        else:
-
-# - also add info to passed_dict
-            # - if not has_failed: create dict with key 'passed' if it does not exist
-            # note: student might have failed beacsuse of other rules
-            if 'passed' not in student_ep_dict:
-                student_ep_dict['passed'] = {}
-            passed_dict = student_ep_dict.get('passed')
-            # - add key 'avgce55' with value 'result_info'
-            passed_dict['avgce55'] = result_info
-
-    if logging_on:
-        logger.debug('     student_ep_dict: ' + str(student_ep_dict))
-
-    return has_failed
-# end of calc_passfailed_pece_avg_rule
-
-
-def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24  PR2022-05-26
-    logging_on = s.LOGGING_ON
+def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24  PR2022-05-28
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  calc_passfailed_core_rule  -----')
 # 'count': {'c3': 0, 'c4': 1, 'c5': 1, 'c6': 2, 'c7': 2, 'core4': 0, 'core5': 0}
@@ -2176,9 +2162,9 @@ def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24  PR2022-05-26
     core5 = count_dict.get('core5', 0)
 
     if logging_on:
-        logger.debug( 'count_dict: ' + str(count_dict) + ' ' + str(type(count_dict)))
-        logger.debug( 'core4: ' + str(core4) + ' ' + str(type(core4)))
-        logger.debug( 'core5: ' + str(core5) + ' ' + str(type(core5)))
+        logger.debug( '     count_dict: ' + str(count_dict) + ' ' + str(type(count_dict)))
+        logger.debug( '     core4: ' + str(core4) + ' ' + str(type(core4)))
+        logger.debug( '     core5: ' + str(core5) + ' ' + str(type(core5)))
 
     has_failed = False
     result_info = ''
@@ -2199,19 +2185,118 @@ def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24  PR2022-05-26
         if 'failed' not in student_ep_dict:
             student_ep_dict['failed'] = {}
         failed_dict = student_ep_dict.get('failed')
+
 # - add key 'core45' with value 'result_info'
         failed_dict['core45'] = result_info
-# - dont add info to passed_dict
+
+# - add info to passed_dict
+    else:
+        # - if not has_failed: create dict with key 'passed' if it does not exist
+        # note: student might have failed because of other rules
+        if 'passed' not in student_ep_dict:
+            student_ep_dict['passed'] = {}
+        passed_dict = student_ep_dict.get('passed')
+
+        if core5:
+            result_info = ''.join(('1 ', str(_('five'))))
+        else:
+            result_info = str(_('No fail marks'))
+        result_info += ''.join((str(_(' in ')), str(_('core subjects')), '.'))
+        passed_dict['core45'] = result_info
 
     if logging_on:
-        logger.debug('student_ep_dict: ' + str(student_ep_dict))
+        logger.debug(' >>> result_info: ' + str(result_info))
+        logger.debug(' >>> student_ep_dict: ' + str(student_ep_dict))
+        logger.debug(' >>> has_failed: ' + str(has_failed))
 
     return has_failed
 # end of calc_passfailed_core_rule
 
 
-def calc_add_result_to_log(examperiod, student_ep_dict):  # PR2021-11-29
+def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24 PR2022-05-26
     logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  calc_passfailed_pece_avg_rule  -----')
+        logger.debug( '     student_ep_dict: ' + str(student_ep_dict))
+    """
+    student_ep_dict: {
+        'ep': 1, 
+        'final': {'sum': 48, 'cnt': 8, 
+                    'info': ' wb:5 na:6 sk:6 bec:6 frtl:7 netl:4 entl:6 combi:8', 'avg': '6.0', 
+                    'result': 'Gemiddeld eindcijfer: 6.0 (48/8) '}, 
+        'combi': {'sum': 15, 'cnt': 2, 
+                    'info': ' asw:7 pws:8', 'final': 8, 
+                    'result': 'Combinatiecijfer: 8 (15/2) '}, 
+        'pece': {'sumX10': 351, 'cnt': 7, 
+                    'info': ' wb:4,1 na:6,0 sk:6,0 bec:7,0 frtl:6,5 netl:1,2 entl:4,3', 'avg': None, 
+                    'result': 'Gemiddeld CE-cijfer: 5,0 (35,1/7) '}, 
+        'count': {'c3': 0, 'c4': 1, 'c5': 1, 'c6': 4, 'c7': 2, 'core4': 1, 'core5': 1}, 
+        'failed': {
+            'insuff': ['Culturele en artistieke vorming is onvoldoende.', 'Lichamelijke opvoeding is onvoldoende.'], 
+            'core45': '1 vier en 1 vijf in kernvakken.'}, 
+            'passed': {'cnt3457': '1 vier en 1 vijf, gemiddeld eindcijfer is 6,0'}, 
+            'result_index': 2}
+    """
+    has_failed = False
+
+    pece_dict = student_ep_dict['pece']
+    if logging_on:
+        logger.debug('     pece_dict' + str(pece_dict))
+
+    avg = pece_dict.get('avg')
+    if avg:
+        avg_str = str(avg)
+        avg_display = avg_str.replace('.', ',')
+        result_info = ''.join((str(_('Average CE grade')), str(_(' is ')), avg_display))
+        if logging_on:
+            logger.debug( 'avg_str' + str(avg_str))
+
+        avg_decimal_A = Decimal(avg_str)
+        if logging_on:
+            logger.debug( 'avg_decimal_A' + str(avg_decimal_A))
+        avg_55_B = Decimal('5.5')
+        # a.compare(b) == -1 means a < b
+        if avg_decimal_A.compare(avg_55_B) == -1:  # a.compare(b) == -1 means a < b
+            has_failed = True
+            result_info += str(_(', must be unrounded 5,5 or higher.'))
+        else:
+            result_info += '.'
+
+# - if has_failed: create dict with key 'failed' if it does not exist
+        if has_failed:
+            student_ep_dict['result_index'] = c.RESULT_FAILED
+            if 'failed' not in student_ep_dict:
+                student_ep_dict['failed'] = {}
+            failed_dict = student_ep_dict.get('failed')
+# - add key 'avgce55' with value 'result_info'
+            failed_dict['avgce55'] = result_info
+            if logging_on:
+                logger.debug('     result_info: ' + str(result_info))
+                logger.debug('     failed_dict: ' + str(failed_dict))
+        else:
+
+# - also add info to passed_dict
+            # - if not has_failed: create dict with key 'passed' if it does not exist
+            # note: student might have failed beacsuse of other rules
+            if 'passed' not in student_ep_dict:
+                student_ep_dict['passed'] = {}
+            passed_dict = student_ep_dict.get('passed')
+            # - add key 'avgce55' with value 'result_info'
+            passed_dict['avgce55'] = result_info
+            if logging_on:
+                logger.debug('     result_info: ' + str(result_info))
+                logger.debug('     passed_dict: ' + str(passed_dict))
+
+    if logging_on:
+        logger.debug(' >>> has_failed: ' + str(has_failed))
+        logger.debug(' >>> student_ep_dict: ' + str(student_ep_dict))
+
+    return has_failed
+# end of calc_passfailed_pece_avg_rule
+
+
+def calc_add_result_to_log(examperiod, student_ep_dict):  # PR2021-11-29
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_add_result_to_log  -----')
         logger.debug('student_ep_dict: ' + str(student_ep_dict))
@@ -2239,54 +2324,92 @@ def calc_add_result_to_log(examperiod, student_ep_dict):  # PR2021-11-29
 
     """
     # add result to combi_dict result: PR2021-11-29
-
     result_info_list = []
+    result_info_log_list = []
 
     if examperiod == 3:
-        result_info_list.append(
-            ('').join((str(_('Result')), ' ', str(_('after')), ' ', str(_('Re-examination 3rd period')).lower(), ':')))
+        result_str = ''.join((str(_('Result')), ' ', str(_('after')), ' ', str(_('Re-examination 3rd period')).lower(), ': '))
+        result_info_log_list.append(result_str)
     elif examperiod == 2:
-        result_info_list.append(('').join((str(_('Result')), ' ', str(_('after')), ' ', str(_('Re-examination')).lower(), ':')))
+        result_str = ''.join((str(_('Result')), ' ', str(_('after')), ' ', str(_('Re-examination')).lower(), ': '))
+        result_info_log_list.append(result_str)
     else:
-        result_info_list.append(('').join((str(_('Result')), ':')))
+        result_str = ''.join((str(_('Result')), ': '))
+        result_info_log_list.append(result_str)
 
     show_details = False
     result_index = student_ep_dict.get('result_index')
     if result_index == c.RESULT_WITHDRAWN:
-        result_info_list.append(('').join((c.STRING_SPACE_05, str(_('Withdrawn')).upper())))
+        result_str += str(_('Withdrawn')).upper()
+        result_info_list.append(result_str)
+        result_info_log_list.append(result_str)
     elif result_index == c.RESULT_NORESULT:
-        result_info_list.append(('').join((c.STRING_SPACE_05, str(_('No result')).upper())))
+        result_str += str(_('No result')).upper()
+        result_info_list.append(result_str)
+        result_info_log_list.append(result_str)
         noin_info_list = student_ep_dict.get('noin_info')
         if noin_info_list:
             for noin_info in noin_info_list:
-                result_info_list.append(('').join((c.STRING_SPACE_05, noin_info)))
+                result_info_list.append(noin_info)
+                result_info_log_list.append(''.join((c.STRING_SPACE_05, noin_info)))
     elif result_index == c.RESULT_FAILED:
         show_details = True
-        result_info_list.append(('').join((c.STRING_SPACE_05, str(_('Failed')).upper())))
+        result_str += str(_('Failed')).upper()
+        result_info_list.append(result_str)
+        result_info_log_list.append(result_str)
+
         fail_dict = student_ep_dict.get('failed')
         if fail_dict:
             cnt3457_dict = fail_dict.get('cnt3457')
             if cnt3457_dict:
-                result_info_list.append(''.join((c.STRING_SPACE_05, str(cnt3457_dict))))
+                result_info_list.append(str(cnt3457_dict))
+                result_info_log_list.append(''.join((c.STRING_SPACE_05, str(cnt3457_dict))))
 
-            core_dict = fail_dict.get('core')
-            if core_dict:
-                result_info_list.append(''.join((c.STRING_SPACE_05, str(core_dict))))
+            core45_dict = fail_dict.get('core45')
+            if core45_dict:
+                result_info_list.append(str(core45_dict))
+                result_info_log_list.append(''.join((c.STRING_SPACE_05, str(core45_dict))))
+
+            avgce55_dict = fail_dict.get('avgce55')
+            if avgce55_dict:
+                result_info_list.append(str(avgce55_dict))
+                result_info_log_list.append(''.join((c.STRING_SPACE_05, str(avgce55_dict))))
 
             insuff_list = fail_dict.get('insuff')
             if insuff_list:
                 # 'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 'Sectorwerkstuk is onvoldoende.']}
                 for info in insuff_list:
-                    result_info_list.append(''.join((c.STRING_SPACE_05, info)))
-    else:
+                    result_info_list.append(str(info))
+                    result_info_log_list.append(''.join((c.STRING_SPACE_05, info)))
+
+    elif result_index == c.RESULT_PASSED:
         show_details = True
-        result_info_list.append(('').join((c.STRING_SPACE_05, str(_('Passed')).upper())))
+        result_str += str(_('Passed')).upper()
+        result_info_list.append(result_str)
+        result_info_log_list.append(result_str)
+
+        passed_dict = student_ep_dict.get('passed')
+        if passed_dict:
+            cnt3457_dict = passed_dict.get('cnt3457')
+            if cnt3457_dict:
+                result_info_log_list.append(''.join((c.STRING_SPACE_05, str(cnt3457_dict))))
+            core45_dict = passed_dict.get('core45')
+            if core45_dict:
+                result_info_log_list.append(''.join((c.STRING_SPACE_05, str(core45_dict))))
+            avgce55_dict = passed_dict.get('avgce55')
+            if avgce55_dict:
+                result_info_log_list.append(''.join((c.STRING_SPACE_05, str(avgce55_dict))))
+            insuff_list = passed_dict.get('insuff')
+            if insuff_list:
+                # 'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 'Sectorwerkstuk is onvoldoende.']}
+                for info in insuff_list:
+                    result_info_log_list.append(''.join((c.STRING_SPACE_05, info)))
 
     if show_details:
 # - add line with combi grade
         combi_dict = student_ep_dict['combi']
         if 'result' in combi_dict:
-            result_info_list.append(('').join((c.STRING_SPACE_05, combi_dict['result'], '{' + combi_dict['info'][1:] + '}')))
+            result_info_log_list.append(('').join((c.STRING_SPACE_05, combi_dict['result'], '{' + combi_dict['info'][1:] + '}')))
 
 # - add line with final grade
         # final_sum_int is negative when grades have no input, therefore use: if final_sum_int > 0
@@ -2306,18 +2429,18 @@ def calc_add_result_to_log(examperiod, student_ep_dict):  # PR2021-11-29
         log_txt = ''.join((str(_('Average final grade')), ': ',
             final_rounded_str, ' (', final_sum_str, '/', final_count_str, ') ', '{' + final_info_str + '}'
         ))
-        result_info_list.append(('').join((c.STRING_SPACE_05, str(log_txt))))
+        result_info_log_list.append(('').join((c.STRING_SPACE_05, str(log_txt))))
 
 # - add line with average pece grade
         pece_dict = student_ep_dict.get('pece')
         if pece_dict:
             result_str = pece_dict['result'] if 'result' in pece_dict else ''
             info_str = pece_dict['info'][1:] if 'info' in pece_dict else ''
-            result_info_list.append(''.join((c.STRING_SPACE_05, result_str, '{' + info_str + '}')))
+            result_info_log_list.append(''.join((c.STRING_SPACE_05, result_str, '{' + info_str + '}')))
 
         if logging_on:
             logger.debug( 'log_txt: ' + str(log_txt))
-    return result_info_list
+    return result_info_list, result_info_log_list
 # - end of calc_add_result_to_log
 
 
@@ -2442,7 +2565,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     # TODO grades that are not published are only visible when 'same_school' (or not??)
     # also add grades of each period
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_students_with_grades_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
@@ -2650,7 +2773,9 @@ def get_scheme_dict(examyear, department):  # PR2021-11-28
     #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
     #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
 
-    sql_keys = {'ey_id': examyear.pk, 'dep_id': department.pk}
+    #PR2022-05-27 debug: must use examyear.code instead of examyear.pk, because it must include SXM schemeitems
+    # also use department.base_id instead of department.id
+    sql_keys = {'ey_code': examyear.code, 'db_id': department.base_id}
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
 
@@ -2664,9 +2789,10 @@ def get_scheme_dict(examyear, department):  # PR2021-11-28
 
         "FROM subjects_scheme AS scheme",
         "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
 
-        "WHERE dep.examyear_id = %(ey_id)s::INT",
-        "AND dep.id = %(dep_id)s::INT"
+        "WHERE ey.code = %(ey_code)s::INT",
+        "AND dep.base_id = %(db_id)s::INT"
         ]
 
     sql = ' '.join(sql_list)
@@ -2692,6 +2818,7 @@ def get_scheme_dict(examyear, department):  # PR2021-11-28
 def get_schemeitems_dict(examyear, department):  # PR2021-11-19
     # function collects all variables from schemeitem and depending tables
     # stores in dict per schemitem
+    #++++++++ this is the one that works +++++++++++++++++++++ PR2022-05-29
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -2705,7 +2832,9 @@ def get_schemeitems_dict(examyear, department):  # PR2021-11-19
     #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
     #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
 
-    sql_keys = {'ey_id': examyear.pk, 'dep_id': department.pk}
+    #PR2022-05-27 debug: must use examyear.code instead of examyear.pk, because it must include SXM schemeitems
+    # also use department.base_id instead of department.id
+    sql_keys = {'ey_code': examyear.code, 'db_id': department.base_id}
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
 
@@ -2725,6 +2854,7 @@ def get_schemeitems_dict(examyear, department):  # PR2021-11-19
         "FROM subjects_schemeitem AS si",
         "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
         "LEFT JOIN subjects_sector AS sct ON (lvl.id = scheme.sector_id)",
 
@@ -2733,8 +2863,8 @@ def get_schemeitems_dict(examyear, department):  # PR2021-11-19
         "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
         "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
 
-        "WHERE dep.examyear_id = %(ey_id)s::INT AND subj.examyear_id = %(ey_id)s::INT",
-        "AND dep.id = %(dep_id)s::INT"
+        "WHERE ey.code = %(ey_code)s::INT",
+        "AND dep.base_id = %(db_id)s::INT"
         ]
 
     sql = ' '.join(sql_list)

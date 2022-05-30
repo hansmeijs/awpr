@@ -1688,6 +1688,8 @@
         //console.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
+        // added for anouncemenets: key 'zzize' and 'btn_hide'
+        //  {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
 
         const el_container = document.getElementById("id_mod_message_container");
         if(el_container){
@@ -1703,7 +1705,8 @@
                 // used in page grade (for now)
                 let has_non_warning_msg = false;
 
-                let header_text = null
+                let header_text = null, max_size = "md";
+                let show_btn_dontshowagain = false;
                 //console.log("el_container", el_container)
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
@@ -1721,10 +1724,6 @@
                         if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
                     };
 
-        console.log("class_str", class_str)
-        console.log("header_text", header_text)
-        console.log("msg_dict.msg_html", msg_dict.msg_html)
-        //console.log("has_non_warning_msg", has_non_warning_msg)
                     if ("msg_html" in msg_dict && msg_dict.msg_html ) {
             // --- create div element with alert border for each message in messages
                         const el_border = document.createElement("div");
@@ -1735,7 +1734,27 @@
                         el_border.appendChild(el_div);
                         el_container.appendChild(el_border);
                     };
+
+        // set size of modal - used in anouncements
+                    // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+                    if (msg_dict.size === "lg") {
+                        max_size = "lg";
+                    };
+
+                    if (msg_dict.btn_hide){
+                        show_btn_dontshowagain = true;
+                    };
+
                 };
+    // set size of modal - used in anouncements
+                // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+                const el_mod_message_size = document.getElementById("id_mod_message_size")
+                add_or_remove_class(el_mod_message_size, "modal-lg", (max_size === "lg"), "modal-md");
+
+    // show btn 'Dont show again - used in anouncements
+                const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide")
+                add_or_remove_class(el_mod_message_btn_hide, cls_hide, !show_btn_dontshowagain)
+
         //console.log("!skip_warning_messages || has_non_warning_msg", !skip_warning_messages || has_non_warning_msg)
                 if (!skip_warning_messages || has_non_warning_msg ){
                     const el_header = document.getElementById("id_mod_message_header");
