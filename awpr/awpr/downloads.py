@@ -40,7 +40,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
     logging.disable(logging.NOTSET)  # logging.NOTSET re-enables logging
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ++++++++++++++++++++ DatalistDownloadView ++++++++++++++++++++ ')
@@ -389,7 +389,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----------------- download_setting ---------------------- ')
@@ -848,6 +848,7 @@ def download_setting(request_item_setting, user_lang, request):
                     base_id=saved_pk_int)
                 if level:
                     setting_dict['sel_level_abbrev'] = level.abbrev
+                    setting_dict['sel_level_name'] = level.name
 
             elif key_str == c.KEY_SEL_SCTBASE_PK:
                 sector = subj_mod.Sector.objects.get_or_none(
@@ -855,6 +856,7 @@ def download_setting(request_item_setting, user_lang, request):
                     base_id=saved_pk_int)
                 if sector:
                     setting_dict['sel_sector_abbrev'] = sector.abbrev
+                    setting_dict['sel_sector_name'] = sector.name
 
             elif key_str == c.KEY_SEL_CLUSTER_PK:
                 cluster = subj_mod.Cluster.objects.get_or_none(

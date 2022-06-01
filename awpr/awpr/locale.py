@@ -828,22 +828,26 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['You_must_submit_additional_ex1form'] = _('You must submit an additional %(ex)s form to delete it.') % {'ex': 'Ex1'}
 
         dict['MASS_info'] = {
-            'checking_studsubj': _('AWP is checking the subjects of the candidates'),
-            'subheader_approve': _('Selection of the subjects, that will be approved:'),
+            'subheader_approve_ex1': _('Selection of the subjects, that will be approved:'),
+            'subheader_approve_ex4': _('Selection of the re-examinations, that will be approved:'),
             'subheader_submit_ex1': _('An %(ex)s form with the following subjects will be submitted:') % {'ex': 'Ex1'},
+            'subheader_submit_ex4': _('An %(ex)s form with the following subjects will be submitted:') % {'ex': 'Ex4'},
 
-            'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
-            'approve_1': _('After the subjects are approved by the chairperson and secretary,'),
-            'approve_2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex1'},
+            #'approve_0': _("Click 'Check subjects' to check the selected subjects before approving."),
+            #'approve_1': _('After the subjects are approved by the chairperson and secretary,'),
+            #'approve_2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex1'},
 
-            'submit_0': _("Click 'Check subjects' to check the selected subjects before submitting."),
-            'submit_1': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected subjects.") % {'ex': 'Ex1'},
-            'submit_2': _("After the subjects are submitted, you can change them by submitting an additional %(ex)s form.") % {'ex': 'Ex1'},
+            #'submit_0': _("Click 'Check subjects' to check the selected subjects before submitting."),
+            #'submit_1': _("If the check is OK, click 'Submit %(ex)s form' to submit the selected subjects.") % {'ex': 'Ex1'},
+            #'submit_2': _("After the subjects are submitted, you can change them by submitting an additional %(ex)s form.") % {'ex': 'Ex1'},
 
-            'approving_studsubj': _('AWP is approving the subjects of the candidates'),
+            'checking_studsubj_ex1': _('AWP is checking the subjects of the candidates'),
+            'checking_studsubj_ex4': _('AWP is checking the re-examinations of the candidates'),
+            'approving_studsubj_ex1': _('AWP is approving the subjects of the candidates'),
+            'approving_studsubj_ex4': _('AWP is approving re-examinations of the candidates'),
             'requesting_verifcode': _('AWP is sending an email with the verification code'),
-            'creating_Ex1_form': _("AWP is creating the %(ex)s form") % {'ex': 'Ex1'},
-            'submit_ok_01': _("The Ex2A form is succesfully created."),
+            #'creating_Ex1_form': _("AWP is creating the %(ex)s form") % {'ex': 'Ex1'},
+            #'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
         dict['MExemptionYear_info'] = {
             'line_01': _('In 2020 and 2021 not all subjects had a central exam because of the Covid-pandemic.'),
@@ -1167,6 +1171,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit_Ex2'] = _('Submit Ex2')
         dict['Submit_Ex2A'] = _('Submit Ex2A')
 
+
+
         dict['Approve_grade'] = _('Approve grade')
         dict['Approve_grades'] = _('Approve grades')
         dict['Block_grade'] = _('Block grade')
@@ -1363,6 +1369,10 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Need_permission_of_inspectorate': _('It is only allowed to submit grades without value with the prior approval of the Inspectorate, or when the candidate has an exemption.'),
                                'Approved_different_function': _('You have approved this grade already in a different function.'),
                                'Approved_in_function_of': _('You have already approved this grade as '),
+                               'Score_not_entered': _('This score is not entered.'),
+                               'Grade_not_entered': _('This grade is not entered.'),
+                               'Dont_haveto_approve_blank_scores': _("You don't have to approve blank scores."),
+                               'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
                                'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
         }

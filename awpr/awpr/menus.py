@@ -283,8 +283,11 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
         menu_items = set_menu_items(sel_page, _class_bg_color, request)
 
-# ------- set no_access -------- PR2021-04-27 PR2021-07-03
-        no_access = ('permit_view' not in permit_list and 'permit_crud' not in permit_list)
+# ------- set no_access -------- PR2021-04-27 PR2021-07-03 PR2022-05-30
+        #  PR2022-05-30 only give no_access when user has no usergroups (commissioner could not log in
+        # was no_access = ('permit_view' not in permit_list and 'permit_crud' not in permit_list)
+
+        no_access = (not permit_list)
 
 # ------- set message -------- PR2021-03-25
         # messages block access to the page.

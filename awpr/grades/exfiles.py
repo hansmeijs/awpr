@@ -384,10 +384,12 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 @method_decorator([login_required], name='dispatch')
 class DownloadEx3View(View):  # PR2021-10-07
 
-    def get(self, request, list_str):
+    def get(self, request, list):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= DownloadEx3View ============= ')
+            if logging_on:
+                logger.debug('     list: ' + str(list))
 
         # TODO for uploading Exs with signatures:
         # - give each Ex3 a sequence, print under Ex3 in box
@@ -400,8 +402,8 @@ class DownloadEx3View(View):  # PR2021-10-07
 
         response = None
 
-        if request.user and request.user.country and request.user.schoolbase and list_str:
-            upload_dict = json.loads(list_str)
+        if request.user and request.user.country and request.user.schoolbase and list:
+            upload_dict = json.loads(list)
 
             req_user = request.user
 

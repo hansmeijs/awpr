@@ -269,25 +269,39 @@ def message_testsite():  #PR2022-01-12
 
     return awp_message
 
-def message_openargs():  #PR2022-05-28
+def message_openargs():  #PR2022-05-28 PR2022-06-01
     # check if selected examyear is the same as this examyear,
     # return warning when examyear is different from this_examyear
 
+    msg = ''.join(('<p><b>', str(_('Anouncement')).upper(), '</b><br>',
+        str(_('There were some issues with downloading the Ex forms.')), ' ',
+        str(_('Hopefully they are solved now.')),'  ', str(_('We apologize for the inconvenience.')),'</p><p>',
+        str(_('<b>How to submit the Ex4 form</b>')), '<br>',
+        str(_('Go to the page <i>Subjects</i> and click on the tab <i>Second exam period</i>.')),'<br>',
+        str(_('Click in the column <i>Re-examination</i> to select the re-examination subjects.')),'<br>',
+        str(_('Make sure the amount of re-examination does not exceed the maximum. AWP does not check this.')),'<br>',
+        str(_('Only the chairperson and secretary must approve the Ex4 form.')),'<br>',
+        str(_('Click <i>Submit Ex4 form</i> to submit the Ex4 form.')),'<br>',
+        str(_('Go to the page <i>Archive</i> to download the submitted form.'))
+    ))
+
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+    """
     msg = ''.join(('<b>', str(_('Anouncement')).upper(), '</b><br>',
-        str(_('The ETE will soon publish the cesuur and conversion tables of the practical exams.')),'<br>',
-        str(_('AWP will then automatically calculate the grades. They are shown in the column <i>CE grade</i> on the page <i>Grades</i>.')),'<br>',
+        str(_('The ETE has published the cesuur and conversion tables of the practical exams.')),'<br>',
+        str(_('AWP has automatically calculated the grades. They are shown in the column <i>CE grade</i> on the page <i>Grades</i>.')),'<br>',
         str(_('To download the conversion table, click the down array in the column <i>Download conversion table</i>.')),'<br><br>',
 # class='pb-0'><span class='man_underline'>Voorbeeld</span>
         str(_("For candidates whose exam was removed because of a mixture of blue and red 'minitoetsen':")),"<br>",
-
         str(_("AWP can only calculate the CE-grade of an ETE exam when an exam is selected in the page 'Exams'")), ' ',
         str(_("Therefore you must still select an exam in the page 'Exams'.")), "<br>",
         str(_('Since the cesuur for the blue and read version of an exam are the same, you can select either version.')), ' ',
         str(_("You must enter the score in the column 'CE-score' on the page 'Grades', not in the page 'Exams'.")),
     ))
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
+    """
 
 
 # ============ SUBJECTS

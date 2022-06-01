@@ -1,7 +1,4 @@
 # PR2018-09-02
-from datetime import datetime, timedelta
-from random import randint
-
 from django.contrib.auth.decorators import login_required
 
 from django.core.mail import send_mail
@@ -1412,6 +1409,8 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
                 logger.debug('upload_dict: ' + str(upload_dict))
             """
             upload_dict: {'table': 'grade', 'mode': 'submit_save', 'form': 'ex2', 'verificationcode': '', 'verificationkey': None, 'auth_index': 2, 'now_arr': [2022, 4, 18, 11, 21]}
+            upload_dict: {'table': 'studsubj', 'form': 'ex4', 'examperiod': 2, 'now_arr': [2022, 5, 31, 7, 29], 'mode': 'request_verif'}
+           
             """
 # - get permit
             has_permit = False
@@ -1482,12 +1481,16 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
                             template_str = 'send_verifcode_exform_email.html'
 
                         ex_form = ''
-                        if form =='ex1':
+                        if form == 'ex1':
                             ex_form = _('Ex1 form')
                         elif form =='ex2':
                             ex_form = _('Ex2 form')
                         elif form =='ex2a':
                             ex_form = _('Ex2A form')
+                        elif form =='ex4':
+                            ex_form = _('Ex4 form')
+                        elif form =='ex4ep3':
+                            ex_form = _('Ex4 form 3rd exam period')
                         message = render_to_string(template_str, {
                             'user': request.user,
                             'examyear': sel_examyear,
@@ -1548,13 +1551,13 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
 
 #####################################################################################
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
+class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-30
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= StudentsubjectApproveOrSubmitEx1View ============= ')
+            logger.debug(' ============= StudentsubjectApproveOrSubmitEx1Ex4View ============= ')
 
 # function sets auth and publish of studentsubject records of current department # PR2021-07-25
         update_wrap = {}
@@ -1613,6 +1616,15 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
                 sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                # TODO: get sel_examperiod as part from get_selected_ey_school_dep_from_usersetting
+                examperiod = upload_dict.get('examperiod')
+                prefix = 'reex3_' if examperiod == 3 else 'reex_' if examperiod == 2 else 'subj_'
+                form_name = 'ex4ep3' if examperiod == 3 else  'ex4' if examperiod == 2 else 'ex1'
+
+                if examperiod not in (1, 2, 3):
+                    msg_list.append(str(_('The exam period is not valid.')))
+
                 if len(msg_list):
                     msg_html = '<br>'.join(msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
@@ -1626,12 +1638,16 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                     is_test = True if mode in ('approve_test', 'submit_test') else False
 
                     if logging_on:
-                        logger.debug('upload_dict' + str(upload_dict))
-                        logger.debug('mode: ' + str(mode))
+                        logger.debug('upload_dict ' + str(upload_dict))
+                        logger.debug('mode:       ' + str(mode))
+                        logger.debug('examperiod: ' + str(examperiod))
+                        logger.debug('prefix:     ' + str(prefix))
+                        logger.debug('form_name:  ' + str(form_name))
 
 # - when mode = submit_submit: check verificationcode.
                     verification_is_ok = True
                     if is_submit and not is_test:
+                        upload_dict['form'] = form_name
                         verification_is_ok, verif_msg_html = subj_vw.check_verifcode_local(upload_dict, request)
                         if verif_msg_html:
                             msg_html = verif_msg_html
@@ -1663,7 +1679,15 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                         # TODO exclude published rows?? Yes, but count them when checking. You cannot approve or undo approve or submit when submitted
                         # when a subject is set 'tobedeleted', the published info is removed, to show up when submitted
                         crit = Q(student__school=sel_school) & \
-                               Q(student__department=sel_department)
+                               Q(student__department=sel_department) & \
+                               Q(tobedeleted=False) & \
+                               Q(student__tobedeleted=False)
+            # filter reex subjects when ex4 or ex4ep3
+                        if examperiod == 2:
+                            crit.add(Q(has_reex=True), crit.connector)
+                        elif examperiod == 3:
+                            crit.add(Q(has_reex03=True), crit.connector)
+
             # when submit: don't filter on level, sector, subject or cluster
                         if not is_submit:
                             if sel_lvlbase_pk:
@@ -1686,18 +1710,18 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                         studsubjects = stud_mod.Studentsubject.objects.filter(crit).order_by('schemeitem__subject__base__code', 'student__lastname', 'student__firstname')
 
                         count_dict = {'count': 0,
-                                    'student_count': 0,
-                                    'student_committed_count': 0,
-                                    'student_saved_count': 0,
-                                    'already_published': 0,
-                                    'double_approved': 0,
-                                    'committed': 0,
-                                    'saved': 0,
-                                    'saved_error': 0,
-                                    'reset': 0,
-                                    'already_approved': 0,
-                                    'auth_missing': 0,
-                                    'test_is_ok': False
+                                      'student_count': 0,
+                                      'student_committed_count': 0,
+                                      'student_saved_count': 0,
+                                      'already_published': 0,
+                                      'double_approved': 0,
+                                      'committed': 0,
+                                      'saved': 0,
+                                      'saved_error': 0,
+                                      'reset': 0,
+                                      'already_approved': 0,
+                                      'auth_missing': 0,
+                                      'test_is_ok': False
                                     }
                         if studsubjects is not None:
 
@@ -1709,12 +1733,12 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                             if is_submit and not is_test:
                                 now_arr = upload_dict.get('now_arr')
 
-                                published_instance = create_published_Ex1_instance(
+                                published_instance = create_published_Ex1_Ex4_instance(
                                     sel_school=sel_school,
                                     sel_department=sel_department,
-                                    sel_examperiod=1,
+                                    examperiod=examperiod,
                                     now_arr=now_arr,
-                                    request=request)  # PR2021-07-27
+                                    request=request)
                                 if published_instance:
                                     published_instance_pk = published_instance.pk
                                     published_instance_filename = published_instance.filename
@@ -1739,9 +1763,9 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                                     is_saved_error = False
 
                                     if is_approve:
-                                        is_committed, is_saved, is_saved_error = approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request)
+                                        is_committed, is_saved, is_saved_error = approve_studsubj(studsubj, requsr_auth, prefix, is_test, is_reset, count_dict, request)
                                     elif is_submit:
-                                        is_committed, is_saved, is_saved_error = submit_studsubj(studsubj, is_test, published_instance, count_dict, request)
+                                        is_committed, is_saved, is_saved_error = submit_studsubj(studsubj, prefix, is_test, published_instance, count_dict, request)
 
         # - add student_pk to student_pk_list, student_committed_list or student_saved_list
                                     # this is used to count the students in msg: '4 students with 39 subjects are added'
@@ -1782,28 +1806,38 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
                             update_wrap['approve_count_dict'] = count_dict
 
     # - create msg_html with info of rows
-                            msg_html = self.create_Ex1_msg_list(count_dict, requsr_auth, is_approve, is_test, published_instance_filename)
+                            msg_html = self.create_ex1_ex4_msg_list(
+                                count_dict=count_dict,
+                                requsr_auth=requsr_auth,
+                                is_approve=is_approve,
+                                is_test=is_test,
+                                examperiod=examperiod,
+                                published_instance_filename=published_instance_filename
+                            )
 
-# +++++ create Ex1 form
+# +++++ create Ex1 Ex4 form
                             if row_count:
                                 if is_submit and not is_test:
-                                    self.create_Ex1_form(
+                                    self.create_ex1_ex4_form(
                                         published_instance=published_instance,
                                         sel_examyear=sel_examyear,
                                         sel_school=sel_school,
                                         sel_department=sel_department,
+                                        examperiod=examperiod,
+                                        prefix=prefix,
                                         save_to_disk=True,
                                         request=request,
                                         user_lang=user_lang)
 
                     # - delete the 'tobedeleted' rows from StudSubject, only after submitting and no test!
-                                    self.delete_tobedeleted_from_studsubj(
-                                        published_instance=published_instance,
-                                        sel_examyear=sel_examyear,
-                                        sel_school=sel_school,
-                                        sel_department=sel_department,
-                                        request=request
-                                )
+                                    # TODO put back 'tobedeleted' functions
+                                    #self.delete_tobedeleted_from_studsubj(
+                                    #    published_instance=published_instance,
+                                    #    sel_examyear=sel_examyear,
+                                    #    sel_school=sel_school,
+                                    #    sel_department=sel_department,
+                                    #    request=request
+                                    #)
 
                                 if (studsubj_rows):
                                     update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
@@ -1844,10 +1878,10 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 # - end of  delete_tobedeleted_from_studsubj
 
 
-    def create_Ex1_msg_list(self, count_dict, requsr_auth, is_approve, is_test, published_instance_filename):
+    def create_ex1_ex4_msg_list(self, count_dict, requsr_auth, is_approve, is_test, examperiod, published_instance_filename):
         logging_on = False  # s.LOGGING_ON
         if logging_on:
-            logger.debug('  ----- create_Ex1_msg_list -----')
+            logger.debug('  ----- create_ex1_ex4_msg_list -----')
             logger.debug('count_dict: ' + str(count_dict))
             logger.debug('is_test: ' + str(is_test))
 
@@ -1894,33 +1928,37 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             else:
                 class_str = 'border_bg_transpaprent'
 
+        subjects_txt = _('subjects') if examperiod == 1 else _('re-examinations')
+        form_txt = _('Ex1') if examperiod == 1 else _('Ex4')
+
 # - create first line with 'The selection contains 4 candidates with 39 subjects'
         msg_list = ["<div class='p-2 ", class_str, "'>"]
         if is_test:
             msg_list.append(''.join(( "<p class='pb-2'>",
                         str(_("The selection contains %(stud)s with %(subj)s.") %
-                            {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(count)}),
+                            {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(examperiod, count)}),
                         '</p>')))
 
 # - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
         if is_test and committed < count:
             willbe_or_are_txt = pgettext_lazy('plural', 'will be') if is_test else _('are')
-            msg_list.append("<p class='pb-0'>" + str(_("The following subjects %(willbe)s skipped")
-                                                     % {'willbe': willbe_or_are_txt}) + ':</p><ul>')
+            msg_list.append("<p class='pb-0'>" + str(_("The following %(cpt)s %(willbe)s skipped")
+                                                     % {'cpt': subjects_txt, 'willbe': willbe_or_are_txt}) + ':</p><ul>')
             if already_published:
                 msg_list.append('<li>' + str(_("%(val)s already submitted") %
-                                             {'val': get_subjects_are_text(already_published)}) + ';</li>')
+                                             {'val': get_subjects_are_text(examperiod, already_published)}) + ';</li>')
             if auth_missing:
                 msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
-                                             {'subj': get_subjects_are_text(auth_missing)}) + ';</li>')
+                                             {'subj': get_subjects_are_text(examperiod, auth_missing)}) + ';</li>')
                 show_msg_first_approve_by_pres_secr = True
             if already_approved:
-                msg_list.append('<li>' + get_subjects_are_text(already_approved) + str(_(' already approved')) + ';</li>')
+                msg_list.append('<li>' + get_subjects_are_text(examperiod, already_approved) + str(_(' already approved')) + ';</li>')
             if double_approved:
                 other_function =  str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
-                msg_list.append(''.join(('<li>', get_subjects_are_text(double_approved),
+                caption = _('subject') if examperiod == 1 else _('re-examination')
+                msg_list.append(''.join(('<li>', get_subjects_are_text(examperiod, double_approved),
                                          str(_(' already approved by you as ')), other_function, '.<br>',
-                                str(_("You cannot approve a subject both as chairperson and as secretary.")), '</li>')))
+                                str(_("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {'cpt': caption} ), '</li>')))
             msg_list.append('</ul>')
 
 # - line with text how many subjects will be approved / submitted
@@ -1928,10 +1966,11 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
         if is_test:
             if is_approve:
                 if not committed:
-                    msg_str = _("No subjects will be approved.")
+                    msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
+
                 else:
                     student_count_txt = get_student_count_text(student_committed_count)
-                    subject_count_txt = get_subject_count_text(committed)
+                    subject_count_txt = get_subject_count_text(examperiod, committed)
                     will_be_text = get_will_be_text(committed)
                     approve_txt = _('approved.')
                     msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
@@ -1939,21 +1978,21 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
             else:
                 if not committed:
                     if is_approve:
-                        msg_str = _("No subjects will be approved.")
+                        msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
                     else:
-                        msg_str = _("The Ex1 form can not be submitted.")
+                        msg_str = _("The %(frm)s form can not be submitted.") % {'frm': form_txt}
                 else:
                     student_count_txt = get_student_count_text(student_committed_count)
-                    subject_count_txt = get_subject_count_text(committed)
+                    subject_count_txt = get_subject_count_text(examperiod, committed)
                     will_be_text = get_will_be_text(committed)
-                    approve_txt = _('approved.') if is_approve else _('added to the Ex1 form.')
+                    approve_txt = _('approved.') if is_approve else _('added to the %(frm)s form.') % {'frm': form_txt}
                     msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
                                         str(will_be_text), str(approve_txt)))
         else:
             student_count_txt = get_student_count_text(student_saved_count)
-            subject_count_txt = get_subject_count_text(saved)
+            subject_count_txt = get_subject_count_text(examperiod, saved)
             student_saved_error_count_txt = get_student_count_text(student_saved_error_count)
-            subject_error_count_txt = get_subject_count_text(saved_error)
+            subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
 
 # - line with text how many subjects have been approved / submitted
             if is_approve:
@@ -1977,14 +2016,14 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
             else:
                 not_str = '' if saved else str(_('not')) + ' '
-                msg_str = str(_("The Ex1 form has %(not)s been submitted.") % {'not': not_str})
+                msg_str = str(_("The %(frm)s form has %(not)s been submitted.") % {'frm': form_txt, 'not': not_str})
                 if saved:
                     student_count_txt = get_student_count_text(student_saved_count)
-                    subject_count_txt = get_subject_count_text(saved)
+                    subject_count_txt = get_subject_count_text(examperiod, saved)
                     file_name = published_instance_filename if published_instance_filename else '---'
                     msg_str += ''.join(('<br>',
                         str(_("It contains %(subj)s of %(stud)s.") % {'stud': student_count_txt, 'subj': subject_count_txt}),
-                        '<br>', str(_("The %(cpt)s form has been saved as '%(val)s'.") % {'cpt': 'Ex1', 'val': file_name}),
+                        '<br>', str(_("The %(frm)s form has been saved as '%(val)s'.") % {'frm': form_txt, 'val': file_name}),
                         '<br>', str(_("Go to the page 'Archive' to download the file."))
                     ))
 
@@ -1993,54 +2032,72 @@ class StudentsubjectApproveOrSubmitEx1View(View):  # PR2021-07-26
 
 # - warning if any subjects are not fully approved
         if show_warning_msg and not is_approve:
-            msg_list.append("<p class='pt-2'><b>")
+            msg_list.append("<div class='pt-2'><b>")
             msg_list.append(str(_('WARNING')))
-            msg_list.append(':</b> ')
+            msg_list.append(':</b><br>')
             msg_list.append(str(_('There are subjects that are not fully approved.')))
             msg_list.append(' ')
-            msg_list.append(str(_('They will not be included in the Ex1 form.')))
+            msg_list.append(str(_('They will not be included in the %(frm)s form.') % {'frm': form_txt}))
             msg_list.append(' ')
-            msg_list.append(str(_('Are you sure you want to submit the Ex1 form?')))
-            msg_list.append('</p>')
+            msg_list.append(str(_('Are you sure you want to submit the %(frm)s form?') % {'frm': form_txt}))
+            msg_list.append('</div>')
 
 # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
         if show_msg_first_approve_by_pres_secr:
-            msg_txt = ''.join(('<p>', str(_('The chairperson and the secretary must approve all subjects before you can submit the Ex1 form.')), '</p>'))
+            msg_txt = ''.join(('<div>', str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') % {'cpt': subjects_txt, 'frm': form_txt}   ), '</div>'))
             msg_list.append(msg_txt)
 
         msg_list.append('</div>')
 
         msg_html = ''.join(msg_list)
         return msg_html
-# - end of create_Ex1_msg_list
+# - end of create_ex1_ex4_msg_list
 
 
-    def create_Ex1_form(self, published_instance, sel_examyear, sel_school, sel_department, save_to_disk, request, user_lang):
+    def create_ex1_ex4_form(self, published_instance, sel_examyear, sel_school, sel_department,
+                                    examperiod, prefix, save_to_disk, request, user_lang):
         #PR2021-07-27 PR2021-08-14
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= create_Ex1_form ============= ')
-
-# get text from examyearsetting
-        settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
-        #if logging_on:
-        #    logger.debug('settings: ' + str(settings))
+            logger.debug(' ============= create_ex1_ex4_form ============= ')
+            logger.debug('examperiod: ' + str(examperiod))
+            logger.debug('save_to_disk: ' + str(save_to_disk))
 
 # +++ create Ex1 xlsx file
-        grd_exc.create_ex1_xlsx(
-            published_instance=published_instance,
-            examyear=sel_examyear,
-            school=sel_school,
-            department=sel_department,
-            settings=settings,
-            save_to_disk=save_to_disk,
-            request=request,
-            user_lang=user_lang)
-    # - end of create_Ex1_form
+        if examperiod == 1:
 
+            # get text from examyearsetting
+            settings = awpr_lib.get_library(sel_examyear, ['exform', 'ex1'])
+            # if logging_on:
+            #    logger.debug('settings: ' + str(settings))
 
-# --- end of StudentsubjectApproveOrSubmitEx1View
+            grd_exc.create_ex1_xlsx(
+                published_instance=published_instance,
+                examyear=sel_examyear,
+                school=sel_school,
+                department=sel_department,
+                examperiod=examperiod,
+                prefix=prefix,
+                settings=settings,
+                save_to_disk=save_to_disk,
+                request=request,
+                user_lang=user_lang)
+
+        elif examperiod in (2, 3):
+            grd_exc.create_ex4_xlsx(
+                published_instance=published_instance,
+                examyear=sel_examyear,
+                school=sel_school,
+                department=sel_department,
+                examperiod=examperiod,
+                prefix=prefix,
+                save_to_disk=save_to_disk,
+                request=request,
+                user_lang=user_lang)
+    # - end of create_ex1_ex4_form
+
+# --- end of StudentsubjectApproveOrSubmitEx1Ex4View
 
 
 #################################################################################
@@ -2208,32 +2265,38 @@ def get_will_be_text(count):
         msg_text = pgettext_lazy('plural', 'will be')
     return msg_text
 
-def get_subject_count_text(count):
+
+def get_subject_count_text(examperiod, count):
     if not count:
-        msg_text = str(_('no subjects'))
+        msg_text = str(_('no subjects')) if examperiod == 1 else str(_('no re-examinations'))
     elif count == 1:
-        msg_text = str(_('1 subject'))
+        msg_text = str(_('1 subject'))  if examperiod == 1 else str(_('1 re-examination'))
     else:
-        msg_text = ' '.join((str(count), str(_('subjects'))))
+        subjects_txt = str(_('subjects')) if examperiod == 1 else str(_('re-examinations'))
+        msg_text = ' '.join((str(count), subjects_txt))
     return msg_text
 
 
-def get_subjects_are_text(count):
+def get_subjects_are_text(examperiod, count):
     if not count:
-        msg_text = str(_('no subjects are'))
+        msg_text = str(_('no subjects are')) if examperiod == 1 else str(_('no re-examinations are'))
     elif count == 1:
-        msg_text = str(_('1 subject is'))
+        msg_text = str(_('1 subject is')) if examperiod == 1 else str(_('1 re-examination is'))
     else:
-        msg_text = str(count) + str(_(' subjects are'))
+        subjects_txt = str(_('subjects are')) if examperiod == 1 else str(_('re-examinations are'))
+        msg_text = ' '.join((str(count), subjects_txt))
     return msg_text
 
-def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, request):
-    # PR2021-07-26
+
+def approve_studsubj(studsubj, requsr_auth, prefix, is_test, is_reset, count_dict, request):
+    # PR2021-07-26 PR2022-05-30
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
+    #  prefix = 'reex3_'  'reex_'  'subj_'
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_studsubj -----')
         logger.debug('requsr_auth:  ' + str(requsr_auth))
+        logger.debug('prefix:  ' + str(prefix))
         logger.debug('is_reset:     ' + str(is_reset))
 
     is_committed = False
@@ -2243,18 +2306,18 @@ def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, reque
         req_user = request.user
 
 # - skip if this studsubj is already published
-        published = getattr(studsubj, 'subj_published')
+        published = getattr(studsubj, prefix + 'published')
         if logging_on:
             logger.debug('published:    ' + str(published))
 
         if published:
             count_dict['already_published'] += 1
         else:
-            requsr_authby_field = 'subj_' + requsr_auth + 'by'
+            requsr_authby_field = prefix + requsr_auth + 'by'
 
 # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
-            auth1by = getattr(studsubj, 'subj_auth1by')
-            auth2by = getattr(studsubj, 'subj_auth2by')
+            auth1by = getattr(studsubj, prefix +'auth1by')
+            auth2by = getattr(studsubj, prefix +'auth2by')
             if logging_on:
                 logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
                 logger.debug('auth1by:      ' + str(auth1by))
@@ -2322,10 +2385,12 @@ def approve_studsubj(studsubj, requsr_auth, is_test, is_reset, count_dict, reque
 # - end of approve_studsubj
 
 
-def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):  # PR2021-01-21 PR2021-07-27
-    logging_on = False  # s.LOGGING_ON
+def submit_studsubj(studsubj, prefix, is_test, published_instance, count_dict, request):
+    # PR2021-01-21 PR2021-07-27 PR2022-05-30
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- submit_studsubj -----')
+        logger.debug('     prefix: ' + str(prefix))
 
     is_committed = False
     is_saved = False
@@ -2334,16 +2399,17 @@ def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):
     if studsubj:
 
 # - check if this studsubj is already published
-        published = getattr(studsubj, 'subj_published')
+        published = getattr(studsubj, prefix + 'published')
         if logging_on:
-            logger.debug('subj_published: ' + str(published))
+            logger.debug('     subj_published: ' + str(published))
+
         if published:
             count_dict['already_published'] += 1
         else:
 
 # - check if this studsubj / examtype is approved by all auth
-            auth1by = getattr(studsubj, 'subj_auth1by')
-            auth2by = getattr(studsubj, 'subj_auth2by')
+            auth1by = getattr(studsubj, prefix + 'auth1by')
+            auth2by = getattr(studsubj, prefix + 'auth2by')
             auth_missing = auth1by is None or auth2by is None
             if logging_on:
                 logger.debug('auth1by: ' + str(auth1by))
@@ -2367,7 +2433,7 @@ def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):
 
                         try:
 # - put published_id in field subj_published
-                            setattr(studsubj, 'subj_published', published_instance)
+                            setattr(studsubj, prefix + 'published', published_instance)
 # - save changes
                             studsubj.save(request=request)
                             is_saved = True
@@ -2381,11 +2447,11 @@ def submit_studsubj(studsubj, is_test, published_instance, count_dict, request):
 # - end of submit_studsubj
 
 
-def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, now_arr, request):  # PR2021-07-27
+def create_published_Ex1_Ex4_instance(sel_school, sel_department, examperiod, now_arr, request):  # PR2021-07-27
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----- create_published_Ex1_instance -----')
-        logger.debug('request.user: ' + str(request.user))
+        logger.debug('----- create_published_Ex1_Ex4_instance -----')
+        logger.debug('     request.user: ' + str(request.user))
 
     # create new published_instance and save it when it is not a test (this function is only called when it is not a test)
     # filename is added after creating file in create_ex1_xlsx
@@ -2395,17 +2461,8 @@ def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, no
 
     # to be used when submitting Ex4 form
     examtype_caption = ''
-    exform = 'Ex1'
-    if sel_examperiod == 1:
-        examtype_caption = 'tv1'
-    if sel_examperiod == 2:
-        examtype_caption = 'tv2'
-        exform = 'Ex4'
-    elif sel_examperiod == 3:
-        examtype_caption = 'tv3'
-        exform = 'Ex4'
-    elif sel_examperiod == 4:
-        examtype_caption = 'vrst'
+    exform = 'Ex4 3e tijdvak' if examperiod == 3 else 'Ex4' if examperiod == 2 else 'Ex1' if examperiod == 1 else '-'
+    examtype_caption = 'tv3' if examperiod == 3 else 'tv2' if examperiod == 2 else 'tv1' if examperiod == 1 else '-'
 
     today_date = af.get_date_from_arr(now_arr)
 
@@ -2428,7 +2485,7 @@ def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, no
         school=sel_school,
         department=sel_department,
         examtype=None,
-        examperiod=sel_examperiod,
+        examperiod=examperiod,
         name=file_name,
         datepublished=today_date,
         modifiedat=timezone.now,
@@ -2441,13 +2498,11 @@ def create_published_Ex1_instance(sel_school, sel_department, sel_examperiod, no
     published_instance.save(request=request)
 
     if logging_on:
-        logger.debug(' request.user: ' + str(request.user))
-        logger.debug('published_instance.saved: ' + str(published_instance))
-        logger.debug('published_instance.pk: ' + str(published_instance.pk))
-        logger.debug('published_instance.modifiedby: ' + str(published_instance.modifiedby))
+        logger.debug('     published_instance.saved: ' + str(published_instance))
+        logger.debug('     published_instance.pk: ' + str(published_instance.pk))
 
     return published_instance
-# - end of create_published_Ex1_instance
+# - end of create_published_Ex1_Ex4_instance
 
 
 #################################################################################
@@ -3564,7 +3619,7 @@ def get_se_sr_pe_from_grade_ep1(studentsubject):  # PR2021-12-25 PR2022-05-29
     if grades_first_period:
         for row in grades_first_period:
             if logging_on:
-                logger.error('row: ' + str(row))
+                logger.debug('row: ' + str(row))
 
             if not found:
                 found = True
@@ -3585,9 +3640,9 @@ def get_se_sr_pe_from_grade_ep1(studentsubject):  # PR2021-12-25 PR2022-05-29
         pegrade = grade_first_period.get('pegrade')
 
     if logging_on:
-        logger.error(' >>> segrade: ' + str(segrade))
-        logger.error(' >>> srgrade: ' + str(srgrade))
-        logger.error(' >>> pegrade: ' + str(pegrade))
+        logger.debug(' >>> segrade: ' + str(segrade))
+        logger.debug(' >>> srgrade: ' + str(srgrade))
+        logger.debug(' >>> pegrade: ' + str(pegrade))
 
     return found, segrade, srgrade, pegrade
 # - end of put_se_sr_pe_from_ep1_in_grade_reex_nosave

@@ -151,6 +151,7 @@ def update_library(examyear, request):
         ('ex3', 'backfooter_01', 'In elk lokaal dienen twee toezichthouders aanwezig te zijn. Elk moment dient derhalve door 2 handtekeningen gedekt te zijn.'),
 
         ('ex4', 'ex4_title', 'Lijst van kandidaten voor het herexamen.'),
+        ('ex4', 'ex4_title_reex03', 'Lijst van kandidaten voor het herexamen derde tijdvak.'),
        # ('ex4', 'ex4_title_corona', 'Lijst van kandidaten voor herkansing.'),
         ('ex4', 'ex4_eex_article', '(Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
         ('ex4', 'ex4_lex_article', '(Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
@@ -161,6 +162,8 @@ def update_library(examyear, request):
         ('ex4', 'ex4_footer02', 'Ex. nr. en naam dienen in overeenstemming te zijn met formulier EX.1.'),
         ('ex4', 'ex4_verhinderd_header01', 'Kandidaten die om een geldige reden verhinderd waren het examen te voltooien.'),
         ('ex4', 'ex4_verhinderd_header02', '(Voortzetting schoolexamen aangeven met s en centraal examen met c).'),
+        ('ex4', 'ex4_verhinderd_header03', 'Naam en voorletters van de kandidaat'),
+
 
         ('ex5', 'ex5_title', 'Verzamellijst van cijfers.'),
         ('ex5', 'eex_inzenden', 'Inzenden binnen één week na de uitslag en na afloop van de herkansing, het ondertekend exemplaar inzenden naar de Onderwijs Inspectie en digitaal naar de Onderwijs Inspectie en het ETE.'),

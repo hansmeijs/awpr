@@ -247,7 +247,7 @@ urlpatterns = [
         path('studsubj_multiple_occurrences', student_views.StudentsubjectMultipleOccurrencesView.as_view(), name='url_studsubj_multiple_occurrences'),
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
-        path('studsubj_approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1View.as_view(), name='url_studsubj_approve_submit_multiple'),
+        path('studsubj_approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1Ex4View.as_view(), name='url_studsubj_approve_submit_multiple'),
         path('send_email_verifcode', student_views.SendEmailSubmitExformView.as_view(), name='url_send_email_verifcode'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
@@ -273,7 +273,7 @@ urlpatterns = [
         path('approve', grade_views.GradeApproveView.as_view(), name='url_grade_approve'),
         path('block', grade_views.GradeBlockView.as_view(), name='url_grade_block'),
 
-        path('submit_ex2', grade_views.GradeSubmitEx2View.as_view(), name='url_grade_submit_ex2'),
+        path('submit_ex2', grade_views.GradeSubmitEx2Ex2AView.as_view(), name='url_grade_submit_ex2'),
 
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
         path('download_ex2', grade_excel.GradeDownloadEx2View.as_view(), name='url_grade_download_ex2'),

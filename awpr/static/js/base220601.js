@@ -1662,6 +1662,11 @@
         const el_msg_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
         if(el_msg_btn_cancel){set_focus_on_el_with_timeout(el_msg_btn_cancel, 150 )};
 
+
+    // hide btn 'Dont show again - used in anouncements - anouncements use b_show_mod_message_dictlist PR2022-06-01
+        const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
+        add_or_remove_class(el_mod_message_btn_hide, cls_hide, true);
+
         $("#id_mod_message").modal({backdrop: false});
 
         /*
@@ -1752,8 +1757,8 @@
                 add_or_remove_class(el_mod_message_size, "modal-lg", (max_size === "lg"), "modal-md");
 
     // show btn 'Dont show again - used in anouncements
-                const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide")
-                add_or_remove_class(el_mod_message_btn_hide, cls_hide, !show_btn_dontshowagain)
+                const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
+                add_or_remove_class(el_mod_message_btn_hide, cls_hide, !show_btn_dontshowagain);
 
         //console.log("!skip_warning_messages || has_non_warning_msg", !skip_warning_messages || has_non_warning_msg)
                 if (!skip_warning_messages || has_non_warning_msg ){

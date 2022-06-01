@@ -6160,7 +6160,7 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
         if (step === 0) {
             // step 0: when form opens and request to check is sent to server
             // tekst: 'The subjects of the candidates are checked'
-            msg_info_txt = loc.MASE_info.checking_studsubj;
+            msg_info_txt = loc.MASE_info.checking_studsubj_ex1;
             show_loader = true;
         } else {
             if(mod_MASE_dict.is_approve_mode){

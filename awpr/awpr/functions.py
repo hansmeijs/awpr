@@ -114,7 +114,7 @@ def send_email_verifcode(formname, email_template, request, sel_examyear, sel_sc
 
 
 def create_verificationcode(formname, request):  # PR2022-02-04
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- create_verificationcode -----')
 
@@ -1219,6 +1219,7 @@ def system_updates(examyear, request):
     # PR2021-03-26 run this always to update text in ex-forms
     awpr_lib.update_library(examyear, request)
 
+
 # PR 2022-05-28 one time function to set rule_avg_pece_sufficient = TRUE, rule_core_notatevlex = FALSE
     # for all departments SXM and CUR departments Havo/Vwo
     set_ce_avg_rule(request)
@@ -1276,6 +1277,40 @@ def system_updates(examyear, request):
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
+
+
+def reset_show_msg(request):
+    # PR 2022-06-01 function resets open_args
+    # called by Loggedin, to rest before setting is retrieved
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- reset_show_msg -------')
+    try:
+        name = 'reset_show_msg'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            # reset values
+            sql = "DELETE FROM accounts_usersetting WHERE key='open_args'"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -end of reset_show_msg
+
+
 
 def set_ce_avg_rule(request):
     # PR 2022-05-28 one time function to set rule_avg_pece_sufficient = TRUE, rule_core_notatevlex = FALSE

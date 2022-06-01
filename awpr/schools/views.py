@@ -105,6 +105,9 @@ def Loggedin(request):
         if sel_page_dict is not None:
             sel_page = sel_page_dict.get('page')
 
+# ----- reset show_msg if necessary PR2022-06-01
+        af.reset_show_msg(request)
+
 # ----- display opening message ------ PR2022-05-28
         usersetting_dict = acc_view.get_usersetting_dict(c.KEY_OPENARGS, request)
         # skip displaying opening message when user has ticked off 'Dont show message again'

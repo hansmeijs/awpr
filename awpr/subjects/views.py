@@ -2259,9 +2259,11 @@ class ExamApproveOrSubmitGradeExamView(View):
 
                     if logging_on:
                         logger.debug('     sel_examyear:        ' + str(sel_examyear))
-                        logger.debug('     sel_school:          ' + str(sel_school))
-                        logger.debug('     sel_department:      ' + str(sel_department))
-                        logger.debug('     req_usr.schoolbase:  ' + str(req_usr.schoolbase))
+                        logger.debug('     sel_school:          ' + str(sel_school.name))
+                        logger.debug('     sel_school.pk:          ' + str(sel_school.id))
+                        logger.debug('     sel_department:      ' + str(sel_department.name))
+                        logger.debug('     sel_department.pk:   ' + str(sel_department.pk))
+                        logger.debug('     req_usr.schoolbase:  ' + str(req_usr.schoolbase.code))
                         logger.debug('     is_role_same_school: ' + str(is_role_same_school))
 
 # - get selected examperiod from usersetting
@@ -3072,11 +3074,22 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 
 def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_examperiod,
                                   sel_lvlbase_pk=None, sel_subjbase_pk=None, sel_cluster_pk=None):
-    # PR2022-04-25
+    # PR2022-04-25 PR2022-06-01
     # approving single grade_exam happens in UploadGrade
-    logging_on = False  # s.LOGGING_ON
+    logging_on = False # s.LOGGING_ON
     if logging_on:
-        logger.debug('  ----- get_approve_grade_exam_rows -----')
+        logger.debug('  ?????????? ----- get_approve_grade_exam_rows -----')
+        logger.debug('     sel_examperiod: ' + str(sel_examperiod))
+        logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+        logger.debug('     sel_subjbase_pk: ' + str(sel_subjbase_pk))
+        logger.debug('     sel_cluster_pk: ' + str(sel_cluster_pk))
+
+        logger.debug('     sel_examyear:        ' + str(sel_examyear))
+        logger.debug('     sel_school:          ' + str(sel_school.name))
+        logger.debug('     sel_school.pk:          ' + str(sel_school.id))
+        logger.debug('     sel_department:      ' + str(sel_department.name))
+        logger.debug('     sel_department.pk:   ' + str(sel_department.pk))
+
 
     # Note: exams must also be assigned to students of SXM. Therefore don't filter on examyer.pk but on examyear.code
     # it doesnt matter here because it doesnt filter on exam
@@ -3100,7 +3113,8 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_ex
                 "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                 "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
-                "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+                #PR2022-06-01 debug: was INNER JOIN subjects_levelbase, returns no rows in Havo/Vwo
+                "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
                 "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
                 "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
@@ -3136,6 +3150,7 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_ex
 
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
+        logger.debug('sql: ' + str(sql))
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
@@ -3143,8 +3158,11 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_ex
 
         if logging_on:
             logger.debug('len grade_exam_row: ' + str(len(grade_exam_rows)))
-            for row in grade_exam_rows:
-                logger.debug(str(row))
+            for conn_query in connection.queries:
+                logger.debug('conn_query: ' + str(conn_query))
+
+            #for row in grade_exam_rows:
+            #    logger.debug(str(row))
     return grade_exam_rows
 # end of get_approve_grade_exam_rows
 
@@ -7512,8 +7530,7 @@ def check_verifcode_local(upload_dict, request ):
         if saved_dict:
     # - check if code is expired:
             saved_expirationtime = saved_dict.get('expirationtime')
-            if logging_on:
-                logger.debug('saved_expirationtime: ' + str(saved_expirationtime))
+
             # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
             now_iso = datetime.now().isoformat()
             if logging_on:
