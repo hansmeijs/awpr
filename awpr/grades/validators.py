@@ -705,16 +705,17 @@ def validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dic
     if not error_list:
 
         is_se = (examgradetype in ('exemsegrade', 'segrade', 'srgrade'))
-        se_ce_cpt = 'SE' if is_se else 'CE'
-        grade_score_cpt = _('score') if 'score' in examgradetype else _('grade')
-
         weight_se = si_dict.get('weight_se', 0)
         weight_ce = si_dict.get('weight_ce', 0)
 
         if (is_se and not weight_se) or (not is_se and not weight_ce):
             # PR2022-01-02 debug: make it possible to delete grade, even when weight = 0, just in case it is necessary
                 if input_value:
-                    error_list.append(str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': se_ce_cpt}))
+                    se_ce_cpt = str(_('School exam') if is_se else _('Central exam')).lower()
+                    grade_score_cpt = _('score') if 'score' in examgradetype else _('grade')
+
+                    #error_list.append(str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': se_ce_cpt}))
+                    error_list.append(str(_('This subject has no %(cpt)s.') % {'cpt': se_ce_cpt}))
                     error_list.append(str(_('You cannot enter a %(item_str)s.') % {'item_str': grade_score_cpt}))
 
     if logging_on:

@@ -9,7 +9,6 @@ from awpr import settings as s
 from awpr import functions as af
 
 from grades import calculations as grade_calc
-from grades import calc_score as calc_score
 from grades import calc_finalgrade as calc_final
 from grades import calc_results as calc_result
 import logging
@@ -154,10 +153,11 @@ def calc_grade_from_score(score_int, scalelength_int , nterm_str , cesuur_int, i
     return grade, err_txt
 
 
-def calc_grade_from_score_wrap(examyear, si_dict, row):
+def calc_grade_from_score_wrap(department, si_dict, row):
     # - calc ce_grade from score
     # only when weight_ce > 0, not no_centralexam, ep not exemption, no secret_exam
     # when exemption or secret_exam the ce_grade is entered, not calculated
+
     #++++++++ this is the one that works +++++++++++++++++++++ PR2022-05-29
 
     logging_on = False  # s.LOGGING_ON
@@ -168,9 +168,10 @@ def calc_grade_from_score_wrap(examyear, si_dict, row):
         logger.debug('     row:      ' + str(row))
 
     ce_grade = None
-
 # - ce_grade = None when no_centralexam or weight_ce = 0
-    if not examyear.no_centralexam and si_dict.get('weight_ce'):
+
+    has_centralexam = department and not department.examyear.no_centralexam and si_dict.get('weight_ce')
+    if has_centralexam:
         is_secret_exam = row.get('secret_exam', False)
         examperiod = row.get('examperiod')
 
@@ -187,10 +188,11 @@ def calc_grade_from_score_wrap(examyear, si_dict, row):
 
 # - ce_grade is None when cescore is not published
     # WARNING: this one blocks cegrade when score is not published, may be too strict
-    # TODO enabled cescore_is_published
             cescore_is_published = True if row.get('ce_published_id') else False
             if logging_on:
                 logger.debug('     cescore_is_published: ' + str(cescore_is_published) + ' ' + str(type(cescore_is_published)))
+
+    # TODO enabled cescore_is_published
             # if cescore_is_published:
             if True:
 # - calculate ce_grade from ce_score
@@ -228,6 +230,7 @@ def calc_grade_from_score_wrap(examyear, si_dict, row):
                         if logging_on:
                             logger.debug('     nterm_str: ' + str(nterm_str) + ' ' + str(type(nterm_str)))
 
+                        # DUO exams don't have to be published
                         if nterm_str:
                             ce_score = row.get('cescore')
                             score_int = int(ce_score) if ce_score is not None else None
@@ -435,7 +438,7 @@ def calc_grade_from_score_duo(score_int, scalelength_int, nterm_str):
 
 
 def create_gradelist_for_score_calc(exam_pk):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_gradelist_for_score_calc --- ')
         logger.debug('    exam_pk: ' + str(exam_pk))
@@ -642,38 +645,19 @@ def get_nterm_number_from_input_str(input_str):
 # - end of get_nterm_number_from_input_str
 
 
-def batch_update_cegrade_from_score(sel_examyear, sel_department, grade_pk_list=None, student_pk_list=None):
-    #PR2022-05-28
-    # called by CalcResultsView
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- batch_update_cegrade_from_score -----')
-        logger.debug('     grade_pk_list:    ' + str(grade_pk_list))
-        logger.debug('     student_pk_list:    ' + str(student_pk_list))
-
-    updated_cegrade_count = 0
-    updated_cegrade_list = []
-    updated_student_pk_list = []
-
-
-            #except Exception as e:
-            #    logger.error(getattr(e, 'message', str(e)))
-
-    if logging_on:
-        logger.debug(' >>> updated_cegrade_count:    ' + str(updated_cegrade_count))
-        logger.debug(' >>> updated_cegrade_list:    ' + str(updated_cegrade_list))
-
-    return updated_cegrade_count, updated_cegrade_list
-# - end of batch_update_cegrade_from_score
-
-
-def batch_update_finalgrade(sel_examyear, sel_department, exam_pk=None, grade_pk_list=None, student_pk_list=None):
-    #PR2022-05-25
+def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_list=None, student_pk_list=None):
+    #PR2022-05-25 PR2022-06-03
     # called by calc_cegrade_from_exam_score and CalcResultsView
+
     #++++++++ this is the one that works +++++++++++++++++++++ PR2022-05-29
+    # function calculates cegrade from score, or gets cegrade from row when exemption or secret_exam
+    # - calculates sesrgrade, pecegrade and final grade
+    # - and puts it in returnvalue updated_cegrade_list
+
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_update_finalgrade -----')
+        logger.debug('     exam_instance:    ' + str(exam_instance))
         logger.debug('     grade_pk_list:    ' + str(grade_pk_list))
         logger.debug('     student_pk_list:    ' + str(student_pk_list))
 
@@ -681,10 +665,11 @@ def batch_update_finalgrade(sel_examyear, sel_department, exam_pk=None, grade_pk
     updated_cegrade_list = []
     updated_student_pk_list = []
 
-    if exam_pk or grade_pk_list or student_pk_list:
+    if department_instance and (exam_instance or grade_pk_list or student_pk_list):
 
 # - get rows of all grades that must be calculated
-        sql_keys = {}
+        # retrieve id and fields necessary to calculate final grade
+        sql_keys = {'depbase_pk': department_instance.base.pk}
         sql_list = [
             "SELECT grd.id, grd.examperiod, grd.segrade, grd.srgrade, grd.pescore, grd.cescore, grd.pegrade, grd.cegrade,",
             "grd.ce_published_id,",
@@ -693,15 +678,20 @@ def batch_update_finalgrade(sel_examyear, sel_department, exam_pk=None, grade_pk
 
             "FROM students_grade AS grd",
             "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+
             "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
             "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-            "WHERE NOT stud.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted"
+            "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+            "WHERE dep.base_id = %(depbase_pk)s::INT",
+            "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted"
         ]
 
-        if exam_pk:
-            sql_keys['exam_pk'] = exam_pk
+        if exam_instance:
+            sql_keys['exam_pk'] = exam_instance.pk
             sql_list.append("AND grd.ce_exam_id = %(exam_pk)s::INT")
-        elif grade_pk_list:
+
+        if grade_pk_list:
             sql_keys['grd_pk_arr'] = grade_pk_list
             sql_list.append("AND grd.id IN (SELECT UNNEST( %(grd_pk_arr)s::INT[]))")
         elif student_pk_list:
@@ -713,6 +703,8 @@ def batch_update_finalgrade(sel_examyear, sel_department, exam_pk=None, grade_pk
         if logging_on:
             logger.debug('     sql:    ' + str(sql))
 
+        rows = []
+
         try:
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
@@ -721,11 +713,16 @@ def batch_update_finalgrade(sel_examyear, sel_department, exam_pk=None, grade_pk
             logger.error(getattr(e, 'message', str(e)))
 
         if logging_on:
-            logger.debug('     rows:    ' + str(rows))
+            for cq in connection.queries:
+                if "SELECT grd.id" in cq:
+                    logger.debug('query: ' + str(cq))
+            #for row in rows:
+            #    logger.debug('     row:    ' + str(row))
+
         if rows:
 
 # - get_schemeitems_dict - of CUR and SXM
-            schemeitems_dict = calc_result.get_schemeitems_dict(sel_examyear, sel_department)
+            schemeitems_dict = calc_result.get_schemeitems_dict(department_instance.examyear, department_instance)
 
             try:
                 # do not change modby, it will give user of admin
@@ -750,10 +747,10 @@ def batch_update_finalgrade(sel_examyear, sel_department, exam_pk=None, grade_pk
                     si_dict = schemeitems_dict.get(schemeitem_id)
                     if si_dict:
 
-        # - calc ce_grade from score, or get from row  when exemption or secret_exam
-                        ce_grade = calc_grade_from_score_wrap(sel_examyear, si_dict, row)
+        # - calc ce_grade from score, or get from row when exemption or secret_exam
+                        ce_grade = calc_grade_from_score_wrap(department_instance, si_dict, row)
 
-        # - calc sesr pece and final grade
+        # - calc sesrgrade pecegrade and final grade
                         sesr_grade, pece_grade, finalgrade, delete_cegrade = \
                             calc_final.calc_sesr_pece_final_grade(
                                 si_dict=si_dict,
@@ -816,7 +813,7 @@ def batch_update_finalgrade(sel_examyear, sel_department, exam_pk=None, grade_pk
         logger.debug(' >>> updated_cegrade_count:    ' + str(updated_cegrade_count))
         logger.debug(' >>> updated_cegrade_list:    ' + str(updated_cegrade_list))
 
-    return updated_cegrade_count, updated_cegrade_list
+    return updated_cegrade_count, updated_cegrade_list, updated_student_pk_list
 # end of batch_update_finalgrade
 
 """

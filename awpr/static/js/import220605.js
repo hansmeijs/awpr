@@ -44,7 +44,11 @@
     // MIME csv: text/csv
      const excelMIMEtypes = {
             xls: "application/vnd.ms-excel",
-            xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            csv: "text/csv"
+        };
+     const csvMIMEtypes = {
+            csv: "text/csv"
         };
 
 //####################################################################
@@ -52,8 +56,8 @@
 //=========  MIMP_Open  ================ PR2020-12-03 PR2021-01-12
     function MIMP_Open(loc, import_table) {
         console.log( "===== MIMP_Open ========= ");
-        //console.log( "import_table: ", import_table);
-        //console.log( "loc: ", loc);
+        console.log( "import_table: ", import_table);
+        console.log( "loc: ", loc);
         // values of import_table are:  "import_student", "import_studsubj", "import_grade", "import_username", "import_permit",
          // mimp_stored.coldefs gets value from schoolsetting_dict in i_UpdateSchoolsettingsImport(schoolsetting_dict)
         // note: mimp_stored.coldefs is not in use when  import_table = import_permit
@@ -960,6 +964,10 @@ upload_dict: {'sel_examyear_pk': 1, 'sel_schoolbase_pk': 13, 'sel_depbase_pk': 1
                 } else if (mimp_stored.import_table === "import_grade"){
                     const schoolname =  [mimp_stored.sel_examyear_code, mimp_stored.sel_school_name, mimp_stored.sel_depbase_code].join(" ");
                     filename += "cijfers " +  schoolname + " dd " + date_str + ".pdf";
+
+                } else if (mimp_stored.import_table === "dnt"){
+                    const schoolname =  [mimp_stored.sel_examyear_code, mimp_stored.sel_school_name, mimp_stored.sel_depbase_code].join(" ");
+                    filename += "n-termen tabel dd " + date_str + ".pdf";
                 }
             //console.log("filename", filename);
                 printPDFlogfile(mimp_logfile, filename )
@@ -1110,6 +1118,7 @@ console.log("mimp.curWorkSheet", mimp.curWorkSheet);
         // MIME xlsx: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
         // MIME csv: text/csv
 
+        console.log("==========  SheetHasRange: ==========");
         let is_valid = false
         for (const value of Object.values(excelMIMEtypes)) {
             if(File.type === value) {
@@ -2519,6 +2528,11 @@ if (show_console){
                     // log_list must come before result
                     mimp_logfile = response.log_list;
                 };
+                if ("dnt_log_list" in response) {
+                       OpenLogfile(response.dnt_log_list);
+                };
+
+
                 if("result" in response){
                     ResponseResult(response);
                 };
@@ -2558,7 +2572,6 @@ if (show_console){
 
         mimp.is_tested = true;
         MIMP_HighlightAndDisableButtons();
-
     }
 
 //========= END UploadData =====================================
@@ -2726,7 +2739,6 @@ if (show_console){
         return [last_name]
     }  // i_get_name_from_fullanme
 
-
 //=========  i_split_prefix_from_name  ================ PR2021-01-12
     function i_split_prefix_from_name(input_value, split_from_first_name){
         //console.log("==== i_split_prefix_from_name  =========>> ");
@@ -2823,8 +2835,10 @@ if (show_console){
         }
         mimp.sel_file = curFile;
         mimp.sel_filename = (curFile) ? curFile.name : null;
-        //console.log("mimp.sel_filename: ", mimp.sel_filename);
-        //console.log("curFile", curFile);
+    console.log("mimp_loc: ", mimp_loc);
+    console.log("mimp.sel_filename: ", mimp.sel_filename);
+    console.log("curFile", curFile);
+    console.log("msg_err", msg_err);
 
 // ---  display sel_filename in elid_MDNT_filename, make btn 'outline' when filename existst
         const el_MDNT_filename = document.getElementById("id_MDNT_filename");
@@ -2840,7 +2854,6 @@ if (show_console){
         };
 
     }  // MDNT_HandleFiledialog
-
 
 //=========   MDNT_Save   ====================== PR2022-02-26
     function MDNT_Save(RefreshDataRowsAfterUpload, setting_dict){
@@ -2886,3 +2899,17 @@ if (show_console){
         reader.readAsText(mimp.sel_file);
 
     }; // MDNT_Save
+
+//=========   OpenLogfile   ====================== PR2022-06-02
+    function OpenLogfile(log_list) {
+        console.log(" ========== OpenLogfile ===========");
+
+        if (!!log_list && log_list) {
+            const today = new Date();
+            const this_month_index = 1 + today.getMonth();
+            const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
+            let filename = "Log dd " + date_str + ".pdf";
+
+            printPDFlogfile(log_list, filename )
+        };
+    }; //OpenLogfile

@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MODAL MULTIPLE OCCURRENCES ------------------------------------
    const el_MMUOC_data_container = document.getElementById("id_MMUOC_data_container")
    const el_MMUOC_btn_showall = document.getElementById("id_MMUOC_btn_showall");
-        el_MMUOC_btn_showall.addEventListener("click", function() {MMUOC_toggle_showall()}, false )
+   if(el_MMUOC_btn_showall){el_MMUOC_btn_showall.addEventListener("click", function() {MMUOC_toggle_showall()}, false )};
 
 // ---  MOD EX3 FORM ------------------------------------
     const el_id_MEX3_hdr = document.getElementById("id_MEX3_hdr");

@@ -110,7 +110,7 @@
             }
             el_hdrbar_examyear.innerText = examyer_txt;
 
-            // add pointer on hover when there are multiple examyear
+// add pointer on hover when there are multiple examyear
             add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", permit_dict.may_select_examyear, "awp_navbar_item" )
 
         }
@@ -122,6 +122,8 @@
             const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
             const may_select_department = (display_department && allowed_depbases_count > 1);
 
+        //console.log("allowed_depbases_count", allowed_depbases_count )
+        //console.log("may_select_department", may_select_department )
             add_or_remove_class(el_hdrbar_department, cls_hide, !display_department)
             // add pointer on hover when tehere are multiple departments
             add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )
@@ -1456,14 +1458,20 @@
     };  // b_recursive_tblRow_lookup
 
 // when list is not sorted - lookup the oldfashioned way
-//========= b_lookup_dict_in_dictlist  ========== PR2020-06-25
-    function b_lookup_dict_in_dictlist(dictlist, search_field, search_value){
+//========= b_lookup_dict_in_dictlist  ========== PR2020-06-25  PR2022-06-02
+    function b_lookup_dict_in_dictlist(dictlist, search_field_01, search_value_01, search_field_02, search_value_02){
         let lookup_dict = null;
-        for (let i = 0, lookup_value, dict; dict = dictlist[i]; i++) {
-            lookup_value = dict[search_field];
-            if(lookup_value && lookup_value === search_value){
-                lookup_dict = dict;
-                break;
+        for (let i = 0, lookup_value_01, lookup_value_02, dict; dict = dictlist[i]; i++) {
+            lookup_value_01 = dict[search_field_01];
+            if (search_field_02) { lookup_value_02 = dict[search_field_02] };
+            if(lookup_value_01 && lookup_value_01 === search_value_01){
+                if (!lookup_value_02) {
+                    lookup_dict = dict;
+                    break;
+                } else if(lookup_value_02 === search_value_02){
+                    lookup_dict = dict;
+                    break;
+                };
             };
         };
         return lookup_dict;
@@ -1688,8 +1696,8 @@
 
 //=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01
     function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
-        console.log("==== b_show_mod_message_dictlist  ======")
-        console.log("msg_dictlist", msg_dictlist)
+        //console.log("==== b_show_mod_message_dictlist  ======")
+        //console.log("msg_dictlist", msg_dictlist)
         //console.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
@@ -1716,7 +1724,7 @@
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
 
-        console.log("msg_dict", msg_dict)
+        //console.log("msg_dict", msg_dict)
                     let class_str = null;
                     if ("header" in msg_dict && msg_dict.header ) {
                         // msgbox only has 1 header. Use first occurring header

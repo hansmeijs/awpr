@@ -73,6 +73,12 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if msg_list:
                     message_list.extend(msg_list)
 
+                if sel_examyear is None:
+                   message_list.append({'msg_html':
+                                            [str(_('No exam year selected.'))], 'class': 'border_bg_warning'})
+                if sel_depbase is None:
+                   message_list.append({'msg_html': [str(_('No department selected.'))], 'class': 'border_bg_warning'})
+
                 requsr_same_school = permit_dict.get('requsr_same_school', False)
 
                 # PR2021-11-03 was:
@@ -163,9 +169,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
                 if datalist_request.get('duo_subject_rows'):
                     datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
-                        req_usr=request.user,
-                        sel_examyear_pk=sel_examyear.pk,
-                        sel_depbase_pk=sel_depbase.pk,
+                        sel_examyear=sel_examyear,
+                        sel_depbase=sel_depbase,
                         append_dict={},
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
@@ -208,6 +213,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- duo exams
                     if datalist_request.get('duo_exam_rows'):
                         datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
+                            req_usr=request.user,
                             sel_examyear=sel_examyear,
                             sel_depbase=sel_depbase,
                             append_dict={},
@@ -218,6 +224,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- duo exams_count
                     if datalist_request.get('duo_exam_count_rows'):
                         datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
+                            req_usr=request.user,
                             sel_examyear=sel_examyear,
                             sel_depbase=sel_depbase,
                             append_dict={},
@@ -258,15 +265,17 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- orderlists
                 if datalist_request.get('orderlist_rows'):
-                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(sel_examyear.code, request)
+                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(
+                        sel_examyear=sel_examyear,
+                        request=request)
 
 # ----- grade_exam_rows
                 if datalist_request.get('grade_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['grade_exam_rows'] = gr_vw.create_grade_with_ete_exam_rows(
-                            sel_examyear_pk=sel_examyear.pk,
-                            sel_schoolbase_pk=sel_schoolbase.pk,
-                            sel_depbase_pk=sel_depbase.pk,
+                            sel_examyear=sel_examyear,
+                            sel_schoolbase=sel_schoolbase,
+                            sel_depbase=sel_depbase,
                             sel_examperiod=sel_examperiod,
                             setting_dict=new_setting_dict,
                             request=request
@@ -320,9 +329,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- results_per_school_rows
                 if datalist_request.get('results_per_school_rows'):
                     datalists['results_per_school_rows'], error_dict = stud_view.create_results_per_school_rows(
+                        request=request,
                         sel_examyear= sel_examyear,
-                        sel_schoolbase=sel_schoolbase,
-                        sel_depbase=sel_depbase)
+                        sel_schoolbase=sel_schoolbase
+                    )
                     if error_dict:
                         message_list.append(error_dict)
 

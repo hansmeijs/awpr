@@ -52,7 +52,7 @@
 
 //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
-        //console.log("===  t_MSED_Save =========");
+        console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const tblName = get_attr_from_el(tblRow, "data-table");
@@ -71,11 +71,11 @@
         } else if (tblName === "department") {
             new_setting.sel_depbase_pk = (selected_pk_int) ? selected_pk_int : null;
 
-
             // PR2022-04-11 debug: ETE cannot change to all deps in exam page because sel_school is set to school with 1 dep
             // therefore must set sel_school = requsr_schoolbase_pk when all_countries = true
             // make sure that ETE school has all deps
             //'argument 'all_countries' also used to show all deps in page exam, only when used by ETE (requsr_role_admin)
+
             if (all_countries){
                 new_setting.sel_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
             };
@@ -224,7 +224,6 @@
     }  // t_MSED_CreateSelectRow
 
 // ++++++++++++  END OF MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
-
 
 
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
@@ -1241,7 +1240,6 @@
         return item_text;
     };  // t_FillOptionTextNew
 
-
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
 //========= t_Filter_SelectRows  ==================================== PR2020-01-17 PR2021-01-23
     function t_Filter_SelectRows(tblBody_select, filter_text, filter_show_inactive, has_ppk_filter, selected_ppk, col_index_list) {
@@ -1458,7 +1456,6 @@
         return !hide_row
     }; // t_ShowTableRow
 // ++++++++++++  END OF FILTER +++++++++++++++++++++++++++++++++++++++
-
 
 // ++++++++++++  FILTER TABLES +++++++++++++++++++++++++++++++++++++++
 //========= t_SetExtendedFilterDict  ======================== PR2020-07-12 PR2020-08-29
@@ -1789,7 +1786,6 @@
 const columns_tobe_hidden = {};
 const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
 
-
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02 PR2022-05-15
     function t_MCOL_Open(page) {
         //console.log(" -----  t_MCOL_Open   ----")
@@ -1953,7 +1949,6 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
         Response_from_SBR_select_level_sector(tblName, selected_base_pk);
     }  // t_SBR_select_and_update_level_sector
 
-
 //=========  t_SBR_select_level_sector  ================ PR2021-08-02
     function t_SBR_select_level_sector(mode, el_select, FillTblRows) {
         //console.log("===== t_SBR_select_level_sector =====");
@@ -2109,7 +2104,6 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
 
         FillTblRows();
     }  // t_SBR_show_all
-
 
 // +++++++++++++++++ END OF SBR SELECT LEVEL SECTOR ++++++++++++++++++++++++++++++++++++++++++
 

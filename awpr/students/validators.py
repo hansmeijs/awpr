@@ -1984,10 +1984,11 @@ def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18
             elif field == 'has_reex03' and si_dict.get('no_thirdperiod', False):
                 err_list.append(str(_('This subject has no third exam period.')))
             elif not si_dict.get('weight_ce', 0):
-                caption = _('Re-examination 3rd period') if field == 'has_reex03' else _('Re-examination')
-                err_list.append(
-                    str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': 'CE'}))
-                err_list.append(str(_('You cannot enter a %(item_str)s.') % {'item_str': str(caption).lower()}))
+                #caption = _('Re-examination 3rd period') if field == 'has_reex03' else _('Re-examination')
+                #err_list.append(
+                #    str(_('The %(se_ce_cpt)s weighing of this subject is zero.') % {'se_ce_cpt': 'CE'}))
+                #err_list.append(str(_('You cannot enter a %(item_str)s.') % {'item_str': str(caption).lower()}))
+                err_list.append(str(_('This subject has no central exam.')))
 
     return err_list
 # --- end of validate_studsubj_add_reex_reex03_allowed

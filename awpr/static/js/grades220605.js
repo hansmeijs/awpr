@@ -1335,22 +1335,47 @@ document.addEventListener("DOMContentLoaded", function() {
 // --- make el readonly when not requsr_requsr_same_school or when not edit permission
                     const may_edit = permit_dict.requsr_same_school && permit_dict.permit_crud;
                     const is_readonly = (!may_edit) ? true :
-                                        (data_dict.secret_exam) ?
-                                        (["pescore", "cescore"].includes(field_name)) :
-                                        (["pegrade", "cegrade"].includes(field_name))
+                                        (data_dict.examperiod === 4) ?
+                                            (!["segrade", "cegrade"].includes(field_name))
+                                        :
+                                            (data_dict.secret_exam) ?
+                                                (["pescore", "cescore"].includes(field_name)) :
+                                                (["pegrade", "cegrade"].includes(field_name))
+
+        //console.log("field_name", field_name);
+        //console.log("may_edit", may_edit);
+        //console.log("data_dict.secret_exam", data_dict.secret_exam);
+        //console.log("is_readonly", is_readonly);
+
                     let is_enabled = false;
                     if (may_edit){
                         // when exemption: only fields segrade and cegrade are visible
                         //      dont block when no ce: let server give message instead
                         // input fields are: "segrade", "srgrade", "pescore", "pegrade", "cescore", "cegrade",
 
-                        if (["segrade", "srgrade"].includes(field_name)){
-                            is_enabled = [1, 4].includes(data_dict.examperiod);
-                        } else  if (["pescore", "cescore"].includes(field_name)){
-                            is_enabled = (!data_dict.secret_exam)
-                        } else  if (["pegrade", "cegrade"].includes(field_name)){
-                            is_enabled = (data_dict.secret_exam)
-                        };
+                        if (data_dict.examperiod === 4) {
+                            is_enabled = ["segrade", "cegrade"].includes(field_name)
+                        } else if (data_dict.examperiod === 1) {
+                            if (["segrade", "srgrade"].includes(field_name))
+                                is_enabled = true;
+                            } else {
+                                if (data_dict.secret_exam) {
+                                    is_enabled = ["pegrade", "cegrade"].includes(field_name);
+                                } else {
+                                    is_enabled = ["pescore", "cescore"].includes(field_name);
+                                };
+                            };
+
+                            is_enabled = ["segrade", "cegrade"].includes(field_name)
+
+                            if (["segrade", "srgrade"].includes(field_name)){
+                                is_enabled = [1, 4].includes(data_dict.examperiod);
+                            } else  if (["pescore", "cescore"].includes(field_name)){
+                                is_enabled = (!data_dict.secret_exam)
+                            } else  if (["pegrade", "cegrade"].includes(field_name)){
+                                is_enabled = (data_dict.secret_exam)
+                            };
+                        ["segrade", "srgrade"].includes(field_name)
                     };
                     el.readOnly = !is_enabled;
 
@@ -1471,8 +1496,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateTblRow  ================ PR2020-08-01
     function UpdateTblRow(tblRow, tblName, data_dict) {
-        console.log("=========  UpdateTblRow =========");
-        console.log("data_dict", data_dict);
+        //console.log("=========  UpdateTblRow =========");
+        //console.log("data_dict", data_dict);
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
                 UpdateField(td.children[0], data_dict);
@@ -1533,6 +1558,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // +++  create href and put it in button PR2021-05-07
                     const href_str = (data_dict.ce_exam_id) ? data_dict.ce_exam_id.toString() : null;
                     el_div.href = (href_str) ? urls.url_exam_download_conversion_pdf.replace("-", href_str) : null;
+
                 } else {
                     let inner_text = null;
                     if (field_name === "examperiod"){
@@ -1675,8 +1701,6 @@ document.addEventListener("DOMContentLoaded", function() {
         return [className, title_text, filter_value]
     };  // UpdateFieldStatus
 
-
-
 //=========  UpdateFieldDownloadExam  ================ PR2022-05-17
     function UpdateFieldDownloadExam(tblName, el_div, data_dict) {
 
@@ -1697,9 +1721,6 @@ document.addEventListener("DOMContentLoaded", function() {
                                                        urls.url_exam_download_grade_exam_pdf.replace("-", pk_str) ;
         el_div.href = href_str;
     };  // UpdateFieldDownloadExam
-
-
-
 
 //========= set_columns_shown  ====== PR2021-03-08
     function set_columns_shown() {
@@ -2077,7 +2098,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const tblRow = t_get_tablerow_selected(el_input);
             const grade_pk = get_attr_from_el_int(tblRow, "data-pk");
             const data_dict = get_gradedict_by_gradepk(grade_pk);
-            //console.log( "data_dict", data_dict);
+            console.log( "data_dict", data_dict);
 
             if(!isEmpty(data_dict)){
 
@@ -2174,14 +2195,13 @@ document.addEventListener("DOMContentLoaded", function() {
                                     const key_grade = (examtype_2char + "grade");
                                     const no_grade_value = (examperiod !== 4 && !data_dict[key_grade]);
                                     const key_score = (examtype_2char + "score");
-                                    const no_score_value = (examtype_2char === "se") ? true : !data_dict[key_score];
 
                                     // skip approve if this grade has no value - not when deleting approval
                                     // PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
                                     // PR2022-05-31 afte corrector has blocked all empty scores by approving: skip approve when empty
                                     const grade_has_value = get_grade_has_value(fldName, data_dict, new_requsr_auth_approved);
 
-
+                                    //const no_score_value = (examtype_2char === "se") ? true : !data_dict[key_score];
                                     //if (new_requsr_auth_approved && no_grade_value && no_score_value){
                                     //    mod_dict = {tblName: tblName, fldName: fldName, examtype_2char: examtype_2char,
                                     //                data_dict: data_dict, auth_dict: auth_dict, requsr_auth_index: requsr_auth_index,
@@ -2190,7 +2210,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
                                     //    ModConfirmOpen("approve", el_input);
                                     //} else {
-                                    if (!grade_has_value){
+
+                                    if (["pe", "ce"].includes(examtype_2char) &&
+                                        [1, 2, 3].includes(data_dict.examperiod) &&
+                                        !data_dict.weight_ce){
+                                        b_show_mod_message_html(loc.approve_err_list.Subject_has_no_ce);
+
+                                    } else if (!grade_has_value){
                                         const is_score = ( ["pe", "ce"].includes(examtype_2char) &&
                                                         [1, 2, 3].includes(data_dict.examperiod) &&
                                                             !data_dict.secret_exam);
@@ -2239,17 +2265,26 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= get_grade_has_value  ============= PR2022-05-31
     function get_grade_has_value(fldName, data_dict, auth_has_value){
+        console.log( " ==== get_grade_has_value ====");
+                console.log( " fldName", fldName);
+                console.log( " auth_has_value", auth_has_value);
         // only show status when weight > 0 and grade/score has value
         // auth_has_value is used in approve: to allow removing approved, auth_has_value = true in updatefield and createtblrow
-
+        // PR2022-06-04 debug: Hans Vlinkervleugel HAP had student with score 0. Make has-Value true when score = 0
         let grade_has_value = false;
         if (!auth_has_value){
             grade_has_value = true;
         } else if (data_dict) {
             if (fldName === 'se_status' && [1, 4].includes(data_dict.examperiod) && data_dict.weight_se){
-                grade_has_value = !!data_dict.segrade;
+                grade_has_value = !!data_dict.segrade != null && data_dict.segrade != '';
             } else if (fldName === 'ce_status' && [1, 2, 3].includes(data_dict.examperiod) && data_dict.weight_ce){
-                grade_has_value = (data_dict.secret_exam) ? !!data_dict.cegrade : !!data_dict.cescore;
+
+                console.log( " data_dict.cescore", data_dict.cescore, typeof data_dict.cescore);
+                console.log( " data_dict.cescore != null", data_dict.cescore != null);
+                console.log( " data_dict.cescore != ''", data_dict.cescore != '');
+
+                grade_has_value = (data_dict.secret_exam) ?
+                        data_dict.cegrade != null : data_dict.cescore != null;
             };
         };
         return grade_has_value;
@@ -3060,7 +3095,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("key", key) ;
         //console.log("msg_dict[key]", msg_dict[key]) ;
                     el = document.createElement("p");
-                    el.innerText = msg_dict[key];
+                    el.innerHTML = msg_dict[key];
                     if (key === "count_text") {
                     } else if (key === "saved_text") {
                         el.classList.add("pt-2");
@@ -3647,10 +3682,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows, skip_show_ok) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-        console.log("update_dict", update_dict);
+    //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;

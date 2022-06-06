@@ -164,7 +164,6 @@ def update_library(examyear, request):
         ('ex4', 'ex4_verhinderd_header02', '(Voortzetting schoolexamen aangeven met s en centraal examen met c).'),
         ('ex4', 'ex4_verhinderd_header03', 'Naam en voorletters van de kandidaat'),
 
-
         ('ex5', 'ex5_title', 'Verzamellijst van cijfers.'),
         ('ex5', 'eex_inzenden', 'Inzenden binnen één week na de uitslag en na afloop van de herkansing, het ondertekend exemplaar inzenden naar de Onderwijs Inspectie en digitaal naar de Onderwijs Inspectie en het ETE.'),
         ('ex5', 'lex_inzenden', 'Inzenden binnen één week na de uitslag en na afloop van de herkansing, het ondertekend exemplaar en digitaal inzenden naar de Onderwijs Inspectie.'),

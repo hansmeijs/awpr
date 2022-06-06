@@ -21,6 +21,7 @@ from grades import views as grade_view
 from schools import models as sch_mod
 from subjects import models as subj_mod
 from students import models as stud_mod
+from students import views as stud_view
 
 import pytz
 import logging
@@ -324,6 +325,22 @@ def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20 PR2021-08-12
             date_obj = date(arr_int[0], arr_int[1], arr_int[2])
         except Exception as e:
             logger.error(' '.join((getattr(e, 'message', str(e)), '- arr_int:', str(arr_int), str(type(arr_int)))))
+
+    return date_obj
+
+
+def get_date_from_arr_str_ddmmyy(date_str):  # PR2022-06-02
+    # format of date_str is "05-20-2022"
+    date_obj = None
+    if date_str:
+        try:
+            arr_str = date_str.split('-')
+            year_int = arr_str[2]
+            month_int = arr_str[1]
+            day_int = arr_str[0]
+            date_obj = date(year_int, month_int, day_int)
+        except Exception as e:
+            logger.error(' '.join((getattr(e, 'message', str(e)), '- date_str:', str(date_str))))
 
     return date_obj
 
@@ -1216,9 +1233,11 @@ def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
 
-    # PR2021-03-26 run this always to update text in ex-forms
-    awpr_lib.update_library(examyear, request)
+# PR2021-03-26 run this to update text in ex-forms, when necessary
+    #awpr_lib.update_library(examyear, request)
 
+# PR 2022-06-05 one time function to recalc amount of exemptions, reex, reex03, thumbrule and put it in student
+    calc_count_reex_etc(request)
 
 # PR 2022-05-28 one time function to set rule_avg_pece_sufficient = TRUE, rule_core_notatevlex = FALSE
     # for all departments SXM and CUR departments Havo/Vwo
@@ -1253,7 +1272,7 @@ def system_updates(examyear, request):
     #recalc_score_of_ce_result()
 
 # PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
-    # show_deleted_grades(request)
+    show_deleted_grades(request)
 
 # PR2022-05-02 recalc amount and scalelength in exams
     #recalc_amount_and_scalelength_of_assignment(request)
@@ -1310,6 +1329,7 @@ def reset_show_msg(request):
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
 
+######################################
 
 
 def set_ce_avg_rule(request):
@@ -1350,6 +1370,40 @@ def set_ce_avg_rule(request):
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -e nd of set_ce_avg_rule
+
+
+#####################################
+
+
+def calc_count_reex_etc(request):
+    # PR 2022-06-05 one time function to recalc amount of exemptions, reex, reex03, thumbrule and put it in student
+    # for all departments SXM and CUR departments Havo/Vwo
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- calc_count_reex_etc -------')
+
+    try:
+        name = 'calc_count_reex_etc'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            for field in ('has_exemption', 'has_sr', 'has_reex', 'has_reex03', 'is_thumbrule'):
+                stud_view.update_reexcount_etc_in_student(field)
 
         # - add function to systemupdate, so it won't run again
             systemupdate = sch_mod.Systemupdate(
@@ -1640,7 +1694,7 @@ def recalc_grade_ce_examscoreXXX(request):
 def show_deleted_grades(request):
     #PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
     # check other 36 grades that have tobedeleted=True
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:  # and request.user.role == c.ROLE_128_SYSTEM:
         logger.debug(' ------- show_deleted_grades, examperiod=1 -------')
         rows = stud_mod.Grade.objects.filter(

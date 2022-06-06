@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Results' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/results220529.js' %}"></script>
+    <script src="{% static 'js/results220605.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -80,7 +80,7 @@
             <!-- end content_header -->
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_student" class="btn btn-secondary">{% trans 'Results' %}</button>
+                <button data-btn="btn_result" class="btn btn-secondary">{% trans 'Results' %}</button>
                 <button data-btn="btn_overview" class="btn btn-secondary">{% trans 'Overview' %}</button>
             </div>
     <!-- end BUTTON GROUP -->
@@ -107,6 +107,8 @@
                 data-url_calc_results="{% url 'url_calc_results' '-' %}"
                 data-url_get_auth="{% url 'url_get_auth' %}"
                 data-url_result_download_ex5="{% url 'url_result_download_ex5' %}"
+                data-url_result_download_overview="{% url 'url_result_download_overview' %}"
+                data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
             >
             </div>
         {% endif %}

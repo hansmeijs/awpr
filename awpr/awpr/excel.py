@@ -23,6 +23,7 @@ from awpr import settings as s
 from awpr import library as awpr_lib
 
 from schools import models as sch_mod
+from subjects import models as subj_mod
 from subjects import views as subj_view
 
 import xlsxwriter
@@ -1290,6 +1291,20 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
                     # - get text from examyearsetting
                     library = awpr_lib.get_library(sel_examyear, ['exform', 'ex2'])
 
+    # - may submit Ex2 per level
+                    # - get selected levelbase from usersetting
+                    sel_lvlbase_pk, sel_level = None, None
+                    selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    if selected_pk_dict:
+                        sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+                    if sel_lvlbase_pk:
+                        sel_level = subj_mod.Level.objects.get_or_none(
+                            base_id=sel_lvlbase_pk,
+                            examyear=sel_examyear
+                        )
+                    if logging_on:
+                        logger.debug('     sel_level: ' + str(sel_level))
+
     # +++ create Ex2_xlsx
                     save_to_disk = False
                     # just to prevent PyCharm warning on published_instance=published_instance
@@ -1299,6 +1314,7 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
                         examyear=sel_examyear,
                         school=sel_school,
                         department=sel_department,
+                        level=sel_level,
                         examperiod=c.EXAMPERIOD_FIRST,
                         library=library,
                         is_ex2a=False,
@@ -1339,10 +1355,23 @@ class GradeDownloadEx2aView(View):  # PR2022-02-17 PR2022-05-09
                     dl.get_selected_ey_school_dep_from_usersetting(request)
 
     # - get selected examperiod
-                sel_examperiod = None
+                sel_examperiod, sel_lvlbase_pk, sel_level = None, None, None
                 selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                 if selected_pk_dict:
                     sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+                    sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+
+        # - may submit Ex2 per level
+                sel_level = None
+                if sel_lvlbase_pk:
+                    sel_level = subj_mod.Level.objects.get_or_none(
+                        base_id=sel_lvlbase_pk,
+                        examyear=sel_examyear
+                    )
+                if logging_on:
+                    logger.debug('     sel_examperiod: ' + str(sel_examperiod))
+                    logger.debug('     sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                    logger.debug('     sel_level: ' + str(sel_level))
 
                 if sel_examyear and sel_school and sel_department and sel_examperiod in (1, 2, 3):
     # - get text from examyearsetting
@@ -1357,6 +1386,7 @@ class GradeDownloadEx2aView(View):  # PR2022-02-17 PR2022-05-09
                         examyear=sel_examyear,
                         school=sel_school,
                         department=sel_department,
+                        level=sel_level,
                         examperiod=sel_examperiod,
                         library=library,
                         is_ex2a=True,
@@ -1423,7 +1453,51 @@ class GradeDownloadEx5View(View):  # PR2022-02-17
 # - end of GradeDownloadEx5View
 
 
-def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, examperiod, library, is_ex2a, save_to_disk, request, user_lang):
+
+@method_decorator([login_required], name='dispatch')
+class GradeDownloadOverviewView(View):  # PR2022-06-01
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= GradeDownloadOverviewView ============= ')
+        # function creates, Ex2 xlsx file based on settings in usersetting
+
+        response = None
+        # try:
+        if True:
+            if request.user and request.user.country and request.user.schoolbase:
+                req_user = request.user
+
+                # - reset language
+                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+                # - get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                if sel_examyear and sel_school and sel_department:
+
+    # +++ create result_overview_xlsx
+                    response = create_result_overview_xlsx(
+                        request=request,
+                        examyear_instance=sel_examyear,
+                        user_lang=user_lang
+                    )
+
+        # except:
+        #    raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of GradeDownloadOverviewView
+
+
+def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level, examperiod, library, is_ex2a, save_to_disk, request, user_lang):
     # PR2022-02-17 PR2022-06-01
     # called by GradeDownloadEx2View
     logging_on = False  # s.LOGGING_ON
@@ -1445,7 +1519,7 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, examp
         logger.debug('     subject_code_list: ' + str(subject_code_list))
 
 # +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
-    ex2_rows_dict, grades_auth_dict = create_ex2_ex2a_rows_dict(examyear, school, department, examperiod, is_ex2a, save_to_disk, published_instance)
+    ex2_rows_dict, grades_auth_dict = create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, is_ex2a, save_to_disk, published_instance)
     if logging_on:
         logger.debug('grades_auth_dict: ' + str(grades_auth_dict))
     """
@@ -2182,10 +2256,10 @@ def create_ex5_format_dict(book, sheet, school, department, subject_pk_list, sub
 # - end of create_ex5_format_dict
 
 
-def create_ex2_ex2a_rows_dict(examyear, school, department, examperiod, is_ex2a, save_to_disk, published_instance, lvlbase_pk=None):
+def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, is_ex2a, save_to_disk, published_instance):
     # PR2022-02-17 PR2022-03-09
     # this function is only called by create_ex2_xlsx
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex2_ex2a_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
@@ -2263,9 +2337,9 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, examperiod, is_ex2a,
         sql_keys['published_id'] = published_pk
         sql_list.append("AND grd." + se_ce + "_published_id = %(published_id)s::INT ")
 
-    if lvlbase_pk:
-        sql_keys['lvlbase_id'] = lvlbase_pk
-        sql_list.append("AND lvl.base_id = %(lvlbase_id)s::INT ")
+    if level:
+        sql_keys['lvl_id'] = level.pk
+        sql_list.append("AND lvl.id = %(lvl_id)s::INT ")
 
     if level_req:
         sql_list.append("ORDER BY LOWER(lvl.abbrev), LOWER(st.lastname), LOWER(st.firstname)")
@@ -4118,6 +4192,49 @@ def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subto
 # - end of write_total_row_with_formula
 
 
+def create_result_overview_row_formats(formats):
+    # form https://stackoverflow.com/questions/16819222/how-to-return-dictionary-keys-as-a-list-in-python
+    # subject_count = len([*ete_duo_dict_total])
+    # ete_duo_dict_total contains a dict with keys = subjectbase_pk and value = count of subjects
+
+    field_names = ['schoolbase_code', 'school_name']
+    field_captions = ['', '']
+    col_header_formats = [formats['border_left_bottom'], formats['border_bottom']]
+    detail_row_formats = [formats['detailrow_col0'], formats['detailrow_col1']]
+    summary_row_formats = [formats['detailrow_col0'], formats['detailrow_col1']]
+    totalrow_formats = [formats['totalrow_merge'], formats['totalrow_align_center']]
+    first_subject_column = col_count
+
+# - loop through subjectbase_dictlist to get the subject code in alphabetic order,
+    # add sjbase_pk to field_names, only when subject is in count_dict
+    # subjectbase_dictlist: [{'id': 153, 'code': 'adm&co'}, {'id': 162, 'code': 'asw'},
+    for subjectbase_dict in subjectbase_dictlist:
+        sjbase_pk = subjectbase_dict.get('id')
+        sjbase_code = subjectbase_dict.get('code', '---')
+        if sjbase_pk and sjbase_pk in ete_duo_dict_total:
+            field_names.append(sjbase_pk)
+            field_captions.append(sjbase_code)
+            col_count += 1
+            col_width.append(subject_col_width)
+            col_header_formats.append(formats['th_align_center'])
+            detail_row_formats.append(formats['row_align_center'])
+            summary_row_formats.append(formats['row_align_center'])
+            totalrow_formats.append(formats['totalrow_number'])
+# - add total at end of list
+    field_names.append('rowtotal')
+    field_captions.append(str(_('Total')))
+    col_count += 1
+    col_width.append(6)
+    col_header_formats.append(formats['th_align_center'])
+    detail_row_formats.append(formats['row_total'])
+    summary_row_formats.append(formats['row_total'])
+    totalrow_formats.append(formats['totalrow_number'])
+
+    return col_count, first_subject_column, col_width, field_names, field_captions, col_header_formats, detail_row_formats, summary_row_formats, totalrow_formats
+# - end of create_row_formats
+
+
+
 def create_row_formats(subjectbase_dictlist, ete_duo_dict_total, formats):
     # form https://stackoverflow.com/questions/16819222/how-to-return-dictionary-keys-as-a-list-in-python
     # subject_count = len([*ete_duo_dict_total])
@@ -4893,6 +5010,132 @@ def has_published_ex1_rows(examyear, school, department):  # PR2021-08-15
 
     return exists
 # --- end of has_published_ex1_rows
+
+####################################################
+
+
+def create_result_overview_xlsx(request, examyear_instance, user_lang):
+    # PR2022-06-04
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_result_overview_xlsx -----')
+        # row: {'school_id': 78, 'schbase_code': 'CUR13', 'school_name': 'Abel Tasman College', 'dep_id': 97, 'depbase_code': 'Vsbo',
+        #           'lvl_id': 63, 'lvl_abbrev': 'TKL', 'subj_id': 998, 'subjbase_code': 'ne', 'subj_name': 'Nederlandse taal', '
+        #           subj_published_arr': [None], 'lang': 'ne', 'count': 7}
+
+# --- get department dictlist
+    # fields are: depbase_id, depbase_code, dep_name, dep_level_req
+    department_dictlist = subj_view.create_departmentbase_dictlist(examyear_instance)
+
+# --- get lvlbase dictlist
+    lvlbase_dictlist = subj_view.create_levelbase_dictlist(examyear_instance)
+
+# +++ get schoolbase dictlist
+    # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
+    schoolbase_dictlist = subj_view.create_schoolbase_dictlist(examyear_instance, request)
+    """
+    schoolbase_dictlist: [
+        {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}, 
+        ...
+        {'sbase_id': 37, 'sbase_code': 'SXM03', 'sch_name': 'Sundial School'}
+        {'sbase_id': 23, 'sbase_code': 'CURETE', 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE'},
+        {'sbase_id': 39, 'sbase_code': 'SXMDOE', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations'}] 
+        ]
+    """
+
+# ---  create file Name and worksheet Name
+    now_formatted = af.format_modified_at(timezone.now(), user_lang, False)  # False = not month_abbrev
+
+    today_dte = af.get_today_dateobj()
+    file_name = ''.join((str(_('Results exams')), ' ', str(examyear_instance.code), ' dd ', today_dte.isoformat(), '.xlsx'))
+
+# create the HttpResponse object ...
+    #response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    #response['Content-Disposition'] = "attachment; filename=" + file_name
+
+# Create an in-memory output file for the new workbook.
+    output = io.BytesIO()
+    # Even though the final file will be in memory the module uses temp
+    # files during assembly for efficiency. To avoid this on servers that
+    # don't allow temp files, for example the Google APP Engine, set the
+    # 'in_memory' Workbook() constructor option as shown in the docs.
+    #  book = xlsxwriter.Workbook(response, {'in_memory': True})
+    book = xlsxwriter.Workbook(output)
+
+# create dict with cell formats
+    formats = create_formats(book)
+
+
+    col_count = 2  # schoolbase_code', 1: school_name
+    col_width = [8, 45]
+    subject_col_width = 4.5
+
+    # get text from examyearsetting
+    settings = awpr_lib.get_library(examyear_instance, ['exform'])
+
+# ++++++++++++ loop through sheets  ++++++++++++++++++++++++++++
+    for sheet_index in (0, 1):
+
+# get number of subject columns from DEO / ETE total dict
+        # 'DUO': {'total': {137: 513, 134: 63, 156: 63, 175: 63},
+        # columns are (0: 'schoolbase_code', 1: school_name"
+        # columns 2 etc  are subject columns. Extend number when more than 15 subjects
+
+        col_count, first_subject_column, col_width, field_names, field_captions, \
+        col_header_formats, detail_row_formats, summary_row_formats, totalrow_formats = \
+                create_result_overview_row_formats(subjectbase_dictlist, ete_duo_dict_total, formats)
+
+# +++++ create worksheet +++++
+        sheet_name = str(_('Percentage')) if sheet_index == 1 else str(_('Numbers'))
+        sheet = book.add_worksheet(sheet_name)
+        sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
+
+# --- set column width
+        for i, width in enumerate(col_width):
+            sheet.set_column(i, i, width)
+
+# --- title row
+        title =file_name = ''.join((str(_('Results exams')), ' ', str(sel_examyear_instance.code)))
+
+        sheet.write(0, 0, settings['minond'], formats['bold_format'])
+        sheet.write(1, 0, now_formatted)
+
+        exta_txt = ' '.join (('   -  ',
+              str(sel_examyear_instance.order_extra_fixed),  str(_('extra exams plus')),
+              str(sel_examyear_instance.order_extra_perc) + '%,',  str(_('rounded up to')),
+              str(sel_examyear_instance.order_round_to) + '.'))
+        sheet.write(3, 0, str(_('Calulation of extra exams:')))
+        sheet.write(4, 0, exta_txt)
+
+
+        row_index = 7
+#########################################################################
+        write_orderlist_with_details(
+            sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
+            row_index, col_count, first_subject_column, list, title, field_names, field_captions,
+            formats, col_header_formats, detail_row_formats,
+            totalrow_formats)
+
+#########################################################################
+    book.close()
+
+# Rewind the buffer.
+    output.seek(0)
+
+# Set up the Http response.
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    response['Content-Disposition'] = 'attachment; filename=%s' % file_name
+    # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # response['Content-Disposition'] = "attachment; filename=" + file_name
+    return response
+# - end of create_result_overview_xlsx
+
+
+
 
 
 ###################################################

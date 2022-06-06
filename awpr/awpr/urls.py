@@ -288,7 +288,8 @@ urlpatterns = [
         path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
         path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
-        path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5')
+        path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5'),
+        path('result_download_overview', grade_excel.GradeDownloadOverviewView.as_view(), name='url_result_download_overview')
     ])),
 
 # ===== ARCHIVES ========================== PR2022-03-09
@@ -315,7 +316,9 @@ urlpatterns = [
         path('exam', subject_views.ExamListView.as_view(), name='exams_url'),
         path('upload', subject_views.ExamUploadView.as_view(), name='url_exam_upload'),
         path('copy', subject_views.ExamCopyView.as_view(), name='url_exam_copy'),
+        path('copy_ntermen', subject_views.ExamCopyNtermenView.as_view(), name='url_exam_copy_ntermen'),
         path('link_duo_exam_to_grade', subject_views.ExamLinkDuoExamToGradeView.as_view(), name='url_link_duo_exam_to_grade'),
+        path('url_calc_grades_from_exam', subject_views.ExamCalcGradesFromExamView.as_view(), name='url_calc_grades_from_exam'),
 
         path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),
         path('approve_publish_exam', subject_views.ExamApproveOrPublishExamView.as_view(), name='url_approve_publish_exam'),

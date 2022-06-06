@@ -236,130 +236,125 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
 
 
 #/////////////////////////////////////////////////////////////////
-def create_results_per_school_rows(sel_examyear, sel_depbase=None, sel_schoolbase=None, sel_lvlbase_pk=None):
+def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
     # - show only students that are not tobedeleted
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_student_rows -----')
+        logger.debug(' ----- create_results_per_school_rows -----')
 
     student_rows = []
     error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
 
-    if sel_examyear and sel_schoolbase and sel_depbase:
+    if sel_examyear:
         try:
 
             if logging_on:
-                logger.debug(' ----- create_student_rows -----')
                 logger.debug('sel_examyear: ' + str(sel_examyear))
                 logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
-                logger.debug('sel_depbase: ' + str(sel_depbase))
-                logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
-                """
+                logger.debug('sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
 
-                        "st.result",
-                """
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk}
+            if logging_on:
+                logger.debug('sql_keys: ' + str(sql_keys))
 
-            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
-            sql_list = ["SELECT db.code AS db_code, sb.code as sb_code, sch.name as sch_name,",
+            sql_list = ["SELECT db.code AS db_code, lvlbase.code AS lvl_code, sch.name as sch_name, sb.code as sb_code,",
+                #"sctbase.code as sct_code, ",
 
-                "SUM((st.gender = 'M')::INT) AS M,",
-                "SUM((st.gender = 'V')::INT) AS V,",
-                "SUM(1) AS T,",
+                "SUM((st.gender = 'M')::INT) AS m,",
+                "SUM((st.gender = 'V')::INT) AS v,",
+                "SUM(1) AS t,",
+        # first exam period
+                    "SUM((st.gender = 'M' AND st.ep01_result = 0)::INT) AS ep1_m_nores,",
+                    "SUM((st.gender = 'V' AND st.ep01_result = 0)::INT) AS ep1_v_nores,",
+                    "SUM((st.ep01_result = 0)::INT) AS ep1_t_nores,",
 
-                        "SUM((st.gender = 'M' AND st.ep01_result = 0)::INT) AS ep1_M_nores,",
-                        "SUM((st.gender = 'V' AND st.ep01_result = 0)::INT) AS ep1_V_nores,",
-                        "SUM((st.ep01_result = 0)::INT) AS ep1_T_nores,",
+                    "SUM((st.gender = 'M' AND st.ep01_result = 1)::INT) AS ep1_m_pass,",
+                    "SUM((st.gender = 'V' AND st.ep01_result = 1)::INT) AS ep1_v_pass,",
+                    "SUM((st.ep01_result = 1)::INT) AS ep1_t_pass,",
 
-                        "SUM((st.gender = 'M' AND st.ep01_result = 1)::INT) AS ep1_M_pass,",
-                        "SUM((st.gender = 'V' AND st.ep01_result = 1)::INT) AS ep1_V_pass,",
-                        "SUM((st.ep01_result = 1)::INT) AS ep1_T_pass,",
+                    "SUM((st.gender = 'M' AND st.ep01_result = 2)::INT) AS ep1_m_fail,",
+                    "SUM((st.gender = 'V' AND st.ep01_result = 2)::INT) AS ep1_v_fail,",
+                    "SUM((st.ep01_result = 2)::INT) AS ep1_t_fail,",
 
-                        "SUM((st.gender = 'M' AND st.ep01_result = 2)::INT) AS ep1_M_fail,",
-                        "SUM((st.gender = 'V' AND st.ep01_result = 2)::INT) AS ep1_V_fail,",
-                        "SUM((st.ep01_result = 2)::INT) AS ep1_T_fail,",
+                    "SUM((st.gender = 'M' AND st.ep01_result = 3)::INT) AS ep1_m_reex,",
+                    "SUM((st.gender = 'V' AND st.ep01_result = 3)::INT) AS ep1_v_reex,",
+                    "SUM((st.ep01_result = 3)::INT) AS ep1_t_reex,",
 
-                        "SUM((st.gender = 'M' AND st.ep01_result = 3)::INT) AS ep1_M_reex,",
-                        "SUM((st.gender = 'V' AND st.ep01_result = 3)::INT) AS ep1_V_reex,",
-                        "SUM((st.ep01_result = 3)::INT) AS ep1_T_reex,",
+                    "SUM((st.gender = 'M' AND st.ep01_result = 4)::INT) AS ep1_m_wdr,",
+                    "SUM((st.gender = 'V' AND st.ep01_result = 4)::INT) AS ep1_v_wdr,",
+                    "SUM((st.ep01_result = 4)::INT) AS ep1_t_wdr,",
+            # grade improvemenet
+                    "SUM((st.gender = 'M' AND st.ep01_result = 1 AND st.reex_count > 0)::INT) AS ep1_m_gimp,",
+                    "SUM((st.gender = 'V' AND st.ep01_result = 1 AND st.reex_count > 0)::INT) AS ep1_v_gimp,",
+                    "SUM((st.ep01_result = 1 AND st.reex_count > 0)::INT) AS ep1_t_gimp,",
+            # re-examination
+                    "SUM((st.gender = 'M' AND st.ep01_result = 2 AND st.reex_count > 0)::INT) AS ep1_m_reex,",
+                    "SUM((st.gender = 'V' AND st.ep01_result = 2 AND st.reex_count > 0)::INT) AS ep1_v_reex,",
+                    "SUM((st.ep01_result = 2 AND st.reex_count > 0)::INT) AS ep1_t_reex,",
 
-                        "SUM((st.gender = 'M' AND st.ep01_result = 4)::INT) AS ep1_M_wdr,",
-                        "SUM((st.gender = 'V' AND st.ep01_result = 4)::INT) AS ep1_V_wdr,",
-                        "SUM((st.ep01_result = 4)::INT) AS ep1_T_wdr,",
+   # second exam period
+            "SUM((st.gender = 'M' AND st.ep02_result = 0)::INT) AS ep2_m_nores,",
+            "SUM((st.gender = 'V' AND st.ep02_result = 0)::INT) AS ep2_v_nores,",
+            "SUM((st.ep02_result = 0)::INT) AS ep2_t_nores,",
 
+            "SUM((st.gender = 'M' AND st.ep02_result = 1)::INT) AS ep2_m_pass,",
+            "SUM((st.gender = 'V' AND st.ep02_result = 1)::INT) AS ep2_v_pass,",
+            "SUM((st.ep02_result = 1)::INT) AS ep2_t_pass,",
 
+            "SUM((st.gender = 'M' AND st.ep02_result = 2)::INT) AS ep2_m_fail,",
+            "SUM((st.gender = 'V' AND st.ep02_result = 2)::INT) AS ep2_v_fail,",
+            "SUM((st.ep02_result = 2)::INT) AS ep2_t_fail,",
 
-                        "SUM((st.gender = 'M' AND st.ep02_result = 0)::INT) AS ep2_M_nores,",
-                        "SUM((st.gender = 'V' AND st.ep02_result = 0)::INT) AS ep2_V_nores,",
-                        "SUM((st.ep02_result = 0)::INT) AS ep2_T_nores,",
+            "SUM((st.gender = 'M' AND st.ep02_result = 3)::INT) AS ep2_m_reex,",
+            "SUM((st.gender = 'V' AND st.ep02_result = 3)::INT) AS ep2_v_reex,",
+            "SUM((st.ep02_result = 3)::INT) AS ep2_t_reex,",
 
-                        "SUM((st.gender = 'M' AND st.ep02_result = 1)::INT) AS ep2_M_pass,",
-                        "SUM((st.gender = 'V' AND st.ep02_result = 1)::INT) AS ep2_V_pass,",
-                        "SUM((st.ep02_result = 1)::INT) AS ep2_T_pass,",
+            "SUM((st.gender = 'M' AND st.ep02_result = 4)::INT) AS ep2_m_wdr,",
+            "SUM((st.gender = 'V' AND st.ep02_result = 4)::INT) AS ep2_v_wdr,",
+            "SUM((st.ep02_result = 4)::INT) AS ep2_t_wdr,",
 
-                        "SUM((st.gender = 'M' AND st.ep02_result = 2)::INT) AS ep2_M_fail,",
-                        "SUM((st.gender = 'V' AND st.ep02_result = 2)::INT) AS ep2_V_fail,",
-                        "SUM((st.ep02_result = 2)::INT) AS ep2_T_fail,",
+        # final results
+            "SUM((st.gender = 'M' AND st.result = 0)::INT) AS m_nores,",
+            "SUM((st.gender = 'V' AND st.result = 0)::INT) AS v_nores,",
+            "SUM((st.result = 0)::INT) AS t_nores,",
 
-                        "SUM((st.gender = 'M' AND st.ep02_result = 3)::INT) AS ep2_M_reex,",
-                        "SUM((st.gender = 'V' AND st.ep02_result = 3)::INT) AS ep2_V_reex,",
-                        "SUM((st.ep02_result = 3)::INT) AS ep2_T_reex,",
+            "SUM((st.gender = 'M' AND st.result = 1)::INT) AS m_pass,",
+            "SUM((st.gender = 'V' AND st.result = 1)::INT) AS v_pass,",
+            "SUM((st.result = 1)::INT) AS t_pass,",
 
-                        "SUM((st.gender = 'M' AND st.ep02_result = 4)::INT) AS ep2_M_wdr,",
-                        "SUM((st.gender = 'V' AND st.ep02_result = 4)::INT) AS ep2_V_wdr,",
-                        "SUM((st.ep02_result = 4)::INT) AS ep2_T_wdr,",
+            "SUM((st.gender = 'M' AND st.result = 2)::INT) AS m_fail,",
+            "SUM((st.gender = 'V' AND st.result = 2)::INT) AS v_fail,",
+            "SUM((st.result = 2)::INT) AS t_fail,",
 
+            "SUM((st.gender = 'M' AND st.result = 3)::INT) AS m_reex,",
+            "SUM((st.gender = 'V' AND st.result = 3)::INT) AS v_reex,",
+            "SUM((st.result = 3)::INT) AS t_reex,",
 
-
-
-                "SUM((st.gender = 'M' AND st.result = 0)::INT) AS M_nores,",
-                "SUM((st.gender = 'V' AND st.result = 0)::INT) AS V_nores,",
-                "SUM((st.result = 0)::INT) AS T_nores,",
-
-                "SUM((st.gender = 'M' AND st.result = 1)::INT) AS M_pass,",
-                "SUM((st.gender = 'V' AND st.result = 1)::INT) AS V_pass,",
-                "SUM((st.result = 1)::INT) AS T_pass,",
-
-                "SUM((st.gender = 'M' AND st.result = 2)::INT) AS M_fail,",
-                "SUM((st.gender = 'V' AND st.result = 2)::INT) AS V_fail,",
-                "SUM((st.result = 2)::INT) AS T_fail,",
-
-                "SUM((st.gender = 'M' AND st.result = 3)::INT) AS M_reex,",
-                "SUM((st.gender = 'V' AND st.result = 3)::INT) AS V_reex,",
-                "SUM((st.result = 3)::INT) AS T_reex,",
-
-                "SUM((st.gender = 'M' AND st.result = 4)::INT) AS M_wdr,",
-                "SUM((st.gender = 'V' AND st.result = 4)::INT) AS V_wdr,",
-                "SUM((st.result = 4)::INT) AS T_wdr",
-
-
-
+            "SUM((st.gender = 'M' AND st.result = 4)::INT) AS m_wdr,",
+            "SUM((st.gender = 'V' AND st.result = 4)::INT) AS v_wdr,",
+            "SUM((st.result = 4)::INT) AS t_wdr",
 
                 "FROM students_student AS st",
                 "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
                 "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
                 "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-                "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
                 "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+                "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+                #"INNER JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+                #"INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
                 "WHERE sch.examyear_id = %(ey_id)s::INT",
                 "AND NOT st.tobedeleted"]
 
-            if sel_depbase:
-                sql_keys['db_id'] = sel_depbase.pk
-                #sql_list.append('AND dep.base_id = %(db_id)s::INT')
-
-            if sel_schoolbase:
-                sql_keys['sb_id'] = sel_schoolbase.pk
-                #sql_list.append('AND sch.base_id = %(sb_id)s::INT')
-
-            if sel_lvlbase_pk:
-                sql_keys['lvlbase_id'] = sel_lvlbase_pk
-                #sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
+            if request.user.is_role_school:
+                sql_keys['sb_id'] = sel_schoolbase.pk if sel_schoolbase else None
+                sql_list.append('AND sb.id = %(sb_id)s::INT')
 
             # order by id necessary to make sure that lookup function on client gets the right row
-            sql_list.append("GROUP BY dep.sequence, db.code, sb.code, sch.name")
-            sql_list.append("ORDER BY dep.sequence, sb.code")
+            sql_list.append("GROUP BY dep.sequence, lvl.sequence, db.code, lvlbase.code, sb.code, sch.name")
+            sql_list.append("ORDER BY dep.sequence, lvl.sequence, sb.code")
 
             sql = ' '.join(sql_list)
 
@@ -367,10 +362,9 @@ def create_results_per_school_rows(sel_examyear, sel_depbase=None, sel_schoolbas
                 cursor.execute(sql, sql_keys)
                 student_rows = af.dictfetchall(cursor)
 
-            if logging_on and False:
+            if logging_on:
                 logger.debug('student_rows: ' + str(student_rows))
-                # logger.debug('connection.queries: ' + str(connection.queries))
-
+                #logger.debug('connection.queries: ' + str(connection.queries))
 
         except Exception as e:
             # - return msg_err when instance not created
@@ -3187,7 +3181,6 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         # upload_dict: {'student_pk': 9226, 'studsubj_pk': 67836, 'subj_auth2by': True}
 
     save_changes = False
-    recalc_reex_grade = False
     recalc_finalgrade = False
 
     for field, new_value in upload_dict.items():
@@ -3254,7 +3247,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 save_changes = True
                 recalc_finalgrade = True
 
-        elif field in ['is_extra_nocount', 'is_extra_counts']:
+        elif field in ('is_extra_nocount', 'is_extra_counts', 'is_thumbrule'):
             saved_value = getattr(studsubj_instance, field)
             if logging_on:
                 logger.debug('saved_value: ' + str(saved_value))
@@ -3262,10 +3255,11 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             if new_value != saved_value:
                 setattr(studsubj_instance, field, new_value)
                 save_changes = True
-                if field == 'is_extra_nocount':
+                if field in ('is_extra_nocount', 'is_thumbrule'):
                     recalc_finalgrade = True
 
-        elif field == 'has_sr':
+        # TODO check or delete has_sr, disabled for now
+        elif field == 'has_sr' and False:
             saved_value = getattr(studsubj_instance, field)
 # +++++ add or delete re-examination school exam
             # - toggle value of has_sr:
@@ -3328,13 +3322,14 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                             setattr(grade_firstperiod, 'sr_auth2by_id', None)
                             setattr(grade_firstperiod, 'sr_published_id', None)
                             recalc_grade_firstperiod = True
+
                     if recalc_grade_firstperiod:
         # recalculate sesr, pece, final in all grade_periods
                         grd_view.recalc_finalgrade_in_grade_and_save(grade_firstperiod, si_dict)
                         grade_firstperiod.save()
 
-        # - count 'exemption', 'sr', 'reex', 'reex03' records of this student an save cont in student
-                        update_reexcount_etc_in_student(field, studsubj_instance)
+        # - count 'exemption', 'sr', 'reex', 'reex03', 'is_thumbrule' records of this student an save count in student
+                        update_reexcount_etc_in_student(field, studsubj_instance.student_id)
 
         elif field in ['has_exemption', 'has_reex', 'has_reex03']:
 
@@ -3410,8 +3405,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 if err_list:
                     msg_list.extend(err_list)
                     err_fields.append(field)
-        # - count 'exemption', 'sr', 'reex', 'reex03' records of this student an save cont in student
-                update_reexcount_etc_in_student(field, studsubj_instance)
+        # - count 'exemption', 'sr', 'reex', 'reex03' records of this student an save count in student
+                update_reexcount_etc_in_student(field, studsubj_instance.student_id)
 
         elif '_auth' in field:
 
@@ -3673,10 +3668,12 @@ def copy_grade_fields_from_firstperiod(grade_instance):  # PR2021-12-25
         setattr(grade_instance, fld, False)
 
 
-def update_reexcount_etc_in_student(field, studsubj_instance):  # PR2021-12-19 PR2021-12-25
+def update_reexcount_etc_in_student(field, student_pk=None):  # PR2021-12-19 PR2021-12-25 PR2022-06-05
     # values of field are 'has_exemption', 'has_sr', 'has_reex', 'has_reex03'
 
-    # function counts 'has_exemption', 'has_sr', 'has_reex', 'has_reex03' records of this student
+    # when 'has_exemption', 'has_reex', 'has_reex03': function counts grade records of this student
+    # when 'has_sr', 'is_thumbrule': function counts studsubj records with value = True
+
     #   with filter:
     #   - student_pk
     #   - sel_examperiod
@@ -3685,13 +3682,15 @@ def update_reexcount_etc_in_student(field, studsubj_instance):  # PR2021-12-19 P
     #   - when exemption, reex, reex03: no check on has_reex; grade with this ep does not exist when has_reex = False
     # Attention: must count after adding grade or saving tobedeleted = True
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- update_reexcount_etc_in_student ----------- ')
         logger.debug('field: ' + str(field))
+        logger.debug('student_pk: ' + str(student_pk))
 
-    if field in ('has_exemption', 'has_sr', 'has_reex', 'has_reex03'):
-        try:
+    if field in ('has_exemption', 'has_sr', 'has_reex', 'has_reex03', 'is_thumbrule'):
+        if True:
+       # try:
             examperiod = c.EXAMPERIOD_EXEMPTION if field == 'has_exemption' else \
                          c.EXAMPERIOD_THIRD if field == 'has_reex03' else \
                          c.EXAMPERIOD_SECOND if field == 'has_reex' else \
@@ -3699,79 +3698,94 @@ def update_reexcount_etc_in_student(field, studsubj_instance):  # PR2021-12-19 P
             db_field = 'exemption_count' if field == 'has_exemption' else \
                         'reex03_count' if field == 'has_reex03' else \
                         'reex_count' if field == 'has_reex' else \
+                        'thumbrule_count' if field == 'is_thumbrule' else \
                         'sr_count'
-            sr_clause = "AND studsubj.has_sr" if field == 'has_sr' else ''
+
             if logging_on:
                 logger.debug('examperiod: ' + str(examperiod))
                 logger.debug('db_field: ' + str(db_field))
 
-            sql_keys = {'stud_id': studsubj_instance.student_id, 'ep': examperiod, 'fld': field}
+            sql_keys = {'ep': examperiod, 'fld': field}
 
             sub_sql_list = [
-                "SELECT stud.id AS student_id, COUNT(*)",
+                "SELECT stud.id AS student_id, COUNT(*) AS count",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
                 "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
 
-                "WHERE stud.id = %(stud_id)s::INT",
-                "AND grd.examperiod = %(ep)s::INT",
-                sr_clause,
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
-                "GROUP BY stud.id"
+                "WHERE grd.examperiod = %(ep)s::INT",
+                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted"
             ]
+            if field == 'has_sr':
+                sub_sql_list.append("AND studsubj.has_sr")
+            elif field == 'is_thumbrule':
+                sub_sql_list.append("AND studsubj.is_thumbrule")
+
+            sub_sql_list.append( "GROUP BY stud.id")
             sub_sql = ' '.join(sub_sql_list)
+
+            # sub_sql row: {'student_id': 4671, 'count': 4}
+
             sql_list = ["WITH grades AS (", sub_sql, ")",
-                        "UPDATE students_student AS st",
+                        "UPDATE students_student",
                                 "SET ", db_field, " = grades.count",
                                 "FROM grades",
-                                "WHERE grades.student_id = st.id",
-                                "RETURNING st.", db_field
+                                "WHERE grades.student_id = students_student.id"
                       ]
-            sql = ' '.join(sql_list)
 
-            count = 0
+            if student_pk:
+                 sql_keys['stud_pk'] = student_pk
+                 sql_list.append("AND students_student.id %(stud_pk)s::INT")
+
+            sql_list.append("RETURNING students_student.id;")
+
+            sql = ' '.join(sql_list)
+            """
+            'WITH grades AS ( 
+                SELECT stud.id AS student_id, COUNT(*) 
+                FROM students_grade AS grd 
+                INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id) 
+                INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id) 
+                WHERE grd.examperiod = 4::INT AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted 
+                GROUP BY stud.id ) 
+                
+            UPDATE students_student AS st 
+            SET  exemption_count  = grades.count FROM grades WHERE grades.student_id = st.id RETURNING st.id, st,lastname, st.firstname, st.exemption_count, st.reex_count, st.reex03_count;', 'time': '0.406'}
+ 
+            """
+
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
-                row = cursor.fetchone()
-                # row is tuple: (1,)
-                if row:
-                    count = row[0]
+                if logging_on:
+                    for cq in connection.queries:
+                        sql_str = cq.get('sql')
+                        if 'update' in sql_str.lower():
+                            logger.debug('query: ' + str(sql_str))
 
-# for testing only: show the reex grades
-            if logging_on:
+                    rows = cursor.fetchall()
+                    for row in rows:
+                        # row is tuple: (3957, 1)
+                        logger.debug('     row: ' + str(row))
 
-                count_sql_list = [
-                    "SELECT stud.id AS stud_id, studsubj.id AS studsubj_id, grd.id AS grd_id, grd.examperiod AS ep, subjbase.code, ",
-                    "studsubj." + field + ", stud." + db_field + ",",
-                    "grd.tobedeleted AS grd_del, studsubj.tobedeleted AS ss_del",
-                    "FROM students_grade AS grd",
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    sql_list = ["SELECT exemption_count, reex_count, reex03_count, thumbrule_count, sr_count, id, lastname, firstname",
+                                "FROM students_student",
+                                "WHERE exemption_count > 0 OR reex_count > 0 OR reex03_count > 0 OR thumbrule_count > 0 OR sr_count > 0",
+                                ]
+                    sql = ' '.join(sql_list)
+                    cursor.execute(sql)
+                    rows = cursor.fetchall()
+                    for row in rows:
+                        logger.debug('     row: ' + str(row))
 
-                    "WHERE stud.id = %(stud_id)s::INT",
-                    "AND grd.examperiod = %(ep)s::INT",
-                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
-                ]
-                count_sql = ' '.join(count_sql_list)
-                with connection.cursor() as cursor:
-                    cursor.execute(count_sql, sql_keys)
-                    rows = af.dictfetchall(cursor)
-                    if rows:
-                        for row in rows:
-                            logger.debug('ZZZZZZZZZZZZZZZZZZZZZZZZ row: ' + str(row))
-
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
+        #except Exception as e:
+        #    logger.error(getattr(e, 'message', str(e)))
 # --- end of update_reexcount_etc_in_student
 
 
 def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_list, sql_student_list):  # PR2021-12-30
 
-    # function saves result and grade info in student record
+    # function saves result and grade info in return list sql_student_values
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -3812,6 +3826,24 @@ def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_l
         result_info = '|'.join(result_info_list) if result_info_list else None
         result_info_str = ''.join(("'",  result_info, "'")) if result_info else 'NULL'
 
+        e1_ce_avg = af.get_dict_value(last_student_ep_dict, ('pece', 'avg'))
+        e1_combi_avg = af.get_dict_value(last_student_ep_dict, ('combi', 'final'))
+        e1_final_avg = af.get_dict_value(last_student_ep_dict, ('final', 'avg'))
+        e1_result_index_str = str(result_index) if result_index else '0'
+
+        e1_ce_avg_str = ''.join(("'",  str(e1_ce_avg), "'")) if e1_ce_avg else 'NULL'
+        e1_combi_avg_str = ''.join(("'",  str(e1_combi_avg), "'")) if e1_combi_avg else 'NULL'
+        e1_final_avg_str = ''.join(("'",  str(e1_final_avg), "'")) if e1_final_avg else 'NULL'
+
+        e2_ce_avg = af.get_dict_value(last_student_ep_dict, ('pece', 'avg'))
+        e2_combi_avg = af.get_dict_value(last_student_ep_dict, ('combi', 'final'))
+        e2_final_avg = af.get_dict_value(last_student_ep_dict, ('final', 'avg'))
+        e2_result_index_str = str(result_index) if result_index else '0'
+
+        e2_ce_avg_str = ''.join(("'",  str(e2_ce_avg), "'")) if e2_ce_avg else 'NULL'
+        e2_combi_avg_str = ''.join(("'",  str(e2_combi_avg), "'")) if e2_combi_avg else 'NULL'
+        e2_final_avg_str = ''.join(("'",  str(e2_final_avg), "'")) if e2_final_avg else 'NULL'
+
         if logging_on:
             logger.debug('gl_ce_avg_str: ' + str(gl_ce_avg_str))
             logger.debug('gl_combi_avg_str: ' + str(gl_combi_avg_str))
@@ -3820,16 +3852,18 @@ def save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_l
             logger.debug('result_index_str: ' + str(result_index_str))
             logger.debug('result_status_str: ' + str(result_status_str))
             logger.debug('result_info_str: ' + str(result_info_str))
+        """
+        (3811, NULL, '6', NULL, 0, 'Geen uitslag', "'Uitslag: GEEN UITSLAG|Centraal examen: ne,en,wk,nask1,nask2,ta niet  "ingevuld', 
+        0, 0, 0, 0, 0, 
+        NULL, '6', NULL, 0, 
+        NULL, '6', NULL, 0)
+        """
 
-        sql_student_values = [
-            str(student_id),
-            gl_ce_avg_str,
-            gl_combi_avg_str,
-            gl_final_avg_str,
-
-            result_index_str,
-            result_status_str,
-            result_info_str
+        sql_student_values = [ str(student_id),
+            gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str,
+            result_index_str, result_status_str,  result_info_str,
+            e1_ce_avg_str, e1_combi_avg_str, e1_final_avg_str, e1_result_index_str,
+            e2_ce_avg_str, e2_combi_avg_str, e2_final_avg_str, e2_result_index_str
         ]
 
 
@@ -4256,8 +4290,9 @@ def create_student(school, department, upload_dict, messages, error_list, reques
 # - end of create_student
 
 #######################################################
-def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict, idnumber_list, examnumber_list, msg_list, error_list, request, skip_save):
-    # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11
+def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
+                            idnumber_list, examnumber_list, msg_list, error_list, request, skip_save):
+    # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -4266,18 +4301,22 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
         logger.debug('instance:    ' + str(instance))
         instance_pk = instance.pk if instance else 'None'
         logger.debug('instance.pk: ' + str(instance_pk))
+    """
+    upload_dict: {'mode': 'withdrawn', 'table': 'student', 'student_pk': 4053, 'withdrawn': True}
+    """
+# ----- get user_lang
+    user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
 
     changes_are_saved = False
     save_error = False
     field_error = False
-    recalc_studsubj_stud_result = False
-    if instance:
-        student_name = ' '.join([instance.firstname, instance.lastname])
 
+    if instance:
         save_changes = False
         update_scheme = False
         recalc_regnumber = False
         remove_exemptions = False
+        recalc_passed_failed = False
 
         for field, new_value in upload_dict.items():
             #try:
@@ -4526,6 +4565,25 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                             setattr(instance, field, new_value)
                             save_changes = True
 
+                elif field == 'withdrawn': # PR2022-06-04
+                    if not new_value:
+                        new_value = False
+                    saved_value = getattr(instance, field) or False
+                    if logging_on:
+                        logger.debug('new_value: ' + str(new_value))
+                        logger.debug('saved_value: ' + str(saved_value))
+                    if new_value != saved_value:
+                        setattr(instance, field, new_value)
+                        save_changes = True
+                        recalc_passed_failed = True
+
+                    # also set result
+                        result_index = c.RESULT_WITHDRAWN if new_value else c.RESULT_NORESULT
+                        result_status = str(_('Withdrawn')) if new_value else str(_('No result'))
+                        setattr(instance, 'result', result_index)
+                        setattr(instance, 'result_status', result_status)
+                        setattr(instance, 'result_info', None)
+
     # - save changes in other fields
                 elif field in ('iseveningstudent', 'islexstudent', 'partial_exam', 'has_dyslexie'):
                     saved_value = getattr(instance, field)
@@ -4583,6 +4641,12 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 sector=sector)
             setattr(instance, 'scheme', scheme)
 
+            if logging_on:
+                logger.debug('     dep:    ' + str(department) + ' ' + str(type(department)))
+                logger.debug('     level:  ' + str(level) + ' ' + str(type(level)))
+                logger.debug('     sector: ' + str(sector) + ' ' + str(type(sector)))
+                logger.debug('     scheme: ' + str(scheme) + ' ' + str(type(scheme)))
+
             if scheme is None:
                 msg_arr = []
                 if department.level_req:
@@ -4597,13 +4661,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     msg_txt = ' '.join(msg_arr)
                     error_list.append(msg_txt)
 
-            if logging_on:
-                logger.debug('department: ' + str(department))
-                logger.debug('level:      ' + str(level))
-                logger.debug('sector:     ' + str(sector))
-                logger.debug('scheme:     ' + str(scheme))
-
-            # - update scheme in student instance, also remove scheme if necessary
+    # - update scheme in student instance, also remove scheme if necessary
             # - update scheme in all studsubj of this student
             update_scheme_in_studsubj(instance, request)
 
@@ -4683,31 +4741,44 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
                 logger.error(getattr(e, 'message', str(e)))
 
-        if instance and changes_are_saved and remove_exemptions:
-            if logging_on:
-                logger.debug(' --- remove_exemptions --- ')
-            # get exemptions of this student
-            # check for published exemptions is already done above.
-            # PR2022-04-11 Richard Westerink ATC: eveningstudent may have exemptions.
-            # Don't remove exemptions when iseveningstudent or islexstudent
-            if not instance.bis_exam and not instance.iseveningstudent and not instance.islexstudent:
-                if student_has_exemptions(instance.pk):
-                    recalc_studsubj_and_student = delete_exemptions(instance.pk)
-                    # TODO recalc_studsubj_and_student
+        if instance and changes_are_saved:
+            if remove_exemptions:
+                if logging_on:
+                    logger.debug(' --- remove_exemptions --- ')
+                # get exemptions of this student
+                # check for published exemptions is already done above.
+                # PR2022-04-11 Richard Westerink ATC: eveningstudent may have exemptions.
+                # Don't remove exemptions when iseveningstudent or islexstudent
+                if not instance.bis_exam and not instance.iseveningstudent and not instance.islexstudent:
+                    if student_has_exemptions(instance.pk):
+                        recalc_studsubj_and_student = delete_exemptions(instance.pk)
+                        # TODO recalc_studsubj_and_student
 
-                    sql_studsubj_list, sql_student_list = \
-                        grd_view.update_studsubj_and_recalc_student_result(
-                            sel_examyear=sel_examyear,
-                            sel_school=sel_school,
-                            sel_department=sel_department,
-                            student=instance)
-                    if sql_studsubj_list:
-                        calc_res.save_studsubj_batch(sql_studsubj_list)
+                        sql_studsubj_list, sql_student_list = \
+                            grd_view.update_studsubj_and_recalc_student_result(
+                                sel_examyear=sel_examyear,
+                                sel_school=sel_school,
+                                sel_department=sel_department,
+                                student=instance)
+                        if sql_studsubj_list:
+                            calc_res.save_studsubj_batch(sql_studsubj_list)
 
-                    #if recalc_studsubj_and_student:
-                    #    calc_res.calc_student_result(examyear, department, student_dict, scheme_dict,
-                    #                                 schemeitems_dict, log_list,
-                    #                    sql_studsubj_list, sql_student_list)
+                        #if recalc_studsubj_and_student:
+                        #    calc_res.calc_student_result(examyear, department, student_dict, scheme_dict,
+                        #                                 schemeitems_dict, log_list,
+                        #                    sql_studsubj_list, sql_student_list)
+
+            if recalc_passed_failed:
+                sel_lvlbase_pk = instance.level.base_id  if instance.level else None
+                log_list = calc_res.calc_batch_student_result(
+                    sel_examyear=sel_examyear,
+                    sel_school=sel_school,
+                    sel_department=sel_department,
+                    student_pk_list=[instance.pk],
+                    sel_lvlbase_pk=sel_lvlbase_pk,
+                    user_lang=user_lang
+                )
+
     if logging_on:
         logger.debug('changes_are_saved: ' + str(changes_are_saved))
         logger.debug('field_error: ' + str(field_error))
@@ -4820,7 +4891,7 @@ def update_scheme_in_studsubj(student, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_scheme_in_studsubj ----- ')
-        logger.debug('student: ' + str(student))
+        logger.debug('     student: ' + str(student))
 
     if student:
         # - update scheme in student, also remove if necessary
@@ -4831,7 +4902,7 @@ def update_scheme_in_studsubj(student, request):
         setattr(student, 'scheme', new_scheme)
 
         if logging_on:
-            logger.debug('new_scheme: ' + str(new_scheme))
+            logger.debug('     new_scheme: ' + str(new_scheme))
 
     # - loop through studsubj of this student
         studsubjects = stud_mod.Studentsubject.objects.filter(
@@ -4847,13 +4918,20 @@ def update_scheme_in_studsubj(student, request):
                 old_subject = studsubj.schemeitem.subject
                 old_subjecttype = studsubj.schemeitem.subjecttype
 
+                if logging_on:
+                    logger.debug('     old_subject: ' + str(old_subject))
+                    logger.debug('     old_subjecttype: ' + str(old_subjecttype))
+
         # skip when studsub scheme equals new_scheme
                 if studsubj.schemeitem.scheme != new_scheme:
-         # check how many times this subject occurs in new scheme
+        # check how many times this subject occurs in new scheme
                     count_subject_in_newscheme = subj_mod.Schemeitem.objects.filter(
                         scheme=new_scheme,
                         subject=old_subject
                         ).count()
+                    if logging_on:
+                        logger.debug('     count_subject_in_newscheme: ' + str(count_subject_in_newscheme))
+
                     if not count_subject_in_newscheme:
         # delete studsub when subject does not exist in new_scheme
                         # check if studsubj is submitted, set tobedeleted = True if submitted
@@ -4879,7 +4957,7 @@ def update_scheme_in_studsubj(student, request):
                             studsubj.schemeitem = new_schemeitem
                             studsubj.save(request=request)
                         else:
-                            # if no schemeitem exist with same subjecttype: get schemeitem with lowest sequence
+        # if no schemeitem exist with same subjecttype: get schemeitem with lowest sequence
                             new_schemeitem = subj_mod.Schemeitem.objects.filter(
                                 scheme=new_scheme,
                                 subject=studsubj.schemeitem.subject
@@ -5437,13 +5515,13 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 
 
 #/////////////////////////////////////////////////////////////////
-def create_orderlist_rows(sel_examyear_code, request):
+def create_orderlist_rows(request, sel_examyear):
     # --- create rows of all schools with published subjects PR2021-08-18
     # PR2022-02-15 filter also on student.tobedeleted=False
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== students.view create_orderlist_rows ============= ')
-        logger.debug('sel_examyear_code: ' + str(sel_examyear_code) + ' ' + str(type(sel_examyear_code)))
+        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
     # create list of schools of this examyear (CUR and SXM), only where defaultrole = school
     # for sxm: only sxm schools
@@ -5475,80 +5553,82 @@ def create_orderlist_rows(sel_examyear_code, request):
     END    
     
     """
+    rows = []
+    if sel_examyear:
 
-    requsr_country_pk = request.user.country.pk
-    is_curacao = request.user.country.abbrev.lower() == 'cur'
-    show_sxm_only = "AND ey.country_id = %(requsr_country_pk)s::INT" if not is_curacao else ''
+        requsr_country_pk = request.user.country.pk
+        is_curacao = request.user.country.abbrev.lower() == 'cur'
+        show_sxm_only = "AND ey.country_id = %(requsr_country_pk)s::INT" if not is_curacao else ''
 
-    sel_exam_period = 1
-    sql_keys = {'ey_code_int': sel_examyear_code,
-                'ex_period_int': sel_exam_period,
-                'default_role': c.ROLE_008_SCHOOL,
-                'requsr_country_pk': requsr_country_pk}
+        sel_exam_period = 1
+        sql_keys = {'ey_code_int': sel_examyear.code,
+                    'ex_period_int': sel_exam_period,
+                    'default_role': c.ROLE_008_SCHOOL,
+                    'requsr_country_pk': requsr_country_pk}
 
-    sql_sublist = ["SELECT st.school_id AS school_id, publ.id AS subj_published_id, count(*) AS publ_count,",
-        "publ.datepublished, publ.examperiod",
+        sql_sublist = ["SELECT st.school_id AS school_id, publ.id AS subj_published_id, count(*) AS publ_count,",
+            "publ.datepublished, publ.examperiod",
 
-        "FROM students_studentsubject AS studsubj",
-        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+            "FROM students_studentsubject AS studsubj",
+            "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
 
-        "INNER JOIN schools_published AS publ ON (publ.id = studsubj.subj_published_id)",
-        "WHERE publ.examperiod = %(ex_period_int)s::INT",
-        "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted",
+            "INNER JOIN schools_published AS publ ON (publ.id = studsubj.subj_published_id)",
+            "WHERE publ.examperiod = %(ex_period_int)s::INT",
+            "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted",
 
-        "GROUP BY st.school_id, publ.id, publ.datepublished, publ.examperiod"
-    ]
-    sub_sql = ' '.join(sql_sublist)
-
-    total_sublist = ["SELECT st.school_id AS school_id, count(*) AS total",
-        "FROM students_studentsubject AS studsubj",
-        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-        "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted",
-        "GROUP BY st.school_id"
-    ]
-    total_sql = ' '.join(total_sublist)
-    # see https://www.postgresqltutorial.com/postgresql-group-by/
-    total_students_sublist = ["SELECT st.school_id, count(*) AS total_students",
-        "FROM students_student AS st",
-        "WHERE NOT st.tobedeleted",
-        "GROUP BY st.school_id"
-    ]
-    total_students_sql = ' '.join(total_students_sublist)
-
-    sql_list = ["WITH sub AS (", sub_sql, "), total AS (", total_sql, "), total_students AS (", total_students_sql, ")",
-        "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sub.subj_published_id,",
-        "total.total, total_students.total_students, sub.publ_count, sub.datepublished, sub.examperiod",
-
-        "FROM schools_school AS sch",
-        "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-
-        "LEFT JOIN sub ON (sub.school_id = sch.id)",
-        "LEFT JOIN total ON (total.school_id = sch.id)",
-        "LEFT JOIN total_students ON (total_students.school_id = sch.id)",
-
-        "WHERE schbase.defaultrole = %(default_role)s::INT",
-        "AND ey.code = %(ey_code_int)s::INT",
-        show_sxm_only,
-        "ORDER BY sch.id"
+            "GROUP BY st.school_id, publ.id, publ.datepublished, publ.examperiod"
         ]
-    sql = ' '.join(sql_list)
+        sub_sql = ' '.join(sql_sublist)
 
-    if logging_on:
-        logger.debug('sql: ' + str(sql))
+        total_sublist = ["SELECT st.school_id AS school_id, count(*) AS total",
+            "FROM students_studentsubject AS studsubj",
+            "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
+            "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted",
+            "GROUP BY st.school_id"
+        ]
+        total_sql = ' '.join(total_sublist)
+        # see https://www.postgresqltutorial.com/postgresql-group-by/
+        total_students_sublist = ["SELECT st.school_id, count(*) AS total_students",
+            "FROM students_student AS st",
+            "WHERE NOT st.tobedeleted",
+            "GROUP BY st.school_id"
+        ]
+        total_students_sql = ' '.join(total_students_sublist)
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        rows = af.dictfetchall(cursor)
+        sql_list = ["WITH sub AS (", sub_sql, "), total AS (", total_sql, "), total_students AS (", total_students_sql, ")",
+            "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sub.subj_published_id,",
+            "total.total, total_students.total_students, sub.publ_count, sub.datepublished, sub.examperiod",
 
-        for row in rows:
-            published_pk = row.get('subj_published_id')
-            if published_pk:
-    # can't use sql because of file field
-                published = sch_mod.Published.objects.get_or_none(pk=published_pk)
-                if published and published.file:
-                    row['file_name'] = str(published.file)
-                    row['url'] = published.file.url
+            "FROM schools_school AS sch",
+            "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+
+            "LEFT JOIN sub ON (sub.school_id = sch.id)",
+            "LEFT JOIN total ON (total.school_id = sch.id)",
+            "LEFT JOIN total_students ON (total_students.school_id = sch.id)",
+
+            "WHERE schbase.defaultrole = %(default_role)s::INT",
+            "AND ey.code = %(ey_code_int)s::INT",
+            show_sxm_only,
+            "ORDER BY sch.id"
+            ]
+        sql = ' '.join(sql_list)
+
+        if logging_on:
+            logger.debug('sql: ' + str(sql))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
+
+            for row in rows:
+                published_pk = row.get('subj_published_id')
+                if published_pk:
+        # can't use sql because of file field
+                    published = sch_mod.Published.objects.get_or_none(pk=published_pk)
+                    if published and published.file:
+                        row['file_name'] = str(published.file)
+                        row['url'] = published.file.url
 
     return rows
 # --- end of create_orderlist_rows

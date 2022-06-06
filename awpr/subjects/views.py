@@ -1444,6 +1444,7 @@ class ExamUploadView(View):
 
                         elif table == 'duo_exam':
                             updated_duo_exam_rows = create_duo_exam_rows(
+                                req_usr=request.user,
                                 sel_examyear=sel_examyear,
                                 sel_depbase=sel_department.base,
                                 append_dict=append_dict,
@@ -1592,6 +1593,132 @@ class ExamCopyView(View):
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamCopyView
 
+# ============= ExamCopyNtermenView ============= PR2022-06-02
+@method_decorator([login_required], name='dispatch')
+class ExamCopyNtermenView(View):
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExamCopyNtermenView ============= ')
+
+        req_usr = request.user
+        update_wrap = {}
+        err_html = ''
+
+# - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - add edit permit
+        has_permit = False
+        if req_usr and req_usr.country:
+            permit_list = req_usr.permit_list('page_exams')
+            if permit_list:
+                has_permit = 'permit_crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if not has_permit:
+            err_html = str(_("You don't have permission to perform this action."))
+        else:
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+                log_list = ['Copy N-termentabel', ' ']
+
+# - get variables from upload_dict
+                # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
+
+                # don't get it from usersettings, get it from upload_dict instead
+                mode = upload_dict.get('mode')
+                if mode == 'copy_ntermen':
+                    examyear_pk = upload_dict.get('examyear_pk')
+                    if logging_on:
+                        logger.debug('examyear_pk' + str(examyear_pk) + ' ' + str(type(examyear_pk)))
+
+    # - check if examyear exists and equals selected examyear from Usersetting
+                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                    if logging_on:
+                        logger.debug('selected_examyear_pk: ' + str(selected_examyear_pk) + ' ' + str(type(selected_examyear_pk)))
+
+                    if examyear_pk == selected_examyear_pk:
+                        if logging_on:
+                            logger.debug('examyear_pk == selected_examyear_pk')
+
+                        examyear = sch_mod.Examyear.objects.get_or_none(
+                            pk=examyear_pk,
+                            country=req_usr.country
+                        )
+                        if logging_on:
+                            logger.debug('examyear' + str(examyear))
+
+                        # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
+                        if examyear and not examyear.locked:
+        # - get exams
+                            exams = subj_mod.Exam.objects.filter(
+                                department__examyear=examyear,
+                                ete_exam=False
+                            )
+                            if logging_on:
+                                logger.debug('exams count' + str(len(exams)))
+                            if exams:
+                                for exam in exams:
+                                    if logging_on:
+                                        logger.debug('exam' + str(exam))
+
+                                    subject = exam.subject.name if exam.subject.name else '---'
+                                    dep_code = exam.department.base.code if exam.department.base.code else '---'
+                                    exam_name = dep_code + ' ' + subject
+                                    if exam.level:
+                                        exam_name += exam.level.base.code
+
+                                    if logging_on:
+                                        logger.debug('exam_name' + str(exam_name))
+
+                                    log_list.append(exam_name)
+
+                                    ntermentable = exam.ntermentable
+                                    if not ntermentable:
+                                        log_list.append('    This exam is nit linked to a DUO exam')
+                                        log_list.append(' ')
+                                    else:
+                                        log_list.append('    DUO exam: ' + ntermentable.omschrijving)
+
+                                    if logging_on:
+                                        logger.debug('exam: ' + str(exam))
+        # - loop through DUO exams
+                                        old_scalelength = getattr(exam, 'scalelength')
+                                        old_nterm = getattr(exam, 'nterm')
+                                        new_scalelength = getattr(ntermentable, 'schaallengte')
+                                        new_nterm = getattr(ntermentable, 'n_term')
+                                        if new_scalelength == old_scalelength and new_nterm == old_nterm:
+                                            log_list.append('    no changes')
+                                        else:
+                                            if new_scalelength != old_scalelength:
+                                                setattr(exam, 'scalelength', new_scalelength)
+                                                log_list.append(' '.join(( '    scalelength:', str(old_scalelength), '>', str(new_scalelength))))
+                                            if new_nterm != old_nterm:
+                                                setattr(exam, 'nterm', new_nterm)
+                                                log_list.append(' '.join(( '    nterm:      ', str(old_nterm), '>', str(new_nterm))))
+                                            exam.save(request=request)
+
+                update_wrap['loglist_copied_ntermen'] = log_list
+
+        if err_html:
+            update_wrap['err_html'] = err_html
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of ExamCopyNtermenView
+
 
 # ============= ExamLinkDuoExamToGradeView ============= PR2022-05-23
 @method_decorator([login_required], name='dispatch')
@@ -1662,7 +1789,6 @@ class ExamLinkDuoExamToGradeView(View):
                             if logging_on:
                                 logger.debug('subject:     ' + str(subject))
 
-
         # - else: get existing exam instance
                                 exam = subj_mod.Exam.objects.get_or_none(
                                     id=exam_pk,
@@ -1706,6 +1832,136 @@ class ExamLinkDuoExamToGradeView(View):
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamLinkDuoExamToGradeView
 
+
+
+# ============= ExamCalcGradesFromExamView ============= PR2022-06-03
+@method_decorator([login_required], name='dispatch')
+class ExamCalcGradesFromExamView(View):
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExamCalcGradesFromExamView ============= ')
+
+        req_usr = request.user
+        update_wrap = {}
+        err_html = []
+
+# - reset language
+        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - add edit permit
+        has_permit = False
+        if req_usr and req_usr.country:
+            permit_list = req_usr.permit_list('page_exams')
+            if permit_list:
+                has_permit = 'permit_crud' in permit_list
+            if logging_on:
+                logger.debug('permit_list: ' + str(permit_list))
+                logger.debug('has_permit: ' + str(has_permit))
+
+        if not has_permit:
+            class_str = 'border_bg_invalid'
+            err_html.append = str(_("You don't have permission to perform this action."))
+        else:
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+
+# - get variables from upload_dict
+                # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
+
+                # don't get it from usersettings, get it from upload_dict instead
+                mode = upload_dict.get('mode')
+                if mode == 'link_duo_exam_grade':
+                    examyear_pk = upload_dict.get('examyear_pk')
+                    exam_pk = upload_dict.get('exam_pk')
+                    # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
+                    subject_pk = upload_dict.get('subject_pk')
+
+    # - check if examyear exists and equals selected examyear from Usersetting
+                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    sel_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                    sel_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+                    if examyear_pk == sel_examyear_pk:
+                        examyear = sch_mod.Examyear.objects.get_or_none(
+                            id=examyear_pk,
+                            country=req_usr.country
+                        )
+                        department = sch_mod.Department.objects.get_or_none(
+                            base__id=sel_depbase_pk,
+                            examyear=examyear
+                        )
+                        if logging_on:
+                            logger.debug('examyear' + str(examyear))
+                            logger.debug('department' + str(department))
+
+                        # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
+                        if examyear and not examyear.locked and department:
+        # - get subject
+                            subject = subj_mod.Subject.objects.get_or_none(
+                                id=subject_pk,
+                                examyear=examyear
+                            )
+                            if logging_on:
+                                logger.debug('subject:     ' + str(subject))
+
+        # - else: get existing exam instance
+                                exam_instance = subj_mod.Exam.objects.get_or_none(
+                                    id=exam_pk,
+                                    subject=subject,
+                                    department=department,
+                                    ete_exam=False
+                                )
+                                if logging_on:
+                                    logger.debug('exam_instance: ' + str(exam_instance))
+
+                                if exam_instance:
+                                    ete_duo = 'ETE' if exam_instance.ete_exam else 'DUO'
+                                    updated_cegrade_count, updated_cegrade_listNIU, updated_student_pk_listNIU = \
+                                        calc_score.batch_update_finalgrade(
+                                            department_instance=department,
+                                            exam_instance=exam_instance
+                                        )
+
+                                    subject_dep_lvl = subject.name + ' ' + exam_instance.department.base.code + ' '
+                                    if exam_instance.department.level_req:
+                                        if exam_instance.level:
+                                            subject_dep_lvl += exam_instance.level.base.code
+                                        else:
+                                            subject_dep_lvl += '-'
+
+    # --- add exam_pk to grades, only when there is only 1 exam for this subject / dep / level / examperiod
+                                    grd_count = add_published_exam_to_grades(exam_instance)
+                                    if grd_count:
+                                        err_html.append(''.join((
+                                            "<div class='p-2 border_bg_valid'>",
+                                            str(_('The %(cpt)s exam') % {'cpt': ete_duo }), ": '", subject_dep_lvl, "'<br>",
+                                            str(_("has been linked to the corresponding subject")), "<br>",
+                                            str(_("of %(val)s candidates.") % {'val': str(grd_count)}),
+                                            '</div')))
+                                    else:
+                                        err_html.append(''.join((
+                                            "<div class='p-2 border_bg_transparent'>",
+                                            str(_('There are no candidates with the %(cpt)s exam') % {'cpt': ete_duo}), ':<br>', subject_dep_lvl,
+                                            '</div')))
+                                else:
+                                    err_html.append(''.join((
+                                        "<div class='p-2 border_bg_invalid'>",
+                                        str(_('The exam is not found')),
+                                        '</div')))
+
+        if err_html:
+            update_wrap['err_html'] = err_html
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# --- end of ExamCalcGradesFromExamView
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -1861,6 +2117,7 @@ class ExamUploadDuoExamView(View):
     # 6. create list of updated exam
                             append_dict = {'created': True}
                             updated_duo_exam_rows = create_duo_exam_rows(
+                                req_usr=request.user,
                                 sel_examyear=examyear,
                                 sel_depbase=department.base,
                                 append_dict=append_dict,
@@ -2429,9 +2686,9 @@ class ExamApproveOrSubmitGradeExamView(View):
 
                         if updated_grade_pk_list:
                             rows = grade_view.create_grade_with_ete_exam_rows(
-                                sel_examyear_pk=sel_examyear.pk,
-                                sel_schoolbase_pk=sel_school.base_id,
-                                sel_depbase_pk=sel_department.base_id,
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_school.base,
+                                sel_depbase=sel_department.base,
                                 sel_examperiod=sel_examperiod,
                                 request=request,
                                 grade_pk_list=updated_grade_pk_list
@@ -2581,6 +2838,15 @@ def batch_submit_grade_exam_rows(req_usr, published_pk, grade_exams_tobe_updated
         sql_keys = {'publ_id': published_pk, 'modby_id': req_usr.pk }
         sql_list = ["CREATE TEMP TABLE gr_update (grade_id) AS",
                     "VALUES (0::INT)"]
+
+        # TODO make separate sql for copying score to ce_score, filter out the (partially) approved scores
+        # solve by removing approved, filter out published
+        """
+        ce_status = 
+        ce_auth1by_id = NULL, ce_auth2by_id = NULL, ce_auth3by_id = NULL, ce_auth4by_id = NULL
+        ce_published_id =
+        ce_blocked = 
+        """
 
         for row in grade_exams_tobe_updated_list:
             grade_id= str(row[0])
@@ -2806,6 +3072,17 @@ def create_grade_exam_approve_submit_msg_list(req_usr, count_list, is_submit, is
         {'exam_id': 51, 'exam_name': 'Engelse taal - TKL', 
         'count': 31, 'has_blanks': 31}]
     
+        count_list: [
+            {'exam_id': 54, 'exam_name': 'Spaanse taal - TKL', 'count': 46, 'already_submitted': 46}, 
+            {'exam_id': 46, 'exam_name': 'Papiamentu - PBL', 'count': 30, 'already_submitted': 30}, 
+            {'exam_id': 39, 'exam_name': 'Mens en maatschappij 2 - PKL', 'count': 27, 'already_submitted': 27}, 
+            {'exam_id': 50, 'exam_name': 'Engelse taal - PKL', 'count': 39, 'already_submitted': 39}, 
+            {'exam_id': 36, 'exam_name': 'Economie - PBL', 'count': 13, 'already_submitted': 13}, 
+            {'exam_id': 51, 'exam_name': 'Engelse taal - TKL', 'count': 46, 'already_submitted': 46}, 
+            {'exam_id': 37, 'exam_name': 'Economie - PKL', 'count': 12, 'already_submitted': 12}, 
+            {'exam_id': 75, 'exam_name': 'Wiskunde - PBL', 'count': 13, 'already_submitted': 13}, 
+            {'exam_id': 48, 'exam_name': 'Papiamentu - TKL', 'count': 46, 'already_submitted': 46}, 
+    
         """
 
 # -  get user_lang
@@ -2840,73 +3117,80 @@ def create_grade_exam_approve_submit_msg_list(req_usr, count_list, is_submit, is
     # count candidates
                 # grade_exam_count cannot be zero because of INNER JOIN ce_exam ceex_exam_id
                 grade_exam_count = count_dict.get('count') or 0
-                msg_list.append(''.join(("<div class='pl-2'>",
-                                         str(_("There %(is_are)s %(count)s with this exam.") % {
-                                             'is_are' : get_is_are_txt(grade_exam_count),
-                                             'count': get_candidates_count_text(grade_exam_count)}),
-                                         '</div>')))
-    # count exams with blanks - should not be possible
-                no_questions_count = count_dict.get('no_questions')
-                blank_questions_count = count_dict.get('blank_questions')
-                if no_questions_count or blank_questions_count :
-                    blank_no = str(pgettext_lazy('geen', 'no') if no_questions_count else _('blank'))
-                    msg_list.append(' '.join(("<div class='pl-2 border_bg_invalid'>",
-                                            str(_('This exam has errors.')),
-                                            str(_('Please contact the Division of Exams.')), '</div>')))
+                already_submitted_count = count_dict.get('already_submitted') or 0
+
+                if grade_exam_count and grade_exam_count == already_submitted_count:
+                    msg_list.append(''.join(("<div class='pl-2'>", str(_("This exam is already submitted.")), '</div>')))
+
                 else:
+                    msg_list.append(''.join(("<div class='pl-2'>",
+                                             str(_("There %(is_are)s %(count)s with this exam.") % {
+                                                 'is_are' : get_is_are_txt(grade_exam_count),
+                                                 'count': get_candidates_count_text(grade_exam_count)}),
+                                             '</div>')))
 
-    # count grade_exam is already submitted
-                    already_published_count = count_dict.get('already_published')
-                    if already_published_count:
-                        msg_list.append(''.join(("<div class='pl-2'>",
-                                                 str(_("%(count)s %(is_are)s already submitted.") % {
-                                                     'is_are': get_is_are_txt(already_published_count),
-                                                     'count': get_exam_count_text(already_published_count)}),
-                                                 '</div>')))
-
-    # count exams with blanks
-                    grade_blanks_count = count_dict.get('has_blanks')
-                    if grade_blanks_count:
-                        msg_list.append(''.join(("<div class='pl-2'>",
-                                                 str(_("%(count)s %(has_have)s blank questions.") % {
-                                                     'has_have': get_has_have_txt(grade_blanks_count),
-                                                     'count': get_exam_count_text(grade_blanks_count)}),
-                                                 '</div>')))
-
-    # count exams double_approved
-                    grade_double_approved_count = count_dict.get('double_approved')
-                    if grade_double_approved_count:
-                        msg_list.append(''.join(("<div class='pl-2'>",
-                                                 str(_("%(count)s %(is_are)s already approved by you in a different function.") % {
-                                                 'is_are' : get_is_are_txt(grade_double_approved_count),
-                                                     'count': get_exam_count_text(grade_double_approved_count)}),
-                                                 '</div>')))
-    # count exams already_approved
-                    grade_already_approved_count = count_dict.get('already_approved')
-                    if grade_already_approved_count:
-                        msg_list.append(''.join(("<div class='pl-2'>",
-                                                 str(_("%(count)s %(is_are)s already approved.") % {
-                                                 'is_are' : get_is_are_txt(grade_already_approved_count),
-                                                     'count': get_exam_count_text(grade_already_approved_count)}),
-                                                 '</div>')))
-
-    # count committed exams
-                    if not is_submit:
-                        grade_committed_count = count_dict.get('committed')
-                        if grade_committed_count:
-                            will_be_approved_txt = str(_("%(count)s %(will_be)s approved.") % {
-                                                 'will_be' : get_will_be_text(grade_committed_count),
-                                                     'count': get_exam_count_text(grade_committed_count)})
-                            msg_list.append(''.join(("<div class='pl-2 border_bg_valid'>", will_be_approved_txt, '</div>')))
-                        else:
-                            will_be_approved_txt = str(_("No exams will be approved."))
-                            msg_list.append(''.join(("<div class='pl-2'>", will_be_approved_txt, '</div>')))
+        # count exams with blanks - should not be possible
+                    no_questions_count = count_dict.get('no_questions')
+                    blank_questions_count = count_dict.get('blank_questions')
+                    if no_questions_count or blank_questions_count :
+                        blank_no = str(pgettext_lazy('geen', 'no') if no_questions_count else _('blank'))
+                        msg_list.append(' '.join(("<div class='pl-2 border_bg_invalid'>",
+                                                str(_('This exam has errors.')),
+                                                str(_('Please contact the Division of Exams.')), '</div>')))
                     else:
-                        tobe_submitted = count_dict.get('tobe_submitted', False) or False
-                        will_be_txt = pgettext_lazy('singular', 'will be') if tobe_submitted else pgettext_lazy('singular', 'will not be')
-                        will_be_submitted_txt = str(_('This exam %(will_be)s submitted.') % {'will_be': str(will_be_txt)})
-                        border_class = 'border_bg_valid' if tobe_submitted else ''
-                        msg_list.append(''.join(("<div class='pl-2 ", border_class, "'>", will_be_submitted_txt, '</div>')))
+
+        # count grade_exam is already submitted
+                        already_published_count = count_dict.get('already_published')
+                        if already_published_count:
+                            msg_list.append(''.join(("<div class='pl-2'>",
+                                                     str(_("%(count)s %(is_are)s already submitted.") % {
+                                                         'is_are': get_is_are_txt(already_published_count),
+                                                         'count': get_exam_count_text(already_published_count)}),
+                                                     '</div>')))
+
+        # count exams with blanks
+                        grade_blanks_count = count_dict.get('has_blanks')
+                        if grade_blanks_count:
+                            msg_list.append(''.join(("<div class='pl-2'>",
+                                                     str(_("%(count)s %(has_have)s blank questions.") % {
+                                                         'has_have': get_has_have_txt(grade_blanks_count),
+                                                         'count': get_exam_count_text(grade_blanks_count)}),
+                                                     '</div>')))
+
+        # count exams double_approved
+                        grade_double_approved_count = count_dict.get('double_approved')
+                        if grade_double_approved_count:
+                            msg_list.append(''.join(("<div class='pl-2'>",
+                                                     str(_("%(count)s %(is_are)s already approved by you in a different function.") % {
+                                                     'is_are' : get_is_are_txt(grade_double_approved_count),
+                                                         'count': get_exam_count_text(grade_double_approved_count)}),
+                                                     '</div>')))
+        # count exams already_approved
+                        grade_already_approved_count = count_dict.get('already_approved')
+                        if grade_already_approved_count:
+                            msg_list.append(''.join(("<div class='pl-2'>",
+                                                     str(_("%(count)s %(is_are)s already approved.") % {
+                                                     'is_are' : get_is_are_txt(grade_already_approved_count),
+                                                         'count': get_exam_count_text(grade_already_approved_count)}),
+                                                     '</div>')))
+
+        # count committed exams
+                        if not is_submit:
+                            grade_committed_count = count_dict.get('committed')
+                            if grade_committed_count:
+                                will_be_approved_txt = str(_("%(count)s %(will_be)s approved.") % {
+                                                     'will_be' : get_will_be_text(grade_committed_count),
+                                                         'count': get_exam_count_text(grade_committed_count)})
+                                msg_list.append(''.join(("<div class='pl-2 border_bg_valid'>", will_be_approved_txt, '</div>')))
+                            else:
+                                will_be_approved_txt = str(_("No exams will be approved."))
+                                msg_list.append(''.join(("<div class='pl-2'>", will_be_approved_txt, '</div>')))
+                        else:
+                            tobe_submitted = count_dict.get('tobe_submitted', False) or False
+                            will_be_txt = pgettext_lazy('singular', 'will be') if tobe_submitted else pgettext_lazy('singular', 'will not be')
+                            will_be_submitted_txt = str(_('This exam %(will_be)s submitted.') % {'will_be': str(will_be_txt)})
+                            border_class = 'border_bg_valid' if tobe_submitted else ''
+                            msg_list.append(''.join(("<div class='pl-2 ", border_class, "'>", will_be_submitted_txt, '</div>')))
 
     # +++ if is not a test
             else:
@@ -3204,7 +3488,6 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_submit
         # because of INNER JOIN ce_exam ceex_exam_id has always a value
         # was: no_exam = not grade_exam_dict.get('ceex_exam_id')
 
-# - skip if this grade_exam is already submitted
         no_questions = not grade_exam_dict.get('ceex_amount')
         has_blank_questions = True if grade_exam_dict.get('ceex_blanks') else False
         is_submitted = True if grade_exam_dict.get('ce_exam_published_id') else False
@@ -3581,10 +3864,21 @@ def create_grade_exam_submitted_instance(sel_school, department, examperiod, now
 # - end of create_grade_exam_submitted_instance
 
 
-def add_published_exam_to_grades(exam_instance, may_override=False):
+def add_published_exam_to_grades(exam_instance):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --- add_published_exam_to_grades --- ')
+
+    # Note: exams must also be assigned to students of SXM.
+    #       Therefore don't filter on examyer.pk but on examyear.code
+
+    # PR2022-06-02 tel Lavern SMAC: has sp DUO
+    # solved by:
+    # SXM can also create exams in exam page
+    # CUR can assign exams to SXM, no override (skip when ce_exam_id has value
+    # SXM can only assign exams to SXM, may override
+
+
 
     updated_grd_count = 0
 
@@ -3603,25 +3897,31 @@ def add_published_exam_to_grades(exam_instance, may_override=False):
 
             # als add exam to stdudents of SXM, therefore use subjbase and examyear instead of subhject
             subjbase_pk = exam_instance.subject.base_id
+            examyear_pk = exam_instance.subject.examyear.pk
             examyear_code = exam_instance.subject.examyear.code
+            country_code = exam_instance.subject.examyear.country.abbrev
             depbase_pk = exam_instance.department.base_id
             lvlbase_pk = exam_instance.level.base_id if exam_instance.level else None
             examperiod = exam_instance.examperiod
             ce_exam_pk = exam_instance.pk
 
+            this_country_only = (country_code == 'Sxm')
+            may_override = (country_code == 'Sxm')
+
             if logging_on:
                 logger.debug('exam.subject.name: ' + str(exam_instance.subject.name))
-                logger.debug('subjbase_pk: ' + str(subjbase_pk))
+                logger.debug('this_country_only: ' + str(this_country_only))
+                logger.debug('may_override: ' + str(may_override))
                 logger.debug('examyear_code: ' + str(examyear_code))
-                logger.debug('depbase_pk: ' + str(depbase_pk))
+                logger.debug('examyear_pk: ' + str(examyear_pk))
+                logger.debug('examyear_code: ' + str(examyear_code))
                 logger.debug('lvlbase_pk: ' + str(lvlbase_pk))
                 logger.debug('examperiod: ' + str(examperiod))
                 logger.debug('ce_exam_pk: ' + str(ce_exam_pk))
 
             try:
-                # Note: exams must also be assigned to students of SXM.
-                #       Therefore don't filter on examyer.pk but on examyear.code
-                sql_keys = {'ey_code': examyear_code, 'db_pk': depbase_pk, 'lb_pk': lvlbase_pk,
+
+                sql_keys = {'ey_pk': examyear_pk, 'ey_code': examyear_code, 'db_pk': depbase_pk, 'lb_pk': lvlbase_pk,
                             'subjbase_pk': subjbase_pk, 'ep': examperiod,  'ce_exam_pk': ce_exam_pk}
 
                 lvlbase_join = "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)" if lvlbase_pk else ''
@@ -3630,6 +3930,11 @@ def add_published_exam_to_grades(exam_instance, may_override=False):
                 # when may_override = True it will replace existoing ce_exams with the new ones,
                 # if False it will skip existing ce_exams
                 may_override_clause = "AND grd.ce_exam_id IS NULL" if not may_override else ""
+
+                if this_country_only:
+                    this_country_only_clause = "AND ey.id = %(ey_pk)s::INT"
+                else:
+                    this_country_only_clause = "AND ey.code = %(ey_code)s::INT"
 
                 sql_list = [
                     "WITH sub_sql AS ( SELECT grd.id AS grd_id",
@@ -3645,10 +3950,10 @@ def add_published_exam_to_grades(exam_instance, may_override=False):
                     "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                     "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id )",
 
-                    "WHERE ey.code = %(ey_code)s::INT",
-                    "AND dep.base_id = %(db_pk)s::INT",
+                    "WHERE dep.base_id = %(db_pk)s::INT",
                     "AND subj.base_id = %(subjbase_pk)s::INT",
                     "AND grd.examperiod = %(ep)s::INT",
+                    this_country_only_clause,
                     may_override_clause,
                     lvlbase_clause,
                     "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted )",
@@ -3957,10 +4262,10 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 # copy exam score to ce-score when scalelength, nterm or  cesuur has changed
                 if calc_cegrade_from_exam_score:
-                    updated_cegrade_count, updated_cegrade_listNIU = calc_score.batch_update_finalgrade(
-                        sel_examyear=sel_examyear,
-                        sel_department=sel_department,
-                        exam_pk=exam_instance.pk
+                    updated_cegrade_count, updated_cegrade_listNIU, updated_student_pk_listNIU = \
+                        calc_score.batch_update_finalgrade(
+                        department_instance=sel_department,
+                        exam_instance=exam_instance
                     )
 
             #except Exception as e:
@@ -3974,7 +4279,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 
 def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
-    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13
+    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13  PR2022-06-02
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
@@ -3983,8 +4288,14 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
     # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
     # solved by: filter by examyear.code instead of examyear.pk
 
-# - only show published exams when user is school
-    sql_keys = {'ey_code': sel_examyear.code, 'depbase_id': sel_depbase.pk}
+    # PR2022-06-02 tel Lavern SMAC: has sp DUO
+    # try solving by filtering on examyear.pk when ETE/DOE logs in
+
+    # - when user is school: only show published exams
+
+    sel_depbase_pk = sel_depbase.pk if sel_depbase else 0
+
+    sql_keys = {'depbase_id': sel_depbase_pk}
 
     sql_list = [
         "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
@@ -4019,9 +4330,15 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "LEFT JOIN schools_published AS publ ON (publ.id = ex.published_id)",
 
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
-        "WHERE ey.code = %(ey_code)s::INT",
-        "AND ex.ete_exam"
+        "WHERE ex.ete_exam"
     ]
+
+    if req_usr.role == c.ROLE_008_SCHOOL:
+        sql_keys['ey_code'] = sel_examyear.code
+        sql_list.append("AND ey.code = %(ey_code)s::INT")
+    else:
+        sql_keys['ey_pk'] = sel_examyear.pk
+        sql_list.append("AND ey.id = %(ey_pk)s::INT")
 
 # - only show exams that are not published when user is_role_admin
     if not req_usr.is_role_admin:
@@ -4070,8 +4387,8 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 # --- end of create_ete_exam_rows
 
 
-def create_duo_exam_rows(sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
-    # PR2022-04-06
+def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
+    # PR2022-04-06 PR2022-06-02
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
@@ -4080,8 +4397,10 @@ def create_duo_exam_rows(sel_examyear, sel_depbase, append_dict, setting_dict=No
     # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
     # solved by: filter by examyear.code instead of examyear.pk
 
-# - only show published exams when user is school
-    sql_keys = {'ey_code': sel_examyear.code, 'depbase_id': sel_depbase.pk}
+    # PR2022-06-02 tel Lavern SMAC: has sp DUO
+    # try solving by filtering on examyear.pk when ETE/DOE logs in
+
+    sql_keys = {'depbase_id': sel_depbase.pk}
 
     sql_list = [
         "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
@@ -4123,8 +4442,16 @@ def create_duo_exam_rows(sel_examyear, sel_depbase, append_dict, setting_dict=No
 
         "LEFT JOIN accounts_user AS au ON (au.id = exam.modifiedby_id)",
 
-        "WHERE ey.code = %(ey_code)s::INT AND depbase.id = %(depbase_id)s::INT AND NOT exam.ete_exam"
+        "WHERE NOT exam.ete_exam AND depbase.id = %(depbase_id)s::INT"
     ]
+
+    if req_usr.role == c.ROLE_008_SCHOOL:
+        sql_keys['ey_code'] = sel_examyear.code
+        sql_list.append("AND ey.code = %(ey_code)s::INT")
+    else:
+        sql_keys['ey_pk'] = sel_examyear.pk
+        sql_list.append("AND ey.id = %(ey_pk)s::INT")
+
 
     if exam_pk_list:
         sql_keys['pk_arr'] = exam_pk_list
@@ -4244,62 +4571,66 @@ def create_duo_exam_count_rows(sel_examyear, sel_depbase, append_dict, setting_d
 # --- end of create_duo_exam_count_rows
 
 
-def create_duo_subject_rows(req_usr, sel_examyear_pk, sel_depbase_pk, append_dict, setting_dict=None, exam_pk_list=None):
+def create_duo_subject_rows(sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_subject_rows ============= ')
 
-# - only show published exams when user is school
-    sql_keys = {'ey_id': sel_examyear_pk, 'depbase_id': sel_depbase_pk}
-    sql_list = [
-        "SELECT subj.id, subj.base_id AS subjbase_id,",
-        "sb.code AS subjbase_code, subj.name AS subj_name,",
-        "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id, ",
-        "dep.id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code",
+    duo_subject_rows=[]
 
-        "FROM subjects_schemeitem AS si",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-        "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+    if sel_examyear and sel_depbase:
 
-        "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
-        "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
-        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+    # - only show published exams when user is school
+        sql_keys = {'ey_id': sel_examyear.pk, 'depbase_id': sel_depbase.pk}
+        sql_list = [
+            "SELECT subj.id, subj.base_id AS subjbase_id,",
+            "sb.code AS subjbase_code, subj.name AS subj_name,",
+            "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id, ",
+            "dep.id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code",
 
-        "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT",
-        #PR2022-05-19 added: AND si.weight_ce > 0", because subjects without CE were showing
-        "AND NOT si.ete_exam AND si.weight_ce > 0"
-    ]
+            "FROM subjects_schemeitem AS si",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
 
-    if setting_dict:
-        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-        if sel_lvlbase_pk:
-            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+            "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
 
-    sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name, lvl.id, lvl.abbrev, dep.id, depbase.id, depbase.code")
+            "WHERE ey.id = %(ey_id)s::INT AND depbase.id = %(depbase_id)s::INT",
+            #PR2022-05-19 added: AND si.weight_ce > 0", because subjects without CE were showing
+            "AND NOT si.ete_exam AND si.weight_ce > 0"
+        ]
 
-    sql = ' '.join(sql_list)
-    if logging_on:
-        logger.debug('sql_keys: ' + str(sql_keys))
-        logger.debug('sql: ' + str(sql))
+        if setting_dict:
+            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+            if sel_lvlbase_pk:
+                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        duo_subject_rows = af.dictfetchall(cursor)
+        sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name, lvl.id, lvl.abbrev, dep.id, depbase.id, depbase.code")
 
-# - add messages to first exam_row, only when exam_pk exists
-        if exam_pk_list and len(exam_pk_list) == 1 and duo_subject_rows:
-            # when exam_pk has value there is only 1 row
-            row = duo_subject_rows[0]
-            if row:
-                for key, value in append_dict.items():
-                    row[key] = value
+        sql = ' '.join(sql_list)
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
 
-    if logging_on:
-        logger.debug('duo_subject_rows: ' + str(duo_subject_rows))
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            duo_subject_rows = af.dictfetchall(cursor)
+
+    # - add messages to first exam_row, only when exam_pk exists
+            if exam_pk_list and len(exam_pk_list) == 1 and duo_subject_rows:
+                # when exam_pk has value there is only 1 row
+                row = duo_subject_rows[0]
+                if row:
+                    for key, value in append_dict.items():
+                        row[key] = value
+
+        if logging_on:
+            logger.debug('duo_subject_rows: ' + str(duo_subject_rows))
 
     return duo_subject_rows
 # --- end of create_duo_subject_rows
@@ -5937,8 +6268,8 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
             else:
                 sql_list.append("AND FALSE")
 
-        if orderby_sequence:
-            sql_list.append("ORDER BY sjtpbase.sequence")
+        #if orderby_sequence:
+        #    sql_list.append("ORDER BY sjtpbase.sequence")
 
         sql_list.append("ORDER BY sjtp.id")
 

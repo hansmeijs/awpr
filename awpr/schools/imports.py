@@ -1036,7 +1036,8 @@ def upload_student_from_datalist(data_dict, school, department, is_test, double_
         if student:
             data_dict.pop('rowindex')
             changes_are_saved, error_save, field_error = \
-                stud_view.update_student_instance(student, school.examyear, school, department, data_dict, idnumber_list, examnumber_list, messagesNIU, error_list, request, is_test)
+                stud_view.update_student_instance(student, school.examyear, school, department, data_dict,
+                                                  idnumber_list, examnumber_list, messagesNIU, error_list, request, user_lang, is_test)
 
             append_dict = {'created': True} if is_new_student else {}
             rows, error_dictNIU = stud_view.create_student_rows(
@@ -3809,7 +3810,6 @@ class UploadImportDntView(View):  # PR2022-02-26
             if request.POST['upload']:
                 upload_dict = json.loads(request.POST['upload'])
 
-
 # - Reset language
                 # PR2019-03-15 Debug: language gets lost, get request.user.lang again
                 # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_from_usersetting
@@ -3849,79 +3849,129 @@ class UploadImportDntView(View):  # PR2022-02-26
                     filename = upload_dict.get('filename', '')
                     upload_data_list = upload_dict.get('data_list')
 
-                    get_dnt_from_upload(sel_examyear, upload_data_list, request)
+                    log_list = get_dnt_from_upload(sel_examyear, upload_data_list, filename, request)
+                    update_wrap['dnt_log_list'] = log_list
 
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of UploadImportDntView
 
 
-def get_dnt_from_upload(sel_examyear, upload_data_list, request):
-    logging_on = s.LOGGING_ON
+def get_dnt_from_upload(sel_examyear, upload_data_list, filename, request):
+    # PR2022-06-02
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_dnt_from_upload ----- ' )
+
+    log_list = ['Upload N-termentabel ' + filename, '']
 
     if sel_examyear and upload_data_list:
         fields = ('sty_id', 'opl_code', 'leerweg', 'ext_code', 'Tijdvak', 'nex_ID', 'Omschrijving', 'Schaallengte', 'N-term', 'AfnameVakID', 'Extra_vakcodes_tbv_Wolf', 'datum', 'begintijd', 'eindtijd')
 
         first_row = upload_data_list[0]
-        if logging_on:
-            logger.debug('first_row : ' + str(first_row))
 
 # create list of mapped_fields, index is same as index in upload_data_list, value is fieldname of table Ntermentable
+        """
+        mapped_fields: ['sty_id', 'opl_code', 'leerweg', 'ext_code', None, None, None, None, 'tijdvak', 'nex_id', 'omschrijving', 'schaallengte', 'n_term', 'afnamevakid', 'extra_vakcodes_tbv_wolf', 'datum', 'begintijd', 'eindtijd', None, None]
+
+        """
         mapped_fields = []
-        pkfield_index = None # index of nex_ID
+        pkfield_index = None  # index of nex_ID
+        name_index = None  # index of Omschrijving
+
         for col_index, caption in enumerate(first_row):
             db_field = None
             if caption and caption in fields:
-                logger.debug('col_index : ' + str(col_index) + ' caption : ' + str(caption))
+    # replace '-' by '_
                 if '-' in caption:
                     caption = caption.replace('-', '_')
+    # convert upper to lower case
                 db_field = caption.lower()
+    # get col_index of nex_id and omschrijving
                 if db_field == 'nex_id':
                     pkfield_index = col_index
+                elif db_field == 'omschrijving':
+                    name_index = col_index
             mapped_fields.append(db_field)
-        if logging_on:
-            logger.debug('mapped_fields: ' + str(mapped_fields))
 
-# loop through rows of upload_data_list
+        if logging_on:
+            logger.debug('     pkfield_index: ' + str(pkfield_index))
+            logger.debug('     name_index: ' + str(name_index))
+            logger.debug('     mapped_fields: ' + str(mapped_fields))
+
+        # loop through rows of upload_data_list
         if pkfield_index:
             for row_index, row in enumerate(upload_data_list):
-                # slip first row, contains field names
+    # slip first row, contains field names
                 if row_index:
-                    # get nex_id:
-                    nt_instance = None
+                    is_added = False
+                    has_changed = False
+
+                    changed_list = []
+    # get nex_id:
                     nex_id = row[pkfield_index]
+                    exam_name = row[name_index]
+
+                    if logging_on:
+                        logger.debug('     row_index: ' + str(row_index) + ' ' + str(nex_id) + ' ' + str(exam_name))
                     if nex_id:
-# check if nex_id starts with last 2 digits of examyear
-                        nextid_yearstr = nex_id[:2]
-                        ey_yearstr = str(sel_examyear.code)[2:]
-                        if logging_on:
-                            logger.debug('nextid_yearstr: ' + str(nextid_yearstr))
-                            logger.debug('    ey_yearstr: ' + str(ey_yearstr))
-
-                        # get existing row
-                        nt_instance = subj_mod.Ntermentable.objects.get_or_none(
+    # get existing row
+                        nt_instance = subj_mod.Ntermentable.objects.filter(
                             examyear=sel_examyear,
                             nex_id=nex_id
-                        )
-                    if nt_instance is None:
-                        nt_instance = subj_mod.Ntermentable(
-                            examyear=sel_examyear,
-                            nex_id=nex_id
-                        )
-                    if nt_instance:
-                        # loop through columns of row, only the ones that are mapped
-                        for col_index, field in enumerate(mapped_fields):
-                            if field and col_index != pkfield_index:
-                                value = row[col_index]
-                                if not value:
-                                    value = None
-                                if value and field == 'datum':
-                                    arr = value.split('-')
-                                    value = '-'.join((arr[2],arr[1],arr[0]))
-                                setattr(nt_instance, field, value)
-                    nt_instance.save(request=request)
-                    if logging_on and False:
-                        logger.debug('nt_instance: ' + str(nt_instance))
+                        ).order_by('-pk').first()
+    # add row if not found
+                        if nt_instance is None:
+                            nt_instance = subj_mod.Ntermentable(
+                                examyear=sel_examyear,
+                                nex_id=nex_id
+                            )
+                            is_added = True
+                            header_txt = ' '.join((str(nex_id), str(exam_name)))
+                        else:
+                            header_txt = ' '.join((str(nt_instance.nex_id), str(nt_instance.omschrijving)))
 
+                        if nt_instance:
+                            if logging_on:
+                                logger.debug('     --- nt_instance: ' + str(nt_instance.omschrijving))
+            # loop through columns of row, only the ones that are mapped
+                            for col_index, field in enumerate(mapped_fields):
+                                if field and col_index != pkfield_index:
+                                    value = row[col_index]
+                                    saved_value = getattr(nt_instance, field)
+                                    if logging_on:
+                                        logger.debug('          value: ' + str(value) + ' saved_value: ' + str(saved_value))
+
+                                    new_value = None
+            # convert date format 20-5-2022 to 2022-05-20
+                                    if value:
+                                        if field == 'datum':
+                                            new_value = af.get_date_from_arr_str_ddmmyy(value)
+
+            # replace n-term comma by dot
+                                        elif field == 'n-term':
+                                            new_value = value.replace(',', '.')
+
+                                        elif field in ('sty_id', 'tijdvak', 'schaallengte', 'afnamevakid'):
+                                            new_value = int(value)
+                                        else:
+                                            new_value = value
+
+                                    if new_value != saved_value:
+                                        setattr(nt_instance, field, new_value)
+                                        has_changed = True
+                                        changed_list.append(' '.join(('  ', str(field), str(saved_value), '>', str(new_value))))
+
+                                        if logging_on:
+                                            logger.debug('     --- new_value: ' + str(new_value))
+                        nt_instance.save(request=request)
+
+                        prefix = '+ ' if is_added else '* ' if has_changed else "  "
+                        log_list.append(prefix + header_txt)
+
+                        log_list.extend(changed_list)
+    if logging_on:
+        for row in log_list:
+            logger.debug(row)
+
+    return log_list
 # - end of get_dnt_from_upload

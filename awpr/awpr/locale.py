@@ -938,6 +938,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve_exams'] = _("Approve exams")
         dict['_by_'] = TXT__by_
         dict['Upload_ntermen'] = _("Upload N-termen tabel")
+        dict['Copy_ntermen_to_exams'] = _("Copy N-termen to exams")
+        dict['Ntermen_will_be_copied'] = _("The scalelengths and n-termen will be copied to the DUO exams.")
 
         dict['Undo_published'] = _("Undo 'Published'")
         dict['Remove_published_from_exam'] = _("Remove 'Published' from exam")
@@ -971,6 +973,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Enter_cesuur_01'] = _("You are about to enter cesuur '")
         dict['Enter_cesuur_02'] = _("' for exam:")
         dict['Enter_cesuur_03'] = _("The grades of all candidates with this exam will be calculated.")
+
+        dict['Enter_nterm'] = _("Enter N-term")
+        dict['Enter_nterm_01'] = _("You are about to enter N-term '")
 
         dict['Link_DUO_to_grade_exam'] = _("Link DUO exam to candidates")
         dict['Link_DUO_to_grade_exam_01'] = _("The DUO exam below will be linked")
@@ -1371,6 +1376,7 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Approved_in_function_of': _('You have already approved this grade as '),
                                'Score_not_entered': _('This score is not entered.'),
                                'Grade_not_entered': _('This grade is not entered.'),
+                               'Subject_has_no_ce': _('This subject has no central exam.'),
                                'Dont_haveto_approve_blank_scores': _("You don't have to approve blank scores."),
                                'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
@@ -1384,9 +1390,23 @@ def get_locale_dict(table_dict, user_lang, request):
     if 'page_result' in page_list:
         dict['Results'] = _('Results')
         dict['Result'] = _('Result')
+
+        dict['Passed'] = _('Passed')
+        dict['Failed'] = _('Failed')
+        dict['Withdrawn'] = _('Withdrawn')
+        dict['Withdrawn_2lines'] = pgettext_lazy('2lines', 'Withdrawn')
+        dict['No_result'] = _('No result')
+        dict['Total_candidates'] = _('Total number of candidates')
+
+        dict['Withdraw_candidate'] = _('Withdraw candidate')
+        dict['will_be_withdrawn'] = pgettext_lazy('singular', ' will be withdrawn.')
+        dict['Status_withdrawn_of'] = _("The status 'Withdrawn' of ")
+        dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
+
         dict['Preliminary_gradelist'] = _('Preliminary grade list')
         dict['Preliminary_ex5_form'] = _('Preliminary %(form)s') % {'form': 'Ex5'}
         dict['The_preliminary_ex5_form'] = _('The preliminary %(form)s form') % {'form': 'Ex5'}
+        dict['The_overview_of_results'] = _('The overview of the results')
 
         dict['Download_gradelist'] = _('Download grade list')
         dict['Download_Ex_form'] = _('Download Ex form')
@@ -1402,6 +1422,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_secretary'] = _('There is no secretary')
 
         dict['Calc_result'] = _('Calculate result')
+        dict['Download_overview'] = _('Download overview')
 
     # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:
