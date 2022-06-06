@@ -287,7 +287,9 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         #  PR2022-05-30 only give no_access when user has no usergroups (commissioner could not log in
         # was no_access = ('permit_view' not in permit_list and 'permit_crud' not in permit_list)
 
-        no_access = (not permit_list)
+#  PR2022-06-06 back to previous one, to be able to block acces to result page when user is not chairperson of secretary
+        # was: no_access = (not permit_list)
+        no_access = not ('permit_view' in permit_list or 'permit_crud' in permit_list)
 
 # ------- set message -------- PR2021-03-25
         # messages block access to the page.

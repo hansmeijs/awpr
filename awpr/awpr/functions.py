@@ -1272,7 +1272,7 @@ def system_updates(examyear, request):
     #recalc_score_of_ce_result()
 
 # PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
-    show_deleted_grades(request)
+    #show_deleted_grades(request)
 
 # PR2022-05-02 recalc amount and scalelength in exams
     #recalc_amount_and_scalelength_of_assignment(request)
@@ -1328,7 +1328,6 @@ def reset_show_msg(request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
-
 ######################################
 
 

@@ -273,7 +273,22 @@ def message_openargs():  #PR2022-05-28 PR2022-06-01
     # check if selected examyear is the same as this examyear,
     # return warning when examyear is different from this_examyear
 
-    msg = ''.join(('<p><b>', str(_('Anouncement')).upper(), '</b><br>',
+    msg = ''.join((
+        '<p><b>', str(_('How to submit the Ex2A form')), '</b></p>',
+        '<ul><li>', str(_('Go to the page <i>Grades</i> and click in the horizontal black bar on the tab <i>First exam period</i>.')),'</li>',
+        '<li>', str(_("Click the grey button <i>Approve grades</i>.")),'</li>',
+        '<li>', str(_("Make sure that you have selected <b>Central exam</b> in the field <i>Exam type</i>, not 'School exam'.")),'</li>',
+        '<li>', str(_('After the chairperson, secretary, examiner and second corrector have approved the scores,')),' ',
+        str(_("the chairperson or secretary can submit the Ex2A form by clicking the grey button <i>Submit Ex2A</i>.")),
+        '</li></ul>'
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+        msg = ''.join(('<p><b>', str(_('Anouncement')).upper(), '</b><br>',
         str(_('There were some issues with downloading the Ex forms.')), ' ',
         str(_('Hopefully they are solved now.')),'  ', str(_('We apologize for the inconvenience.')),'</p><p>',
         str(_('<b>How to submit the Ex4 form</b>')), '<br>',
@@ -284,12 +299,6 @@ def message_openargs():  #PR2022-05-28 PR2022-06-01
         str(_('Click <i>Submit Ex4 form</i> to submit the Ex4 form.')),'<br>',
         str(_('Go to the page <i>Archive</i> to download the submitted form.'))
     ))
-
-
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-    """
     msg = ''.join(('<b>', str(_('Anouncement')).upper(), '</b><br>',
         str(_('The ETE has published the cesuur and conversion tables of the practical exams.')),'<br>',
         str(_('AWP has automatically calculated the grades. They are shown in the column <i>CE grade</i> on the page <i>Grades</i>.')),'<br>',
