@@ -14,6 +14,15 @@ from django.views.generic import View
 
 from os.path import basename
 
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
+from reportlab.lib.units import inch, mm
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Image
+
 from accounts import models as acc_mod
 from accounts import  views as acc_view
 from awpr import constants as c
@@ -25,6 +34,7 @@ from awpr import library as awpr_lib
 from schools import models as sch_mod
 from subjects import models as subj_mod
 from subjects import views as subj_view
+from students import results as stud_res
 
 import xlsxwriter
 from zipfile import ZipFile
@@ -1419,11 +1429,11 @@ class GradeDownloadEx5View(View):  # PR2022-02-17
             if request.user and request.user.country and request.user.schoolbase:
                 req_user = request.user
 
-                # - reset language
+    # - reset language
                 user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
-                # - get selected examyear, school and department from usersettings
+    # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, may_edit, msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
 
@@ -1451,7 +1461,6 @@ class GradeDownloadEx5View(View):  # PR2022-02-17
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of GradeDownloadEx5View
-
 
 
 @method_decorator([login_required], name='dispatch')
@@ -2247,8 +2256,15 @@ def create_ex5_format_dict(book, sheet, school, department, subject_pk_list, sub
     ex5_formats['row_formats'].append(row_align_center)
     ex5_formats['totalrow_formats'].append(totalrow_align_center)
 
-
-
+# Uitslag van het examen
+    """
+    field_width.append(4)
+    ex5_formats['field_names'].append('subjects_count')
+    ex5_formats['field_captions'].append('@@@ Uitslag van het examen')
+    ex5_formats['header_formats'].append(th_rotate)
+    ex5_formats['row_formats'].append(row_align_center)
+    ex5_formats['totalrow_formats'].append(totalrow_align_center)
+    """
 
     ex5_formats['field_width'] = field_width
 
@@ -2516,7 +2532,7 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
                               lvlbase_pk=None):
     # PR2022-02-17 PR2022-03-09
     # this function is only called by create_ex2_xlsx
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex5_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
@@ -2940,7 +2956,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         th_merge_bold = ex5_formats.get('th_merge_bold')
         th_prelim = ex5_formats.get('th_prelim')
         th_align_center = ex5_formats.get('th_align_center')
-        totalrow_merge = ex5_formats.get('totalrow_merge')
+        th_rotate = ex5_formats.get('th_rotate')
         #col_index = len(ex5_formats['field_width'])
 
         formatindex_first_subject = ex5_formats.get('formatindex_first_subject', 0)
@@ -2950,7 +2966,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         # --- min ond row
         sheet.write(0, 0, library['minond'], bold_format)
 
-    # --- title row
+# --- title row
         title_str = library['ex5_title']
         if school.islexschool:
             lb_rgl01_str = ' '.join((library['lex_lb_rgl01'], library['lex_lb_rgl02']))
@@ -2977,7 +2993,8 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         row_index = 9
 
         if not save_to_disk:
-            prelim_txt = f'VOORLOPIG {exform_name} FORMULIER'
+            #prelim_txt = f'VOORLOPIG {exform_name} FORMULIER'
+            prelim_txt = 'VOORLOPIG %(cpt)s FORMULIER' % {'cpt': exform_name}
             sheet.write(row_index, 0, prelim_txt, bold_format)
 
         # if has_published_ex2_rows(examyear, school, department):
@@ -3005,12 +3022,13 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
                     row_index += 2
 
 # ---  write table header
-                row_index = write_ex5_table_header(sheet, row_index, ex5_formats, library, th_align_center)
+                row_index, max_col_index = write_ex5_table_header(book, sheet, row_index, ex5_formats, library, th_align_center, th_rotate)
                 row_index += 2
 
 # ---  student rows
                 for student_pk, student_dict in students_dict.items():
                     row_index = write_ex5_table_row(
+                        book=book,
                         sheet=sheet,
                         row_index=row_index,
                         student_pk=student_pk,
@@ -3089,7 +3107,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
 # --- end of create_ex5_xlsx
 
 
-def write_ex5_table_header(sheet, row_index, ex5_formats, library, th_align_center):
+def write_ex5_table_header(book, sheet, row_index, ex5_formats, library, th_align_center, th_rotate):
     # format_index counts 1 for each subject.
     # col_index adds 3 columns per subject, is therefore different from format_index
 
@@ -3166,11 +3184,89 @@ def write_ex5_table_header(sheet, row_index, ex5_formats, library, th_align_cent
             sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, field_caption, header_format)
             col_index = add_colnr_and_increase_index(col_index)
 
-    return row_index
+    # format got lost, dont know why
+    th_rotate = book.add_format(
+        {'font_size': 8, 'border': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True, 'rotation': 90})
+
+# put rest here instead of in  loop through field_captions
+    sheet.set_column(col_index, col_index, 5)
+    sheet.merge_range(row_index -1, col_index, row_index - 1 , col_index + 2, 'Uitslag van het examen', th_align_center)
+    sheet.merge_range(row_index, col_index, row_index + 1, col_index, 'Geslaagd', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 5)
+    sheet.merge_range(row_index, col_index, row_index + 1, col_index, 'Toegelaten tot een herexamen', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 5)
+    sheet.merge_range(row_index, col_index, row_index + 1, col_index, 'Afgewezen', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 4)
+    sheet.merge_range(row_index -1, col_index, row_index + 1, col_index, 'pre-examen(p) of bis-examen(b)', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+# Uitslag na tweede tijdvak
+    sheet.set_column(col_index, col_index, 5)
+    sheet.merge_range(row_index -1, col_index, row_index - 1, col_index + 6, 'Uitslag na het tweede tijdvak', th_align_center)
+    sheet.merge_range(row_index, col_index, row_index, col_index + 2, 'Vak', th_align_center)
+    sheet.write(row_index + 1, col_index, 'Vak', th_align_center)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 5)
+    sheet.write(row_index + 1, col_index, 'c', th_align_center)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 5)
+    sheet.write(row_index + 1, col_index, 'e', th_align_center)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 7)
+    sheet.merge_range(row_index, col_index, row_index + 1, col_index , 'Totaal van de eindcijfers\nna het herexamen', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 7)
+    sheet.merge_range(row_index, col_index, row_index + 1, col_index , 'Gemiddelde\nvan de CE-cijfers\nna het herexamen', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 3)
+    sheet.merge_range(row_index, col_index, row_index + 1, col_index , 'Geslaagd', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    sheet.set_column(col_index, col_index, 3)
+    sheet.merge_range(row_index, col_index, row_index + 1, col_index , 'Afgewezen', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+# Teruggetrokken
+    sheet.set_column(col_index, col_index, 5)
+    sheet.merge_range(row_index -1, col_index, row_index + 1, col_index, 'Teruggetrokken', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    # Registratienummer
+    sheet.set_column(col_index, col_index, 15)
+    sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Registratienummer', th_align_center)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    # Diplomanummer
+    sheet.set_column(col_index, col_index, 5)
+    sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Diplomanummer', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    # Cijferlijstnummer
+    sheet.set_column(col_index, col_index, 5)
+    sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Cijferlijstnummer', th_rotate)
+    col_index = add_colnr_and_increase_index(col_index)
+
+# Opmerkingen
+    sheet.set_column(col_index, col_index, 17)
+    sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Opmerkingen\n(bij pre- en bis- examen de dit jaar geexamineerde vakken vermelden)', th_align_center)
+    col_index = add_colnr_and_increase_index(col_index)
+
+    return row_index, col_index
 # - end of write_ex5_table_header
 
 
-def write_ex5_table_row(sheet, row_index, student_pk, student_dict, ex5_formats,
+def write_ex5_table_row(book, sheet, row_index, student_pk, student_dict, ex5_formats,
 formatindex_first_subject, formatindex_number_subjects,
                         row_align_center, row_align_center_green, row_bg_lightgrey):
 
@@ -3182,6 +3278,31 @@ formatindex_first_subject, formatindex_number_subjects,
     if isinstance(student_pk, int):
         """
         student_dict: {3747: {'stud': {'idnr': '2002111708', 'exnr': '2101', 'gender': 'M',
+        
+        student_dict: {
+            'stud': {'idnr': '2004042808', 'exnr': '101', 'gender': 'M', 'class': '5', 'lvl': None, 'sct': 'e&m', 
+                        'name': 'Apostel, Deshawn Devanté Stan-Lee', 'regnr': 'CUR1312201011', 'dipnr': None, 'glnr': None, 
+                        'evest': False, 'lexst': False, 'bisst': False, 'partst': False, 'wdr': False, 
+                        'ep01_ce_avg': None, 'ep01_combi_avg': '7', 'ep01_final_avg': None, 'ep01_result': 0, 
+                        'ep02_ce_avg': None, 'ep02_combi_avg': '7', 'ep02_final_avg': None, 'ep02_result': 0, 
+                        'gl_ce_avg': None, 'gl_combi_avg': '7', 'gl_final_avg': None, 'result': 0}, 
+                        'subj': {
+                            165: {'gls': '5.5'}, 167: {'gls': '5.9'}, 
+                            145: {'gls': '5.5'}, 148: {'gls': '7.9', 'glf': '8'}, 
+                            149: {'gls': '6.5'}, 118: {'gls': '5.3'}, 
+                            155: {'gls': '5.7'}, 152: {'gls': '6.4', 'glf': '6'}, 
+                            142: {'gls': '6.3', 'glf': '6'}}, 
+                        'ep': {
+                            1: {
+                                165: {'s': '5.5', 'c': None, 'f': None}, 
+                                167: {'s': '5.9', 'c': None, 'f': None},
+                                 145: {'s': '5.5', 'c': None, 'f': None}, 
+                                 148: {'s': '7.9', 'c': None, 'f': '8'}, 
+                                 149: {'s': '6.5', 'c': None, 'f': None}, 
+                                 118: {'s': '5.3', 'c': None, 'f': None}, 
+                                 155: {'s': '5.7', 'c': None, 'f': None}, 
+                                 152: {'s': '6.4', 'c': None, 'f': '6'}, 
+                                 142: {'s': '6.3', 'c': None, 'f': '6'}}}}
         """
         stud_info_dict = student_dict.get('stud')
         stubjects_dict = student_dict.get('subj')
@@ -3210,9 +3331,10 @@ formatindex_first_subject, formatindex_number_subjects,
             if logging_on:
                 logger.debug(str(format_index) + ' field_name: ' + str(field_name) + str(type(field_name)))
 
+            row_format = ex5_formats['row_formats'][format_index]
+
             if format_index < formatindex_first_subject:
                 # write student info
-                row_format = ex5_formats['row_formats'][format_index]
                 value_str = stud_info_dict.get(field_name) or None
                 sheet.write(row_index, col_index, value_str, row_format)
                 col_index += 1
@@ -3276,10 +3398,56 @@ formatindex_first_subject, formatindex_number_subjects,
             elif format_index == formatindex_number_subjects:
                 sheet.write(row_index, col_index, subj_count, row_format)
                 col_index += 1
-            else:
-                sheet.write(row_index, col_index, None, row_bg_lightgrey)
-                col_index += 1
 
+        row_align_center = book.add_format(
+            {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
+        """
+        sheet.write(row_index, col_index, None, )
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        col_index += 1
+
+        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        """
     return row_index
 # - end of write_ex5_table_row
 
@@ -5012,7 +5180,6 @@ def has_published_ex1_rows(examyear, school, department):  # PR2021-08-15
 # --- end of has_published_ex1_rows
 
 ####################################################
-
 
 def create_result_overview_xlsx(request, examyear_instance, user_lang):
     # PR2022-06-04

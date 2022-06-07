@@ -2677,7 +2677,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     # TODO grades that are not published are only visible when 'same_school' (or not??)
     # also add grades of each period
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_students_with_grades_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
@@ -3087,17 +3087,15 @@ def log_list_student_header(student_dict, full_name, log_list):  # PR2021-12-19
 
     log_list.append(c.STRING_SINGLELINE_80)
     log_list.append(full_name)
-    log_list.append(
-        ('').join((c.STRING_SPACE_05,
-                    student_dict.get('depbase_code', ''), ' ',
-                    student_dict.get('lvlbase_code', ''), ' ',
-                    student_dict.get('sct_name', '')
-                    )))
+    depbase_code = student_dict.get('depbase_code') or ''
+    lvlbase_code = student_dict.get('lvlbase_code') or ''
+    sct_name = student_dict.get('sct_name') or ''
+    log_list.append( ('').join((c.STRING_SPACE_05, depbase_code, ' ', lvlbase_code, ' ', sct_name )))
 
 def log_list_add_scheme_notfound(dep_level_req, log_list):  # PR2021-12-19
     # - add msg when scheme not found
-    log_list.append(('').join((c.STRING_SPACE_05, str(_('The subjectscheme of this candidate could not be found.')))))
-    log_list.append(('').join((c.STRING_SPACE_05, str(_('The result cannot be calculated.')))))
+    log_list.append(''.join((c.STRING_SPACE_05, str(_('The subjectscheme of this candidate could not be found.')))))
+    log_list.append(''.join((c.STRING_SPACE_05, str(_('The result cannot be calculated.')))))
     msg_txt = _('Please enter the leerweg and sector.') if dep_level_req else _('Please enter the profiel.')
     log_list.append(('').join((c.STRING_SPACE_05, str(msg_txt))))
 # - end of log_list_add_scheme_notfound

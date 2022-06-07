@@ -3795,13 +3795,13 @@ def update_hasexemption_in_studsubj_batch(tobe_updated_studsubj_pk_list, examyea
 
 
 @method_decorator([login_required], name='dispatch')
-class UploadImportDntView(View):  # PR2022-02-26
+class UploadImportNtermentableView(View):  # PR2022-02-26
     # function import n-termen table
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= UploadImportDntView ============= ')
+            logger.debug(' ============= UploadImportNtermentableView ============= ')
 
         update_wrap = {}
         msg_list = []
@@ -3853,12 +3853,12 @@ class UploadImportDntView(View):  # PR2022-02-26
                     update_wrap['dnt_log_list'] = log_list
 
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of UploadImportDntView
+# - end of UploadImportNtermentableView
 
 
 def get_dnt_from_upload(sel_examyear, upload_data_list, filename, request):
     # PR2022-06-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_dnt_from_upload ----- ' )
 
@@ -3908,25 +3908,31 @@ def get_dnt_from_upload(sel_examyear, upload_data_list, filename, request):
 
                     changed_list = []
     # get nex_id:
-                    nex_id = row[pkfield_index]
+                    nex_id_str = row[pkfield_index]
                     exam_name = row[name_index]
 
+                    try:
+                        nex_id_int = int(nex_id_str)
+                    except:
+                        nex_id_int = None
+
                     if logging_on:
-                        logger.debug('     row_index: ' + str(row_index) + ' ' + str(nex_id) + ' ' + str(exam_name))
-                    if nex_id:
+                        logger.debug('     row_index: ' + str(row_index) + ' ' + str(nex_id_str) + ' ' + str(type(nex_id_str)) + ' ' + str(nex_id_int) + ' ' + str(type(nex_id_int)) + ' ' + str(exam_name))
+
+                    if nex_id_int:
     # get existing row
                         nt_instance = subj_mod.Ntermentable.objects.filter(
                             examyear=sel_examyear,
-                            nex_id=nex_id
+                            nex_id=nex_id_int
                         ).order_by('-pk').first()
     # add row if not found
                         if nt_instance is None:
                             nt_instance = subj_mod.Ntermentable(
                                 examyear=sel_examyear,
-                                nex_id=nex_id
+                                nex_id=nex_id_int
                             )
                             is_added = True
-                            header_txt = ' '.join((str(nex_id), str(exam_name)))
+                            header_txt = ' '.join((str(nex_id_int), str(exam_name)))
                         else:
                             header_txt = ' '.join((str(nt_instance.nex_id), str(nt_instance.omschrijving)))
 

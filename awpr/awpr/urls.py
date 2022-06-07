@@ -288,6 +288,8 @@ urlpatterns = [
         path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
         path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
+
+        path('download_short_gradelist', student_results.GradeDownloadShortGradelist.as_view(), name='url_result_download_short_gradelist'),
         path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5'),
         path('result_download_overview', grade_excel.GradeDownloadOverviewView.as_view(), name='url_result_download_overview')
     ])),
@@ -340,7 +342,7 @@ urlpatterns = [
         path('studentsubject_upload/', school_imports.UploadImportStudentsubjectView.as_view(), name='url_importstudentsubject_upload'),
 
         path('grade_upload/', school_imports.UploadImportGradeView.as_view(), name='url_importgrade_upload'),
-        path('dnt_upload/', school_imports.UploadImportDntView.as_view(), name='url_importdnt_upload'),
+        path('dnt_upload/', school_imports.UploadImportNtermentableView.as_view(), name='url_importdnt_upload'),
 
         path('username_upload/', school_imports.UploadImportUsernameView.as_view(), name='url_importusername_upload'),
         path('importdata_upload/', school_imports.UploadImportDataView.as_view(), name='url_importdata_upload'),

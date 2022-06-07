@@ -1885,7 +1885,7 @@ class ExamCalcGradesFromExamView(View):
                     # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
                     subject_pk = upload_dict.get('subject_pk')
 
-    # - check if examyear exists and equals selected examyear from Usersetting
+# - check if examyear exists and equals selected examyear from Usersetting
                     selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     sel_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                     sel_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
@@ -1904,7 +1904,7 @@ class ExamCalcGradesFromExamView(View):
 
                         # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
                         if examyear and not examyear.locked and department:
-        # - get subject
+# - get subject
                             subject = subj_mod.Subject.objects.get_or_none(
                                 id=subject_pk,
                                 examyear=examyear
@@ -1912,7 +1912,7 @@ class ExamCalcGradesFromExamView(View):
                             if logging_on:
                                 logger.debug('subject:     ' + str(subject))
 
-        # - else: get existing exam instance
+# - get exam instance
                                 exam_instance = subj_mod.Exam.objects.get_or_none(
                                     id=exam_pk,
                                     subject=subject,
@@ -1923,6 +1923,7 @@ class ExamCalcGradesFromExamView(View):
                                     logger.debug('exam_instance: ' + str(exam_instance))
 
                                 if exam_instance:
+# - recalc grade from score and update final grade in all students
                                     ete_duo = 'ETE' if exam_instance.ete_exam else 'DUO'
                                     updated_cegrade_count, updated_cegrade_listNIU, updated_student_pk_listNIU = \
                                         calc_score.batch_update_finalgrade(
@@ -2677,12 +2678,13 @@ class ExamApproveOrSubmitGradeExamView(View):
                             )
 
     #  - submit grade_exams
-                        elif is_submit:
-                            has_error, updated_grade_pk_list = batch_submit_grade_exam_rows(
-                                req_usr=req_usr,
-                                published_pk=published_pk,
-                                grade_exams_tobe_updated_list=grade_exams_tobe_updated_list
-                            )
+                        #elif is_submit:
+                            # PR2022-06-07 DONT
+                           # has_error, updated_grade_pk_list = batch_submit_grade_exam_rows(
+                            #    req_usr=req_usr,
+                           #     published_pk=published_pk,
+                           #     grade_exams_tobe_updated_list=grade_exams_tobe_updated_list
+                           # )
 
                         if updated_grade_pk_list:
                             rows = grade_view.create_grade_with_ete_exam_rows(
@@ -2813,6 +2815,7 @@ def batch_approve_grade_exam_rows(request, grade_exams_tobe_updated_list, requsr
 
 def batch_submit_grade_exam_rows(req_usr, published_pk, grade_exams_tobe_updated_list):
     #PR2020-05-06
+    # GOES WRONG WHEN SCHOOL HAVE ENTERED ce-grades alreay:
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_submit_grade_exam_rows -----')
@@ -3878,8 +3881,6 @@ def add_published_exam_to_grades(exam_instance):
     # CUR can assign exams to SXM, no override (skip when ce_exam_id has value
     # SXM can only assign exams to SXM, may override
 
-
-
     updated_grd_count = 0
 
     if exam_instance.examperiod in (1, 2, 3):
@@ -3895,7 +3896,7 @@ def add_published_exam_to_grades(exam_instance):
     # skip if there are multiple exams
         if count_exams == 1:
 
-            # als add exam to stdudents of SXM, therefore use subjbase and examyear instead of subhject
+            # als add exam to students of SXM, therefore use subjbase and examyear instead of subject
             subjbase_pk = exam_instance.subject.base_id
             examyear_pk = exam_instance.subject.examyear.pk
             examyear_code = exam_instance.subject.examyear.code

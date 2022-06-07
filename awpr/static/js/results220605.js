@@ -79,6 +79,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_result_download_ex5 = get_attr_from_el(el_data, "data-url_result_download_ex5");
     urls.url_result_download_overview = get_attr_from_el(el_data, "data-url_result_download_overview");
+    urls.url_result_download_short_gradelist = get_attr_from_el(el_data, "data-url_result_download_short_gradelist");
+
 
     // columns_hidden and columns_tobe_hidden are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
     // columns_tobe_hidden contains the fields and captions that can be hidden
@@ -213,12 +215,14 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_sector.addEventListener("change",
                 function() {t_SBR_select_and_update_level_sector("sctbase", el_SBR_select_sector, Response_from_SBR_select_level_sector)}, false);
         };
-        //const el_SBR_select_class = document.getElementById("id_SBR_select_class");
-        //if(el_SBR_select_class){
-        //    el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+        const el_SBR_select_class = document.getElementById("id_SBR_select_class");
+        if(el_SBR_select_class){
+            el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if(el_SBR_select_student){
             el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
             el_SBR_select_showall.addEventListener("click", function() {SBR_show_all(FillTblRows)}, false);
@@ -414,22 +418,16 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("loc ", loc);
 
         const el_submenu = document.getElementById("id_submenu")
-        //if(permit_dict.permit_crud){
-        //    AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
-        //    AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete")});
-        //};
-        if(permit_dict.requsr_role_system){
-            AddSubmenuButton(el_submenu, loc.Validate_candidate_schemes, function() {ModConfirmOpen("validate_scheme")});
-            AddSubmenuButton(el_submenu, loc.Correct_candidate_schemes, function() {ModConfirmOpen("correct_scheme")});
-        };
+
         AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
 
         if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Calc_result, function() {Calc_result("prelim")}, ["tab_show", "tab_btn_result"]);
         };
 
+        //AddSubmenuButton(el_submenu, loc.Download_short_gradelist, function() {ModConfirmOpen("short_gradelist")}, ["tab_show", "tab_btn_result"]);
         AddSubmenuButton(el_submenu, loc.Preliminary_ex5_form, function() {ModConfirmOpen("prelim_ex5")}, ["tab_show", "tab_btn_result"]);
-        AddSubmenuButton(el_submenu, loc.Download_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
+        AddSubmenuButton(el_submenu, loc.Download_result_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_result")}, [], "id_submenu_columns");
         el_submenu.classList.remove(cls_hide);
 
@@ -1353,18 +1351,16 @@ function RefreshDataRowsAfterUpload(response) {
         const map_dict = selected.student_dict;
     //console.log("map_dict", map_dict)
 
-        console.log("mode", mode)
+// ---  create mod_dict
+        mod_dict = {mode: mode};
 
         if(["prelim_ex5", "overview"].includes(mode)){
 
-// ---  create mod_dict
-            mod_dict = {mode: mode};
             const has_selected_item = (!isEmpty(map_dict));
 
             //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
             el_confirm_btn_save.innerText = loc.OK;
             el_confirm_btn_cancel.innerText = loc.Cancel;
-
 
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
         };
@@ -1379,7 +1375,7 @@ function RefreshDataRowsAfterUpload(response) {
         const full_name = (map_dict.fullname) ? map_dict.fullname  : "---";
         if(mode === "overview"){
             show_modal = true;
-            header_text = loc.Download_overview;
+            header_text = loc.Download_result_overview;
             msg_html = ["<p>", loc.The_overview_of_results, " ", loc.will_be_downloaded, "</p><p>"].join("");
 
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
@@ -1388,6 +1384,16 @@ function RefreshDataRowsAfterUpload(response) {
                 el_modconfirm_link.setAttribute("href", url_str);
             };
 
+        } else if(mode === "short_gradelist"){
+            show_modal = true;
+            header_text = loc.Download_short_gradelist;
+            msg_html = ["<p>", loc.The_short_gradelist, " ", loc.will_be_downloaded, "</p><p>"].join("");
+
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                const url_str = urls.url_result_download_short_gradelist;
+                el_modconfirm_link.setAttribute("href", url_str);
+            };
         } else if(mode === "prelim_ex5"){
             show_modal = true;
             header_text = loc.Download_Ex_form;
@@ -1453,21 +1459,21 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        //console.log(" --- ModConfirmSave --- ");
-        //console.log("mod_dict: ", mod_dict);
+        console.log(" --- ModConfirmSave --- ");
+        console.log("mod_dict: ", mod_dict);
 
-        const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
 // ---  Upload Changes
-        let url_str = null;
-        if(mod_dict.mode === "prelim_ex5"){
+        if(["prelim_ex5", "short_gradelist"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
                 el_modconfirm_link.click();
+                   console.log("el_modconfirm_link", el_modconfirm_link)
+
             // show loader
                 el_confirm_loader.classList.remove(cls_visible_hide)
             };
-
         } else if(mod_dict.mode === "withdrawn"){
+            const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
             if(may_edit){
                 const upload_dict = {
                         mode: mod_dict.mode,
@@ -1803,7 +1809,6 @@ function RefreshDataRowsAfterUpload(response) {
         setting_dict.sel_student_pk = null;
 
         const el_SBR_select_department = document.getElementById("id_SBR_select_department");
-        const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
         const el_SBR_select_class = document.getElementById("id_SBR_select_class");
 

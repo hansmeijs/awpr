@@ -239,7 +239,7 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
 def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
     # - show only students that are not tobedeleted
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_results_per_school_rows -----')
 

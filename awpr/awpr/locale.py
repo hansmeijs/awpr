@@ -1406,11 +1406,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Preliminary_gradelist'] = _('Preliminary grade list')
         dict['Preliminary_ex5_form'] = _('Preliminary %(form)s') % {'form': 'Ex5'}
         dict['The_preliminary_ex5_form'] = _('The preliminary %(form)s form') % {'form': 'Ex5'}
-        dict['The_overview_of_results'] = _('The overview of the results')
+        dict['The_short_gradelist'] = _('The short gradelist')
+        #dict['Short_grade_list'] = _('Short_grade_list')
 
         dict['Download_gradelist'] = _('Download grade list')
+        dict['Download_short_gradelist'] = _('Download short grade list')
+        dict['Download_result_overview'] = _('Download result overview')
         dict['Download_Ex_form'] = _('Download Ex form')
 
+        dict['The_overview_of_results'] = _('The overview of the results')
         dict['The_preliminary_gradelist_of'] = _('The preliminary grade list of')
         dict['The_final_gradelist_of'] = _('The final grade list of')
         dict['candidates'] = _(' candidates')
@@ -1422,7 +1426,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_secretary'] = _('There is no secretary')
 
         dict['Calc_result'] = _('Calculate result')
-        dict['Download_overview'] = _('Download overview')
 
     # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:

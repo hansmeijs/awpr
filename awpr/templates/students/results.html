@@ -29,7 +29,7 @@
                ></select>
             </div>
 
-            <div id="id_SBR_container_class" class="tw_200 m-2 display_hide">
+            <div class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Class' %}:</h6>
                 <input id="id_SBR_select_class" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
@@ -108,6 +108,8 @@
                 data-url_get_auth="{% url 'url_get_auth' %}"
                 data-url_result_download_ex5="{% url 'url_result_download_ex5' %}"
                 data-url_result_download_overview="{% url 'url_result_download_overview' %}"
+                data-url_result_download_short_gradelist="{% url 'url_result_download_short_gradelist' %}"
+
                 data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
             >
             </div>

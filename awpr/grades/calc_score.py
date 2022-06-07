@@ -160,7 +160,7 @@ def calc_grade_from_score_wrap(department, si_dict, row):
 
     #++++++++ this is the one that works +++++++++++++++++++++ PR2022-05-29
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- calc_grade_from_score_wrap -----')
         logger.debug('     sjb_code: ' + si_dict.get('subj_code', '-'))
@@ -241,7 +241,6 @@ def calc_grade_from_score_wrap(department, si_dict, row):
                             if logging_on:
                                 logger.debug('     score_int: ' + str(score_int) + ' ' + str(type(score_int)))
                                 logger.debug('     scalelength_int: ' + str(scalelength_int) + ' ' + str(type(scalelength_int)))
-                                logger.debug('     nterm_str: ' + str(nterm_str) + ' ' + str(type(nterm_str)))
 
     if logging_on:
         logger.debug(' >>> ce_grade: ' + str(ce_grade) + ' ' + str(type(ce_grade)))
@@ -687,16 +686,19 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
             "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted"
         ]
 
-        if exam_instance:
-            sql_keys['exam_pk'] = exam_instance.pk
-            sql_list.append("AND grd.ce_exam_id = %(exam_pk)s::INT")
-
-        if grade_pk_list:
-            sql_keys['grd_pk_arr'] = grade_pk_list
-            sql_list.append("AND grd.id IN (SELECT UNNEST( %(grd_pk_arr)s::INT[]))")
-        elif student_pk_list:
+        if student_pk_list:
             sql_keys['stud_pk_arr'] = student_pk_list
             sql_list.append("AND stud.id IN (SELECT UNNEST( %(stud_pk_arr)s::INT[]))")
+
+        elif grade_pk_list:
+            sql_keys['grd_pk_arr'] = grade_pk_list
+            sql_list.append("AND grd.id IN (SELECT UNNEST( %(grd_pk_arr)s::INT[]))")
+
+        elif exam_instance:
+            sql_keys['exam_pk'] = exam_instance.pk
+            sql_list.append("AND grd.ce_exam_id = %(exam_pk)s::INT")
+        else:
+            sql_list.append("AND FALSE")
 
         sql = ' '.join(sql_list)
 
@@ -705,19 +707,17 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
 
         rows = []
 
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
-                rows = af.dictfetchall(cursor)
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
+            logger.debug('     rows:    ' + str(rows))
 
         if logging_on:
             for cq in connection.queries:
-                if "SELECT grd.id" in cq:
+                if 'SELECT "grd' in cq:
                     logger.debug('query: ' + str(cq))
-            #for row in rows:
-            #    logger.debug('     row:    ' + str(row))
+            for row in rows:
+                logger.debug('     row:    ' + str(row))
 
         if rows:
 
@@ -738,7 +738,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
 
                     grade_id = str(row.get('id'))
 
-                    #TODO updated_student_pk_list to be used to calculate passedfailed of students with updates grades
+                    # updated_student_pk_list is used to calculate passedfailed of students with updates grades
                     student_id = row.get('student_id')
                     if student_id not in updated_student_pk_list:
                         updated_student_pk_list.append(student_id)
