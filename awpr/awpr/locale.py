@@ -133,6 +133,8 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Assignment_title'] = _('Assignment title')
     dict['Assignment_subjects'] = _('Assignment subjects')
 
+    dict['Thumbrule_2lines'] = _('Thumb\nrule')
+
     dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
@@ -1417,15 +1419,19 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_overview_of_results'] = _('The overview of the results')
         dict['The_preliminary_gradelist_of'] = _('The preliminary grade list of')
         dict['The_final_gradelist_of'] = _('The final grade list of')
+        dict['The_result_of'] = _('The result of')
         dict['candidates'] = _(' candidates')
 
         dict['will_be_downloaded'] = _('will be downloaded.')
+        dict['will_be_calculated'] = _('will be calculated.')
+        dict['Logfile_with_details_willbe_downloaded'] = _('The logfile with details will be downloaded.')
+
         dict['Select_a_chairperson'] = _('Select a chairperson')
         dict['Select_a_secretary'] = _('Select a secretary')
         dict['No_chairperson'] = _('There is no chairperson')
         dict['No_secretary'] = _('There is no secretary')
 
-        dict['Calc_result'] = _('Calculate result')
+        dict['Calculate_results'] = _('Calculate results')
 
     # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:

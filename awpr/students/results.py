@@ -40,7 +40,7 @@ from awpr import functions as af
 from awpr import downloads as dl
 from awpr import library as awpr_lib
 
-from grades import calc_score as calc_score
+from grades import calc_results as calc_res
 
 from students import functions as stud_fnc
 
@@ -370,6 +370,18 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 logger.debug('sel_department: ' + str(sel_department))
 
             if sel_school and sel_department:
+                student_pk_list = upload_dict.get('student_pk_list')
+
+
+# +++++ calc_batch_student_result ++++++++++++++++++++
+                calc_res.calc_batch_student_result(
+                    sel_examyear=sel_examyear,
+                    sel_school=sel_school,
+                    sel_department=sel_department,
+                    student_pk_list=student_pk_list,
+                    sel_lvlbase_pk=sel_lvlbase_pk,
+                    user_lang=user_lang
+                )
 
 # - save printdate and auth in schoolsetting
                 mode =  upload_dict.get('mode')
@@ -381,12 +393,10 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 # print Herexamen instead of AFgewezen, only when prlim gradelist is printed
                 print_reex = upload_dict.get('print_reex', False) if is_prelim else False
 
-
                 if logging_on:
                     logger.debug('VVVVVVVVVV print_reex: ' + str(upload_dict.get('print_reex', False)))
                     logger.debug('VVVVVVVVVV is_prelim: ' + str(is_prelim))
 
-                student_pk_list = upload_dict.get('student_pk_list')
 
                 settings_key = c.KEY_GRADELIST
                 new_setting_dict = {
@@ -519,7 +529,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                 "lvl.name AS lvl_name, sct.name AS sct_name, sctbase.code AS sctbase_code,"
                 "cl.name AS cluster_name, stud.classname,",
                 "studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
-                "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.gradelist_use_exem,",
+                "studsubj.is_extra_nocount, studsubj.is_thumbrule, studsubj.is_extra_counts, studsubj.gradelist_use_exem,",
 
                 "studsubj.pws_title, studsubj.pws_subjects,",
 
@@ -713,6 +723,9 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                 if row.get('is_extra_nocount', False):
                     subj_dict['is_extra_nocount'] = True
                     student_dict['has_extra_nocount'] = True
+                if row.get('is_thumbrule', False):
+                    subj_dict['is_thumbrule'] = True
+                    student_dict['has_thumbrule'] = True
                 if row.get('is_extra_counts', False):
                     subj_dict['is_extra_counts'] = True
                     student_dict['has_extra_counts'] = True
@@ -1166,7 +1179,7 @@ def draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict, is_combi=
     subj_name = subj_dict.get('subj_name', '---')
     if is_combi:
         subj_name += " *"
-    if subj_dict.get('is_extra_nocount', False):
+    if subj_dict.get('is_extra_nocount', False) or subj_dict.get('is_thumbrule', False):
         subj_name += " +"
     if subj_dict.get('is_extra_counts', False):
         subj_name += " ++"
@@ -1301,9 +1314,9 @@ def draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_di
         logger.debug('has_extra_nocount: ' + str(student_dict.get('has_extra_nocount', False)))
         logger.debug('has_extra_counts: ' + str(student_dict.get('has_extra_counts', False)))
 
-    # check if student has subjects with is_extra_nocount or is_extra_counts or gradelist_use_exem
+    # check if student has subjects with is_extra_nocount or has_thumbruleor is_extra_counts or gradelist_use_exem
     footnote = ''
-    if student_dict.get('has_extra_nocount', False):
+    if student_dict.get('has_extra_nocount', False) or student_dict.get('has_thumbrule', False):
         footnote += library.get('footnote_extra_nocount') or ''
     if student_dict.get('has_extra_counts', False):
         footnote += library.get('footnote_extra_counts') or ''

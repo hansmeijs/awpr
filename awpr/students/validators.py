@@ -1994,3 +1994,56 @@ def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18
 # --- end of validate_studsubj_add_reex_reex03_allowed
 
 
+def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
+    # from letter minister MinOnd 22 feb 2022:
+    # thumbrule is allowed:
+    # - in only 1 subject
+    # - only Havo Vwo
+    # - not in core subjects
+    # - only when they did the full exam (i.e. no exemptions)
+    # - combi grade can have thumbrule, not individual exams
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_thumbrule_allowed -------')
+        logger.debug('studsubj_instance: ' + str(studsubj_instance))
+    err_list = []
+    # when sxm has different rules
+    # id_sxm_student = studsubj_instance.student.school.examyear.country.abbrev = 'Sxm'
+
+# - only when Havo / Vwo
+    depbase_code = studsubj_instance.student.department.base.code
+    if depbase_code != 'Havo' and depbase_code != 'Vwo':
+        err_list.append(str(_('Thumb rule is not applicable in Vsbo.')))
+# - not in core subjects
+    elif studsubj_instance.schemeitem.is_core_subject:
+        err_list.append(str(_('Thumb rule is not applicable to core subjects.')))
+    else:
+# - not when there are exemptions
+        has_exemptions = stud_mod.Studentsubject.objects.filter(
+            student=studsubj_instance.student,
+            has_exemption=True,
+            tobedeleted=False
+        ).exists()
+        if has_exemptions:
+            err_list.append(str(_('Thumb rule is only applicable when the candidate has taken a full exam.')))
+            err_list.append(str(_('This candidate has exemptions, therefore the thumbrule cannot be applied.')))
+        else:
+            has_thumbrule_nocombi = stud_mod.Studentsubject.objects.filter(
+                student=studsubj_instance.student,
+                is_thumbrule=True,
+                schemeitem__is_combi=False,
+                tobedeleted=False
+            ).exists()
+            has_thumbrule_combi = stud_mod.Studentsubject.objects.filter(
+                student=studsubj_instance.student,
+                is_thumbrule=True,
+                schemeitem__is_combi=True,
+                tobedeleted=False
+            ).exists()
+            if has_thumbrule_nocombi or has_thumbrule_combi:
+                err_list.append(str(_('This candidate already has a subject with the thumb rule.')))
+                err_list.append(str(_('The thumbrule can only be applied to one subject.')))
+
+    return err_list
+# --- end of validate_studsubj_add_reex_reex03_allowed

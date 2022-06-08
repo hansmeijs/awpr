@@ -274,6 +274,36 @@ def message_openargs():  #PR2022-05-28 PR2022-06-01
     # return warning when examyear is different from this_examyear
 
     msg = ''.join((
+        '<p><b>', str(_('How AWP-online will calculate the results')), '</b><br>',
+        str(_('As soon as the conversion tables ares available, we will upload them in AWP-online.')), ' ',
+        str(_('AWP will then calculate all grades, but not the results.')), ' ',
+        str(_('Go to the page <i>Results</i> and click the grey button <i>Calculate results</i>, the results will then be calculated.')), ' ',
+        str(_('A logfile will be downloaded with a detailed calculation of the results.')), ' ',
+        str(_('The results will also be calculated when you download the preliminary grade lists.')), '</p>',
+
+        '<p><b>', str(_('Overview of the results')), '</b><br>',
+        str(_('Unfortunately the short grade list is not available yet. Instead you can use for the exam result meeting:')), '</p>',
+        '<ul><li>', str(_('The preliminary Ex5 form.')),'</li>',
+        '<li>', str(_('The preliminary grade lists.')),'</li>',
+        '<li>', str(_('The logfile of the calculated results.')),'</li></ul>',
+
+        '<p><b>', str(_('Applying the thumb rule')), '</b> (', str(_('only at Havo and Vwo')),')<br>',
+        str(_('Go to the page <i>Subjects</i> and click in the horizontal black bar on <i>First exam period</i>.')),' ',
+        str(_('Click in the column <i>Thumb rule</i> of the desired subject.</i>.')),' ',
+        str(_('AWP will give a message when a thumb rule cannot be applied to a subject.')),'</p>',
+
+        '<p><b>', str(_('Safety measure')), '</b><br>',
+        str(_("To prevent leaking of the results, before the official announcement of the results,")),' ',
+        str(_("only the chairperson and secretary have access to the page <i>Results</i> and <i>Archive</i>.")), '</p>'
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+    
+    msg = ''.join((
         '<p><b>', str(_('How to submit the Ex2A form')), '</b></p>',
         '<ul><li>', str(_('Go to the page <i>Grades</i> and click in the horizontal black bar on the tab <i>First exam period</i>.')),'</li>',
         '<li>', str(_("Click the grey button <i>Approve grades</i>.")),'</li>',
@@ -282,12 +312,8 @@ def message_openargs():  #PR2022-05-28 PR2022-06-01
         str(_("the chairperson or secretary can submit the Ex2A form by clicking the grey button <i>Submit Ex2A</i>.")),
         '</li></ul>'
     ))
-
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
+    
+    
         msg = ''.join(('<p><b>', str(_('Anouncement')).upper(), '</b><br>',
         str(_('There were some issues with downloading the Ex forms.')), ' ',
         str(_('Hopefully they are solved now.')),'  ', str(_('We apologize for the inconvenience.')),'</p><p>',

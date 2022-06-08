@@ -394,11 +394,11 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, studsubj_pk, studsubj_dict, si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_studsubj_result  -----')
         logger.debug('     studsubj_dict: ' + str(studsubj_dict))
-        logger.debug(' @@@@@@@@@@@@@@@@    si_dict: ' + str(si_dict))
+        logger.debug('     si_dict: ' + str(si_dict))
     """
     si_dict: {'si_id': 1714, 'ete_exam': False, 'gradetype': 1, 'weight_se': 1, 'weight_ce': 1, 'multiplier': 1, 
     'is_mandatory': True, 'is_combi': False, 'extra_count_allowed': False, 'extra_nocount_allowed': False, 
@@ -456,10 +456,12 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
         if log_list is not None:
             log_list.append(''.join((c.STRING_SPACE_05, str(_('Extra subject, does not count for the result.')))))
 
-    is_thumbrule = studsubj_dict.get('is_thumbrule', False) if thumb_rule_applies else False
-    if is_thumbrule:
-        if log_list is not None:
-            log_list.append(''.join((c.STRING_SPACE_05, str(_('Thumb rule applies, subject does not count for the result.')))))
+    is_thumbrule = False
+    if thumb_rule_applies:
+        is_thumbrule = studsubj_dict.get('is_thumbrule', False)
+        if is_thumbrule:
+            if log_list is not None:
+                log_list.append(''.join((c.STRING_SPACE_05, str(_('Thumb rule applies, subject does not count for the result.')))))
 
     exemp_no_ce = False
     has_exemption = studsubj_dict.get('has_exemption', False)
@@ -472,7 +474,8 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
         logger.debug(' ')
         logger.debug(' =====================  ' + str(subj_name) + '   =====================')
         logger.debug('     has_exemption: ' + str(has_exemption))
-        logger.debug('     has_reex: ' + str(has_reex))
+        logger.debug('     has_reex:      ' + str(has_reex))
+        logger.debug('     is_thumbrule:  ' + str(is_thumbrule))
 
     # gl_max_examperiod contains the examperiod that must be stored in studsubj, to be shown on gradelist
     gl_max_examperiod = c.EXAMPERIOD_FIRST
@@ -575,7 +578,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
 
 # - calculate count of each final grade
                 calc_count_final_3457_core(calc_student_ep_dict, max_final,
-                                gradetype, is_combi, is_core, multiplier, is_extra_nocount, subj_code)
+                                gradetype, is_combi, is_core, multiplier, is_extra_nocount, is_thumbrule, subj_code)
 
 # - calculate sum of final grades, separate for combi subjects
                 calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dict,
@@ -1094,7 +1097,7 @@ def calc_sum_finalgrade_and_combi(max_final, max_ep, max_ni, calc_student_ep_dic
     """
     try:
 # - calc only when gradetype is number
-# - calc only when subject is not 'is_extra_nocount'
+# - skip when subject is 'is_extra_nocount' or 'is_thumbrule'
         if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount and not is_thumbrule:
             key_str = 'combi' if is_combi else 'final'
             ep_dict = calc_student_ep_dict[key_str]
@@ -1171,7 +1174,7 @@ def calc_sum_pece(max_pece, max_ep, max_ni, calc_student_ep_dict,
     # calc only when :
     #  - gradetype is number
     #  - weight_ce > 0
-    #  - TODO exemption has no ce
+    #  - exemption has central exam
     #  - subject is not 'is_extra_nocount'
     #  - subject is not 'is_thumbrule'
 
@@ -1255,21 +1258,24 @@ def get_gradeinfo_extension(multiplier, max_ep):
 # - end of get_gradeinfo_extension
 
 
-def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_combi, is_core, multiplier, is_extra_nocount, subj_code):
-    logging_on = False  # s.LOGGING_ON
+def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_combi, is_core, multiplier,
+                               is_extra_nocount, is_thumbrule, subj_code):
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_count_final_3457_core  ----- examperiod: ' +  str(calc_student_ep_dict.get('ep', '-')))
-        logger.debug('subj_code: ' + str(subj_code))
-        logger.debug('is_core: ' + str(is_core))
-        logger.debug('is_combi: ' + str(is_combi))
-        logger.debug('max_final: ' + str(max_final))
+        logger.debug('     subj_code: ' + str(subj_code))
+        logger.debug('     is_core: ' + str(is_core))
+        logger.debug('     is_combi: ' + str(is_combi))
+        logger.debug('     max_final: ' + str(max_final))
+        logger.debug('     is_thumbrule: ' + str(is_thumbrule))
 
 # - calc only when gradetype is number
 # - skip count 3457 when subject is 'is_combi (combi grade is checked at the end by calc_combi_and_add_to_totals)
     #  - note: grade '3 or less' is not skipped when is_combi
     #  - note: core is not skipped when is_combi
-# - skip when subject is 'is_extra_nocount'
-    if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount:
+
+# - skip when subject is 'is_extra_nocount' or 'is_thumbrule'
+    if gradetype == c.GRADETYPE_01_NUMBER and not is_extra_nocount and not is_thumbrule:
         try:
             count_dict = calc_student_ep_dict['count']
 
@@ -1305,7 +1311,7 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
                         max_final_int = 3
                     if 6 < max_final_int < 11:
                         max_final_int = 7
-                    # skip count when is combi, except when max_final_int <= 3
+        # skip count when is combi, except when max_final_int <= 3
                     if not is_combi or max_final_int == 3:
                         key_str = 'c' + str(max_final_int)
                         count_dict[key_str] += multiplier
@@ -1325,9 +1331,9 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
 
 
 def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR2021-12-22
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('  -----  calc_combi_and_add_to_totals  -----')
+        logger.debug(' @@@@@@@@@@@@@@@@ -----  calc_combi_and_add_to_totals  -----')
         logger.debug('examperiod: ' + str(examperiod))
         logger.debug('student_ep_dict: ' + str(student_ep_dict))
     """
@@ -1344,7 +1350,6 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
     # skip calculating combi grade when no combi subjects - correct? PR2021-11-30
     if combi_dict:
         combi_cnt_int = combi_dict.get('cnt', 0)
-
 
 # - calculate final combi grade
         combi_cnt_str, combi_sum_str, combi_final_str, combi_final_int = None, None, None, None
@@ -1390,6 +1395,8 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
 
 
 # - add combi grade to calc_count_final_3457_core(use_studsubj_ep_dict, calc_student_ep_dict, gradetype, is_core, multiplier, log_list):
+        is_thumbrule = False
+
         # note: here is_combi is False. When True it skips counting, this is used when for combi subjects
         calc_count_final_3457_core(
             calc_student_ep_dict=student_ep_dict,
@@ -1399,6 +1406,7 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
             is_core=False,
             multiplier=1,
             is_extra_nocount=False,   # is_extra_nocount is not True when combi subject
+            is_thumbrule=is_thumbrule,
             subj_code='combi' # only for debugging
         )
 # - end of calc_combi_and_add_to_totals
@@ -2568,7 +2576,7 @@ def save_studsubj_batch(sql_studsubj_list):  # PR2022-01-03
 
 def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
     # this function saves calculated fields in student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- save_student_batch  --------------------')
         logger.debug('sql_student_list: ' + str(sql_student_list))
@@ -2677,7 +2685,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     # TODO grades that are not published are only visible when 'same_school' (or not??)
     # also add grades of each period
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_students_with_grades_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
@@ -2811,6 +2819,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
                         if value is not None or True:
                             stud_dict[field] = value
                     cascade_dict[stud_id] = stud_dict
+
     # - add studsubj_dict dict
                 student_dict = cascade_dict.get(stud_id)
                 if student_dict:
@@ -2848,7 +2857,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
     if logging_on and grade_dictlist_sorted:
         for row in grade_dictlist_sorted:
-            logger.debug('row: ' + str(row))
+            logger.debug('XXXXXXXXXXXXXXXXXXXX row: ' + str(row))
             """
             {'fullname': 'Acosta Hurtado, Nathasha', 'stud_id': 4053, 'country': 'Curaçao', 'examyear_txt': '2022', 
             'school_name': 'Ancilla Domini Vsbo', 'school_code': 'CUR01', 'islexschool': False, 
@@ -2872,6 +2881,10 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
             67819: {'si_id': 9750, 'subj_code': 'zwi', 'has_exemption': True, 'has_reex': True, 4: {'sesr': '4.5', 'final': '5'}, 2: {}, 1: {'sesr': '7.1'}}, 
             67820: {'si_id': 9752, 'subj_code': 'sws', 'has_exemption': True, 4: {'final': 'g'}, 2: {}, 1: {'sesr': 'v', 'final': 'v'}}}
  
+ 
+
+ 44768: {'si_id': 1861, 'subj': 'asw', 'is_thumbrule': True, 
+
             """
     return grade_dictlist_sorted
 # - end of get_students_with_grades_dictlist

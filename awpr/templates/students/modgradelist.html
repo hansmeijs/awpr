@@ -24,41 +24,42 @@
                 </div>
             </div>
 
-            <div id="id_MGL_loader" class="image_container mt-1 visibility_hide">
-                <img src="{% static 'img/loader.gif' %}" height="24" width="24">
-            </div>
+            <div id="id_MGL_select_container">
 
-            <div class="content_header px-2">
-                <div class="flex_1 mx-1">
-                    <label for="id_MGL_select_pres" class="label_margin_top_m2">{% trans 'Chairperson' %}:</label>
-                    <select id="id_MGL_select_pres" data-field= "lvlbase_id" class="form-control"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                    </select>
+                <div id="id_MGL_loader" class="image_container mt-1 visibility_hide">
+                    <img src="{% static 'img/loader.gif' %}" height="24" width="24">
                 </div>
-                <div class="flex_1 mx-1">
-                    <label for="id_MGL_select_secr" class="label_margin_top_m2">{% trans 'Secretary' %}:</label>
-                    <select id="id_MGL_select_secr" data-field= "sctbase_id" class="form-control"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                    </select>
+
+                <div class="content_header px-2">
+                    <div class="flex_1 mx-1">
+                        <label for="id_MGL_select_pres" class="label_margin_top_m2">{% trans 'Chairperson' %}:</label>
+                        <select id="id_MGL_select_pres" data-field= "lvlbase_id" class="form-control"
+                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                        </select>
+                    </div>
+                    <div class="flex_1 mx-1">
+                        <label for="id_MGL_select_secr" class="label_margin_top_m2">{% trans 'Secretary' %}:</label>
+                        <select id="id_MGL_select_secr" data-field= "sctbase_id" class="form-control"
+                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                        </select>
+                    </div>
+                </div>
+
+                <div class="content_header px-2">
+                    <div class="flex_1 mx-1">
+                        <label for="id_MGL_printdate" class="label_margin_top_m3">{% trans 'Date of the grade list' %}:</label>
+                        <input id="id_MGL_printdate" type="date" data-field= "birthdate" class="form-control"
+                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                    </div>
+                </div>
+
+                <div id="id_MGL_print_reex_container"  class="content_header mt-2 px-2">
+                    <span>
+                        <input id="id_MGL_print_reex" type="checkbox" class="tw_032">
+                        <label for="id_MGL_print_reex" class="mx-2 my-1">{% trans "Print uitslag 'Herexamen' instead of 'Afgewezen'" %}</label>
+                    </span>
                 </div>
             </div>
-
-            <div class="content_header px-2">
-                <div class="flex_1 mx-1">
-                    <label for="id_MGL_printdate" class="label_margin_top_m3">{% trans 'Date of the grade list' %}:</label>
-                    <input id="id_MGL_printdate" type="date" data-field= "birthdate" class="form-control"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                </div>
-            </div>
-
-            <div id="id_MGL_print_reex_container"  class="content_header mt-2 px-2">
-                <span>
-                    <input id="id_MGL_print_reex" type="checkbox" class="tw_032">
-                    <label for="id_MGL_print_reex" class="mx-2 my-1">{% trans "Print uitslag 'Herexamen' instead of 'Afgewezen'" %}</label>
-                </span>
-            </div>
-
-
 
             <div class="display_hide">
                 <a id="id_MGL_link" href="#" target="_blank"></a>

@@ -3223,8 +3223,8 @@ def create_grade_exam_approve_submit_msg_list(req_usr, count_list, is_submit, is
                             msg_list.append(''.join(("<div class='pl-2 border_bg_invalid'>", err_txt, ' ', has_been_submitted_txt, '</div>')))
                         else:
                             has_been_submitted_txt = str(_("This exam %(has_been)s submitted.") % {'has_been': str(_('has been'))})
-                            copied_txt = str(_('The scores have been copied to the CE score.'))
-                            msg_list.append(' '.join(("<div class='pl-2 border_bg_valid'>", has_been_submitted_txt, copied_txt, '</div>')))
+                            # copied_txt = str(_('The scores have been copied to the CE score.'))
+                            msg_list.append(' '.join(("<div class='pl-2 border_bg_valid'>", has_been_submitted_txt, '</div>')))
                     else:
                         has_been_submitted_txt = str(_("This exam %(has_been)s submitted.") % {'has_been': str(_('has not been'))})
                         msg_list.append(''.join(("<div class='pl-2'>", has_been_submitted_txt, '</div>')))

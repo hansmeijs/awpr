@@ -3106,6 +3106,8 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         if logging_on:
                             logger.debug('studsubj: ' + str(studsubj))
 
+                        studsubj_pk_list = [studsubj.pk]
+
 # - get schemitem_info, separately, instead of getting from grade_instance, should be faster
                         si_pk = studsubj.schemeitem_id
                         if logging_on:
@@ -3119,7 +3121,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         si_dict = schemeitems_dict.get(si_pk)
 
 # +++++  update studentsubject
-                        update_studsubj(
+                        updated_pk_list = update_studsubj(
                             studsubj_instance=studsubj,
                             upload_dict=upload_dict,
                             si_dict=si_dict,
@@ -3130,6 +3132,8 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                             err_fields=err_fields,
                             request=request
                         )
+                        if updated_pk_list:
+                            studsubj_pk_list.extend(updated_pk_list)
 
                         if msg_list:
                             update_wrap['msg_list'] = msg_list
@@ -3142,7 +3146,6 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         if err_fields:
                             append_dict['err_fields'] = err_fields
 
-                        studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
                         studsubj_rows = create_studentsubject_rows(
                             examyear=sel_examyear,
                             schoolbase=sel_school.base,
@@ -3182,7 +3185,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
     save_changes = False
     recalc_finalgrade = False
-
+    studsubj_pk_list = []
     for field, new_value in upload_dict.items():
 
 # +++ save changes in studsubj_instance fields
@@ -3234,9 +3237,6 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
         elif field == 'exemption_year':
             # changing is only allowed when evening or lex student. Is set on client side
-
-            if not new_value:
-                new_value = False
             saved_value = getattr(studsubj_instance, field)
             if logging_on:
                 logger.debug('field: ' + str(field))
@@ -3247,7 +3247,48 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                 save_changes = True
                 recalc_finalgrade = True
 
-        elif field in ('is_extra_nocount', 'is_extra_counts', 'is_thumbrule'):
+        elif field == 'is_thumbrule':
+            saved_value = getattr(studsubj_instance, field)
+            err_list = []
+            if new_value:
+                err_list = stud_val.validate_thumbrule_allowed(studsubj_instance)
+                if err_list:
+                    msg_list.extend(err_list)
+                    err_fields.append(field)
+
+            if not err_list:
+                if logging_on:
+                    logger.debug('saved_value: ' + str(saved_value) + str(type(new_value)))
+                    logger.debug('new_value: ' + str(new_value) + str(type(new_value)))
+
+                if new_value != saved_value:
+                    setattr(studsubj_instance, field, new_value)
+                    save_changes = True
+        # when combi: apply or remove thumbrule also to other combi subjects
+                    if studsubj_instance.schemeitem.is_combi:
+                        other_combi_subjects = stud_mod.Studentsubject.objects.filter(
+                            student=studsubj_instance.student,
+                            schemeitem__is_combi=True,
+                            tobedeleted=False
+                        ).exclude(pk=studsubj_instance.pk)
+
+                        if other_combi_subjects:
+                            for other_combi in other_combi_subjects:
+                                setattr(other_combi, field, new_value)
+                                other_combi.save(request=request)
+                                studsubj_pk_list.append(other_combi.pk)
+
+                            if new_value:
+                                set_remove = str(pgettext_lazy('the thumbrule is set to', 'set to'))
+                            else:
+                                set_remove =str(pgettext_lazy('the thumbrule is removed from', 'removed from'))
+                            msg_list.append(
+                                str(_('The thumb rule is only applicable to the combination grade, not to individual combi subjects.')))
+                            msg_list.append(
+                                str(_('Therefore the thumbrule is also %(cpt)s the other combi subjects of this candidate.') %{'cpt': set_remove}))
+
+        elif field in ('is_extra_nocount', 'is_extra_counts'):
+
             saved_value = getattr(studsubj_instance, field)
             if logging_on:
                 logger.debug('saved_value: ' + str(saved_value))
@@ -3495,6 +3536,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
     if logging_on:
         logger.debug('msg_list: ' + str(msg_list))
         logger.debug('  ..... end of update_studsubj .....')
+    return studsubj_pk_list
 # --- end of update_studsubj
 
 
@@ -5172,7 +5214,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
         sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
             "cl.id AS cluster_id, cl.name AS cluster_name, si.id AS schemeitem_id, si.scheme_id AS scheme_id,",
-            "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
+            "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_thumbrule,",
             "studsubj.pws_title, studsubj.pws_subjects,",
             "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year, studsubj.pok_validthru,",
             "si.subject_id, si.subjecttype_id, si.gradetype,",
@@ -5267,7 +5309,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
             "sct.base_id AS sctbase_id, sct.abbrev AS sct_abbrev,",
 
-            "studsubj.is_extra_nocount, studsubj.is_extra_counts,",
+            "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_thumbrule,",
             "studsubj.pws_title, studsubj.pws_subjects,",
             "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year, studsubj.pok_validthru,",
 

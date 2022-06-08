@@ -262,13 +262,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MGL_header = document.getElementById("id_MGL_header");
         const el_MGL_loader = document.getElementById("id_MGL_loader");
 
-        const el_MGL_info_container = document.getElementById("id_MGL_info_container")
+        const el_MGL_info_container = document.getElementById("id_MGL_info_container");
 
-        const el_MGL_select_pres = document.getElementById("id_MGL_select_pres")
-        const el_MGL_select_secr = document.getElementById("id_MGL_select_secr")
-        const el_MGL_printdate = document.getElementById("id_MGL_printdate")
-        const el_MGL_print_reex_container = document.getElementById("id_MGL_print_reex_container")
-        const el_MGL_print_reex = document.getElementById("id_MGL_print_reex")
+        const el_MGL_select_container = document.getElementById("id_MGL_select_container");
+        const el_MGL_print_reex_container = document.getElementById("id_MGL_print_reex_container");
+
+        const el_MGL_select_pres = document.getElementById("id_MGL_select_pres");
+        const el_MGL_select_secr = document.getElementById("id_MGL_select_secr");
+        const el_MGL_printdate = document.getElementById("id_MGL_printdate");
+        const el_MGL_print_reex = document.getElementById("id_MGL_print_reex");
 
         const el_MGL_link = document.getElementById("id_MGL_link");
 
@@ -422,7 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
         AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
 
         if(permit_dict.permit_crud){
-            AddSubmenuButton(el_submenu, loc.Calc_result, function() {Calc_result("prelim")}, ["tab_show", "tab_btn_result"]);
+            //AddSubmenuButton(el_submenu, loc.Calc_results, function() {Calc_result("prelim")}, ["tab_show", "tab_btn_result"]);
+            AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
         };
 
         //AddSubmenuButton(el_submenu, loc.Download_short_gradelist, function() {ModConfirmOpen("short_gradelist")}, ["tab_show", "tab_btn_result"]);
@@ -1132,17 +1135,20 @@ function RefreshDataRowsAfterUpload(response) {
 
 
 // +++++++++++++++++ MODAL GRADEIST +++++++++++++++++++++++++++++++++++++++++++
-//=========  MGL_Open  ================ PR2021-11-18 PR2021-12-28
+//=========  MGL_Open  ================ PR2021-11-18 PR2021-12-28  PR2022-06-08
     function MGL_Open(mode) {
         console.log(" -----  MGL_Open   ----")
-        // only called by menubtn Preliminary_gradelist and PrintGradelist
+        // only called by menubtn Preliminary_gradelist and PrintGradelist and CalcResults
         mod_dict = {mode: mode};
-        el_MGL_header.innerText = (mode === "prelim") ? loc.Preliminary_gradelist : loc.Download_gradelist;
-        // hide "Print uitslag 'Herexamen' instead of 'Afgewezen'" when printing final grade list
-        add_or_remove_attr(el_MGL_print_reex_container, cls_hide, mode !== "prelim")
+        el_MGL_header.innerText = (mode === "calc_results") ? loc.Calculate_results : (mode === "prelim") ? loc.Preliminary_gradelist : loc.Download_gradelist;
+
+        console.log("el_MGL_select_container", el_MGL_select_container)
+
+// hide opptions
+        add_or_remove_class(el_MGL_select_container, cls_hide, mode === "calc_results")
+        add_or_remove_class(el_MGL_print_reex_container, cls_hide, mode !== "prelim")
 
         const student_count = student_rows.length;
-        console.log("student_count", student_count);
 
         let count = 0, student_pk_list = [], print_all = false;
 // get all visible students selected
@@ -1187,7 +1193,7 @@ function RefreshDataRowsAfterUpload(response) {
         console.log("student_pk_list", student_pk_list);
         console.log("count", count);
 
-        const msg01_txt =  (mode === "prelim") ? loc.The_preliminary_gradelist_of : loc.The_final_gradelist_of;
+        const msg01_txt = (mode === "calc_results") ? loc.The_result_of :  (mode === "prelim") ? loc.The_preliminary_gradelist_of : loc.The_final_gradelist_of;
         let msg02_txt = '';
         if (count === 1) {
             if (student_count === 1) {
@@ -1201,30 +1207,46 @@ function RefreshDataRowsAfterUpload(response) {
         } else {
             msg02_txt = "&emsp;" + count + loc.candidates;  // &emsp—the em space, wide space equal 4 normal spaces
         }
-        const msg_html = ["<div class='p-2'>",
+
+        let msg_html = null;
+        if (mode === "calc_results"){
+
+            msg_html = ["<p class='p-2'>",
+                            msg01_txt, "<br>",  msg02_txt, "<br>", loc.will_be_calculated, "</p><p>",
+                            loc.Logfile_with_details_willbe_downloaded,
+                             "</p>"
+                          ].join("");
+        } else {
+
+            msg_html = ["<div class='p-2'>",
                             msg01_txt, "<br>",  msg02_txt, "<br>",
                             loc.will_be_downloaded,
                              "</div>"
                           ].join("");
+        }
+
         console.log("msg_html", msg_html);
         el_MGL_info_container.innerHTML = msg_html;
         console.log("el_MGL_info_container", el_MGL_info_container);
         console.log("pres_secr_dict", pres_secr_dict);
 
+        if (mode !== "calc_results"){
 // ---  get auth and printdate info from server
-        UploadChanges({ get: true}, urls.url_get_auth);
-
+            UploadChanges({ get: true}, urls.url_get_auth);
+        };
 // ---  disable save button
-        el_MGL_btn_save.disabled = true;
+        el_MGL_btn_save.disabled = (mode !== "calc_results");
 
 // show loader
-        el_MGL_loader.classList.remove(cls_visible_hide)
+        add_or_remove_class(el_MGL_loader, cls_visible_hide, mode === "calc_results" )
 
-        const selected_value = null;
-        t_FillOptionsFromList(el_MGL_select_pres, pres_secr_dict.auth1, "pk", "name",
-                                    loc.Select_a_chairperson, loc.No_chairperson, selected_value);
-        t_FillOptionsFromList(el_MGL_select_secr, pres_secr_dict.auth2, "pk", "name",
-                                    loc.Select_a_secretary, loc.No_secretary, selected_value);
+        if (mode !== "calc_results"){
+            const selected_value = null;
+            t_FillOptionsFromList(el_MGL_select_pres, pres_secr_dict.auth1, "pk", "name",
+                                        loc.Select_a_chairperson, loc.No_chairperson, selected_value);
+            t_FillOptionsFromList(el_MGL_select_secr, pres_secr_dict.auth2, "pk", "name",
+                                        loc.Select_a_secretary, loc.No_secretary, selected_value);
+        };
 
         $("#id_mod_gradelist").modal({backdrop: true});
     };  // MGL_Open
@@ -1249,30 +1271,34 @@ function RefreshDataRowsAfterUpload(response) {
 
     };  // MGL_ResponseAuth
 
-//=========  MGL_Save  ================ PR2021-11-18
-    function MGL_Save(mode) {
+//=========  MGL_Save  ================ PR2021-11-18 PR2022-06-08
+    function MGL_Save() {
         console.log(" -----  MGL_Save   ----")
         const el_MGL_link = document.getElementById("id_MGL_link");
 
-        let href = null;
-        const upload_dict = {
-            mode: mod_dict.mode,
-            print_all: mod_dict.print_all,
-            print_reex: el_MGL_print_reex.checked
+        if (mod_dict.mode === "calc_results"){
+            Calc_result()
+        } else {
+
+            let href = null;
+            const upload_dict = {
+                mode: mod_dict.mode,
+                print_all: mod_dict.print_all,
+                print_reex: el_MGL_print_reex.checked
+            };
+            if (mod_dict.student_pk_list) { upload_dict.student_pk_list = mod_dict.student_pk_list};
+            if (mod_dict.print_all) { upload_dict.print_all = mod_dict.print_all};
+
+            if (Number(el_MGL_select_pres.value)) { upload_dict.auth1_pk = Number(el_MGL_select_pres.value)};
+            if (Number(el_MGL_select_secr.value)) { upload_dict.auth2_pk = Number(el_MGL_select_secr.value)};
+            if (el_MGL_printdate.value) { upload_dict.printdate = el_MGL_printdate.value};
+
+            const href_str = JSON.stringify(upload_dict);
+            href = urls.url_download_gradelist.replace("-", href_str);
+
+            el_MGL_link.href = href;
+            el_MGL_link.click();
         };
-        if (mod_dict.student_pk_list) { upload_dict.student_pk_list = mod_dict.student_pk_list};
-        if (mod_dict.print_all) { upload_dict.print_all = mod_dict.print_all};
-
-        if (Number(el_MGL_select_pres.value)) { upload_dict.auth1_pk = Number(el_MGL_select_pres.value)};
-        if (Number(el_MGL_select_secr.value)) { upload_dict.auth2_pk = Number(el_MGL_select_secr.value)};
-        if (el_MGL_printdate.value) { upload_dict.printdate = el_MGL_printdate.value};
-
-        const href_str = JSON.stringify(upload_dict);
-        href = urls.url_download_gradelist.replace("-", href_str);
-
-        el_MGL_link.href = href;
-        el_MGL_link.click();
-
         $("#id_mod_gradelist").modal("hide");
 
     };  // MGL_Save
