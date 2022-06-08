@@ -2002,9 +2002,11 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     setattr(grade_instance, "ce_exam_published", None)
                     setattr(grade_instance, "ce_exam_blocked", False)
 
+                    #PR2022-06-08 debug tel Angela Richardson Maris Stella: score diaapperas
+                    # dont reset cescore cegrade
                     # also reset cescore and cegrade
-                    setattr(grade_instance, "cescore", None)
-                    setattr(grade_instance, "cegrade", None)
+                    #setattr(grade_instance, "cescore", None)
+                    #setattr(grade_instance, "cegrade", None)
 
                     save_changes = True
                     if logging_on:
