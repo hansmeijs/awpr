@@ -325,7 +325,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             request=request
                         )
 
-
 # ----- results_per_school_rows
                 if datalist_request.get('results_per_school_rows'):
                     datalists['results_per_school_rows'], error_dict = stud_view.create_results_per_school_rows(

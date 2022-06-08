@@ -421,12 +421,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_submenu = document.getElementById("id_submenu")
 
-        AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
-
         if(permit_dict.permit_crud){
             //AddSubmenuButton(el_submenu, loc.Calc_results, function() {Calc_result("prelim")}, ["tab_show", "tab_btn_result"]);
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
         };
+
+        AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
 
         //AddSubmenuButton(el_submenu, loc.Download_short_gradelist, function() {ModConfirmOpen("short_gradelist")}, ["tab_show", "tab_btn_result"]);
         AddSubmenuButton(el_submenu, loc.Preliminary_ex5_form, function() {ModConfirmOpen("prelim_ex5")}, ["tab_show", "tab_btn_result"]);

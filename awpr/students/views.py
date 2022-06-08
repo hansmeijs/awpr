@@ -3132,6 +3132,10 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                             err_fields=err_fields,
                             request=request
                         )
+
+                        if logging_on:
+                            logger.debug('updated_pk_list: ' + str(updated_pk_list))
+
                         if updated_pk_list:
                             studsubj_pk_list.extend(updated_pk_list)
 
@@ -3287,17 +3291,22 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                             msg_list.append(
                                 str(_('Therefore the thumbrule is also %(cpt)s the other combi subjects of this candidate.') %{'cpt': set_remove}))
 
-        elif field in ('is_extra_nocount', 'is_extra_counts'):
+        elif field in ('is_extra_nocount', 'is_extra_countsNIU'):
+            err_list = []
+            if new_value:
+                err_list = stud_val.validate_extra_nocount_allowed(studsubj_instance)
+                if err_list:
+                    msg_list.extend(err_list)
+                    err_fields.append(field)
 
-            saved_value = getattr(studsubj_instance, field)
-            if logging_on:
-                logger.debug('saved_value: ' + str(saved_value))
+            if not err_list:
+                saved_value = getattr(studsubj_instance, field)
+                if logging_on:
+                    logger.debug('saved_value: ' + str(saved_value))
 
-            if new_value != saved_value:
-                setattr(studsubj_instance, field, new_value)
-                save_changes = True
-                if field in ('is_extra_nocount', 'is_thumbrule'):
-                    recalc_finalgrade = True
+                if new_value != saved_value:
+                    setattr(studsubj_instance, field, new_value)
+                    save_changes = True
 
         # TODO check or delete has_sr, disabled for now
         elif field == 'has_sr' and False:
@@ -3381,6 +3390,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
     # - when delete: set 'tobedeleted' = True and reset all values of grade
     # - recalc max_ etc in studsubj
     # - recalc result in student
+            must_add_delete_exem_reex_reex03 = False
 
 # +++++ add exemption, reex, reex03
             if new_value:
@@ -3403,8 +3413,11 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
-                        recalc_reex_grade = field in ('has_reex', 'has_reex03')
+                        must_add_delete_exem_reex_reex03 = True
+                        if logging_on:
+                            logger.debug(' add reex, field: ' + str(field) + ' ' + str(new_value))
 
+                        recalc_reex_grade = field in ('has_reex', 'has_reex03')
     # - when setting exemption: fill in previous examyear as exemption_year PR2022-04-15
                         if field == 'has_exemption':
                             previous_exam_year = sel_examyear.code - 1
@@ -3416,7 +3429,9 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         # - get saved value
                 saved_value = getattr(studsubj_instance, field)
                 if logging_on:
-                    logger.debug('saved_value: ' + str(saved_value))
+                    logger.debug(' delete reex, field: ' + str(saved_value))
+                    logger.debug(' delete reex, saved_value: ' + str(saved_value))
+                    logger.debug(' delete reex, new_value: ' + str(saved_value))
 
         # - save when new_value != saved_value
                 if new_value != saved_value:
@@ -3433,6 +3448,9 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
+                        must_add_delete_exem_reex_reex03 = True
+                        if logging_on:
+                            logger.debug(' removed reex, field: ' + str(field) + ' ' + str(new_value))
 
         # - when deleting exemption: also delete exemption_year PR2022-04-15
                         if field == 'has_exemption':
@@ -3440,9 +3458,11 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
 # --- add exem, reex, reex03 grade or make grade 'tobedeleted'
             # when adding: also pu values of segrade, srgrade and pegrade in new grade_instance
-            if recalc_finalgrade:
-                err_list = add_or_delete_grade_exem_reex_reex03(
-                            field, studsubj_instance, new_value, request)
+            if must_add_delete_exem_reex_reex03:
+                err_list = add_or_delete_grade_exem_reex_reex03( field, studsubj_instance, new_value, request)
+                if logging_on:
+                    logger.debug('  err_list:     ' + str(err_list))
+
                 if err_list:
                     msg_list.extend(err_list)
                     err_fields.append(field)
@@ -3544,6 +3564,12 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
     # fields are 'has_exemption', 'has_reex', 'has_reex03'
     # when new_value = True: add or undelete grade
     # when new_value = False: make grade 'tobedeleted', remove all values if allowed
+
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- add_or_delete_grade_exem_reex_reex03 -------')
+        logger.debug('     field: ' + str(field))
     exam_period = None
     if field == 'has_exemption':
         exam_period = c.EXAMPERIOD_EXEMPTION
@@ -3552,8 +3578,13 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
     elif field == 'has_reex03':
         exam_period = c.EXAMPERIOD_THIRD
 
+    if logging_on:
+        logger.debug('     exam_period: ' + str(exam_period))
+        logger.debug('     new_value: ' + str(new_value))
+
     err_list = []
-    try:
+    if True:
+    #try:
         save_changes = False
 
 # - check if grade of this exam_period exists
@@ -3563,44 +3594,66 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
             examperiod=exam_period
         ).first()
 
+        if logging_on:
+            logger.debug('     grade exists: ' + str(grade))
 # +++ add or undelete grade
         # when new_value = True: add or undelete grade
         if new_value:
             save_changes = True
 
             if grade:
+                if logging_on:
+                    logger.debug('     grade tobedeleted: ' + str(grade.tobedeleted))
         # - if grade exists: it must be deleted row. Undelete
                 setattr(grade, 'tobedeleted', False)
+                if logging_on:
+                    logger.debug('     grade tobedeleted: ' + str(grade.tobedeleted))
             else:
         # - if grade does not exist: create new grade row
                 grade = stud_mod.Grade(
                     studentsubject=studsubj_instance,
                     examperiod=exam_period)
 
+                if logging_on:
+                    logger.debug('     grade new: ' + str(exam_period))
     # if 2nd or 3rd period: get se sr pe from first period and put them in new grade
             # PR2022-01-05 dont save se, sr, pe in reex reex03 any more
             # PR2022-05-29 changed my mind: due to batch update needs nthosegardes in reex_grade to calc final grade
             # must make sure that values in reex_grade are updated when update them in ep 1
             if exam_period in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
                 found, segrade, srgrade, pegrade = get_se_sr_pe_from_grade_ep1(studsubj_instance)
+
+                if logging_on:
+                    logger.debug('     segrade: ' + str(segrade))
+
                 if found:
                     setattr(grade, 'segrade', segrade)
                     setattr(grade, 'srgrade', srgrade)
                     setattr(grade, 'pegrade', pegrade)
+                if logging_on:
+                    logger.debug('     segrade: ' + str(segrade))
         else:
             if grade:
+                if logging_on:
+                    logger.debug('     set grade tobedeleted ')
+
 # +++ set grade tobedeleted
     # - when new has_exemption etc. is False: delete row by setting deleted=True and reset all fields
                 clear_grade_fields(grade)
                 setattr(grade, 'tobedeleted', True)
                 save_changes = True
 
+                if logging_on:
+                    logger.debug('     set grade tobedeleted: ' + str(grade.tobedeleted))
+
         if save_changes:
             grade.save(request=request)
+            if logging_on:
+                logger.debug('     saved_changes: ')
 
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-        err_list.append(str(_('An error occurred. The changes have not been saved.')))
+    #except Exception as e:
+    #    logger.error(getattr(e, 'message', str(e)))
+    #    err_list.append(str(_('An error occurred. The changes have not been saved.')))
 
     return err_list
 # --- end of add_or_delete_grade_exem_reex_reex03
@@ -3635,9 +3688,9 @@ def get_se_sr_pe_from_grade_ep1(studentsubject):  # PR2021-12-25 PR2022-05-29
     # functions returns value of se, sr, pe from first period,
     # called when creating grade of 2nd or 3rd period
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ------- put_se_sr_pe_from_ep1_in_grade_reex_nosave -------')
+        logger.debug(' ------- get_se_sr_pe_from_grade_ep1 -------')
         logger.debug('studentsubject: ' + str(studentsubject))
 
     segrade, srgrade, pegrade = None, None, None
@@ -3682,7 +3735,7 @@ def get_se_sr_pe_from_grade_ep1(studentsubject):  # PR2021-12-25 PR2022-05-29
         logger.debug(' >>> pegrade: ' + str(pegrade))
 
     return found, segrade, srgrade, pegrade
-# - end of put_se_sr_pe_from_ep1_in_grade_reex_nosave
+# - end of get_se_sr_pe_from_grade_ep1
 
 # NOT IN USE
 def copy_grade_fields_from_firstperiod(grade_instance):  # PR2021-12-25
@@ -3724,11 +3777,11 @@ def update_reexcount_etc_in_student(field, student_pk=None):  # PR2021-12-19 PR2
     #   - when exemption, reex, reex03: no check on has_reex; grade with this ep does not exist when has_reex = False
     # Attention: must count after adding grade or saving tobedeleted = True
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug('----------- update_reexcount_etc_in_student ----------- ')
-        logger.debug('field: ' + str(field))
-        logger.debug('student_pk: ' + str(student_pk))
+        logger.debug('     field: ' + str(field))
+        logger.debug('     student_pk: ' + str(student_pk))
 
     if field in ('has_exemption', 'has_sr', 'has_reex', 'has_reex03', 'is_thumbrule'):
         if True:
@@ -3744,13 +3797,14 @@ def update_reexcount_etc_in_student(field, student_pk=None):  # PR2021-12-19 PR2
                         'sr_count'
 
             if logging_on:
-                logger.debug('examperiod: ' + str(examperiod))
-                logger.debug('db_field: ' + str(db_field))
+                logger.debug('     examperiod: ' + str(examperiod))
+                logger.debug('     db_field: ' + str(db_field))
+                logger.debug('     student_pk: ' + str(student_pk))
 
-            sql_keys = {'ep': examperiod, 'fld': field}
+            sql_keys = {'ep': examperiod}
 
             sub_sql_list = [
-                "SELECT stud.id AS student_id, COUNT(*) AS count",
+                "SELECT stud.id AS student_id, COUNT(*) AS record_count",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -3771,39 +3825,30 @@ def update_reexcount_etc_in_student(field, student_pk=None):  # PR2021-12-19 PR2
 
             sql_list = ["WITH grades AS (", sub_sql, ")",
                         "UPDATE students_student",
-                                "SET ", db_field, " = grades.count",
-                                "FROM grades",
-                                "WHERE grades.student_id = students_student.id"
+                            "SET ", db_field, " = grades.record_count",
+                        "FROM grades",
+                        "WHERE grades.student_id = students_student.id"
                       ]
 
             if student_pk:
                  sql_keys['stud_pk'] = student_pk
-                 sql_list.append("AND students_student.id %(stud_pk)s::INT")
+                 sql_list.append("AND students_student.id = %(stud_pk)s::INT")
 
             sql_list.append("RETURNING students_student.id;")
 
             sql = ' '.join(sql_list)
-            """
-            'WITH grades AS ( 
-                SELECT stud.id AS student_id, COUNT(*) 
-                FROM students_grade AS grd 
-                INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id) 
-                INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id) 
-                WHERE grd.examperiod = 4::INT AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted 
-                GROUP BY stud.id ) 
-                
-            UPDATE students_student AS st 
-            SET  exemption_count  = grades.count FROM grades WHERE grades.student_id = st.id RETURNING st.id, st,lastname, st.firstname, st.exemption_count, st.reex_count, st.reex03_count;', 'time': '0.406'}
- 
-            """
+
+            if logging_on:
+                logger.debug('     sql_keys: ' + str(sql_keys))
+                logger.debug('     sql: ' + str(sql))
 
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
+
                 if logging_on:
+                    logger.debug('     cursor.execute: ')
                     for cq in connection.queries:
-                        sql_str = cq.get('sql')
-                        if 'update' in sql_str.lower():
-                            logger.debug('query: ' + str(sql_str))
+                        logger.debug('query: ' + str(cq.get('sql')))
 
                     rows = cursor.fetchall()
                     for row in rows:

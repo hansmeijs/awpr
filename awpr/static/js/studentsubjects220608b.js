@@ -102,11 +102,15 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_cluster_upload = get_attr_from_el(el_data, "data-url_cluster_upload");
 
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
+
     columns_tobe_hidden.all = {
         examnumber: "Examnumber", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
     };
     columns_tobe_hidden.btn_ep_01 = {
-        sjtp_abbrev: "Character", is_thumbrule: "Thumb_rule", pws_title: "Assignment_title", pws_subjects: "Assignment_subjects", subj_status: "Status"
+        sjtp_abbrev: "Character", is_thumbrule: "Thumb_rule",
+        is_extra_nocount: "Extra_subject_nocount",
+        //NIU is_extra_counts:  "Extra_subject_count",
+        pws_title: "Assignment_title", pws_subjects: "Assignment_subjects", subj_status: "Status"
     };
 
     // don'/'t add exemption_year to columns_tobe_hidden PR2022-04-15
@@ -119,18 +123,26 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get field_settings
     const field_settings = {
         btn_ep_01: {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Character", "Thumbrule_2lines", "Assignment_title", "Assignment_subjects", ""],
+                                "Abbreviation_twolines", "Subject", "Character",
+                                "Thumbrule_2lines",  "Extra_subject_nocount_2lines", //NIU  "Extra_subject_count_2lines",
+                                "Assignment_title", "Assignment_subjects", ""],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "sjtp_abbrev", "is_thumbrule", "pws_title", "pws_subjects", "subj_status",
+                                "subj_code", "subj_name", "sjtp_abbrev",
+                                "is_thumbrule", "is_extra_nocount", //NIU  "is_extra_counts",
+                                "pws_title", "pws_subjects", "subj_status",
                                 ],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div", "input", "input", "div"],
+                                "div", "div", "div", "div", "div", //NIU "div",
+                                "input", "input", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text",
-                                "text", "text", "text", "toggle", "text", "text", "toggle"],
+                                "text", "text", "text", "toggle", "toggle", //NIU "toggle",
+                                "text", "text", "toggle"],
                     field_width:  ["020", "020", "075", "180", "075", "075", "120",
-                                    "075", "180", "090", "090", "150","150", "032"],
+                                    "075", "180", "090", "090", "120", //NIU "120",
+                                    "150","150", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l",
-                                    "c", "l", "l", "c", "l", "l", "c"]},
+                                    "c", "l", "l", "c", "c",//NIU  "c",
+                                    "l", "l", "c"]},
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
         btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Leerweg", "SectorProfiel_twolines", "Cluster",
@@ -1041,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- add classList to td
                 if (tblName === "studsubj"){
                     //if(field_name === "examnumber"){ td.classList.add("pr-4") }
-                    if (field_name.includes("has_") || field_name === "is_thumbrule"){
+                    if (field_name.includes("has_") || ["is_thumbrule", "is_extra_nocount", "is_extra_counts"].includes(field_name)){
                         el.classList.add("tickmark_0_0")
                     } else  if (field_name === "subj_error"){
                         el.classList.add("note_0_3")
@@ -1076,6 +1088,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         td.addEventListener("click", function() {UploadToggleThumbrule(el)}, false)
                         add_hover(td);
                     };
+                } else if (["is_thumbrule", "is_extra_nocount", "is_extra_counts"].includes(field_name)){
+                    if(permit_dict.permit_crud && permit_dict.requsr_same_school){
+                        td.addEventListener("click", function() {UploadToggleExtraNocountCounts(el)}, false)
+                        add_hover(td);
+                    };
 
                 } else if (field_name.includes("_status")){
         //console.log("field_name", field_name);
@@ -1086,11 +1103,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                         ( (setting_dict.sel_examperiod === 1) ||
                                             (setting_dict.sel_examperiod === 2 && data_dict.has_reex) ||
                                             (setting_dict.sel_examperiod === 3 && data_dict.has_reex03) );
-
-
-        console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod);
-        console.log("data_dict.has_reex", data_dict.has_reex);
-        console.log("show_diamond", show_diamond);
 
                     if (show_diamond){
                         // examtype = 'subj', 'exem', 'sr', 'reex', 'reex03', 'pok'
@@ -1200,7 +1212,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         inner_text = (fld_value) ? fld_value : "&nbsp";
                     };
-                } else if (field.includes("has_") || field === "is_thumbrule"){
+
+                } else if (field.includes("has_") || ["is_thumbrule", "is_extra_nocount", "is_extra_counts"].includes(field)){
                     filter_value = (fld_value) ? "1" : "0";
                     el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
                     el_div.setAttribute("data-value", filter_value);
@@ -1343,7 +1356,12 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("is_hidden", is_hidden)
         if(!is_hidden){
 // thumbrule not in Vsbo
-            is_hidden = (field === "is_thumbrule" && setting_dict.sel_depbase_code !== "Havo" && setting_dict.sel_depbase_code !== "Vwo");
+
+            if (["is_extra_nocount",  "is_extra_counts"].includes(field)){
+                is_hidden = (setting_dict.sel_depbase_code !== "Vsbo");
+            } else if (field === "is_thumbrule"){
+                is_hidden = (setting_dict.sel_depbase_code !== "Havo" && setting_dict.sel_depbase_code !== "Vwo");
+            };
             if(!is_hidden){
                 if (mapped_field === "lvl_abbrev") {
                     is_hidden = (!setting_dict.sel_dep_level_req);
@@ -1529,6 +1547,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }; //   if(permit_dict.permit_approve_subject)
     };  // UploadToggleStatus
 
+
+
+
 //========= UploadToggleThumbrule  ============= PR2022-06-07
     function UploadToggleThumbrule(el_input) {
         console.log( " ==== UploadToggleThumbrule ====");
@@ -1564,6 +1585,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
         }; //   if(permit_dict.permit_approve_subject)
     }  // UploadToggleThumbrule
+
+
+
+
+//========= UploadToggleExtraNocountCounts  ============= PR2022-06-08
+    function UploadToggleExtraNocountCounts(el_input) {
+        console.log( " ==== UploadToggleExtraNocountCounts ====");
+        console.log( "el_input", el_input);
+
+        if (permit_dict.permit_crud && permit_dict.requsr_same_school){
+
+            const tblRow = t_get_tablerow_selected(el_input);
+            const stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
+            const studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
+
+            const fldName = get_attr_from_el(el_input, "data-field");
+            const old_value = get_attr_from_el_int(el_input, "data-value");
+
+            const new_value = (!old_value);
+
+     // ---  change icon, before uploading
+            add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+
+// ---  upload changes
+            const upload_dict = {
+                student_pk: stud_pk,
+                studsubj_pk: studsubj_pk
+            };
+            upload_dict[fldName] = new_value;
+            UploadChanges(upload_dict, urls.url_studsubj_single_update);
+
+
+        }; //   if(permit_dict.permit_approve_subject)
+    }  // UploadToggleExtraNocountCounts
 
 //========= UploadToggle  ============= PR2020-07-31 PR2021-09-18
     function UploadToggle(el_input) {

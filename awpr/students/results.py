@@ -1227,13 +1227,23 @@ def draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, subj_dict,
     # when title has more than 44 char, shift title 22 mm to left
     title_key = 'lbl_title_pws' if has_profiel else 'lbl_title_sws'
     title = library.get(title_key, '---')
-    if len(title) > 44:
+    pws_title = subj_dict.get('pws_title') or ''
+    if pws_title:
+        pws_title = pws_title.strip()
+    pws_subjects = subj_dict.get('pws_subjects') or ''
+    if pws_subjects:
+        pws_subjects = pws_subjects.strip()
+
+    logger.debug('pws_title: >' + str(pws_title) + '< ' + str(len(pws_title)) )
+
+    if len(pws_title) > 44:
         pos_x_title = x + (col_tab_list[1] - 20) * mm
     else:
         pos_x_title = x + col_tab_list[1] * mm
+
     txt_list = (
         {'txt': library.get(title_key, '---'), 'font': 'Times-Roman', 'padding': 4, 'x': x + col_tab_list[0] * mm},
-        {'txt': subj_dict.get('pws_title', '---'), 'font': 'Times-Italic', 'padding': 4, 'x': pos_x_title}
+        {'txt': pws_title, 'font': 'Times-Italic', 'padding': 4, 'x': pos_x_title}
     )
     vertical_lines = (0, 5)
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
@@ -1241,7 +1251,7 @@ def draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, subj_dict,
     subjects_key = 'lbl_subjects_pws' if has_profiel else 'lbl_subjects_sws'
     txt_list = (
         {'txt': library.get(subjects_key, '---'), 'font': 'Times-Roman', 'padding': 4, 'x': x + col_tab_list[0] * mm},
-        {'txt': subj_dict.get('pws_subjects', '---'), 'font': 'Times-Italic', 'padding': 4, 'x': x + col_tab_list[1] * mm}
+        {'txt': pws_subjects, 'font': 'Times-Italic', 'padding': 4, 'x': x + col_tab_list[1] * mm}
     )
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
 # - end of draw_gradelist_werkstuk_row

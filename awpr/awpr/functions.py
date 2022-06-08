@@ -1236,6 +1236,8 @@ def system_updates(examyear, request):
 # PR2021-03-26 run this to update text in ex-forms, when necessary
     #awpr_lib.update_library(examyear, request)
 
+    # show_unmatched_reex_rows()
+
 # PR 2022-06-05 one time function to recalc amount of exemptions, reex, reex03, thumbrule and put it in student
     calc_count_reex_etc(request)
 
@@ -1730,6 +1732,35 @@ def show_deleted_grades(request):
                     'studsubj.del', str(row.studentsubject.tobedeleted),
                     ' stud.del', str(row.studentsubject.student.tobedeleted)))
                 logger.debug(msg_txt)
+
+
+
+def show_unmatched_reex_rows():
+    #PR2022-05-08 debug: Friedam: eneterd reex has no 'has_reex' in studsubj  not showing. Tobeleted was still true, after undelete subject
+    # check other 36 grades that have tobedeleted=True
+    logging_on = s.LOGGING_ON
+    if logging_on:  # and request.user.role == c.ROLE_128_SYSTEM:
+        logger.debug(' ------- show_unmatched_reex_rows, examperiod=1 -------')
+        rows = stud_mod.Grade.objects.filter(
+            tobedeleted=False,
+            studentsubject__tobedeleted=False,
+            studentsubject__has_reex=False,
+            examperiod=2
+        ).order_by('studentsubject__student__school__base__code', 'studentsubject__student__lastname')
+        if rows:
+            if logging_on:
+                logger.debug(' ------- show_unmatched_reex_rows')
+                for row in rows:
+                    msg_txt = ' '.join((
+                            str(row.studentsubject.student.school.base.code),
+                            str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname) ,
+                            str(row.studentsubject.schemeitem.subject.base.code),
+                            'garde_pk', str(row.pk),
+                            'studsubj_pk', str(row.studentsubject.pk),
+                            ' has_reex', str(row.studentsubject.has_reex)))
+                    logger.debug(msg_txt)
+
+        logger.debug(' ------- show_unmatched_reex_rows -------')
 
 
 def recalc_amount_and_scalelength_of_assignment(request):

@@ -2046,4 +2046,48 @@ def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
                 err_list.append(str(_('The thumbrule can only be applied to one subject.')))
 
     return err_list
-# --- end of validate_studsubj_add_reex_reex03_allowed
+# --- end of validate_thumbrule_allowed
+
+
+def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- validate_thumbrule_allowed -------')
+        logger.debug('studsubj_instance: ' + str(studsubj_instance))
+    err_list = []
+    # when sxm has different rules
+    # id_sxm_student = studsubj_instance.student.school.examyear.country.abbrev = 'Sxm'
+
+# - only when Vsbo
+    depbase_code = studsubj_instance.student.department.base.code
+    if depbase_code != 'Vsbo':
+        err_list.append(str(_('This option is not applicable in %(cpt)s.') %{'cpt': depbase_code}))
+# - only in TKL
+    elif not studsubj_instance.student.level:
+        err_list.append(str(_('Candidate has no learning path.')))
+# - only in TKL
+    elif studsubj_instance.student.level.abbrev != 'TKL':
+        err_list.append(str(_('This option is not applicable in %(cpt)s.') %{'cpt': studsubj_instance.student.level.abbrev}))
+# - not when mandatory subject
+    elif studsubj_instance.schemeitem.is_mand_subj:
+        err_list.append(str(_('This is a mandatory subject.')))
+        err_list.append(str(_('This option is not allowed when a subject is mandatory.')))
+
+# - only for subjects in 'vrije deel / overig vak'
+    elif not studsubj_instance.schemeitem.subjecttype:
+        err_list.append(str(_("Subject has no 'Character'.")))
+    elif not studsubj_instance.schemeitem.subjecttype.base.code == 'vrd':
+        err_list.append(str(_("This subject has the character '%(cpt)s'.") %{'cpt': studsubj_instance.schemeitem.subjecttype.base.name}))
+        err_list.append(str(_("This option is only allowed when a subject has the character 'Overig vak'.")))
+    else:
+# - only one allowed
+        has_extra_nocount = stud_mod.Studentsubject.objects.filter(
+            student=studsubj_instance.student,
+            is_extra_nocount=True,
+            tobedeleted=False)
+        if has_extra_nocount:
+            err_list.append(str(_('Only one subject can be set as extra subject that does not count towards the result.')))
+
+    return err_list
+# --- end of validate_extra_nocount_allowed

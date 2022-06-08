@@ -130,11 +130,6 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Clusters'] = _('Clusters')
     dict['a_cluster'] = _('a cluster')
 
-    dict['Assignment_title'] = _('Assignment title')
-    dict['Assignment_subjects'] = _('Assignment subjects')
-
-    dict['Thumbrule_2lines'] = _('Thumb\nrule')
-
     dict['Total'] = _('Total')
     dict['Candidate'] = _('Candidate')
     dict['Candidates'] = _('Candidates')
@@ -723,6 +718,16 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Abbreviation_twolines'] = _('Abbre-\nviation')
         dict['Exemption_year'] = _('Exemption year')
         dict['Exemption_year_twolines'] = _('Exemption-\nyear')
+
+        dict['Assignment_title'] = _('Assignment title')
+        dict['Assignment_subjects'] = _('Assignment subjects')
+
+        dict['Thumb_rule'] = _('Thumb rule')
+        dict['Thumbrule_2lines'] = _('Thumb\nrule')
+        dict['Extra_subject_nocount'] = _('Extra subject does not count')
+        dict['Extra_subject_count'] = _('Extra subject counts')
+        dict['Extra_subject_nocount_2lines'] = _('Extra subject\ndoes not count')
+        dict['Extra_subject_count_2lines'] = _('Extra subject\ncounts')
 
         dict['Select_exemption_examyear'] = _('Select the exam year of the exemption')
 
