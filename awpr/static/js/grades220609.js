@@ -1342,10 +1342,10 @@ document.addEventListener("DOMContentLoaded", function() {
                                                 (["pescore", "cescore"].includes(field_name)) :
                                                 (["pegrade", "cegrade"].includes(field_name))
 
-        //console.log("field_name", field_name);
-        //console.log("may_edit", may_edit);
-        //console.log("data_dict.secret_exam", data_dict.secret_exam);
-        //console.log("is_readonly", is_readonly);
+        console.log("field_name", field_name);
+        console.log("may_edit", may_edit);
+        console.log("data_dict.secret_exam", data_dict.secret_exam);
+        console.log("is_readonly", is_readonly);
 
                     let is_enabled = false;
                     if (may_edit){
@@ -1356,7 +1356,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (data_dict.examperiod === 4) {
                             is_enabled = ["segrade", "cegrade"].includes(field_name)
                         } else if (data_dict.examperiod === 1) {
-                            if (["segrade", "srgrade"].includes(field_name))
+                            if (["segrade", "srgrade"].includes(field_name)){
                                 is_enabled = true;
                             } else {
                                 if (data_dict.secret_exam) {
@@ -1365,18 +1365,15 @@ document.addEventListener("DOMContentLoaded", function() {
                                     is_enabled = ["pescore", "cescore"].includes(field_name);
                                 };
                             };
-
-                            is_enabled = ["segrade", "cegrade"].includes(field_name)
-
-                            if (["segrade", "srgrade"].includes(field_name)){
-                                is_enabled = [1, 4].includes(data_dict.examperiod);
-                            } else  if (["pescore", "cescore"].includes(field_name)){
-                                is_enabled = (!data_dict.secret_exam)
-                            } else  if (["pegrade", "cegrade"].includes(field_name)){
-                                is_enabled = (data_dict.secret_exam)
+                        } else if ([2, 3].includes(data_dict.examperiod)) {
+                           if (data_dict.secret_exam) {
+                                is_enabled = ["pegrade", "cegrade"].includes(field_name);
+                            } else {
+                                is_enabled = ["pescore", "cescore"].includes(field_name);
                             };
-                        ["segrade", "srgrade"].includes(field_name)
+                        };
                     };
+
                     el.readOnly = !is_enabled;
 
                     el.setAttribute("type", "text")
