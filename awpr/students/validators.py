@@ -2101,11 +2101,12 @@ def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08
         err_list.append(str(_('This option is not allowed when a subject is mandatory.')))
 
 # - only for subjects in 'vrije deel / overig vak'
-    elif not studsubj_instance.schemeitem.subjecttype:
-        err_list.append(str(_("Subject has no 'Character'.")))
-    elif not studsubj_instance.schemeitem.subjecttype.base.code == 'vrd':
-        err_list.append(str(_("This subject has the character '%(cpt)s'.") %{'cpt': studsubj_instance.schemeitem.subjecttype.base.name}))
-        err_list.append(str(_("This option is only allowed when a subject has the character 'Overig vak'.")))
+    # TODO PR2022-06-09 Kevin Weert: restrictie Overig vak tijdelijk weggehaald, totdat je kunt switchen van karakter zonder cijfers kwijt te raken
+    #elif not studsubj_instance.schemeitem.subjecttype:
+    #    err_list.append(str(_("Subject has no 'Character'.")))
+    #elif not studsubj_instance.schemeitem.subjecttype.base.code == 'vrd':
+    #    err_list.append(str(_("This subject has the character '%(cpt)s'.") %{'cpt': studsubj_instance.schemeitem.subjecttype.base.name}))
+    #    err_list.append(str(_("This option is only allowed when a subject has the character 'Overig vak'.")))
     else:
 # - only one allowed
         has_extra_nocount = stud_mod.Studentsubject.objects.filter(
