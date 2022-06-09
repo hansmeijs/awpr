@@ -2008,6 +2008,9 @@ def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
     # Option for all final exam students not to include the final mark of one subject when
     # determining the final results (duimregel). This subject may not be a core subject.
 
+    # WARNING : calc_result uses schemeitem.thumb_rule + studsubj.is_thumbrule
+    # must also set thumb_rule in schemeitem
+
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_thumbrule_allowed -------')

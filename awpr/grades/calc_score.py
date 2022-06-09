@@ -653,7 +653,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
     # - calculates sesrgrade, pecegrade and final grade
     # - and puts it in returnvalue updated_cegrade_list
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_update_finalgrade -----')
         logger.debug('     exam_instance:    ' + str(exam_instance))
@@ -664,7 +664,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
     updated_cegrade_list = []
     updated_student_pk_list = []
 
-    if department_instance and (exam_instance or grade_pk_list or student_pk_list):
+    if department_instance:
 
 # - get rows of all grades that must be calculated
         # retrieve id and fields necessary to calculate final grade
@@ -697,8 +697,6 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
         elif exam_instance:
             sql_keys['exam_pk'] = exam_instance.pk
             sql_list.append("AND grd.ce_exam_id = %(exam_pk)s::INT")
-        else:
-            sql_list.append("AND FALSE")
 
         sql = ' '.join(sql_list)
 
@@ -710,9 +708,9 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             rows = af.dictfetchall(cursor)
-            logger.debug('     rows:    ' + str(rows))
+            logger.debug('     rows count    ' + str(len(rows)))
 
-        if logging_on:
+        if logging_on and False:
             for cq in connection.queries:
                 if 'SELECT "grd' in cq:
                     logger.debug('query: ' + str(cq))
@@ -797,13 +795,12 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
                 with connection.cursor() as cursor:
                     cursor.execute(sql)
                     rows = cursor.fetchall()
-                if logging_on:
-                    logger.debug('     rows:    ' + str(rows))
 
                 if rows:
                     for row in rows:
                         updated_cegrade_list.append(row[0])
-
+                        if logging_on:
+                            logger.debug('  updated_cegrade_list   row:    ' + str(row))
                 updated_cegrade_count = len(rows)
 
             except Exception as e:

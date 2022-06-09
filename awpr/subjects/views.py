@@ -1879,7 +1879,7 @@ class ExamCalcGradesFromExamView(View):
 
                 # don't get it from usersettings, get it from upload_dict instead
                 mode = upload_dict.get('mode')
-                if mode == 'link_duo_exam_grade':
+                if mode == 'calc_grades':
                     examyear_pk = upload_dict.get('examyear_pk')
                     exam_pk = upload_dict.get('exam_pk')
                     # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
@@ -1930,6 +1930,8 @@ class ExamCalcGradesFromExamView(View):
                                             department_instance=department,
                                             exam_instance=exam_instance
                                         )
+                                    if logging_on:
+                                        logger.debug('updated_cegrade_count: ' + str(updated_cegrade_count))
 
                                     subject_dep_lvl = subject.name + ' ' + exam_instance.department.base.code + ' '
                                     if exam_instance.department.level_req:
@@ -1938,8 +1940,13 @@ class ExamCalcGradesFromExamView(View):
                                         else:
                                             subject_dep_lvl += '-'
 
+                                    if logging_on:
+                                        logger.debug('subject_dep_lvl: ' + str(subject_dep_lvl))
+
     # --- add exam_pk to grades, only when there is only 1 exam for this subject / dep / level / examperiod
                                     grd_count = add_published_exam_to_grades(exam_instance)
+                                    if logging_on:
+                                        logger.debug('subject_dep_lvl: ' + str(subject_dep_lvl))
                                     if grd_count:
                                         err_html.append(''.join((
                                             "<div class='p-2 border_bg_valid'>",

@@ -5498,7 +5498,6 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
         };
         console.log("mod_MDUO_dict.duo_exam_list", mod_MDUO_dict.duo_exam_list);
 
-
         //const JustLinkedAwpId = null, JustUnLinkedAwpId = null, JustUnlinkedExcId = null;
         //Fill_AEL_Table(JustLinkedAwpId, JustUnLinkedAwpId, JustUnlinkedExcId)
 

@@ -205,6 +205,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
+        logger.debug('student_pk_list: ' + str(student_pk_list))
 
 # - get_scheme_dict
     scheme_dict = get_scheme_dict(sel_examyear, sel_department)
@@ -215,7 +216,6 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 # +++  recalculate and save the final grades of the subjects of each student in student_pk_list PR2022-05-25
     calc_score.batch_update_finalgrade(
         department_instance=sel_department,
-        exam_instance=sel_examyear,
         student_pk_list=student_pk_list)
 
 # +++  get_students_with_grades_dictlist
@@ -1260,7 +1260,7 @@ def get_gradeinfo_extension(multiplier, max_ep):
 
 def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_combi, is_core, multiplier,
                                is_extra_nocount, is_thumbrule, subj_code):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_count_final_3457_core  ----- examperiod: ' +  str(calc_student_ep_dict.get('ep', '-')))
         logger.debug('     subj_code: ' + str(subj_code))
@@ -1331,7 +1331,7 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
 
 
 def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR2021-12-22
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' @@@@@@@@@@@@@@@@ -----  calc_combi_and_add_to_totals  -----')
         logger.debug('examperiod: ' + str(examperiod))
@@ -1413,7 +1413,7 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
 
 
 def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  calc_pece_avg  -----')
         logger.debug('     examperiod: ' + str(examperiod))
@@ -1739,7 +1739,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
     # is reex03 when reex03 student, reex when reex student, firstperiod otherwise
-    logging_on = s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
@@ -2685,7 +2685,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     # TODO grades that are not published are only visible when 'same_school' (or not??)
     # also add grades of each period
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_students_with_grades_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
