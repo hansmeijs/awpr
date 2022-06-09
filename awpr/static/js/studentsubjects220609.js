@@ -1355,13 +1355,15 @@ document.addEventListener('DOMContentLoaded', function() {
         let is_hidden = col_hidden.includes(mapped_field);
         //console.log("is_hidden", is_hidden)
         if(!is_hidden){
-// thumbrule not in Vsbo
+// thumbrule not in Vsbo Cur
 
             if (["is_extra_nocount",  "is_extra_counts"].includes(field)){
                 is_hidden = (setting_dict.sel_depbase_code !== "Vsbo");
             } else if (field === "is_thumbrule"){
-                is_hidden = (setting_dict.sel_depbase_code !== "Havo" && setting_dict.sel_depbase_code !== "Vwo");
+                const show_thumbrule = (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");
+                is_hidden = !show_thumbrule;
             };
+
             if(!is_hidden){
                 if (mapped_field === "lvl_abbrev") {
                     is_hidden = (!setting_dict.sel_dep_level_req);

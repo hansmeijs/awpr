@@ -2532,7 +2532,7 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
                               lvlbase_pk=None):
     # PR2022-02-17 PR2022-03-09
     # this function is only called by create_ex2_xlsx
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex5_rows_dict -----')
     # function creates dictlist of all students of this examyear, school and department
@@ -2882,11 +2882,12 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
     subjects_dict: {133: {'code': 'ac', 'name': 'Administratie en commercie'}, 123: {'code': 'bi', 'name': 'Biologie'}, 
     """
 
+
 # +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
     ex5_rows_dict = create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk, published_instance)
 
-    if logging_on and False:
-        logger.debug('ex5_rows_dict: ' + str(ex5_rows_dict))
+    if logging_on:
+        logger.debug('?????????? ex5_rows_dict: ' + str(ex5_rows_dict))
 
     response = None
 
@@ -3205,7 +3206,7 @@ def write_ex5_table_header(book, sheet, row_index, ex5_formats, library, th_alig
     sheet.set_column(col_index, col_index, 4)
     sheet.merge_range(row_index -1, col_index, row_index + 1, col_index, 'pre-examen(p) of bis-examen(b)', th_rotate)
     col_index = add_colnr_and_increase_index(col_index)
-
+    """
 # Uitslag na tweede tijdvak
     sheet.set_column(col_index, col_index, 5)
     sheet.merge_range(row_index -1, col_index, row_index - 1, col_index + 6, 'Uitslag na het tweede tijdvak', th_align_center)
@@ -3261,7 +3262,7 @@ def write_ex5_table_header(book, sheet, row_index, ex5_formats, library, th_alig
     sheet.set_column(col_index, col_index, 17)
     sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Opmerkingen\n(bij pre- en bis- examen de dit jaar geexamineerde vakken vermelden)', th_align_center)
     col_index = add_colnr_and_increase_index(col_index)
-
+"""
     return row_index, col_index
 # - end of write_ex5_table_header
 
@@ -3319,6 +3320,8 @@ formatindex_first_subject, formatindex_number_subjects,
 
         row_index += 1
         col_index = 0
+        is_reex_kand = False
+        is_reex03_kand = False
 
         if logging_on:
             logger.debug('     stud_info_dict: ' + str(stud_info_dict))
@@ -3328,8 +3331,8 @@ formatindex_first_subject, formatindex_number_subjects,
 
 # +++ loop through field_names
         for format_index, field_name in enumerate(ex5_formats['field_names']):
-            if logging_on:
-                logger.debug(str(format_index) + ' field_name: ' + str(field_name) + str(type(field_name)))
+            if logging_on and False:
+                logger.debug(str(format_index) + ' field_name: ' + str(field_name) + ' ' + str(type(field_name)))
 
             row_format = ex5_formats['row_formats'][format_index]
 
@@ -3343,6 +3346,7 @@ formatindex_first_subject, formatindex_number_subjects,
                 # field_name contains subject_pk in subject columns
                 # subj_dict can be empty, when no exemp, reex or gl garde
                 subj_dict = stubjects_dict.get(field_name)
+                # stubjects_dict: {152: {'exemp': True, 'usex': True, 'gls': '6.6', 'glf': '7'},
 
                 row_format = ex5_formats['row_formats'][format_index]
                 if subj_dict is None:
@@ -3355,8 +3359,12 @@ formatindex_first_subject, formatindex_number_subjects,
                     # row_format = row_align_center_green if has_exemp else row_align_center
                     usex = subj_dict.get('usex', False)
                     # has_sr = subj_dict.get('sr', False)
-                    has_re = subj_dict.get('re', False)
-                    has_re3 = subj_dict.get('re3', False)
+                    has_reex = subj_dict.get('re', False)
+                    if has_reex:
+                        is_reex_kand = True
+                    has_reex03 = subj_dict.get('re3', False)
+                    if has_reex03:
+                        is_reex03_kand = True
                     gls = subj_dict.get('gls')
                     glc = subj_dict.get('glc')
                     glf = subj_dict.get('glf')
@@ -3365,8 +3373,9 @@ formatindex_first_subject, formatindex_number_subjects,
                     ep01_dict: {120: {'s': '8.0', 'c': None, 'f': None}, 113: {'s': '5.9', 'c': None, 'f': None}, 114: {'s': '8.0', 'c': None, 'f': None}, 115: {'s': '5.4', 'c': None, 'f': '5'}, 116: {'s': '7.0', 'c': None, 'f': '7'}, 118: {'s': '7.6', 'c': None, 'f': None}, 133: {'s': '6.4', 'c': None, 'f': None}, 136: {'s': 'g', 'c': None, 'f': 'g'}, 155: {'s': '6.1', 'c': None, 'f': None}, 117: {'s': '6.1', 'c': None, 'f': '6'}}
 
                     """
+                    if has_exemp and usex:
+                        row_format = row_align_center_green
 
-                    #row_format = row_align_center_green if has_exemp and usex else row_align_center
                     ep_dict = ep04_dict if has_exemp and usex else ep01_dict
                     ep_subj_dict = ep_dict.get(field_name)
 
@@ -3401,52 +3410,52 @@ formatindex_first_subject, formatindex_number_subjects,
 
         row_align_center = book.add_format(
             {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
+
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        sheet.write(row_index, col_index, None, row_align_center)
+        col_index += 1
+        result_int = stud_info_dict.get('result') or 0
+# passed
+        sheet.write(row_index, col_index, 'x' if result_int == c.RESULT_PASSED else None, row_align_center)
+        col_index += 1
+# reex
+        sheet.write(row_index, col_index, 'x' if is_reex_kand else None, row_align_center)
+        col_index += 1
+# failed
+        sheet.write(row_index, col_index, 'x' if result_int == c.RESULT_FAILED else None, row_align_center)
+        col_index += 1
+# bis_exam
+        sheet.write(row_index, col_index, 'x' if stud_info_dict.get('bisst') else None, row_align_center)
+        col_index += 1
+# withdrawn
+        #sheet.write(row_index, col_index, 'x' if stud_info_dict.get('wdr') else None, row_align_center)
+
         """
-        sheet.write(row_index, col_index, None, )
         col_index += 1
-        sheet.write(row_index, col_index, None, row_align_center)
+        sheet.write(row_index, col_index, 'g', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_align_center)
+        sheet.write(row_index, col_index, 'h', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_align_center)
+        sheet.write(row_index, col_index, 'i', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_align_center)
+        sheet.write(row_index, col_index, 'j', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_align_center)
+        sheet.write(row_index, col_index, 'k', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_align_center)
+        sheet.write(row_index, col_index, 'l', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        sheet.write(row_index, col_index, 'm', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        sheet.write(row_index, col_index, 'n', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        sheet.write(row_index, col_index, 'o', row_bg_lightgrey)
         col_index += 1
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        sheet.write(row_index, col_index, 'p', row_bg_lightgrey)
         col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        sheet.write(row_index, col_index, 'q', row_bg_lightgrey)
         col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
-        col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
-        col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
-        col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
-        col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
-        col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
-        col_index += 1
-
-        sheet.write(row_index, col_index, None, row_bg_lightgrey)
+        sheet.write(row_index, col_index, 'r', row_bg_lightgrey)
         """
     return row_index
 # - end of write_ex5_table_row
@@ -3709,20 +3718,14 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 # +++ get subjectbase dictlist
     # functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
     subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
-    """
-    subjectbase_pk_list: [
-        {'id': 153, 'code': 'adm&co'}, 
-        ... 
-        {'id': 151, 'code': 'zwi'}]
-    """
 
 # +++ get schoolbase dictlist
     # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
+
     """
     schoolbase_dictlist: [
         {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}, 
-        ...
         {'sbase_id': 37, 'sbase_code': 'SXM03', 'sch_name': 'Sundial School'}
         {'sbase_id': 23, 'sbase_code': 'CURETE', 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE'},
         {'sbase_id': 39, 'sbase_code': 'SXMDOE', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations'}] 

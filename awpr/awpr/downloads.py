@@ -514,6 +514,9 @@ def download_setting(request_item_setting, user_lang, request):
 # - add info to setting_dict, will be sent back to client
     if sel_examyear_instance:
         setting_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
+
+        setting_dict['sel_country_is_sxm'] = (sel_examyear_instance.country.abbrev == 'Sxm')
+
         setting_dict['sel_examyear_code'] = sel_examyear_instance.code if sel_examyear_instance.code else None
         if sel_examyear_instance.published:
             setting_dict['sel_examyear_published'] = sel_examyear_instance.published
