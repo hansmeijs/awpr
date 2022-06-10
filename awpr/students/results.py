@@ -254,7 +254,7 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-06
                     library = awpr_lib.get_library(sel_examyear, ['gradelist'])
 
                     # +++ get grade_dictlist
-                    student_list = get_grade_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk,
+                    student_list = get_gradelist_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk,
                                                       sel_sctbase_pk, None)
 
                     # +++ get name of chairperson and secretary
@@ -372,7 +372,6 @@ class DownloadGradelistView(View):  # PR2021-11-15
             if sel_school and sel_department:
                 student_pk_list = upload_dict.get('student_pk_list')
 
-
 # +++++ calc_batch_student_result ++++++++++++++++++++
                 calc_res.calc_batch_student_result(
                     sel_examyear=sel_examyear,
@@ -412,7 +411,7 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 library = awpr_lib.get_library(sel_examyear, ['gradelist'])
 
 # +++ get grade_dictlist
-                student_list = get_grade_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, sel_sctbase_pk,
+                student_list = get_gradelist_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, sel_sctbase_pk,
                                                   student_pk_list)
 
  # +++ get name of chairperson and secretary
@@ -491,14 +490,14 @@ class DownloadGradelistView(View):  # PR2021-11-15
 # - end of DownloadGradelistView
 
 
-def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):  # PR2021-11-19
+def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):  # PR2021-11-19
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- get_grade_dictlist -----')
+        logger.debug(' ----- get_gradelist_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
 
     # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}
@@ -640,7 +639,7 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
                     'classname':  row.get('classname'),
                     'cluster_name':  row.get('cluster_name'),
 
-                    'ce_avg': row.get('gl_ce_avg_text'),
+                    'ce_avg': row.get('gl_ce_avg'),
                     'combi_avg':  row.get('gl_combi_avg'),
                     'final_avg':  row.get('gl_final_avg'),
                     'result_status':  row.get('result_status'),
@@ -745,42 +744,52 @@ def get_grade_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase
             #logger.debug('row: ' + str(row))
 
     return grade_dictlist_sorted
-# - end of get_grade_dictlist
+# - end of get_gradelist_dictlist
 
 ################
 
 def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, request):
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----- draw_gradelist -----')
-        logger.debug('auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
-        logger.debug('student_dict: ' + str(student_dict))
+        logger.debug(' ')
+        logger.debug('+++++++++++++ draw_gradelist +++++++++++++')
+        logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
+        logger.debug('     student_dict: ' + str(student_dict))
         """
-        student_dict: {
-            'examyear_txt': '2021', 'school_name': 'Juan Pablo Duarte Vsbo', 'country': 'Curacao', 'school_article': 'de', 
-            'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_abbrev': 'V.S.B.O.', 'level_req': True, 'has_profiel': False, 
-            'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'sct_name': 'Zorg & Welzijn', 'cluster_name': None, 'classname': 'T4A', 
-            'fullname': 'ANTOINE, Stayci', 'idnumber': None, 'birthdate': '23 juni 2005', 'birthplace': 'Willemstad, Curaçao', 
-            'regnumber': None, 'islexschool': False, 'ce_avg': None, 'combi_avg': None, 'endgrade_avg': '7,1', 
-            'result_info': 'Geslaagd', 
-            'has_extra_nocount': True, 
+       student_dict: {
+            'country': 'Sint Maarten', 'examyear_txt': '2022', 
+            'school_name': 'Milton Peters College', 'school_article': 'het', 'school_code': 'SXM01', 'islexschool': False, 
+            'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 
+            'lvl_name': 'Praktisch Kadergerichte Leerweg', 'lvlbase_code': 'PKL', 'level_req': True, 
+            'sct_name': 'Economie', 'sctbase_code': 'ec', 'has_profiel': False, 
+            'fullname': 'Akim Bansingh', 'idnumber': '2001121974', 'gender': 'M', 
+            'birthdate': '19 december 2001', 'birthplace': "Nederland, s'-Gravenhage", 
+            'regnumber': None, 'examnumber': '301', 'classname': 'EACp4a', 'cluster_name': None, 
+            'ce_avg': None, 'combi_avg': '7', 'final_avg': '6.1', 'result_status': 'Geslaagd', 
+        1: {'sjtp_name': 'Gemeenschappelijk deel', 168: {'sjtp_code': 'gmd', 'subj_name': 'Nederlandse taal', 'subjbase_code': 'ne', 
+            'segrade': '7,3', 'pecegrade': '7,5', 'finalgrade': '7'}, 
+            170: {'sjtp_code': 'gmd', 'subj_name': 'Engelse taal', 'subjbase_code': 'en', 
+            'segrade': '5,9', 'pecegrade': '6,4', 'finalgrade': '6'}, 
+            171: {'sjtp_code': 'gmd', 'subj_name': 'Spaanse taal', 'subjbase_code': 'sp', 
+            'segrade': '6,1', 'pecegrade': '5,4', 'finalgrade': '6'}}, 
+        2: {'sjtp_name': 'Sectordeel', 172: {'sjtp_code': 'spd', 'subj_name': 'Franse taal', 'subjbase_code': 'fr', 
+            'segrade': '6,2', 'pecegrade': '3,5', 'finalgrade': '5'}, 
+            175: {'sjtp_code': 'spd', 'subj_name': 'Wiskunde', 'subjbase_code': 'wk', 
+            'segrade': '6,8', 'pecegrade': '5,9', 'finalgrade': '6'}, 
+            185: {'sjtp_code': 'spd', 'subj_name': 'Economie', 'subjbase_code': 'ec', 
+            'segrade': '6,0', 'pecegrade': '6,5', 'finalgrade': '6'}}, 
             'combi': {'sjtp_name': '', 
-                2116: {'sjtp_code': 'gmd', 'subj_name': 'Mens en Maatschappij 1', 'segrade': '5,8', 'pecegrade': '---', 'finalgrade': '6'}, 
-                2117: {'sjtp_code': 'gmd', 'subj_name': 'Lichamelijke Opvoeding', 'segrade': '6,9', 'pecegrade': '---', 'finalgrade': '7'}, 
-                2118: {'sjtp_code': 'gmd', 'subj_name': 'Culturele en Artistieke Vorming', 'segrade': '7,9', 'pecegrade': '---', 'finalgrade': '8'}}, 
-            'wst': {'sjtp_name': 'Sectorwerkstuk', 
-                2136: {'sjtp_code': 'wst', 'subj_name': 'Sectorwerkstuk', 'segrade': 'G', 'pecegrade': '---', 'finalgrade': 'G', 'pws_title': 'Heterokromia'}}}
-            1: {'sjtp_name': 'Gemeenschappelijk deel', 
-                2114: {'sjtp_code': 'gmd', 'subj_name': 'Nederlandse taal', 'segrade': '6,6', 'pecegrade': '7,6', 'finalgrade': '7'}, 
-                2115: {'sjtp_code': 'gmd', 'subj_name': 'Engelse taal', 'segrade': '8,7', 'pecegrade': '6,8', 'finalgrade': '8'}, 
-                2119: {'sjtp_code': 'gmd', 'subj_name': 'Papiamentu', 'segrade': '8,4', 'pecegrade': '---', 'finalgrade': '8'}}, 
-            3: {'sjtp_name': 'Overig vak', 
-                2121: {'sjtp_code': 'vrd', 'subj_name': 'Spaanse taal', 'segrade': '7,1', 'pecegrade': '8,2', 'finalgrade': '8', 'is_extra_nocount': True}}, 
-            2: {'sjtp_name': 'Sectordeel', 
-                2124: {'sjtp_code': 'spd', 'subj_name': 'Biologie', 'segrade': '6,3', 'pecegrade': '5,5', 'finalgrade': '6'}, 
-                2125: {'sjtp_code': 'spd', 'subj_name': 'Mens en Maatschappij 1, 2', 'segrade': '6,8', 'pecegrade': '---', 'finalgrade': '7'}}, 
-            4: {'sjtp_name': 'Sectorprogramma', 
-                2132: {'sjtp_code': 'spr', 'subj_name': 'Zorg en Welzijn Intrasectoraal', 'segrade': '7,1', 'pecegrade': '6,7', 'finalgrade': '7'}}, 
+            193: {'sjtp_code': 'gmd', 'subj_name': 'Mens en maatschappij 1', 'subjbase_code': 'mm1', 'segrade': '6,1', 
+            'pecegrade': None, 'finalgrade': '6'}, 
+            195: {'sjtp_code': 'gmd', 'subj_name': 'Culturele en artistieke vorming', 'subjbase_code': 'cav', 
+            'segrade': '7,3', 'pecegrade': None, 'finalgrade': '7'}, 
+            197: {'sjtp_code': 'gmd', 'subj_name': 'Lichamelijke opvoeding', 'subjbase_code': 'lo', 
+            'segrade': '7,6', 'pecegrade': None, 'finalgrade': '8'}}, 
+        4: {'sjtp_name': 'Sectorprogramma', 
+            205: {'sjtp_code': 'spr', 'subj_name': 'Administratie en commercie', 'subjbase_code': 'ac', 'segrade': '5,4', 'pecegrade': '5,1', 'finalgrade': '5', 'is_thumbrule': True}}, 'has_thumbrule': True, 'stg': {'sjtp_name': 'Stage', 
+            212: {'sjtp_code': 'stg', 'subj_name': 'Stage', 'subjbase_code': 'stg', 'segrade': 'v', 'pecegrade': None, 'finalgrade': 'v'}}}
+            [2022-06-10 07:18:27] DEBUG [students.results.draw_gradelist:798]       
+
         """
     auth1_name = '---'
     if auth1_pk:
@@ -791,15 +800,13 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_p
             is_active=True,
             usergroups__contains='auth1'
         )
-        if logging_on:
-            logger.debug('auth1: ' + str(auth1))
         if auth1:
             auth1_name = auth1.last_name
 
-            if logging_on:
-                logger.debug('auth1: ' + str(auth1))
-                logger.debug('auth1_name: ' + str(auth1_name))
-                logger.debug('auth1.usergroups: ' + str(auth1.usergroups))
+        if logging_on:
+            logger.debug('     auth1: ' + str(auth1))
+            logger.debug('     auth1_name: ' + str(auth1_name))
+            logger.debug('     auth1.usergroups: ' + str(auth1.usergroups))
 
     auth2_name = '---'
     if auth2_pk:
@@ -837,10 +844,11 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_p
     border = [top, right, bottom, left]
     coord = [left, top]
     if logging_on:
-        logger.debug('bottom: ' + str(bottom))
-        logger.debug('left: ' + str(left))
-        logger.debug('coord: ' + str(coord))
-        logger.debug('1 * mm: ' + str(1 * mm))
+        logger.debug('     bottom: ' + str(bottom))
+        logger.debug('     left: ' + str(left))
+        logger.debug('     coord: ' + str(coord))
+        logger.debug('     1 * mm: ' + str(1 * mm))
+
     canvas.setLineWidth(0.5)
     canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
 
@@ -865,7 +873,7 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_p
         if sjtp_dict:
             draw_gradelist_sjtp_header(canvas, coord, col_tab_list, library, sjtp_dict, student_dict)
             if logging_on:
-                logger.debug('@@@@@ sjtp_dict: ' + str(sjtp_dict))
+                logger.debug('     sjtp_dict: ' + str(sjtp_dict))
 
             for key, subj_dict in sjtp_dict.items():
 
@@ -936,9 +944,6 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_p
     draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, student_dict, auth1_name, auth2_name, printdate, reg_number)
 
 # - end of draw_gradelist
-
-
-######################
 
 
 def draw_page_border(canvas, border):
@@ -1196,8 +1201,7 @@ def draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict, is_combi=
         {'txt': finalgrade, 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm},
         {'txt': finalgrade_in_letters, 'align': 'c', 'x': x + (col_tab_list[4] + col_tab_list[5]) / 2 * mm}
     ]
-
-    logger.debug('@@@@@ txt_list: ' + str(txt_list))
+    logger.debug('     txt_list: ' + str(txt_list))
 
     vertical_lines = (0, 1, 2, 3, 4,  5)
     draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)
@@ -1270,21 +1274,31 @@ def draw_gradelist_stage_row(canvas, coord, col_tab_list, subj_dict):
 
 
 def draw_gradelist_avg_final_row(canvas, coord, col_tab_list, library, student_dict):
+    # PR2021-11-16 PR2022-06-09
     # draw row 'Gemiddelde der cijfers', only when ce_avg or endgrade_avg have value PR2021-11-16
     # values are stored in student_dict, not in subj_dict
-    ce_avg = student_dict.get('ce_avg')
-    endgrade_avg = student_dict.get('endgrade_avg')
 
-    if ce_avg or endgrade_avg:
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- draw_gradelist_avg_final_row -----')
+        logger.debug('     student_dict: ' + str(student_dict))
+
+    ce_avg = student_dict.get('ce_avg')
+    final_avg = student_dict.get('final_avg')
+    if logging_on:
+        logger.debug('ce_avg: ' + str(ce_avg))
+        logger.debug('final_avg: ' + str(final_avg))
+
+    if ce_avg or final_avg:
         txt_list = [ {'txt': library.get('avg_grade', '---'), 'font': 'Times-Roman', 'padding': 4, 'x': coord[0] + col_tab_list[0] * mm}]
         if ce_avg:
             txt_list.append({'txt': ce_avg, 'align': 'c', 'x': coord[0] + (col_tab_list[2] + col_tab_list[3]) / 2 * mm})
-        if endgrade_avg:
-            txt_list.append({'txt': endgrade_avg, 'align': 'c', 'x': coord[0] + (col_tab_list[3] + col_tab_list[4]) / 2 * mm})
+        if final_avg:
+            txt_list.append({'txt': final_avg, 'align': 'c', 'x': coord[0] + (col_tab_list[3] + col_tab_list[4]) / 2 * mm})
         vertical_lines = [0, 3, 5]
         if ce_avg:
             vertical_lines.append(2)
-        if endgrade_avg:
+        if final_avg:
             vertical_lines.append(4)
 
         draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, True, vertical_lines, txt_list)

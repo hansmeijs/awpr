@@ -2084,11 +2084,12 @@ def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08
     err_list = []
     # when sxm has different rules
     # id_sxm_student = studsubj_instance.student.school.examyear.country.abbrev = 'Sxm'
-
-# - only when Vsbo
     depbase_code = studsubj_instance.student.department.base.code
     if depbase_code != 'Vsbo':
-        err_list.append(str(_('This option is not applicable in %(cpt)s.') %{'cpt': depbase_code}))
+# - only when Vsbo
+# PR2022-06-09 Ricahrd Westerink: also for havo Vwo, is correct: was in old AWP also allowed
+        pass
+        # was: err_list.append(str(_('This option is not applicable in %(cpt)s.') %{'cpt': depbase_code}))
 # - only in TKL
     elif not studsubj_instance.student.level:
         err_list.append(str(_('Candidate has no learning path.')))

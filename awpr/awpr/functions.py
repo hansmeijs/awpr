@@ -1232,29 +1232,29 @@ def has_unread_mailbox_items(examyear, req_user):
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
-
+    pass
 # PR2021-03-26 run this to update text in ex-forms, when necessary
     #awpr_lib.update_library(examyear, request)
 
     # show_unmatched_reex_rows()
 
 # PR 2022-06-05 one time function to recalc amount of exemptions, reex, reex03, thumbrule and put it in student
-    calc_count_reex_etc(request)
+    #calc_count_reex_etc(request)
 
 # PR 2022-05-28 one time function to set rule_avg_pece_sufficient = TRUE, rule_core_notatevlex = FALSE
     # for all departments SXM and CUR departments Havo/Vwo
-    set_ce_avg_rule(request)
+    #set_ce_avg_rule(request)
 
 # PR 2022-05-28 one time function to set rule_core_sufficient = TRUE, rule_core_notatevlex = FALSE
     # for departments Havo/Vwo
-    set_core_sufficient_rule(request)
+    #set_core_sufficient_rule(request)
 
 # PR 2022-05-28 one time function to set rule_grade_sufficient = TRUE, rule_gradesuff_notatevlex = TRUE
     # subjects 'cav' and 'lo' in 'Havo' and 'Vwo'
-    set_cav_lo_sufficient_rule(request)
+    #set_cav_lo_sufficient_rule(request)
 
 # PR 2022-05-26 one time function to set thumb_rule = True for Havo/Vwo excluding core subjects
-    set_thumb_rule(request)
+    #set_thumb_rule(request)
 
 #PR2022-05-03 debug: Oscar Panneflek grade not showing. Tobeleted was still true, after undelete subject
     #show_deleted_grades(request)

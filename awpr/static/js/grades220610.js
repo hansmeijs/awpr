@@ -1342,11 +1342,6 @@ document.addEventListener("DOMContentLoaded", function() {
                                                 (["pescore", "cescore"].includes(field_name)) :
                                                 (["pegrade", "cegrade"].includes(field_name))
 
-        console.log("field_name", field_name);
-        console.log("may_edit", may_edit);
-        console.log("data_dict.secret_exam", data_dict.secret_exam);
-        console.log("is_readonly", is_readonly);
-
                     let is_enabled = false;
                     if (may_edit){
                         // when exemption: only fields segrade and cegrade are visible

@@ -201,7 +201,7 @@ class CalcResultsView(View):  # PR2021-11-19
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
@@ -260,7 +260,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict, log_list, sql_studsubj_list, sql_student_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -319,11 +319,11 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
     # otherwise error 'dictionary changed size during iteration' will come up
 
     if not skip_student:
-        exemption_count = student_dict.get('exemption_count', 0)
-        sr_count = student_dict.get('sr_count', 0)
-        reex_count = student_dict.get('reex_count', 0)
-        reex03_count = student_dict.get('reex03_count', 0)
-        thumbrule_count = student_dict.get('thumbrule_count', 0)
+        exemption_count = student_dict.get('c_ep4', 0)
+        sr_count = student_dict.get('c_sr', 0)
+        reex_count = student_dict.get('c_ep2', 0)
+        reex03_count = student_dict.get('c_ep3', 0)
+        thumbrule_count = student_dict.get('c_thumbrule', 0)
 
         ep_list = [c.EXAMPERIOD_EXEMPTION, c.EXAMPERIOD_FIRST]
         if reex_count:
@@ -381,7 +381,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         # - puts calculated result of the last examperiod in log_list
 
         calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, rule_core_sufficient,
-                                  withdrawn, has_subjects, depbase_is_vsbo, log_list, sql_student_list)
+                                  withdrawn, partial_exam, has_subjects, depbase_is_vsbo, log_list, sql_student_list)
 
         if logging_on:
             logger.debug('     sql_student_list: ' + str(sql_student_list))
@@ -394,7 +394,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, studsubj_pk, studsubj_dict, si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_studsubj_result  -----')
         logger.debug('     studsubj_dict: ' + str(studsubj_dict))
@@ -409,7 +409,6 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
      'subj_name': 'Biologie', 'subj_code': 'bi', 'sjtp_name': 'Sectordeel', 'sjtp_code': 'spd', 'sjtp_has_pws': False}
 
     """
-
     subj_code = si_dict.get('subj_code', '-')
     subj_name = si_dict.get('subj_name', '-')
     gradetype = si_dict.get('gradetype')
@@ -450,6 +449,10 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
     has_sr = studsubj_dict.get('has_sr', False)
     has_reex = studsubj_dict.get('has_reex', False)
     has_reex03 = studsubj_dict.get('has_reex03', False)
+
+    # PR2022-06-09 debug value of has_reex etc is not always correct
+    # it is safer to loop through ep_list to calculate values of has_reex etc
+    # then has_reex can be stored in student
 
     is_extra_nocount = studsubj_dict.get('is_extra_nocount', False)
     if is_extra_nocount:
@@ -521,10 +524,13 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                 gl_max_examperiod = max_examperiod
                 if max_ni:
                     gl_max_ni = max_ni
-        # end of "if examperiod in studsubj_dict"
 
             if logging_on:
                 logger.debug('    this_examperiod_dict: ' + str(this_examperiod_dict))
+                logger.debug('    max_examperiod: ' + str(max_examperiod))
+                logger.debug('    gl_max_examperiod: ' + str(gl_max_examperiod))
+                logger.debug('    max_ni: ' + str(max_ni))
+                logger.debug('    gl_max_ni: ' + str(gl_max_ni))
 
 # add subj_grade_str to log_subj_grade_dict
             # subj_grade_str: '     Vrijstelling: SE:9,7 CE:6,0 Eindcijfer:8'
@@ -532,6 +538,8 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                                                     weight_se, weight_ce, has_practexam, sr_allowed, no_practexam)
             if subj_grade_str:
                 log_subj_grade_dict[examperiod] = subj_grade_str
+
+# --- end of "if examperiod in studsubj_dict"
 
 # --- create student_ep_dicts with key ep1, ep2 and ep3 in student_dict[ep_key]
         if examperiod != c.EXAMPERIOD_EXEMPTION:
@@ -808,7 +816,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------  calc_max_grades  ----------')
-        logger.debug('this_examperiod: ' + str(this_examperiod))
+        logger.debug('     this_examperiod: ' + str(this_examperiod))
 
 # - loop through examperiod: firstperiod, reex and reex03
 
@@ -829,6 +837,9 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
         if c.EXAMPERIOD_EXEMPTION in studsubj_dict:
             previous_examperiod = c.EXAMPERIOD_EXEMPTION
 
+    if logging_on:
+        logger.debug('     previous_examperiod: ' + str(previous_examperiod))
+
     max_sesr, max_pece, max_final, max_ni, max_noin, max_use_exemption = None, None, None, [], [], False
     max_examperiod = None
 
@@ -846,21 +857,25 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
         max_ni = this_examperiod_dict.get('ni') or []
         max_noin = this_examperiod_dict.get('noin') or []
         max_use_exemption = (this_examperiod == c.EXAMPERIOD_EXEMPTION)
+        if logging_on:
+            logger.debug('     previous_examperiod is None ')
+            logger.debug('     max_examperiod = this_examperiod: ' + str(max_examperiod))
+            logger.debug('     max_ni: ' + str(max_ni))
     else:
 
 # - get previous examperiod_dict
         prev_examperiod_dict = studsubj_dict.get(previous_examperiod)
 
         if logging_on:
-            logger.debug('this_examperiod_dict: ' + str(this_examperiod_dict))
-            logger.debug('prev_examperiod_dict: ' + str(prev_examperiod_dict))
+            logger.debug('     this_examperiod_dict: ' + str(this_examperiod_dict))
+            logger.debug('     prev_examperiod_dict: ' + str(prev_examperiod_dict))
 
         this_ni = this_examperiod_dict.get('ni')
         prev_ni = prev_examperiod_dict.get('ni')
 
         if logging_on:
-            logger.debug('this_ni: ' + str(this_ni))
-            logger.debug('prev_ni: ' + str(prev_ni))
+            logger.debug('     this_ni: ' + str(this_ni))
+            logger.debug('     prev_ni: ' + str(prev_ni))
 
         if this_examperiod == c.EXAMPERIOD_FIRST:
             # (exemption and firstperiod without exemption are already filtered out)
@@ -871,8 +886,6 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
 
             if prev_ni or this_ni:
                 # make max_use_exemption = True when exemption has no input
-                if logging_on:
-                    logger.debug('prev_ni has no input')
 
                 max_examperiod = c.EXAMPERIOD_EXEMPTION
                 max_sesr = prev_examperiod_dict.get('sesr')
@@ -882,9 +895,18 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 max_noin = prev_examperiod_dict.get('noin') or []
                 max_use_exemption = True
 
-# when this is reex or reex03 examperiod and this period has no input:
-    # - make reex / reex03 the max period, to show 'noinput' on the log_list and gradelist
+                if logging_on:
+                    logger.debug('if prev_ni or this_ni')
+                    logger.debug('     max_ni: ' + str(max_ni))
+                    logger.debug('     max_noin: ' + str(max_noin))
+                    logger.debug('     max_use_exemption: ' + str(max_use_exemption))
+
+
+# ---  examperiod is reex or reex03
         elif this_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+
+            # when this is reex or reex03 examperiod and this period has no input:
+            # - make reex / reex03 the max period, to show 'noinput' on the log_list and gradelist
             if this_ni:
                 max_examperiod = this_examperiod
                 max_sesr = this_examperiod_dict.get('sesr')
@@ -893,18 +915,36 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 max_ni = this_examperiod_dict.get('ni') or []
                 max_noin = this_examperiod_dict.get('noin') or []
                 max_use_exemption = False
+
+                if logging_on:
+                    logger.debug('if this_ni')
+                    logger.debug('     max_ni: ' + str(max_ni))
+                    logger.debug('     max_noin: ' + str(max_noin))
+                    logger.debug('     max_use_exemption: ' + str(max_use_exemption))
+
             elif prev_ni:
                 # if reex03: previous = reex if exists, else firstperiod
                 # if reex:   previous = firstperiod
-                max_examperiod = previous_examperiod
-                max_sesr = prev_examperiod_dict.get('max_sesr')
-                max_pece = prev_examperiod_dict.get('max_pece')
-                max_final = prev_examperiod_dict.get('max_final')
-                max_ni = prev_examperiod_dict.get('max_ni') or []
-                max_noin = prev_examperiod_dict.get('max_noin') or []
-                max_use_exemption = prev_examperiod_dict.get('max_use_exem', False)
-            # else: if reex / reex03 has input:
+
+                # when this period has input and previous period has no input:
+                # - set max_examperiod = this_examperiod
+
+                max_examperiod = this_examperiod
+                max_sesr = this_examperiod_dict.get('max_sesr')
+                max_pece = this_examperiod_dict.get('max_pece')
+                max_final = this_examperiod_dict.get('max_final')
+                max_ni = this_examperiod_dict.get('max_ni') or []
+                max_noin = this_examperiod_dict.get('max_noin') or []
+                max_use_exemption = this_examperiod_dict.get('max_use_exem', False)
+            # else: # if reex / reex03 has input compare
                 # compare previous_examperiod and this examperiod
+                # happens further in this function
+
+                if logging_on:
+                    logger.debug('elif prev_ni')
+                    logger.debug('     max_ni: ' + str(max_ni))
+                    logger.debug('     max_noin: ' + str(max_noin))
+                    logger.debug('     max_use_exemption: ' + str(max_use_exemption))
 
             if logging_on:
                 logger.debug('>>>> prev_examperiod_dict: ' + str(prev_examperiod_dict))
@@ -923,15 +963,9 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
             #        this_ni.append('sr')
             #    this_examperiod_dict['ni'] = this_ni
 
-            if logging_on:
-                logger.debug('>>>> this_ni: ' + str(this_ni))
-                logger.debug('>>>> prev_examperiod_dict: ' + str(prev_examperiod_dict))
-                logger.debug('>>>> this_examperiod_dict: ' + str(this_examperiod_dict))
-
 # - if both this_examperiod and previous_examperiod have values: compare
         # - calculate which examperiod gives the highest final grade, use max_value in prev period
         if max_examperiod is None:
-
             this_finalgrade = this_examperiod_dict.get('final')
             prev_finalgrade = prev_examperiod_dict.get('max_final')
 
@@ -949,6 +983,8 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 max_examperiod = calc_max_examperiod_gradetype_character(
                     this_examperiod, this_finalgrade,
                     previous_examperiod, prev_finalgrade)
+                if logging_on:
+                    logger.debug('     max_examperiod == calc_max_examperiod_gradetype_character')
 
             elif gradetype == c.GRADETYPE_01_NUMBER:
                 this_pece = this_examperiod_dict.get('pece')
@@ -957,6 +993,8 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 max_examperiod = calc_max_examperiod_gradetype_decimal(
                     this_examperiod, this_finalgrade, this_pece,
                     previous_examperiod, prev_finalgrade, prev_pece)
+                if logging_on:
+                    logger.debug('     max_examperiod == calc_max_examperiod_gradetype_decimal')
 
 # get max_use_exemption.
             # - is False when max_examperiod = this_examperiod
@@ -964,6 +1002,8 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
             # - is True  when max_examperiod = prev_period and use_exemption of prev_period = True
 
             if max_examperiod == this_examperiod:
+                if logging_on:
+                    logger.debug('     max_examperiod == this_examperiod')
                 # max_examperiod = this_examperiod
                 max_sesr = this_examperiod_dict.get('sesr')
                 max_pece = this_examperiod_dict.get('pece')
@@ -972,6 +1012,8 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 max_noin = this_examperiod_dict.get('noin') or []
                 max_use_exemption = False
             else:
+                if logging_on:
+                    logger.debug('     else: max_examperiod = previous_examperiod')
                 #max_examperiod = previous_examperiod
                 max_sesr = prev_examperiod_dict.get('max_sesr')
                 max_pece = prev_examperiod_dict.get('max_pece')
@@ -1415,7 +1457,7 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
 def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' -----  calc_pece_avg  -----')
+        logger.debug('-----  calc_pece_avg  -----')
         logger.debug('     examperiod: ' + str(examperiod))
         logger.debug('     student_ep_dict: ' + str(student_ep_dict))
     # see https://www.examenblad.nl/veel-gevraagd/hoe-moeten-cijfers-worden-afgerond/2013
@@ -1733,13 +1775,13 @@ def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent
 # - end of calc_rule_issufficient
 
 
-def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, rule_core_sufficient, withdrawn,
+def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, rule_core_sufficient, withdrawn, partial_exam,
                               has_subjects, depbase_is_vsbo, log_list, sql_student_list):
     # PR2021-12-31 PR2022-06-04
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
     # is reex03 when reex03 student, reex when reex student, firstperiod otherwise
-    logging_on = False  #s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
@@ -1779,55 +1821,38 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
                 }
         'ep2':  {'ep': 2, 'final': {'sum': -976, 'cnt': 7, 'info': ' ne:- pa:6 en:6(vr) wk:4 mm12:5 ac:2 combi:-', 'avg': None, 'result': 'Gemiddeld eindcijfer: - (-/7) '}, 'combi': {'sum': -988, 'cnt': 3, 'info': ' mm1:6 cav:-(vr) lo:5', 'final': None, 'result': 'Combinatiecijfer: - (-/3) '}, 'pece': {'sumX10': -9879, 'cnt': 4, 'info': ' ne:- en:7,0(vr) wk:3,0 ac:2,0', 'avg': None, 'result': 'Gemiddeld CE-cijfer: - (-/4) '}, 'count': {'c3': 1, 'c4': 1, 'c5': 1, 'c6': 2, 'c7': 0, 'core4': 1, 'core5': 0}, 'noin': {'sr': ['ne'], 'ce': ['ne'], 'vr': {'ec': ['CE'], 'cav': ['SE']}}, 'failed': {'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 'Sectorwerkstuk is onvoldoende.']}}
         'ep3': {'ep': 3, 'final': {'sum': -1977, 'cnt': 7, 'info': ' ne:- pa:6 en:6(vr) wk:4 mm12:5 ac:-(h3) combi:-', 'avg': None, 'result': 'Gemiddeld eindcijfer: - (-/7) '}, 'combi': {'sum': -988, 'cnt': 3, 'info': ' mm1:6 cav:-(vr) lo:5', 'final': None, 'result': 'Combinatiecijfer: - (-/3) '}, 'pece': {'sumX10': -19898, 'cnt': 4, 'info': ' ne:- en:7,0(vr) wk:3,0 ac:-(h3)', 'avg': None, 'result': 'Gemiddeld CE-cijfer: - (-/4) '}, 'count': {'c3': 0, 'c4': 1, 'c5': 1, 'c6': 2, 'c7': 0, 'core4': 1, 'core5': 0}, 'noin': {'sr': ['ne'], 'ce': ['ne'], 'vr': {'ec': ['CE'], 'cav': ['SE']}, 'h3': ['ac']}, 'failed': {'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 'Sectorwerkstuk is onvoldoende.']}} 
-        
-        
-      student_dict: {
-      'fullname': 'Ahoua, Candy Kimberly', 'stud_id': 3823, 'country': 'Curaçao', 
-      'examyear_txt': '2022', 'school_name': 'Juan Pablo Duarte Vsbo', 'school_code': 'CUR03', 
-      'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 
-      'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'lvlbase_code': 'TKL', 'level_req': True, 
-      'sct_name': 'Economie', 'dep_id': 4, 'lvl_id': 4, 'sct_id': 13, 'scheme_id': 70, 'examnumber': '2177',
-20701: {'si_id': 1686, 'subj': 'ne', 1: {'subj': 'ne', 'se': '7.6', 'sesr': '7.6', 'noin': {'ce': ['ne']}, 'ni': ['ce'], 
-       'max_ep': 1, 'max_sesr': '7.6', 'max_pece': None, 'max_final': None, 'max_ni': ['ce'], 'max_noin': {'ce': ['ne']},
-        'max_use_exem': False}}, 
-20706: {'si_id': 1691, 'subj': 'pa', 1: {'subj': 'pa', 'se': '7.5', 'sesr': '7.5', 
-        'noin': {'ce': ['pa']}, 'ni': ['ce'], 'max_ep': 1, 'max_sesr': '7.5', 'max_pece': None, 'max_final': None, 
-        'max_ni': ['ce'], 'max_noin': {'ce': ['pa']}, 'max_use_exem': False}},
-20702: {'si_id': 1687, 'subj': 'en', 1: {'subj': 'en', 'se': '7.4', 'sesr': '7.4', 'noin': {'ce': ['en']}, 
-         'ni': ['ce'], 'max_ep': 1, 'max_sesr': '7.4', 'max_pece': None, 'max_final': None, 'max_ni': ['ce'], 
-         'max_noin': {'ce': ['en']}, 'max_use_exem': False}}, 
-45546: {'si_id': 1700, 'subj': 'sp', 
-         1: {'subj': 'sp', 'se': '7.6', 'sesr': '7.6', 'noin': {'ce': ['sp']}, 'ni': ['ce'], 'max_ep': 1, 'max_sesr': '7.6',
-          'max_pece': None, 'max_final': None, 'max_ni': ['ce'], 'max_noin': {'ce': ['sp']}, 'max_use_exem': False}}, 
-20707: {'si_id': 1693, 'subj': 'wk', 1: {'subj': 'wk', 'se': '6.0', 'sesr': '6.0', 'noin': {'ce': ['wk']}, 
-          'ni': ['ce'], 'max_ep': 1, 'max_sesr': '6.0', 'max_pece': None, 'max_final': None, 'max_ni': ['ce'], 
-          'max_noin': {'ce': ['wk']}, 'max_use_exem': False}}, 
-20710: {'si_id': 1701, 'subj': 'ec',
-           1: {'subj': 'ec', 'se': '6.9', 'sesr': '6.9', 
-           'noin': {'ce': ['ec']}, 'ni': ['ce'], 'max_ep': 1, 'max_sesr': '6.9', 'max_pece': None, 'max_final': None, 
-           'max_ni': ['ce'], 'max_noin': {'ce': ['ec']}, 'max_use_exem': False}}, 
-20703: {'si_id': 1688, 'subj': 'mm1', 1: {'subj': 'mm1', 'se': '7.1', 'sesr': '7.1', 'final': '7', 
-           'max_ep': 1, 'max_sesr': '7.1', 'max_pece': None, 'max_final': '7', 'max_ni': [], 'max_noin': [], 
-           'max_use_exem': False}}, 
-20705: {'si_id': 1690, 'subj': 'cav', 1: {'subj': 'cav', 'se': '7.3', 
-           'sesr': '7.3', 'final': '7', 'max_ep': 1, 'max_sesr': '7.3', 'max_pece': None, 'max_final': '7',
-            'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
- 20704: {'si_id': 1689, 'subj': 'lo',
-             1: {'subj': 'lo', 'se': '6.7', 'sesr': '6.7', 'final': '7', 'max_ep': 1, 'max_sesr': '6.7', 
-             'max_pece': None, 'max_final': '7', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}},
-20708: {'si_id': 1697, 'subj': 'ac', 1: {'subj': 'ac', 'se': '6.4', 'sesr': '6.4', 
-              'noin': {'ce': ['ac']}, 'ni': ['ce'], 'max_ep': 1, 'max_sesr': '6.4', 'max_pece': None, 
-              'max_final': None, 'max_ni': ['ce'], 'max_noin': {'ce': ['ac']}, 'max_use_exem': False}}, 
-20709: {'si_id': 1699, 'subj': 'sws', 1: {'subj': 'sws', 'se': 'g', 'sesr': 'g', 'final': 'g',
-               'max_ep': 1, 'max_sesr': 'g', 'max_pece': None, 'max_final': 'g', 'max_ni': [],  'max_noin': [], 'max_use_exem': False}}, 
-               
-'ep1': {'ep': 1, 
-    'final': {'sum': -6993, 'cnt': 7,  'info': ' ne:- pa:- en:- sp:- wk:- ec:- ac:-'}, 
-    'combi': {'sum': 21, 'cnt': 3, 'info': ' mm1:7 cav:7 lo:7'}, 
-    'pece': {'sumX10': -69993, 'cnt': 7,  'info': ' ne:- pa:- en:- sp:- wk:- ec:- ac:-'}, 
-    'count': {'c3': 0, 'c4': 0, 'c5': 0, 'c6': 0, 'c7': 0, 'core4': 0, 'core5': 0}, 
-    'noin': {'ce': ['ne', 'pa', 'en', 'sp', 'wk', 'ec', 'ac']}}}
-     
+
+
+    student_dict: {
+      'fullname': 'Bansingh, Akim', 'stud_id': 4377, 'country': 'Sint Maarten', 'examyear_txt': '2022', 'school_name': 'Milton Peters College', 'school_code': 'SXM01', 'islexschool': False, 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 
+                    'lvl_name': 'Praktisch Kadergerichte Leerweg', 'lvlbase_code': 'PKL', 'level_req': True, 'sct_name': 'Economie', 'dep_id': 7, 'lvl_id': 8, 'sct_id': 20, 'scheme_id': 93, 'has_profiel': False, 'examnumber': '301', 'iseveningstudent': False, 'islexstudent': False, 
+                    'bis_exam': False, 'partial_exam': False, 'exemption_count': 0, 
+                    'sr_count': 0, 'reex_count': 0, 'reex03_count': 0, 'thumbrule_count': 0, 'withdrawn': False, 
+    28266: {
+            'si_id': 2555, 'subj': 'ac', 
+            2: {'subj': 'ac', 'se': '5.4', 'sr': None, 'sesr': '5.4', 'pe': None, 'ce': None, 'pece': None, 'final': None}, 
+            1: {'subj': 'ac', 'se': '5.4', 'sr': None, 'sesr': '5.4', 'pe': None, 'ce': '5.1', 'pece': '5.1', 'final': '5', 'max_ep': 1, 'max_sesr': '5.4', 'max_pece': '5.1', 'max_final': '5', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    28262: {'si_id': 2551, 'subj': 'cav', 
+        1: {'subj': 'cav', 'se': '7.3', 'sr': None, 'sesr': '7.3', 'pe': None, 'ce': None, 'pece': None, 'final': '7', 'max_ep': 1, 'max_sesr': '7.3', 'max_pece': None, 'max_final': '7', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    28268: {'si_id': 2554, 'subj': 'ec', 
+        1: {'subj': 'ec', 'se': '6.0', 'sr': None, 'sesr': '6.0', 'pe': None, 'ce': '6.5', 'pece': '6.5', 'final': '6', 'max_ep': 1, 'max_sesr': '6.0', 'max_pece': '6.5', 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    28259: {'si_id': 2559, 'subj': 'en', 
+        1: {'subj': 'en', 'se': '5.9', 'sr': None, 'sesr': '5.9', 'pe': None, 'ce': '6.4', 'pece': '6.4', 'final': '6', 'max_ep': 1, 'max_sesr': '5.9', 'max_pece': '6.4', 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 28263: {'si_id': 2563, 'subj': 'fr', 1: {'subj': 'fr', 'se': '6.2', 'sr': None, 'sesr': '6.2', 'pe': None, 'ce': '3.5', 'pece': '3.5', 'final': '5', 'max_ep': 1, 'max_sesr': '6.2', 'max_pece': '3.5', 'max_final': '5', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    28261: {'si_id': 2550, 'subj': 'lo', 
+        1: {'subj': 'lo', 'se': '7.6', 'sr': None, 'sesr': '7.6', 'pe': None, 'ce': None, 'pece': None, 'final': '8', 'max_ep': 1, 'max_sesr': '7.6', 'max_pece': None, 'max_final': '8', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+      28260: {'si_id': 2549, 'subj': 'mm1', 
+        1: {'subj': 'mm1', 'se': '6.1', 'sr': None, 'sesr': '6.1', 'pe': None, 'ce': None, 'pece': None, 'final': '6', 'max_ep': 1, 'max_sesr': '6.1', 'max_pece': None, 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+      28258: {'si_id': 2548, 'subj': 'ne', 
+        1: {'subj': 'ne', 'se': '7.3', 'sr': None, 'sesr': '7.3', 'pe': None, 'ce': '7.5', 'pece': '7.5', 'final': '7', 'max_ep': 1, 'max_sesr': '7.3', 'max_pece': '7.5', 'max_final': '7', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+      28264: {'si_id': 2561, 'subj': 'sp', 
+        1: {'subj': 'sp', 'se': '6.1', 'sr': None, 'sesr': '6.1', 'pe': None, 'ce': '5.4', 'pece': '5.4', 'final': '6', 'max_ep': 1, 'max_sesr': '6.1', 'max_pece': '5.4', 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 28267: {'si_id': 2557, 'subj': 'stg', 1: {'subj': 'stg', 'se': 'v', 'sr': None, 'sesr': 'v', 'pe': None, 'ce': None, 'pece': None, 'final': 'v', 'max_ep': 1, 'max_sesr': 'v', 'max_pece': None, 'max_final': 'v', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+      28265: {'si_id': 2558, 'subj': 'wk', 
+        1: {'subj': 'wk', 'se': '6.8', 'sr': None, 'sesr': '6.8', 'pe': None, 'ce': '5.9', 'pece': '5.9', 'final': '6', 'max_ep': 1, 'max_sesr': '6.8', 'max_pece': '5.9', 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    'ep1': {'ep': 1, 'final': {'sum': 41, 'cnt': 7, 'info': ' ac:5 ec:6 en:6 fr:5 ne:7 sp:6 wk:6'}, 
+                    'combi': {'sum': 21, 'cnt': 3, 'info': ' cav:7 lo:8 mm1:6'}, 
+                    'pece': {'sumX10': 403, 'cnt': 7, 'info': ' ac:5,1 ec:6,5 en:6,4 fr:3,5 ne:7,5 sp:5,4 wk:5,9'}, 
+                    'count': {'c3': 0, 'c4': 0, 'c5': 2, 'c6': 4, 'c7': 1, 'core4': 0, 'core5': 0}}}
+     ###########################
         
     """
     last_examperiod = None
@@ -1851,6 +1876,9 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
                 student_ep_dict['result_index'] = c.RESULT_WITHDRAWN
                 if logging_on:
                     logger.debug('     withdrawn: ' + str(withdrawn))
+            elif partial_exam:
+                # PR2022-06-10 Richard Westerink ATC: partial exam student has always 'No result' on gradelist
+                student_ep_dict['result_index'] = c.RESULT_NORESULT
             elif not has_subjects:
                 student_ep_dict['result_index'] = c.RESULT_NORESULT
             else:
@@ -1918,7 +1946,9 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
         result_info_list, result_info_log_list = calc_add_result_to_log(last_examperiod, last_student_ep_dict,
                                                                         rule_avg_pece_sufficient, rule_core_sufficient)
         log_list.extend(result_info_log_list)
-        sql_student_values = stud_view.save_result_etc_in_student(student_dict, last_student_ep_dict, result_info_list, sql_student_list)
+
+# - put result and grade info in sql_student_values
+        sql_student_values = get_sql_student_values(student_dict, last_student_ep_dict, result_info_list)
 
         if sql_student_values:
             sql_student_list.append(sql_student_values)
@@ -2377,35 +2407,28 @@ def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24 PR2022-05-26
 # end of calc_passfailed_pece_avg_rule
 
 
-def calc_add_result_to_log(examperiod, student_ep_dict, rule_avg_pece_sufficient, rule_core_sufficient):
+def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_sufficient, rule_core_sufficient):
     # PR2021-11-29 PR2022-06-05
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_add_result_to_log  -----')
-        logger.debug('student_ep_dict: ' + str(student_ep_dict))
+        logger.debug('last_student_ep_dict: ' + str(last_student_ep_dict))
     """
-    student_ep_dict: {
-        'ep': 3, 
-            'final': {'sum': -3986, 'cnt': 7, 'info': ' ne:- pa:6 en:-(vr) wk:4 mm12:-(vr) ac:-(h3) combi:-', 'avg': None, 
-                'result': 'Gemiddeld eindcijfer: - (-/7) '}, 
-            'combi': {'sum': -1993, 'cnt': 3, 'info': ' mm1:- cav:-(vr) lo:5', 'final': None, 
-                'result': 'Combinatiecijfer: - (-/3) '}, 
-            'pece': {'sumX10': -29967, 'cnt': 4, 'info': ' ne:- en:-(vr) wk:3,0 ac:-(h3)', 'avg': None, 
-                'result': 'Gemiddeld CE-cijfer: - (-/4) '}, 
-            'count': {'c3': 0, 'c4': 1, 'c5': 0, 'c6': 1, 'c7': 0, 'core4': 1, 'core5': 0}, 
-            'noin': {'sr': ['ne'], 'ce': ['ne'], 'vr': {'en': ['SE', 'CE'], 'ec': ['SE', 'CE'], 
-                    'mm12': ['SE'], 'cav': ['SE']}, 'se': ['mm1'], 'h3': ['ac']}, 
-            'failed': {
-                'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 
-                            'Sectorwerkstuk is onvoldoende.']}, 
-            'result_index': 0, 
-            'noresult': ['Vrijstelling: en(SE,CE) ec(SE,CE) mm12(SE) cav(SE)  niet ingevuld', 
-                        'Schoolexamen: mm1 niet ingevuld', 
-                        'Herkansing schoolexamen: ne niet ingevuld', 
-                        'Centraal examen: ne niet ingevuld', 
-                        'Herexamen 3e tijdvak: ac niet ingevuld']}
+    last_student_ep_dict: {
+        'ep': 2, 
+        'final': {'sum': -962, 'cnt': 7, 'info': ' ec:-(h) en:6 fr:5 ne:7 sp:6 wk:6 combi:7', 'avg': None, 
+                    'result': 'Gemiddeld eindcijfer: - (-/7) '}, 
+        'combi': {'sum': 21, 'cnt': 3, 'info': ' cav:7 lo:8 mm1:6', 'final': 7, 
+                    'result': 'Combinatiecijfer: 7 (21/3) '}, 
+        'pece': {'sumX10': -9712, 'cnt': 6, 'info': ' ec:-(h) en:6,4 fr:3,5 ne:7,5 sp:5,4 wk:5,9', 'avg': None, 
+                    'result': 'Gemiddeld CE-cijfer: - (-/6) '}, 
+        'count': {'c3': 0, 'c4': 0, 'c5': 1, 'c6': 3, 'c7': 2, 'core4': 0, 'core5': 0}, 
+        'noin': {'h2': ['ec']}, 
+        'noin_info': ['Herexamen: ec niet ingevuld'],
+        'result_index': 0}
+    """
+    #last_student_ep_dict = student_dict[last_ep_str]
 
-    """
     # add result to combi_dict result: PR2021-11-29
     result_info_list = []
     result_info_log_list = []
@@ -2419,7 +2442,7 @@ def calc_add_result_to_log(examperiod, student_ep_dict, rule_avg_pece_sufficient
 
     show_details = False
     result_info_log_list.append(' ')
-    result_index = student_ep_dict.get('result_index')
+    result_index = last_student_ep_dict.get('result_index')
     if result_index == c.RESULT_WITHDRAWN:
         result_str += str(_('Withdrawn')).upper()
         result_info_list.append(result_str)
@@ -2428,7 +2451,7 @@ def calc_add_result_to_log(examperiod, student_ep_dict, rule_avg_pece_sufficient
         result_str += str(_('No result')).upper()
         result_info_list.append(result_str)
         result_info_log_list.append(result_str)
-        noin_info_list = student_ep_dict.get('noin_info')
+        noin_info_list = last_student_ep_dict.get('noin_info')
         if noin_info_list:
             for noin_info in noin_info_list:
                 result_info_list.append(noin_info)
@@ -2439,7 +2462,7 @@ def calc_add_result_to_log(examperiod, student_ep_dict, rule_avg_pece_sufficient
         result_info_list.append(result_str)
         result_info_log_list.append(result_str)
 
-        fail_dict = student_ep_dict.get('failed')
+        fail_dict = last_student_ep_dict.get('failed')
         if fail_dict:
             cnt3457_dict = fail_dict.get('cnt3457')
             if cnt3457_dict:
@@ -2471,7 +2494,7 @@ def calc_add_result_to_log(examperiod, student_ep_dict, rule_avg_pece_sufficient
         result_info_list.append(result_str)
         result_info_log_list.append(result_str)
 
-        passed_dict = student_ep_dict.get('passed')
+        passed_dict = last_student_ep_dict.get('passed')
         if passed_dict:
             cnt3457_dict = passed_dict.get('cnt3457')
             if cnt3457_dict:
@@ -2490,13 +2513,13 @@ def calc_add_result_to_log(examperiod, student_ep_dict, rule_avg_pece_sufficient
 
     if show_details:
 # - add line with combi grade
-        combi_dict = student_ep_dict['combi']
+        combi_dict = last_student_ep_dict['combi']
         if 'result' in combi_dict:
             result_info_log_list.append(('').join((c.STRING_SPACE_05, combi_dict['result'], '{' + combi_dict['info'][1:] + '}')))
 
 # - add line with final grade
         # final_sum_int is negative when grades have no input, therefore use: if final_sum_int > 0
-        final_dict = student_ep_dict.get('final')
+        final_dict = last_student_ep_dict.get('final')
         final_sum_int = final_dict.get('sum', 0)
         final_cnt_int = final_dict.get('cnt', 0)
 
@@ -2515,7 +2538,7 @@ def calc_add_result_to_log(examperiod, student_ep_dict, rule_avg_pece_sufficient
         result_info_log_list.append(('').join((c.STRING_SPACE_05, str(log_txt))))
 
 # - add line with average pece grade
-        pece_dict = student_ep_dict.get('pece')
+        pece_dict = last_student_ep_dict.get('pece')
         if pece_dict:
             result_str = pece_dict['result'] if 'result' in pece_dict else ''
             info_str = pece_dict['info'][1:] if 'info' in pece_dict else ''
@@ -2576,7 +2599,7 @@ def save_studsubj_batch(sql_studsubj_list):  # PR2022-01-03
 
 def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
     # this function saves calculated fields in student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- save_student_batch  --------------------')
         logger.debug('sql_student_list: ' + str(sql_student_list))
@@ -2586,8 +2609,8 @@ def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
 
         """
         sql_student_values = [ str(student_id),
-            gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str,
-            result_index_str, result_status_str,  result_info_str,
+            gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str, result_index_str, 
+                result_status_str,  result_info_str,
             e1_ce_avg_str, e1_combi_avg_str, e1_final_avg_str, e1_result_index_str,
             e2_ce_avg_str, e2_combi_avg_str, e2_final_avg_str, e2_result_index_str
         ]
@@ -2597,13 +2620,17 @@ def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
                     "CREATE TEMP TABLE tmp (st_id,",
                         "avg_ce, avg_combi, avg_final, index, status, info,",
                         "e1_ce_avg, e1_combi_avg, e1_final_avg, e1_result,",
-                        "e2_ce_avg, e2_combi_avg, e2_final_avg, e2_result",
+                        "e2_ce_avg, e2_combi_avg, e2_final_avg, e2_result,",
+                        "exemption_count, sr_count,",
+                        "reex_count, reex03_count,thumbrule_count",
 
                     ") AS VALUES (0::INT,",
                         "'-'::TEXT, '-'::TEXT, '-'::TEXT,",
                         "0::INT, '-'::TEXT, '-'::TEXT,",
                         "'-'::TEXT, '-'::TEXT, '-'::TEXT, 0::INT,",
-                        "'-'::TEXT, '-'::TEXT, '-'::TEXT, 0::INT",
+                        "'-'::TEXT, '-'::TEXT, '-'::TEXT, 0::INT,",
+                        "0::INT, 0::INT,"
+                        "0::INT, 0::INT, 0::INT"
                     ")"]
 
         for row in sql_student_list:
@@ -2616,11 +2643,18 @@ def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
                 'NULL', "'7'", 'NULL', '0', 
                 'NULL', "'7'", 'NULL', '0']
 
+            row: ['4377', 
+                "'5.8'", "'7'", "'6.1'", '1', "'Geslaagd'", "'Uitslag na herexamen: GESLAAGD'", 
+                "'5.8'", "'7'", "'6.1'", '1', "'5.8'", "'7'", "'6.1'", '1']
+
+            
+
             """
             sql_item = ', '.join((row[0],
                 row[1], row[2], row[3], row[4], row[5], row[6],
                 row[7], row[8], row[9], row[10],
-                row[11], row[12], row[13], row[14]
+                row[11], row[12], row[13], row[14],
+                row[15], row[16], row[17], row[18], row[19]
             ))
             sql_list.append(''.join((", (", sql_item, ")")))
 
@@ -2632,8 +2666,10 @@ def save_student_batch(sql_student_list):  # PR2022-01-03 PR2022-06-03
             "; UPDATE students_student AS st",
             "SET gl_ce_avg = tmp.avg_ce, gl_combi_avg = tmp.avg_combi, gl_final_avg = tmp.avg_final,",
             "result = tmp.index, result_status = tmp.status, result_info = tmp.info,",
-            "ep01_ce_avg=tmp.e1_ce_avg, ep01_combi_avg=tmp.e1_combi_avg, ep01_final_avg=tmp.e1_final_avg, ep01_result=tmp.e1_result, ",
-            "ep02_ce_avg=tmp.e2_ce_avg, ep02_combi_avg=tmp.e2_combi_avg, ep02_final_avg=tmp.e2_final_avg, ep02_result=tmp.e2_result",
+            "ep01_ce_avg=tmp.e1_ce_avg, ep01_combi_avg=tmp.e1_combi_avg, ep01_final_avg=tmp.e1_final_avg, ep01_result=tmp.e1_result,",
+            "ep02_ce_avg=tmp.e2_ce_avg, ep02_combi_avg=tmp.e2_combi_avg, ep02_final_avg=tmp.e2_final_avg, ep02_result=tmp.e2_result,",
+            "exemption_count=tmp.exemption_count, sr_count=tmp.sr_count,",
+            "reex_count=tmp.reex_count, reex03_count=tmp.reex03_count, thumbrule_count=tmp.thumbrule_count",
 
             "FROM tmp",
             "WHERE st.id = tmp.st_id",
@@ -2685,8 +2721,9 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     # TODO grades that are not published are only visible when 'same_school' (or not??)
     # also add grades of each period
 
-    logging_on = False  #s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' ----- get_students_with_grades_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
 
@@ -2698,7 +2735,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
     student_field_list = ('stud_id', 'country', 'examyear_txt', 'school_name', 'school_code', 'islexschool',
                           'dep_name', 'depbase_code', 'dep_abbrev', 'lvl_name', 'lvlbase_code',  'level_req', 'sct_name',
-                          'dep_id', 'lvl_id', 'sct_id', 'scheme_id',
+                          'dep_id', 'lvl_id', 'sct_id', 'scheme_id', 'classname',
                           'has_profiel', 'examnumber', 'iseveningstudent', 'islexstudent', 'bis_exam', 'partial_exam',
                           'exemption_count', 'sr_count', 'reex_count', 'reex03_count', 'thumbrule_count', 'withdrawn',
                           )  # 'fullname is also added to dict
@@ -2746,8 +2783,8 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
                 "SELECT stud.id AS stud_id, studsubj.id AS studsubj_id, studsubj.si_id,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.classname,",
-                "stud.iseveningstudent, stud.islexstudent, stud.bis_exam, stud.partial_exam,",
-                "stud.exemption_count, stud.sr_count, stud.reex_count, stud.reex03_count, stud.thumbrule_count, stud.withdrawn,",
+                "stud.iseveningstudent, stud.islexstudent, stud.bis_exam, stud.partial_exam, stud.withdrawn,",
+                "stud.exemption_count, stud.sr_count, stud.reex_count, stud.reex03_count, stud.thumbrule_count,",
 
                 "school.name AS school_name, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
@@ -2818,7 +2855,18 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
                         value = row.get(field)
                         if value is not None or True:
                             stud_dict[field] = value
-                    cascade_dict[stud_id] = stud_dict
+                    # PR 2022-06-09 debug: count exemp, reex, reex3
+                    # id safer than getting it from student row
+
+# count exemption(c_ep4), reex(c_ep2), reex03(c_ep3)
+                examperiod = row.get('examperiod')
+
+                for ep_int in range(2, 5):
+                    if examperiod == ep_int:
+                        key_str = 'c_ep' + str(ep_int)
+                        stud_dict[key_str] = 1 + (stud_dict.get(key_str) or 0)
+
+                cascade_dict[stud_id] = stud_dict
 
     # - add studsubj_dict dict
                 student_dict = cascade_dict.get(stud_id)
@@ -2827,11 +2875,26 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
                     studsubj_pk = row.get('studsubj_id')
 
                     if studsubj_pk not in student_dict:
+    # add 1 to count subjects
+                        stud_dict['c_subj'] = 1 + (stud_dict.get('c_subj') or 0)
+
+    # count put value of studsubj_field_list fields in ss_dict
                         ss_dict = {}
                         for field in studsubj_field_list:
                             value = row.get(field)
                             if value:
                                 ss_dict[field] = value
+
+    # count is_extra_nocount, is_extra_counts, is_thumbrule
+                                if field == 'has_sr':
+                                    stud_dict['c_sr'] = 1 + (stud_dict.get('c_sr') or 0)
+                                if field == 'is_thumbrule':
+                                    stud_dict['c_thumbrule'] = 1 + (stud_dict.get('c_thumbrule') or 0)
+                                elif field == 'is_extra_nocount':
+                                    stud_dict['c_extra_nocount'] = 1 + (stud_dict.get('c_extra_nocount') or 0)
+                                elif field == 'is_extra_counts':
+                                    stud_dict['c_extra_counts'] = 1 + (stud_dict.get('c_extra_counts') or 0)
+
                         student_dict[studsubj_pk] = ss_dict
 
                     studsubj_dict = student_dict.get(studsubj_pk)
@@ -3024,20 +3087,23 @@ def get_isevlex_isreex_fullname(student_dict):  # PR2021-12-19  PR2021-12-29 PR2
     # - get from student_dict: isevlexstudent, reex_count, reex03_count and full name with (evening / lex student)
 
     full_name = student_dict.get('fullname', '---')
-    iseveningstudent = student_dict.get('iseveningstudent', False)
-    islexstudent = student_dict.get('islexstudent', False)
-    partial_exam = student_dict.get('partial_exam', False) or False
-
-    partial_exam_str = ' ' + str(_('partial exam')) if partial_exam else ''
+    iseveningstudent = student_dict.get('iseveningstudent') or False
+    islexstudent = student_dict.get('islexstudent') or False
+    partial_exam = student_dict.get('partial_exam') or False
 
     isevlexstudent = False
-
-    if iseveningstudent or islexstudent:
+    ev_lex_part_list = []
+    if iseveningstudent:
         isevlexstudent = True
-        evlex_str = str(_('landsexamen candidate')) if islexstudent else str(_('evening school candidate'))
-        full_name += ''.join((' (', evlex_str, partial_exam_str, ')'))
-    elif partial_exam:
-        full_name += ''.join((' (', partial_exam_str, ')'))
+        ev_lex_part_list.append(str(_('evening school candidate')))
+    if islexstudent:
+        isevlexstudent = True
+        ev_lex_part_list.append(str(_('landsexamen candidate')))
+    if partial_exam:
+        ev_lex_part_list.append(str(_('partial exam')))
+    if ev_lex_part_list:
+        ev_lex_part_str = ', '.join(ev_lex_part_list)
+        full_name += ''.join((' (', ev_lex_part_str, ')'))
 
     withdrawn = student_dict.get('withdrawn', False)
 
@@ -3077,6 +3143,189 @@ def get_rules_from_schemeitem(student_dict, isevlexstudent, scheme_dict):
 # - end of get_rules_from_schemeitem
 
 
+def get_sql_student_values(student_dict, last_student_ep_dict, result_info_list):  # PR2021-12-30
+
+    # function puts result and grade info in return list sql_student_values
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('>>>>> ----------- get_sql_student_values ----------- ')
+        logger.debug('!!!!!!!!!!!@@ last_student_ep_dict: ' + str(last_student_ep_dict))
+        logger.debug('@@@@@@@@@@@@@@@@@ student_dict: ' + str(student_dict))
+    """
+
+    last_student_ep_dict: {
+        'ep': 2, 
+        'final': {'sum': 43, 'cnt': 7, 'info': ' ec:6(h) en:6 fr:5 ne:7 sp:6 wk:6 combi:7', 'avg': '6.1', 'result': 'Gemiddeld eindcijfer: 6.1 (43/7) '}, 
+        'combi': {'sum': 21, 'cnt': 3, 'info': ' cav:7 lo:8 mm1:6', 'final': 7, 'result': 'Combinatiecijfer: 7 (21/3) '}, 
+        'pece': {'sumX10': 352, 'cnt': 6, 'info': ' ec:6,5(h) en:6,4 fr:3,5 ne:7,5 sp:5,4 wk:5,9', 'avg': '5.8', 'result': 'Gemiddeld CE-cijfer: 5,8 (35,2/6) '}, 
+        'count': {'c3': 0, 'c4': 0, 'c5': 1, 'c6': 4, 'c7': 2, 'core4': 0, 'core5': 0}, 
+        'passed': {'cnt3457': '1 vijf en voor de andere vakken een 6 of hoger.', 'avgce55': 'Gemiddeld CE-cijfer is 5,8.'}, 
+        'result_index': 1}
+        
+    student_dict: {'fullname': 'Bansingh, Akim', 'stud_id': 4377, 'country': 'Sint Maarten', 'examyear_txt': '2022', 
+        'school_name': 'Milton Peters College', 'school_code': 'SXM01', 'islexschool': False, 
+        'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 
+        'lvl_name': 'Praktisch Kadergerichte Leerweg', 'lvlbase_code': 'PKL', 'level_req': True, 
+        'sct_name': 'Economie', 'dep_id': 7, 'lvl_id': 8, 'sct_id': 20, 'scheme_id': 93, 
+        'classname': 'EACp4a', 'has_profiel': False, 'examnumber': '301', 
+        'iseveningstudent': False, 'islexstudent': False, 'bis_exam': True, 'partial_exam': False, 
+        'exemption_count': 1, 'sr_count': 0, 'reex_count': 2, 'reex03_count': 0, 'thumbrule_count': 0, 'withdrawn': False, 
+        'c_subj': 11, 'c_thumbrule': 1, 
+         'c_ep2': 2, 'c_ep4': 1, 
+    28266: {'si_id': 2555, 'subj': 'ac', 'is_thumbrule': True, 
+            1: {'subj': 'ac', 'se': '5.4', 'sr': None, 'sesr': '5.4', 'pe': None, 'ce': '5.1', 'pece': '5.1', 'final': '5', 
+                'max_ep': 1, 'max_sesr': '5.4', 'max_pece': '5.1', 'max_final': '5', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}, 
+            2: {'subj': 'ac', 'se': '5.4', 'sr': None, 'sesr': '5.4', 'pe': None, 'ce': None, 'pece': None, 'final': None, 
+                'max_ep': 1, 'max_sesr': '5.4', 'max_pece': '5.1', 'max_final': '5', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    28262: {'si_id': 2551, 'subj': 'cav', 1: {'subj': 'cav', 'se': '7.3', 'sr': None, 'sesr': '7.3', 'pe': None, 'ce': None, 'pece': None, 'final': '7',
+            'max_ep': 1, 'max_sesr': '7.3', 'max_pece': None, 'max_final': '7', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    28268: {'si_id': 2554, 'subj': 'ec', 'has_reex': True,
+            1: {'subj': 'ec', 'se': '6.0', 'sr': None, 'sesr': '6.0', 'pe': None, 'ce': '1.3', 'pece': '1.3', 'final': '4', 
+                'max_ep': 1, 'max_sesr': '6.0', 'max_pece': '1.3', 'max_final': '4', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}, 
+            2: {'subj': 'ec', 'se': '6.0', 'sr': None, 'sesr': '6.0', 'pe': None, 'ce': '6.5', 'pece': '6.5', 'final': '6', 
+                'max_ep': 2, 'max_sesr': '6.0', 'max_pece': '6.5', 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+    28259: {'si_id': 2559, 'subj': 'en', 'has_exemption': True, 'exemption_year': 2021, 
+            1: {'subj': 'en', 'se': '5.9', 'sr': None, 'sesr': '5.9', 'pe': None, 'ce': '6.4', 'pece': '6.4', 'final': '6', 
+                'max_ep': 1, 'max_sesr': '5.9', 'max_pece': '6.4', 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': False}, 
+            4: {'subj': 'en', 'se': '6.7', 'sr': None, 'sesr': '6.7', 'pe': None, 'ce': '4.5', 'pece': '4.5', 'final': '6', 
+                'max_ep': 4, 'max_sesr': '6.7', 'max_pece': '4.5', 'max_final': '6', 'max_ni': [], 'max_noin': [], 'max_use_exem': True}}, 
+
+    'ep1': {'ep': 1, 
+            'final': {'sum': 41, 'cnt': 7, 'info': ' ec:4 en:6 fr:5 ne:7 sp:6 wk:6 combi:7', 'avg': '5.9', 'result': 'Gemiddeld eindcijfer: 5.9 (41/7) '}, 
+            'combi': {'sum': 21, 'cnt': 3, 'info': ' cav:7 lo:8 mm1:6', 'final': 7, 'result': 'Combinatiecijfer: 7 (21/3) '}, 
+            'pece': {'sumX10': 300, 'cnt': 6, 'info': ' ec:1,3 en:6,4 fr:3,5 ne:7,5 sp:5,4 wk:5,9', 'avg': '5.0', 'result': 'Gemiddeld CE-cijfer: 5,0 (30/6) '}, 
+            'count': {'c3': 0, 'c4': 1, 'c5': 1, 'c6': 3, 'c7': 2, 'core4': 0, 'core5': 0}, 
+            'result_index': 2, 
+            'failed': {'cnt3457': '1 vier en 1 vijf.', 'avgce55': 'Gemiddeld CE-cijfer is 5,0, moet onafgerond 5,5 of hoger zijn.'}}, 
+    'ep2': {'ep': 2, 
+            'final': {'sum': 43, 'cnt': 7, 'info': ' ec:6(h) en:6 fr:5 ne:7 sp:6 wk:6 combi:7', 'avg': '6.1', 'result': 'Gemiddeld eindcijfer: 6.1 (43/7) '}, 
+            'combi': {'sum': 21, 'cnt': 3, 'info': ' cav:7 lo:8 mm1:6', 'final': 7, 'result': 'Combinatiecijfer: 7 (21/3) '}, 
+            'pece': {'sumX10': 352, 'cnt': 6, 'info': ' ec:6,5(h) en:6,4 fr:3,5 ne:7,5 sp:5,4 wk:5,9', 'avg': '5.8', 'result': 'Gemiddeld CE-cijfer: 5,8 (35,2/6) '}, 
+            'count': {'c3': 0, 'c4': 0, 'c5': 1, 'c6': 4, 'c7': 2, 'core4': 0, 'core5': 0}, 
+            'passed': {'cnt3457': '1 vijf en voor de andere vakken een 6 of hoger.', 'avgce55': 'Gemiddeld CE-cijfer is 5,8.'}, 
+            'result_index': 1}, 
+    'last_ep': 'ep2'}
+    """
+    def get_sql_value_str(value):
+        return ''.join(("'", str(value), "'")) if value else 'NULL'
+
+    def get_sql_value_int(value):
+        return str(value) if value else '0'
+
+    sql_student_values = []
+    try:
+        student_id = student_dict.get('stud_id')
+        exemption_count_str = get_sql_value_int(student_dict.get('c_ep4'))
+        sr_count_str =  get_sql_value_int(student_dict.get('sr_count_str'))
+        reex_count_str =  get_sql_value_int(student_dict.get('c_ep2'))
+        reex03_count_str =  get_sql_value_int(student_dict.get('c_ep3'))
+        thumbrule_count_str =  get_sql_value_int(student_dict.get('c_thumbrule'))
+        # TODO add field subj_count to model
+        # subject_count =  get_sql_value_int(student_dict.get('c_subj'))
+
+        if logging_on:
+            logger.debug('     exemption_count_str: ' + str(exemption_count_str))
+            logger.debug('     reex_count_str: ' + str(reex_count_str))
+
+        last_ep_key = student_dict.get('last_ep')
+        last_ep_dict = student_dict.get(last_ep_key)
+
+        if logging_on:
+            logger.debug('?????????????!@@ last_ep_dict: ' + str(last_ep_dict))
+
+        gl_ce_avg = af.get_dict_value(last_ep_dict, ('pece', 'avg'))
+        gl_combi_avg = af.get_dict_value(last_ep_dict, ('combi', 'final'))
+        gl_final_avg = af.get_dict_value(last_ep_dict, ('final', 'avg'))
+        result_index = last_ep_dict.get('result_index') or 0
+
+        """
+        last_ep_dict: {'ep': 1, 
+        'final': {'sum': 41, 'cnt': 7, 'info': ' ec:4 en:6 fr:5 ne:7 sp:6 wk:6 combi:7', 'avg': '5.9', 
+        'result': 'Gemiddeld eindcijfer: 5.9 (41/7) '}, 
+        'combi': {'sum': 21, 'cnt': 3, 'info': ' cav:7 lo:8 mm1:6', 'final': 7, 
+        'result': 'Combinatiecijfer: 7 (21/3) '}, 
+        'pece': {'sumX10': 300, 'cnt': 6, 'info': ' ec:1,3 en:6,4 fr:3,5 ne:7,5 sp:5,4 wk:5,9', 'avg': '5.0', 
+        'result': 'Gemiddeld CE-cijfer: 5,0 (30/6) '}, 
+        'count': {'c3': 0, 'c4': 1, 'c5': 1, 'c6': 3, 'c7': 2, 'core4': 0, 'core5': 0}, 
+        'result_index': 2, 
+        'failed': {'cnt3457': '1 vier en 1 vijf.', 'avgce55': 'Gemiddeld CE-cijfer is 5,0, moet onafgerond 5,5 of hoger zijn.'}}
+
+        """
+        gl_ce_avg_str = ''.join(("'", str(gl_ce_avg), "'")) if gl_ce_avg else 'NULL'
+        gl_combi_avg_str = ''.join(("'", str(gl_combi_avg), "'")) if gl_combi_avg else 'NULL'
+        gl_final_avg_str = ''.join(("'", str(gl_final_avg), "'")) if gl_final_avg else 'NULL'
+
+        result_index_str = str(result_index) if result_index else '0'
+        result_status_str = ''.join(("'", c.RESULT_CAPTION[result_index], "'")) if c.RESULT_CAPTION[
+            result_index] else 'NULL'
+
+        result_info = '|'.join(result_info_list) if result_info_list else None
+        result_info_str = ''.join(("'", result_info, "'")) if result_info else 'NULL'
+
+        e1_ce_avg_str, e1_combi_avg_str, e1_final_avg_str, e1_result_index_str = 'NULL', 'NULL', 'NULL', '0'
+        ep1_dict = student_dict.get('ep1')
+        if ep1_dict:
+            e1_ce_avg = af.get_dict_value(ep1_dict, ('pece', 'avg'))
+            e1_combi_avg = af.get_dict_value(ep1_dict, ('combi', 'final'))
+            e1_final_avg = af.get_dict_value(ep1_dict, ('final', 'avg'))
+            e1_result_index = ep1_dict.get('result_index')
+
+            e1_ce_avg_str = ''.join(("'", str(e1_ce_avg), "'")) if e1_ce_avg else 'NULL'
+            e1_combi_avg_str = ''.join(("'", str(e1_combi_avg), "'")) if e1_combi_avg else 'NULL'
+            e1_final_avg_str = ''.join(("'", str(e1_final_avg), "'")) if e1_final_avg else 'NULL'
+            e1_result_index_str = str(e1_result_index) if e1_result_index else '0'
+
+        e2_ce_avg_str, e2_combi_avg_str, e2_final_avg_str, e2_result_index_str = 'NULL', 'NULL', 'NULL', '0'
+        ep2_dict = student_dict.get('ep2')
+        if ep2_dict:
+            e2_ce_avg = af.get_dict_value(ep2_dict, ('pece', 'avg'))
+            e2_combi_avg = af.get_dict_value(ep2_dict, ('combi', 'final'))
+            e2_final_avg = af.get_dict_value(ep2_dict, ('final', 'avg'))
+            e2_result_index = ep2_dict.get('result_index')
+
+            e2_ce_avg_str = ''.join(("'", str(e2_ce_avg), "'")) if e2_ce_avg else 'NULL'
+            e2_combi_avg_str = ''.join(("'", str(e2_combi_avg), "'")) if e2_combi_avg else 'NULL'
+            e2_final_avg_str = ''.join(("'", str(e2_final_avg), "'")) if e2_final_avg else 'NULL'
+            e2_result_index_str = str(e2_result_index) if e2_result_index else '0'
+
+        """
+        sql_student_values = [ str(student_id),
+            gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str, result_index_str,  result_status_str,  result_info_str,
+            e1_ce_avg_str, e1_combi_avg_str, e1_final_avg_str, e1_result_index_str,
+            e2_ce_avg_str, e2_combi_avg_str, e2_final_avg_str, e2_result_index_str,
+            exemption_count, sr_count, reex_count, reex03_count,thumbrule_count
+        ]
+        sql_student_values: [ '4377', 
+            "'5.8'", "'7'", "'6.1'", '1', "'Geslaagd'", "'Uitslag na herexamen: GESLAAGD'", 
+            "'5.0'", "'7'", "'5.9'", '2', 
+            "'5.8'", "'7'", "'6.1'", '1']
+        sql_student_values: ['4377', 
+            "'5.0'", "'7'", "'5.9'", '2', "'Afgewezen'", "'Uitslag: AFGEWEZEN|1 vier en 1 vijf.|Gemiddeld CE-cijfer is 5,0, moet onafgerond 5,5 of hoger zijn.'", 
+            "'5.0'", "'7'", "'5.9'", '2', 'NULL', 'NULL', 'NULL', '0', '0', '0', '0', '0', '0']
+    
+        """
+
+        sql_student_values = [str(student_id),
+                                gl_ce_avg_str, gl_combi_avg_str, gl_final_avg_str, result_index_str,
+                                result_status_str, result_info_str,
+                                e1_ce_avg_str, e1_combi_avg_str, e1_final_avg_str, e1_result_index_str,
+                                e2_ce_avg_str, e2_combi_avg_str, e2_final_avg_str, e2_result_index_str,
+                                exemption_count_str, sr_count_str,
+                                reex_count_str, reex03_count_str, thumbrule_count_str
+                              ]
+
+        if logging_on:
+            logger.debug('     sql_student_values: ' + str(sql_student_values))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    return sql_student_values
+# --- end of get_sql_student_values
+
+
+###############################
 def log_list_header(sel_school, sel_department, sel_examyear, user_lang):  # PR2021-12-20
 # - create log_list
     today_dte = af.get_today_dateobj()
@@ -3104,6 +3353,7 @@ def log_list_student_header(student_dict, full_name, log_list):  # PR2021-12-19
     lvlbase_code = student_dict.get('lvlbase_code') or ''
     sct_name = student_dict.get('sct_name') or ''
     log_list.append( ('').join((c.STRING_SPACE_05, depbase_code, ' ', lvlbase_code, ' ', sct_name )))
+
 
 def log_list_add_scheme_notfound(dep_level_req, log_list):  # PR2021-12-19
     # - add msg when scheme not found

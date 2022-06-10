@@ -653,7 +653,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
     # - calculates sesrgrade, pecegrade and final grade
     # - and puts it in returnvalue updated_cegrade_list
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_update_finalgrade -----')
         logger.debug('     exam_instance:    ' + str(exam_instance))
