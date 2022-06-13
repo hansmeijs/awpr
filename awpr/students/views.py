@@ -234,9 +234,129 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
 # --- end of create_student_rows
 
 
+#/////////////////////////////////////////////////////////////////
+def create_results_per_school_rows(request, sel_examyear, sel_schoolbase,
+                                   group_by_level=False, group_by_school=False):
+    # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
+    # - show only students that are not tobedeleted
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_results_per_school_rows -----')
+
+    student_rows = []
+    error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
+
+
+    if sel_examyear:
+        try:
+
+            if logging_on:
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                logger.debug('sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
+
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk}
+            if logging_on:
+                logger.debug('sql_keys: ' + str(sql_keys))
+
+# - add fields, group by and order by level
+            level_fields = "lvlbase.code AS lvl_code," if group_by_level else ''
+            level_groupby = ", lvl.sequence, lvlbase.code" if group_by_level else ''
+            level_orderby = ", lvl.sequence" if group_by_level else ''
+
+# - add fields, group by and order by level
+            school_fields = "sch.name as sch_name, sb.code as sb_code," if group_by_school else ''
+            school_groupby = ", sb.code, sch.name" if group_by_school else ''
+            school_orderby = ", sb.code" if group_by_school else ''
+
+            sql_list = ["SELECT db.code AS db_code, ",
+                level_fields,
+                school_fields,
+
+                "SUM((st.gender = 'M')::INT) AS count_m,",
+                "SUM((st.gender = 'V')::INT) AS count_v,",
+                "SUM(1) AS count_t,",
+
+# +++++++++++  final results
+            # passed
+                    "SUM(((st.result = 1) AND (st.gender = 'M'))::INT) AS res_pass_m,",
+                    "SUM(((st.result = 1) AND (st.gender = 'V'))::INT) AS res_pass_v,",
+                    "SUM(((st.result = 1))::INT) AS res_pass_t,",
+
+            # - failed
+                    "SUM(((st.result = 2) AND (st.gender = 'M'))::INT) AS res_fail_m,",
+                    "SUM(((st.result = 2) AND (st.gender = 'V'))::INT) AS res_fail_v,",
+                    "SUM(((st.result = 2))::INT) AS res_fail_t,",
+
+            # re-examination = (failed - with reex) + (no_result - with reex)
+                    "SUM(((st.result = 0) AND (st.reex_count > 0) AND (st.gender = 'M'))::INT) AS res_reex_m,",
+                    "SUM(((st.result = 0) AND (st.reex_count > 0) AND (st.gender = 'V'))::INT) AS res_reex_v,",
+                    "SUM(((st.result = 0) AND (st.reex_count > 0))::INT) AS res_reex_t,",
+
+            # - no result
+                    "SUM(((st.result = 0) AND (st.reex_count = 0) AND (st.gender = 'M'))::INT) AS res_nores_m,",
+                    "SUM(((st.result = 0) AND (st.reex_count = 0) AND (st.gender = 'V'))::INT) AS res_nores_v,",
+                    "SUM(((st.result = 0) AND (st.reex_count = 0))::INT) AS res_nores_t,",
+
+            # - withdrawn
+                    "SUM(((st.result = 4) AND (st.gender = 'M'))::INT) AS res_wdr_m,",
+                    "SUM(((st.result = 4) AND (st.gender = 'V'))::INT) AS res_wdr_v,",
+                    "SUM(((st.result = 4))::INT) AS res_wdr_t",
+
+                "FROM students_student AS st",
+                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+                "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+                #"INNER JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
+                #"INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
+                "WHERE sch.examyear_id = %(ey_id)s::INT",
+                "AND NOT st.tobedeleted"]
+
+            if request.user.is_role_school:
+                sql_keys['sb_id'] = sel_schoolbase.pk if sel_schoolbase else None
+                sql_list.append('AND sb.id = %(sb_id)s::INT')
+
+            # order by id necessary to make sure that lookup function on client gets the right row
+            sql_list.append(''.join(["GROUP BY dep.sequence, db.code",
+                            level_groupby,
+                            school_groupby]))
+
+            sql_list.append(''.join(["ORDER BY dep.sequence",
+                            level_orderby,
+                            school_orderby]))
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                student_rows = af.dictfetchall(cursor)
+
+            if logging_on:
+                logger.debug('student_rows: ' + str(student_rows))
+                #logger.debug('connection.queries: ' + str(connection.queries))
+
+        except Exception as e:
+            # - return msg_err when instance not created
+            #  msg format: [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred." }]
+            logger.error(getattr(e, 'message', str(e)))
+            # &emsp; add 4 'hard' spaces
+            msg_html = '<br>'.join((
+                str(_('An error occurred')) + ':',
+                '&emsp;<i>' + str(e) + '</i>'
+            ))
+            error_dict = {'class': 'border_bg_invalid', 'msg_html': msg_html}
+
+    return student_rows, error_dict
+# --- end of create_student_rows
+
+
 
 #/////////////////////////////////////////////////////////////////
-def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
+def create_results_per_school_rowsOLD(request, sel_examyear, sel_schoolbase):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
     # - show only students that are not tobedeleted
     logging_on = False  # s.LOGGING_ON
@@ -264,76 +384,81 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
                 "SUM((st.gender = 'M')::INT) AS m,",
                 "SUM((st.gender = 'V')::INT) AS v,",
                 "SUM(1) AS t,",
-        # first exam period
-                    "SUM((st.gender = 'M' AND st.ep01_result = 0)::INT) AS ep1_m_nores,",
-                    "SUM((st.gender = 'V' AND st.ep01_result = 0)::INT) AS ep1_v_nores,",
-                    "SUM((st.ep01_result = 0)::INT) AS ep1_t_nores,",
 
-                    "SUM((st.gender = 'M' AND st.ep01_result = 1)::INT) AS ep1_m_pass,",
-                    "SUM((st.gender = 'V' AND st.ep01_result = 1)::INT) AS ep1_v_pass,",
-                    "SUM((st.ep01_result = 1)::INT) AS ep1_t_pass,",
+# +++++++++++ first exam period
+            # passed, including re-examination
+                    "SUM(((st.ep01_result = 1) AND (st.gender = 'M'))::INT) AS ep1_m_pass,",
+                    "SUM(((st.ep01_result = 1) AND (st.gender = 'V'))::INT) AS ep1_v_pass,",
+                    "SUM(((st.ep01_result = 1))::INT) AS ep1_t_pass,",
 
-                    "SUM((st.gender = 'M' AND st.ep01_result = 2)::INT) AS ep1_m_fail,",
-                    "SUM((st.gender = 'V' AND st.ep01_result = 2)::INT) AS ep1_v_fail,",
-                    "SUM((st.ep01_result = 2)::INT) AS ep1_t_fail,",
+            # - failed - no reex
+                    "SUM(((st.ep01_result = 2) AND (st.reex_count = 0) AND (st.gender = 'M'))::INT) AS ep1_m_fail,",
+                    "SUM(((st.ep01_result = 2) AND (st.reex_count = 0) AND (st.gender = 'V'))::INT) AS ep1_v_fail,",
+                    "SUM(((st.ep01_result = 2) AND (st.reex_count = 0))::INT) AS ep1_t_fail,",
 
-                    "SUM((st.gender = 'M' AND st.ep01_result = 3)::INT) AS ep1_m_reex,",
-                    "SUM((st.gender = 'V' AND st.ep01_result = 3)::INT) AS ep1_v_reex,",
-                    "SUM((st.ep01_result = 3)::INT) AS ep1_t_reex,",
+            # re-examination = (failed - with reex) + (no_result - with reex)
+                    "SUM(((st.ep01_result = 0 OR st.ep01_result = 2) AND (st.reex_count > 0) AND (st.gender = 'M'))::INT) AS ep1_m_reex,",
+                    "SUM(((st.ep01_result = 0 OR st.ep01_result = 2) AND (st.reex_count > 0) AND (st.gender = 'V'))::INT) AS ep1_v_reex,",
+                    "SUM(((st.ep01_result = 0 OR st.ep01_result = 2) AND (st.reex_count > 0))::INT) AS ep1_t_fail_reex,",
 
-                    "SUM((st.gender = 'M' AND st.ep01_result = 4)::INT) AS ep1_m_wdr,",
-                    "SUM((st.gender = 'V' AND st.ep01_result = 4)::INT) AS ep1_v_wdr,",
-                    "SUM((st.ep01_result = 4)::INT) AS ep1_t_wdr,",
-            # grade improvemenet
-                    "SUM((st.gender = 'M' AND st.ep01_result = 1 AND st.reex_count > 0)::INT) AS ep1_m_gimp,",
-                    "SUM((st.gender = 'V' AND st.ep01_result = 1 AND st.reex_count > 0)::INT) AS ep1_v_gimp,",
-                    "SUM((st.ep01_result = 1 AND st.reex_count > 0)::INT) AS ep1_t_gimp,",
-            # re-examination
-                    "SUM((st.gender = 'M' AND st.ep01_result = 2 AND st.reex_count > 0)::INT) AS ep1_m_reex,",
-                    "SUM((st.gender = 'V' AND st.ep01_result = 2 AND st.reex_count > 0)::INT) AS ep1_v_reex,",
-                    "SUM((st.ep01_result = 2 AND st.reex_count > 0)::INT) AS ep1_t_reex,",
+            # - no result - no reex
+                    "SUM(((st.ep01_result = 0) AND (st.reex_count = 0) AND (st.gender = 'M'))::INT) AS ep1_m_nores,",
+                    "SUM(((st.ep01_result = 0) AND (st.reex_count = 0) AND (st.gender = 'V'))::INT) AS ep1_v_nores,",
+                    "SUM(((st.ep01_result = 0) AND (st.reex_count = 0))::INT) AS ep1_t_nores,",
 
-   # second exam period
-            "SUM((st.gender = 'M' AND st.ep02_result = 0)::INT) AS ep2_m_nores,",
-            "SUM((st.gender = 'V' AND st.ep02_result = 0)::INT) AS ep2_v_nores,",
-            "SUM((st.ep02_result = 0)::INT) AS ep2_t_nores,",
+            # - withdrawn
+                    "SUM(((st.ep01_result = 4) AND (st.gender = 'M'))::INT) AS ep1_m_wdr,",
+                    "SUM(((st.ep01_result = 4) AND (st.gender = 'V'))::INT) AS ep1_v_wdr,",
+                    "SUM(((st.ep01_result = 4))::INT) AS ep1_t_wdr,",
 
-            "SUM((st.gender = 'M' AND st.ep02_result = 1)::INT) AS ep2_m_pass,",
-            "SUM((st.gender = 'V' AND st.ep02_result = 1)::INT) AS ep2_v_pass,",
-            "SUM((st.ep02_result = 1)::INT) AS ep2_t_pass,",
 
-            "SUM((st.gender = 'M' AND st.ep02_result = 2)::INT) AS ep2_m_fail,",
-            "SUM((st.gender = 'V' AND st.ep02_result = 2)::INT) AS ep2_v_fail,",
-            "SUM((st.ep02_result = 2)::INT) AS ep2_t_fail,",
+# +++++++++++ sewcond period
+            # passed, including re-examination
+                    "SUM(((st.ep02_result = 1) AND (st.gender = 'M'))::INT) AS ep2_m_pass,",
+                    "SUM(((st.ep02_result = 1) AND (st.gender = 'V'))::INT) AS ep2_v_pass,",
+                    "SUM(((st.ep02_result = 1))::INT) AS ep2_t_pass,",
 
-            "SUM((st.gender = 'M' AND st.ep02_result = 3)::INT) AS ep2_m_reex,",
-            "SUM((st.gender = 'V' AND st.ep02_result = 3)::INT) AS ep2_v_reex,",
-            "SUM((st.ep02_result = 3)::INT) AS ep2_t_reex,",
+            # - failed - no reex
+                    "SUM(((st.ep02_result = 2) AND (st.reex_count = 0) AND (st.gender = 'M'))::INT) AS ep2_m_fail,",
+                    "SUM(((st.ep02_result = 2) AND (st.reex_count = 0) AND (st.gender = 'V'))::INT) AS ep2_v_fail,",
+                    "SUM(((st.ep02_result = 2) AND (st.reex_count = 0))::INT) AS ep2_t_fail,",
 
-            "SUM((st.gender = 'M' AND st.ep02_result = 4)::INT) AS ep2_m_wdr,",
-            "SUM((st.gender = 'V' AND st.ep02_result = 4)::INT) AS ep2_v_wdr,",
-            "SUM((st.ep02_result = 4)::INT) AS ep2_t_wdr,",
+            # re-examination = (failed - with reex) + (no_result - with reex)
+                    "SUM(((st.ep02_result = 0 OR st.ep02_result = 2) AND (st.reex_count > 0) AND (st.gender = 'M'))::INT) AS ep2_m_reex,",
+                    "SUM(((st.ep02_result = 0 OR st.ep02_result = 2) AND (st.reex_count > 0) AND (st.gender = 'V'))::INT) AS ep2_v_reex,",
+                    "SUM(((st.ep02_result = 0 OR st.ep02_result = 2) AND (st.reex_count > 0))::INT) AS ep2_t_fail_reex,",
 
-        # final results
-            "SUM((st.gender = 'M' AND st.result = 0)::INT) AS m_nores,",
-            "SUM((st.gender = 'V' AND st.result = 0)::INT) AS v_nores,",
-            "SUM((st.result = 0)::INT) AS t_nores,",
+            # - no result - no reex
+                    "SUM(((st.ep02_result = 0) AND (st.reex_count = 0) AND (st.gender = 'M'))::INT) AS ep2_m_nores,",
+                    "SUM(((st.ep02_result = 0) AND (st.reex_count = 0) AND (st.gender = 'V'))::INT) AS ep2_v_nores,",
+                    "SUM(((st.ep02_result = 0) AND (st.reex_count = 0))::INT) AS ep2_t_nores,",
 
-            "SUM((st.gender = 'M' AND st.result = 1)::INT) AS m_pass,",
-            "SUM((st.gender = 'V' AND st.result = 1)::INT) AS v_pass,",
-            "SUM((st.result = 1)::INT) AS t_pass,",
+            # - withdrawn
+                    "SUM(((st.ep02_result = 4) AND (st.gender = 'M'))::INT) AS ep2_m_wdr,",
+                    "SUM(((st.ep02_result = 4) AND (st.gender = 'V'))::INT) AS ep2_v_wdr,",
+                    "SUM(((st.ep02_result = 4))::INT) AS ep2_t_wdr,",
 
-            "SUM((st.gender = 'M' AND st.result = 2)::INT) AS m_fail,",
-            "SUM((st.gender = 'V' AND st.result = 2)::INT) AS v_fail,",
-            "SUM((st.result = 2)::INT) AS t_fail,",
+# +++++++++++  final results
+            # passed
+                    "SUM(((st.result = 1) AND (st.gender = 'M'))::INT) AS fin_m_pass,",
+                    "SUM(((st.result = 1) AND (st.gender = 'V'))::INT) AS fin_v_pass,",
+                    "SUM(((st.result = 1))::INT) AS fin_t_pass,",
 
-            "SUM((st.gender = 'M' AND st.result = 3)::INT) AS m_reex,",
-            "SUM((st.gender = 'V' AND st.result = 3)::INT) AS v_reex,",
-            "SUM((st.result = 3)::INT) AS t_reex,",
+            # - failed
+                    "SUM(((st.result = 2) AND (st.gender = 'M'))::INT) AS fin_m_fail,",
+                    "SUM(((st.result = 2) AND (st.gender = 'V'))::INT) AS fin_v_fail,",
+                    "SUM(((st.result = 2))::INT) AS fin_t_fail,",
 
-            "SUM((st.gender = 'M' AND st.result = 4)::INT) AS m_wdr,",
-            "SUM((st.gender = 'V' AND st.result = 4)::INT) AS v_wdr,",
-            "SUM((st.result = 4)::INT) AS t_wdr",
+            # - no result
+                    "SUM(((st.result = 0) AND (st.gender = 'M'))::INT) AS fin_m_nores,",
+                    "SUM(((st.result = 0) AND (st.gender = 'V'))::INT) AS fin_v_nores,",
+                    "SUM(((st.result = 0))::INT) AS fin_t_nores,",
+
+            # - withdrawn
+                    "SUM(((st.result = 4) AND (st.gender = 'M'))::INT) AS fin_m_wdr,",
+                    "SUM(((st.result = 4) AND (st.gender = 'V'))::INT) AS fin_v_wdr,",
+                    "SUM(((st.result = 4))::INT) AS fin_t_wdr",
+
 
                 "FROM students_student AS st",
                 "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
@@ -728,6 +853,7 @@ def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
     return err_list, updated_studsubj_list
 # - end of loop_studsubj_list
 
+
 @method_decorator([login_required], name='dispatch')
 class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 
@@ -740,28 +866,26 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
         update_wrap = {}
         messages = []
 
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+
 # - get permit
-        has_permit = af.get_permit_crud_of_this_page('page_student', request)
-        if has_permit:
+            page_name = 'page_result' if mode == 'withdrawn' else 'page_student'
+            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+
+            if has_permit:
 
 # - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
 
 # - get variables
                 student_pk = upload_dict.get('student_pk')
-                mode = upload_dict.get('mode')
                 is_create = mode == 'create'
                 is_delete =  mode == 'delete'
-
-                if logging_on:
-                    logger.debug('mode: ' + str(mode))
-                    logger.debug('upload_dict: ' + str(upload_dict))
 
                 updated_rows = []
                 append_dict = {}
@@ -1380,12 +1504,12 @@ class StudentsubjectMultipleOccurrencesView(View):  # PR2021-09-05
 #####################################################################################
 
 @method_decorator([login_required], name='dispatch')
-class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
+class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= SendEmailSubmitExformView ============= ')
+            logger.debug(' ============= SendEmailVerifcodeView ============= ')
 
         update_wrap = {}
 
@@ -1404,7 +1528,8 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
             """
             upload_dict: {'table': 'grade', 'mode': 'submit_save', 'form': 'ex2', 'verificationcode': '', 'verificationkey': None, 'auth_index': 2, 'now_arr': [2022, 4, 18, 11, 21]}
             upload_dict: {'table': 'studsubj', 'form': 'ex4', 'examperiod': 2, 'now_arr': [2022, 5, 31, 7, 29], 'mode': 'request_verif'}
-           
+            upload_dict: {'table': 'grade', 'form': 'ex5', 'auth_index': 2, 'now_arr': [2022, 6, 12, 18, 51]}
+
             """
 # - get permit
             has_permit = False
@@ -1413,7 +1538,9 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
             table = upload_dict.get('table')
             form = upload_dict.get('form')
 
-            if table == 'grade':
+            if table == 'result':
+                sel_page = 'page_result'
+            elif table == 'grade':
                 sel_page = 'page_grade'
             elif mode in ('publish_exam', 'submit_grade_exam'):
                 sel_page = 'page_exams'
@@ -1426,11 +1553,13 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
                 permit_list = req_usr.permit_list(sel_page)
                 if permit_list and req_usr.usergroup_list:
                     if 'auth1' in req_usr.usergroup_list or 'auth2' in req_usr.usergroup_list:
-                        if table == 'grade':
+                        if table == 'result':
+                            has_permit = 'permit_submit_ex5' in permit_list
+                        elif table == 'grade':
                             has_permit = 'permit_submit_grade' in permit_list
                         elif mode == 'publish_exam':
                             has_permit = 'permit_publish_exam' in permit_list
-                        elif mode in ('submit_grade_exam'):
+                        elif mode == 'submit_grade_exam':
                             has_permit = 'permit_submit_exam' in permit_list
                         else:
                             has_permit = 'permit_approve_subject' in permit_list
@@ -1483,6 +1612,8 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
                             ex_form = _('Ex2A form')
                         elif form =='ex4':
                             ex_form = _('Ex4 form')
+                        elif form =='ex5':
+                            ex_form = _('Ex5 form')
                         elif form =='ex4ep3':
                             ex_form = _('Ex4 form 3rd exam period')
                         message = render_to_string(template_str, {
@@ -1540,7 +1671,7 @@ class SendEmailSubmitExformView(View):  # PR2021-07-26 PR2022-04-18
     # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
-# - end of SendEmailSubmitExformView
+# - end of SendEmailVerifcodeView
 
 
 #####################################################################################

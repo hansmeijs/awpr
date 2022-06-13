@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-06-16
     function UpdateField(el_div, data_dict) {
-        console.log("=========  UpdateField =========");
+        //console.log("=========  UpdateField =========");
         console.log("data_dict", data_dict);
 
         if(el_div){

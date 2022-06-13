@@ -1,7 +1,7 @@
 # PR2018-07-20
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, \
-    DecimalField, BooleanField, DateField, FileField
+    BooleanField, DateField, FileField
 
 from django.db.models.functions import Lower
 
@@ -9,7 +9,6 @@ from django.db.models.functions import Lower
 from awpr.settings import AUTH_USER_MODEL
 from awpr.storage_backends import PrivateMediaStorage
 from awpr import constants as c
-from awpr import functions as f
 
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -413,17 +412,6 @@ class Studentsubject(sch_mod.AwpBaseModel):
     pok_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     pok_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    # TODO deprecate
-    #ex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #ex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #ex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #reex_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #reex_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #reex_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #reex3_max_segrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #reex3_max_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-    #reex3_max_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
-
     gradelist_sesrgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_pecegrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
     gradelist_finalgrade = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
@@ -456,10 +444,10 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     pws_title = CharField(max_length=80, null=True, blank = True)
     pws_subjects = CharField(max_length=80, null=True, blank = True)
 
-    has_exemption = BooleanField(default=False)
+    has_exemption = BooleanField(default=False)  # PR2022-06-10 this field will be recalculated in calc_result
     has_sr = BooleanField(default=False)  # has se_reex (herkansing) ,only possible when si.sr_allowed
-    has_reex = BooleanField(default=False)
-    has_reex03 = BooleanField(default=False) # only possible when no_thirdperiod = False
+    has_reex = BooleanField(default=False)  # PR2022-06-10 this field will be recalculated in calc_result
+    has_reex03 = BooleanField(default=False) # only possible when no_thirdperiod = False  # PR2022-06-10 this field will be recalculated in calc_result
 
     # deprecated, replaced by pok_validthru = NOT NULL
     #has_pok = BooleanField(default=False) # proof of knowledge  (for day school)

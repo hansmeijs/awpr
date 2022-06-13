@@ -2625,6 +2625,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     }  // ModMessageClose
 
+
 //========= MOD APPROVE GRADE ==================================== PR2022-03-09
     function MAG_Open (mode ) {
         console.log("===  MAG_Open  =====") ;
@@ -2950,7 +2951,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
     };  // MAG_Save
 
-
 //=========  MAG_ExamtypeChange  ================ PR2022-05-29
     function MAG_ExamtypeChange (el_select) {
         console.log("===  MAG_ExamtypeChange  =====") ;
@@ -2966,7 +2966,6 @@ document.addEventListener("DOMContentLoaded", function() {
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
     }; // MAG_ExamtypeChange
-
 
 //=========  MAG_UploadAuthIndex  ================ PR2022-03-13
     function MAG_UploadAuthIndex (el_select) {

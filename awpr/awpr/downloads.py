@@ -327,10 +327,14 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- results_per_school_rows
                 if datalist_request.get('results_per_school_rows'):
+                    group_by_level = True
+                    group_by_school = True
                     datalists['results_per_school_rows'], error_dict = stud_view.create_results_per_school_rows(
                         request=request,
                         sel_examyear= sel_examyear,
-                        sel_schoolbase=sel_schoolbase
+                        sel_schoolbase=sel_schoolbase,
+                        group_by_level=group_by_level,
+                        group_by_school=group_by_school
                     )
                     if error_dict:
                         message_list.append(error_dict)

@@ -230,7 +230,8 @@ def get_examtype_caption(examtype_str):
 RESULT_NORESULT = 0
 RESULT_PASSED = 1
 RESULT_FAILED = 2
-RESULT_REEXAM = 3
+# RESULT_REEXAM is not in use
+#   RESULT_REEXAM = 3
 RESULT_WITHDRAWN = 4
 
 RESULT_CAPTION = [
@@ -545,6 +546,18 @@ PAGE_LIST = {
 }
 
 # XLSWRITER FORMATS
-XF_FS8_FCBLUE_ALC_BORDER = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
 XF_FS8_BCLIGHTGREY_ALC_BORDER = {'font_size': 8, 'border': True, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+XF_BOLD = {'bold': True}
+XF_BOLD_FCBLUE = {'font_color': 'blue', 'bold': True}
+XF_FCBLUE = {'font_color': 'blue'}
+
+# row_align_center
+XF_FS8_FCBLUE_ALC_BORDER = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
+#row_align_center_red
+XF_FS8_FCRED_ALC_BORDER = {'font_size': 8, 'font_color': 'red', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
+#row_align_center_green
+XF_FS8_FCGREEN_ALC_BORDER = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
+#row_align_left_green
+XF_FS8_FCGREEN_ALL_BORDER = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'left', 'valign': 'vcenter', 'border': True}
 

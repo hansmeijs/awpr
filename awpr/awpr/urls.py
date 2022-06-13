@@ -248,7 +248,7 @@ urlpatterns = [
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
         path('studsubj_approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1Ex4View.as_view(), name='url_studsubj_approve_submit_multiple'),
-        path('send_email_verifcode', student_views.SendEmailSubmitExformView.as_view(), name='url_send_email_verifcode'),
+        path('send_email_verifcode', student_views.SendEmailVerifcodeView.as_view(), name='url_send_email_verifcode'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
@@ -273,7 +273,7 @@ urlpatterns = [
         path('approve', grade_views.GradeApproveView.as_view(), name='url_grade_approve'),
         path('block', grade_views.GradeBlockView.as_view(), name='url_grade_block'),
 
-        path('submit_ex2', grade_views.GradeSubmitEx2Ex2AView.as_view(), name='url_grade_submit_ex2'),
+        path('submit_ex2', grade_views.GradeSubmitEx2Ex2aView.as_view(), name='url_grade_submit_ex2'),
 
         path('download_icons', grade_views.GradeDownloadGradeIconsView.as_view(), name='download_grade_icons_url'),
         path('download_ex2', grade_excel.GradeDownloadEx2View.as_view(), name='url_grade_download_ex2'),
@@ -289,9 +289,11 @@ urlpatterns = [
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
         path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
 
+        path('submit_ex5', grade_views.GradeSubmitEx5View.as_view(), name='url_grade_submit_ex5'),
+
         path('download_short_gradelist', student_results.GradeDownloadShortGradelist.as_view(), name='url_result_download_short_gradelist'),
         path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5'),
-        path('result_download_overview', grade_excel.GradeDownloadOverviewView.as_view(), name='url_result_download_overview')
+        path('result_download_overview', grade_excel.GradeDownloadResultOverviewView.as_view(), name='url_result_download_overview')
     ])),
 
 # ===== ARCHIVES ========================== PR2022-03-09
@@ -326,7 +328,7 @@ urlpatterns = [
         path('approve_publish_exam', subject_views.ExamApproveOrPublishExamView.as_view(), name='url_approve_publish_exam'),
         path('approve_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 
-        path('send_email_submit_exam', student_views.SendEmailSubmitExformView.as_view(), name='url_send_email_submit_exam'),
+        path('send_email_submit_exam', student_views.SendEmailVerifcodeView.as_view(), name='url_send_email_submit_exam'),
 
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='url_exam_download_exam_pdf'),
         path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='url_exam_download_grade_exam_pdf'),

@@ -1306,6 +1306,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Secretary'] = TXT_Secretary
         dict['Corrector'] = TXT_Corrector
         dict['Examiner'] = TXT_Examiner
+
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_at'] = TXT_Submitted_at
 
@@ -1401,6 +1402,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Passed'] = _('Passed')
         dict['Failed'] = _('Failed')
         dict['Withdrawn'] = _('Withdrawn')
+
+        dict['Grade_improvement'] = _('Grade improvement')
+        dict['Gimp_2lines'] = pgettext_lazy('2lines', 'Grade improvement')
         dict['Withdrawn_2lines'] = pgettext_lazy('2lines', 'Withdrawn')
         dict['No_result'] = _('No result')
         dict['Total_candidates'] = _('Total number of candidates')
@@ -1411,8 +1415,54 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
 
         dict['Preliminary_gradelist'] = _('Preliminary grade list')
+
         dict['Preliminary_ex5_form'] = _('Preliminary %(form)s') % {'form': 'Ex5'}
         dict['The_preliminary_ex5_form'] = _('The preliminary %(form)s form') % {'form': 'Ex5'}
+
+        dict['Submit_Ex5'] = _('Submit Ex5')
+        dict['Submit_Ex5_form'] = _('Submit Ex5 form')
+        dict['The_ex5_form'] = _('The %(form)s form') % {'form': 'Ex5'}
+        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+        dict['examtype_caption'] = c.EXAMTYPE_CAPTION
+
+        dict['Chairperson'] = TXT_Chairperson
+        dict['Secretary'] = TXT_Secretary
+        dict['Corrector'] = TXT_Corrector
+        dict['Examiner'] = TXT_Examiner
+
+        dict['Request_verifcode'] = TXT_Request_verifcode
+
+        dict['Check_grades'] = _('Check grades')
+
+        dict['Submitted_by'] = TXT_Submitted_by
+
+        dict['MAG_ex5_info'] = {
+            'subheader_approve': _('The following grades will be approved:'),
+            'subheader_submit_ex5': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex5', 'sc_gr': _('grades')},
+            'approve_0': _("Click 'Check grades' to check the grades before submitting the Ex5 form."),
+            'approve_1_ex2': _('The grades are already approved,'),
+            'approve_2_ex2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2'},
+
+            'submit_0': _("Click 'Check grades' to check the grades before submitting the Ex5 form."),
+            'submit_1': _("If the check is OK, click 'Request verification code' to submit the Ex5 form."),
+
+            'submit_ok_01_ex2': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2'},
+            'submit_ok_01_ex2a': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2A'},
+
+            'block_01': _("You are about to block this grade."),
+            'block_02': _("The diploma and final grade list can not be printed when a grade is blocked."),
+            'block_03': _("The school has to change the grade and approve and submit it again."),
+            'block_04': _("Then you can unblock the grade by clicking this icon again."),
+            'block_05': _("Please add a note with an explanation and include the grade in the note."),
+            'block_06': _("After blocking the grade, the value of the grade will no longer be visible for you."),
+
+            'unblock_01': _("You are about to unblock this grade."),
+
+            'verif_01': _("You need a 6 digit verification code to submit the Ex form."),
+            'verif_02': _("Click 'Request verification code' and we will send you an email with the verification code."),
+            'verif_03': _("The verification code expires in 30 minutes."),
+        }
+
         dict['The_short_gradelist'] = _('The short gradelist')
         #dict['Short_grade_list'] = _('Short_grade_list')
 
@@ -1438,7 +1488,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Calculate_results'] = _('Calculate results')
 
-    # ====== PAGE ARCHIVE ========================= PR2022-03-09
+# ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:
         dict['Name_ex_form'] = TXT_Name_ex_form
         dict['Exam_period'] = TXT_Exam_period

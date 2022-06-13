@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Results' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/results220610.js' %}"></script>
+    <script src="{% static 'js/results220613.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -62,6 +62,7 @@
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
+            {% include 'students/modapprovegrade.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'students/modstudent.html' %}
@@ -81,7 +82,8 @@
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                 <button data-btn="btn_result" class="btn btn-secondary">{% trans 'Results' %}</button>
-                <button data-btn="btn_overview" class="btn btn-secondary">{% trans 'Overview' %}</button>
+                <button data-btn="btn_overview" class="btn btn-secondary">{% trans 'Overview results' %}</button>
+                <button data-btn="btn_percentage" class="btn btn-secondary display_hide">{% trans 'Overview results percentage' %}</button>
             </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -102,6 +104,8 @@
                 data-url_student_upload="{% url 'url_student_upload' %}"
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
+                data-url_grade_submit_ex5="{% url 'url_grade_submit_ex5' %}"
+                data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
 
                 data-url_download_gradelist="{% url 'url_download_gradelist' '-' %}"
                 data-url_calc_results="{% url 'url_calc_results' '-' %}"

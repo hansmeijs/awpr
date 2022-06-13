@@ -1232,9 +1232,10 @@ def has_unread_mailbox_items(examyear, req_user):
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
-    pass
+
 # PR2021-03-26 run this to update text in ex-forms, when necessary
-    #awpr_lib.update_library(examyear, request)
+    # awpr_lib.update_library(examyear, request)
+    recalc_reex_count(request)
 
     # show_unmatched_reex_rows()
 
@@ -1330,7 +1331,173 @@ def reset_show_msg(request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
+
+
 ######################################
+def recalc_exemption_countNIU(request):
+    # PR 2022-06-11 one time function to recalculate exemption
+    # Dont run this one, it might give problems
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- recalc_exemption_count -------')
+    try:
+        name = 'recalc_exemption_count'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+
+# - get list of studsubj_id that have reex
+            sub_sql_list = ["SELECT studsubj.id AS studsubj_id",
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "WHERE grd.examperiod =", str(c.EXAMPERIOD_EXEMPTION),
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                    "GROUP BY studsubj.id"
+            ]
+            sub_sql = ' '.join(sub_sql_list)
+
+# - set has_exemption = TRUE in studsubj if it is False
+            sql_list = [
+                "WITH sub_sql AS (", sub_sql, ")",
+                "UPDATE students_studentsubject AS studsubj",
+                "SET has_exemption = TRUE",
+                "FROM sub_sql",
+                "WHERE studsubj.id = sub_sql.studsubj_id",
+                "AND NOT studsubj.has_exemption",
+                "RETURNING studsubj.id, studsubj.has_exemption"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                if logging_on:
+                    for row in cursor.fetchall():
+                        logger.debug('updated has_exemption row: ' + str(row))
+
+# - count number of exemption of each student
+            sub_sql_list = ["SELECT stud.id AS stud_id, COUNT(*) AS exemption_count",
+                            "FROM students_studentsubject AS studsubj",
+                            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                            "WHERE studsubj.has_exemption",
+                            "AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                            "GROUP BY stud.id"
+                            ]
+            sub_sql = ' '.join(sub_sql_list)
+
+# - update exemption_count in student
+            sql_list = [
+                "WITH sub_sql AS (", sub_sql, ")",
+                "UPDATE students_student AS stud",
+                "SET exemption_count = sub_sql.exemption_count",
+                "FROM sub_sql",
+                "WHERE stud.id = sub_sql.stud_id",
+                "AND stud.exemption_count <> sub_sql.exemption_count",
+                "RETURNING stud.id, stud.exemption_count"
+            ]
+            sql = ' '.join(sql_list)
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                if logging_on:
+                    for row in cursor.fetchall():
+                        logger.debug('updated exemption_count row: ' + str(row))
+
+   # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -end of recalc_exemption_count
+
+
+def recalc_reex_count(request):
+    # PR 2022-06-11 one time function to recalculate reex
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- recalc_reex_count -------')
+    try:
+        name = 'recalc_reex_count'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+
+# - get list of studsubj_id that have reex
+            sub_sql_list = ["SELECT studsubj.id AS studsubj_id",
+                    "FROM students_grade AS grd",
+                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                    "WHERE grd.examperiod =", str(c.EXAMPERIOD_SECOND),
+                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                    "GROUP BY studsubj.id"
+            ]
+            sub_sql = ' '.join(sub_sql_list)
+
+# - set has_reex = TRUE in studsubj if it is False (happened in 20 cases)
+            sql_list = [
+                "WITH sub_sql AS (",  sub_sql, ")",
+                "UPDATE students_studentsubject AS studsubj",
+                "SET has_reex = TRUE",
+                "FROM sub_sql",
+                "WHERE studsubj.id = sub_sql.studsubj_id",
+                "AND NOT studsubj.has_reex",
+                "RETURNING studsubj.id, studsubj.has_reex"
+            ]
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                if logging_on:
+                    for row in cursor.fetchall():
+                        logger.debug('has_reex row: ' + str(row))
+
+# - count number of reex of each student
+            sub_sql_list = ["SELECT stud.id AS stud_id, COUNT(*) AS reex_count",
+                            "FROM students_studentsubject AS studsubj",
+                            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                            "WHERE studsubj.has_reex",
+                            "AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted",
+                            "GROUP BY stud.id"
+                            ]
+            sub_sql = ' '.join(sub_sql_list)
+
+# - update reex_count in student
+            sql_list = [
+                "WITH sub_sql AS (", sub_sql, ")",
+                "UPDATE students_student AS stud",
+                "SET reex_count = sub_sql.reex_count",
+                "FROM sub_sql",
+                "WHERE stud.id = sub_sql.stud_id",
+                "AND stud.reex_count <> sub_sql.reex_count",
+                "RETURNING stud.id, stud.reex_count"
+            ]
+            sql = ' '.join(sql_list)
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                for row in cursor.fetchall():
+                    logger.debug('updated reex_count row: ' + str(row))
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -end of recalc_reex_count
 
 
 def set_ce_avg_rule(request):
@@ -1734,9 +1901,9 @@ def show_deleted_grades(request):
                 logger.debug(msg_txt)
 
 
-
 def show_unmatched_reex_rows():
-    #PR2022-05-08 debug: Friedam: eneterd reex has no 'has_reex' in studsubj  not showing. Tobeleted was still true, after undelete subject
+    #PR2022-05-08 debug: Friedeman: enetered reex has no 'has_reex' in studsubj  not showing.
+    # Tobeleted was still true, after undelete subject
     # check other 36 grades that have tobedeleted=True
     logging_on = s.LOGGING_ON
     if logging_on:  # and request.user.role == c.ROLE_128_SYSTEM:

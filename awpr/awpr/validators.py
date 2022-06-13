@@ -273,6 +273,27 @@ def message_openargs():  #PR2022-05-28 PR2022-06-01
     # check if selected examyear is the same as this examyear,
     # return warning when examyear is different from this_examyear
 
+    # reset_show_msg(request):
+
+    # PR 2022-06-01 function 'reset_show_msg' resets open_args
+    # called only once by Loggedin, to rest before setting is retrieved
+    # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
+
+
+    msg = ''.join((
+        '<p><b>', str(_("The 'Submit Ex5' button is now available")), '</b><br>',
+        str(_('Go to the page <i>Results</i> and click the grey button <i>Submit Ex5</i>.')), ' ',
+        str(_('There are now additional approvals needed, but all SE grades and CE scores must be approved.')), ' ',
+        str(_('Only the chairperson or secretary can submit the Ex5 form.')), '</p>',
+        '</p>'
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+    
     msg = ''.join((
         '<p><b>', str(_('How AWP-online will calculate the results')), '</b><br>',
         str(_('As soon as the conversion tables ares available, we will upload them in AWP-online.')), ' ',
@@ -296,12 +317,6 @@ def message_openargs():  #PR2022-05-28 PR2022-06-01
         str(_("To prevent leaking of the results, before the official announcement of the results,")),' ',
         str(_("only the chairperson and secretary have access to the page <i>Results</i> and <i>Archive</i>.")), '</p>'
     ))
-
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
     
     msg = ''.join((
         '<p><b>', str(_('How to submit the Ex2A form')), '</b></p>',
