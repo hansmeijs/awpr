@@ -760,10 +760,19 @@
         return img_class;
     };
 
-    function b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3, auth4_must_sign, auth4) {
-    // PR2021-05-07 PR2021-12-18 PR2022-04-17
+    function b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
+    // PR2021-05-07 PR2021-12-18 PR2022-04-17 PR 2022-06-13
         //console.log( " ==== b_get_status_auth1234_iconclass ====");
         //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2, "auth3", auth3)
+
+        // PR 2022-06-13 shen secret exam (aangewezen examen) auth3 and auth4 dont have to approve
+        // - solved as follows:
+        // - when auth3_must_sign = false, auth4_must_sign is also false
+        // - when auth3_must_sign = false: make auth3 = auth2 and auth 4 = auth1
+        // - this way the left half of the diamond turns black when auth1 approves, the right part when auth2 approves
+        // when only  auth4_must_sign = false:
+        // - make the diamond full black when auth1, auth2 and auth 3 have approved
+
         const prefix = (blocked) ? "blocked_" : "diamond_";
         let img_class = prefix + "0_0"; // empty diamond
     //console.log( "img_class", img_class);

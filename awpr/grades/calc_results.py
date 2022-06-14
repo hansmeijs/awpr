@@ -121,7 +121,7 @@ logger = logging.getLogger(__name__)
 class CalcResultsView(View):  # PR2021-11-19
 
     def post(self, request, list):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= CalcResultsView ============= ')
@@ -261,7 +261,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict,
                         log_list, sql_studsubj_list, sql_student_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -397,7 +397,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                          si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_studsubj_result  -----')
         logger.debug(' @@@@@@@@@@@@@@@@@@@@@@@@@@    studsubj_dict: ' + str(studsubj_dict))
@@ -514,8 +514,21 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
             # when noinput: 'ni' = ['se', 'sr', 'pe', 'ce'] is stored in this_examperiod_dict
             # also noin_dict is added, is used in log_list
             # 'noin': {'vr': {'cav': ['se']}, 'pe': {'bw': ['se', 'ce']}, 'se': ['mm1'], 'ce': ['ec'], 'h3': ['ac']}
-            calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has_practexam, has_sr,
-                         has_exemptionCALC, has_reexCALC, has_reex03CALC, exemp_no_ce)
+
+            calc_noinput(
+                examperiod=examperiod,
+                studsubj_dict=studsubj_dict,
+                subj_code=subj_code,
+                weight_se=weight_se,
+                weight_ce=weight_ce,
+                has_practexam=has_practexam,
+                has_exemption=has_exemptionCALC,
+                has_sr=has_sr,
+                has_reex=has_reexCALC,
+                has_reex03=has_reex03CALC,
+                exemp_no_ce=exemp_no_ce
+            )
+
             if logging_on:
                 logger.debug('    this_examperiod_dict: ' + str(this_examperiod_dict))
                 logger.debug('    this_examperiod_dict ni: ' + str(this_examperiod_dict.get('ni')))
@@ -674,12 +687,13 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
     # takes in account that in 2020 there was no central exam
     #  when noinput: key is appendedd to key with 'noinput' in this_examperiod_dict
     """"""
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_noinput  --------- ')
         logger.debug('   subj_code: ' + str(subj_code))
         logger.debug('   examperiod: ' + str(examperiod))
         logger.debug('   exemp_no_ce: ' + str(exemp_no_ce))
+        logger.debug('   has_sr: ' + str(has_sr))
     """
     67838: {'si_id': 9734, 'subj': 'ec', 'is_extra_nocount': True, 'has_exemption': True, 
         1: {'subj': 'ec', 'se': '7,4', 'sesr': '7.4', 'ni': ['ce'], 'max_ep': 4, 'max_sesr': None, 'max_pece': None, 'max_final': None, 
@@ -1854,7 +1868,6 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
                     if not has_failed:
                         student_ep_dict['result_index'] = c.RESULT_PASSED
 
-
             if logging_on:
                 logger.debug('student_ep_dict: ' + str(student_ep_dict))
 
@@ -2147,8 +2160,7 @@ def calc_passfailed_count6_havovwo(student_ep_dict):  #  PR2021-11-30  PR2022-05
                 # geslaagd als gemiddeld een 6 of hoger is behaald
                 if avgfinal_lt_6:
                     has_failed = True
-                result_info += ''.join((', ', str(_('average final grade is ')), avgfinal_str))
-
+                result_info += ''.join((five_str,', ', str(_('average final grade is ')), avgfinal_str))
             elif c5 == 1:
                 # 'kandidaat heeft 1 vijf, rest zessen of hoger
                 # 'PR 17 jun 10 NB: gemiddeld een 6 of hoger is hier NIET van toepassing
@@ -2678,7 +2690,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     # TODO grades that are not published are only visible when 'same_school' (or not??)
     # also add grades of each period
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- get_students_with_grades_dictlist -----')

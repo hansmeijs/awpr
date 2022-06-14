@@ -1389,6 +1389,10 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
                                'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
+                               'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),
+                                        str(_("The examiner and corrector don't have to approve designated exams."))))
+
+
         }
 
         dict['No_cluster_block_permission'] =  _("You don't have permission to block grades of this cluster.")

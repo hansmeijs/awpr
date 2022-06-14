@@ -193,10 +193,29 @@ def update_library(examyear, request):
         ('gradelist', 'de_sector', 'de sector'),
         ('gradelist', 'at_school', 'aan'),
         ('gradelist', 'at_country', 'te'),
-# & " heeft deelgenomen aan het eindexamen " & [Afd]![Afk_Afdeling] & " conform"
-        ('gradelist', 'eex_article01', 'De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en'),
-        ('gradelist', 'eex_article02', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
-        ('gradelist', 'eex_article03', ''),
+
+# heeft deelgenomen aan het eindexamen text for Curacao
+        ('gradelist', 'eex_article01_cur', 'De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en'),
+        # standard text
+        #('gradelist', 'eex_article02', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
+        #('gradelist', 'eex_article03', ''),
+        # text 2022
+        ('gradelist', 'eex_article02_cur', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en de Tijdelijke regeling afwijking'),
+        ('gradelist', 'eex_article03_cur', 'centrale examens v.w.o., h.a.v.o., v.s.b.o. voor het schooljaar 2021-2022 P.B. 2022, no. 53 d.d. 10 juni 2022'),
+        ('gradelist', 'eex_article04_cur', 'en heeft de hierna vermelde cijfers behaald.'),
+
+# heeft deelgenomen aan het eindexamen text for St Maarten
+        ('gradelist', 'eex_article01_sxm',
+         'De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en'),
+        # standard text
+        # ('gradelist', 'eex_article02', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
+        # ('gradelist', 'eex_article03', ''),
+        # text 2022
+        ('gradelist', 'eex_article02_sxm',
+         'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
+
+        ('gradelist', 'eex_article03_sxm', None),
+        ('gradelist', 'eex_article04_sxm', None),
 
         ('gradelist', 'col_00_00', 'Vakken waarin examen is afgelegd'),
 

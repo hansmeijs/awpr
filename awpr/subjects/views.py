@@ -3056,8 +3056,7 @@ def create_exam_approve_publish_msg_list(req_usr, count_dict, requsr_auth, is_ap
             if count_dict['updated_grd_count'] == 1:
                 msg_str = _("The exam has been linked to 1 subject of a candidate.")
             else:
-                msg_str = _("The exams have been linked to %(count)s subjects of candidates."
-                                  % {'count': count_dict['updated_grd_count']})
+                msg_str = _("The exams have been linked to %(count)s subjects of candidates.") % {'count': count_dict['updated_grd_count']}
             msg_txt = ''.join(('<p>', str(msg_str), '</p>'))
             msg_list.append(msg_txt)
 

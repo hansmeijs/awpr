@@ -248,12 +248,12 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
             permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_grade', req_usr)
 
             # NOT IN USE > can be removed??
-            allowed_dict = {}
-            dl.get_requsr_allowed(req_usr, allowed_dict)
-            if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('allowed_dict: ' + str(allowed_dict))
-                # allowed_dict: {'requsr_allowed_clusters': [300]}
+            #allowed_dict = {}
+            #dl.get_requsr_allowed(req_usr, allowed_dict)
+            #if logging_on:
+            #    logger.debug('permit_list: ' + str(permit_list))
+            #    logger.debug('allowed_dict: ' + str(allowed_dict))
+            #    # allowed_dict: {'requsr_allowed_clusters': [300]}
 
             has_permit = 'permit_approve_grade' in permit_list
             if has_permit:
@@ -295,7 +295,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
         # - get auth_index (1 = Chairperson, 2 = Secretary, 3 = examiner, 4 = Corrector
                             # PR2021-03-27 auth_index is taken from requsr_usergroups_list, not from upload_dict
-                            #  function may have changed if gradepage is not refreshed in time)
+                            #  function may have changed if grade page is not refreshed in time)
                             #  was: auth_index = upload_dict.get('auth_index')
                             #  can't do it like this any more. User can be examiner and pres/secr at the same time. Get index from upload again
 
@@ -307,7 +307,8 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
                                 logger.debug('mode: ' + str(mode))
                                 logger.debug('auth_index: ' + str(auth_index))
                             """
-                            upload_dict{'table': 'grade', 'mode': 'approve_save', 'mapid': 'grade_22432', 'field': 'se_status', 'auth_index': 4, 'auth_bool_at_index': True, 'examtype': 'se', 'grade_pk': 22432}
+                            upload_dict{'table': 'grade', 'mode': 'approve_save', 'mapid': 'grade_22432', 'field': 'se_status', 
+                            'auth_index': 4, 'auth_bool_at_index': True, 'examtype': 'se', 'grade_pk': 22432}
                             """
 
         # - get selected examyear, school and department from usersettings
@@ -337,9 +338,14 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
                                 # sel_examtype may contain 'all'
                                 # examtype = 'se', 'sr', 'pe', 'ce', 'reex','reex03', 'exem', 'all'
                                 # examtype has no value when called bij MAG_Save > get then from usersetting
+
                                 sel_examtype = upload_dict.get('examtype')
                                 if sel_examtype is None:
                                     sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
+
+        # replace examtype 'reex', 'reex03' with 'ce' (sel_examperiod determines if it is reex)
+                                if sel_examtype in ('reex', 'reex03'):
+                                    sel_examtype = 'ce'
 
                                 if logging_on:
                                     logger.debug('sel_examtype:   ' + str(sel_examtype))
@@ -349,7 +355,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
         # - get allowed filter > this is part of create_grade_approve_rows
 
                                 if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
-
+                                    # blank scores / grades are not included
                                     grade_approve_rows = create_grade_approve_rows(
                                         request=request,
                                         sel_examyear_pk=sel_examyear.pk,
@@ -379,6 +385,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
         # +++ check if approving grade is allowed
                                         is_score = 'ce' in sel_examtype
                                         # use validate_grade_is_allowed when single grade is approved (in that case grade_pk has value)
+                                        # checks if grade is in allowed_subjectbases etc
                                         if grade_pk:
                                             is_allowed = grad_val.validate_grade_is_allowed(
                                                 request=request,
@@ -402,6 +409,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
                                                 cluster_pk=grade_row.get('cluster_id')
                                             )
                                         if is_allowed:
+        # +++ approvie grade, returns grade_rows_tobe_updated with grade_pk, new_auth_id, new_status_sum
                                             approve_grade_row(grade_row, grade_rows_tobe_updated, sel_examtype, requsr_auth, auth_index, is_test, is_reset,
                                                           msg_dict, request)
                                         else:
@@ -480,14 +488,16 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
 
 def create_approve_grade_msg_dict(msg_dict):  # PR2022-03-11
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_approve_grade_msg_dict -----')
+        logger.debug('msg_dict: ' + str(msg_dict))
 
     # this function is only called if is_test:
     count = msg_dict.get('count', 0)
     committed = msg_dict.get('committed', 0)
     no_value = msg_dict.get('no_value', 0)
+    no_approval_needed = msg_dict.get('no_approval_needed', 0)
     already_published = msg_dict.get('already_published', 0)
     auth_missing = msg_dict.get('auth_missing', 0)
     already_approved = msg_dict.get('already_approved', 0)
@@ -504,8 +514,10 @@ def create_approve_grade_msg_dict(msg_dict):  # PR2022-03-11
     if already_published:
         msg_dict['already_published_text'] = _("  - %(val)s already submitted") % \
                                              {'val': get_grades_are_text(already_published)}
+
+
     if auth_missing:
-        msg_dict['auth_missing_text'] = str(_("  - %(val)s not completely approved") % \
+        msg_dict['auth_missing_text'] = str(_("  - %(val)s not fully approved") % \
                                {'val': get_grades_are_text(auth_missing)})
     #if no_value:
     #    if no_value == 1:
@@ -514,7 +526,7 @@ def create_approve_grade_msg_dict(msg_dict):  # PR2022-03-11
     #        msg_dict['no_value_text'] = _("  - %(val)s grades have no value") % {'val': no_value}
 
     if double_approved:
-        msg_dict['double_approved_text'] = get_approved_text(double_approved) + str(_(', in a different function'))
+        msg_dict['double_approved_text'] = get_approved_by_you_text(double_approved) + str(_(', in a different function'))
 
     if already_approved:
         msg_dict['already_approved_text'] = get_approved_text(already_approved)
@@ -526,6 +538,16 @@ def create_approve_grade_msg_dict(msg_dict):  # PR2022-03-11
         else:
             no_value_txt += ' ' + str(_("They don't have to be approved."))
         msg_dict['no_value_text'] = no_value_txt
+
+
+    if no_approval_needed:
+        no_approval_needed_txt = str(_("  - %(val)s designated exam.") % {'val': get_grades_are_text(no_value)})
+        if no_approval_needed == 1:
+            no_approval_needed_txt += ' ' + str(_("It doesn't have to be approved."))
+        else:
+            no_approval_needed_txt += ' ' + str(_("They don't have to be approved."))
+        #TODO change on client
+        msg_dict['no_approval_needed'] = no_approval_needed_txt
 
     if not committed:
         msg_dict['saved_text'] = _("No grades will be approved.")
@@ -690,7 +712,7 @@ def batch_submit_ex2_rows(grade_rows_tobe_updated, sel_examtype, published_pk, r
 def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, sel_examtype,
                               sel_lvlbase_pk=None, sel_subject_pk=None, sel_cluster_pk=None,
                               grade_pk=None, include_grades=False):
-    # PR2022-03-07
+    # PR2022-03-07 PR2022-06-13
     # called by GradeApproveView, GradeSubmitEx2Ex2aView
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -698,6 +720,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
         logger.debug(' ----- create_grade_approve_rows -----')
         logger.debug('     sel_examtype:  ' + str(sel_examtype))
         logger.debug('     sel_examperiod: ' + str(sel_examperiod))
+        logger.debug('     include_grades: ' + str(include_grades))
 
     grade_rows = []
     log_list = []
@@ -711,6 +734,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 
         sql_list = [
             "SELECT grd.id, grd.examperiod, studsubj.id AS studsubj_id, studsubj.cluster_id, studsubj.has_exemption,",
+            "COALESCE(exam.secret_exam, FALSE) AS secret_exam,",
             "subj.base_id AS subjbase_id, lvl.base_id AS lvlbase_id, dep.base_id AS depbase_id, school.base_id AS schoolbase_id,"]
 
         if sel_examtype in ('se', 'sr', 'pe', 'ce'):
@@ -751,6 +775,8 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
             "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
             "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
             "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+            "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
 
             "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
             "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
@@ -1025,6 +1051,10 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                             sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
                             sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
 
+    # replace examtype 'reex', 'reex03' with 'ce' (sel_examperiod determines if it is reex)
+                            if sel_examtype in ('reex', 'reex03'):
+                                sel_examtype = 'ce'
+
                         if logging_on:
                             logger.debug('     sel_examtype:   ' + str(sel_examtype))
                             logger.debug('     sel_examperiod: ' + str(sel_examperiod))
@@ -1103,9 +1133,17 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
 # +++++ loop through grade_approve_rows
                                     grade_rows_tobe_updated = []
                                     for grade_row in grade_approve_rows:
-                                        log_txt = calc_grade_rows_tobe_updated(grade_row, grade_rows_tobe_updated, sel_examperiod, sel_examtype, is_test, msg_dict)
+                                        log_txt = calc_grade_rows_tobe_updated(
+                                            grade_row=grade_row,
+                                            tobe_updated_list=grade_rows_tobe_updated,
+                                            sel_examperiod=sel_examperiod,
+                                            sel_examtype=sel_examtype,
+                                            is_test=is_test,
+                                            msg_dict=msg_dict
+                                        )
                                         if log_txt:
                                             log_list.append(log_txt)
+
 # +++++  end of loop through grade_approve_rows
 
                                     updated_grade_pk_list = []
@@ -1123,7 +1161,12 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                                     else:
                         # - create msg_dict with info of rows
                                         exform_txt = 'Ex2A' if form_name == 'ex2a' else 'Ex2'
-                                        test_is_ok = create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, exform_txt)
+                                        test_is_ok = create_submit_ex2_ex2a_msg_dict(
+                                            msg_dict=msg_dict,
+                                            log_list=log_list,
+                                            file_name=file_name,
+                                            is_test=is_test,
+                                            exform_txt=exform_txt)
 
 # +++ create Ex2_xlsx
                                         if not is_test:
@@ -1351,8 +1394,8 @@ class GradeSubmitEx5View(View):  # PR2022-06-12
 # --- end of GradeSubmitEx5View
 
 
-def create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, ex_form): # PR2022-03-11
-    logging_on = False  # s.LOGGING_ON
+def create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, exform_txt): # PR2022-03-11
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ----- create_submit_ex2_ex2a_msg_dict -----')
@@ -1369,17 +1412,19 @@ def create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, ex_f
         auth_missing = msg_dict.get('auth_missing', 0)
         already_approved = msg_dict.get('already_approved', 0)
         double_approved = msg_dict.get('double_approved', 0)
+        secret_exam = msg_dict.get('secret_exam', 0)
 
         msg_dict['count_text'] = _("The selection contains %(val)s.") % \
                                  {'val': get_grade_text(count)}
-        if no_value:
-            # don't show thuiis message when submitting Ex5
-            if ex_form != 'Ex5':
-                msg_dict['no_value_text'] = _("  - %(val)s not entered") % \
-                                            {'val': get_grades_are_text(no_value)}
+        # PR2022-06-14 don't show not entered message
+        #if no_value:
+        #    # don't show this message when submitting Ex5
+        #    if exform_txt != 'Ex5':
+        #        msg_dict['no_value_text'] = _("  - %(val)s not entered") % \
+        #                                    {'val': get_grades_are_text(no_value)}
 
         if auth_missing:
-            auth_missing_txt = str(_("  - %(val)s not completely approved") % \
+            auth_missing_txt = str(_("  - %(val)s not fully approved") % \
                                    {'val': get_grades_are_text(auth_missing)})
 
             if log_list and len(log_list) <= 25:
@@ -1387,9 +1432,18 @@ def create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, ex_f
                     auth_missing_txt += '<br>&emsp;&emsp;' + log_str
             msg_dict['auth_missing_text'] = auth_missing_txt
 
-            exam_comm = _(' and examiner') if ex_form == 'Ex2' else _(', examiner and corrector')
-            msg_dict['saved_text'] = _("The %(cpt)s form can not be submitted.") % {'cpt': ex_form}
+            exam_comm = _(' and examiner') if exform_txt == 'Ex2' else _(', examiner and corrector')
+            msg_dict['saved_text'] = _("The %(cpt)s form can not be submitted.") % {'cpt': exform_txt}
             msg_dict['saved_text2'] = _("All grades must be approved by the chairperson, secretary%(exam_comm)s.") % {'exam_comm': exam_comm}
+
+            if secret_exam:
+                msg_dict['saved_text2'] = ',<br>'.join((
+                    str(_("All grades must be approved by the chairperson, secretary%(exam_comm)s") % {'exam_comm': exam_comm}),
+                    str(_("except for the designated exams, they must only be approved by the chairperson and secretary."))))
+            else:
+                msg_dict['saved_text2'] = str(_(
+                    "All grades must be approved by the chairperson, secretary%(exam_comm)s.") % {
+                                              'exam_comm': exam_comm}) + '.'
         else:
             if committed:
                 test_is_ok = True
@@ -1400,7 +1454,7 @@ def create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, ex_f
                 msg_dict['already_published_text'] = _("  - %(val)s already submitted") % \
                                                      {'val': get_grades_are_text(already_published)}
             if auth_missing:
-                auth_missing_txt = str(_("  - %(val)s not completely approved") % \
+                auth_missing_txt = str(_("  - %(val)s not fully approved") % \
                                                 {'val': get_grades_are_text(auth_missing)})
 
                 if log_list and len(log_list) <= 25:
@@ -1420,12 +1474,12 @@ def create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, ex_f
                 msg_dict['already_approved_text'] = get_approved_text(already_approved)
 
             if not committed:
-                msg_dict['saved_text'] = _("The %(cpt)s form can not be submitted.") % {'cpt': ex_form }
+                msg_dict['saved_text'] = _("The %(cpt)s form can not be submitted.") % {'cpt': exform_txt }
             elif committed == 1:
-                msg_dict['saved_text'] = _("One grade will be added to the %(cpt)s form.") % {'cpt': ex_form }
+                msg_dict['saved_text'] = _("One grade will be added to the %(cpt)s form.") % {'cpt': exform_txt }
             else:
                 msg_dict['saved_text'] = _("%(val)s grades will be added to the %(cpt)s form.") % \
-                                         {'cpt': ex_form, 'val': committed}
+                                         {'cpt': exform_txt, 'val': committed}
 
     # - warning if any subjects are not fully approved
             #if no_value:
@@ -1434,15 +1488,15 @@ def create_submit_ex2_ex2a_msg_dict(msg_dict, log_list, file_name, is_test, ex_f
     else:
         saved = msg_dict.get('saved', 0)
         if not saved:
-            msg_dict['saved_text'] = _("The %(cpt)s form has not been submitted.") % {'cpt': ex_form }
+            msg_dict['saved_text'] = _("The %(cpt)s form has not been submitted.") % {'cpt': exform_txt }
         elif saved == 1:
-            msg_dict['saved_text'] = ' '.join((str(_("The %(cpt)s has been submitted.") % {'cpt': ex_form }),
+            msg_dict['saved_text'] = ' '.join((str(_("The %(cpt)s has been submitted.") % {'cpt': exform_txt }),
                                                str(_("It contains 1 grade."))))
         else:
-            msg_dict['saved_text'] = ' '.join((str(_("The %(cpt)s has been submitted.") % {'cpt': ex_form}),
+            msg_dict['saved_text'] = ' '.join((str(_("The %(cpt)s has been submitted.") % {'cpt': exform_txt}),
                                                str(_("It contains %(val)s grades.") % {'val': saved})))
         if file_name:
-            msg_dict['file_name'] = ''.join((str(_("The %(cpt)s form has been saved as '%(val)s'.") % {'cpt': ex_form, 'val': file_name}),
+            msg_dict['file_name'] = ''.join((str(_("The %(cpt)s form has been saved as '%(val)s'.") % {'cpt': exform_txt, 'val': file_name}),
                                              '<br>',
                                               str(_("Go to the page 'Archive' to download the file."))))
     if logging_on:
@@ -1628,6 +1682,12 @@ def get_approved_text(count):
         msg_text = ' - ' + str(count) + str(_(' grades are already approved'))
     return msg_text
 
+def get_approved_by_you_text(count):
+    if count == 1:
+        msg_text = _(' - 1 grade is already approved by you')
+    else:
+        msg_text = ' - ' + str(count) + str(_(' grades are already approved by you'))
+    return msg_text
 
 def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, auth_index, is_test, is_reset, msg_dict, request):
     # PR2021-01-19 PR2022-03-08
@@ -1713,21 +1773,29 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
                     if double_approved:
                         af.add_one_to_count_dict(msg_dict, 'double_approved')
                     else:
+                        is_secret_exam = grade_row.get('secret_exam') or False
+
+    # skip if this is a secret_exam and authindex = examiner or commissioner
+                        # or when se / sr and authindex = commissioner
+                        if (is_secret_exam and requsr_auth in ('auth3', 'auth4')) or \
+                                (sel_examtype in ('se', 'sr') and requsr_auth == 'auth4'):
+                            af.add_one_to_count_dict(msg_dict, 'no_approval_needed')
+                        else:
 
     # skip if this grade has no value - not when deleting approval
-                        # PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
-                        # PR2022-05-31 afte corrector has blocked all empty scores by approving: skip approve when empty
+                            # PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
+                            # PR2022-05-31 afte corrector has blocked all empty scores by approving: skip approve when empty
 
-                        has_value = grade_row.get('has_value', False)
-                        if logging_on:
-                            logger.debug('     has_value   : ' + str(has_value))
-                        if not has_value:
-                            af.add_one_to_count_dict(msg_dict, 'no_value')
-                        else:
-                            # add pk and req_usr.pk to tobe_updated_list
-                            save_changes = True
+                            has_value = grade_row.get('has_value', False)
                             if logging_on:
-                                logger.debug('save_changes: ' + str(save_changes))
+                                logger.debug('     has_value   : ' + str(has_value))
+                            if not has_value:
+                                af.add_one_to_count_dict(msg_dict, 'no_value')
+                            else:
+                                # add pk and req_usr.pk to tobe_updated_list
+                                save_changes = True
+                                if logging_on:
+                                    logger.debug('save_changes: ' + str(save_changes))
 
 # - set value of requsr_authby_field
             if save_changes:
@@ -1770,27 +1838,37 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
 
 def calc_grade_rows_tobe_updated(grade_row, tobe_updated_list, sel_examperiod, sel_examtype, is_test, msg_dict):
     # PR2022-03-09 PR2022-04-17 PR2022-06-03
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- calc_grade_rows_tobe_updated -----')
         logger.debug('     sel_examperiod: ' + str(sel_examperiod))
         logger.debug('     sel_examtype:   ' + str(sel_examtype))
         logger.debug(' ZZZZZZZZZZZ    grade_row:      ' + str(grade_row))
+
     """
-    grade_row:      {'id': 21945, 'examperiod': 1, 'studsubj_id': 20693, 'cluster_id': 449, 'subjbase_id': 113, 'lvlbase_id': 5, 
-    'depbase_id': 1, 'schoolbase_id': 2, 'auth1by_id': 88, 'auth2by_id': 37, 'auth3by_id': 185, 'auth4by_id': 766,
-     'published_id': None, 'blocked': False, 'has_value': True, 'pescore': None, 'cescore': 23, 
-     'segrade': '5.4', 'srgrade': None, 'sesrgrade': '5.4', 'pegrade': None, 'cegrade': '5.4', 
-     'pecegrade': '5.4', 'finalgrade': '5', 'status': 30, 'stud_name': 'Velder, Liandra Raylianne Sayonara', 
-     'subj_name': 'Nederlandse taal'}
+    grade_row:  {
+        'id': 48685, 'examperiod': 2, 'studsubj_id': 20702, 'cluster_id': 967, 
+        'has_exemption': False, 'secret_exam': True, 
+        'subjbase_id': 114, 'lvlbase_id': 4, 'depbase_id': 1, 'schoolbase_id': 4, 
+        'auth1by_id': None, 'auth2by_id': 498, 'auth3by_id': None, 'auth4by_id': None, 'published_id': None, 'blocked': False, 
+        'has_value': True, 
+        'pescore': None, 'cescore': 24, 'segrade': '7.4', 'srgrade': None, 'sesrgrade': '7.4', 
+        'pegrade': None, 'cegrade': None, 'pecegrade': None, 'finalgrade': None, 'status': 4, 
+        'stud_name': 'Ahoua, Candy Kimberly', 'subj_name': 'Engelse taal'}
     """
     log_txt = None
+
     af.add_one_to_count_dict(msg_dict, 'count')
 
     if grade_row and sel_examtype and sel_examtype in ('se', 'sr', 'pe', 'ce'):
 
         grade_pk = grade_row.get('id')
-        has_exemption  = grade_row.get('has_exemption', False)
+        has_exemption = grade_row.get('has_exemption') or False
+        is_secret_exam = grade_row.get('secret_exam') or False
+
+# - count secret_exams
+        if is_secret_exam:
+            af.add_one_to_count_dict(msg_dict, 'secret_exam')
 
 # - skip if this grade/examtype is already published
         published_id = grade_row.get( 'published_id')
@@ -1822,12 +1900,21 @@ def calc_grade_rows_tobe_updated(grade_row, tobe_updated_list, sel_examperiod, s
                 auth4by_id = grade_row.get('auth4by_id')
 
     # - skip if this grade / examtype is not approved by all auth
-                auth_missing = auth1by_id is None or auth2by_id is None or auth3by_id is None
-                if not auth_missing:
+                auth_missing = auth1by_id is None or auth2by_id is None
+
                 # TODO change when submitting exemption grades (NIU yet)
+                if not auth_missing:
+                    if sel_examtype in ('se', 'sr'):
+                        auth_missing = auth3by_id is None
+                    else:
+                        if not is_secret_exam:
+                            auth_missing = auth3by_id is None
+
+                if not auth_missing:
                     if sel_examperiod != c.EXAMPERIOD_EXEMPTION:
                         if sel_examtype in ('pe', 'ce'):
-                            auth_missing = auth4by_id is None
+                            if not is_secret_exam:
+                                auth_missing = auth4by_id is None
 
                 if auth_missing:
                     af.add_one_to_count_dict(msg_dict, 'auth_missing')

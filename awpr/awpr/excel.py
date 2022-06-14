@@ -2868,13 +2868,14 @@ def create_exform_mapped_subject_rows(examyear, school, department, is_ex2a, is_
 def count_number_reex_for_ex5(school, department):
     # PR2022-06-12
     # function count number of reex, to detremine how many reex column Ex5 must contain
+    # value is always 1 or higher, to show at least 1 set of reex subject columns
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ============= count_number_reex_for_ex5 ============= ')
 
-    max_number_of_reex = 0
+    max_number_of_reex = 1
 
     sql_keys = {'sch_id': school.pk, 'dep_id': department.pk}
 
@@ -2890,16 +2891,20 @@ def count_number_reex_for_ex5(school, department):
                 ")",
                 "SELECT MAX(count) FROM sub_sql",
                 ]
-
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = cursor.fetchall()
         if rows:
-            max_number_of_reex = rows[0][0]
-            if logging_on:
-                logger.debug('max_number_of_reex: ' + str(max_number_of_reex))
+            first_row = rows[0]
+            if first_row and first_row[0]:
+                max_number_of_reex = first_row[0]
+    if logging_on:
+        logger.debug('max_number_of_reex: ' + str(max_number_of_reex))
+
+    if not max_number_of_reex:
+        max_number_of_reex = 1
 
     return max_number_of_reex
 # --- end of count_number_reex_for_ex5
@@ -3000,8 +3005,6 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         #  book = xlsxwriter.Workbook(response, {'in_memory': True})
         book = xlsxwriter.Workbook(output)
 
-
-
 # +++++++++++++++++++++++++
 # +++ print Ex5 front page
         sheet = book.add_worksheet(str(_('Ex5')))
@@ -3022,7 +3025,7 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         subject_count = ex5_formats.get('subject_count', 0)
         formatindex_number_subjects = formatindex_first_subject + subject_count
 
-        # --- min ond row
+# --- min ond row
         sheet.write(0, 0, library['minond'], bold_format)
 
 # --- title row
@@ -3298,10 +3301,16 @@ def write_ex5_table_header(book, sheet, max_number_of_reex, row_index, ex5_forma
     sheet.merge_range(row_index -1, col_index, row_index + 1, col_index, 'pre-examen(p) of\nbis-examen(b)', th_rotate)
     col_index = add_colnr_and_increase_index(col_index)
 
+    if logging_on:
+        logger.debug('     max_number_of_reex: ' + str(max_number_of_reex))
 # Uitslag na tweede tijdvak
     # show at least 1 subject column set (each set contains 3 columns: 'vak', 'c', 'e')
     max_number_of_reex = max_number_of_reex if max_number_of_reex else 1
     col_count_result_ep2 = 3 * max_number_of_reex + 4
+
+    if logging_on:
+        logger.debug('     max_number_of_reex: ' + str(max_number_of_reex))
+        logger.debug('     col_count_result_ep2: ' + str(col_count_result_ep2))
 
     sheet.merge_range(row_index -1, col_index, row_index - 1, col_index + col_count_result_ep2 -1, 'Uitslag na het tweede tijdvak', th_align_center)
 
@@ -3498,7 +3507,7 @@ ep02_dict: {149: {'subj': 'wa', 's': '5.6', 'c': '4.8', 'f': '5'}, 155: {'subj':
                 sheet.write(row_index, col_index, subj_count, row_format)
                 col_index += 1
 
-# avergae final grades
+# average final grades
         sheet.write(row_index, col_index, stud_info_dict.get('ep01_final_avg'), row_align_center)
         col_index += 1
 # average ce grade
@@ -3534,6 +3543,9 @@ ep02_dict: {149: {'subj': 'wa', 's': '5.6', 'c': '4.8', 'f': '5'}, 155: {'subj':
                     subj_code_list.append(subj_code)
             subj_code_list.sort()
 
+        if logging_on:
+            logger.debug('     reex subj_code_list: ' + str(subj_code_list))
+            logger.debug('     reex max_number_of_reex: ' + str(max_number_of_reex))
 # loop through max number of reex subjects
         first_reex_col_index = col_index
         for x in range(0, max_number_of_reex):

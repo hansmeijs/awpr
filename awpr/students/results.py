@@ -110,7 +110,7 @@ class ArchivesListView(View):  # PR2022-03-09
 class GetPresSecrView(View):  # PR2021-11-19
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GetPresSecrView ============= ')
 
@@ -353,7 +353,7 @@ class DownloadGradelistView(View):  # PR2021-11-15
         if request.user and request.user.country and request.user.schoolbase and list:
             upload_dict = json.loads(list) if list != '-' else {}
             if logging_on:
-                logger.debug('upload_dict: ' + str(upload_dict))
+                logger.debug('     upload_dict: ' + str(upload_dict))
                 # upload_dict: {'mode': 'prelim', 'print_all': False, 'student_pk_list': [8629], 'auth1_pk': 116, 'printdate': '2021-11-18'}
             req_user = request.user
 
@@ -366,11 +366,15 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 dl.get_selected_ey_school_dep_from_usersetting(request)
             sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
             if logging_on:
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('     sel_school: ' + str(sel_school))
+                logger.debug('     sel_department: ' + str(sel_department))
 
             if sel_school and sel_department:
                 student_pk_list = upload_dict.get('student_pk_list')
+                is_sxm = sel_examyear.country.abbrev == 'Sxm'
+                if logging_on:
+                    logger.debug('     sel_examyear.country.abbrev: ' + str(sel_examyear.country.abbrev))
+                    logger.debug('     is_sxm: ' + str(is_sxm))
 
 # +++++ calc_batch_student_result ++++++++++++++++++++
                 calc_res.calc_batch_student_result(
@@ -393,8 +397,8 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 print_reex = upload_dict.get('print_reex', False) if is_prelim else False
 
                 if logging_on:
-                    logger.debug('VVVVVVVVVV print_reex: ' + str(upload_dict.get('print_reex', False)))
-                    logger.debug('VVVVVVVVVV is_prelim: ' + str(is_prelim))
+                    logger.debug('     print_reex: ' + str(upload_dict.get('print_reex', False)))
+                    logger.debug('     is_prelim: ' + str(is_prelim))
 
 
                 settings_key = c.KEY_GRADELIST
@@ -447,7 +451,7 @@ class DownloadGradelistView(View):  # PR2021-11-15
 
                     # recalc result before printing the gradelist
 
-                    draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, request)
+                    draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
                     canvas.showPage()
 
                 canvas.save()
@@ -586,8 +590,8 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
     if grade_rows:
         for row in grade_rows:
             stud_id = row.get('stud_id')
-
-            logger.debug('row: ' + str(row))
+            if logging_on:
+                logger.debug('row: ' + str(row))
 
             if stud_id not in grade_dict:
                 #full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
@@ -683,8 +687,10 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                         'finalgrade': finalgrade
                     }
                 subj_dict = sjtp_dict[subj_id]
-                logger.debug('?############ row: ' + str(row))
-                logger.debug('?????????? sjtp_dict[' + str(subj_id) + ']: ' + str(sjtp_dict[subj_id]))
+
+                if logging_on and False:
+                    logger.debug('     row: ' + str(row))
+                    logger.debug('     sjtp_dict[' + str(subj_id) + ']: ' + str(sjtp_dict[subj_id]))
 
                 """
                 row: {'studsubj_id': 40093, 'stud_id': 5453, 'lastname': 'Boasman', 'firstname': 'Acemar, Hurbertho', 
@@ -748,13 +754,14 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
 ################
 
-def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_pk, auth2_pk, printdate, request):
+def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('+++++++++++++ draw_gradelist +++++++++++++')
         logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
         logger.debug('     student_dict: ' + str(student_dict))
+        logger.debug('     is_sxm: ' + str(is_sxm))
         """
        student_dict: {
             'country': 'Sint Maarten', 'examyear_txt': '2022', 
@@ -857,9 +864,17 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, print_reex, auth1_p
 # - draw border around page
     if is_prelim:
         draw_page_border(canvas, border)
-
 # - draw page header
-    draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_lexschool)
+    draw_gradelist_page_header(
+        canvas=canvas,
+        coord=coord,
+        col_tab_list=col_tab_list,
+        library=library,
+        student_dict=student_dict,
+        is_prelim=is_prelim,
+        is_sxm=is_sxm,
+        is_lexschool=is_lexschool
+    )
 
 # - draw column header
     draw_gradelist_colum_header(canvas, coord, col_tab_list, library, is_lexschool)
@@ -959,8 +974,13 @@ def draw_page_border(canvas, border):
     #draw_red_cross(canvas, left, bottom)
 # - end of draw_page_border
 
-def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_lexschool):
+def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_sxm, is_lexschool):
     # loop through rows of page_header
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ----- draw_gradelist_page_header -----')
+        logger.debug('     is_sxm: ' + str(is_sxm))
 
     examyear_code = student_dict.get('examyear_txt', '---')
     school_name = student_dict.get('school_name', '---')
@@ -990,11 +1010,21 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
 
     aan_article_txt = ' '.join((library.get('at_school', '-'), school_article))
 
-    eex_article01 = library.get('eex_article01')
-    eex_article02 = library.get('eex_article02')
-    eex_article03 = library.get('eex_article03')
+# get different 'Landsbesluit' text for sxm and cur
+    eex_article_list = []
+    for x in range(1, 5):
+        key_str = 'eex_article0' + str(x) + ('_sxm' if is_sxm else '_cur')
+        eex_article_txt = library.get(key_str)
+        if logging_on:
+            logger.debug('     key_str: ' + str(key_str))
+            logger.debug('     eex_article_txt: ' + str(eex_article_txt))
+        if eex_article_txt:
+            eex_article_list.append(eex_article_txt)
 
-    is_prelim = True
+    if logging_on:
+        logger.debug('     eex_article_list: ' + str(eex_article_list))
+
+# VOORLOPIGE CIJFERLIJST - print only when is_prelim, but do add line when not printing
     txt_list = [{'txt': library.get('preliminary', '---'), 'font': 'Times-Roman', 'size': 16, 'align': 'c',
          'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, 10, 0, False, None, txt_list, not is_prelim)
@@ -1040,15 +1070,20 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
         {'txt': country, 'font': 'Times-Bold', 'size': 11, 'x': 145 * mm}]
     draw_text_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list, not is_prelim)
 
-    txt_list = [{'txt': eex_article01, 'x': 25 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list, not is_prelim)
+# De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en
+    # first line has height 6, rest is 5
+    eex_article_lineheight = 6
+    for eex_article_txt in eex_article_list:
+        txt_list = [{'txt': eex_article_txt, 'x': 25 * mm}]
+        draw_text_one_line(canvas, coord, col_tab_list, eex_article_lineheight, 0, False, None, txt_list, not is_prelim)
+        eex_article_lineheight = 5
 
-    txt_list = [{'txt': eex_article02, 'x': 25 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 5, 0, False, None, txt_list, not is_prelim)
+    #txt_list = [{'txt': eex_article02, 'x': 25 * mm}]
+    #draw_text_one_line(canvas, coord, col_tab_list, 5, 0, False, None, txt_list, not is_prelim)
 
-    if eex_article03:
-        txt_list = [{'txt': eex_article03, 'x': 25 * mm}]
-        draw_text_one_line(canvas, coord, col_tab_list, 5, 0, False, None, txt_list, not is_prelim)
+    #if eex_article03:
+    #    txt_list = [{'txt': eex_article03, 'x': 25 * mm}]
+    #    draw_text_one_line(canvas, coord, col_tab_list, 5, 0, False, None, txt_list, not is_prelim)
 # - end of draw_gradelist_page_header
 
 

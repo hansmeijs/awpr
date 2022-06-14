@@ -79,7 +79,7 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, schoolbase_pk, depb
                                'cluster_pk:', str(cluster_pk))))
     not_allowed = False
 
-    # PR2022-04-20 tel Bruno New Song: chairpeson is also examiner.
+    # PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
     # must be able to approve all subjects as chairperson.
     # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
 
@@ -966,7 +966,7 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR202
                 err_list.append(str(_('You must ask the Inspectorate permission to make changes.')))
             elif is_auth:
                 err_list.append(str(_('%(cpt)s is already approved.') % {'cpt': caption}))
-                err_list.append(str(_('You must first undo the approval before you can make changes.')))
+                err_list.append(str(_('You must first remove the approval before you can make changes.')))
 
     return err_list
 

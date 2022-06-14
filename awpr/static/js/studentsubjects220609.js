@@ -3939,6 +3939,8 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MEX3_FillTbls  ============= PR2021-10-06
     function MEX3_FillTbls() {
         console.log("===== MEX3_FillTbls ===== ");
+        console.log("setting_dict", setting_dict);
+        console.log("permit_dict", permit_dict);
         console.log("mod_MEX3_dict.subject_rows", mod_MEX3_dict.subject_rows);
         console.log("mod_MEX3_dict.lvlbase_pk_list", mod_MEX3_dict.lvlbase_pk_list, typeof mod_MEX3_dict.lvlbase_pk_list);
 
@@ -3952,17 +3954,25 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  loop through mod_MEX3_dict.subject_rows, show only subjects with lvlbase_pk in lvlbase_pk_list
         if (mod_MEX3_dict.subject_rows && mod_MEX3_dict.subject_rows.length){
             for (let i = 0, subj_row; subj_row = mod_MEX3_dict.subject_rows[i]; i++) {
+            // PR2022-06-13 tel Richard Westerink, Havo Vwo shows no subject.
+            // setting_dict.sel_dep_level_req added to filter
+                // subj_row.lvlbase_id_arr: [4]
                 let show_row = false;
-                if (mod_MEX3_dict.lvlbase_pk_list && mod_MEX3_dict.lvlbase_pk_list.length){
-                    if (subj_row.lvlbase_id_arr && subj_row.lvlbase_id_arr.length){
-                         for (let x = 0, lvlbase_id; lvlbase_id = subj_row.lvlbase_id_arr[x]; x++) {
-                            if (mod_MEX3_dict.lvlbase_pk_list.includes(lvlbase_id)){
-                                show_row = true;
-                                break
-                    }}};
-                } else {
+                if(!setting_dict.sel_dep_level_req){
+                    // skip when dep has no level (Havo, Vwo)
                     show_row = true;
-                }
+                } else if (!mod_MEX3_dict.lvlbase_pk_list || !mod_MEX3_dict.lvlbase_pk_list.length){
+                    // skip when lvlbase_pk_list is empty ('all' levels selected)
+                    show_row = true;
+                } else {
+                    // loop through subj_row.lvlbase_id_arr and check if subject.levelbase is in lvlbase_pk_list
+                     for (let x = 0, lvlbase_id; lvlbase_id = subj_row.lvlbase_id_arr[x]; x++) {
+                        if (mod_MEX3_dict.lvlbase_pk_list.includes(lvlbase_id)){
+                            show_row = true;
+                            break;
+                        };
+                     };
+                };
                 if (show_row){
                     has_subject_rows = true;
                     const has_selected_subjects = MEX3_CreateSelectRow(subj_row);

@@ -441,6 +441,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
+// --- reset table rows, dont delete  header
+        tblBody_datatable.innerText = null;
+
 // ---  show loader
         if(!keep_loader_hidden){el_loader.classList.remove(cls_visible_hide)}
 
@@ -1361,6 +1364,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 };
                             };
                         } else if ([2, 3].includes(data_dict.examperiod)) {
+                        //TODO SXM gives scores to schools, not grades. Also for Cur??
                            if (data_dict.secret_exam) {
                                 is_enabled = ["pegrade", "cegrade"].includes(field_name);
                             } else {
@@ -1463,7 +1467,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // --- add EventListener to td
                 // only show status when weight > 0 and has value
-                // TODO enable this next year . It is turned off because empty scores were submitted
+                // TODO enable this next year . It is turned off so you can remove approved empty scores
                 //const grade_has_value = get_grade_has_value(field_name, data_dict, true);
                 //if (grade_has_value){
                 if (is_status_field){
@@ -1532,7 +1536,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 } else if (field_name.includes("_status")){
 
-                    // TODO enable this nect year . It is turned off because empty scores were submitted
+                    // TODO enable this next year . It is turned off because empty scores were submitted
                     //const grade_has_value = get_grade_has_value(field_name, data_dict, true);
                     //if ( grade_has_value){
                     if (true){
@@ -1601,20 +1605,20 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
             // only show status when weight > 0
 
-            // TODO enable this next year . It is turned off because empty scores were submitted
+            // TODO enable this next year. It is turned off because empty scores were submitted
             //const grade_has_value = get_grade_has_value(field_name, data_dict, true);
             //if (grade_has_value){
 
             const show_status = (["se_status", "sr_status"].includes(field_name) && data_dict.weight_se) ||
                                 (["pe_status", "ce_status"].includes(field_name) && data_dict.weight_ce);
             if (true){
-                const field_auth1by_id = prefix_str + "_auth1by_id"
-                const field_auth2by_id = prefix_str + "_auth2by_id"
-                const field_auth3by_id = prefix_str + "_auth3by_id"
-                const field_auth4by_id = prefix_str + "_auth4by_id"
+                const field_auth1by_id = prefix_str + "_auth1by_id";
+                const field_auth2by_id = prefix_str + "_auth2by_id";
+                const field_auth3by_id = prefix_str + "_auth3by_id";
+                const field_auth4by_id = prefix_str + "_auth4by_id";
                 const field_published_id = prefix_str + "_published_id";
-                const field_blocked = prefix_str + "_blocked"
-                const field_status = prefix_str + "_status"
+                const field_blocked = prefix_str + "_blocked";
+                const field_status = prefix_str + "_status";
 
                 const auth1by_id = (data_dict[field_auth1by_id]) ? data_dict[field_auth1by_id] : null;
                 const auth2by_id = (data_dict[field_auth2by_id]) ? data_dict[field_auth2by_id] : null;
@@ -1622,12 +1626,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 const auth4by_id = (data_dict[field_auth4by_id]) ? data_dict[field_auth4by_id] : null;
                 const published_id = (data_dict[field_published_id]) ? data_dict[field_published_id] : null;
                 const is_blocked = (data_dict[field_blocked]) ? data_dict[field_blocked] : null;
-                const auth4_must_sign = ["pe_status", "ce_status"].includes(field_name);
+
+                // Auth3 does not have to sign when secret exam (aangewezen examen)
+                const auth3_must_sign = (!data_dict.secret_exam);
+                const auth4_must_sign = (!data_dict.secret_exam && ["pe_status", "ce_status"].includes(field_name));
 
         //console.log("field_blocked", field_blocked);
         //console.log("is_blocked", is_blocked);
 
-                className = b_get_status_auth1234_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3by_id, auth4_must_sign, auth4by_id);
+                className = b_get_status_auth1234_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
 
         //console.log("className", className);
                 // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
@@ -2099,6 +2106,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const is_published = (!!data_dict[examtype_2char + "_published_id"]);
                 const is_blocked = (!!data_dict[examtype_2char + "_blocked"]);
                 const examperiod = data_dict.examperiod;
+                const grade_has_value = get_grade_has_value(fldName, data_dict);
 
 // +++ approve grades by school +++++++++++++++++++++
                 if(permit_dict.permit_approve_grade){
@@ -2107,117 +2115,83 @@ document.addEventListener("DOMContentLoaded", function() {
                     // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
                     // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
                     // this function gives err message when multiple found. (uses b_show_mod_message_html)
-                    // get value of highest index
+
                     const permit_auth_list = b_get_multiple_auth_index_of_requsr(permit_dict)
                     const requsr_auth_index = setting_dict.sel_auth_index;
 
                     if(requsr_auth_index){
-
                         if(fldName in data_dict){
 
-    // give message and exit when corrector wants to approve se_grade
-                            if (fldName === "se_status" && requsr_auth_index === 4 ){
-                                const msg_html = loc.approve_err_list.Corrector_cannot_approve_se;
-                                b_show_mod_message_html(msg_html);
+    // - is_approved_by_requsr_auth = true when requsr_auth has approved in this function
+                            // - auth_dict contains user_id of all auth_index
+                            //   auth_dict:  {1: 146, 3: 157}
+                            const auth_dict = {};
+                            const is_approved_by_requsr_auth = get_is_approved_by_requsr_auth(data_dict, examtype_2char, requsr_auth_index, auth_dict);
+
+    // give message and exit when corrector wants to approve se_grade, not when remove approved
+                            if (fldName === "se_status" && requsr_auth_index === 4 && !is_approved_by_requsr_auth){
+                                b_show_mod_message_html(loc.approve_err_list.Corrector_cannot_approve_se);
+
+    // give message and exit when examiner or corrector wants to approve secret exam, not when remove approved
+                            } else if(data_dict.secret_exam && [3, 4].includes(requsr_auth_index) && !is_approved_by_requsr_auth){
+                                b_show_mod_message_html(loc.approve_err_list.Cannot_approve_secret_exam);
+
     // give message and exit when grade is published
                             } else if (is_published){
-                                const msg_html = loc.approve_err_list.This_grade_is_submitted + "<br>" + loc.approve_err_list.You_cannot_change_approval;
+                                const msg_html = [loc.approve_err_list.This_grade_is_submitted,
+                                                  loc.approve_err_list.You_cannot_change_approval].join("<br>");
                                 b_show_mod_message_html(msg_html);
                             } else {
 
-    // - requsr_auth_approved = true when requsr_auth has approved in this function
-                                // - auth_dict contains user_id of all auth_index
-                                // auth_dict:  {1: 146, 3: 157}
-                                let requsr_auth_approved = false;
-                                const auth_dict = {};
-                                for (let i = 1, key_str; i < 5; i++) {
-                                    key_str = examtype_2char + "_auth" + i + "by_id";
-                                    if (data_dict[key_str]){
-                                        if (requsr_auth_index === i) {
-                                            requsr_auth_approved = true;
-                                        };
-                                        auth_dict[i] = data_dict[key_str];
-                                    };
-                                };
-                                //console.log("auth_dict", auth_dict)
-                                //console.log("requsr_auth_approved", requsr_auth_approved)
-
-    // ---  toggle value of requsr_auth_approved
-                                const new_requsr_auth_approved = !requsr_auth_approved;
+    // ---  toggle value of is_approved_by_requsr_auth
+                                const new_is_approved_by_requsr_auth = !is_approved_by_requsr_auth;
 
     // also update requsr_pk in auth_dict;
-                                auth_dict[requsr_auth_index] = (new_requsr_auth_approved) ? permit_dict.requsr_pk : null;
-                                //console.log("auth_dict", auth_dict)
+                                auth_dict[requsr_auth_index] = (new_is_approved_by_requsr_auth) ? permit_dict.requsr_pk : null;
 
-    // give message when status_bool = true and grade already approved by this user in different function
-                                // chairperson may also approve as examiner
-                                // secretary may alo approve as examiner
+    // give message when new_is_approved_by_requsr_auth = true and grade already approved by this user in different function
+                                // chairperson cannot also approve as secretary or as corrector
+                                // secretary cannot also approve as chairperson or as corrector
+                                // examiner cannot also approve as corrector
+                                // corrector cannot also approve as chairperson, secretary or examiner
 
-                                let already_approved_by_auth_index = null;
-                                if(new_requsr_auth_approved){
-                                    // chairperson cannot also approve as secretary or as corrector
-                                    // secretary cannot also approve as chairperson or as corrector
-                                    // examiner cannot also approve as corrector
-                                    // corrector cannot also approve as chairperson, secretary or examiner
-                                    const no_double_auth_index_list = (requsr_auth_index === 1) ? [2, 4] :
-                                                                 (requsr_auth_index === 2) ? [1, 4] :
-                                                                 (requsr_auth_index === 3) ? [4] :
-                                                                 (requsr_auth_index === 4) ? [1, 2, 3] : [];
+                                const already_approved_by_auth_index = get_already_approved_by_auth_index(auth_dict, new_is_approved_by_requsr_auth, requsr_auth_index);
 
-                                    for (let i = 0, no_double_auth_index; no_double_auth_index = no_double_auth_index_list[i]; i++) {
-                                        if (auth_dict[no_double_auth_index] === auth_dict[requsr_auth_index]) {
-                                            already_approved_by_auth_index = no_double_auth_index;
-                                            break;
-                                        };
-                                    };
-                                };
                                 if (already_approved_by_auth_index) {
                                     const auth_function = b_get_function_of_auth_index(loc, already_approved_by_auth_index);
-                                    const msg_html = loc.approve_err_list.Approved_in_function_of + auth_function.toLowerCase() + ".<br>" + loc.approve_err_list.You_cannot_approve_again;
+                                    const msg_html = [loc.approve_err_list.Approved_in_function_of, auth_function.toLowerCase(), ".<br>",
+                                                      loc.approve_err_list.You_cannot_approve_again].join("");
                                     b_show_mod_message_html(msg_html);
 
                                 } else {
 
-    // - give message when grade /score  has no value
+    // - give message when grade /score  has no value, skip when removing approval
+                                    // skip approve if this grade has no value - not when removing approval
                                     // PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
+                                    // PR2022-05-31 after a corrector has blocked all empty scores by approving: skip approve when empty
+
                                     // no value of exemption is complicated, because of no CE in 2020 and partly in 2021.
                                     // skip no_grade_value of exemption, validate on server
 
-                                    // // examtype_2char = 'se', 'sr', 'pe', 'ce'
-                                    const key_grade = (examtype_2char + "grade");
-                                    const no_grade_value = (examperiod !== 4 && !data_dict[key_grade]);
-                                    const key_score = (examtype_2char + "score");
-
-                                    // skip approve if this grade has no value - not when deleting approval
-                                    // PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
-                                    // PR2022-05-31 afte corrector has blocked all empty scores by approving: skip approve when empty
-                                    const grade_has_value = get_grade_has_value(fldName, data_dict, new_requsr_auth_approved);
-
-                                    //const no_score_value = (examtype_2char === "se") ? true : !data_dict[key_score];
-                                    //if (new_requsr_auth_approved && no_grade_value && no_score_value){
-                                    //    mod_dict = {tblName: tblName, fldName: fldName, examtype_2char: examtype_2char,
-                                    //                data_dict: data_dict, auth_dict: auth_dict, requsr_auth_index: requsr_auth_index,
-                                    //                is_published: is_published, is_blocked: is_blocked,
-                                    //                new_requsr_auth_approved: new_requsr_auth_approved, el_input: el_input};
-
-                                    //    ModConfirmOpen("approve", el_input);
-                                    //} else {
+                                    // is_approved_by_requsr_auth is used in approve: to allow removing approved, is_approved_by_requsr_auth = true in updatefield and createtblrow
 
                                     if (["pe", "ce"].includes(examtype_2char) &&
                                         [1, 2, 3].includes(data_dict.examperiod) &&
                                         !data_dict.weight_ce){
                                         b_show_mod_message_html(loc.approve_err_list.Subject_has_no_ce);
 
-                                    } else if (!grade_has_value){
+                        // give message when grade has no value, not when removing approved
+                                    } else if (!grade_has_value && !is_approved_by_requsr_auth){
                                         const is_score = ( ["pe", "ce"].includes(examtype_2char) &&
                                                         [1, 2, 3].includes(data_dict.examperiod) &&
                                                             !data_dict.secret_exam);
                                         const msg_html = (is_score) ? loc.approve_err_list.Score_not_entered + "<br>" + loc.approve_err_list.Dont_haveto_approve_blank_scores :
                                                             loc.approve_err_list.Grade_not_entered + "<br>" + loc.approve_err_list.Dont_haveto_approve_blank_grades;
                                         b_show_mod_message_html(msg_html);
+
                                     } else {
                                         UploadApproveGrade(tblName, fldName, examtype_2char, data_dict, auth_dict, requsr_auth_index,
-                                                            is_published, is_blocked, new_requsr_auth_approved, el_input) ;
+                                                            is_published, is_blocked, new_is_approved_by_requsr_auth, el_input) ;
                                     }; //  if (double_approved))
                                 };  // if (already_approved_by_auth_index)
                             };  // if (published_pk)
@@ -2255,36 +2229,79 @@ document.addEventListener("DOMContentLoaded", function() {
         };  // if(permit_dict.permit_approve_grade){
     };  // UploadStatus
 
-//========= get_grade_has_value  ============= PR2022-05-31
-    function get_grade_has_value(fldName, data_dict, auth_has_value){
-        console.log( " ==== get_grade_has_value ====");
-                console.log( " fldName", fldName);
-                console.log( " auth_has_value", auth_has_value);
+//========= get_is_approved_by_requsr_auth  ============= PR2022-06-13
+    function get_is_approved_by_requsr_auth(data_dict, examtype_2char, requsr_auth_index, auth_dict){
+        //console.log( " ==== get_is_approved_by_requsr_auth ====");
+// - is_approved_by_requsr_auth = true when requsr_auth has approved in this function
+        // - auth_dict contains user_id of all auth_index
+        // auth_dict:  {1: 146, 3: 157}
+        let is_approved_by_requsr_auth = false;
+        for (let i = 1, key_str; i < 5; i++) {
+            key_str = examtype_2char + "_auth" + i + "by_id";
+            if (data_dict[key_str]){
+                if (requsr_auth_index === i) {
+                    is_approved_by_requsr_auth = true;
+                };
+                auth_dict[i] = data_dict[key_str];
+            };
+        };
+        return is_approved_by_requsr_auth;
+    };
+// end of get_is_approved_by_requsr_auth
+
+
+//========= get_already_approved_by_auth_index  ============= PR2022-06-13
+    function get_already_approved_by_auth_index(auth_dict, new_is_approved_by_requsr_auth, requsr_auth_index){
+        // chairperson cannot also approve as secretary or as corrector
+        // secretary cannot also approve as chairperson or as corrector
+        // examiner cannot also approve as corrector
+        // corrector cannot also approve as chairperson, secretary or examiner
+
+        let already_approved_by_auth_index = null;
+
+        if(new_is_approved_by_requsr_auth){
+            const no_double_auth_index_list = (requsr_auth_index === 1) ? [2, 4] :
+                                         (requsr_auth_index === 2) ? [1, 4] :
+                                         (requsr_auth_index === 3) ? [4] :
+                                         (requsr_auth_index === 4) ? [1, 2, 3] : [];
+
+            for (let i = 0, no_double_auth_index; no_double_auth_index = no_double_auth_index_list[i]; i++) {
+                if (auth_dict[no_double_auth_index] === auth_dict[requsr_auth_index]) {
+                    already_approved_by_auth_index = no_double_auth_index;
+                    break;
+                };
+            };
+        };
+        return already_approved_by_auth_index
+    };
+// end of get_already_approved_by_auth_index
+
+//========= get_grade_has_value  ============= PR2022-05-31 PR2022-06-13
+    function get_grade_has_value(fldName, data_dict){
+        //console.log( " ==== get_grade_has_value ====");
+
         // only show status when weight > 0 and grade/score has value
-        // auth_has_value is used in approve: to allow removing approved, auth_has_value = true in updatefield and createtblrow
-        // PR2022-06-04 debug: Hans Vlinkervleugel HAP had student with score 0. Make has-Value true when score = 0
+        // PR2022-06-04 debug: Hans Vlinkervleugel KAP had student with score 0.
+        // Make has-Value true when score = 0 by using cescore != null instead of !!cescore
         let grade_has_value = false;
-        if (!auth_has_value){
-            grade_has_value = true;
-        } else if (data_dict) {
+        if (data_dict) {
             if (fldName === 'se_status' && [1, 4].includes(data_dict.examperiod) && data_dict.weight_se){
                 grade_has_value = !!data_dict.segrade != null && data_dict.segrade != '';
             } else if (fldName === 'ce_status' && [1, 2, 3].includes(data_dict.examperiod) && data_dict.weight_ce){
-
-                console.log( " data_dict.cescore", data_dict.cescore, typeof data_dict.cescore);
-                console.log( " data_dict.cescore != null", data_dict.cescore != null);
-                console.log( " data_dict.cescore != ''", data_dict.cescore != '');
-
-                grade_has_value = (data_dict.secret_exam) ?
-                        data_dict.cegrade != null : data_dict.cescore != null;
+                // PR 2022-06-13 removed, SXM gives scores to schools when secret_exam
+                // was: grade_has_value = (data_dict.secret_exam) ?
+                //       data_dict.cegrade != null : data_dict.cescore != null;
+                grade_has_value = !(data_dict.cescore == null || data_dict.cescore === '');
             };
         };
+        //console.log( " >>> grade_has_value", grade_has_value);
         return grade_has_value;
     };
+// end of get_grade_has_value
 
 //========= UploadApproveGrade  ============= PR2022-03-12
     function UploadApproveGrade(tblName, fldName, examtype_2char, data_dict, auth_dict, requsr_auth_index,
-                                is_published, is_blocked, new_requsr_auth_approved, el_input) {
+                                is_published, is_blocked, new_is_approved_by_requsr_auth, el_input) {
         //console.log( " ==== UploadApproveGrade ====");
 // ---  change icon, before uploading
 
@@ -2293,17 +2310,20 @@ document.addEventListener("DOMContentLoaded", function() {
             b_show_mod_message_html(loc.approve_err_list.No_cluster_permission);
         } else {
 
-            console.log("auth_dict)", auth_dict);
-            const auth4_must_sign = ["pe_status", "ce_status"].includes(fldName);
+            // Auth3 does not have to sign when secret exam (aangewezen examen)
+            const auth3_must_sign = (!data_dict.secret_exam);
+            const auth4_must_sign = (!data_dict.secret_exam && ["pe_status", "ce_status"].includes(fldName));
+
             const new_class_str = b_get_status_auth1234_iconclass(is_published, is_blocked,
-                                    auth_dict[1], auth_dict[2], auth_dict[3], auth4_must_sign, auth_dict[4]);
+                                    auth_dict[1], auth_dict[2],
+                                    auth3_must_sign, auth_dict[3],
+                                    auth4_must_sign, auth_dict[4]);
             el_input.className = new_class_str;
-            console.log( "new_class_str)", new_class_str);
 
     // ---  upload changes
             // value of 'mode' determines if status is set to 'approved' or 'not
-            // instead of using value of new_requsr_auth_approvede,
-            const mode = (new_requsr_auth_approved) ? "approve_save" : "approve_reset"
+            // instead of using value of new_is_approved_by_requsr_authe,
+            const mode = (new_is_approved_by_requsr_auth) ? "approve_save" : "approve_reset"
             const upload_dict = { table: tblName,
                                    mode: mode,
                                    mapid: data_dict.mapid,
@@ -2543,7 +2563,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (mod_dict.mode === "approve"){
                 UploadApproveGrade(mod_dict.tblName, mod_dict.fldName, mod_dict.examtype,
                             mod_dict.data_dict, mod_dict.auth_dict, mod_dict.requsr_auth_index,
-                            mod_dict.is_published, mod_dict.is_blocked, mod_dict.new_requsr_auth_approved,
+                            mod_dict.is_published, mod_dict.is_blocked, mod_dict.new_is_approved_by_requsr_auth,
                             mod_dict.el_input) ;
 
         } else if (mod_dict.mode === "block_grade"){
