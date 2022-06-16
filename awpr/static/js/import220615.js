@@ -2529,7 +2529,7 @@ if (show_console){
                     mimp_logfile = response.log_list;
                 };
                 if ("dnt_log_list" in response) {
-                       OpenLogfile(response.dnt_log_list);
+                       OpenLogfile(loc, response.dnt_log_list);
                 };
 
 
@@ -2901,14 +2901,16 @@ if (show_console){
     }; // MDNT_Save
 
 //=========   OpenLogfile   ====================== PR2022-06-02
-    function OpenLogfile(log_list) {
-        console.log(" ========== OpenLogfile ===========");
+    function OpenLogfile(loc, log_list) {
+        console.log(" ========== OpenLogfile import===========");
 
         if (!!log_list && log_list) {
-            const today = new Date();
-            const this_month_index = 1 + today.getMonth();
-            const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
-            let filename = "Log dd " + date_str + ".pdf";
+            const today_dateJS = new Date();
+            //const this_month_index = 1 + today.getMonth();
+            //const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
+            const datetime_formatted = format_datetime_from_datetimeJS(loc, today_dateJS, true)
+
+            let filename = "Log dd " + datetime_formatted + ".pdf";
 
             printPDFlogfile(log_list, filename )
         };

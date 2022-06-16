@@ -259,9 +259,9 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
-            el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false);
+            //el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false);
             // TODO switch to t_SBR_show_all
-            //el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
+            el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
             add_hover(el_SBR_select_showall);
         };
 
@@ -536,6 +536,8 @@ document.addEventListener('DOMContentLoaded', function() {
         el_loader.classList.remove(cls_hide)
         UpdateHeaderText(true);  // true = reset
 
+// --- reset table
+        tblBody_datatable.innerText = null;
 
         let param = {"download": JSON.stringify (datalist_request)};
         let response = "";
@@ -878,7 +880,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateTblHeader(field_setting, col_hidden) {
         //console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
-        //console.log("columns_hidden", columns_hidden);
+        //console.log("col_hidden", col_hidden);
 
         const column_count = field_setting.field_names.length;
 
@@ -1357,8 +1359,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if(!is_hidden){
 // thumbrule not in Vsbo Cur
 
-            if (["is_extra_nocount",  "is_extra_counts"].includes(field)){
-                is_hidden = (setting_dict.sel_depbase_code !== "Vsbo");
+            if (["is_extra_nocount", "is_extra_counts"].includes(field)){
+                // PR2022-06-15 Richard Westerink: also avalilable for havo vwo
+                // is_hidden = (setting_dict.sel_depbase_code !== "Vsbo");
             } else if (field === "is_thumbrule"){
                 const show_thumbrule = (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");
                 is_hidden = !show_thumbrule;
@@ -3736,10 +3739,13 @@ document.addEventListener('DOMContentLoaded', function() {
         el_SBR_select_level.value = null;
         el_SBR_select_sector.value = null;
 
+        setting_dict.sel_cluster_pk = null;
+
         ResetFilterRows();
 
 // ---  upload new setting
-        const selected_pk_dict = {sel_lvlbase_pk: null, sel_sctbase_pk: null, sel_subject_pk: null, sel_student_pk: null};
+        const selected_pk_dict = {sel_lvlbase_pk: null, sel_sctbase_pk: null, sel_subject_pk: null,
+                                    sel_student_pk: null, sel_cluster_pk: null};
         //const page_grade_dict = {sel_btn: "grade_by_all"}
        //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
         const upload_dict = {selected_pk: selected_pk_dict};

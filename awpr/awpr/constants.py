@@ -449,6 +449,7 @@ FIELDS_GRADE =('studentsubject', 'examperiod',
                'deleted', 'status', 'modifiedby', 'modifiedat')
 
 
+STRING_SPACE_40 = ' ' * 40
 STRING_SPACE_30 = ' ' * 30
 STRING_SPACE_20 = ' ' * 20
 STRING_SPACE_15 = ' ' * 15

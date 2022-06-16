@@ -2045,31 +2045,34 @@ def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
             err_list.append(str(_('Thumb rule is not applicable to core subjects.')))
         else:
     # - not when there are exemptions
-            has_exemptions = stud_mod.Studentsubject.objects.filter(
+            # PR2022-06-15 this is removed from the final MB
+            # was:
+            #has_exemptions = stud_mod.Studentsubject.objects.filter(
+            #    student=studsubj_instance.student,
+            #    has_exemption=True,
+            #    tobedeleted=False
+            #).exists()
+            #if has_exemptions:
+            #    err_list.append(str(_('Thumb rule is only applicable when the candidate has taken a full exam.')))
+            #    err_list.append(str(_('This candidate has exemptions, therefore the thumbrule cannot be applied.')))
+            #else:
+
+# check if there is already a subject with thumbrule
+            has_thumbrule_nocombi = stud_mod.Studentsubject.objects.filter(
                 student=studsubj_instance.student,
-                has_exemption=True,
+                is_thumbrule=True,
+                schemeitem__is_combi=False,
                 tobedeleted=False
             ).exists()
-            if has_exemptions:
-                err_list.append(str(_('Thumb rule is only applicable when the candidate has taken a full exam.')))
-                err_list.append(str(_('This candidate has exemptions, therefore the thumbrule cannot be applied.')))
-            else:
-# check if there is already a subject with thumbrule
-                has_thumbrule_nocombi = stud_mod.Studentsubject.objects.filter(
-                    student=studsubj_instance.student,
-                    is_thumbrule=True,
-                    schemeitem__is_combi=False,
-                    tobedeleted=False
-                ).exists()
-                has_thumbrule_combi = stud_mod.Studentsubject.objects.filter(
-                    student=studsubj_instance.student,
-                    is_thumbrule=True,
-                    schemeitem__is_combi=True,
-                    tobedeleted=False
-                ).exists()
-                if has_thumbrule_nocombi or has_thumbrule_combi:
-                    err_list.append(str(_('This candidate already has a subject with the thumb rule.')))
-                    err_list.append(str(_('The thumbrule can only be applied to one subject.')))
+            has_thumbrule_combi = stud_mod.Studentsubject.objects.filter(
+                student=studsubj_instance.student,
+                is_thumbrule=True,
+                schemeitem__is_combi=True,
+                tobedeleted=False
+            ).exists()
+            if has_thumbrule_nocombi or has_thumbrule_combi:
+                err_list.append(str(_('This candidate already has a subject with the thumb rule.')))
+                err_list.append(str(_('The thumbrule can only be applied to one subject.')))
 
     return err_list
 # --- end of validate_thumbrule_allowed

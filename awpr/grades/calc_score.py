@@ -160,7 +160,7 @@ def calc_grade_from_score_wrap(department, si_dict, row):
 
     #++++++++ this is the one that works +++++++++++++++++++++ PR2022-05-29
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- calc_grade_from_score_wrap -----')
         logger.debug('     sjb_code: ' + si_dict.get('subj_code', '-'))
@@ -653,7 +653,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
     # - calculates sesrgrade, pecegrade and final grade
     # - and puts it in returnvalue updated_cegrade_list
 
-    logging_on = False  #s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_update_finalgrade -----')
         logger.debug('     exam_instance:    ' + str(exam_instance))
@@ -702,8 +702,6 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
 
         if logging_on:
             logger.debug('     sql:    ' + str(sql))
-
-        rows = []
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
@@ -800,7 +798,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
                     for row in rows:
                         updated_cegrade_list.append(row[0])
                         if logging_on:
-                            logger.debug('  updated_cegrade_list   row:    ' + str(row))
+                            logger.debug('  updated_cegrade_list row:    ' + str(row))
                 updated_cegrade_count = len(rows)
 
             except Exception as e:

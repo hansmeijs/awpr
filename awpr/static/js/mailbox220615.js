@@ -815,7 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     if ("mailmessage_log_list" in response) {
                         refresh_page = true;
-                        OpenLogfile(response.mailmessage_log_list);
+                        OpenLogfile(loc, response.mailmessage_log_list);
 
                     };
                     if ("class_has_mail" in response){
@@ -3107,7 +3107,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 //=========   OpenLogfile   ====================== PR2021-11-02
-    function OpenLogfile(log_list) {
+    function OpenLogfile(loc, log_list) {
         console.log(" ========== OpenLogfile ===========");
 
         if (!!log_list && log_list) {

@@ -5,9 +5,9 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220609.js' %}"></script>
+    <script src="{% static 'js/exams220615.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
-    <script src="{% static 'js/import220605.js' %}"></script>
+    <script src="{% static 'js/import220615.js' %}"></script>
 
 {% endblock %}
 
@@ -151,7 +151,7 @@
                 data-url_duo_exam_upload="{% url 'url_duo_exam_upload' %}"
                 data-url_exam_copy="{% url 'url_exam_copy' %}"
                 data-url_exam_copy_ntermen="{% url 'url_exam_copy_ntermen' %}"
-                data-url_link_duo_exam_to_grade="{% url 'url_link_duo_exam_to_grade' %}"
+                data-url_link_exam_to_grades="{% url 'url_link_exam_to_grades' %}"
                 data-url_calc_grades_from_exam="{% url 'url_calc_grades_from_exam' %}"
 
                 data-url_approve_publish_exam="{% url 'url_approve_publish_exam' %}"

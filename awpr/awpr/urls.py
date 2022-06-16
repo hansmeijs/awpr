@@ -321,7 +321,7 @@ urlpatterns = [
         path('upload', subject_views.ExamUploadView.as_view(), name='url_exam_upload'),
         path('copy', subject_views.ExamCopyView.as_view(), name='url_exam_copy'),
         path('copy_ntermen', subject_views.ExamCopyNtermenView.as_view(), name='url_exam_copy_ntermen'),
-        path('link_duo_exam_to_grade', subject_views.ExamLinkDuoExamToGradeView.as_view(), name='url_link_duo_exam_to_grade'),
+        path('link_duo_exam_to_grade', subject_views.ExamLinkExamToGradesView.as_view(), name='url_link_exam_to_grades'),
         path('url_calc_grades_from_exam', subject_views.ExamCalcGradesFromExamView.as_view(), name='url_calc_grades_from_exam'),
 
         path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),

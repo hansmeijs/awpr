@@ -1192,7 +1192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         RefreshDataRows("schemeitem", response.updated_schemeitem_rows, schemeitem_rows, true)  // true = update
                     };
                     if ("log_list" in response) {
-                       OpenLogfile(response.log_list);
+                       OpenLogfile(loc, response.log_list);
                     };
 
                     $("#id_mod_subject").modal("hide");

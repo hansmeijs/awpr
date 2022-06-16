@@ -705,7 +705,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         b_show_mod_message_dictlist(response.messages);
                     }
                     if ("log_list" in response) {
-                       OpenLogfile(response.log_list);
+                       OpenLogfile(loc, response.log_list);
                     };
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -1811,8 +1811,8 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 
 //=========   OpenLogfile   ====================== PR2021-09-24
-    function OpenLogfile(log_list) {
-        console.log(" ========== OpenLogfile ===========");
+    function OpenLogfile(loc, log_list) {
+        console.log(" ========== OpenLogfile examyears===========");
 
         if (!!log_list && log_list) {
             const today = new Date();

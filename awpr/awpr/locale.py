@@ -984,9 +984,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Enter_nterm'] = _("Enter N-term")
         dict['Enter_nterm_01'] = _("You are about to enter N-term '")
 
-        dict['Link_DUO_to_grade_exam'] = _("Link DUO exam to candidates")
-        dict['Link_DUO_to_grade_exam_01'] = _("The DUO exam below will be linked")
-        dict['Link_DUO_to_grade_exam_02'] = _("to the corresponding subjects of all candidates:")
+        dict['Link_exam_to_grades'] = _("Link exam to subjects of candidates")
+        dict['Link_exam_to_grades_01'] = _("The exam below will be linked")
+        dict['Link_exam_to_grades_02'] = _("to the corresponding subjects of all candidates:")
 
         dict['Calculate_grades'] = _("Calculate grades")
         dict['Calculate_grades_01'] = _("AWP is about to calculate the grades of exam:")
@@ -1007,7 +1007,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Maximum_score_2lines'] = pgettext_lazy('2 lines', 'Maximum\nscore')
         dict['Sequence_2lines'] = TXT_Sequence_2lines
         dict['Cesuur'] = _('Cesuur')
-        dict['Secret_exam'] = _('Secret exam')
+        dict['Designated_exam'] = _('Designated exam')
+        dict['Designated_exam_2lines'] = _('Desig-\nnated exam')
         dict['not_applicable'] = _('N.A.')
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")

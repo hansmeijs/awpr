@@ -118,7 +118,7 @@ logger = logging.getLogger(__name__)
 
 
 @method_decorator([login_required], name='dispatch')
-class CalcResultsView(View):  # PR2021-11-19
+class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
     def post(self, request, list):
         logging_on = False  # s.LOGGING_ON
@@ -324,7 +324,8 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         sr_count = student_dict.get('c_sr', 0)
         reex_count = student_dict.get('c_ep2', 0)
         reex03_count = student_dict.get('c_ep3', 0)
-        thumbrule_count = student_dict.get('c_thumbrule', 0)
+        thumbrule_count = student_dict.get('c_thumbrule') or 0
+        thumbrule_combi = student_dict.get('thumbrule_combi') or False
 
         ep_list = [c.EXAMPERIOD_EXEMPTION, c.EXAMPERIOD_FIRST]
         if reex_count:
@@ -335,8 +336,9 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
             ep_list.append(c.EXAMPERIOD_THIRD)
 
 # - add amount of sr, reex, reex03 to log_list
+        # TODO add extra_nocount
         if log_list is not None:
-            log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thumbrule_count, log_list)
+            log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thumbrule_count, thumbrule_combi, log_list)
 
         for examperiod in ep_list:
             # - create dict per examperiod, not for exemption,
@@ -397,10 +399,10 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                          si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_studsubj_result  -----')
-        logger.debug(' @@@@@@@@@@@@@@@@@@@@@@@@@@    studsubj_dict: ' + str(studsubj_dict))
+        logger.debug(' studsubj_dict: ' + str(studsubj_dict))
         logger.debug('     si_dict: ' + str(si_dict))
     """
     studsubj_dict: {'si_id': 2555, 
@@ -686,8 +688,10 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
     # Note: this function is only called when grade has no value
     # takes in account that in 2020 there was no central exam
     #  when noinput: key is appendedd to key with 'noinput' in this_examperiod_dict
-    """"""
-    logging_on = False  # s.LOGGING_ON
+
+    # note: combi subject can have weight_ce = 1. In that case it gives 'no input' when CE not entered.
+    # let it stay, so combi with ce can be possible
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_noinput  --------- ')
         logger.debug('   subj_code: ' + str(subj_code))
@@ -706,7 +710,7 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
     # dont skip calc noinput when is_extra_nocount
     # put se, sr, pe from first period also in reex and reex03
 
-# - get exemption only if has_exem, reex only if has_reex,  reex03 only if has_reex03,
+# - get exemption only if has_exem, reex only if has_reex, reex03 only if has_reex03,
     if (examperiod == c.EXAMPERIOD_EXEMPTION and has_exemption) or \
             (examperiod == c.EXAMPERIOD_SECOND and has_reex) or \
             (examperiod == c.EXAMPERIOD_THIRD and has_reex03) or \
@@ -2725,7 +2729,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
     cascade_dict = {}
 
-    sub_list = ["SELECT studsubj.id,studsubj.student_id, si.id as si_id,",
+    sub_list = ["SELECT studsubj.id,studsubj.student_id, si.id as si_id, si.is_combi,",
                 "subj.id AS subj_id, subj.name AS subj_name, subjbase.code AS subj, cl.name AS cluster_name,",
                 "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_thumbrule, studsubj.has_sr,",
                 # these are calculated fields, dont get value from studsubj record:
@@ -2756,7 +2760,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
     sql_list = ["WITH studsubj AS (" + sql_studsubjects + ")",
 
-                "SELECT stud.id AS stud_id, studsubj.id AS studsubj_id, studsubj.si_id,",
+                "SELECT stud.id AS stud_id, studsubj.id AS studsubj_id, studsubj.si_id, studsubj.is_combi,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.classname,",
                 "stud.iseveningstudent, stud.islexstudent, stud.bis_exam, stud.partial_exam, stud.withdrawn,",
                 "stud.exemption_count, stud.sr_count, stud.reex_count, stud.reex03_count, stud.thumbrule_count,",
@@ -2869,7 +2873,10 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
                                     stud_dict['c_sr'] = 1 + (stud_dict.get('c_sr') or 0)
                                     ss_dict['has_sr'] = True  # has_school_reex
                                 if field == 'is_thumbrule':
-                                    stud_dict['c_thumbrule'] = 1 + (stud_dict.get('c_thumbrule') or 0)
+                                    if row.get('is_combi'):
+                                        stud_dict['thumbrule_combi'] = True
+                                    else:
+                                        stud_dict['c_thumbrule'] = 1 + (stud_dict.get('c_thumbrule') or 0)
                                     ss_dict['is_thumbrule'] = True
                                 elif field == 'is_extra_nocount':
                                     stud_dict['c_extra_nocount'] = 1 + (stud_dict.get('c_extra_nocount') or 0)
@@ -3104,7 +3111,11 @@ def get_isevlex_isreex_fullname(student_dict):  # PR2021-12-19  PR2021-12-29 PR2
         isevlexstudent = True
         ev_lex_part_list.append(str(_('landsexamen candidate')))
     if partial_exam:
-        ev_lex_part_list.append(str(_('partial exam')))
+        if iseveningstudent:
+            ev_lex_part_list.append(str(_('partial exam')))
+        else:
+            ev_lex_part_list.append(str(_('additional exam')))
+
     if ev_lex_part_list:
         ev_lex_part_str = ', '.join(ev_lex_part_list)
         full_name += ''.join((' (', ev_lex_part_str, ')'))
@@ -3221,16 +3232,22 @@ def get_sql_student_values(student_dict, last_student_ep_dict, result_info_list)
     try:
         student_id = student_dict.get('stud_id')
         exemption_count_str = get_sql_value_int(student_dict.get('c_ep4'))
-        sr_count_str =  get_sql_value_int(student_dict.get('sr_count_str'))
-        reex_count_str =  get_sql_value_int(student_dict.get('c_ep2'))
-        reex03_count_str =  get_sql_value_int(student_dict.get('c_ep3'))
-        thumbrule_count_str =  get_sql_value_int(student_dict.get('c_thumbrule'))
+        sr_count_str = get_sql_value_int(student_dict.get('sr_count_str'))
+        reex_count_str = get_sql_value_int(student_dict.get('c_ep2'))
+        reex03_count_str = get_sql_value_int(student_dict.get('c_ep3'))
+
+        # combi thumbrule counts as one
+        c_thumbrule = student_dict.get('c_thumbrule') or 0
+        if student_dict.get('thumbrule_combi'):
+            c_thumbrule += 1
+        thumbrule_count_str = get_sql_value_int(c_thumbrule)
         # TODO add field subj_count to model
-        # subject_count =  get_sql_value_int(student_dict.get('c_subj'))
+        # subject_count = get_sql_value_int(student_dict.get('c_subj'))
 
         if logging_on:
             logger.debug('     exemption_count_str: ' + str(exemption_count_str))
             logger.debug('     reex_count_str: ' + str(reex_count_str))
+            logger.debug('     thumbrule_count_str: ' + str(thumbrule_count_str))
 
         last_ep_key = student_dict.get('last_ep')
         last_ep_dict = student_dict.get(last_ep_key)
@@ -3369,7 +3386,7 @@ def log_list_add_scheme_notfound(dep_level_req, log_list):  # PR2021-12-19
 # - end of log_list_add_scheme_notfound
 
 
-def log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thumbrule_count, log_list):
+def log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thumbrule_count, thumbrule_combi, log_list):
     # PR2021-12-20 PR2021-12-28 PR2022-06-03
     if exemption_count or sr_count or reex_count or reex03_count:
         if exemption_count:
@@ -3387,6 +3404,8 @@ def log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thu
         if thumbrule_count:
             cpt = str(_('thumb rule is applied') if thumbrule_count == 1 else _('thumb rules are applied'))
             log_list.append(''.join((c.STRING_SPACE_05, str(thumbrule_count), ' ', cpt)))
+        if thumbrule_combi:
+            log_list.append(''.join((c.STRING_SPACE_05,str(_('The thumb rule is applied to the combination subjects.')))))
 
 
 def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight_se, weight_ce, has_practexam, sr_allowed, no_practexam):

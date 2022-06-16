@@ -2052,8 +2052,9 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
     function t_SBR_show_all(FillTblRows) {
         //console.log("===== t_SBR_show_all =====");
 
-        setting_dict.sel_depbase_pk = null;
-        setting_dict.sel_depbase_code = null;
+        // PR2022-06-15 dont reset department
+        //setting_dict.sel_depbase_pk = null;
+        //setting_dict.sel_depbase_code = null;
 
         setting_dict.sel_lvlbase_pk = null;
         setting_dict.sel_level_abbrev = null;
@@ -2074,7 +2075,7 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
         setting_dict.sel_student_name = null;
         setting_dict.sel_student_name_init = null;
 
-        const el_SBR_select_department = document.getElementById("id_SBR_select_department");
+        //const el_SBR_select_department = document.getElementById("id_SBR_select_department");
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
@@ -2082,7 +2083,7 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
         const el_SBR_select_class = document.getElementById("id_SBR_select_class");
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
 
-        if (el_SBR_select_department){ el_SBR_select_department.value = null};
+        //if (el_SBR_select_department){ el_SBR_select_department.value = null};
         if (el_SBR_select_level){ el_SBR_select_level.value = null};
         if (el_SBR_select_sector){ el_SBR_select_sector.value = null};
         if (el_SBR_select_subject){ t_MSSSS_display_in_sbr("subject", null)};
@@ -2090,10 +2091,9 @@ const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
         if (el_SBR_select_class){ el_SBR_select_class.value = "0"};
         if (el_SBR_select_student){t_MSSSS_display_in_sbr("student", null)};
 
-
 // ---  upload new setting
         const upload_dict = {selected_pk: {
-            sel_depbase_pk: null,
+            //sel_depbase_pk: null,
             sel_lvlbase_pk: null,
             sel_sctbase_pk: null,
             sel_classname: null,

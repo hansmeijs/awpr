@@ -483,8 +483,9 @@ document.addEventListener('DOMContentLoaded', function() {
             //AddSubmenuButton(el_submenu, loc.Calc_results, function() {Calc_result("prelim")}, ["tab_show", "tab_btn_result"]);
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
         };
-
-        AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
+        if(permit_dict.requsr_same_school){
+            AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
+        };
 
         //AddSubmenuButton(el_submenu, loc.Download_short_gradelist, function() {ModConfirmOpen("short_gradelist")}, ["tab_show", "tab_btn_result"]);
 
@@ -989,7 +990,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         MGL_ResponseAuth(response.pres_secr_dict)
                     }
                     if ("log_list" in response) {
-                        OpenLogfile(response.log_list);
+                        OpenLogfile(loc, response.log_list);
                     }
                     if ("approve_msg_dict" in response) {
                         MAG_UpdateFromResponse (response);
@@ -1013,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 //=========   OpenLogfile   ====================== PR2021-11-20
-    function OpenLogfile(log_list) {
+    function OpenLogfile(loc, log_list) {
         //console.log(" ========== OpenLogfile ===========");
 
         if (!!log_list && log_list.length) {
