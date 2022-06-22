@@ -345,7 +345,7 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
 def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, examperiod, examgradetype, grade_str, is_test):
     # PR2021-12-11 PR2022-02-09 PR2022-04-17
     # only called by import_studsubj_grade_from_datalist
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_import_grade ----- ')
 

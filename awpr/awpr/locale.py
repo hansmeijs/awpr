@@ -87,7 +87,8 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['will_be_made_inactive'] = pgettext_lazy('singular', ' will be made inactive.')
     dict['will_be_made_active'] = pgettext_lazy('singular', ' will be made active.')
     dict['will_be_printed'] = pgettext_lazy('singular', ' will be printed.')
-    dict['will_be_downloaded'] = pgettext_lazy('singular', ' will be downloaded.')
+    dict['will_be_downloaded_sing'] = pgettext_lazy('singular', ' will be downloaded.')
+    dict['will_be_downloaded_plur'] = pgettext_lazy('plural', ' will be downloaded.')
     dict['will_be_copied'] = pgettext_lazy('singular', ' will be copied.')
     dict['Copy_to_examyear'] = _('Copy to examyear')
 
@@ -1420,6 +1421,17 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
 
         dict['Preliminary_gradelist'] = _('Preliminary grade list')
+        dict['Final_gradelist'] = _('Final grade list')
+        dict['Download_diploma'] = _('Download diploma')
+
+        dict['Diploma_number'] = _('Diploma number')
+        dict['Gradelist_number'] = _('Gradelist number')
+
+        dict['Diplomanumber_2lines'] = pgettext_lazy('2lines', 'Diploma\nnumber')
+        dict['Gradelistnumber_2lines'] = pgettext_lazy('2lines', 'Gradelist\nnumber')
+
+        dict['Diplomanumber_mustbe_wholenumber'] = _('%(cpt)s must be a whole number greater than zero.') % {'cpt': _('The diploma number')}
+        dict['Gradelistnumber_mustbe_wholenumber'] = _('%(cpt)s must be a whole number greater than zero.') % {'cpt': _('The gradelist number')}
 
         dict['Preliminary_ex5_form'] = _('Preliminary %(form)s') % {'form': 'Ex5'}
         dict['The_preliminary_ex5_form'] = _('The preliminary %(form)s form') % {'form': 'Ex5'}
@@ -1472,6 +1484,7 @@ def get_locale_dict(table_dict, user_lang, request):
         #dict['Short_grade_list'] = _('Short_grade_list')
 
         dict['Download_gradelist'] = _('Download grade list')
+        dict['Download_diploma'] = _('Download diploma')
         dict['Download_short_gradelist'] = _('Download short grade list')
         dict['Download_result_overview'] = _('Download result overview')
         dict['Download_Ex_form'] = _('Download Ex form')
@@ -1479,10 +1492,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_overview_of_results'] = _('The overview of the results')
         dict['The_preliminary_gradelist_of'] = _('The preliminary grade list of')
         dict['The_final_gradelist_of'] = _('The final grade list of')
+        dict['The_diploma_of'] = _('The diploma of')
+        dict['The_diplomas_of'] = _('The diplomas of')
         dict['The_result_of'] = _('The result of')
         dict['candidates'] = _(' candidates')
 
-        dict['will_be_downloaded'] = _('will be downloaded.')
+        dict['Date_ofthe_gradelist'] = _('Date of the grade list')
+        dict['Date_ofthe_diploma'] = _('Date of the diploma')
+
+        dict['will_be_downloaded_sing'] = _('will be downloaded.')
         dict['will_be_calculated'] = _('will be calculated.')
         dict['Logfile_with_details_willbe_downloaded'] = _('The logfile with details will be downloaded.')
 
@@ -1492,6 +1510,14 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_secretary'] = _('There is no secretary')
 
         dict['Calculate_results'] = _('Calculate results')
+        dict['Log_calculated_results'] = _('Log calculated results')
+
+
+        dict['Birthcountry_not_correct'] = _('Country of birth is not correct')
+        dict['Log_change_birth_country'] = _('Log change country of birth')
+        dict['Log_change_birth_country'] = _('Log change country of birth')
+
+
 
 # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:

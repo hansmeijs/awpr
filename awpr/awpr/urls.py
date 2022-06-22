@@ -285,15 +285,17 @@ urlpatterns = [
     path('results/', include([
         path('result', student_results.ResultListView.as_view(), name='results_url'),
 
-        path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
+        path('get_auth', student_results.GetGradelistDiplomaAuthView.as_view(), name='url_get_auth'),
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
-        path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
+        path('download_gradelist/<lst>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
 
         path('submit_ex5', grade_views.GradeSubmitEx5View.as_view(), name='url_grade_submit_ex5'),
 
         path('download_short_gradelist', student_results.GradeDownloadShortGradelist.as_view(), name='url_result_download_short_gradelist'),
         path('result_download_ex5', grade_excel.GradeDownloadEx5View.as_view(), name='url_result_download_ex5'),
-        path('result_download_overview', grade_excel.GradeDownloadResultOverviewView.as_view(), name='url_result_download_overview')
+        path('result_download_overview', grade_excel.GradeDownloadResultOverviewView.as_view(), name='url_result_download_overview'),
+
+        path('change_birthcountry', student_views.ChangeBirthcountryView.as_view(), name='url_change_birthcountry'),
     ])),
 
 # ===== ARCHIVES ========================== PR2022-03-09
@@ -301,7 +303,7 @@ urlpatterns = [
         path('archive', student_results.ArchivesListView.as_view(), name='url_archive'),
 
         #path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
-        #path('download_gradelist/<list>/', student_results.DownloadGradelistView.as_view(), name='url_download_gradelist'),
+        #path('download_gradelist/<list>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
 
     ])),
 

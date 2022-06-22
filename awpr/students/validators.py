@@ -1509,7 +1509,7 @@ def get_dateformat_from_uploadfileNIU(data_list, date_field):
 # - end of get_dateformat_from_uploadfile
 
 
-# ========  get_idnumberlist_from_database  ======= PR2021-07-19
+# ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20
 def get_idnumberlist_from_database(sel_school):
     # get list of examnumbers of this school, used with import student and update student
     # idnumber_list contains tuples with (id, idnumber)
@@ -1525,6 +1525,7 @@ def get_idnumberlist_from_database(sel_school):
             "FROM students_student AS st",
             "WHERE st.school_id = %(sch_id)s::INT",
             "AND st.idnumber IS NOT NULL",
+            "AND NOT st.tobedeleted",
             "ORDER BY st.idnumber"]
         sql = ' '.join(sql_list)
 

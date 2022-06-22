@@ -391,6 +391,17 @@
             setTimeout(function (){el.classList.remove(className)}, timeout);
         };
     };
+//=========  UndoInvalidInput  ================ PR2022-06-19
+    function UndoInvalidInput(el_input, old_value) {
+        // show class, remove it after timeout milliseconds
+        if(el_input){
+            el_input.classList.add("border_bg_invalid");
+            setTimeout(function (){
+                el_input.classList.remove("border_bg_invalid");
+                el_input.value = old_value;
+            }, 2000);
+        };
+    };
 
 // ++++++++++++++++ SELECT ELEMENTS by Classname  +++++++++++++++
 
@@ -1667,7 +1678,7 @@
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
-    function b_show_mod_message_html(msg_html, header_text, ModMessageClose){  // PR2021-01-26 PR2021-03-25 PR2021-07-03
+    function b_show_mod_message_html(msg_html, header_text, ModMessageClose){// PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
 
         const el_msg_header = document.getElementById("id_mod_message_header");

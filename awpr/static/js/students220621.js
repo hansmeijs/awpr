@@ -1935,16 +1935,22 @@ function RefreshDataRowsAfterUpload(response) {
         console.log( "===== MSED_Response ========= ");
         console.log( "new_setting", new_setting);
 
+// --- reset table
+        tblBody_datatable.innerText = null;
+
 // ---  upload new selected_pk
         new_setting.page = setting_dict.sel_page;
+
 // also retrieve the tables that have been changed because of the change in examyear / dep
         const datalist_request = {
                 setting: new_setting,
-                student_rows: {get: true},
-                studentsubject_rows: {get: true},
-                grade_rows: {get: true},
-                schemeitem_rows: {get: true},
-                schoolsetting: {setting_key: "import_student"}
+                schoolsetting: {setting_key: "import_student"},
+                examyear_rows: {get: true},
+                school_rows: {get: true},
+                department_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
+                student_rows: {get: true}
             };
         DatalistDownload(datalist_request);
 
@@ -1954,10 +1960,13 @@ function RefreshDataRowsAfterUpload(response) {
 //###########################################################################
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
-        //console.log( "===== MSSSS_Response ========= ");
+        console.log( "===== MSSSS_Response ========= ");
         //console.log( "selected_pk", selected_pk);
         //console.log( "selected_code", selected_code);
         //console.log( "selected_name", selected_name);
+
+// --- reset table
+        tblBody_datatable.innerText = null;
 
 // ---  upload new setting and refresh page
         const datalist_request = {
@@ -1968,9 +1977,6 @@ function RefreshDataRowsAfterUpload(response) {
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
                 student_rows: {get: true},
-                subject_rows: {get: true},
-                studentsubject_rows: {get: true},
-                scheme_rows: {cur_dep_only: true},
             };
 
         DatalistDownload(datalist_request);

@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // set focus to cancel button
                 header_txt = loc.Preliminary_orderlist + loc.per_school;
                 html_list = ["<div class='flex_1 mx-1'>",
-                                "<p>", loc.The_preliminary_orderlist, loc.per_school, loc.will_be_downloaded, "</p>",
+                                "<p>", loc.The_preliminary_orderlist, loc.per_school, loc.will_be_downloaded_sing, "</p>",
                                 "<p>", loc.Do_you_want_to_continue, "</p>",
                              "</div>"]
 

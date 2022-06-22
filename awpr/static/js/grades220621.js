@@ -2516,7 +2516,7 @@ document.addEventListener("DOMContentLoaded", function() {
             el_confirm_loader.classList.add(cls_visible_hide)
             const exform_txt = (mode === "prelim_ex2") ? loc.The_preliminary_ex2_form : loc.The_preliminary_ex2a_form;
 
-            let msg_html = ["<p>", exform_txt, loc.will_be_downloaded, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
+            let msg_html = ["<p>", exform_txt, loc.will_be_downloaded_sing, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
             if ((mode === "prelim_ex2a")){
                 msg_html += ["<div class='m-2 p-2 border_bg_message'>", loc.MAG_info.subheader_submit_ex2a_2,
                              loc.MAG_info.subheader_submit_ex2a_3, "</div>"].join(" ");

@@ -14,15 +14,6 @@ from django.views.generic import View
 
 from os.path import basename
 
-from reportlab.pdfgen.canvas import Canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
-from reportlab.lib.units import inch, mm
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Image
-
 from accounts import models as acc_mod
 from accounts import  views as acc_view
 from awpr import constants as c
@@ -35,6 +26,7 @@ from schools import models as sch_mod
 from subjects import models as subj_mod
 from subjects import views as subj_view
 from students import views as stud_view
+from students import functions as stud_fnc
 
 import xlsxwriter
 from zipfile import ZipFile
@@ -1159,7 +1151,8 @@ def create_ex1_ex4_rows_dict(examyear, school, department, save_to_disk, examper
             level_total = level_dict.get('total')
             level_studlist = level_dict.get('stud_list')
 
-            idnumber = row.get('idnumber' ,'---')
+    # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
+            idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
             examnumber = row.get('examnumber' ,'---')
             classname = row.get('classname' ,'')
             lvl_abbrev = row.get('lvl_abbrev' ,'---')
@@ -1175,7 +1168,7 @@ def create_ex1_ex4_rows_dict(examyear, school, department, save_to_disk, examper
             subj_id_arr = row.get('subj_id_arr', [])
             subj_id_arr_nondel = row.get('subj_id_arr_nondel', [])
             subj_id_arr_del = row.get('subj_id_arr_del', [])
-            student_dict = {'idnr': idnumber, 'exnr': examnumber, 'name': fullname,
+            student_dict = {'idnr': idnumber_withdots_no_char, 'exnr': examnumber, 'name': fullname,
                             'lvl': lvl_abbrev, 'sct': sct_abbrev, 'cls': classname, 'subj': subj_id_arr,
                             'subj_nondel': subj_id_arr_nondel, 'subj_del': subj_id_arr_del
                             }
@@ -1487,11 +1480,46 @@ class GradeDownloadResultOverviewView(View):  # PR2022-06-01
 
                 if sel_examyear and sel_school and sel_department:
 
-    # +++ create result_overview_xlsx
-                    response = create_result_overview_xlsx(
+    # --- get department dictlist
+                    # fields are: depbase_id, depbase_code, dep_name, dep_level_req
+                    department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear)
+
+                    # --- get lvlbase dictlist
+                    lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear)
+
+                    # +++ get subjectbase dictlist
+                    # functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
+                    subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear)
+
+                    # +++ get schoolbase dictlist
+                    # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
+                    schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear, request)
+
+                    """
+                    schoolbase_dictlist: [
+                        {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}, 
+                        {'sbase_id': 37, 'sbase_code': 'SXM03', 'sch_name': 'Sundial School'}
+                        {'sbase_id': 23, 'sbase_code': 'CURETE', 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE'},
+                        {'sbase_id': 39, 'sbase_code': 'SXMDOE', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations'}] 
+                        ]
+                    """
+
+                    # +++ get nested dicts of results per school, dep, level
+
+                    result_dict_per_school, error_dict = stud_view.create_result_dict_per_school(
                         request=request,
                         sel_examyear=sel_examyear,
-                        sel_school = sel_school,
+                        sel_schoolbase=sel_school.base
+                    )
+
+    # +++ create result_overview_xlsx
+                    response = create_result_overview_xlsx(
+                        sel_examyear=sel_examyear,
+                        sel_school=sel_school,
+                        department_dictlist=department_dictlist,
+                        lvlbase_dictlist=lvlbase_dictlist,
+                        schoolbase_dictlist=schoolbase_dictlist,
+                        result_dict_per_school=result_dict_per_school,
                         user_lang=user_lang
                     )
         #except:
@@ -2689,9 +2717,12 @@ def create_ex5_rows_dict(examyear, school, department, examperiod, save_to_disk,
                 lastname = ' '.join((prefix, lastname))
             fullname = ''.join((lastname, ', ', firstname))
 
+    # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
+            idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnr'))
+
             level_students[student_pk] = {
                 'stud': {
-                    'idnr': row.get('idnr'),
+                    'idnr': idnumber_withdots_no_char,
                     'exnr': row.get('exnr'),
                     'gender': row.get('gender'),
                     'class': row.get('class'),
@@ -3015,9 +3046,9 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         bold_blue = book.add_format(c.XF_BOLD_FCBLUE)
         normal_blue = book.add_format(c.XF_FCBLUE)
 
-        row_align_center = book.add_format(c.XF_FS8_FCBLUE_ALC_BORDER)
-        row_align_center_green = book.add_format(c.XF_FS8_FCGREEN_ALC_BORDER)
-        row_align_left_green = book.add_format(c.XF_FS8_FCGREEN_ALL_BORDER)
+        row_align_center = book.add_format(c.XF_ROW_ALIGN_CENTER)
+        row_align_center_green = book.add_format(c.XF_ROW_ALIGN_CENTER_GREEN)
+        row_align_left_green = book.add_format(c.XF_ROW_ALIGN_LEFT__GREEN)
         th_align_center = ex5_formats.get('th_align_center')
         th_rotate = ex5_formats.get('th_rotate')
 
@@ -3592,10 +3623,10 @@ ep02_dict: {149: {'subj': 'wa', 's': '5.6', 'c': '4.8', 'f': '5'}, 155: {'subj':
         sheet.write(row_index, col_index, stud_info_dict.get('regnr'), row_align_center)
         col_index += 1
 # Diplomanummer
-        sheet.write(row_index, col_index, 'x' if stud_info_dict.get('dipnr') else None, row_align_center)
+        sheet.write(row_index, col_index, stud_info_dict.get('dipnr', ''), row_align_center)
         col_index += 1
 # Cijferlijstnummer
-        sheet.write(row_index, col_index, 'x' if stud_info_dict.get('glnr') else None, row_align_center)
+        sheet.write(row_index, col_index, stud_info_dict.get('glnr'), row_align_center)
         col_index += 1
 
 # Opmerkingen
@@ -3933,6 +3964,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
                     sheet_name = ' '.join((ete_duo, summary_detail))
                     sheet = book.add_worksheet(sheet_name)
                     sheet.hide_gridlines(2) # 2 = Hide screen and printed gridlines
+                    sheet.hide_zero()
 
     # --- set column width
                     for i, width in enumerate(col_width):
@@ -4472,7 +4504,7 @@ def write_total_row(sheet, item_dict, row_index, field_names, first_subject_colu
 
 def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subtotal_last_row_index,
                                  field_names, totalrow_formats):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  write_total_row_with_formula  -----')
 
@@ -5352,56 +5384,18 @@ def has_published_ex1_rows(examyear, school, department):  # PR2021-08-15
 
 ####################################################
 
-def create_result_overview_xlsx(request, sel_examyear, sel_school, user_lang):
+def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, lvlbase_dictlist, schoolbase_dictlist, result_dict_per_school, user_lang):
     # PR2022-06-11
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_result_overview_xlsx -----')
 
-    # from https://stackoverflow.com/questions/16393242/xlsxwriter-object-save-as-http-response-to-create-download-in-django
-    # logger.debug('period_dict: ' + str(period_dict))
-
     response = None
-    # --- end of get_student_rows
 
-    def write_column_header(sheet, row_index, field_captions, header_format):
-        for col_index, field_caption in enumerate(field_captions):
-            sheet.write(row_index, col_index, field_caption, header_format)
-    # --- end of write_column_header
+    if result_dict_per_school:
 
-    def write_column_sub_header(sheet, row_index, header_format):
-        for col_index in range(4, 20, 3):
-            for i, field_caption in enumerate(('M', 'V', 'T')):
-                sheet.write(row_index, col_index + i, field_caption, header_format)
-    # --- end of write_column_header
-
-
-    def write_rows(sheet, row_index, row, field_names, row_formats, user_lang):  # PR2022-05-18
-        # ---  loop through columns
-        for i, field_name in enumerate(field_names):
-            if field_name == 'modifiedat':
-                modified_dte = row.get(field_name, '')
-                value = af.format_modified_at(modified_dte, user_lang)
-            else:
-                value = row.get(field_name, '')
-            sheet.write(row_index, i, value, row_formats[i])
-    # --- end of write_student_rows
-
-    group_by_level = True
-    group_by_school = True
-    result_rows, error_dict = stud_view.create_results_per_school_rows(
-        request=request,
-        sel_examyear=sel_examyear,
-        sel_schoolbase=sel_school.base,
-        group_by_level=group_by_level,
-        group_by_school=group_by_school
-    )
-
-    if result_rows:
-
-        # ---  create file Name and worksheet Name
+# ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
-        today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
         school_name = ' '.join((sel_school.base.code, sel_school.name))
         title = ' '.join((str(_('Results')), str(school_name), str(sel_examyear), 'dd', today_dte.isoformat()))
         file_name = title + ".xlsx"
@@ -5411,7 +5405,7 @@ def create_result_overview_xlsx(request, sel_examyear, sel_school, user_lang):
         # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         # response['Content-Disposition'] = "attachment; filename=" + file_name
 
-        # Create an in-memory output file for the new workbook.
+# Create an in-memory output file for the new workbook.
         output = io.BytesIO()
         # Even though the final file will be in memory the module uses temp
         # files during assembly for efficiency. To avoid this on servers that
@@ -5420,94 +5414,96 @@ def create_result_overview_xlsx(request, sel_examyear, sel_school, user_lang):
         #  book = xlsxwriter.Workbook(response, {'in_memory': True})
         book = xlsxwriter.Workbook(output)
 
+# +++++ create worksheet +++++
         sheet = book.add_worksheet(worksheet_name)
         sheet.hide_gridlines(2)  # 2 = Hide screen and printed gridlines
+        sheet.hide_zero()
+        sheet.freeze_panes(5, 0)
 
-        bold_format = book.add_format({'bold': True})
+# create dict with formats, used in this workbook
+        formats = {
+            'bold_format': book.add_format(c.XF_BOLD),
+            'row_align_center': book.add_format(c.XF_ROW_ALIGN_CENTER),
+            'row_align_left': book.add_format(c.XF_ROW_ALIGN_LEFT),
+
+            'hdr_tableheader': book.add_format(c.XF_TABLEHEADER),
+            'hdr_tableheader_alignleft': book.add_format(c.XF_TABLEHEADER_ALIGNLEFT),
+            'hdr_tableheader_borderleft': book.add_format(c.XF_TABLEHEADER_BORDERLEFT),
+
+            'hdr_grandtotal': book.add_format(c.XF_HDR_GRANDTOTAL),
+            'hdr_grandtotal_alignleft': book.add_format(c.XF_HDR_GRANDTOTAL_ALIGNLEFT),
+            'hdr_grandtotal_percentage': book.add_format(c.XF_HDR_GRANDTOTAL_PERCENTAGE),
+            'hdr_grandtotal_borderleft': book.add_format(c.XF_HDR_GRANDTOTAL_BORDERLEFT),
+            'hdr_grandtotal_perc_borderleft': book.add_format(c.XF_HDR_GRANDTOTAL_PERCENTAGE_BORDERLEFT),
+
+            'hdr_subtotal': book.add_format(c.XF_HDR_SUBTOTAL),
+            'hdr_subtotal_alignleft': book.add_format(c.XF_HDR_SUBTOTAL_ALIGNLEFT),
+            'hdr_subtotal_percentage': book.add_format(c.XF_HDR_SUBTOTAL_PERCENTAGE),
+            'hdr_subtotal_borderleft': book.add_format(c.XF_HDR_SUBTOTAL_BORDERLEFT),
+            'hdr_subtotal_perc_borderleft': book.add_format(c.XF_HDR_SUBTOTAL_PERCENTAGE_BORDERLEFT),
+
+            'hdr_subsubtotal': book.add_format(c.XF_HDR_SUBSUBTOTAL),
+            'hdr_subsubtotal_alignleft': book.add_format(c.XF_HDR_SUBSUBTOTAL_ALIGNLEFT),
+            'hdr_subsubtotal_percentage': book.add_format(c.XF_HDR_SUBSUBTOTAL_PERCENTAGE),
+            'hdr_subsubtotal_borderleft': book.add_format(c.XF_HDR_SUBSUBTOTAL_BORDERLEFT),
+            'hdr_subsubtotal_perc_borderleft': book.add_format(c.XF_HDR_SUBSUBTOTAL_PERCENTAGE_BORDERLEFT),
+
+            'row_value': book.add_format(c.XF_ROW_VALUE),
+            'row_value_alignleft': book.add_format(c.XF_ROW_VALUE_ALIGNLEFT),
+            'row_perc': book.add_format(c.XF_ROW_PERCENTAGE),
+            'row_value_borderleft': book.add_format(c.XF_ROW_VALUE_BORDERLEFT),
+            'row_perc_borderleft': book.add_format(c.XF_ROW_PERCENTAGE_BORDERLEFT),
+
+            'th_align_center': book.add_format(c.XF_HDR_ALC_TOPBOTTOM),
+            'th_align_left': book.add_format(c.XF_HDR_ALL_TOPBOTTOM)
+        }
+
         titel_data = book.add_format({'font_size': 11, 'font_color': 'blue', 'valign': 'vcenter'})
-
-        th_align_center = book.add_format(
-            {'font_size': 8, 'border': True, 'bold': True, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
-        th_align_center.set_bottom()
-        th_align_center.set_bg_color('#d8d8d8')  # #d8d8d8;  /* light grey 218 218 218 100%
 
         th_merge_bold = book.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter'})
         th_merge_bold.set_left()
         th_merge_bold.set_bottom()
 
-        row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter', 'border': True})
-        row_align_center = book.add_format(
-            {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
         row_date_format = book.add_format(
             {'font_size': 8, 'font_color': 'blue', 'num_format': 'd mmmm yyyy', 'align': 'left', 'valign': 'vcenter',
              'border': True})
 
         # get number of columns
-        field_names = ['db_code', 'lvl_code', 'sb_code', 'sch_name',
-                       'count_m', 'count_v', 'count_t',
-                       'res_pass_m', 'res_pass_v', 'res_pass_t',
-                       'res_reex_m', 'res_reex_v', 'res_reex_t',
-                       'res_fail_m', 'res_fail_v', 'res_fail_t',
-                       'res_wdr_m', 'res_wdr_v', 'res_wdr_t',
-                       'res_nores_m', 'res_nores_v', 'res_nores_t'
+        field_names = ['sb_code', 'sch_name',
+                       'c_m', 'c_v', 'c_t',
+                       'r_p_m', 'r_p_v', 'r_p_t',
+                       'r_r_m', 'r_r_v', 'r_r_t',
+                       'r_f_m', 'r_f_v', 'r_f_t',
+                       'r_w_m', 'r_w_v', 'r_w_t',
+                       'r_n_m', 'r_n_v', 'r_n_t'
                        ]
-        field_captions = [str(_('Department')), str(_('Learning path')), str(_('School code')), str(_('School')),
+        field_captions = ['', str(_('School')),
                           str(_('Total candidates')), '', '',
                           str(_('Passed')),  '', '',
                           str(_('Re-examination')), '', '',
                           str(_('Failed')), '', '',
                           str(_('Withdrawn')), '', '',
-                          str(_('No result')), '', '']
+                          str(_('No result')), '', ''
+                          ]
 
-        field_width = [12, 12, 12, 25,
-                       4, 4, 4,
-                       4, 4, 4,
-                       4, 4, 4,
-                       4, 4, 4,
-                       4, 4, 4,
-                       4, 4, 4
-                       ]
+        subheader_captions = [str(_('V')), 'T', 'M']
 
-        header_format = th_align_center
-        row_formats = [row_align_center, row_align_center, row_align_center, row_align_left,
-                       row_align_center, row_align_center, row_align_center,
-                       row_align_center, row_align_center, row_align_center,
-                       row_align_center, row_align_center, row_align_center,
-                       row_align_center, row_align_center, row_align_center,
-                       row_align_center, row_align_center, row_align_center,
-                       row_align_center, row_align_center, row_align_center
-                       ]
+        field_width = [8, 36,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       8, 8, 36,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6,
+                       4.6, 4.6, 4.6]
 
-        # --- set column width
-        for i, width in enumerate(field_width):
-            sheet.set_column(i, i, width)
-
-        row_index = 0
-
- # --- title row
-        title = str(_('Exam results'))
-        sheet.write(row_index, 0, title, bold_format)
-        row_index += 2
-        sheet.write(row_index, 0, str(_('Exam year')) + ':', bold_format)
-        sheet.write(row_index, 1, str(sel_examyear.code), titel_data)
-        row_index += 1
-        sheet.write(row_index, 0, str(_('School code')) + ':', bold_format)
-        sheet.write(row_index, 1, str(sel_school.base.code), titel_data)
-        row_index += 1
-        sheet.write(row_index, 0, str(_('School')) + ':', bold_format)
-        sheet.write(row_index, 1, str(sel_school.name), titel_data)
-
-# --- write_column_header
-        row_index += 2
-        write_column_header(sheet, row_index, field_captions, header_format)
-
-        row_index += 1
-        write_column_sub_header(sheet, row_index, header_format)
-
-# ---  write_result_rows
-        for row in result_rows:
-            row_index += 1
-            write_rows(sheet, row_index, row, field_names, row_formats, user_lang)
+        write_resultlist_details(sheet, sel_examyear, department_dictlist, lvlbase_dictlist, schoolbase_dictlist, result_dict_per_school,
+                                field_names, field_captions, field_width, subheader_captions, formats, user_lang)
 
         book.close()
 
@@ -5525,6 +5521,383 @@ def create_result_overview_xlsx(request, sel_examyear, sel_school, user_lang):
     # response['Content-Disposition'] = "attachment; filename=" + file_name
     return response
 # - end of write_resultlist
+
+
+def write_resultlist_details(sheet, sel_examyear, department_dictlist, lvlbase_dictlist, schoolbase_dictlist, result_dict_per_school,
+                             field_names, field_captions, field_width, subheader_captions, formats, user_lang):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- write_resultlist_details -----')
+        logger.debug(' ----- write_resultlist_details -----')
+    """
+    result_dict: {
+        1: {'db_id': 1, 'db_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
+                4: {'lvl_id': 4, 'lvl_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+                    13: {'sch_code': None, 'sch_name': 'Abel Tasman College', 
+                        'res': {'c_m': 4, 'c_v': 6, 'c_t': 10, 
+                                'r_p_m': 2, 'r_p_v': 6, 'r_p_t': 8, 
+                                'r_f_m': 0, 'r_f_v': 0, 'r_f_t': 0,
+                                'r_r_m': 1, 'r_r_v': 0, 'r_r_t': 1, 
+                                'r_n_m': 1, 'r_n_v': 0, 'r_n_t': 1, 
+                                'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0}}}}, 
+        2: {'db_id': 2, 'db_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 
+                0: {'lvl_id': 0, 'lvl_code': None, 'lvl_name': None, 
+                    13: {'sch_code': None, 'sch_name': 'Abel Tasman College', 
+                        'res': {'c_m': 12, 'c_v': 9, 'c_t': 21, 'r_p_m': 6, 'r_p_v': 5, 'r_p_t': 11, 'r_f_m': 0, 'r_f_v': 2, 'r_f_t': 2, 'r_r_m': 6, 'r_r_v': 2, 'r_r_t': 8, 'r_n_m': 0, 'r_n_v': 0, 'r_n_t': 0, 'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0}}}}, 
+        3: {'db_id': 3, 'db_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 
+                0: {'lvl_id': 0, 'lvl_code': None, 'lvl_name': None, 
+                    13: {'sch_code': None, 'sch_name': 'Abel Tasman College', 
+                    'res': {'c_m': 2, 'c_v': 5, 'c_t': 7, 'r_p_m': 1, 'r_p_v': 2, 'r_p_t': 3, 'r_f_m': 0, 'r_f_v': 0, 'r_f_t': 0, 'r_r_m': 1, 'r_r_v': 3, 'r_r_t': 4, 'r_n_m': 0, 'r_n_v': 0, 'r_n_t': 0, 'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0}}}}}
+    """
+
+# write_result_header_row
+    def write_result_header_row(sheet, row_index, formats):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' -----  write_result_header_row  -----')
+            logger.debug('field_captions: ' + str(field_captions))
+
+        format_value = formats['hdr_tableheader']
+        format_alignleft = formats['hdr_tableheader_alignleft']
+        format_value_bl = formats['hdr_tableheader_borderleft']
+
+# --- write_column_header and write_column_subheader
+        sheet.set_row(row_index, 26)
+        for col_index, field_caption in enumerate(field_captions):
+            # passed_m is stored in index 5 (has modulo 2), percentage passed_m in col_index 23 (has modulo 2)
+            # modulo operator >>> 5 % 3 = 2
+            header_merge = col_index % 3 == 2
+
+            if logging_on:
+                logger.debug('col_index: ' + str(col_index))
+                logger.debug('    header_merge: ' + str(header_merge))
+                logger.debug('    field_caption: ' + str(field_caption))
+                logger.debug('    format_value_bl: ' + str(format_value_bl))
+
+
+            if col_index <= 1:
+                sheet.write(row_index, col_index, field_caption, format_alignleft)
+                sheet.write(row_index + 1, col_index, '', format_alignleft)
+
+                sheet.write(row_index, col_index + 21, field_caption, format_alignleft)
+                sheet.write(row_index + 1, col_index + 21, '', format_alignleft)
+
+            elif 1 < col_index < 20:
+                col_index_perc = col_index + 18
+                if header_merge:
+                    sheet.merge_range(row_index, col_index, row_index, col_index + 2, field_caption, format_value_bl)
+                    if col_index > 4:
+                        sheet.merge_range(row_index, col_index_perc, row_index, col_index_perc + 2, field_caption, format_value_bl)
+
+                # modulo index % 3 is used to lookup caption, M = modulo 2, therefore M comes last in subheader_captions
+                # subheader_captions = [str(_('V')), 'T', 'M']
+                modulo = col_index % 3
+                subheader_caption = subheader_captions[modulo]
+                sheet.write(row_index + 1, col_index, subheader_caption, format_value_bl)
+                if col_index > 4:
+                    sheet.write(row_index + 1, col_index_perc, subheader_caption, format_value_bl)
+    # - end of write_result_header_row
+
+    def write_result_total_row(sheet, row_index, first_total_row_index, formats, mode, dep_lvl_code=None, sb_code = None, sch_name = None):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' -----  write_result_total_row  -----')
+            #logger.debug('formats: ' + str(formats))
+
+        if mode == 'grand':
+            format_key_value = 'hdr_grandtotal'
+            format_key_alignleft = 'hdr_grandtotal_alignleft'
+            format_key_perc = 'hdr_grandtotal_percentage'
+            format_key_value_bl = 'hdr_grandtotal_borderleft'
+            format_key_perc_bl = 'hdr_grandtotal_perc_borderleft'
+        elif mode == 'dep':
+            format_key_value = 'hdr_subtotal'
+            format_key_alignleft = 'hdr_subtotal_alignleft'
+            format_key_perc = 'hdr_subtotal_percentage'
+            format_key_value_bl = 'hdr_subtotal_borderleft'
+            format_key_perc_bl = 'hdr_subtotal_perc_borderleft'
+        elif mode == 'level':
+            format_key_value = 'hdr_subsubtotal'
+            format_key_alignleft = 'hdr_subsubtotal_alignleft'
+            format_key_perc = 'hdr_subsubtotal_percentage'
+            format_key_value_bl = 'hdr_subsubtotal_borderleft'
+            format_key_perc_bl = 'hdr_subsubtotal_perc_borderleft'
+        else:
+            format_key_value = 'row_value'
+            format_key_alignleft = 'row_value_alignleft'
+            format_key_perc = 'row_perc'
+            format_key_value_bl = 'row_value_borderleft'
+            format_key_perc_bl = 'row_perc_borderleft'
+
+        format_value = formats[format_key_value]
+        format_alignleft = formats[format_key_alignleft]
+        format_perc = formats[format_key_perc]
+        format_value_bl = formats[format_key_value_bl]
+        format_perc_bl = formats[format_key_perc_bl]
+
+        for i, field_name in enumerate(field_names):
+            code, name = None, None
+            if mode == 'school':
+                code = schoolbase_dict.get('sbase_code', '---')
+                name = schoolbase_dict.get('sch_name', '---')
+                write_value_cell(sheet, i, row_index, field_name, format_value, format_alignleft,
+                               format_value_bl)
+            else:
+                name = str(_('TOTAL'))
+                if dep_lvl_code:
+                    name += ' ' + dep_lvl_code.upper()
+                write_sum_cell(sheet, i, row_index, first_total_row_index, format_value, format_alignleft, format_value_bl, code, name)
+
+            write_percentage_cell(sheet, i, row_index, format_perc, format_alignleft, format_perc_bl, code, name)
+    # - end of write_result_total_row
+
+    def write_value_cell(sheet, col_index, row_index, field_name, format_value, format_alignleft, format_value_bl):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' -----  write_value_cell  -----')
+            logger.debug('col_index: ' + str(col_index))
+
+        if field_name == 'db_code':
+            sheet.write(row_index, col_index, dep_dict.get('depbase_code', '---'), format_alignleft)
+        elif field_name == 'lvl_code':
+            sheet.write(row_index, col_index, lvlbase_dict.get('lvlbase_code', '---'), format_alignleft)
+        elif field_name == 'sb_code':
+            sheet.write(row_index, col_index, schoolbase_dict.get('sbase_code', '---'), format_alignleft)
+        elif field_name == 'sch_name':
+            sheet.write(row_index, col_index, schoolbase_dict.get(field_name, '---'), format_alignleft)
+        else:
+            modulo = col_index % 3
+            frm_val = format_value_bl if modulo == 2 else format_value
+            value = sbase_result_dict.get(field_name)
+            value_int = 0
+            if value and isinstance(value, int):
+                value_int = value
+            sheet.write(row_index, col_index, value_int, frm_val)
+    # - end of write_value_cell
+
+    def write_sum_cell(sheet, col_index, row_index, first_total_row_index, format_value, format_alignleft, format_value_bl, code, name):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' -----  write_sum_cell  -----')
+            logger.debug('col_index: ' + str(col_index))
+
+        if col_index == 0:
+            code_str = code if code else ''
+            sheet.write(row_index, col_index, code_str, format_alignleft)
+        elif col_index == 1:
+            name_str = name if name else ''
+            sheet.write(row_index, col_index, name_str, format_alignleft)
+        else:
+            # passed_m is stored in index 5 (has modulo 2), percentage passed_m in col_index 23 (has modulo 2)
+            # modulo operator >>> 5 % 3 = 2
+            modulo = col_index % 3
+            frm_val = format_value_bl if modulo == 2 else format_value
+
+            upper_cell_ref = subj_view.xl_rowcol_to_cell(first_total_row_index, col_index)
+            lower_cell_ref = subj_view.xl_rowcol_to_cell(row_index - 1, col_index)
+            this_cell_ref = subj_view.xl_rowcol_to_cell(row_index, col_index)
+
+            formula = ''.join(('SUBTOTAL(9,', upper_cell_ref, ':', lower_cell_ref, ')'))
+            sheet.write_formula(this_cell_ref, formula, frm_val)
+    # - end of write_sum_cell
+
+    def write_percentage_cell(sheet, col_index, row_index, format_perc, format_alignleft, format_perc_bl, code = None, name = None):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' -----  write_value_percentage_cell  -----')
+
+        col_index_perc = col_index + 18
+
+        # number of M, V. T is stored in col_index 2, 3, 4
+        count_m_ref = subj_view.xl_rowcol_to_cell(row_index, 2)
+        count_v_ref = subj_view.xl_rowcol_to_cell(row_index, 3)
+        count_t_ref = subj_view.xl_rowcol_to_cell(row_index, 4)
+        sum_cell_ref = subj_view.xl_rowcol_to_cell(row_index, col_index)
+        if logging_on:
+            logger.debug('col_index: ' + str(col_index))
+            logger.debug('count_m_ref: ' + str(count_m_ref))
+            logger.debug('count_v_ref: ' + str(count_v_ref))
+            logger.debug('count_t_ref: ' + str(count_t_ref))
+            logger.debug('sum_cell_ref: ' + str(sum_cell_ref))
+
+        # passed_m is stored in index 5 (has modulo 2), percentage passed_m in col_index 23 (has modulo 2)
+        # modulo operator >>> 5 % 3 = 2
+        modulo = col_index % 3
+        frm_perc = format_perc_bl if modulo == 2 else format_perc
+
+        # put percentage in next set of columns
+        count_ref = count_m_ref if modulo == 2 else count_v_ref if modulo == 0 else count_t_ref
+        this_cell_ref = subj_view.xl_rowcol_to_cell(row_index, col_index_perc)
+
+        if col_index == 3:
+            code_str = code if code else ''
+            sheet.write(row_index, col_index_perc, code_str, format_alignleft)
+        elif col_index == 4:
+            name_str = name if name else ''
+            sheet.write(row_index, col_index_perc, name_str, format_alignleft)
+
+        elif 4 < col_index < 20:
+            # check for None and 0 values
+            # =IF(OR(ISBLANK($D39);$D39=0);0;G39/$D39)
+            formula = ''.join(('IF(OR(ISBLANK($', count_ref, '),$', count_ref, '=0),0,', sum_cell_ref, '/$', count_ref, ')'))
+            sheet.write_formula(this_cell_ref, formula, frm_perc)
+
+            if logging_on:
+                logger.debug('this_cell_ref: ' + str(this_cell_ref))
+                logger.debug('formula: ' + str(formula))
+    # - end of write_value_percentage_cell
+
+# --- set column width
+    for i, width in enumerate(field_width):
+        sheet.set_column(i, i, width)
+
+    row_index = 0
+
+# --- title row
+    title = ' '.join((str(_('Exam results')), str(sel_examyear.code)))
+    sheet.write(row_index, 1, title, formats['bold_format'])
+    row_index += 1
+
+    today_dte = af.get_today_dateobj()
+    today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
+    title = ''.join((str(_('Date')), ': ', today_formatted))
+    sheet.write(row_index, 1, title, formats['bold_format'])
+    row_index += 2
+
+
+# --- write_column_header and write_column_subheader
+    write_result_header_row(sheet, row_index, formats)
+    row_index += 2
+    grandtotal_first_row_index = row_index
+
+# +++++++++++++++++++++ loop through departent  ++++++++++++++++++++++++++++
+    for dep_dict in department_dictlist:
+        # fields are: depbase_id, depbase_code, dep_name, dep_level_req
+        """
+        dep_dict: {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}
+        """
+        depbase_pk = dep_dict.get('depbase_id')
+        dep_name = dep_dict.get('dep_name')
+        depbase_code = dep_dict.get('depbase_code')
+        level_req = dep_dict.get('dep_level_req', False)
+        if logging_on and False:
+            logger.debug('dep_dict: ' + str(dep_dict))
+
+# lookup dep in result_dict_per_school
+        if depbase_pk in result_dict_per_school:
+            depbase_result_dict = result_dict_per_school.get(depbase_pk)
+            if logging_on and False:
+                logger.debug('depbase_result_dict: ' + str(depbase_result_dict))
+            """
+            depbase_result_dict {'db_id': 1, 'db_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
+                4: {'lvlbase_id': 4, 'lvl_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+                    13: {'sch_code': None, 'sch_name': 'Abel Tasman College', 
+                        'res': {'c_m': 4, 'c_v': 6, 'c_t': 10, 'r_p_m': 2, 'r_p_v': 6, 'r_p_t': 8, 'r_f_m': 0, 'r_f_v': 0, 'r_f_t': 0, 'r_r_m': 1, 'r_r_v': 0, 'r_r_t': 1, 'r_n_m': 1, 'r_n_v': 0, 'r_n_t': 1, 'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0}}}}, 
+            """
+            logger.debug('depbase_pk in result_dict_per_school row_index: ' + str(row_index))
+    # ---  department title row
+            row_index += 2
+            sheet.merge_range(row_index, 0, row_index, 19, dep_name, formats['hdr_subtotal'])
+            sheet.merge_range(row_index, 21, row_index, 37, dep_name, formats['hdr_subtotal'])
+
+            logger.debug('department title row: ' + str(row_index))
+
+    # ---  departent column header row
+            depbase_first_row_index = row_index
+            logger.debug('depbase_first_row_index: ' + str(row_index))
+
+    # ++++++++++++ loop through levels  ++++++++++++++++++++++++++++
+            for lvlbase_dict in lvlbase_dictlist:
+                # fields are lvlbase_id, lvlbase_code, lvl_name",
+                """
+                lvlbase_dict: {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}
+                lvlbase_dict: {'lvlbase_id': 0, 'lvlbase_code': '', 'lvl_name': ''}
+
+                """
+                if logging_on and False:
+                    logger.debug('lvlbase_dict: ' + str(lvlbase_dict))
+
+                lvlbase_pk = lvlbase_dict.get('lvlbase_id') or 0
+                lvl_name = lvlbase_dict.get('lvl_name') or str(_('Learning path is not entered'))
+                lvlbase_code = lvlbase_dict.get('lvlbase_code')  or '---'
+
+     # lookup level in depbase_result_dict
+                if lvlbase_pk in depbase_result_dict:
+                    lvlbase_result_dict = depbase_result_dict.get(lvlbase_pk)
+
+                    if logging_on and False:
+                        logger.debug('lvlbase_result_dict: ' + str(lvlbase_result_dict))
+                    """
+                    lvlbase_result_dict {
+                        'lvlbase_id': 4, 'lvl_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+                        13: {'sb_id': 13,'sch_code': None, 'sch_name': 'Abel Tasman College', 
+                                'res': {'c_m': 4, 'c_v': 6, 'c_t': 10, 'r_p_m': 2, 'r_p_v': 6, 'r_p_t': 8, 'r_f_m': 0, 'r_f_v': 0, 'r_f_t': 0, 'r_r_m': 1, 'r_r_v': 0, 'r_r_t': 1, 'r_n_m': 1, 'r_n_v': 0, 'r_n_t': 1, 'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0}}}}, 
+                    """
+
+        # ---  level title row
+                    # skip when Havo / Vwo
+                    if level_req:
+                        row_index += 2
+                        sheet.merge_range(row_index, 0, row_index, 19, lvl_name, formats['hdr_subsubtotal'])
+                        sheet.merge_range(row_index, 21, row_index, 37, lvl_name, formats['hdr_subsubtotal'])
+
+                    logger.debug('level title row: ' + str(row_index))
+        # ---  level column header row
+                       # row_index += 1
+                        #for i in range(0, col_count):
+                        #    sheet.write(row_index, i, field_captions[i], col_header_formats[i])
+
+        # ---  level total row  > moved to the end
+                        #row_index += 1
+
+                    lvlbase_first_row_index = row_index
+
+    # ++++++++++++ loop through schools  ++++++++++++++++++++++++++++
+                    for schoolbase_dict in schoolbase_dictlist:
+                        if logging_on and False:
+                            logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
+                        """
+                        schoolbase_dict: {'sbase_id': 13, 'sbase_code': 'CUR13', 'sch_article': 'het', 'sch_name': 'Abel Tasman College', 'sch_abbrev': 'ATC', 'defaultrole': 8}
+                        """
+                        schoolbase_pk = schoolbase_dict.get('sbase_id')
+                        if schoolbase_pk in lvlbase_result_dict:
+                            # PR2022-06-17 defaultrole = school is filtered out in create_results_per_school_rows
+                            # was: defaultrole = schoolbase_dict.get('defaultrole', 0)
+                            row_index += 1
+
+                            sbase_result_dict = lvlbase_result_dict.get(schoolbase_pk)
+                            if lvlbase_first_row_index is None:
+                                lvlbase_first_row_index = row_index
+
+                            if logging_on and False:
+                                logger.debug('sbase_result_dict: ' + str(sbase_result_dict))
+                            sb_code = schoolbase_dict.get('sbase_code', '---')
+                            sch_name = schoolbase_dict.get('sch_name', '---')
+                            write_result_total_row(sheet, row_index, 0, formats, 'school',
+                                                       None, sb_code, sch_name)
+
+    # ++++++++++++ end of loop through schools  ++++++++++++++++++++++++++++
+                    if level_req:
+                        # add 1 extra row t subtotal range, to prevent leaving out last row in calculation when manually added extra rows
+                        if lvlbase_first_row_index:
+                            row_index += 1
+                            logger.debug('end of loop through schools: ' + str(row_index))
+                            write_result_total_row(sheet, row_index, lvlbase_first_row_index, formats, 'level', lvlbase_code)
+                            logger.debug('write_result_total_row: ' + str(row_index))
+
+# --- write departent total row
+            if depbase_first_row_index:
+                row_index += 2 if level_req else 1
+                logger.debug('write departent total row: ' + str(row_index))
+                write_result_total_row(sheet, row_index, depbase_first_row_index, formats, 'dep', depbase_code)
+                logger.debug('write_result_total_row: ' + str(row_index))
+
+# --- write grand total row
+    row_index += 2
+    write_result_total_row(sheet, row_index, grandtotal_first_row_index, formats, 'grand', None)
+
+# - end of write_resultlist_details
+
 
 
 ###################################################

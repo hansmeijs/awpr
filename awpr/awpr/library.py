@@ -252,13 +252,27 @@ def update_library(examyear, request):
         ('gradelist', 'chairperson', 'voorzitter'),
         ('gradelist', 'secretary', 'secretaris'),
 
-        ('diploma', 'born', 'geboren'),
-        ('diploma', 'born_at', 'at'),
+        ('diploma', 'born', 'geboren op'),
+        ('diploma', 'born_at', 'te'),
         ('diploma', 'attended', 'met gunstig gevolg heeft deelgenomen aan het eindexamen'),
-        ('diploma', 'conform_sector', 'conform de sector'),
+        ('diploma', 'attended_lex', 'met gunstig gevolg heeft deelgenomen aan het landsexamen'),
+        ('diploma', 'conform', 'conform'),
+        ('diploma', 'conform_sector', 'de sector'),
+        ('diploma', 'conform_profiel', 'het profiel'),
         ('diploma', 'at_school', 'aan'),
         ('diploma', 'at_country', 'te'),
-        ('diploma', 'article', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de Landsverordening voortgezet onderwijs van de 21ste mei 2008, P.B. no. 33, (P.B. 1979, no 29), zoals gewijzigd.'),
+
+        # standard
+        ('diploma', 'dpl_article_01', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de'),
+        ('diploma', 'dpl_article_02', 'Landsverordening voortgezet onderwijs van de 21ste mei 2008, P.B. no. 33, (P.B. 1979, no 29), zoals gewijzigd.'),
+
+# heeft deelgenomen aan het eindexamen text for Curacao
+        # text 2022 curacao
+        ('diploma', 'dpl_article01_cur', 'welk examen werd afgenomen volgens de voorschriften gegeven bij en krachtens artikel 32 van de '),
+        ('diploma', 'dpl_article02_cur', 'Landsverordening voortgezet onderwijs van de 21ste mei 2008, P.B. no. 33, (P.B. 1979, no 29),'),
+
+        ('diploma', 'dpl_article03_cur', 'zoals gewijzigd en de Tijdelijke regeling afwijking centrale examens v.w.o., h.a.v.o., v.s.b.o.'),
+        ('diploma', 'dpl_article04_cur', 'voor het schooljaar 2021-2022 P.B. 2022, no. 53 d.d. 10 juni 2022.'),
 
         ('diploma', 'place', 'Plaats:'),
         ('diploma', 'date', 'Datum:'),

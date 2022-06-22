@@ -234,18 +234,187 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
 # --- end of create_student_rows
 
 
+def create_check_birthcountry_rows(sel_examyear, sel_schoolbase, sel_depbase):
+    # --- check_birthcountry rows of all students of this examyear / school PR2022-06-20
+    # - show only students that are not tobedeleted
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_check_birthcountry_rows -----')
+
+    log_list = []
+    msg_html = None
+    birthcountry_regex = '%maarten%' if sel_examyear.country.abbrev == 'Sxm' else 'cura%'
+    country = 'Sint Maarten' if sel_examyear.country.abbrev == 'Sxm' else 'Curaçao'
+
+    if logging_on:
+        logger.debug('birthcountry_regex: ' + str(birthcountry_regex))
+
+    if sel_examyear and sel_schoolbase and sel_depbase:
+        try:
+            if logging_on:
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                logger.debug('sel_depbase: ' + str(sel_depbase))
+
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk, 'regex': birthcountry_regex}
+            sql_list = ["SELECT st.lastname, st.firstname, st.prefix,",
+                "st.birthcountry, COALESCE(st.birthcity, '-') AS birthcity, st.birthdate",
+                "FROM students_student AS st",
+                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
+
+                "WHERE sch.base_id = %(sb_id)s::INT",
+                "AND sch.examyear_id = %(ey_id)s::INT",
+                "AND dep.base_id = %(db_id)s::INT",
+
+                "AND st.birthdate < '2010-10-10'::DATE",
+                # PR2022-06-21 debug: got error 'argument formats can't be mixed' when using: " ILIKE '" + birthcountry_regex + "'"
+                # solved biij changing to  %(regex)s::TEXT, without apostroph
+                # see https://www.psycopg.org/docs/usage.html#passing-parameters-to-sql-queries
+                "AND TRIM(st.birthcountry) ILIKE %(regex)s::TEXT", # ILIKE is case insensitive
+                #"AND (POSITION('" + birthcountry + "' IN LOWER(st.birthcountry)) > 0)",
+                "AND NOT st.tobedeleted",
+                "ORDER BY st.lastname, st.firstname"]
+            sql = ' '.join(sql_list)
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+
+            count_wrong_birthcountry = 0
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = cursor.fetchall()
+                if rows:
+                    count_wrong_birthcountry = len(rows)
+
+            if count_wrong_birthcountry:
+                count_str = str(_("There is 1 candidate") if count_wrong_birthcountry == 1 else _("There are %(count)s candidates") % {'count': str(count_wrong_birthcountry)})
+                is_are_str = str(_('is') if count_wrong_birthcountry == 1 else _('are'))
+                this_these_str = str(_("This candidate").lower() if count_wrong_birthcountry == 1 else _('these candidates'))
+                msg_html = '<br>'.join(("<p class='p-2 border_bg_warning'>" + count_str + \
+                                        str(_(" with country of birth: '%(cpt)s', who %(is_are)s born before October 10, 2010.") % {'cpt': country, 'is_are': is_are_str}),
+                    str(_("This is not correct, because before that date, the country was 'Nederlandse Antillen', not '%(cpt)s'.") % {'cpt': country}),
+                    str(_("Click 'OK' to change the country of birth of %(this_these)s to 'Nederlandse Antillen' and the place of birth to '%(cpt)s' ") % {'this_these': this_these_str, 'cpt': country}),
+                    str(_("The list of candidates, whose country of birth will be changed, has been downloaded.")) + '</p>'
+                ))
+                log_list.append(str(_("List of candidates, whose country of birth will be changed to 'Nederlandse Antillen'")))
+                log_list.append(' ')
+                log_list.append(' '.join((
+                    (str(_('Candidate')).upper() + c.STRING_SPACE_30)[:30],
+                    (str(_('Country of birth')).upper() + c.STRING_SPACE_20)[:20],
+                    (str(_('Place of birth')).upper() + c.STRING_SPACE_20)[:20],
+                    str(_('Birthdate')).upper()
+                )))
+                for row in rows:
+                    lastname_firstname_initial = stud_fnc.get_lastname_firstname_initials(row[0], row[1], row[2])
+                    log_list.append(' '.join((
+                        (lastname_firstname_initial + c.STRING_SPACE_30)[:30],
+                        (row[3] + c.STRING_SPACE_20)[:20],
+                        (row[4] + c.STRING_SPACE_20)[:20],
+                        str(row[5])
+                    )))
+            if logging_on:
+                logger.debug('log_list: ' + str(log_list))
+                # logger.debug('connection.queries: ' + str(connection.queries))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return log_list, msg_html
+# --- end of create_student_rows
+
+
+def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
+    # --- change birthcountry in all students of this examyear / school PR2022-06-20
+    # - show only students that are not tobedeleted
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- change_birthcountry -----')
+
+    msg_dict = {}
+
+    birthcountry_regex = '%maarten%' if sel_examyear.country.abbrev == 'Sxm' else 'cura%'
+    country = 'Sint Maarten' if sel_examyear.country.abbrev == 'Sxm' else 'Curaçao'
+
+    modifiedby_pk_str = str(request.user.pk)
+    modifiedat_str = str(timezone.now())
+
+    if logging_on:
+        logger.debug('birthcountry_regex: ' + str(birthcountry_regex))
+
+    if sel_examyear and sel_schoolbase and sel_depbase:
+        try:
+            if logging_on:
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                logger.debug('sel_depbase: ' + str(sel_depbase))
+
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk, 'regex': birthcountry_regex}
+
+    # - select students with country 'Sint Maarten' or 'Curacao'
+            sub_sql_list = ["SELECT st.id AS stud_id",
+                            "FROM students_student AS st",
+                            "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                            "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
+
+                            "WHERE sch.base_id = %(sb_id)s::INT",
+                            "AND sch.examyear_id = %(ey_id)s::INT",
+                            "AND dep.base_id = %(db_id)s::INT",
+
+                            "AND st.birthdate < '2010-10-10'::DATE",
+                            "AND TRIM(st.birthcountry) ILIKE %(regex)s::TEXT",  # ILIKE is case insensitive
+
+                            "AND NOT st.tobedeleted"]
+            sub_sql = ' '.join(sub_sql_list)
+     # - update birthcountry and birthcity in student
+            sql_list = [
+                "WITH sub_sql AS (", sub_sql, ")",
+                "UPDATE students_student AS stud",
+                "SET birthcountry = 'Nederlandse Antillen', birthcity = '" + country + "',",
+                "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "'",
+
+                "FROM sub_sql",
+                "WHERE stud.id = sub_sql.stud_id",
+                "RETURNING stud.id"
+            ]
+
+            sql = ' '.join(sql_list)
+            if logging_on:
+                logger.debug('sql: ' + str(sql))
+            record_count = 0
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = cursor.fetchall()
+                if rows:
+                    updated_count = len(rows)
+                # logger.debug('connection.queries: ' + str(connection.queries))
+            if logging_on:
+                logger.debug('rows: ' + str(rows))
+
+            count_str = str(_("1 candidate") if updated_count == 1 else _("%(count)s candidates") % {'count': updated_count})
+
+            class_str = 'border_bg_valid' if updated_count else 'border_bg_invalid'
+            msg_html = str(_("The birth country of %(cnt)s have been changed to 'Nederlandse Antillen'.") % {'cnt': count_str})
+            msg_dict = {'class': class_str, 'msg_html': msg_html}
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return msg_dict
+
+
+# --- end of change_birthcountry
+
 #/////////////////////////////////////////////////////////////////
-def create_results_per_school_rows(request, sel_examyear, sel_schoolbase,
-                                   group_by_level=False, group_by_school=False):
+def create_results_per_school_rowsOLD(request, sel_examyear, sel_schoolbase):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
     # - show only students that are not tobedeleted
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_results_per_school_rows -----')
+        logger.debug(' ----- create_results_per_school_rowsOLD -----')
 
-    student_rows = []
+    result_dict = {}
+    result_rows = []
     error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
-
 
     if sel_examyear:
         try:
@@ -253,55 +422,44 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase,
             if logging_on:
                 logger.debug('sel_examyear: ' + str(sel_examyear))
                 logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
-                logger.debug('sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
 
             sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk}
             if logging_on:
                 logger.debug('sql_keys: ' + str(sql_keys))
 
-# - add fields, group by and order by level
-            level_fields = "lvlbase.code AS lvl_code," if group_by_level else ''
-            level_groupby = ", lvl.sequence, lvlbase.code" if group_by_level else ''
-            level_orderby = ", lvl.sequence" if group_by_level else ''
+            sql_list = ["SELECT db.id AS db_id, db.code AS db_code, dep.name AS dep_name,",
+                "lvlbase.id AS lvlbase_id, lvl.name AS lvl_name, lvlbase.code AS lvl_code,",
+                "sb.id as sb_id, sch.name as sch_name, sb.code as sb_code,",
 
-# - add fields, group by and order by level
-            school_fields = "sch.name as sch_name, sb.code as sb_code," if group_by_school else ''
-            school_groupby = ", sb.code, sch.name" if group_by_school else ''
-            school_orderby = ", sb.code" if group_by_school else ''
-
-            sql_list = ["SELECT db.code AS db_code, ",
-                level_fields,
-                school_fields,
-
-                "SUM((st.gender = 'M')::INT) AS count_m,",
-                "SUM((st.gender = 'V')::INT) AS count_v,",
-                "SUM(1) AS count_t,",
+                "SUM((LOWER(st.gender) = 'm')::INT) AS c_m,",
+                "SUM((LOWER(st.gender) = 'v')::INT) AS c_v,",
+                "SUM(1) AS c_t,",
 
 # +++++++++++  final results
             # passed
-                    "SUM(((st.result = 1) AND (st.gender = 'M'))::INT) AS res_pass_m,",
-                    "SUM(((st.result = 1) AND (st.gender = 'V'))::INT) AS res_pass_v,",
-                    "SUM(((st.result = 1))::INT) AS res_pass_t,",
+                    "SUM(((st.result = 1) AND (LOWER(st.gender) = 'm'))::INT) AS r_p_m,",
+                    "SUM(((st.result = 1) AND (LOWER(st.gender) = 'v'))::INT) AS r_p_v,",
+                    "SUM(((st.result = 1))::INT) AS r_p_t,",
 
-            # - failed
-                    "SUM(((st.result = 2) AND (st.gender = 'M'))::INT) AS res_fail_m,",
-                    "SUM(((st.result = 2) AND (st.gender = 'V'))::INT) AS res_fail_v,",
-                    "SUM(((st.result = 2))::INT) AS res_fail_t,",
+            # - failed - no reex
+                    "SUM(((st.result = 2) AND (st.reex_count = 0) AND (LOWER(st.gender) = 'm'))::INT) AS r_f_m,",
+                    "SUM(((st.result = 2) AND (st.reex_count = 0) AND (LOWER(st.gender) = 'v'))::INT) AS r_f_v,",
+                    "SUM(((st.result = 2) AND (st.reex_count = 0) )::INT) AS r_f_t,",
 
             # re-examination = (failed - with reex) + (no_result - with reex)
-                    "SUM(((st.result = 0) AND (st.reex_count > 0) AND (st.gender = 'M'))::INT) AS res_reex_m,",
-                    "SUM(((st.result = 0) AND (st.reex_count > 0) AND (st.gender = 'V'))::INT) AS res_reex_v,",
-                    "SUM(((st.result = 0) AND (st.reex_count > 0))::INT) AS res_reex_t,",
+                    "SUM(((st.result = 0 OR st.result = 2) AND (st.reex_count > 0) AND (LOWER(st.gender) = 'm'))::INT) AS r_r_m,",
+                    "SUM(((st.result = 0 OR st.result = 2) AND (st.reex_count > 0) AND (LOWER(st.gender) = 'v'))::INT) AS r_r_v,",
+                    "SUM(((st.result = 0 OR st.result = 2) AND (st.reex_count > 0))::INT) AS r_r_t,",
 
-            # - no result
-                    "SUM(((st.result = 0) AND (st.reex_count = 0) AND (st.gender = 'M'))::INT) AS res_nores_m,",
-                    "SUM(((st.result = 0) AND (st.reex_count = 0) AND (st.gender = 'V'))::INT) AS res_nores_v,",
-                    "SUM(((st.result = 0) AND (st.reex_count = 0))::INT) AS res_nores_t,",
+            # - no result - no reex
+                    "SUM(((st.result = 0) AND (st.reex_count = 0) AND (LOWER(st.gender) = 'm'))::INT) AS r_n_m,",
+                    "SUM(((st.result = 0) AND (st.reex_count = 0) AND (LOWER(st.gender) = 'v'))::INT) AS r_n_v,",
+                    "SUM(((st.result = 0) AND (st.reex_count = 0))::INT) AS r_n_t,",
 
             # - withdrawn
-                    "SUM(((st.result = 4) AND (st.gender = 'M'))::INT) AS res_wdr_m,",
-                    "SUM(((st.result = 4) AND (st.gender = 'V'))::INT) AS res_wdr_v,",
-                    "SUM(((st.result = 4))::INT) AS res_wdr_t",
+                    "SUM(((st.result = 4) AND (LOWER(st.gender) = 'm'))::INT) AS r_w_m,",
+                    "SUM(((st.result = 4) AND (LOWER(st.gender) = 'v'))::INT) AS r_w_v,",
+                    "SUM(((st.result = 4))::INT) AS r_w_t",
 
                 "FROM students_student AS st",
                 "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
@@ -314,6 +472,8 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase,
                 #"INNER JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
                 #"INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
                 "WHERE sch.examyear_id = %(ey_id)s::INT",
+                "AND sb.defaultrole = ", str(c.ROLE_008_SCHOOL),
+                "AND NOT st.partial_exam",
                 "AND NOT st.tobedeleted"]
 
             if request.user.is_role_school:
@@ -321,23 +481,16 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase,
                 sql_list.append('AND sb.id = %(sb_id)s::INT')
 
             # order by id necessary to make sure that lookup function on client gets the right row
-            sql_list.append(''.join(["GROUP BY dep.sequence, db.code",
-                            level_groupby,
-                            school_groupby]))
+            sql_list.append(''.join(["GROUP BY db.id, db.code, dep.name, dep.sequence,",
+                                     " lvlbase.id, lvl.name, lvl.sequence, lvlbase.code, sb.id, sb.code, sch.name"]))
 
-            sql_list.append(''.join(["ORDER BY dep.sequence",
-                            level_orderby,
-                            school_orderby]))
+            sql_list.append(''.join(["ORDER BY dep.sequence, lvl.sequence, sb.code"]))
 
             sql = ' '.join(sql_list)
 
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
-                student_rows = af.dictfetchall(cursor)
-
-            if logging_on:
-                logger.debug('student_rows: ' + str(student_rows))
-                #logger.debug('connection.queries: ' + str(connection.queries))
+                result_rows = af.dictfetchall(cursor)
 
         except Exception as e:
             # - return msg_err when instance not created
@@ -350,9 +503,173 @@ def create_results_per_school_rows(request, sel_examyear, sel_schoolbase,
             ))
             error_dict = {'class': 'border_bg_invalid', 'msg_html': msg_html}
 
-    return student_rows, error_dict
-# --- end of create_student_rows
+    return result_rows, error_dict
+# --- end of create_results_per_school_rowsOLD
 
+
+#/////////////////////////////////////////////////////////////////
+def create_results_per_school_rows(request, sel_examyear, sel_schoolbase):
+    # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
+    # - show only students that are not tobedeleted
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_results_per_school_rows -----')
+
+    result_dict = {}
+    result_rows = []
+    error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
+
+    if sel_examyear:
+        try:
+
+            if logging_on:
+                logger.debug('sel_examyear: ' + str(sel_examyear))
+                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+
+            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk}
+            if logging_on:
+                logger.debug('sql_keys: ' + str(sql_keys))
+
+            subsql_list = ["SELECT st.id AS stud_id,",
+                           "(LOWER(st.gender) = 'm')::INT AS m,",
+                           "(LOWER(st.gender) = 'v')::INT AS v,",
+        # partal exam and tobedeleted are filtered out
+        # return withdrawn if result is withdrawn
+                "CASE WHEN result = 4 THEN 4 ELSE",
+        # return passed if any result is passed, also when reex_count > 0
+                    "CASE WHEN st.ep01_result = 1 OR ep02_result = 1 OR result = 1 THEN 1 ELSE",
+        # return failed if result is failed
+                        "CASE WHEN (result = 2) THEN 2 ELSE",
+        # return reex if reex_count > 0
+        # return noo result if no reex
+                            "CASE WHEN st.reex_count > 0 OR st.reex03_count > 0 THEN 3 ELSE 0 END",
+                        "END",
+                    "END",
+                "END AS resultcalc",
+                "FROM students_student AS st",
+                "WHERE NOT st.partial_exam",
+                "AND NOT st.tobedeleted"]
+            sub_sql = ' '.join(subsql_list)
+
+            sql_list = ["WITH subsql AS (" + sub_sql + ")",
+                "SELECT db.id AS db_id, db.code AS db_code, dep.name AS dep_name,",
+                        "lvlbase.id AS lvlbase_id, lvlbase.code AS lvl_code, lvl.name AS lvl_name,",
+                        "sb.id AS sb_id, sch.name as sch_name, sb.code as sb_code,",
+
+                "SUM(subsql.m) AS c_m,",
+                "SUM(subsql.v) AS c_v,",
+                "COUNT(*) AS c_t,",
+
+                "SUM((subsql.resultcalc = 1 AND subsql.m = 1)::INT) AS r_p_m,",
+                "SUM((subsql.resultcalc = 1 AND subsql.v = 1)::INT) AS r_p_v,",
+                "SUM((subsql.resultcalc = 1)::INT) AS r_p_t,",
+
+                "SUM((subsql.resultcalc = 2 AND subsql.m = 1)::INT) AS r_f_m,",
+                "SUM((subsql.resultcalc = 2 AND subsql.v = 1)::INT) AS r_f_v,",
+                "SUM((subsql.resultcalc = 2)::INT) AS r_f_t,",
+
+                "SUM((subsql.resultcalc = 3 AND subsql.m = 1)::INT) AS r_r_m,",
+                "SUM((subsql.resultcalc = 3 AND subsql.v = 1)::INT) AS r_r_v,",
+                "SUM((subsql.resultcalc = 3)::INT) AS r_r_t,",
+
+                "SUM((subsql.resultcalc = 4 AND subsql.m = 1)::INT) AS r_w_m,",
+                "SUM((subsql.resultcalc = 4 AND subsql.v = 1)::INT) AS r_w_v,",
+                "SUM((subsql.resultcalc = 4)::INT) AS r_w_t,",
+
+                "SUM((subsql.resultcalc = 0 AND subsql.m = 1)::INT) AS r_n_m,",
+                "SUM((subsql.resultcalc = 0 AND subsql.v = 1)::INT) AS r_n_v,",
+                "SUM((subsql.resultcalc = 0)::INT) AS r_n_t",
+
+                "FROM students_student AS st",
+                "INNER JOIN subsql ON (subsql.stud_id = st.id)",
+
+                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+                "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
+                "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+
+                "WHERE sch.examyear_id = %(ey_id)s::INT"]
+
+            if request.user.is_role_school:
+                sql_keys['sb_id'] = sel_schoolbase.pk if sel_schoolbase else None
+                sql_list.append('AND sb.id = %(sb_id)s::INT')
+
+            sql_list.append("GROUP BY db.id, dep.sequence, db.code, dep.name, lvlbase.id, lvl.sequence, lvlbase.code, lvl.name, sb.id, sb.code, sch.name")
+            sql_list.append("ORDER BY dep.sequence, lvl.sequence, sb.code")
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                result_rows = af.dictfetchall(cursor)
+
+                if logging_on:
+                    for row in result_rows:
+                        logger.debug('row: ' + str(row))
+
+        except Exception as e:
+            # - return msg_err when instance not created
+            #  msg format: [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred." }]
+            logger.error(getattr(e, 'message', str(e)))
+            # &emsp; add 4 'hard' spaces
+            msg_html = '<br>'.join((str(_('An error occurred')) + ':','&emsp;<i>' + str(e) + '</i>'))
+            error_dict = {'class': 'border_bg_invalid', 'msg_html': msg_html}
+
+    return result_rows, error_dict
+# --- end of create_results_per_school_rows
+
+
+def create_result_dict_per_school(request, sel_examyear, sel_schoolbase):
+    # --- create rows of all students of this examyear / school PR2022-06-17
+    # - show only students that are not tobedeleted
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_result_dict_per_school -----')
+
+    result_dict = {}
+
+    result_rows, error_dict = create_results_per_school_rows(request, sel_examyear, sel_schoolbase)
+
+    if result_rows:
+        for row in result_rows:
+            db_id = row.get('db_id') or 0
+            lvlbase_id = row.get('lvlbase_id') or 0
+            sb_id = row.get('sb_id') or 0
+
+            if db_id not in result_dict:
+                result_dict[db_id] = {'db_id': db_id, 'db_code': row.get('db_code'),
+                                      'dep_name': row.get('dep_name')}
+            db_dict = result_dict[db_id]
+
+            if lvlbase_id not in db_dict:
+                db_dict[lvlbase_id] = {'lvlbase_id': lvlbase_id, 'lvl_code': row.get('lvl_code'),
+                                   'lvl_name': row.get('lvl_name')}
+            lvl_dict = db_dict[lvlbase_id]
+
+            if sb_id not in lvl_dict:
+                lvl_dict[sb_id] = row
+
+    if logging_on:
+        logger.debug('result_dict: ' + str(result_dict))
+
+    """
+    result_dict: 
+        {1: {'db_id': 1, 'db_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
+            4: {'lvlbase_id': 4, 'lvl_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+                13: {'db_id': 1, 'db_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'lvlbase_id': 4, 'lvl_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'sb_id': 13, 'sch_name': 'Abel Tasman College', 'sb_code': 'CUR13', 'c_m': 4, 'c_v': 6, 'c_t': 10, 'r_p_m': 3, 'r_p_v': 6, 'r_p_t': 9, 'r_f_m': 0, 'r_f_v': 0, 'r_f_t': 0, 'r_r_m': 0, 'r_r_v': 0, 'r_r_t': 0, 'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0, 'r_n_m': 1, 'r_n_v': 0, 'r_n_t': 1}}}, 
+        2: {'db_id': 2, 'db_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 
+            0: {'lvlbase_id': 0, 'lvl_code': None, 'lvl_name': None, 
+                13: {'db_id': 2, 'db_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 'lvlbase_id': None, 'lvl_code': None, 'lvl_name': None, 'sb_id': 13, 'sch_name': 'Abel Tasman College', 'sb_code': 'CUR13', 'c_m': 12, 'c_v': 9, 'c_t': 21, 'r_p_m': 7, 'r_p_v': 6, 'r_p_t': 13, 'r_f_m': 0, 'r_f_v': 2, 'r_f_t': 2, 'r_r_m': 5, 'r_r_v': 1, 'r_r_t': 6, 'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0, 'r_n_m': 0, 'r_n_v': 0, 'r_n_t': 0}}}, 
+        3: {'db_id': 3, 'db_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 
+            0: {'lvlbase_id': 0, 'lvl_code': None, 'lvl_name': None, 
+                13: {'db_id': 3, 'db_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'lvlbase_id': None, 'lvl_code': None, 'lvl_name': None, 'sb_id': 13, 'sch_name': 'Abel Tasman College', 'sb_code': 'CUR13', 'c_m': 2, 'c_v': 5, 'c_t': 7, 'r_p_m': 1, 'r_p_v': 3, 'r_p_t': 4, 'r_f_m': 0, 'r_f_v': 0, 'r_f_t': 0, 'r_r_m': 1, 'r_r_v': 2, 'r_r_t': 3, 'r_w_m': 0, 'r_w_v': 0, 'r_w_t': 0, 'r_n_m': 0, 'r_n_v': 0, 'r_n_t': 0}}}}
+    """
+
+    return result_dict, error_dict
+# --- end of create_result_dict_per_school
 
 
 #/////////////////////////////////////////////////////////////////
@@ -977,6 +1294,66 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of StudentUploadView
+
+
+@method_decorator([login_required], name='dispatch')
+class ChangeBirthcountryView(View):  # PR2022-06-20
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ChangeBirthcountryView ============= ')
+
+        update_wrap = {}
+        messages = []
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+
+# - get permit
+            page_name = 'page_result' if mode == 'withdrawn' else 'page_student'
+            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+
+            if has_permit:
+
+# - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+# ----- get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(
+                        request=request,
+                        skip_check_activated=True
+                    )
+
+                if logging_on:
+                    logger.debug('sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('sel_school:     ' + str(sel_school))
+                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('may_edit:       ' + str(may_edit))
+                    logger.debug('sel_msg_list:       ' + str(sel_msg_list))
+
+                if len(sel_msg_list):
+                    msg_html = '<br>'.join(sel_msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                else:
+                    msg_dict = change_birthcountry(sel_examyear, sel_school.base, sel_department.base, request)
+                    if msg_dict:
+                        messages.append(msg_dict)
+
+# - addd messages to update_wrap
+        if len(messages):
+            update_wrap['messages'] = messages
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of StudentUploadView
+# - end of ChangeBirthcountryView
 
 
 @method_decorator([login_required], name='dispatch')
@@ -4498,8 +4875,8 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                             recalc_regnumber = True
 
                 elif field in ('idnumber', 'examnumber'):
-                    has_error = False
-                    caption = ''
+                    err_txt = None
+                    class_txt = None
 
                     if isinstance(new_value, int):
                         new_value = str(new_value)
@@ -4507,49 +4884,63 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if new_value:
                         if field == 'idnumber':
                             caption = _('ID-number')
-                # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
-                            if not idnumber_list:
-                                idnumber_list = stud_val.get_idnumberlist_from_database(instance.school)
-                # check if new_value already exists in idnumber_list, but skip idnumber of this instance
-                            if idnumber_list:
-                                for row in idnumber_list:
-                                    # row is a tuple with (id, idnumber)
-                                    if row[1] == new_value:
-                                        # unsaved instance has id = None
-                                        skip_own_idnumber = False
-                                        saved_id = getattr(instance, 'id')
-                                        if saved_id:
-                                            if saved_id and row[0] == saved_id:
-                                                skip_own_idnumber = True
-                                        if not skip_own_idnumber:
-                                            has_error = True
-                                            field_error = True
-                                        break
 
-                            if not has_error:
-                                # add new_value to idnumber_list if it doesn't exist yet
+                # remove dots, check if idnumber is correct
+                            idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
+                            if msg_err:
+                                err_txt = msg_err
+                                class_txt = "border_bg_invalid"
+                            else:
+                # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
+                                if not idnumber_list:
+                                    idnumber_list = stud_val.get_idnumberlist_from_database(instance.school)
+                # check if new_value already exists in idnumber_list, but skip idnumber of this instance
+                                if idnumber_list:
+                                    for row in idnumber_list:
+                                        # row is a tuple with (id, idnumber)
+                                        if row[1] == new_value:
+                                            # unsaved instance has id = None
+                                            skip_own_idnumber = False
+                                            saved_id = getattr(instance, 'id')
+                                            if saved_id:
+                                                if saved_id and row[0] == saved_id:
+                                                    skip_own_idnumber = True
+                                            if not skip_own_idnumber:
+                                                err_txt = _("%(cpt)s '%(val)s' already exists.") \
+                                                          % {'cpt': str(caption), 'val': new_value}
+                                                class_txt = "border_bg_warning"
+                                            break
+
+                            if not err_txt:
+                # replace new_value by idnumber_nodots_stripped_lower
+                                new_value = idnumber_nodots_stripped_lower
+
+                # add new_value to idnumber_list if it doesn't exist yet
                                 idnumber_list.append(new_value)
 
                         elif field == 'examnumber':
                             caption = _('Exam number')
                 # when uploading students: examnumber_list is filled, unless there were no examnumbers
                             if examnumber_list and new_value in examnumber_list:
-                                has_error = True
+                                err_txt = _("%(cpt)s '%(val)s' already exists.") \
+                                          % {'cpt': str(caption), 'val': new_value}
+                                class_txt = "border_bg_warning"
                             else:
                 # when updating single student, examnumber_list is not filled. Use validate_examnumber_exists instead
-                                has_error = stud_val.validate_examnumber_exists(instance, new_value)
-
+                                has_err = stud_val.validate_examnumber_exists(instance, new_value)
+                                if has_err:
+                                    err_txt = _("%(cpt)s '%(val)s' already exists.") \
+                                              % {'cpt': str(caption), 'val': new_value}
+                                    class_txt = "border_bg_warning"
                 # add new_value to examnumber_list if it doesn't exist yet
-                            if not has_error:
+                            if not err_txt:
                                 examnumber_list.append(new_value)
 
                 # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                    if has_error:
+                    if err_txt:
                         field_error = True
-                        err_txt = _("%(cpt)s '%(val)s' already exists.") \
-                                  % {'cpt': str(caption), 'val': new_value}
                         error_list.append(err_txt)
-                        msg_list.append({'class': "border_bg_warning", 'msg_html': err_txt})
+                        msg_list.append({'class': class_txt, 'msg_html': err_txt})
                     else:
                         saved_value = getattr(instance, field)
 
@@ -4774,7 +5165,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
 # +++ calculate registration number
         if recalc_regnumber:
-            school_code, examyear_code, depbase, levelbase = None, None, None, None
+            school_code, examyear_code, depbase, levelbase, bis_exam = None, None, None, None, False
 
             school = getattr(instance, 'school')
             if school:
@@ -4804,10 +5195,21 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 save_changes = True
                 if logging_on:
                     logger.debug('setattr(instance, examnumber, examnumber: ' + str(examnumber))
+
     # - calc_regnumber
+            bis_exam = getattr(instance, 'bis_exam') or False
             depbase_code = depbase.code if depbase else None
             levelbase_code = levelbase.code if levelbase else None
-            new_regnumber = stud_fnc.calc_regnumber(school_code, gender, str(examyear_code), examnumber, depbase_code, levelbase_code)
+
+            new_regnumber = stud_fnc.calc_regnumber(
+                school_code=school_code,
+                gender=gender,
+                examyear_str=str(examyear_code),
+                examnumber_str=examnumber,
+                depbase_code=depbase_code,
+                levelbase_code=levelbase_code,
+                bis_exam=bis_exam
+            )
 
             if logging_on:
                 logger.debug('recalc_regnumber: ')

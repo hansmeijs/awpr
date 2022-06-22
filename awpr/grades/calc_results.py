@@ -291,6 +291,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         log_list_student_header(student_dict, full_name, log_list)
 
 # - A.3c. skip when scheme not found, put err_msg in loglist
+    # PR2022-06-18 debug: msut give result 'no result, teherefpre don't skip student
     if not skip_student and scheme_error:
         skip_student = True
         if log_list is not None:
@@ -399,7 +400,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                          si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_studsubj_result  -----')
         logger.debug(' studsubj_dict: ' + str(studsubj_dict))
@@ -691,7 +692,7 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
 
     # note: combi subject can have weight_ce = 1. In that case it gives 'no input' when CE not entered.
     # let it stay, so combi with ce can be possible
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_noinput  --------- ')
         logger.debug('   subj_code: ' + str(subj_code))
@@ -1793,7 +1794,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
     # is reex03 when reex03 student, reex when reex student, firstperiod otherwise
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
@@ -2351,7 +2352,7 @@ def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24 PR2022-05-26
 
 def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_sufficient, rule_core_sufficient):
     # PR2021-11-29 PR2022-06-05
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_add_result_to_log  -----')
         logger.debug('last_student_ep_dict: ' + str(last_student_ep_dict))
@@ -3162,7 +3163,7 @@ def get_sql_student_values(student_dict, last_student_ep_dict, result_info_list)
 
     # function puts result and grade info in return list sql_student_values
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('>>>>> ----------- get_sql_student_values ----------- ')
         logger.debug('!!!!!!!!!!!@@ last_student_ep_dict: ' + str(last_student_ep_dict))

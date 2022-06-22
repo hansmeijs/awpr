@@ -1901,8 +1901,8 @@ class ExamCalcGradesFromExamView(View):
                 logger.debug('has_permit: ' + str(has_permit))
 
         if not has_permit:
-            class_str = 'border_bg_invalid'
-            err_html.append = str(_("You don't have permission to perform this action."))
+            err_txt = _("You don't have permission to perform this action.")
+            err_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
         else:
 
 # - get upload_dict from request.POST
@@ -4400,9 +4400,11 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13  PR2022-06-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
+        logger.debug('sel_examyear: ' + str(sel_examyear))
+        logger.debug('sel_depbase: ' + str(sel_depbase))
 
     # PR2022-05-13 debug: Raymond Romney MPC: cannot open exam.
     # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
@@ -4415,15 +4417,10 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
     sel_depbase_pk = sel_depbase.pk if sel_depbase else 0
     sel_ey_code = sel_examyear.code if sel_examyear else 0
-    sel_examperiod = 0
-    if setting_dict:
-        examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
-        if examperiod in (1, 2, 3):
-            sel_examperiod = examperiod
-        else:
-            sel_examperiod = 0
-    sql_keys = {'ey_code': sel_ey_code, 'depbase_id': sel_depbase_pk, 'ep': sel_examperiod}
 
+    sql_keys = {'ey_code': sel_ey_code, 'depbase_id': sel_depbase_pk}
+
+    logger.debug('sql_keys: ' + str(sql_keys))
     sql_list = [
         "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', ex.id::TEXT) AS mapid,",
@@ -4459,7 +4456,8 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
         "WHERE ex.ete_exam",
         "AND ey.code = %(ey_code)s::INT",
-        "AND ex.examperiod = %(ep)s::INT"
+# always filter on department
+        "AND depbase.id = %(depbase_id)s::INT"
     ]
 
 # - only show exams that are published when user is not role_admin
@@ -4469,11 +4467,8 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 # skip other filters when exam_pk_list has value
     if exam_pk_list:
         sql_keys['pk_arr'] = exam_pk_list
-        sql_list.append("AND ex.id IN ( SELECT UNNEST( %(pk_arr)s::INT[]))")
+        sql_list.append("AND ex.id IN (SELECT UNNEST( %(pk_arr)s::INT[]))")
     else:
-# always filter on department
-        sql_list.append("AND depbase.id = %(depbase_id)s::INT")
-
         if setting_dict:
             sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
             if sel_examperiod in (1, 2, 3):

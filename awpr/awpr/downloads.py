@@ -247,6 +247,16 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         append_dict={})
                     if error_dict:
                         message_list.append(error_dict)
+
+# ----- check birthcountry
+                if datalist_request.get('check_birthcountry_rows'):
+                    datalists['check_birthcountry_rows'], msg_html = stud_view.create_check_birthcountry_rows(
+                        sel_examyear= sel_examyear,
+                        sel_schoolbase=sel_schoolbase,
+                        sel_depbase=sel_depbase)
+                    if msg_html:
+                        datalists['check_birthcountry_msg_html'] = msg_html
+
 # ----- studentsubjects
                 if datalist_request.get('studentsubject_rows'):
                     datalists['studentsubject_rows'] = stud_view.create_studentsubject_rows(
@@ -327,18 +337,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- results_per_school_rows
                 if datalist_request.get('results_per_school_rows'):
-                    group_by_level = True
-                    group_by_school = True
                     datalists['results_per_school_rows'], error_dict = stud_view.create_results_per_school_rows(
                         request=request,
                         sel_examyear= sel_examyear,
-                        sel_schoolbase=sel_schoolbase,
-                        group_by_level=group_by_level,
-                        group_by_school=group_by_school
+                        sel_schoolbase=sel_schoolbase
                     )
                     if error_dict:
                         message_list.append(error_dict)
-
 
 # ----- published
                 if datalist_request.get('published_rows'):
@@ -436,6 +441,7 @@ def download_setting(request_item_setting, user_lang, request):
     """
     req_user = request.user
     msg_list = []
+
 # ----- get page name from request_item_setting
     # request_item_setting: {'page': 'page_grade', 'sel_examperiod': 4}
     page = request_item_setting.get('page')
@@ -597,7 +603,7 @@ def download_setting(request_item_setting, user_lang, request):
             setting_dict['sel_school_islexschool'] = True
         if sel_school.locked:
             setting_dict['sel_school_locked'] = True
-# - add message when school is locked PR22021-12-04
+# - add message when school is locked PR2021-12-04
             msg_list.append( {'msg_html': [
                     '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {'exyr': str(sel_school.examyear.code)}),
                                  str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
@@ -1254,7 +1260,7 @@ def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
     if logging_on:
         logger.debug(' ----- get_selected_lvlbase_sctbase_from_usersetting ----- ' )
     # this function gets sel_lvlbase_pk and sel_sctbase_pk from req_user and usersetting
-    # used in DownloadGradelistView (for now)
+    # used in DownloadGradelistDiplomaView (for now)
     # checks if user may edit .
 
     req_user = request.user

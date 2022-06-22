@@ -547,18 +547,68 @@ PAGE_LIST = {
 }
 
 # XLSWRITER FORMATS
-XF_FS8_BCLIGHTGREY_ALC_BORDER = {'font_size': 8, 'border': True, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 
 XF_BOLD = {'bold': True}
 XF_BOLD_FCBLUE = {'font_color': 'blue', 'bold': True}
 XF_FCBLUE = {'font_color': 'blue'}
 
+# row_align_left
+XF_ROW_ALIGN_LEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'left', 'valign': 'vcenter', 'border': True}
 # row_align_center
-XF_FS8_FCBLUE_ALC_BORDER = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
+XF_ROW_ALIGN_CENTER = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
 #row_align_center_red
-XF_FS8_FCRED_ALC_BORDER = {'font_size': 8, 'font_color': 'red', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
+XF_ROW_ALIGN_CENTER_RED = {'font_size': 8, 'font_color': 'red', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
 #row_align_center_green
-XF_FS8_FCGREEN_ALC_BORDER = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
+XF_ROW_ALIGN_CENTER_GREEN = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
 #row_align_left_green
-XF_FS8_FCGREEN_ALL_BORDER = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'left', 'valign': 'vcenter', 'border': True}
+XF_ROW_ALIGN_LEFT__GREEN = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'left', 'valign': 'vcenter', 'border': True}
+
+XF_ROW_BG_LIGHTGREY = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
+
+#  color #6c757d;  /* dark grey (awp tab grey) 108 117 125 100%
+XF_HDR_BG_DARKGREY_ALC_BORDER = {'font_size': 8, 'border': True, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+#  color #d8d8d8;  /* light grey 218 218 218 100%
+XF_HDR_BG_LIGHTGREY_ALC_BORDER = {'font_size': 8, 'border': True, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+#  color #f2f2f2;  /* light light grey 242 242 242 100%
+XF_HDR_BG_LIGHTLIGHTGREY_ALC_BORDER = {'font_size': 8, 'border': True, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+# th_align_center #d8d8d8;  /* light grey 218 218 218 100%
+XF_HDR_ALC_TOPBOTTOM = {'font_size': 8, 'border': True, 'bold': True, 'bg_color': '#d8d8d8', 'top': 1, 'bottom': 2, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+# th_align_left #d8d8d8;  /* light grey 218 218 218 100%
+XF_HDR_ALL_TOPBOTTOM = {'font_size': 8, 'border': True, 'bold': True, 'bg_color': '#d8d8d8', 'top': 1, 'bottom': 2, 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
+
+
+# color #a5a5a5; /* medium grey; 165 165 165 */
+XF_TABLEHEADER = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_TABLEHEADER_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
+XF_TABLEHEADER_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'left': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+
+
+# color #a5a5a5; /* medium grey; 165 165 165 */
+XF_HDR_GRANDTOTAL = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_GRANDTOTAL_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#a5a5a5', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_GRANDTOTAL_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_GRANDTOTAL_PERCENTAGE = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_GRANDTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+#  color #d8d8d8;  /* light grey 218 218 218 100%
+XF_HDR_SUBTOTAL = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBTOTAL_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBTOTAL_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBTOTAL_PERCENTAGE = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+#  color #f2f2f2;  /* light light grey 242 242 242 100%
+XF_HDR_SUBSUBTOTAL = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBSUBTOTAL_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBSUBTOTAL_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBSUBTOTAL_PERCENTAGE = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+XF_HDR_SUBSUBTOTAL_PERCENTAGE_BORDERLEFT = {'font_size': 10, 'bold': True, 'num_format': '0%', 'bottom': 2, 'top': 1, 'left': 1, 'bg_color': '#f2f2f2', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
+
+# row_align_left
+XF_ROW_VALUE = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'text_wrap': True}
+XF_ROW_VALUE_ALIGNLEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'left', 'valign': 'vcenter', 'bottom': 1, 'text_wrap': True}
+XF_ROW_PERCENTAGE = {'font_size': 8, 'num_format': '0%', 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'text_wrap': True}
+XF_ROW_VALUE_BORDERLEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1,'text_wrap': True}
+XF_ROW_PERCENTAGE_BORDERLEFT = {'font_size': 8, 'num_format': '0%', 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'bottom': 1, 'left': 1,'text_wrap': True}
 

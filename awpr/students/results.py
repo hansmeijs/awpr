@@ -1,17 +1,9 @@
 # PR2021-11-15
-from datetime import datetime, timedelta
-from random import randint
-
 from django.contrib.auth.decorators import login_required
 
-from django.core.mail import send_mail
-
-from django.db.models import Q
 from django.db import connection
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
-from django.template.loader import render_to_string
-from django.utils import timezone
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
@@ -24,11 +16,9 @@ from django.utils.functional import Promise
 from django.utils.encoding import force_text
 from django.core.serializers.json import DjangoJSONEncoder
 
-
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
 from reportlab.lib.units import mm
 from reportlab.lib import colors
 
@@ -46,7 +36,6 @@ from students import functions as stud_fnc
 
 import io
 import json
-
 
 import logging
 logger = logging.getLogger(__name__)
@@ -107,12 +96,12 @@ class ArchivesListView(View):  # PR2022-03-09
 
 
 @method_decorator([login_required], name='dispatch')
-class GetPresSecrView(View):  # PR2021-11-19
+class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
-            logger.debug(' ============= GetPresSecrView ============= ')
+            logger.debug(' ============= GetGradelistDiplomaAuthView ============= ')
 
         update_wrap = {}
         messages = []
@@ -146,7 +135,7 @@ class GetPresSecrView(View):  # PR2021-11-19
 # - end of StudentUploadView
 
 
-def get_pres_secr_dict(request):  # PR2021-11-18
+def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
     # function creates a dict of auth1 and auth2 users
     # also retrieves the selected auth and printdate from schoolsettings
 
@@ -154,59 +143,66 @@ def get_pres_secr_dict(request):  # PR2021-11-18
     if logging_on:
         logger.debug(' ----- get_pres_secr_dict -----')
 
+    auth_dict = {}
 # get selected auth and printdatum from schoolsettings
-    settings_json = request.user.schoolbase.get_schoolsetting_dict(c.KEY_GRADELIST)
-    stored_setting = json.loads(settings_json) if settings_json else {}
-    if logging_on:
-        logger.debug('stored_setting: ' + str(stored_setting))
-        # stored_setting: {'auth1_pk': 120, 'auth2_pk': None, 'printdate': None}
-
-    # auth_dict: {'auth1': [{'pk': 120, 'name': 'jpd'}, {'pk': 116, 'name': 'Hans meijs'}], 'auth2': []}
-    sql_keys = {'sb_id': request.user.schoolbase_id, 'c_id': request.user.country_id, 'role': c.ROLE_008_SCHOOL}
-    sql_list = ["SELECT au.id, au.last_name,",
-                "(POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0) AS auth1,",
-                "(POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0) AS auth2",
-
-                "FROM accounts_user AS au",
-                "INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)",
-                "INNER JOIN schools_country AS c ON (c.id = au.country_id)",
-
-                "WHERE sb.id = %(sb_id)s::INT AND c.id = %(c_id)s::INT AND au.role = %(role)s::INT",
-                "AND ( (POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0)",
-                "OR (POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0 ) )"
-                "AND au.activated AND au.is_active"
-                ]
-    sql = ' '.join(sql_list)
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        rows = af.dictfetchall(cursor)
-
-    auth_dict = {'auth1': [], 'auth2': []}
-    for row in rows:
+    if request.user and request.user.schoolbase:
+        settings_json = request.user.schoolbase.get_schoolsetting_dict(c.KEY_GRADELIST)
+        stored_setting = json.loads(settings_json) if settings_json else {}
         if logging_on:
-            logger.debug('row: ' + str(row))
-            # row: {'id': 47, 'last_name': 'Hans', 'auth1': False, 'auth2': True}
-        for usergroup in ('auth1', 'auth2'):
-            if row.get(usergroup, False):
-                last_name = row.get('last_name')
-                if last_name:
-                    pk_int = row.get('id')
-                    a_dict = {'pk': pk_int, 'name': last_name}
-                    selected_auth_pk = stored_setting.get(usergroup + '_pk')
-                    if selected_auth_pk and selected_auth_pk == pk_int:
-                        a_dict['selected'] = True
-                    auth_dict[usergroup].append(a_dict)
+            logger.debug('    request.user.schoolbase.code: ' + str(request.user.schoolbase.code))
+            logger.debug('    stored_setting: ' + str(stored_setting))
+            # stored_setting: {'auth1_pk': 120, 'auth2_pk': None, 'printdate': None}
+
+        # auth_dict: {'auth1': [{'pk': 120, 'name': 'jpd'}, {'pk': 116, 'name': 'Hans meijs'}], 'auth2': []}
+        sql_keys = {'sb_id': request.user.schoolbase_id, 'c_id': request.user.country_id, 'role': c.ROLE_008_SCHOOL}
+        sql_list = ["SELECT au.id, au.last_name,",
+                    "(POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0) AS auth1,",
+                    "(POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0) AS auth2",
+
+                    "FROM accounts_user AS au",
+                    "INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)",
+                    "INNER JOIN schools_country AS c ON (c.id = au.country_id)",
+
+                    "WHERE sb.id = %(sb_id)s::INT AND c.id = %(c_id)s::INT AND au.role = %(role)s::INT",
+                    "AND ( (POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0)",
+                    "OR (POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0 ) )"
+                    "AND au.activated AND au.is_active"
+                    ]
+        sql = ' '.join(sql_list)
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
+
+        for row in rows:
+            if logging_on:
+                logger.debug('row: ' + str(row))
+                # row: {'id': 47, 'last_name': 'Hans', 'auth1': False, 'auth2': True}
+            for usergroup in ('auth1', 'auth2'):
+                if row.get(usergroup, False):
+                    last_name = row.get('last_name')
+                    if last_name:
+                        pk_int = row.get('id')
+                        a_dict = {'pk': pk_int, 'name': last_name}
+                        selected_auth_pk = stored_setting.get(usergroup + '_pk')
+                        if selected_auth_pk and selected_auth_pk == pk_int:
+                            a_dict['selected'] = True
+                            auth_dict['_'.join(('sel', usergroup, 'pk'))] = selected_auth_pk
+
+                        if usergroup not in auth_dict:
+                            auth_dict[usergroup] = []
+
+                        auth_dict[usergroup].append(a_dict)
 # add printdate
-    print_date = stored_setting.get('printdate')
-    if print_date:
-        auth_dict['printdate'] = print_date
+        print_date = stored_setting.get('printdate')
+        if print_date:
+            auth_dict['printdate'] = print_date
 
     return auth_dict
 # - -end of get_pres_secr_dict
 
 
 
-# end of GetPresSecrView
+# end of GetGradelistDiplomaAuthView
 
 
 @method_decorator([login_required], name='dispatch')
@@ -332,26 +328,16 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-06
 
 
 @method_decorator([login_required], name='dispatch')
-class DownloadGradelistView(View):  # PR2021-11-15
+class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
-    def get(self, request, list):
+    def get(self, request, lst):
         logging_on = s.LOGGING_ON
         if logging_on:
-            logger.debug(' ============= DownloadGradelistView ============= ')
-
-        # TODO for uploading Exs with signatures:
-        # - give each Ex3 a sequence , print under Ex3 in box
-        # - create table mapped_ex3 with field Ex3 sequence and field with all grade_pks of that Ex3
-        # when uploading: user types Ex3 number when uploading Ex3,
-        # Awp links grades of that Ex3 to the uploaded file
-        # in grade table: add column with href to the uploaded Ex3 form
-
-        # function creates, pdf file based on settings in list and usersetting
-
+            logger.debug(' ============= DownloadGradelistDiplomaView ============= ')
         response = None
 
-        if request.user and request.user.country and request.user.schoolbase and list:
-            upload_dict = json.loads(list) if list != '-' else {}
+        if request.user and request.user.country and request.user.schoolbase and lst:
+            upload_dict = json.loads(lst) if lst != '-' else {}
             if logging_on:
                 logger.debug('     upload_dict: ' + str(upload_dict))
                 # upload_dict: {'mode': 'prelim', 'print_all': False, 'student_pk_list': [8629], 'auth1_pk': 116, 'printdate': '2021-11-18'}
@@ -376,30 +362,33 @@ class DownloadGradelistView(View):  # PR2021-11-15
                     logger.debug('     sel_examyear.country.abbrev: ' + str(sel_examyear.country.abbrev))
                     logger.debug('     is_sxm: ' + str(is_sxm))
 
-# +++++ calc_batch_student_result ++++++++++++++++++++
-                calc_res.calc_batch_student_result(
-                    sel_examyear=sel_examyear,
-                    sel_school=sel_school,
-                    sel_department=sel_department,
-                    student_pk_list=student_pk_list,
-                    sel_lvlbase_pk=sel_lvlbase_pk,
-                    user_lang=user_lang
-                )
-
-# - save printdate and auth in schoolsetting
-                mode =  upload_dict.get('mode')
+# - get info from upload_dict
+        # modes are "calc_results", "prelim", "final", "diploma"
+                mode = upload_dict.get('mode')
                 is_prelim = mode == 'prelim'
-                auth1_pk = upload_dict.get('auth1_pk')
-                auth2_pk = upload_dict.get('auth2_pk')
-                printdate = upload_dict.get('printdate')
 
-                # print Herexamen instead of AFgewezen, only when prlim gradelist is printed
+# +++++ calc_batch_student_result ++++++++++++++++++++
+                if mode != 'diploma':
+                    calc_res.calc_batch_student_result(
+                        sel_examyear=sel_examyear,
+                        sel_school=sel_school,
+                        sel_department=sel_department,
+                        student_pk_list=student_pk_list,
+                        sel_lvlbase_pk=sel_lvlbase_pk,
+                        user_lang=user_lang
+                    )
+
+# - print 'Herexamen' instead of 'Afgewezen', only when prelim gradelist is printed
                 print_reex = upload_dict.get('print_reex', False) if is_prelim else False
-
                 if logging_on:
+                    logger.debug('     mode: ' + str(mode))
                     logger.debug('     print_reex: ' + str(upload_dict.get('print_reex', False)))
                     logger.debug('     is_prelim: ' + str(is_prelim))
 
+# - save printdate and auth in schoolsetting
+                auth1_pk = upload_dict.get('auth1_pk')
+                auth2_pk = upload_dict.get('auth2_pk')
+                printdate = upload_dict.get('printdate')
 
                 settings_key = c.KEY_GRADELIST
                 new_setting_dict = {
@@ -408,20 +397,30 @@ class DownloadGradelistView(View):  # PR2021-11-15
                     'printdate': printdate,
                 }
 
+                if logging_on:
+                    logger.debug('     upload_dict: ' + str(upload_dict))
+                    logger.debug('     new_setting_dict: ' + str(new_setting_dict))
+
                 new_setting_json = json.dumps(new_setting_dict)
                 request.user.schoolbase.set_schoolsetting_dict(settings_key, new_setting_json)
 
 # - get library from examyearsetting
-                library = awpr_lib.get_library(sel_examyear, ['gradelist'])
+                key_str = 'diploma' if mode == 'diploma' else 'gradelist'
+                library = awpr_lib.get_library(sel_examyear, [key_str])
 
-# +++ get grade_dictlist
-                student_list = get_gradelist_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, sel_sctbase_pk,
+# +++ get grade_dictlist / diploma_dictlist
+                if mode == 'diploma':
+                    student_list = get_diploma_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk,
+                                                          sel_sctbase_pk,
+                                                          student_pk_list)
+                else:
+                    student_list = get_gradelist_dictlist(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, sel_sctbase_pk,
                                                   student_pk_list)
 
  # +++ get name of chairperson and secretary
                 # auth_dict = get_pres_secr_dict(request)
 
-                # - get arial font
+        # - get arial font
                 try:
                     filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
                     ttfFile = TTFont('Arial', filepath)
@@ -429,29 +428,87 @@ class DownloadGradelistView(View):  # PR2021-11-15
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
 
-                # - get Palace_Script_MT font - for testing - it works 2021-10-14
-                """
+        # - get Garamond font
+                try:
+                    filepath = s.STATICFILES_FONTS_DIR + 'Garamond.ttf'
+                    ttfFile = TTFont('Garamond', filepath)
+                    #pdfmetrics.registerFont(ttfFile)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+       # - get Garamond font
+                try:
+                    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Bold.ttf'
+                    ttfFile = TTFont('Garamond_Bold', filepath)
+                    pdfmetrics.registerFont(ttfFile)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+                # - get Garamond font
+                try:
+                    filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Regular.ttf'
+                    ttfFile = TTFont('Garamond_Regular', filepath)
+                    pdfmetrics.registerFont(ttfFile)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+        # - get Palace_Script_MT font - for testing - it works 2021-10-14
                 try:
                     filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
                     ttfFile = TTFont('Palace_Script_MT', filepath)
                     pdfmetrics.registerFont(ttfFile)
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
-                """
+
+                try:
+                    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT_Semi_Bold.ttf'
+                    ttfFile = TTFont('Palace_Script_MT_Semi_Bold', filepath)
+                    pdfmetrics.registerFont(ttfFile)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
                 # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
                 # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
                 # temp_file = tempfile.TemporaryFile()
                 # canvas = Canvas(temp_file)
 
+                auth1_name, auth2_name = '---', '---'
+                # get auth1_pk from upload_dict, check if user exists and has auth1 permission
+                if auth1_pk:
+                    auth1 = acc_mod.User.objects.get_or_none(
+                        pk=auth1_pk,
+                        schoolbase=request.user.schoolbase,
+                        activated=True,
+                        is_active=True,
+                        usergroups__contains='auth1'
+                    )
+                    if auth1:
+                        auth1_name = auth1.last_name
+
+                # get auth1_pk from upload_dict, check if user exists and has auth1 permission
+                if auth2_pk:
+                    auth2 = acc_mod.User.objects.get_or_none(
+                        pk=auth2_pk,
+                        schoolbase=request.user.schoolbase,
+                        activated=True,
+                        is_active=True,
+                        usergroups__contains='auth2'
+                    )
+                    if auth2:
+                        auth2_name = auth2.last_name
+
                 buffer = io.BytesIO()
                 canvas = Canvas(buffer)
 
                 for student_dict in student_list:
+                    if mode == 'diploma':
+                        if is_sxm:
+                            draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate)
+                        else:
+                            draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate)
 
-                    # recalc result before printing the gradelist
-
-                    draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+                    else:
+                        draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
                     canvas.showPage()
 
                 canvas.save()
@@ -491,7 +548,7 @@ class DownloadGradelistView(View):  # PR2021-11-15
         else:
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
-# - end of DownloadGradelistView
+# - end of DownloadGradelistDiplomaView
 
 
 def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):  # PR2021-11-19
@@ -499,7 +556,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
     # grades that are not published are only visible when 'same_school'
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_gradelist_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
@@ -522,14 +579,14 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
     sql_list = ["SELECT studsubj.id AS studsubj_id, stud.id AS stud_id,",
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
-                "stud.birthdate, stud.birthcountry, stud.birthcity,"
+                "stud.birthdate, stud.birthcountry, stud.birthcity, stud.bis_exam,"
                 "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
 
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
-                "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
-                "ey.code::TEXT AS examyear_txt, c.name AS country,"
-                "dep.name AS dep_name, dep.abbrev AS dep_abbrev, dep.level_req, dep.has_profiel,"
-                "lvl.name AS lvl_name, sct.name AS sct_name, sctbase.code AS sctbase_code,"
+                "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,",
+                "ey.code::TEXT AS examyear_txt, c.name AS country,",
+                "dep.name AS dep_name, dep.abbrev AS dep_abbrev, dep.level_req, dep.has_profiel,",
+                "lvl.name AS lvl_name, sct.name AS sct_name, sctbase.code AS sctbase_code,",
                 "cl.name AS cluster_name, stud.classname,",
                 "studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
                 "studsubj.is_extra_nocount, studsubj.is_thumbrule, studsubj.is_extra_counts, studsubj.gradelist_use_exem,",
@@ -564,7 +621,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                "AND NOT studsubj.tobedeleted"
+                "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted"
                 ]
 
     if student_pk_list:
@@ -595,8 +652,11 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
             if stud_id not in grade_dict:
                 #full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
-                full_name = stud_fnc.get_firstname_prefix_lastname(row.get('lastname'), row.get('firstname'), row.get('prefix'))
-
+                last_name = row.get('lastname') or '---'
+                first_name = row.get('firstname') or '---'
+                prefix = row.get('prefix')
+                full_name = stud_fnc.get_firstname_prefix_lastname(last_name, first_name, prefix)
+                sort_name = stud_fnc.get_full_name(last_name, first_name, prefix)
                 birth_date = row.get('birthdate', '')
                 birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
 
@@ -611,6 +671,20 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                         birth_place = birth_country
                 elif birth_city:
                     birth_place = birth_city
+
+        # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
+                idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
+
+                # - calc regnumber
+                reg_number = stud_fnc.calc_regnumber(
+                    school_code=row.get('school_code'),
+                    gender=row.get('gender'),
+                    examyear_str=row.get('examyear_txt'),
+                    examnumber_str=row.get('examnumber'),
+                    depbase_code=row.get('depbase_code'),
+                    levelbase_code=row.get('lvlbase_code'),
+                    bis_exam=row.get('bis_exam')
+                )
 
                 grade_dict[stud_id] = {
                     'country': row.get('country'),
@@ -634,11 +708,12 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                     'has_profiel':  row.get('has_profiel', False),
 
                     'fullname': full_name,
-                    'idnumber': row.get('idnumber'),
+                    'sortname': sort_name,
+                    'idnumber': idnumber_withdots_no_char,
                     'gender': row.get('gender'),
                     'birthdate': birth_date_formatted,
                     'birthplace': birth_place,
-                    'regnumber':  row.get('regnumber'),
+                    'regnumber':  reg_number,
                     'examnumber':  row.get('examnumber'),
                     'classname':  row.get('classname'),
                     'cluster_name':  row.get('cluster_name'),
@@ -743,14 +818,452 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
 # sort list to sorted dictlist
         # PR2021-11-15 from https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-a-value-of-the-dictionary
-        grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['fullname'])
+        #grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['fullname'])
+        # PR2022-06-16 Hans Vlinkervleugel gradelist sort by first name, instead of by last name. sortname added
+        # was: grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['fullname'])
+        grade_dictlist_sorted = sorted(grade_list, key=lambda d: d['sortname'])
 
-    #if logging_on:
-        #for row in grade_dictlist_sorted:
-            #logger.debug('row: ' + str(row))
+        if logging_on:
+            if grade_dictlist_sorted:
+                for row in grade_dictlist_sorted:
+                    logger.debug('row: ' + str(row))
 
     return grade_dictlist_sorted
 # - end of get_gradelist_dictlist
+
+
+def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk,
+                           student_pk_list):  # PR2022-06-16
+
+    # NOTE: don't forget to filter deleted = false!! PR2021-03-15
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_diploma_dictlist -----')
+        logger.debug('student_pk_list: ' + str(student_pk_list))
+
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk,
+                'student_pk_arr': student_pk_list}
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+
+    sql_list = ["SELECT stud.id AS stud_id,",
+                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
+                "stud.birthdate, stud.birthcountry, stud.birthcity, stud.bis_exam,",
+                "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
+
+                "school.name AS school_name, school.article AS school_article, school.islexschool,",
+                "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
+                "ey.code::TEXT AS examyear_txt, c.name AS country,",
+                "dep.name AS dep_name, dep.abbrev AS dep_abbrev, dep.level_req, dep.has_profiel,",
+                "lvl.name AS lvl_name, sct.name AS sct_name, sctbase.code AS sctbase_code,",
+                "stud.classname",
+
+                "FROM students_student AS stud",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+                "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+                "LEFT JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
+
+                "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
+                "AND stud.result=", str(c.RESULT_PASSED),
+                "AND NOT stud.tobedeleted"
+                ]
+
+    if student_pk_list:
+        sql_keys['student_pk_arr'] = student_pk_list
+        sql_list.append("AND stud.id IN (SELECT UNNEST( %(student_pk_arr)s::INT[]))")
+    else:
+        if sel_lvlbase_pk:
+            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+        if sel_sctbase_pk:
+            sql_keys['sctbase_pk'] = sel_sctbase_pk
+            sql_list.append("AND sct.base_id = %(sctbase_pk)s::INT")
+
+    sql_list.append("ORDER BY stud.lastname, stud.firstname")
+
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+    if logging_on:
+        logger.debug('rows: ' + str(rows))
+
+    diploma_list = []
+
+    # - add full name to rows, and array of id's of auth
+    if rows:
+        for row in rows:
+
+            # full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
+            last_name = row.get('lastname') or '---'
+            first_name = row.get('firstname') or '---'
+            prefix = row.get('prefix')
+            full_name = stud_fnc.get_firstname_prefix_lastname(last_name, first_name, prefix)
+
+    # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
+            idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
+
+    # - calc regnumber
+            reg_number = stud_fnc.calc_regnumber(
+                school_code=row.get('school_code'),
+                gender=row.get('gender'),
+                examyear_str=row.get('examyear_txt'),
+                examnumber_str=row.get('examnumber'),
+                depbase_code=row.get('depbase_code'),
+                levelbase_code=row.get('lvlbase_code'),
+                bis_exam=row.get('bis_exam')
+            )
+
+            birth_date = row.get('birthdate', '')
+            birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
+
+            birth_country = row.get('birthcountry')
+            birth_city = row.get('birthcity')
+
+            birth_place = ''
+            if birth_country:
+                if birth_city:
+                    birth_place = ', '.join((birth_city, birth_country))
+                else:
+                    birth_place = birth_country
+            elif birth_city:
+                birth_place = birth_city
+
+            diploma_list.append({
+                'country': row.get('country'),
+                'examyear_txt': row.get('examyear_txt'),
+
+                'school_name': row.get('school_name'),
+                'school_article': row.get('school_article'),
+                'school_code': row.get('school_code'),
+                'islexschool': row.get('islexschool', False),
+
+                'dep_name': row.get('dep_name'),
+                'depbase_code': row.get('depbase_code'),
+                'dep_abbrev': row.get('dep_abbrev'),
+
+                'lvl_name': row.get('lvl_name'),
+                'lvlbase_code': row.get('lvlbase_code'),
+                'level_req': row.get('level_req', False),
+
+                'sct_name': row.get('sct_name'),
+                'sctbase_code': row.get('sctbase_code'),
+                'has_profiel': row.get('has_profiel', False),
+
+                'fullname': full_name,
+                'idnumber': idnumber_withdots_no_char,
+                'gender': row.get('gender'),
+                'birthdate': birth_date_formatted,
+
+                'birth_country': birth_country,
+                'birth_city': birth_city,
+                'birthplace': birth_place,
+                'regnumber': reg_number
+            })
+
+    if logging_on:
+        for row in diploma_list:
+            logger.debug('row: ' + str(row))
+
+    return diploma_list
+# - end of get_diploma_dictlist
+
+
+def draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('+++++++++++++ draw_diploma_cur +++++++++++++')
+        logger.debug('     student_dict: ' + str(student_dict))
+
+    #PR 2022-06-20
+    # Margins on the diploma of Curacao are:
+    # PR2022-06-20 Janine Dambruck ETE: make left margin 1 mm wider, (from 18 > 19 mm)
+    # and put student name evenly from 'De ondergetekenden' and 'geboren op' (distance between these 2 lines is 27 mm)
+    # therefore y+pos of fullname must be 13 mm higher than line 'geboren op
+    # top is base of the line 'De ondergetekenden', left = start of line 'De ondergetekenden'
+
+    # - 72 points = 1 inch  -  1 point = 20 pixels - 1 mm = 2,8346 points
+    # origin of diploma CUR = [19, 199] mm
+    #   subtract y from y origin, add x to x-origin.
+    #   convert mm to point when drawing
+
+    """
+    student_dict: {'country': 'Curaçao', 'examyear_txt': '2022', 'school_name': 'St. Jozef Vsbo', 'school_article': 'de', 
+    'school_code': 'CUR11', 'islexschool': False, 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
+    'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+    'lvlbase_code': 'TKL', 'level_req': True, 'sct_name': 'Techniek', 'sctbase_code': 'tech', 'has_profiel': False, 
+    'fullname': 'Tanisha Jacqueline Isabel Metresili Teixeira Veloza', 'idnumber': '2005.09.06.06', 
+    'gender': 'V', 'birthdate': '6 september 2005', 'birthplace': 'Willemstad, Curaçao', 'regnumber': 'CUR1122222113'}
+    """
+
+    is_lex_cur = student_dict.get('islexschool', False) and student_dict.get('country', '')[:3] == 'Cur'
+
+    # - set the corners of the rectangle
+    top = 199 * mm # was: 197 * mm
+    left = 19 * mm # was:  18 * mm
+
+    origin = [left, top]
+    #draw_red_cross(canvas, origin[0], origin[1])
+
+    tabstop = [0, 8 * mm, 22 * mm, 55 * mm, 87 * mm, 105 * mm, 115 * mm, 127 * mm]
+
+    lineheight_5mm = 5 * mm
+    lineheight_8mm = 8 * mm
+    lineheight_10mm = 10 * mm
+
+    y_pos = origin[1] - 14 * mm  # was: origin[1] - 15 * mm
+
+    font_bold_fancy = 'Palace_Script_MT' if is_lex_cur else 'Garamond_Bold'
+    font_bold = 'Garamond_Bold'
+    font_normal = 'Garamond_Regular'
+    size_normal = 12
+    size_small = 10
+    size_large = 36 if is_lex_cur else 16
+
+# - full name
+    canvas.setFont(font_bold_fancy, size_large)
+    canvas.drawString(origin[0] + tabstop[1], y_pos, student_dict.get('fullname') or '---')
+    y_pos -= 13 * mm  # was: lineheight_10mm
+
+# - geboren
+    canvas.setFont(font_normal, size_normal)
+    canvas.drawString(origin[0], y_pos, library.get('born'))
+
+    canvas.setFont(font_bold_fancy, size_large)
+    canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('birthdate') or '---')
+    y_pos -= lineheight_8mm
+
+# - te
+    canvas.setFont(font_normal, size_normal)
+    canvas.drawString(origin[0], y_pos, library.get('born_at'))
+
+    canvas.setFont(font_bold_fancy, size_large)
+    canvas.drawString((origin[0] + tabstop[2]) , y_pos, student_dict.get('birthplace') or '---')
+    y_pos -= lineheight_10mm
+
+# - met gunstig gevolg
+    canvas.setFont(font_normal, size_normal)
+    key_str = 'attended_lex' if is_lex_cur else 'attended'
+    text = ' '.join((library.get(key_str), student_dict.get('dep_abbrev'), library.get('conform')))
+    canvas.drawString(origin[0], y_pos, text)
+    y_pos -= lineheight_10mm
+
+# - conform_sector / profiel
+    canvas.setFont(font_normal, size_normal)
+    key_str = 'conform_profiel' if student_dict.get('has_profiel') else 'conform_sector'
+    canvas.drawString(origin[0], y_pos, library.get(key_str))
+
+    canvas.setFont(font_bold_fancy, size_large)
+    canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('sct_name') or '---')
+    y_pos -= lineheight_8mm
+
+# - aan
+    if not is_lex_cur:
+        canvas.setFont(font_normal, size_normal)
+        text = library.get('at_school')
+        school_article = student_dict.get('school_article')
+        if school_article:
+            text += ' ' + school_article
+        canvas.drawString(origin[0], y_pos, text)
+
+        canvas.setFont(font_bold_fancy, size_large)
+        canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('school_name') or '---')
+        y_pos -= lineheight_8mm
+
+# - te
+        canvas.setFont(font_normal, size_normal)
+        canvas.drawString(origin[0], y_pos, library.get('at_country'))
+
+        canvas.setFont(font_bold_fancy, size_large)
+        canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('country') or '---')
+        y_pos -= lineheight_10mm
+
+# - welk examen werd afgenomen
+    canvas.setFont(font_normal, size_normal)
+    canvas.drawString(origin[0], y_pos, library.get('dpl_article01_cur'))
+    y_pos -= lineheight_5mm
+    canvas.drawString(origin[0], y_pos, library.get('dpl_article02_cur'))
+    y_pos -= lineheight_5mm
+    canvas.drawString(origin[0], y_pos, library.get('dpl_article03_cur'))
+    y_pos -= lineheight_5mm
+    canvas.drawString(origin[0], y_pos, library.get('dpl_article04_cur'))
+    y_pos -= lineheight_10mm
+
+# - Plaats - datum
+    canvas.drawString(origin[0], y_pos, library.get('place'))
+    canvas.drawString(origin[0] + tabstop[4], y_pos, library.get('date'))
+
+    canvas.setFont(font_bold_fancy, size_large)
+    canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('country') or '---')
+
+    printdate_formatted = None
+    if printdate:
+        printdate_dte = af.get_date_from_ISO(printdate)
+        printdate_formatted = af.format_DMY_from_dte(printdate_dte, 'nl', False)  # False = not month_abbrev
+    if not printdate_formatted:
+        printdate_formatted = '---'
+    canvas.drawString(origin[0] + tabstop[5], y_pos, printdate_formatted)
+    y_pos -= lineheight_10mm
+
+# - Het Expertisecentrum voor Toetsen & Examens
+    if is_lex_cur:
+        canvas.setFont(font_normal, size_normal)
+        canvas.drawString(origin[0], y_pos, library.get('ete'))
+        y_pos -= lineheight_10mm
+
+# - De voorzitter - De secretaris
+    canvas.setFont(font_normal, size_normal)
+    canvas.drawString(origin[0], y_pos, library.get('chairperson'))
+    canvas.drawString(origin[0] + tabstop[4], y_pos, library.get('secretary'))
+    y_pos -= (2 * lineheight_10mm) + lineheight_5mm
+
+# - Voorzitter - Secretaris
+    canvas.setFont(font_bold, size_normal)
+    canvas.drawString(origin[0], y_pos, auth1_name or '---')
+    canvas.drawString(origin[0] + tabstop[4], y_pos, auth2_name or '---')
+    y_pos -= lineheight_10mm
+
+# - Handtekening van de geslaagde:
+    canvas.setFont(font_normal, size_normal)
+    canvas.drawString(origin[0] + tabstop[3], y_pos, library.get('signature'))
+
+# - Registratienr - Id.nr.:
+    canvas.setFont(font_normal, size_small)
+    y_pos = 22 * mm
+    canvas.drawString(origin[0], y_pos, library.get('reg_nr'))
+    canvas.drawString(origin[0] + tabstop[6], y_pos, library.get('id_nr'))
+
+    canvas.setFont(font_bold, size_small)
+    canvas.drawString(origin[0] + tabstop[2], y_pos, student_dict.get('regnumber') or '-')
+    canvas.drawString(origin[0] + tabstop[7], y_pos, student_dict.get('idnumber') or '-')
+
+    #draw_red_cross(canvas, origin[0], y_pos)
+    #draw_red_cross(canvas, right, y_pos)
+# - end of draw_diploma_cur
+
+
+def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, printdate):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('+++++++++++++ draw_diploma_sxm +++++++++++++')
+        logger.debug('     student_dict: ' + str(student_dict))
+
+    #PR 2022-06-20
+    # Position of fields taken form old AWP
+
+    # - 72 points = 1 inch  -  1 point = 20 pixels - 1 mm = 2,8346 points
+    # origin of diploma CUR = [19, 199] mm
+    #   subtract y from y origin, add x to x-origin.
+    #   convert mm to point when drawing
+
+    """
+    student_dict: {'country': 'Curaçao', 'examyear_txt': '2022', 'school_name': 'St. Jozef Vsbo', 'school_article': 'de', 
+    'school_code': 'CUR11', 'islexschool': False, 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 
+    'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 
+    'lvlbase_code': 'TKL', 'level_req': True, 'sct_name': 'Techniek', 'sctbase_code': 'tech', 'has_profiel': False, 
+    'fullname': 'Tanisha Jacqueline Isabel Metresili Teixeira Veloza', 'idnumber': '2005.09.06.06', 
+    'gender': 'V', 'birthdate': '6 september 2005', 'birthplace': 'Willemstad, Curaçao', 'regnumber': 'CUR1122222113'}
+    """
+
+# - set the corners of the rectangle
+    # - 72 points = 1 inch   -  1 point = 20 pixels  - 1 mm = 2,8346 points
+    # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 12 mm from bottom, 15 mm from left
+    top = 191 * mm
+    left = 23 * mm
+
+    origin = [left, top]
+
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('+++++++++++++ draw_diploma_sxm +++++++++++++')
+        logger.debug('     student_dict: ' + str(student_dict))
+
+    y_pos = origin[1]
+
+    font_bold = 'Garamond_Bold'
+    size_normal = 12
+    size_small = 10
+    size_large = 16
+
+# - full name
+    canvas.setFont(font_bold, size_large)
+    canvas.drawString(left + 14 * mm, y_pos, student_dict.get('fullname') or '---')
+
+# - birthdate - birthplace
+    y_pos -= 17 * mm
+    canvas.setFont(font_bold, size_large)
+    canvas.drawString(left + 28 * mm, y_pos, student_dict.get('birthdate') or '---')
+
+    birthplace = student_dict.get('birthplace') or ''
+    if len(birthplace) <= 25:
+        if birthplace:
+            canvas.drawString(left + 98 * mm, y_pos, birthplace)
+    else:
+    # put birthcountry on separate line when totl char > 25
+        birth_country = student_dict.get('birth_country')
+        birth_city = student_dict.get('birth_city')
+        if birth_country:
+            if birth_city:
+                canvas.drawString(left + 98 * mm, y_pos, birth_city + ',')
+                canvas.drawString(left + 98 * mm, y_pos - 8 * mm, birth_country)
+            else:
+                canvas.drawString(left + 98 * mm, y_pos, birth_country)
+        elif birth_city:
+                canvas.drawString(left + 98 * mm, y_pos, birth_city)
+
+# - sector / profiel
+    y_pos -= 22 * mm
+    canvas.setFont(font_bold, size_large)
+    canvas.drawString(left + 47 * mm, y_pos, student_dict.get('sct_name') or '---')
+
+# - aan
+    y_pos -= 10 * mm
+    canvas.setFont(font_bold, size_large)
+    canvas.drawString(left + 20 * mm, y_pos, student_dict.get('school_name') or '---')
+
+# - te
+    y_pos -= 10 * mm
+    canvas.setFont(font_bold, size_large)
+    canvas.drawString(left + 17 * mm, y_pos, student_dict.get('country') or '---')
+
+# - Plaats - datum
+    y_pos -= 43 * mm
+    canvas.setFont(font_bold, size_large)
+    canvas.drawString(left + 25 * mm, y_pos, student_dict.get('country') or '---')
+
+    printdate_formatted = None
+    if printdate:
+        printdate_dte = af.get_date_from_ISO(printdate)
+        printdate_formatted = af.format_DMY_from_dte(printdate_dte, 'nl', False)  # False = not month_abbrev
+    if not printdate_formatted:
+        printdate_formatted = '---'
+    canvas.drawString(left + 112 * mm, y_pos, printdate_formatted)
+
+# - Voorzitter - Secretaris
+    y_pos -= 29 * mm
+    canvas.setFont(font_bold, size_normal)
+    canvas.drawCentredString(left + 44 * mm, y_pos, auth1_name or '---')
+    canvas.drawCentredString(left + 129 * mm, y_pos, auth2_name or '---')
+
+# - Registratienr - Id.nr.:
+    canvas.setFont(font_bold, size_small)
+    canvas.drawString(left + 38 * mm, 31 * mm, student_dict.get('regnumber') or '-')
+    canvas.drawString(left + 134 * mm, 31 * mm, student_dict.get('idnumber') or '-')
+# - end of draw_diploma_sxm
+
 
 ################
 
@@ -761,43 +1274,9 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex,
         logger.debug('+++++++++++++ draw_gradelist +++++++++++++')
         logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
         logger.debug('     student_dict: ' + str(student_dict))
+        logger.debug('     is_prelim: ' + str(is_prelim))
         logger.debug('     is_sxm: ' + str(is_sxm))
-        """
-       student_dict: {
-            'country': 'Sint Maarten', 'examyear_txt': '2022', 
-            'school_name': 'Milton Peters College', 'school_article': 'het', 'school_code': 'SXM01', 'islexschool': False, 
-            'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 
-            'lvl_name': 'Praktisch Kadergerichte Leerweg', 'lvlbase_code': 'PKL', 'level_req': True, 
-            'sct_name': 'Economie', 'sctbase_code': 'ec', 'has_profiel': False, 
-            'fullname': 'Akim Bansingh', 'idnumber': '2001121974', 'gender': 'M', 
-            'birthdate': '19 december 2001', 'birthplace': "Nederland, s'-Gravenhage", 
-            'regnumber': None, 'examnumber': '301', 'classname': 'EACp4a', 'cluster_name': None, 
-            'ce_avg': None, 'combi_avg': '7', 'final_avg': '6.1', 'result_status': 'Geslaagd', 
-        1: {'sjtp_name': 'Gemeenschappelijk deel', 168: {'sjtp_code': 'gmd', 'subj_name': 'Nederlandse taal', 'subjbase_code': 'ne', 
-            'segrade': '7,3', 'pecegrade': '7,5', 'finalgrade': '7'}, 
-            170: {'sjtp_code': 'gmd', 'subj_name': 'Engelse taal', 'subjbase_code': 'en', 
-            'segrade': '5,9', 'pecegrade': '6,4', 'finalgrade': '6'}, 
-            171: {'sjtp_code': 'gmd', 'subj_name': 'Spaanse taal', 'subjbase_code': 'sp', 
-            'segrade': '6,1', 'pecegrade': '5,4', 'finalgrade': '6'}}, 
-        2: {'sjtp_name': 'Sectordeel', 172: {'sjtp_code': 'spd', 'subj_name': 'Franse taal', 'subjbase_code': 'fr', 
-            'segrade': '6,2', 'pecegrade': '3,5', 'finalgrade': '5'}, 
-            175: {'sjtp_code': 'spd', 'subj_name': 'Wiskunde', 'subjbase_code': 'wk', 
-            'segrade': '6,8', 'pecegrade': '5,9', 'finalgrade': '6'}, 
-            185: {'sjtp_code': 'spd', 'subj_name': 'Economie', 'subjbase_code': 'ec', 
-            'segrade': '6,0', 'pecegrade': '6,5', 'finalgrade': '6'}}, 
-            'combi': {'sjtp_name': '', 
-            193: {'sjtp_code': 'gmd', 'subj_name': 'Mens en maatschappij 1', 'subjbase_code': 'mm1', 'segrade': '6,1', 
-            'pecegrade': None, 'finalgrade': '6'}, 
-            195: {'sjtp_code': 'gmd', 'subj_name': 'Culturele en artistieke vorming', 'subjbase_code': 'cav', 
-            'segrade': '7,3', 'pecegrade': None, 'finalgrade': '7'}, 
-            197: {'sjtp_code': 'gmd', 'subj_name': 'Lichamelijke opvoeding', 'subjbase_code': 'lo', 
-            'segrade': '7,6', 'pecegrade': None, 'finalgrade': '8'}}, 
-        4: {'sjtp_name': 'Sectorprogramma', 
-            205: {'sjtp_code': 'spr', 'subj_name': 'Administratie en commercie', 'subjbase_code': 'ac', 'segrade': '5,4', 'pecegrade': '5,1', 'finalgrade': '5', 'is_thumbrule': True}}, 'has_thumbrule': True, 'stg': {'sjtp_name': 'Stage', 
-            212: {'sjtp_code': 'stg', 'subj_name': 'Stage', 'subjbase_code': 'stg', 'segrade': 'v', 'pecegrade': None, 'finalgrade': 'v'}}}
-            [2022-06-10 07:18:27] DEBUG [students.results.draw_gradelist:798]       
 
-        """
     auth1_name = '---'
     if auth1_pk:
         auth1 = acc_mod.User.objects.get_or_none(
@@ -828,27 +1307,20 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex,
             auth2_name = auth2.last_name
 
     is_lexschool = student_dict.get('islexschool', False)
+
     has_profiel = student_dict.get('has_profiel', False)
     reg_number = student_dict.get('regnumber')
 
-# - calc regnumber if it is None
-    if reg_number is None:
-        reg_number = stud_fnc.calc_regnumber(
-            school_code=student_dict.get('school_code'),
-            gender=student_dict.get('gender'),
-            examyear_str=student_dict.get('examyear_txt'),
-            examnumber_str=student_dict.get('examnumber'),
-            depbase_code=student_dict.get('depbase_code'),
-            levelbase_code=student_dict.get('lvlbase_code')
-        )
-
 # - set the corners of the rectangle
     # - 72 points = 1 inch   -  1 point = 20 pixels  - 1 mm = 2,8346 points
-    # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 12 mm from bottom, 15 mm from left
-    top, right, bottom, left = 282 * mm, 195 * mm, 12 * mm, 15 * mm
-    #width = right - left  # 190 mm
-    #height = top - bottom  # 275 mm
+    # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 15 mm from bottom, 15 mm from left
+    top = (261 if is_sxm else 282) * mm
+    bottom = 15 * mm
+    left = 15 * mm
+    right = 195 * mm
+
     border = [top, right, bottom, left]
+
     coord = [left, top]
     if logging_on:
         logger.debug('     bottom: ' + str(bottom))
@@ -880,7 +1352,6 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex,
     draw_gradelist_colum_header(canvas, coord, col_tab_list, library, is_lexschool)
 
 # - loop through subjecttypes
-
     # combi, stage and werkstuk have text keys, rest has integer key
     for sequence in range(0, 10):  # range(start_value, end_value, step), end_value is not included!
         # sjtp_dict = {'sjtp_code': 'combi', 'sjtp_name': '', 2168: {'subj_name': 'Culturele en Artistieke Vorming',
@@ -902,7 +1373,6 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex,
         118: {'sjtp_code': 'gmd', 'subj_name': 'Papiamentu', 'segrade': '7.6', 'pecegrade': None, 'finalgrade': None}, 
         114: {'sjtp_code': 'gmd', 'subj_name': 'Engelse taal', 'segrade': '8.0', 'pecegrade': None, 'finalgrade': None}}
     """
-
 
 # - get combi subjects
     # also check if combi contains werkstuk
@@ -957,7 +1427,6 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex,
 
 # - draw page signatures
     draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, student_dict, auth1_name, auth2_name, printdate, reg_number)
-
 # - end of draw_gradelist
 
 
@@ -973,6 +1442,7 @@ def draw_page_border(canvas, border):
 
     #draw_red_cross(canvas, left, bottom)
 # - end of draw_page_border
+
 
 def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dict, is_prelim, is_sxm, is_lexschool):
     # loop through rows of page_header
@@ -1025,35 +1495,42 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
         logger.debug('     eex_article_list: ' + str(eex_article_list))
 
 # VOORLOPIGE CIJFERLIJST - print only when is_prelim, but do add line when not printing
+    line_height = 10
     txt_list = [{'txt': library.get('preliminary', '---'), 'font': 'Times-Roman', 'size': 16, 'align': 'c',
          'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 10, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, not is_prelim)
 
     txt_list = [{'txt': dep_name, 'font': 'Times-Bold', 'size': 16, 'align': 'c',
          'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 10, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, not is_prelim)
 
     dont_print_leerweg = not level_req or not is_prelim
     txt_list = [{'txt': leerweg_txt, 'font': 'Times-Bold', 'size': 14, 'align': 'c',
          'x': coord[0] + (col_tab_list[0] + col_tab_list[5]) / 2 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 10, 0, False, None, txt_list, dont_print_leerweg)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list, dont_print_leerweg)
 
     txt_list = [{'txt': library.get('undersigned', '---'), 'size': 11, 'x': 25 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 10, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
+# full_name
+    line_height = 7 if is_sxm else 10
     txt_list = [{'txt': full_name, 'font': 'Times-Bold', 'size': 14, 'x': 25 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 10, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
+# born_on born_at
     txt_list = [
         {'txt': library.get('born_on', '---'), 'size': 11, 'x': 25 * mm},
         {'txt': birth_date, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm},
         {'txt': library.get('born_at', '---'), 'size': 11, 'x': 80 * mm},
         {'txt': birth_place, 'font': 'Times-Bold', 'size': 11, 'x': 87 * mm} ]
-    draw_text_one_line(canvas, coord, col_tab_list, 10, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
+# in_the_examyear
+    line_height = 5 if is_sxm else 6
     txt_list = [{'txt': in_the_examyear_txt, 'size': 11, 'x': 25 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
+# sector_profiel
     txt_list = [
         {'txt': sector_profiel_label, 'size': 11, 'x': 25 * mm},
         {'txt': sector_profiel_txt, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm} ]
@@ -1061,29 +1538,23 @@ def draw_gradelist_page_header(canvas, coord, col_tab_list, library, student_dic
         txt_list.extend([
             {'txt': leerweg_label, 'size': 11, 'x': 95 * mm},
             {'txt': leerweg_txt, 'font': 'Times-Bold', 'size': 11, 'padding': 0, 'x': 115 * mm} ])
-    draw_text_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
+# aan_article
     txt_list = [
         {'txt': aan_article_txt,'size': 11, 'x': 25 * mm},
         {'txt': school_name, 'font': 'Times-Bold', 'size': 11, 'x': 45 * mm},
         {'txt': library.get('at_country', '-'), 'size': 11, 'x': 135 * mm},
         {'txt': country, 'font': 'Times-Bold', 'size': 11, 'x': 145 * mm}]
-    draw_text_one_line(canvas, coord, col_tab_list, 6, 0, False, None, txt_list, not is_prelim)
+    draw_text_one_line(canvas, coord, col_tab_list, line_height, 0, False, None, txt_list)
 
 # De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en
     # first line has height 6, rest is 5
-    eex_article_lineheight = 6
+    eex_article_lineheight = 5 if is_sxm else 6
     for eex_article_txt in eex_article_list:
         txt_list = [{'txt': eex_article_txt, 'x': 25 * mm}]
-        draw_text_one_line(canvas, coord, col_tab_list, eex_article_lineheight, 0, False, None, txt_list, not is_prelim)
-        eex_article_lineheight = 5
-
-    #txt_list = [{'txt': eex_article02, 'x': 25 * mm}]
-    #draw_text_one_line(canvas, coord, col_tab_list, 5, 0, False, None, txt_list, not is_prelim)
-
-    #if eex_article03:
-    #    txt_list = [{'txt': eex_article03, 'x': 25 * mm}]
-    #    draw_text_one_line(canvas, coord, col_tab_list, 5, 0, False, None, txt_list, not is_prelim)
+        draw_text_one_line(canvas, coord, col_tab_list, eex_article_lineheight, 0, False, None, txt_list)
+        eex_article_lineheight = 4 if is_sxm else 5
 # - end of draw_gradelist_page_header
 
 
@@ -1400,7 +1871,7 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
     """
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug((' ----- draw_gradelist_signature_row -----'))
         #logger.debug(('student_dict: ' + str(student_dict)))
@@ -1408,11 +1879,11 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
         logger.debug('auth2_name: ' + str(auth2_name))
         logger.debug('printdate: ' + str(printdate))
 
-
     #border = [top, right, bottom, left]
     bottom = border[2]
 
-# ---  set date today for now - TODO save date in school_settings
+# - place, date
+    # printdate is retrieved from upload_dict and saved in school_settings
     printdate_formatted = None
     if printdate:
         printdate_dte = af.get_date_from_ISO(printdate)
@@ -1443,13 +1914,13 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
     ]
     line_height = 30
     pos_y_auth = coord[1] - line_height * mm
-    if pos_y_auth < 23 * mm:
-        pos_y_auth = 23 * mm
+    if pos_y_auth < 25 * mm:
+        pos_y_auth = 25 * mm
     coord_auth = [coord[0], pos_y_auth]
     draw_text_one_line(canvas, coord_auth, col_tab_list, 0, 1.25, False, None, txt_list)
 
 # - draw label 'chairperson' and 'secretary' under the name
-    pos_y_auth_label  = pos_y_auth - 5 * mm
+    pos_y_auth_label = pos_y_auth - 4 * mm
     coord_auth_label = [coord[0], pos_y_auth_label]
     txt_list = [
         {'txt': library.get('chairperson', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
@@ -1473,6 +1944,7 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
          'x': x + col_tab_list[1] * mm},
     ]
     coord_regnr = [coord[0], bottom]
+
     draw_text_one_line(canvas, coord_regnr, col_tab_list, 0, 1.25, False, None, txt_list)
 # - end of draw_gradelist_signature_row
 
@@ -1536,11 +2008,12 @@ def draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
 # - end of draw_text_one_line
 
 
-def draw_red_cross(canvas, x, y):
+# def draw_red_cross(canvas, x, y):
     # draw red cross, for outlining while designing
-    canvas.setStrokeColorRGB(1, 0, 0)
-    canvas.line(x, y + 5 * mm, x, y - 5 * mm)
-    canvas.line(x - 5 * mm, y , x + 5 * mm, y )
+
+    #canvas.setStrokeColorRGB(1, 0, 0)
+    #canvas.line(x, y + 5 * mm, x, y - 5 * mm)
+    #canvas.line(x - 5 * mm, y , x + 5 * mm, y )
 
 
 def get_final_grade(subj_dict, key_str):

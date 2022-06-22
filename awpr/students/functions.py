@@ -7,6 +7,51 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def convert_idnumber_withdots_no_char(id_number):
+    # PR2022-06-17
+    # function add dots to idnumber, if last 2 digits are not numeric: dont print letters, but print '00' instead
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- convert_idnumber_withdots_no_char -----')
+
+    if logging_on:
+        logger.debug('     id_number: ' + str(id_number))
+        logger.debug('     len(id_number): ' + str(len(id_number)))
+        logger.debug('     id_number[8:]: ' + str(id_number[8:]))
+
+# - delete dots if there are dots in idnumber (should not be possible, but has happened because mod stdent didnt remove dots )
+    if id_number and '.' in id_number:
+        id_number.replace('.', '')
+
+    sequence_is_numeric = False
+    if len(id_number) > 8:
+        try:
+            sequence_int = int(id_number[8:])
+            sequence_is_numeric = True
+            if logging_on:
+                logger.debug('     sequence_int: ' + str(sequence_int))
+                logger.debug('     sequence_is_numeric: ' + str(sequence_is_numeric))
+        except:
+#  -if last 2 digits are not numeric: dont print letters, print '00' instead
+            id_number = id_number[:8] + '00'
+
+    if len(id_number) >= 10:
+        id_number_with_dots = '.'.join((id_number[:4], id_number[4:6], id_number[6:8], id_number[8:]))
+    elif len(id_number) >= 8:
+        id_number_with_dots = '.'.join((id_number[:4], id_number[4:6], id_number[6:]))
+    else:
+        id_number_with_dots = id_number
+
+    if logging_on:
+        logger.debug('     id_number: ' + str(id_number))
+        logger.debug('     sequence_is_numeric: ' + str(sequence_is_numeric))
+
+    return id_number_with_dots
+# - end of convert_idnumber_withdots_no_char
+
+
+
 def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
     # function gets max exnr of this school and dep and adds 1 to it
 
@@ -34,7 +79,8 @@ def get_next_examnumber(sel_school, sel_department):  # PR2021-08-11
 # - end of get_next_examnumber
 
 
-def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code):
+
+def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_code, levelbase_code, bis_exam):
     # function calculates regnumber. This format is used in examyear 2015 and later PR2021-07-19 PR2021-11-17
     #    'structuur registratienummer kandidaat: '12345 6 78910 111213 14 bv: cur02112130021 = cur02-1-1213-002-1
     #    '12345:     SchoolID: CUR01 etc, BON01,
@@ -42,8 +88,17 @@ def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_co
     #    '78910:     schooljaar
     #    '11,12,13:   volgnr leerling
     #    '14:        1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = pbl
-
     logging_on = False  # s.LOGGING_ON
+
+    """
+    Het registratienummer bestaat uit 13 tekens en is als volgt opgebouwd:
+        1 tm 5: S choolregistratienr:   CUR17
+        6:       Geslacht:              M=1, V = 2" & vbCrLf & _
+        7 tm 8:  Examenjaar             22 (schooljaar 2021-2022)
+        9 tm 12: Examennummer           0001 etc. (001b voor bis examen)
+        13:      Studierichting:        1=Havo, 2=Vwo, 3=Tkl, 4=Pkl, 5 = Pbl
+    """
+
     if logging_on:
         logger.debug(' ------- calc_regnumber -------')
         logger.debug('school_code: ' + str(school_code))
@@ -69,15 +124,13 @@ def calc_regnumber(school_code, gender, examyear_str, examnumber_str, depbase_co
     reg03 = examyear_str[2:4] if examyear_str else '--'
 
 # - teken 9, 10, 11 en 12 zijn volgnr kandidaat
+    # add 'b' when bis candidate
+    if bis_exam:
+        examnumber_str += 'b'
     if examnumber_str:
-        examnumber_len = len(examnumber_str)
-        if examnumber_len == 4:
-            reg04 = examnumber_str
-        elif examnumber_len > 4:
-            reg04 = examnumber_str[:4]
-        else:
-            examnumber_fill = '0000' + examnumber_str
-            reg04 = examnumber_fill[-4:]
+        # PR2022-06-16 get last 4 characters from exam number instead of first 4
+        # KAP uses birthdate as exam number, therefore first characters are birth year
+        reg04 = ('0000' + examnumber_str)[-4:]
     else:
         reg04 = '----'
 
@@ -240,8 +293,6 @@ def split_fullname(fullname): # PR2018-12-06
 
 
 # oooooooooooooo Functions  Student name ooooooooooooooooooooooooooooooooooooooooooooooooooo
-
-
 
 def get_firstname_prefix_lastname(last_name, first_name, prefix):  # PR2022-03-05
 

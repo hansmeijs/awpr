@@ -4339,7 +4339,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_header.innerText = header_txt;
             el_confirm_msg_container.className = "p-3";
             const caption = (mode === "prelim_ex4") ? loc.The_preliminary_Ex4_form : loc.The_preliminary_Ex1_form
-            const msg_html = "<p>" + caption + loc.will_be_downloaded + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
+            const msg_html = "<p>" + caption + loc.will_be_downloaded_sing + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
             el_confirm_msg_container.innerHTML = msg_html;
 
 

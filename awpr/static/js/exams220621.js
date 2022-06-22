@@ -2494,8 +2494,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         //PR2015-12-27 debug: vervang komma door punt, anders wordt komma genegeerd
                         value_with_dots = new_value.replace(",", ".");
                         const value_number = Number(value_with_dots);
-        console.log("value_with_dots", value_with_dots, typeof value_with_dots)
-        console.log("value_number", value_number, typeof value_number)
+
                         if (fldName === "cesuur"){
                             if(!value_number && value_number != 0){
                                 msg_html = loc.err_list.cesuur_mustbe;
@@ -2515,7 +2514,6 @@ document.addEventListener("DOMContentLoaded", function() {
                             } else if (value_number % 1 !== 0 ) {
                                 // the remainder / modulus operator (%) returns the remainder after (integer) division.
                                 msg_html = loc.err_list.scalelength_mustbe;
-
                             };
                         } else if (fldName === "nterm"){
                             if(!value_number && value_number != 0){
