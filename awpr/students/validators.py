@@ -4,6 +4,10 @@ from django.db import connection
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import pgettext_lazy, gettext_lazy as _
 
+from reportlab.pdfbase.pdfmetrics import stringWidth, registerFont
+from reportlab.pdfbase.ttfonts import TTFont
+import math
+
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
@@ -1511,7 +1515,7 @@ def get_dateformat_from_uploadfileNIU(data_list, date_field):
 
 # ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20
 def get_idnumberlist_from_database(sel_school):
-    # get list of examnumbers of this school, used with import student and update student
+    # get list of idnumbers of this school, used with import student and update student
     # idnumber_list contains tuples with (id, idnumber)
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1540,11 +1544,11 @@ def get_idnumberlist_from_database(sel_school):
 # - end of get_idnumberlist_from_database
 
 
-# ========  get_examnumberlist_from_database  ======= PR2021-07-19
-
+# ========  get_examnumberlist_from_database  =======
 def get_examnumberlist_from_database(sel_school, sel_department):
+    # PR2021-07-19 PR2022-06-26
     # get list of examnumbers of this school and this department, used with import student  and update student
-    # list contains tuples with (id, examnumber)
+    # list contains tuples with (id, examnumber) id is needed to skip value of  this student
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_examnumberlist_from_database -----')
@@ -1558,6 +1562,7 @@ def get_examnumberlist_from_database(sel_school, sel_department):
             "FROM students_student AS st",
             "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
             "AND st.examnumber IS NOT NULL",
+            "AND NOT st.tobedeleted",
             "ORDER BY st.examnumber"]
         sql = ' '.join(sql_list)
 
@@ -1571,8 +1576,67 @@ def get_examnumberlist_from_database(sel_school, sel_department):
 # - end of get_examnumberlist_from_database
 
 
-# ========  get_double_schoolcode_usernamelist_from_uploadfile  ======= PR2021-08-04
+# ========  get_diplomanumberlist_gradelistnumberlist_from_database  =======
+def get_diplomanumberlist_gradelistnumberlist_from_database(field, sel_school):
+    # PR2022-06-26
+    # get list of diplomanumbers and gradelistnumbers of this school, used with import student and update student
+    # list contains tuples with (id, value) id is needed to skip value of  this student
 
+    value_list = []
+    if sel_school:
+        sql_keys = {'sch_id': sel_school.pk}
+        sql_list = ["SELECT stud.id, stud.", field, " ",
+            "FROM students_student AS stud ",
+            "WHERE stud.school_id = %(sch_id)s::INT ",
+            "AND stud.", field, " IS NOT NULL ",
+            "AND NOT stud.tobedeleted"]
+        sql = ''.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            value_list = cursor.fetchall()
+
+    return value_list
+# - end of get_diplomanumberlist_gradelistnumberlist_from_database
+"""
+TODO replace by functio that also detects dipl nr in other schools
+
+# ========  get_diplomanumberlist_gradelistnumberlist_from_database  =======
+def validate_diplomanumberlist_gradelistnumberlist_exists(field, value, sel_school):
+    # PR2022-06-26
+    # get list of diplomanumbers and gradelistnumbers of this school, used with import student and update student
+    # list contains tuples with (id, value) id is needed to skip value of  this student
+
+    value_list = []
+    if sel_school and value:
+        sql_keys = {'ey_id': sel_school.examyear.pk, 'val': value.strip()}
+        sql_list = ["SELECT stud.id, ,
+            "FROM students_student AS stud ",
+            "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+            "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = school.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+
+            "WHERE school.examyear_id = %(ey_id)s::INT",
+            "AND TRIM(stud.", field, ") ILIKE %(val)s::TEXT",  # ILIKE is case insensitive
+            "AND NOT stud.tobedeleted"
+
+            "WHERE stud.school_id = %(sch_id)s::INT ",
+            "AND stud.", field, " IS NOT NULL ",
+            "AND NOT stud.tobedeleted"]
+        sql = ''.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            value_list = cursor.fetchall()
+
+    return value_list
+# - end of get_diplomanumberlist_gradelistnumberlist_from_database
+
+
+
+"""
+
+# ========  get_double_schoolcode_usernamelist_from_uploadfile  ======= PR2021-08-04
 def get_double_schoolcode_usernamelist_from_uploadfile(data_list):
     # function returns list of (schoolcode, username) tuples that occur multiple times in data_list
 
@@ -1658,7 +1722,6 @@ def validate_double_schoolcode_username_in_uploadfile(schoolcode, username, doub
 
 
 # ========  validate_double_schoolcode_username_in_uploadfile  ======= PR2021-07-17
-
 def validate_double_schoolcode_email_in_uploadfile(schoolcode, email, double_entrieslist, error_list):
     has_error = False
     if schoolcode and email and double_entrieslist:
@@ -1670,14 +1733,48 @@ def validate_double_schoolcode_email_in_uploadfile(schoolcode, email, double_ent
 # - end of validate_double_schoolcode_username_in_uploadfile
 
 
-# ========  get_double_entrieslist_from_uploadfile  ======= PR2021-06-14 PR2021-07-17 PR2022-01-04
+# ========  get_double_diplomanumber_gradelistnumber_from_uploadfile  ======= PR2022-06-26
+def get_double_diplomanumber_gradelistnumber_from_uploadfile(data_list):
+    # function returns list of diplomanumber and gradelistnumber, that occur multiple times in data_list
 
-def get_double_entrieslist_from_uploadfile(data_list):
+    diplomanumber_list = []
+    gradelistnumber_list = []
+    double_diplomanumber_list = []
+    double_gradelistnumber_list = []
+
+    for data_dict in data_list:
+        diplomanumber = data_dict.get('diplomanumber')
+
+        if diplomanumber:
+            if not isinstance(diplomanumber, str):
+                diplomanumber = str(diplomanumber)
+
+            if diplomanumber not in diplomanumber_list:
+                diplomanumber_list.append(diplomanumber)
+            elif diplomanumber not in double_diplomanumber_list:
+                double_diplomanumber_list.append(diplomanumber)
+
+        gradelistnumber = data_dict.get('gradelistnumber')
+        if gradelistnumber:
+            if not isinstance(gradelistnumber, str):
+                gradelistnumber = str(gradelistnumber)
+
+            if gradelistnumber not in gradelistnumber_list:
+                gradelistnumber_list.append(gradelistnumber)
+            elif diplomanumber not in double_gradelistnumber_list:
+                double_gradelistnumber_list.append(gradelistnumber)
+
+    return double_diplomanumber_list, double_gradelistnumber_list
+# - end of get_double_diplomanumber_gradelistnumber_from_uploadfile
+
+
+# ========  get_double_idnumberlist_from_uploadfile  ======= PR2021-06-14 PR2021-07-17 PR2022-01-04
+def get_double_idnumberlist_from_uploadfile(data_list):
     # function returns list of valid idnumbers, that occur multiple times in data_list
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' -----  get_double_entrieslist_from_uploadfile  -----')
+        logger.debug(' -----  get_double_idnumberlist_from_uploadfile  -----')
 
     double_entrieslist = []
     # student_list is list of idnumbers of all students in data_list.
@@ -1708,10 +1805,10 @@ def get_double_entrieslist_from_uploadfile(data_list):
                 student_list.append(idnumber_nodots_stripped)
 
         if logging_on:
-            logger.debug('student_list: ' + str(student_list))
-            logger.debug('double_entrieslist: ' + str(double_entrieslist))
+            logger.debug('>>> student_list: ' + str(student_list))
+            logger.debug('>>> double_entrieslist: ' + str(double_entrieslist))
     return double_entrieslist
-# - end of get_double_entrieslist_from_uploadfile
+# - end of get_double_idnumberlist_from_uploadfile
 
 
 def get_idnumber_nodots_stripped_lower(id_number):
@@ -1763,12 +1860,11 @@ def get_idnumber_nodots_stripped_lower(id_number):
         msg_err = _("ID number is not entered.")
 
     if logger_on:
-        logger.debug('msg_err: ' + str(msg_err))
-        logger.debug('idnumber_nodots_stripped_lower: ' + str(idnumber_nodots_stripped_lower) + ' ' + str(type(idnumber_nodots_stripped_lower)))
-        logger.debug('birthdate_dteobj: ' + str(birthdate_dteobj)+ ' ' + str(type(birthdate_dteobj)))
+        logger.debug('    msg_err: ' + str(msg_err))
+        logger.debug('    idnumber_nodots_stripped_lower: ' + str(idnumber_nodots_stripped_lower) + ' ' + str(type(idnumber_nodots_stripped_lower)))
+        logger.debug('    birthdate_dteobj: ' + str(birthdate_dteobj)+ ' ' + str(type(birthdate_dteobj)))
     return idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj
 # - end of get_idnumber_nodots_stripped_lower
-
 
 
 def get_string_convert_type_and_strip(caption, value, blank_not_allowed):
@@ -1838,16 +1934,16 @@ def get_double_entrieslist_with_firstlastname_from_uploadfileNIU(data_list):
     return double_entrieslist
 
 
-# ========  validate_double_entries_in_uploadfile  ======= PR2021-07-17
-def validate_double_entries_in_uploadfile(idnumber_nodots_stripped, double_entrieslist, error_list):
-
+# ========  validate_double_entries_in_uploadfile  ======= PR2021-07-17 PR2022-06-25
+def validate_double_entries_in_uploadfile(caption, lookup_value, double_entrieslist, error_list):
     has_error = False
-    if idnumber_nodots_stripped and double_entrieslist:
-        if idnumber_nodots_stripped in double_entrieslist:
+    if lookup_value and double_entrieslist:
+        if lookup_value in double_entrieslist:
             has_error = True
-            error_list.append(_("ID-number '%(val)s' is found multiple times in this upload file.") \
-                      % {'val': idnumber_nodots_stripped})
+            error_list.append(_("%(cpt)s '%(val)s' is found multiple times in this upload file.") \
+                      % {'cpt': caption, 'val': lookup_value})
     return has_error
+
 
 
 # ========  validate_student_name_length  ======= PR2021-06-19 PR2021-09-10
@@ -1972,6 +2068,36 @@ def validate_studsubj_sr_allowed(si_dict):  # PR2021-12-25
 
     return err_list
 # --- end of validate_studsubj_sr_allowed
+
+
+def validate_studsubj_pws_title_subjects_length(field, value):
+    # PR2022-06-25
+    # check if title or subjects of assignments fits on gradelist
+    # uses reportlab stringWidth to calculate width of tekst in points, convert to mm (1 point = 1/72 inch)
+    err_list = []
+    if field == 'pws_title':
+        max_width_mm = c.GRADELIST_PWS_TITLE_MAX_LENGTH_MM
+        caption = 'the title'
+    elif field == 'pws_subjects':
+        max_width_mm = c.GRADELIST_PWS_TITLE_MAX_LENGTH_MM
+        caption = 'the subjects'
+    else:
+        max_width_mm = None
+        caption = ''
+
+    if value and max_width_mm:
+        value_strip = value.strip()
+        if value_strip:
+            value_width = stringWidth(value_strip, 'Times-Roman', 10)
+            value_width_roundup_mm = math.ceil(value_width / 72 * 25.4)
+
+            if value_width_roundup_mm > max_width_mm:
+                err_list.append(str(_('The length of %(cpt)s of the assignment is %(val)s mm.')
+                                    % {'cpt': caption, 'val': str(value_width_roundup_mm)}))
+                err_list.append(str(_('The maximum length is %(max)s mm.') % {'max': str(max_width_mm)}))
+
+    return err_list
+# --- end of validate_studsubj_pws_title_subjects_length
 
 
 def validate_studsubj_add_reex_reex03_allowed(field, si_dict):  # PR2021-12-18

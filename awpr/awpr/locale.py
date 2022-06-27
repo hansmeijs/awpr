@@ -969,7 +969,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Blanks'] = _("Blanks")
         dict['Download_exam'] = _("Download exam")
         dict['Download_conv_table'] = _("Download conversion table")
-        dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', ' Download conversion table.')
+        dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', ' Download conversion table')
         dict['Download_JSON'] = _("Download JSON")
         dict['JSON_will_be_downloaded'] = _("The JSON file with the following exam results will be downloaded:")
         dict['will_be_unlinked'] = pgettext_lazy('singular', ' will be unlinked.')
@@ -1049,7 +1049,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Number_of_exams'] = _('Number of exams')
         dict['Submitted_exams'] = _('Number of submitted exams')
         dict['Average_score_percentage'] = _('Average score percentage')
-
 
         dict['err_list'] = {
             'Amount': _("Amount"),
@@ -1145,7 +1144,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['reex_msg_01'] = _("Only the re-examination subjects will be shown.")
         dict['reex_msg_02'] = _("Go to the page 'Subjects' and tick off 'Re-examination' to add a re-examination subject.")
-
+        dict['reex03_msg_01'] = _("Only the subjects of the re-examination in the third period will be shown.")
+        dict['reex03_msg_02'] = _("Go to the page 'Subjects' and tick off 'Re-examination third period' to add a re-examination subject.")
 
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
@@ -1154,7 +1154,13 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['First_name'] = _('First name')
         dict['Gender'] = _('Gender')
         dict['ID_number'] = _('ID number')
-        dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', ' Download conversion table.')
+        dict['Exam'] = _('Exam')
+        dict['Select_exam'] = _("Select exam")
+
+        dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
+
+        dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', 'Download conversion table')
+        dict['Download_conv_table'] =_('Download conversion table')
 
         dict['All_subjects'] = TXT_All_subjects
         dict['All_candidates'] = TXT_All_candidates
@@ -1264,7 +1270,7 @@ def get_locale_dict(table_dict, user_lang, request):
         #dict['Re_examination_score'] = _('Re-examination score')
         dict['Re_examination_score_2lines'] = _('Re-examination\nscore')
         dict['Re_examination_grade_2lines'] = _('Re-examination\ngrade')
-        #dict['Third_period_score_2lines'] = _('Third period\nscore')
+        dict['Third_period_score_2lines'] = _('Third period\nscore')
         dict['Third_period_grade_2lines'] = _('Third period\ngrade')
 
         dict['PE_score_twolines'] = _('PE-\nscore')
@@ -1393,8 +1399,6 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
                                'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),
                                         str(_("The examiner and corrector don't have to approve designated exams."))))
-
-
         }
 
         dict['No_cluster_block_permission'] =  _("You don't have permission to block grades of this cluster.")
@@ -1512,12 +1516,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Calculate_results'] = _('Calculate results')
         dict['Log_calculated_results'] = _('Log calculated results')
 
-
         dict['Birthcountry_not_correct'] = _('Country of birth is not correct')
         dict['Log_change_birth_country'] = _('Log change country of birth')
         dict['Log_change_birth_country'] = _('Log change country of birth')
-
-
 
 # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:

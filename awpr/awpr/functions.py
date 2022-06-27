@@ -1232,11 +1232,14 @@ def has_unread_mailbox_items(examyear, req_user):
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
-
+    pass
 # PR2021-03-26 run this to update text in ex-forms, when necessary
-    awpr_lib.update_library(examyear, request)
+    #if request.user.role == c.ROLE_128_SYSTEM:
+    #    awpr_lib.update_library(examyear, request)
 
-    recalc_reex_count(request)
+    #get_long_pws_title_pws_subjectsONCEONLY(request)
+
+    #recalc_reex_count(request)
 
     # show_unmatched_reex_rows()
 
@@ -1296,7 +1299,6 @@ def system_updates(examyear, request):
     #PR2021-08-05 add SXMSYS school if not exists
     # add_sxmsys_school_if_not_exist(request)
 
-
     #transfer_depbases_from_array_to_string()
 
 # - end of system_updates
@@ -1332,6 +1334,90 @@ def reset_show_msg(request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
+
+# get long psw_title and pws_subjcts
+def get_long_pws_title_pws_subjectsONCEONLY(request):
+    # PR 2022-06-11 one time function to get long psw_title and pws_subjcts, so i can send email to schools
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_long_pws_title_pws_subjectsONCEONLY -------')
+    try:
+        from reportlab.pdfbase.pdfmetrics import stringWidth, registerFont
+        from reportlab.pdfbase.ttfonts import TTFont
+        import math
+# - get Garamond font
+        try:
+            filepath = s.STATICFILES_FONTS_DIR + 'Garamond.ttf'
+            ttfFile = TTFont('Garamond', filepath)
+            registerFont(ttfFile)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+
+        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        s_ey_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+        sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=s_ey_pk)
+        if sel_examyear_instance:
+            sql_dict = {'ey_code': sel_examyear_instance.code}
+    # - update exemption_count in student
+            sql_list = [
+                "SELECT sbase.code AS sbase_code, school.name AS school_name, depbase.code AS depbase_code,",
+                "CASE WHEN stud.prefix IS NULL THEN CONCAT(TRIM(stud.lastname), ', ', TRIM(stud.firstname)) ELSE",
+                    "CONCAT(TRIM(stud.prefix), ' ', TRIM(stud.lastname), ', ', TRIM(stud.firstname))",
+                "END AS fullname,",
+
+                "studsubj.pws_title, studsubj.pws_subjects",
+
+                "FROM students_studentsubject AS studsubj",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = school.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+                "WHERE ey.code = %(ey_code)s::INT",
+                "AND (LENGTH(TRIM(studsubj.pws_title))>60 OR LENGTH(TRIM(studsubj.pws_subjects))>50)",
+                "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted",
+                "ORDER BY sbase.code, depbase.code, stud.lastname, stud.firstname"
+            ]
+            sql = ' '.join(sql_list)
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_dict)
+                if logging_on:
+                    for row in dictfetchall(cursor):
+                        pws_title = (row.get('pws_title') or '').strip()
+                        pws_subjects = (row.get('pws_subjects') or '').strip()
+                        pws_title_width = stringWidth(pws_title, 'Times-Roman', 10) if pws_title else 0
+                        pws_title_width_roundup_mm = math.ceil(pws_title_width / 72 * 25.4)
+                        max_title_width_mm = c.GRADELIST_PWS_TITLE_MAX_LENGTH_MM
+
+                        pws_subjects_width = stringWidth(pws_subjects, 'Times-Roman', 10) if pws_subjects else 0
+                        pws_subjects_width_roundup_mm = math.ceil(pws_subjects_width / 72 * 25.4)
+                        max_subjects_width_mm = c.GRADELIST_PWS_SUBJECTS_MAX_LENGTH_MM
+
+                        if pws_title_width_roundup_mm > max_title_width_mm or \
+                                pws_subjects_width_roundup_mm > max_subjects_width_mm:
+
+                            log_list = [str(row.get('sbase_code')),
+                                        str(row.get('school_name')),
+                                        str(row.get('depbase_code')),
+                                        str(row.get('fullname'))
+                                        ]
+                            if pws_title_width > 267:
+                                log_list.extend(["- Titel:", "'" + str(pws_title) + "'", '(breedte:', str(pws_title_width_roundup_mm), 'mm, max:',  str(max_title_width_mm), 'mm)'])
+
+                            if pws_subjects_width > 208:
+                                log_list.extend(['- Vakken:', "'" + str(pws_subjects) + "'", '(breedte:', str(pws_subjects_width_roundup_mm), 'mm, max:',  str(max_subjects_width_mm), 'mm)'])
+
+                            logger.debug(str(' '.join(log_list)))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -end of get_long_pws_title_pws_subjectsONCEONLY
 
 
 ######################################
@@ -2331,4 +2417,3 @@ def dictfetchrows(cursor):
     #elapsed_seconds = (timer() - starttime)
     #return_dict['elapsed_milliseconds'] = elapsed_seconds * 1000
     return return_dict
-

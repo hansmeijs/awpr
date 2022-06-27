@@ -1360,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // thumbrule not in Vsbo Cur
 
             if (["is_extra_nocount", "is_extra_counts"].includes(field)){
-                // PR2022-06-15 Richard Westerink: also avalilable for havo vwo
+                // PR2022-06-15 Richard Westerink: also available for havo vwo
                 // is_hidden = (setting_dict.sel_depbase_code !== "Vsbo");
             } else if (field === "is_thumbrule"){
                 const show_thumbrule = (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");

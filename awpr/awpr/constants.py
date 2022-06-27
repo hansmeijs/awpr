@@ -358,7 +358,9 @@ KEY_COLDEF = {
 
         {'awpColdef': 'level', 'caption': _('Level'), 'linkrequired': True},
         {'awpColdef': 'sector', 'caption': _('Sector'), 'linkrequired': True},
-        {'awpColdef': 'profiel', 'caption': _('Profiel'), 'linkrequired': True}
+        {'awpColdef': 'profiel', 'caption': _('Profiel'), 'linkrequired': True},
+        {'awpColdef': 'diplomanumber', 'caption': _('Diploma number')},
+        {'awpColdef': 'gradelistnumber', 'caption': _('Gradelist number')}
          ],
 
     KEY_IMPORT_PERMITS:
@@ -377,6 +379,9 @@ KEY_COLDEF = {
          {'awpColdef': 'function', 'caption': _('Function')}
          ],
 }
+
+GRADELIST_PWS_TITLE_MAX_LENGTH_MM = 95  # = 269 points / 72 * 25.4 PR2022-06-25
+GRADELIST_PWS_SUBJECTS_MAX_LENGTH_MM = 73  # = 208 points / 72 * 25.4 PR2022-06-25
 
 CAPTIONS = {'student': {'lastname': _('Last name'),
                         'firstname': _('First name'),
@@ -481,6 +486,7 @@ ROLE_DICT = {
     ROLE_128_SYSTEM: 'system'
     }
 
+
 def get_role_options(request):
     ETE_DEX = _('Division of Examinations') if request.user.country.abbrev.lower() == 'sxm' else 'ETE'
     _role_options = [
@@ -576,13 +582,10 @@ XF_HDR_ALC_TOPBOTTOM = {'font_size': 8, 'border': True, 'bold': True, 'bg_color'
 # th_align_left #d8d8d8;  /* light grey 218 218 218 100%
 XF_HDR_ALL_TOPBOTTOM = {'font_size': 8, 'border': True, 'bold': True, 'bg_color': '#d8d8d8', 'top': 1, 'bottom': 2, 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
 
-
 # color #a5a5a5; /* medium grey; 165 165 165 */
 XF_TABLEHEADER = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
 XF_TABLEHEADER_ALIGNLEFT = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'bg_color': '#d8d8d8', 'align': 'left', 'valign': 'vcenter', 'text_wrap': True}
 XF_TABLEHEADER_BORDERLEFT = {'font_size': 10, 'bold': True, 'bottom': 1, 'top': 1, 'left': 1, 'bg_color': '#d8d8d8', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}
-
-
 
 # color #a5a5a5; /* medium grey; 165 165 165 */
 XF_HDR_GRANDTOTAL = {'font_size': 10, 'bold': True, 'bottom': 2, 'top': 1, 'bg_color': '#a5a5a5', 'align': 'center', 'valign': 'vcenter', 'text_wrap': True}

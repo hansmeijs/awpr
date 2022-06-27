@@ -1077,11 +1077,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( "response");
                     console.log( response);
 
+                    console.log("updated_student_rows in response", "updated_student_rows" in response);
                     if ("updated_student_rows" in response) {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
                         if(el_MSTUD_loader){ el_MSTUD_loader.classList.add(cls_visible_hide)};
 
                         const tblName = "student";
+                    console.log("tblName" , tblName);
                         RefreshDataRows(tblName, response.updated_student_rows, student_rows, true)  // true = update
                     };
 
@@ -1148,11 +1150,16 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDataRows  ================ PR2020-08-16 PR2021-06-16
     function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
+        console.log(" --- RefreshDataRows  ---");
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+
+        console.log("tblName" , tblName);
+        console.log("update_rows" , update_rows);
+        console.log("data_rows" , data_rows);
 
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[tblName];
+        console.log("field_setting" , field_setting);
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
                 RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
             }
@@ -1165,9 +1172,9 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
-        //console.log(" --- RefreshDatarowItem  ---");
-        //console.log("tblName", tblName);
-        //console.log("update_dict", update_dict);
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("tblName", tblName);
+        console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -1178,7 +1185,7 @@ function RefreshDataRowsAfterUpload(response) {
 
             let field_error_list = []
             const error_list = get_dict_value(update_dict, ["error"], []);
-        //console.log("error_list", error_list);
+    console.log("error_list", error_list);
 
             if(error_list && error_list.length){
 
@@ -1227,8 +1234,8 @@ function RefreshDataRowsAfterUpload(response) {
                 const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 const datarow_index = index;
-        //console.log("pk_int", pk_int);
-        //console.log("data_dict", data_dict);
+        console.log("pk_int", pk_int);
+        console.log("data_dict", data_dict);
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -1262,7 +1269,7 @@ function RefreshDataRowsAfterUpload(response) {
                                     updated_columns.push(col_field)
                                 }};
                         };
-        //console.log("updated_columns", updated_columns);
+        console.log("updated_columns", updated_columns);
 
 // ---  update fields in data_row
                         for (const [key, new_value] of Object.entries(update_dict)) {
@@ -1270,7 +1277,7 @@ function RefreshDataRowsAfterUpload(response) {
                                 if (new_value !== data_dict[key]) {
                                     data_dict[key] = new_value
                         }}};
-        //console.log("data_dict", data_dict);
+        console.log("data_dict", data_dict);
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
@@ -1337,33 +1344,56 @@ function RefreshDataRowsAfterUpload(response) {
 
         const student_rows_length = (student_rows) ? student_rows.length : 0;
 
-        let count_selected = 0, student_pk_list = [], print_all = false;
+        let count_selected_passed = 0, count_selected_not_passed = 0, student_pk_list = [], print_all = false;
 
 // get all visible students selected
         if (!student_rows_length){
             msg_html = "no students"
         } else {
+
 // --- count number of selected elements that are not hidden
             const elements = tblBody_datatable.querySelectorAll("tr:not(.display_hide).tsa_tr_selected");
 
             for (let i = 0, tr, el; tr = elements[i]; i++) {
                 const pk_int = get_attr_from_el_int(tr, "data-pk");
                 if(pk_int){
-                    student_pk_list.push(pk_int);
-                    count_selected += 1;
+
+// --- get existing data_dict from data_rows
+                    // check if student has passed - only when printing diploma
+                    // when mode is not "diploma" has_passed = true
+                    const [index, data_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
+                    const has_passed = (!isEmpty(data_dict) &&
+                            (mode !== "diploma" || data_dict.ep01_result === 1 || data_dict.ep02_result === 1 || data_dict.result === 1));
+                    if (has_passed){
+                        student_pk_list.push(pk_int);
+                        count_selected_passed += 1;
+
+                    } else {
+                        count_selected_not_passed += 1;
+                    };
+
                 };
             };
 
 // if there are no selected elements that are not hidden:
-            if (!student_pk_list.length){
+            if (!count_selected_passed && !count_selected_not_passed ){
 // --- count number of elements that are not hidden
                 const elements = tblBody_datatable.querySelectorAll("tr:not(.display_hide)");
                 for (let i = 0, tr, el; tr = elements[i]; i++) {
                     const pk_int = get_attr_from_el_int(tr, "data-pk");
-                    if(pk_int){
+
+                // check if student has passed - only when printing diploma
+                    // when mode is not "diploma" has_passed = true
+                    const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
+                    const has_passed = (!isEmpty(found_dict) &&
+                            (mode !== "diploma" || found_dict.ep01_result === 1 || found_dict.ep02_result === 1 || found_dict.result === 1));
+                    if (has_passed){
                         student_pk_list.push(pk_int);
-                        count_selected += 1;
+                        count_selected_passed += 1;
+                    } else {
+                        count_selected_not_passed += 1;
                     };
+
                 };
             }
 // --- if all students are in list: set print_all = true, so you dont have to filter database on student_pk_list
@@ -1378,11 +1408,6 @@ function RefreshDataRowsAfterUpload(response) {
         }
         mod_dict.print_all = print_all;
 
-        console.log("student_pk_list", student_pk_list);
-        console.log("count_selected", count_selected);
-        console.log("loc.The_diplomas_of", loc.The_diplomas_of);
-        console.log("loc.The_diploma_of", loc.The_diploma_of);
-
         const msg01_txt = (mode === "calc_results") ?
             loc.The_result_of
         : (mode === "prelim") ?
@@ -1390,18 +1415,19 @@ function RefreshDataRowsAfterUpload(response) {
         : (mode === "final") ?
             loc.The_final_gradelist_of
         : (mode === "diploma") ?
-            (count_selected > 1) ? loc.The_diplomas_of : loc.The_diploma_of
+            (count_selected_passed > 1) ? loc.The_diplomas_of : loc.The_diploma_of
         : null;
 
         console.log("msg01_txt", msg01_txt);
         let msg02_txt = '';
-        if (count_selected === 1) {
+
+        if (count_selected_passed === 1) {
             const pk_int = student_pk_list[0];
             const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
             const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
             if (!isEmpty(data_dict)) {msg02_txt = (data_dict.fullname) ? data_dict.fullname : "---"};
         } else {
-            msg02_txt = count_selected + loc.candidates
+            msg02_txt = count_selected_passed + loc.candidates
         };
 
         let msg_html = null;
@@ -1413,12 +1439,11 @@ function RefreshDataRowsAfterUpload(response) {
         } else {
             msg_html = ["<p>",
                             msg01_txt, " ",  msg02_txt, " ",
-                            (count_selected === 1) ? loc.will_be_downloaded_sing : loc.will_be_downloaded_plur,
+                            (count_selected_passed === 1) ? loc.will_be_downloaded_sing : loc.will_be_downloaded_plur,
                              "</p>"
                           ].join("");
         }
 
-        console.log("msg_html", msg_html);
         el_MGL_info_container.innerHTML = msg_html;
         console.log("el_MGL_info_container", el_MGL_info_container);
         console.log("pres_secr_dict", pres_secr_dict);

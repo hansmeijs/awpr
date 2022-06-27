@@ -120,31 +120,15 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
     is_score = 'score' in examgradetype
     is_grade = 'grade' in examgradetype
 
-    #is_se = examgradetype in ("segrade", "srgrade")
-    #is_sr = examgradetype == "srgrade"
-    #is_se_grade = (examgradetype == "segrade")
-    #is_pe_or_ce = (examgradetype in ("pescore", "pegrade", "cescore", "cegrade"))
-
     # gradetypes are: 0: None, 1: number, 2: character (g, o, v)
     gradetype = si_dict.get('gradetype')
     no_ce_years = si_dict.get('no_ce_years')
-
-    # weight_se = si_dict.get('weight_se')
-    # weight_ce = si_dict.get('weight_ce')
-    # is_combi = si_dict.get('is_combi')
-    # extra_count_allowed = si_dict.get('extra_count_allowed')
-    # extra_nocount_allowed = si_dict.get('extra_nocount_allowed')
-    # si_has_practex = si_dict.get('has_practexam')
-    # si_sr_allowed = si_dict.get('sr_allowed')
 
     subj_code = si_dict.get('subj_code')
 
     studsubj = grade_instance.studentsubject
 
     student = studsubj.student
-    # has_dyslexie = student.has_dyslexie
-    # st_iseveningstudent = student.iseveningstudent
-    # st_islexstudent =student.islexstudent
 
     # bis_exam = student.bis_exam
     # st_partial_exam = student.partial_exam  # get certificate, only when evening- or lexstudent
@@ -160,9 +144,6 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
     if exam:
         max_score = exam.scalelength
         is_secret_exam = exam.secret_exam
-        # nex_id = exam.nex_id
-        # cesuur = exam.cesuur
-        # nterm = exam.nterm
 
     if logging_on:
         logger.debug(' ')
@@ -196,6 +177,8 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
             logger.debug('     validate_grade_examgradetype_in_examyear:     ' + str(err_list))
 
 # - check if it is allowed to enter a score / grade because of is_secret_exam
+    # nota any more. ALso when secret exam you must enter score, not grade
+    # entering pe- and ce-grades not allowed in ep01, ep02 and ep03, only when exemption ce-grades can be entered
     if not error_list:
         err_list = validate_grade_secret_exam(examperiod, gradetype, is_secret_exam)
         if err_list:
@@ -568,7 +551,7 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
 
 def validate_grade_secret_exam(examperiod, examgradetype, is_secret_exam):  # PR2022-05-20
     # - check if it is allowed to enter a score / grade because of is_secret_exam
-
+    # PR2022-06-22 secret_exam also enters scores, only difference is that examiner and commissioner dont need to approve it
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_grade_secret_exam ----- ')
@@ -580,36 +563,39 @@ def validate_grade_secret_exam(examperiod, examgradetype, is_secret_exam):  # PR
 
     err_list = []
     col_name = None
-    if is_secret_exam:
-        if examgradetype in ('pescore', 'cescore'):
-            if examperiod == c.EXAMPERIOD_FIRST:
-                col_name = _('CE grade')
-            elif examperiod == c.EXAMPERIOD_SECOND:
-                col_name = _('Re-examination grade')
-            elif examperiod == c.EXAMPERIOD_THIRD:
-                col_name = _('Third period grade')
-            if col_name:
-                err_list.extend(((
-                    str(_('This exam is taken at the Division of Exams.')),
-                    str(_('You cannot enter scores in this exam.')),
-                    str(_('The grade of this exam will be provided by the Division of Exams.')),
-                    str(_("You can enter this grade in the column '%(cpt)s'.") % {'cpt': col_name}))))
-    else:
-        if examgradetype in ('pegrade', 'cegrade'):
-            if examperiod == c.EXAMPERIOD_FIRST:
-                col_name = _('CE score')
-            elif examperiod == c.EXAMPERIOD_SECOND:
-                col_name = _('Re-examination score')
-            elif examperiod == c.EXAMPERIOD_THIRD:
-                col_name = _('Third period score')
-            if col_name:
-                err_list.extend(((
-                    str(_('You cannot enter grades in this exam.')),
-                    str(_("Enter the score in the column '%(cpt)s'.") % {'cpt': col_name}),
-                    str(_('AWP will calculate the grade when the conversion table has been published.')))))
+    # PR2022-06-22 was:
+    #if is_secret_exam:
+    #    if examgradetype in ('pescore', 'cescore'):
+    #        if examperiod == c.EXAMPERIOD_FIRST:
+    #            col_name = _('CE grade')
+    #        elif examperiod == c.EXAMPERIOD_SECOND:
+    #            col_name = _('Re-examination grade')
+    #        elif examperiod == c.EXAMPERIOD_THIRD:
+    #            col_name = _('Third period grade')
+    #        if col_name:
+    #            err_list.extend(((
+    #                str(_('This exam is taken at the Division of Exams.')),
+    #                str(_('You cannot enter scores in this exam.')),
+    #                str(_('The grade of this exam will be provided by the Division of Exams.')),
+    #                str(_("You can enter this grade in the column '%(cpt)s'.") % {'cpt': col_name}))))
+    #else:
+    # entering grades not allowed in ep01, ep02 and ep03
+    if examgradetype in ('pegrade', 'cegrade'):
+        if examperiod == c.EXAMPERIOD_FIRST:
+            col_name = _('CE score')
+        elif examperiod == c.EXAMPERIOD_SECOND:
+            col_name = _('Re-examination score')
+        elif examperiod == c.EXAMPERIOD_THIRD:
+            col_name = _('Third period score')
+        if col_name:
+            err_list.extend(((
+                str(_('You cannot enter a grade.')),
+                str(_("Enter the score in the column '%(cpt)s'.") % {'cpt': col_name}),
+                str(_('AWP will calculate the grade when the conversion table has been published.')))))
 
     if logging_on:
         logger.debug('     err_list: ' + str(err_list))
+
     return err_list
 # - en of validate_grade_secret_exam
 

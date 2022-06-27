@@ -21,7 +21,6 @@ from schools import dicts as sch_dicts
 import logging
 logger = logging.getLogger(__name__)
 
-
 height = 32
 indent_none = 0
 indent_10 = 10
@@ -238,6 +237,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         # if sel_examyear and display_school:
         if sel_examyear:
+
+
             sel_schoolbase, save_sel_schoolbase_NIU = af.get_sel_schoolbase_instance(request)
             school_name = sel_schoolbase.code if sel_schoolbase.code else ''
     # - get school from sel_schoolbase and sel_examyear

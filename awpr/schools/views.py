@@ -91,7 +91,9 @@ def home(request):
 
 
 def Loggedin(request):
-    logger.debug('  ==========  Loggedin ==========')
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  ==========  Loggedin ==========')
     # redirect to saved_href of last selected menubutton # PR2018-12-25 # PR2020-10-22 PR2021-01-25
 
 # retrieve last opened page from, so at next login this page will open. Uses in LoggedIn
@@ -100,7 +102,9 @@ def Loggedin(request):
         req_usr = request.user
         #logger.debug('req_usr: ' + str(req_usr))
         sel_page_dict = acc_view.get_usersetting_dict(c.KEY_SEL_PAGE, request)
-        logger.debug('sel_page_dict: ' + str(sel_page_dict))
+
+        if logging_on:
+            logger.debug('sel_page_dict: ' + str(sel_page_dict))
 
         if sel_page_dict is not None:
             sel_page = sel_page_dict.get('page')
@@ -121,7 +125,9 @@ def Loggedin(request):
 
     # get page_url of sel_page, returns 'page_student' when not found
     page_url = awpr_menu.get_saved_page_url(sel_page, request)
-    #logger.debug('page_url: ' + str(page_url))
+
+    if logging_on:
+        logger.debug('page_url: ' + str(page_url))
 
     return HttpResponseRedirect(reverse_lazy(page_url))
 

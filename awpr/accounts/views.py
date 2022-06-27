@@ -2241,14 +2241,17 @@ def get_usr_schoolname_with_article(user):  # PR2019-03-09 PR2021-01-25 PR2021-0
 # - end of set_usersetting_from_upload_subdict
 
 
-def get_username_dict():  # PR2021-12-19
+def get_username_dict(request):  # PR2021-12-19 PR2022-06-24
     # create dict with key = user_pk and value = username
     # used to add auth names without adding LEFT JOIN accounts_user to sql
 
+    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+    sql_keys = {'sb_id': schoolbase_pk}
+
     username_dict = {}
-    sql = "SELECT au.id, au.last_name FROM accounts_user AS au"
+    sql = "SELECT au.id, au.last_name FROM accounts_user AS au WHERE au.schoolbase_id = %(sb_id)s::INT"
     with connection.cursor() as cursor:
-        cursor.execute(sql)
+        cursor.execute(sql,sql_keys)
 
         for row in cursor.fetchall():
             username_dict[row[0]] = row[1]

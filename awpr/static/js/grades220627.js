@@ -28,6 +28,7 @@ let subject_rows = [];
 let cluster_rows = [];
 
 let schemeitem_rows = [];
+let all_exam_rows = [];
 
 document.addEventListener("DOMContentLoaded", function() {
     "use strict";
@@ -45,6 +46,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     let mod_dict = {};
     const mod_MAG_dict = {};
+    const mod_MSELEX_dict = {};
+
     let mod_status_dict = {};
     let mod_note_dict = {};
 
@@ -97,6 +100,9 @@ document.addEventListener("DOMContentLoaded", function() {
         examnumber: "Examnumber", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
     };
     columns_tobe_hidden.btn_exem = {exemption_year: "Exemption_year"};
+    columns_tobe_hidden.btn_ep_01 = {ce_exam_name: "Exam"};
+    columns_tobe_hidden.btn_reex = {ce_exam_name: "Exam"};
+    columns_tobe_hidden.btn_reex03 = {ce_exam_name: "Exam"};
 
 // --- get field_settings
     const field_settings = {
@@ -113,59 +119,58 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l",
                                  "c", "c", "c", "c", "c"]},
 
-        btn_ep_01: { field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
+        btn_ep_01: {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
                                    "segrade", "se_status", "srgrade", "sr_status",
                                    "pescore", "pe_status", "pegrade",
                                     "cescore", "ce_status", "cegrade", "finalgrade",
-                                   "note_status", "download_conv_table"],
+                                   "note_status", "ce_exam_name", "download_conv_table"],
                     field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                    "School_exam_2lines", "", "Herkansing_SE_grade_2lines", "",
                                   "PE_score", "", "PE_grade",
                                   "CE_score", "", "CE_grade", "Final_grade_twolines",
-                                  "", "Download_conv_table_2lines"],
-
+                                  "", "Exam", ""],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
                                 "input", "div",  "input", "div",
                                 "input", "div", "input",
                                 "input", "div", "input", "div",
-                                "div", "a"],
+                                "div", "div", "a"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
                                 "text", "status", "text", "status",
                                 "text", "status", "text",
                                 "text", "status", "text",  "text",
-                                "toggle", "text", ],
+                                "toggle", "text", "text" ],
                     field_width: ["020", "060", "240", "060", "060", "120", "075","240",
                                 "090", "020", "090", "020",
                                 "090", "020", "090",
                                 "090", "020", "090", "090",
-                                 "032", "100"],
+                                 "032", "180", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c","l",
                                 "c", "c", "c", "c",
                                 "c", "c", "c",
                                 "c", "c", "c", "c",
-                                "c", "c"]},
+                                "c", "l", "c"]},
 
-        btn_reex:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                                  "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Download_conv_table_2lines"],
-                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
-                                  "cescore", "ce_status", "cegrade", "note_status", "download_conv_table"],
+        btn_reex:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
+                                  "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
+                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
+                                  "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Exam", ""],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
-                                "input", "div",  "input", "div", "a"],
+                                "input", "div",  "input", "div", "div", "a"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
-                                "text", "status", "text", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "100"],
+                                "text", "status", "text", "text", "toggle", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "180", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]},
 
-        btn_reex03:  { field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
-                                  "Third_period_grade_2lines", "", ""],
-                    field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "cluster_name", "subj_code", "subj_name",
-                                  "cegrade", "ce_status","note_status"], // 3d period has no score, is always 'geheim examen'
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div",
-                                    "input", "status",  "div"],
-                    filter_tags: ["text", "text","text", "text", "text", "text", "text", "text",
-                                    "text", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075","240", "090", "020", "032"],
-                    field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c",  "c"]},
+        btn_reex03:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
+                                  "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
+                    field_caption: ["", "Ex_nr", "Candidate", "Leerweg_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
+                                  "Third_period_score_2lines", "", "Third_period_grade_2lines", "", "Exam", ""],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div","div",
+                                "input", "div",  "input", "div", "div", "a"],
+                    filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
+                                "text", "status", "text", "text", "toggle", "text", "text"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "180", "032"],
+                    field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]},
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -273,7 +278,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const el_MAG_examperiod = document.getElementById("id_MAG_examperiod");
             const el_MAG_examtype = document.getElementById("id_MAG_examtype");
 
-
         if (el_MAG_examtype){
             el_MAG_examtype.addEventListener("change", function() {MAG_ExamtypeChange(el_MAG_examtype)}, false );
         };
@@ -308,6 +312,21 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MAG_btn_save.addEventListener("click", function() {MAG_Save("save")}, false );
         };
         const el_MAG_btn_cancel = document.getElementById("id_MAG_btn_cancel");
+
+// ---  MSELEX MOD SELECT EXAM ------------------------------
+        const el_MSELEX_header = document.getElementById("id_MSELEX_header");
+        const el_MSELEX_info_container = document.getElementById("id_MSELEX_info_container");
+
+        const el_MSELEX_tblBody_select = document.getElementById("id_MSELEX_tblBody_select");
+        const el_MSELEX_btn_cancel = document.getElementById("id_MSELEX_btn_cancel");
+        const el_MSELEX_btn_save = document.getElementById("id_MSELEX_btn_save");
+        if (el_MSELEX_btn_save){
+            el_MSELEX_btn_save.addEventListener("click", function() {MSELEX_Save(false)}, false )
+        }
+        const el_MSELEX_btn_delete = document.getElementById("id_MSELEX_btn_delete");
+        if (el_MSELEX_btn_delete){
+            el_MSELEX_btn_delete.addEventListener("click", function() {MSELEX_Save(true)}, false )  // true = is_delete
+        }
 
 // ---  MOD CONFIRM ------------------------------------
         const el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -353,7 +372,6 @@ document.addEventListener("DOMContentLoaded", function() {
             };
         };
 
-
 // ---  MOD IMPORT ------------------------------------
 // --- create EventListener for select dateformat element
 // --- create EventListener for buttons in btn_container
@@ -373,15 +391,6 @@ document.addEventListener("DOMContentLoaded", function() {
         el_MIMP_btn_filedialog.addEventListener("click", function() {MIMP_OpenFiledialog(el_MIMP_filedialog)}, false)};
     const el_MIMP_filename = document.getElementById("id_MIMP_filename");
 
-    //const el_MIMP_tabular = document.getElementById("id_MIMP_tabular");
-    //if (el_MIMP_tabular){
-    //    el_MIMP_tabular.addEventListener("change", function() {MIMP_CheckboxCrosstabTabularChanged(el_MIMP_tabular)}, false )
-    //};
-    //const el_MIMP_crosstab = document.getElementById("id_MIMP_crosstab");
-    //if (el_MIMP_crosstab){
-    //    el_MIMP_crosstab.addEventListener("change", function() {MIMP_CheckboxCrosstabTabularChanged(el_MIMP_crosstab)}, false )
-    //};
-
     const el_worksheet_list = document.getElementById("id_MIMP_worksheetlist");
     if (el_worksheet_list){el_worksheet_list.addEventListener("change", function() {MIMP_SelectWorksheet(el_worksheet_list)}, false )};
 
@@ -398,7 +407,6 @@ document.addEventListener("DOMContentLoaded", function() {
    if (el_MIMP_btn_test){el_MIMP_btn_test.addEventListener("click", function() {MIMP_Save("test", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false)};
    const el_MIMP_btn_upload = document.getElementById("id_MIMP_btn_upload");
    if (el_MIMP_btn_upload){el_MIMP_btn_upload.addEventListener("click", function() {MIMP_Save("save", RefreshDataRowsAfterUploadFromExcel, setting_dict)}, false)};
-
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
     const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -426,7 +434,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
             student_rows: {cur_dep_only: true},
             studentsubject_rows: {cur_dep_only: true},
-            grade_rows: {cur_dep_only: true}
+            grade_rows: {cur_dep_only: true},
+
+            all_exam_rows: {get: true}
         };
 
         DatalistDownload(datalist_request);
@@ -441,7 +451,8 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
 
-// --- reset table rows, dont delete  header
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
 
 // ---  show loader
@@ -548,6 +559,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     grade_rows = response.grade_rows;
         // get icons of notes and status PR2021-04-21
                     DownloadGradeStatusAndIcons();
+                };
+
+                if ("all_exam_rows" in response) {
+                    all_exam_rows = response.all_exam_rows;
                 };
 
                 SBR_display_subject_cluster_student();
@@ -739,7 +754,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 page: "page_grade",
                 sel_examperiod: sel_examperiod
                 },
-            grade_rows: {cur_dep_only: true}
+            grade_rows: {cur_dep_only: true},
+            all_exam_rows: {get: true}
         };
         DatalistDownload(datalist_request);
     };  // HandleSbrPeriod
@@ -786,7 +802,8 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         // mode = "level" or "sector"
 
-// --- reset table rows, dont delete  header
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
 
 // - get new value from el_select
@@ -817,7 +834,8 @@ document.addEventListener("DOMContentLoaded", function() {
             student_rows: {cur_dep_only: true},
             studentsubject_rows: {cur_dep_only: true},
 
-            grade_rows: {cur_dep_only: true}
+            grade_rows: {cur_dep_only: true},
+            all_exam_rows: {get: true}
         };
 
         DatalistDownload(datalist_request);
@@ -1007,7 +1025,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
-                grade_rows: {cur_dep_only: true}
+                grade_rows: {cur_dep_only: true},
+                all_exam_rows: {get: true}
             };
 
             DatalistDownload(datalist_request);
@@ -1061,51 +1080,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const data_rows = get_datarows_from_selectedBtn()
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
-
-// - hide columns that are not in use this examyear or this department PR2021-12-04
-        // PR2021-12-04 use spread operator. from https://stackoverflow.com/questions/4842993/javascript-push-an-entire-list
-        // PR2022-04-19 Sentry debug: Syntax error
-        // back from spread operator, is not supported bij IE
-
-        // hide srgrade when not sr_allowed
-        if(!setting_dict.sr_allowed){col_hidden.push("srgrade", "sr_status")};
-
-        // hide pe or ce + pe when not allowed
-        if(setting_dict.no_centralexam){
-            col_hidden.push("pescore", "pe_status", "pegrade", "cescore", "ce_status", "cegrade");
-        } else if(setting_dict.no_practexam){
-            col_hidden.push("pescore", "pe_status", "pegrade");
-        };
-
-// - hide level when not level_req
-        if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
-
-// - show only columns of sel_examtype
-        // dont show examtype, Richard Westerink ATC didnt see that select btn.
-        /*
-        console.log( "setting_dict.sel_examtype", setting_dict.sel_examtype);
-        if(setting_dict.sel_examtype === "se"){
-            col_hidden.push("srgrade", "sr_status",
-                               "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade");
-        } else if(setting_dict.sel_examtype === "sr"){
-            col_hidden.push("segrade", "se_status",
-                               "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade");
-        } else if(setting_dict.sel_examtype === "pe"){
-            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
-                                    "cescore", "ce_status", "cegrade", "finalgrade");
-        } else if(  ["ce", "reex", "reex03"].includes(setting_dict.sel_examtype)){
-            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
-                                   "pescore", "pe_status", "pegrade",
-                                    "finalgrade");
-        };
-        */
-        col_hidden.push( "srgrade", "sr_status", "pescore", "pe_status", "pegrade");
-        //console.log( "col_hidden", col_hidden);
+        const col_hidden = get_column_is_hidden();
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -1145,7 +1120,7 @@ document.addEventListener("DOMContentLoaded", function() {
             td.setAttribute("colspan", 6);
             let el = document.createElement("p");
             el.className = "border_bg_transparent text-muted p-2 my-4"
-            el.innerHTML = loc.reex_msg_01 + "<br>" + loc.reex_msg_02;
+            el.innerHTML = (selected_btn === "btn_reex03") ? loc.reex03_msg_01 + "<br>" + loc.reex03_msg_02 : loc.reex_msg_01 + "<br>" + loc.reex_msg_02;
             td.appendChild(el);
         };
 
@@ -1166,7 +1141,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
-            const is_status_field = (field_name !== "note_status" && field_name.includes("_status"));
+            const skip_left_border = (field_name === "download_conv_table") ||  (field_name !== "note_status" && field_name.includes("_status"));
 
     // --- skip column if in columns_hidden
             //example of mapped field
@@ -1208,8 +1183,8 @@ document.addEventListener("DOMContentLoaded", function() {
                         el_header.classList.add(class_str)
                     }
 
-        // --- add left border, not when status field
-                    if(j && !is_status_field){th_header.classList.add("border_left")};
+        // --- add left border, not when status field or download_exam
+                    if(j && !skip_left_border){th_header.classList.add("border_left")};
 
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
@@ -1227,7 +1202,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     el_filter.setAttribute("data-filtertag", filter_tag);
 
         // --- add left border, not when status field
-                    if(j && !is_status_field){th_filter.classList.add("border_left")};
+                    if(j && !skip_left_border){th_filter.classList.add("border_left")};
 
         // --- add EventListener to el_filter
                     if (["text", "number"].includes(filter_tag)) {
@@ -1309,7 +1284,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++  insert td's into tblRow
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
+
             const is_status_field = (field_name !== "note_status" && field_name.includes("_status"));
+            const skip_left_border = (field_name === "download_conv_table" || is_status_field);
 
     // --- skip columns if in columns_hidden
             //example of mapped field
@@ -1405,8 +1382,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     el.classList.add("pr-2");
                 }
 
-    // --- add left border, not when status field
-                if(j && !is_status_field){td.classList.add("border_left")};
+    // --- add left border, not when status field or download field
+                if(j && !skip_left_border){td.classList.add("border_left")};
 /*
 // --- add column with status icon, only when weigning > 0
                 if (["se_status", "sr_status"].includes(field_name)){
@@ -1442,6 +1419,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         add_hover(td);
                     }
                     */
+                } else if (field_name === "ce_exam_name"){
+                    td.addEventListener("click", function() {MSELEX_Open(el)}, false);
+                    add_hover(td);
 
                 } else if (field_name === "download_conv_table"){
             // +++  create href and put it in button PR2021-05-07
@@ -1449,7 +1429,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         // td.class_align necessary to center align a-element
                         td.classList.add(class_align);
                         add_hover(td);
-                        el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
+                        //el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
+                        el.innerHTML = "&emsp;&#8681;&emsp;";
+                        td.title = loc.Download_conv_table;
                         // target="_blank opens file in new tab
                         el.target = "_blank";
                     };
@@ -1571,6 +1553,9 @@ document.addEventListener("DOMContentLoaded", function() {
                     //    inner_text = format_dateISO_vanilla (loc, data_dict.datepublished, true, false, true, false);
                     } else {
                         inner_text = fld_value;
+                        if (field_name === "ce_exam_name"){
+                            title_text = fld_value
+                        };
                     }
                     //el_div.innerText = (inner_text) ? inner_text : null;
                     el_div.innerText = (inner_text) ? inner_text : "\n"; // \n is necessary to show green field when blank
@@ -1701,7 +1686,7 @@ document.addEventListener("DOMContentLoaded", function() {
     };  // UpdateFieldStatus
 
 //=========  UpdateFieldDownloadExam  ================ PR2022-05-17
-    function UpdateFieldDownloadExam(tblName, el_div, data_dict) {
+    function UpdateFieldDownloadExamNIU(tblName, el_div, data_dict) {
 
         const show_href = (tblName === "ete_exam" || (data_dict.ce_exam_id && !data_dict.secret_exam && data_dict.ceex_published_id) );
         if (show_href){
@@ -1788,8 +1773,8 @@ document.addEventListener("DOMContentLoaded", function() {
             columns_shown.fullname = true;
             columns_shown.subj_code = true;
             columns_shown.subj_name = true;
-        }
-    }  // set_columns_shown
+        };
+    };  // set_columns_shown
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-12-15
 
@@ -3693,10 +3678,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows, skip_show_ok) {
-        //console.log(" --- RefreshDatarowItem  ---");
+        console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-    //console.log("update_dict", update_dict);
+    console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -3723,23 +3708,25 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             if(!isEmpty(data_dict)){
                 for (const [key, new_value] of Object.entries(update_dict)) {
 
-    // ---  if value has changed: add field to updated_columns before updateing data_dict
+    // ---  if value has changed: add field to updated_columns before updating data_dict
                     // PR2022-05-25 this doesnt work: se_blocked is boolean, se_status is int.
-                    const mapped_key = key;  // (key === "se_blocked") ? "se_status" :
+                    //const mapped_key =  (key === "se_blocked") ? "se_status" :
                                             //(key === "sr_blocked") ? "sr_status" :
                                             //(key === "pe_blocked") ? "pe_status" :
                                             //(key === "ce_blocked") ? "ce_status" : key;
-
-                    if (mapped_key in data_dict && new_value !== data_dict[mapped_key]) {
-                        updated_columns.push(mapped_key);
-                    };
-
-    // ---  put updated value back in data_map
-                    if(key in data_dict && new_value !== data_dict[key]) {
+                    if (key in data_dict && new_value !== data_dict[key]) {
+    // ---  first put key in updated_columns
+                        updated_columns.push(key);
+    // ---  then put updated value back in data_map
                         data_dict[key] = update_dict[key];
+                        if(key === "ce_exam_id"){
+                        // also update download_conv_table when ce_exam_id has changed
+                            updated_columns.push("download_conv_table");
+                        };
                     };
                 };
-    //console.log("updated_columns", updated_columns);
+    console.log("updated_columns", updated_columns);
+    console.log("data_dict", data_dict);
 
         // ---  make update in tblRow
                 const tblRow = document.getElementById(data_dict.mapid);
@@ -3997,7 +3984,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
-                grade_rows: {cur_dep_only: true}
+                grade_rows: {cur_dep_only: true},
+                all_exam_rows: {get: true}
             };
         DatalistDownload(datalist_request);
     }  // MSED_Response
@@ -4112,7 +4100,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
-                grade_rows: {get: true}
+                grade_rows: {get: true},
+                all_exam_rows: {get: true}
             };
 
             DatalistDownload(datalist_request);
@@ -4488,6 +4477,191 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
             };
         };
     };  // MEX3_reset_layout_options
+
+///////////////////////////////////////
+// +++++++++ MOD SELECT EXAM  ++++++++++++++++ PR2022-06-22
+    function MSELEX_Open(el_input){
+        console.log(" ===  MSELEX_Open  =====") ;
+        console.log( "el_input", el_input);
+        // only called in table "grades" when clicked on field "ceex_name"
+        // cannot change exam when it is approved or published
+
+        el_MSELEX_header.innerText = loc.Select_exam;
+
+        b_clear_dict(mod_MSELEX_dict);
+        mod_MSELEX_dict.exam_pk = null;
+
+        if(permit_dict.permit_crud){
+            const tblRow = t_get_tablerow_selected(el_input)
+            const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        console.log("pk_int", pk_int);
+            const [index, found_dict, compare] = b_recursive_integer_lookup(grade_rows, "id", pk_int);
+            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+            const datarow_index = index;
+        console.log("data_dict", data_dict);
+
+            if(!isEmpty(data_dict)){
+                const auth1by_field =  "ce_exam_auth1by_id" ;
+                const auth2by_field =  "ce_exam_auth2by_id" ;
+                const publ_field = "ce_exam_published_id" ;
+
+                if (!!data_dict.ce_exam_published_id){
+    // exit and give message when grade is submitted
+                    b_show_mod_message_html(loc.err_list.This_exam_is_submitted + "<br>" + loc.err_list.You_cannot_change_exam);
+                } else if (!!data_dict.ce_exam_auth1by_id || !!data_dict.ce_exam_auth2by_id){
+    // exit and give message when grade is submitted
+                    b_show_mod_message_html(loc.err_list.This_exam_is_approved + "<br>" + loc.err_list.You_cannot_change_exam);
+
+                } else {
+                    mod_MSELEX_dict.exam_pk = data_dict.ce_exam_id;
+                    mod_MSELEX_dict.mapid = data_dict.mapid;
+                    mod_MSELEX_dict.grade_pk = data_dict.id;
+                    mod_MSELEX_dict.student_pk = data_dict.student_id;
+                    mod_MSELEX_dict.studsubj_pk = data_dict.studsubj_id;
+                    mod_MSELEX_dict.subj_pk = data_dict.subj_id;
+                    mod_MSELEX_dict.subjbase_pk = data_dict.subjbase_id;
+                    mod_MSELEX_dict.student_lvlbase_pk = data_dict.lvlbase_id;
+            console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+            console.log( "mod_MSELEX_dict.exam_pk", mod_MSELEX_dict.exam_pk);
+
+        // ---  fill select table
+                    const row_count = MSELEX_FillSelectTable()
+                    // hide remove button when grade has no exam
+                    add_or_remove_class(el_MSELEX_btn_delete, cls_hide, !data_dict.ce_exam_id)
+                    add_or_remove_class(el_MSELEX_btn_save, cls_hide, !row_count)
+                    el_MSELEX_btn_cancel.innerText = (row_count) ? loc.Cancel : loc.Close;
+                    MSELEX_validate_and_disable();
+
+                    add_or_remove_class(el_MSELEX_info_container, cls_hide, true);
+
+        // ---  show modal
+                    $("#id_mod_select_exam").modal({backdrop: true});
+
+                };  // if (is_published || is_authby){
+            };  // if(!isEmpty(data_dict))
+        };
+    };  // MSELEX_Open
+
+//=========  MSELEX_Save  ================ PR2021-05-22 PR2022-01-24
+    function MSELEX_Save(is_delete){
+        console.log(" ===  MSELEX_Save  =====") ;
+
+        console.log( "mod_MSELEX_dict: ", mod_MSELEX_dict);
+        const sel_exam_pk = (!is_delete && mod_MSELEX_dict.exam_pk) ? mod_MSELEX_dict.exam_pk : null;
+        if(permit_dict.permit_crud){
+            const upload_dict = {
+                table: 'grade',
+                mode: "update",
+                return_grades_with_exam: true,
+                examyear_pk: setting_dict.sel_examyear_pk,
+                depbase_pk: setting_dict.sel_depbase_pk,
+                examperiod: setting_dict.sel_examperiod,
+                exam_pk: sel_exam_pk,
+                student_pk: mod_MSELEX_dict.student_pk,
+                lvlbase_pk: mod_MSELEX_dict.student_lvlbase_pk,
+                studsubj_pk: mod_MSELEX_dict.studsubj_pk,
+                grade_pk: mod_MSELEX_dict.grade_pk,
+            };
+
+            UploadChanges(upload_dict, urls.url_grade_upload);
+
+        }  // if(permit_dict.permit_crud){
+        $("#id_mod_select_exam").modal("hide");
+    }  // MSELEX_Save
+
+//=========  MSELEX_FillSelectTable  ================ PR2022-06-22
+    function MSELEX_FillSelectTable() {
+        console.log( "===== MSELEX_FillSelectTable ========= ");
+
+        const tblBody_select = el_MSELEX_tblBody_select;
+        tblBody_select.innerText = null;
+
+        console.log( "all_exam_rows", all_exam_rows);
+        let row_count = 0, add_to_list = false;
+// ---  loop through all_exam_rows
+        if(all_exam_rows && all_exam_rows.length){
+            for (let i = 0, data_dict; data_dict = all_exam_rows[i]; i++) {
+
+            // add only when exam has same subject as grade, and also the same depbase and lvlbase_id
+            // PR2022-05-18 debug Mireille Peterson exam not showing
+            // cause: sxm has different subj_pk, use subjbase_pk instead
+                let show_row = false;
+                if (mod_MSELEX_dict.subjbase_pk === data_dict.subjbase_id){
+                    if(mod_MSELEX_dict.student_lvlbase_pk){
+                        show_row = (mod_MSELEX_dict.student_lvlbase_pk === data_dict.lvlbase_id);
+                    } else {
+                        show_row = true;
+                    };
+                };
+                if (show_row){
+        console.log( "data_dict", data_dict);
+                    row_count += 1;
+                    MSELEX_FillSelectRow(data_dict, tblBody_select, -1);
+                };
+            };
+        };
+        if(!row_count){
+            let tblRow = tblBody_select.insertRow(-1);
+            let td = tblRow.insertCell(-1);
+            td.innerText = loc.No_exam_for_this_subject;
+
+        } else if(row_count === 1){
+            let tblRow = tblBody_select.rows[0]
+            if(tblRow) {
+// ---  make first row selected
+                //tblRow.classList.add(cls_selected)
+
+                MSELEX_SelectItem(tblRow);
+            };
+        };
+        return row_count
+    }; // MSELEX_FillSelectTable
+
+//=========  MSELEX_FillSelectRow  ================ PR2020-10-27
+    function MSELEX_FillSelectRow(exam_dict, tblBody_select, row_index) {
+        //console.log( "===== MSELEX_FillSelectRow ========= ");
+        //console.log( "exam_dict: ", exam_dict);
+
+//--- loop through data_map
+        const exam_pk_int = exam_dict.id;
+        const code_value = (exam_dict.exam_name) ? exam_dict.exam_name : "---"
+        const is_selected_pk = (mod_MSELEX_dict.exam_pk != null && exam_pk_int === mod_MSELEX_dict.exam_pk)
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(row_index);
+        tblRow.setAttribute("data-pk", exam_pk_int);
+// ---  add EventListener to tblRow
+        tblRow.addEventListener("click", function() {MSELEX_SelectItem(tblRow)}, false )
+// ---  add hover to tblRow
+        add_hover(tblRow);
+// ---  highlight clicked row
+        if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+// --- add a element to td., necessary to get same structure as item_table, used for filtering
+        let el_div = document.createElement("div");
+            el_div.innerText = code_value;
+            el_div.classList.add("tw_360", "px-2", "pointer_show" )
+        td.appendChild(el_div);
+    }  // MSELEX_FillSelectRow
+
+//=========  MSELEX_SelectItem  ================ PR2021-04-05
+    function MSELEX_SelectItem(tblRow) {
+        console.log( "===== MSELEX_SelectItem ========= ");
+        console.log( "tblRow", tblRow);
+// ---  deselect all highlighted rows
+        DeselectHighlightedRows(tblRow, cls_selected)
+// ---  highlight clicked row
+        tblRow.classList.add(cls_selected)
+// ---  get pk code and value from tblRow in mod_MSELEX_dict
+        mod_MSELEX_dict.exam_pk = get_attr_from_el_int(tblRow, "data-pk")
+        console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+        MSELEX_validate_and_disable();
+    }  // MSELEX_SelectItem
+
+//=========  MSELEX_Save  ================ PR2021-05-22
+    function MSELEX_validate_and_disable(){
+        el_MSELEX_btn_save.disabled = !mod_MSELEX_dict.exam_pk;
+    }
 
 ///////////////////////////////////////
 
@@ -5033,15 +5207,25 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
     }  // ValidateGrade
 ////////////////////////////////////////////////
 
-//========= get_column_is_hidden  ====== PR2022-04-17
+//========= get_column_is_hidden  ====== PR2022-04-17 PR2022-06-22
     function get_column_is_hidden() {
-    // ---  get list of hidden columns
+        console.log(" --- get_column_is_hidden ---")
+
+// ---  get list of hidden columns
+
+// ---  get list of hidden columns
         // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
+        const col_hidden = ["srgrade", "sr_status", "pescore", "pe_status", "pegrade"];
+        // can also add multiple values with push:
+        // was:
+        // col_hidden.push( "srgrade", "sr_status", "pescore", "pe_status", "pegrade");
+
         b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
 
 // - hide columns that are not in use this examyear or this department PR2021-12-04
         // PR2021-12-04 use spread operator. from https://stackoverflow.com/questions/4842993/javascript-push-an-entire-list
+        // PR2022-04-19 Sentry debug: Syntax error
+        // back from spread operator, is not supported bij IE
 
         // hide srgrade when not sr_allowed
         if(!setting_dict.sr_allowed){col_hidden.push("srgrade", "sr_status")};
@@ -5056,27 +5240,19 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // - hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
-// - hide exemption_year when not evening or lex school
-         if(!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){col_hidden.push("exemption_year")};
+// - show or hide download column when ce_exam_name is shown hidden PR2022-06-22
+        const fldName = "download_conv_table";
+        if(col_hidden.includes("ce_exam_name")) {
+            if(!col_hidden.includes(fldName)) { col_hidden.push(fldName) }
+        } else {
+            if(col_hidden.includes(fldName)) { b_remove_item_from_array(col_hidden, fldName)}
+        };
 
 // - show only columns of sel_examtype
-        //console.log( "setting_dict.sel_examtype", setting_dict.sel_examtype);
-        if(setting_dict.sel_examtype === "se"){
-            col_hidden.push("srgrade", "sr_status",
-                               "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade");
-        } else if(setting_dict.sel_examtype === "sr"){
-            col_hidden.push("segrade", "se_status",
-                               "pescore", "pe_status", "pegrade",
-                                "cescore", "ce_status", "cegrade", "finalgrade");
-        } else if(setting_dict.sel_examtype === "pe"){
-            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
-                                    "cescore", "ce_status", "cegrade", "finalgrade");
-        } else if(  ["ce", "reex", "reex03"].includes(setting_dict.sel_examtype)){
-            col_hidden.push("segrade", "se_status", "srgrade", "sr_status",
-                                   "pescore", "pe_status", "pegrade",
-                                    "finalgrade");
-        };
+        // in field_setting are only columns of the seelected exan type
+        // dont show examtype, Richard Westerink ATC didn't see that select btn.
+
+
         //console.log( "col_hidden", col_hidden);
         return col_hidden;
     };

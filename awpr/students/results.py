@@ -99,14 +99,14 @@ class ArchivesListView(View):  # PR2022-03-09
 class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= GetGradelistDiplomaAuthView ============= ')
 
         update_wrap = {}
         messages = []
 
-        # - get permit
+# - get permit
         has_permit = af.get_permit_crud_of_this_page('page_result', request)
         if True:
 
@@ -331,7 +331,7 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-06
 class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
     def get(self, request, lst):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= DownloadGradelistDiplomaView ============= ')
         response = None
@@ -833,16 +833,18 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
 
 
 def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk,
-                           student_pk_list):  # PR2022-06-16
+                           student_pk_list):  # PR2022-06-16 PR2022-06-24
 
     # NOTE: don't forget to filter deleted = false!! PR2021-03-15
+    # PR2022-06-24 Marisela Cijntje Radulphus: cannot print diploma of passed students with reex
+    # solved by: allow printing if ep01_result or ep02_result or ep01_result = passed
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_diploma_dictlist -----')
         logger.debug('student_pk_list: ' + str(student_pk_list))
 
-    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk,
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'passed': c.RESULT_PASSED,
                 'student_pk_arr': student_pk_list}
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
@@ -851,7 +853,8 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
                 "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.gender, stud.idnumber,",
                 "stud.birthdate, stud.birthcountry, stud.birthcity, stud.bis_exam,",
                 "stud.gl_ce_avg, stud.gl_combi_avg, stud.gl_final_avg, stud.result, stud.result_status,",
-
+                "stud.ep01_result, stud.ep02_result, stud.result,"
+                
                 "school.name AS school_name, school.article AS school_article, school.islexschool,",
                 "sb.code AS school_code, depbase.code AS depbase_code, lvlbase.code AS lvlbase_code,"
                 "ey.code::TEXT AS examyear_txt, c.name AS country,",
@@ -873,7 +876,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
                 "LEFT JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
 
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                "AND stud.result=", str(c.RESULT_PASSED),
+                "AND (stud.ep01_result = %(passed)s::INT OR stud.ep02_result = %(passed)s::INT OR stud.result = %(passed)s::INT)",
                 "AND NOT stud.tobedeleted"
                 ]
 
@@ -904,7 +907,6 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
     # - add full name to rows, and array of id's of auth
     if rows:
         for row in rows:
-
             # full_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
             last_name = row.get('lastname') or '---'
             first_name = row.get('firstname') or '---'
@@ -971,6 +973,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
                 'birthplace': birth_place,
                 'regnumber': reg_number
             })
+
 
     if logging_on:
         for row in diploma_list:
@@ -1736,7 +1739,7 @@ def draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, subj_dict,
 # - draw subject_row
     # when title has more than 44 char, shift title 22 mm to left
     title_key = 'lbl_title_pws' if has_profiel else 'lbl_title_sws'
-    title = library.get(title_key, '---')
+
     pws_title = subj_dict.get('pws_title') or ''
     if pws_title:
         pws_title = pws_title.strip()

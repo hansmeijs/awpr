@@ -211,25 +211,25 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         exam_pk_list=None
                     )
 # ----- duo exams
-                    if datalist_request.get('duo_exam_rows'):
-                        datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
-                            req_usr=request.user,
-                            sel_examyear=sel_examyear,
-                            sel_depbase=sel_depbase,
-                            append_dict={},
-                            setting_dict=new_setting_dict,
-                            exam_pk_list=None
+                if datalist_request.get('duo_exam_rows'):
+                    datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
+                        req_usr=request.user,
+                        sel_examyear=sel_examyear,
+                        sel_depbase=sel_depbase,
+                        append_dict={},
+                        setting_dict=new_setting_dict,
+                        exam_pk_list=None
                         )
-
-# ----- duo exams_count
-                    if datalist_request.get('duo_exam_count_rows'):
-                        datalists['duo_exam_rows'] = sj_vw.create_duo_exam_rows(
-                            req_usr=request.user,
-                            sel_examyear=sel_examyear,
-                            sel_depbase=sel_depbase,
-                            append_dict={},
-                            setting_dict=new_setting_dict,
-                            exam_pk_list=None
+# ----- all exams
+                if datalist_request.get('all_exam_rows'):
+                    datalists['all_exam_rows'] = sj_vw.create_all_exam_rows(
+                        req_usr=request.user,
+                        sel_examyear=sel_examyear,
+                        sel_depbase=sel_depbase,
+                        sel_examperiod=sel_examperiod,
+                        append_dict={},
+                        setting_dict=new_setting_dict,
+                        exam_pk_list=None
                         )
 # ----- ntermentable
                 if datalist_request.get('ntermentable_rows'):
@@ -314,6 +314,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             setting_dict=new_setting_dict,
                             request=request
                         )
+
                         # PR2022-05-11 just added to answer question of Nancy Josefina
                         #datalists['grade_rows_with_modby'] = gr_vw.create_grade_rows_with_modbyTEMP(
                         #    sel_examyear_pk=sel_examyear.pk,

@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import220615.js' %}"></script>
-    <script src="{% static 'js/grades220621.js' %}"></script>
+    <script src="{% static 'js/import220627.js' %}"></script>
+    <script src="{% static 'js/grades220627.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -83,6 +83,7 @@
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
+            {% include 'includes/modselectexam.html' %}
             {% include 'students/modapprovegrade.html' %}
             {% include 'students/modselectex3.html' %}
             {% include 'includes/modstatus.html' %}
@@ -90,7 +91,6 @@
             {% include 'includes/modimport.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modmessage.html' %}
-
 
     <!-- CONTENT HEADER - LOADER -->
             <div class="content_margin_top78">

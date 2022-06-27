@@ -867,10 +867,10 @@ def get_schoolsettings(request, request_item_setting, sel_examyear, sel_schoolba
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_schoolsetting ---------------- ')
-        logger.debug('request_item_setting: ' + str(request_item_setting))
-        logger.debug('sel_examyear: ' + str(sel_examyear))
-        logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
-        logger.debug('sel_depbase: ' + str(sel_depbase))
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+        logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
+        logger.debug('    sel_depbase: ' + str(sel_depbase))
 
     # only called by DatalistDownloadView
     # setting_keys are: 'import_subject', 'import_studsubj', 'import_subject'. 'import_grade', 'import_permit'
@@ -921,8 +921,8 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
-        logger.debug('setting_key: ' + str(setting_key))
-        logger.debug('sel_depbase: ' + str(sel_depbase))
+        logger.debug('    setting_key: ' + str(setting_key))
+        logger.debug('    sel_depbase: ' + str(sel_depbase))
 
     # stored_settings_dict: {'worksheetname': 'Compleetlijst', 'has_header': True,
     # 'coldef': {'idnumber': 'ID', 'classname': 'KLAS', 'department': 'Vakantiedagen', 'level': 'Payrollcode', 'sector': 'Profiel'},
@@ -951,10 +951,10 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
             school_has_multiple_deps = True
 
         if logging_on:
-            logger.debug('sel_school.depbases: ' + str(sel_school.depbases))
-            logger.debug('depbases_str_list: ' + str(depbases_str_list))
-            logger.debug('sel_school_depbases_list: ' + str(sel_school_depbases_list))
-            logger.debug('school_has_multiple_deps: ' + str(school_has_multiple_deps))
+            logger.debug('    sel_school.depbases: ' + str(sel_school.depbases))
+            logger.debug('    depbases_str_list: ' + str(depbases_str_list))
+            logger.debug('    sel_school_depbases_list: ' + str(sel_school_depbases_list))
+            logger.debug('    school_has_multiple_deps: ' + str(school_has_multiple_deps))
 
         if sel_depbase and sel_school_depbases_list and sel_depbase.pk in sel_school_depbases_list:
             sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
@@ -968,9 +968,9 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
     stored_settings_dict = sel_schoolbase.get_schoolsetting_dict(setting_key)
     if logging_on:
         logger.debug('stored_settings_dict: ' + str(stored_settings_dict))
-        logger.debug('setting_key: ' + str(setting_key))
-        logger.debug('sel_school: ' + str(sel_school))
-        logger.debug('sel_department: ' + str(sel_department))
+        logger.debug('    setting_key: ' + str(setting_key))
+        logger.debug('    sel_school: ' + str(sel_school))
+        logger.debug('    sel_department: ' + str(sel_department))
 
     noheader = False
     worksheetname = ''
@@ -1017,7 +1017,7 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
                     del default_coldef_list[index_tobe_removed]
         if logging_on:
             logger.debug('stored_coldef: ' + str(stored_coldef))
-            logger.debug('default_coldef_list: ' + str(default_coldef_list))
+            logger.debug('    default_coldef_list: ' + str(default_coldef_list))
         """
         KEY_IMPORT_USERNAME default_coldef_list: [
             {'awpColdef': 'schoolcode', 'caption': 'Schoolcode', 'linkrequired': True}, 
@@ -1091,7 +1091,7 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
                     stored_dict = stored_settings_dict.get(tblName) if stored_settings_dict else None
                     if logging_on:
                         logger.debug('tblName: ' + str(tblName))
-                        logger.debug('stored_dict: ' + str(stored_dict))
+                        logger.debug('    stored_dict: ' + str(stored_dict))
 
                     if stored_dict:
                         for excValue, awpBasePk in stored_dict.items():
@@ -1114,12 +1114,15 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
         # - loop through instances of this examyear
                     for instance in instances:
                         if logging_on:
-                            logger.debug('instance ' + str(instance) + ' ' + str(type(instance)))
+                            logger.debug('    instance ' + str(instance) + ' ' + str(type(instance)))
             # - check if one of the depbases of the instance is in the list of depbases of the school
                         add_to_list = False
                         if sel_department:
                             if tblName == 'department':
                     # if department: check if depbasePk is in school_depbasePk_list
+                                # PR2022-06-26 tried to also import students from other departments.
+                                # Better not do it, beacuse you need to link sectors + profiles at the same time.
+                                # Keep:  'if instance == sel_department:'
                                 if instance == sel_department:
                                     add_to_list = True
 
