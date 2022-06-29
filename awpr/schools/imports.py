@@ -927,6 +927,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
     error_list = []
     update_list = []
     is_existing_student, is_new_student, is_diff_dep_student, has_error, might_be_bisexam = False, False, False, False, False
+    error_create = False
 
 # - get variables from data_dict
     id_number = data_dict.get('idnumber', '')
@@ -943,40 +944,28 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
 # - skip when student is from different department
     # PR2022-06-26 debug: Havo student was added to Vsbo in ATC. Must filter out students from different departments
     # not when student_depbase_pk has no value
-    if logging_on:
-        logger.debug('    student_depbase_pk: ' + str(student_depbase_pk))
-        logger.debug('    department.base_id: ' + str(department.base_id))
-
     if student_depbase_pk is None or student_depbase_pk != department.base_id:
-        student_depbase = sch_mod.Departmentbase.objects.get_or_none(pk=student_depbase_pk)
-
-        if student_depbase:
-            msg_err = str(_("This is a %(dep)s candidate.") % {'dep': student_depbase.code})
-        else:
-            msg_err = str(_("This candidate belongs to a different department."))
-        error_list.append(str(msg_err))
-
         is_diff_dep_student = True
-        if logging_on:
-            logger.debug('    is_diff_dep_student: ' + str(is_diff_dep_student))
+        error_list.append(str(_("This candidate belongs to a different department.")))
 
+    # dont add error message when student is from diff department
     idnumber_nodots, msg_err, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
-    if msg_err:
+    if msg_err and not is_diff_dep_student:
         has_error = True
         error_list.append(str(msg_err))
 
     lastname_stripped, msg_err = stud_val.get_string_convert_type_and_strip(_('Last name'), last_name, True) # True = blank_not_allowed
-    if msg_err:
+    if msg_err and not is_diff_dep_student:
         has_error = True
         error_list.append(str(msg_err))
 
     firstname_stripped, msg_err = stud_val.get_string_convert_type_and_strip(_('First name'), first_name, True) # True = blank_not_allowed
-    if msg_err:
+    if msg_err and not is_diff_dep_student:
         has_error = True
         error_list.append(str(msg_err))
 
     prefix_stripped, msg_err = stud_val.get_string_convert_type_and_strip(_('Prefix'), prefix, False) # False = blank_allowed
-    if msg_err:
+    if msg_err and not is_diff_dep_student:
         has_error = True
         error_list.append(str(msg_err))
 
@@ -1077,7 +1066,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
             # check if student exists in other year is replaced to exemption.
             # here it is not in use
             # base_pk only has vaue when user has ticked of 'same_student' after test_upload
-            # instead of creating a new student_base, the pase_pk will be used and 'islinked' will be set True
+            # instead of creating a new student_base, the base_pk will be used and 'islinked' will be set True
 
             #if base_pk:
             #    base = stud_mod.Studentbase.objects.filter( pk=base_pk)

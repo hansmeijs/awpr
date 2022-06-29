@@ -604,16 +604,19 @@ class UserpermitUploadView(View):
 def update_grouppermit(instance, upload_dict, msg_dict, request):
     # --- update existing and new instance PR2021-03-20
     # add new values to update_dict (don't reset update_dict, it has values)
-    logger.debug(' ------- update_grouppermit -------')
-    logger.debug('upload_dict' + str(upload_dict))
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- update_grouppermit -------')
+        logger.debug('upload_dict' + str(upload_dict))
 
     save_changes = False
     for field, new_value in upload_dict.items():
         if field in ['role', 'page', 'action']:
             saved_value = getattr(instance, field)
-            logger.debug('field:       ' + str(field))
-            logger.debug('saved_value: ' + str(saved_value) + str(type(saved_value)))
-            logger.debug('new_value:   ' + str(new_value) + str(type(new_value)))
+            if logging_on:
+                logger.debug('field:       ' + str(field))
+                logger.debug('saved_value: ' + str(saved_value) + str(type(saved_value)))
+                logger.debug('new_value:   ' + str(new_value) + str(type(new_value)))
 
             if new_value and new_value != saved_value:
                 setattr(instance, field, new_value)
@@ -626,14 +629,17 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
                 save_changes = True
 
     # - save changes`
-    logger.debug('save_changes' + str(save_changes) + str(type(save_changes)))
+    if logging_on:
+        logger.debug('save_changes' + str(save_changes) + str(type(save_changes)))
     if save_changes:
         try:
             instance.save(request=request)
         except Exception as e:
             msg_dict['err_update'] = getattr(e, 'message', str(e))
             #msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
-    logger.debug('msg_dict' + str(msg_dict) + str(type(msg_dict)))
+
+    if logging_on:
+        logger.debug('msg_dict' + str(msg_dict) + str(type(msg_dict)))
 # --- end of update_grouppermit
 
 
@@ -690,7 +696,7 @@ def account_activation_sent(request):
 
 # === SignupActivateView ===================================== PR2020-09-29
 def SignupActivateView(request, uidb64, token):
-    logging_on = s.LOGGING_ON
+    logging_on = True  # s.LOGGING_ON
     if logging_on:
         logger.debug('  === SignupActivateView =====')
 
@@ -764,7 +770,7 @@ def SignupActivateView(request, uidb64, token):
     update_wrap['activation_token_ok'] = activation_token_ok
 
     if request.method == 'POST':
-        if logging_on:
+        if logging_on and False:
             logger.debug('request.POST' + str(request.POST))
 
         form = SetPasswordForm(user, request.POST)

@@ -508,7 +508,11 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                             draw_diploma_cur(canvas, library, student_dict, auth1_name, auth2_name, printdate)
 
                     else:
-                        draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+                        if is_sxm:
+                            draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+                        else:
+                            draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request)
+
                     canvas.showPage()
 
                 canvas.save()
@@ -1262,15 +1266,197 @@ def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, prin
     canvas.drawCentredString(left + 129 * mm, y_pos, auth2_name or '---')
 
 # - Registratienr - Id.nr.:
+    # PR2022-06-28 mail Joan Kartokromo: Op de diploma's zal ik de regel met het registratienummer en id-nummer 1 mm lager plaatsen.
+    # was:  canvas.drawString(left + 38 * mm, 31 * mm, student_dict.get('regnumber') or '-') >> changed to 30 mm
     canvas.setFont(font_bold, size_small)
-    canvas.drawString(left + 38 * mm, 31 * mm, student_dict.get('regnumber') or '-')
-    canvas.drawString(left + 134 * mm, 31 * mm, student_dict.get('idnumber') or '-')
+    canvas.drawString(left + 38 * mm, 30 * mm, student_dict.get('regnumber') or '-')
+    canvas.drawString(left + 134 * mm, 30 * mm, student_dict.get('idnumber') or '-')
 # - end of draw_diploma_sxm
+
+################
+
+def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('+++++++++++++ draw_gradelist_sxm +++++++++++++')
+        logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
+        logger.debug('     student_dict: ' + str(student_dict))
+        logger.debug('     is_prelim: ' + str(is_prelim))
+        logger.debug('     is_sxm: ' + str(is_sxm))
+
+    auth1_name = '---'
+    if auth1_pk:
+        auth1 = acc_mod.User.objects.get_or_none(
+            pk=auth1_pk,
+            schoolbase=request.user.schoolbase,
+            activated=True,
+            is_active=True,
+            usergroups__contains='auth1'
+        )
+        if auth1:
+            auth1_name = auth1.last_name
+
+        if logging_on:
+            logger.debug('     auth1: ' + str(auth1))
+            logger.debug('     auth1_name: ' + str(auth1_name))
+            logger.debug('     auth1.usergroups: ' + str(auth1.usergroups))
+
+    auth2_name = '---'
+    if auth2_pk:
+        auth2 = acc_mod.User.objects.get_or_none(
+            pk=auth2_pk,
+            schoolbase=request.user.schoolbase,
+            activated=True,
+            is_active=True,
+            usergroups__contains='auth2'
+        )
+        if auth2:
+            auth2_name = auth2.last_name
+
+    is_lexschool = student_dict.get('islexschool', False)
+
+    has_profiel = student_dict.get('has_profiel', False)
+    reg_number = student_dict.get('regnumber')
+
+# - set the corners of the rectangle
+    # - 72 points = 1 inch   -  1 point = 20 pixels  - 1 mm = 2,8346 points
+    # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 15 mm from bottom, 15 mm from left
+
+    # PR2022-06-28 mail Joan Kartokromo:
+    # Bij de cijferlijst van Vsbo zal ik tussen 'Theoretisch Kadergerichte Leerweg' en 'De ondergetekenden verklaren dat'
+    # eenzelfde regelafstand aanhouden als tussen de naam en de regel  'De ondergetekenden verklaren dat'.
+    # make top 6 mm lower than before.
+    # was:  top = (261 if is_sxm else 282) * mm
+    # Ik zal de onderste regel met  het registratienummer en id-nummer iets naar boven halen, zodat ze niet door het kader geprint worden.
+    # was bottom = 15 * mm  > bottom = 18 * mm
+
+    is_vsbo = False
+    dep_abbrev = student_dict.get('dep_abbrev')
+    if dep_abbrev:
+        is_vsbo = dep_abbrev.replace('.', '').lower() == 'vsbo'
+
+    top = (255 if is_vsbo else 261) * mm
+    bottom = 18 * mm
+    left = 15 * mm
+    right = 195 * mm
+
+    border = [top, right, bottom, left]
+
+    coord = [left, top]
+    if logging_on:
+        logger.debug('     is_vsbo: ' + str(is_vsbo))
+        logger.debug('     bottom: ' + str(bottom))
+        logger.debug('     left: ' + str(left))
+        logger.debug('     coord: ' + str(coord))
+        logger.debug('     1 * mm: ' + str(1 * mm))
+
+    canvas.setLineWidth(0.5)
+    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
+
+    col_tab_list = (10, 90, 110, 130, 150, 170, 180)
+
+# - draw border around page
+    if is_prelim:
+        draw_page_border(canvas, border)
+# - draw page header
+    draw_gradelist_page_header(
+        canvas=canvas,
+        coord=coord,
+        col_tab_list=col_tab_list,
+        library=library,
+        student_dict=student_dict,
+        is_prelim=is_prelim,
+        is_sxm=is_sxm,
+        is_lexschool=is_lexschool
+    )
+
+# - draw column header
+    draw_gradelist_colum_header(canvas, coord, col_tab_list, library, is_lexschool)
+
+# - loop through subjecttypes
+    # combi, stage and werkstuk have text keys, rest has integer key
+    for sequence in range(0, 10):  # range(start_value, end_value, step), end_value is not included!
+        # sjtp_dict = {'sjtp_code': 'combi', 'sjtp_name': '', 2168: {'subj_name': 'Culturele en Artistieke Vorming',
+        sjtp_dict = student_dict.get(sequence)
+        if sjtp_dict:
+            draw_gradelist_sjtp_header(canvas, coord, col_tab_list, library, sjtp_dict, student_dict)
+            if logging_on:
+                logger.debug('     sjtp_dict: ' + str(sjtp_dict))
+
+            for key, subj_dict in sjtp_dict.items():
+
+                if isinstance(key, int):
+                    draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict)
+
+    """
+    sjtp_dict: {
+        'sjtp_name': 'Gemeenschappelijk deel', 
+        113: {'sjtp_code': 'gmd', 'subj_name': 'Nederlandse taal', 'segrade': '5.9', 'pecegrade': None, 'finalgrade': None}, 
+        118: {'sjtp_code': 'gmd', 'subj_name': 'Papiamentu', 'segrade': '7.6', 'pecegrade': None, 'finalgrade': None}, 
+        114: {'sjtp_code': 'gmd', 'subj_name': 'Engelse taal', 'segrade': '8.0', 'pecegrade': None, 'finalgrade': None}}
+    """
+
+# - get combi subjects
+    # also check if combi contains werkstuk
+    combi_dict = student_dict.get('combi')
+    wst_subj_dict = {}
+
+    if combi_dict:
+        draw_gradelist_sjtp_header(canvas, coord, col_tab_list, library, combi_dict, student_dict, True)
+        for key, subj_dict in combi_dict.items():
+            if isinstance(key, int):
+                sjtp_code = subj_dict.get('sjtp_code')
+                if sjtp_code == 'wst':
+                    wst_subj_dict = subj_dict
+                    wst_subj_dict['is_combi'] = True
+
+                draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict, True)
+
+# - get werkstuk rows
+    # if wst not found in combi (in Havo Vwo), lookup with key 'wst' ( in Vsbo)
+    if not wst_subj_dict:
+        wst_dict = student_dict.get('wst')
+        if wst_dict:
+            # there can only be one werkstuk
+            for key, subj_dict in wst_dict.items():
+                if isinstance(key, int):
+                    wst_subj_dict = subj_dict
+                    wst_subj_dict['is_combi'] = False
+                    break
+    if wst_subj_dict:
+        draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, wst_subj_dict, has_profiel)
+
+# - get stage rows
+    stg_dict = student_dict.get('stg')
+    if stg_dict:
+        stg_subj_dict = {}
+        # there can only be one stage
+        for key, subj_dict in stg_dict.items():
+            if isinstance(key, int):
+                stg_subj_dict = subj_dict
+                break
+        if stg_subj_dict:
+            draw_gradelist_stage_row(canvas, coord, col_tab_list, stg_subj_dict)
+
+# - draw 'Gemiddelde der cijfers' row
+    draw_gradelist_avg_final_row(canvas, coord, col_tab_list, library, student_dict)
+
+# - draw 'Uitslag op grond van de resultaten:' row
+    draw_gradelist_result_row(canvas, coord, col_tab_list, library, student_dict, print_reex)
+
+# - draw page footer
+    draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexschool)
+
+# - draw page signatures
+    draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name, auth2_name, printdate, reg_number)
+# - end of draw_gradelist_sxm
+
 
 
 ################
 
-def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request):
+def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -1429,8 +1615,8 @@ def draw_gradelist(canvas, library, student_dict, is_prelim, is_sxm, print_reex,
     draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexschool)
 
 # - draw page signatures
-    draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, student_dict, auth1_name, auth2_name, printdate, reg_number)
-# - end of draw_gradelist
+    draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name, auth2_name, printdate, reg_number)
+# - end of draw_gradelist_cur
 
 
 def draw_page_border(canvas, border):
@@ -1870,7 +2056,7 @@ def draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_di
 # - end of draw_gradelist_footnote_row
 
 
-def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, student_dict, auth1_name, auth2_name, printdate, reg_number):
+def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name, auth2_name, printdate, reg_number):
     """
     'PR2020-05-24 na email correspondentie Esther: 'De voorzitter / directeur' gewijzigd in 'De voorzitter'
     """
@@ -1884,6 +2070,8 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
 
     #border = [top, right, bottom, left]
     bottom = border[2]
+
+    # when cur: bottom = 15 mm, when sxm: bottom = 18 mm
 
 # - place, date
     # printdate is retrieved from upload_dict and saved in school_settings
@@ -1917,8 +2105,12 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, library, s
     ]
     line_height = 30
     pos_y_auth = coord[1] - line_height * mm
-    if pos_y_auth < 25 * mm:
-        pos_y_auth = 25 * mm
+    # let signature never go lower than just above regnr line
+
+    # when cur: bottom = 15 mm, when sxm: bottom = 18 mm
+    min_pos_y_auth = 28 * mm if is_sxm else 25 * mm
+    if pos_y_auth < min_pos_y_auth:
+        pos_y_auth = min_pos_y_auth
     coord_auth = [coord[0], pos_y_auth]
     draw_text_one_line(canvas, coord_auth, col_tab_list, 0, 1.25, False, None, txt_list)
 

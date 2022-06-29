@@ -496,12 +496,12 @@ def create_department_rows(examyear):
 
 def create_level_rows(request, examyear, depbase, cur_dep_only, skip_allowed_filter):
     # --- create rows of all levels of this examyear / country PR2020-12-11 PR2021-03-08  PR2021-06-24
-    logging_on = False  #s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_level_rows ============= ')
-        logger.debug('examyear: ' + str(examyear))
-        logger.debug('depbase: ' + str(depbase))
-        logger.debug('cur_dep_only: ' + str(cur_dep_only))
+        logger.debug('    examyear: ' + str(examyear))
+        logger.debug('    depbase: ' + str(depbase))
+        logger.debug('    cur_dep_only: ' + str(cur_dep_only))
 
     rows =[]
     if examyear:

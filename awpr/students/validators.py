@@ -1772,7 +1772,7 @@ def get_double_diplomanumber_gradelistnumber_from_uploadfile(data_list):
 def get_double_idnumberlist_from_uploadfile(data_list):
     # function returns list of valid idnumbers, that occur multiple times in data_list
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_double_idnumberlist_from_uploadfile  -----')
 
@@ -1940,10 +1940,9 @@ def validate_double_entries_in_uploadfile(caption, lookup_value, double_entriesl
     if lookup_value and double_entrieslist:
         if lookup_value in double_entrieslist:
             has_error = True
-            error_list.append(_("%(cpt)s '%(val)s' is found multiple times in this upload file.") \
-                      % {'cpt': caption, 'val': lookup_value})
+            error_list.append(str(_("%(cpt)s '%(val)s' is found multiple times in this upload file.") \
+                      % {'cpt': caption, 'val': lookup_value}))
     return has_error
-
 
 
 # ========  validate_student_name_length  ======= PR2021-06-19 PR2021-09-10

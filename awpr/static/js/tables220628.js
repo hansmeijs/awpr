@@ -349,18 +349,20 @@
     } // t_MSSSS_Fill_SelectTable
 
     function t_MSSSS_AddAll_txt(tblName){
-        const caption = (tblName === "student") ? loc.Candidates.toLowerCase() :
-                        (tblName === "subject") ? loc.Subjects.toLowerCase() :
-                        (tblName === "cluster") ? loc.Clusters.toLowerCase() :
-                        (tblName === "school") ? loc.Schools.toLowerCase() : "";
+        //PR2022-06-27 Sentry debug: undefined is not an object (evaluating 'loc.Subjects.toLowerCase')
+        // added : (loc.Subjects) ? ...  instead of: (tblName === "subject") ? loc.Subjects.toLowerCase() :
+        const caption = (tblName === "student") ? (loc.Candidates) ? loc.Candidates.toLowerCase() : "" :
+                        (tblName === "subject") ? (loc.Subjects) ? loc.Subjects.toLowerCase() : "" :
+                        (tblName === "cluster") ? (loc.Clusters) ? loc.Clusters.toLowerCase() : "" :
+                        (tblName === "school") ? (loc.Schools) ? loc.Schools.toLowerCase() : "" : "";
         return "<" + loc.All_ + caption + ">";
     }
     function t_MSSSS_NoItems_txt(tblName){
         // PR2022-05-01
-        const caption = (tblName === "student") ? loc.Candidates.toLowerCase() :
-                        (tblName === "subject") ? loc.Subjects.toLowerCase() :
-                        (tblName === "cluster") ? loc.Clusters.toLowerCase() :
-                        (tblName === "school") ? loc.Schools.toLowerCase() : "";
+        const caption = (tblName === "student") ? (loc.Candidates) ? loc.Candidates.toLowerCase() : "" :
+                        (tblName === "subject") ? (loc.Subjects) ? loc.Subjects.toLowerCase() : "" :
+                        (tblName === "cluster") ? (loc.Clusters) ? loc.Clusters.toLowerCase() : "" :
+                        (tblName === "school") ? (loc.Schools) ? loc.Schools.toLowerCase() : "" : "";
         return "<" + loc.No_ + caption + ">";
     }
 
@@ -370,7 +372,7 @@
                (tblName === "subject") ? {id: -1,  code: "", name: add_all_text} :
                (tblName === "cluster") ? {id: -1,  subj_code: "", name: add_all_text} :
                (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
-    }
+    };
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
@@ -710,23 +712,27 @@
         // stored_columns[3]: {awpCol: "lastname", caption: "Last name", excCol: "ANAAM" }
         // excel_columns[0]:    {excCol: "ANAAM", awpCol: "lastname", awpCaption: "Achternaam"}
         // PR2020-12-27 do not use Object.entries because it does not allow break
-        //console.log("----- get_arrayRow_by_keyValue -----")
-        //console.log("dict_list", dict_list)
+        console.log("----- get_arrayRow_by_keyValue -----")
+        console.log("    dict_list", dict_list)
+        console.log("    keyValue", keyValue)
 
         let row = null;
         if (dict_list && arrKey && keyValue != null){
             for (let i = 0, dict; dict = dict_list[i]; i++) {
                 // dict =  {awpKey: "examnumber", caption: "Examennummer", linkfield: true, excKey: "exnr"}
                 const value = dict[arrKey];
+        console.log("    value", value)
                 if (!!dict && value != null){
                     // convert number to string for text comparison
                     let isEqual = false;
                     if (typeof(keyValue) === "string"){
                         const value_str = (typeof(value) === "number") ? value.toString() : value;
+        console.log("    value_str", value_str)
                         isEqual = (keyValue.toLowerCase() === value_str.toLowerCase());
                     } else {
                         isEqual = (keyValue === value);
                     }
+        console.log(" >> isEqual", isEqual)
                     if (isEqual){
                         row = dict;
                         break;

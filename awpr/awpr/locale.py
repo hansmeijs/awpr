@@ -1141,7 +1141,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
         dict['Please_select_examtype'] = _('Please select one exam type in the vertical grey bar at the left.')
 
-
         dict['reex_msg_01'] = _("Only the re-examination subjects will be shown.")
         dict['reex_msg_02'] = _("Go to the page 'Subjects' and tick off 'Re-examination' to add a re-examination subject.")
         dict['reex03_msg_01'] = _("Only the subjects of the re-examination in the third period will be shown.")

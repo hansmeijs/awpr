@@ -22,9 +22,7 @@ from schools import functions as sch_fnc
 from schools import dicts as school_dicts
 from subjects import models as subj_mod
 from subjects import views as sj_vw
-from students import models as stud_mod
 from students import views as stud_view
-from students import functions as stud_fnc
 from grades import views as gr_vw
 
 import json

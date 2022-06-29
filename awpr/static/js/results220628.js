@@ -515,12 +515,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         if(permit_dict.requsr_same_school && permit_dict.permit_crud){
-            if (permit_dict.requsr_country === "Sint Maarten"){
-                // TODO enable final gradelist anddiploma after approval by DOE
-            } else {
-                AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
-                AddSubmenuButton(el_submenu, loc.Download_diploma, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
-            };
+            AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
+            AddSubmenuButton(el_submenu, loc.Download_diploma, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
         };
 
         AddSubmenuButton(el_submenu, loc.Download_result_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
@@ -1400,7 +1396,7 @@ function RefreshDataRowsAfterUpload(response) {
             if (student_pk_list.length === student_rows_length){
                 print_all = true;
                 student_pk_list = [];
-                count_selected = student_rows_length;
+                count_selected_passed = student_rows_length;
             }
         }
         if(student_pk_list.length) {

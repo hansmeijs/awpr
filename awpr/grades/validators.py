@@ -848,6 +848,7 @@ def validate_grade_auth_publ_from_dict(studsubj_dict, this_item_cpt):
 
 def validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field):  # PR2021-12-18
     # only called by update_studsubj
+
 # - function checks
 # if:
     #  - grade is already authorized, published or blocked
@@ -856,31 +857,33 @@ def validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field):  # PR
 
     #  Note: 'se' and 'pe' don't have to be checked, because they have no 'is_se_cand" or 'is_pe_cand"
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_exem_sr_reex_reex03_delete_allowed -------')
 
     exam_period = None
     examtype = None
     is_score = False
+    caption = ''
+
     error_list = []
     if field == 'has_exemption':
         exam_period = c.EXAMPERIOD_EXEMPTION
         examtype = 'se'
-        caption = str(_('This exemption')).lower()
+        caption = str(_('This exemption'))
     elif field == 'has_sr':
         exam_period = c.EXAMPERIOD_FIRST
         examtype = 'sr'
-        caption = str(_('This re-examination school exam')).lower()
+        caption = str(_('This re-examination school exam'))
     elif field == 'has_reex':
         exam_period = c.EXAMPERIOD_SECOND
         examtype = 'ce'
         is_score = True
-        caption = str(_('This re-examination')).lower()
+        caption = str(_('This re-examination'))
     elif field == 'has_reex03':
         exam_period = c.EXAMPERIOD_THIRD
         examtype = 'ce'
-        caption = str(_('This re-examination 3rd period')).lower()
+        caption = str(_('This re-examination 3rd period'))
     # NIU
     #elif field == 'has_practexam':
     #    exam_period = c.EXAMPERIOD_FIRST
@@ -892,10 +895,18 @@ def validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field):  # PR
         studentsubject=studsubj_instance,
         examperiod=exam_period
     ).first()
+    if logging_on:
+        logger.debug("grade_instance: " + str(grade_instance))
 
-    err_list = validate_grade_published_from_gradeinstance(grade_instance, examtype, is_score)
+# - validate grade_published from gradeinstance
+    err_list = validate_grade_published_from_gradeinstance(
+        grade_instance=grade_instance,
+        examtype=examtype,
+        this_item_cpt=caption
+    )
     if err_list:
-        this_item_cpt = str(_('This score')).lower() if is_score else str(_('This grade')).lower()
+        #this_item_cpt = str(_('This score')).lower() if is_score else str(_('This grade')).lower()
+        this_item_cpt = caption.lower() if caption else str(_('This item')).lower()
         err_list.append(str(_('You cannot delete %(cpt)s.') % {'cpt': this_item_cpt}))
         error_list.extend(err_list)
 
@@ -959,24 +970,63 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR202
 
 def validate_grade_published_from_gradeinstance(grade_instance, examtype, this_item_cpt):  # PR2021-12-18
     # examtype = 'se', 'sr', 'pe', 'ce'
+    # called by: validate_grade_input_value, validate_exem_sr_reex_reex03_delete_allowed and update_studsubj
     # TODO check if function is same as validate_grade_auth_publ PR2022-04-17
-    logging_on = False  # s.LOGGING_ON
+
+    # complicated to block approved:
+    # when exemption: approval not neede yet
+    # when ep01: can subject be deleted when SE approved / CE approved (take in account secret exam
+    # when ep02/ ep03: can subject be deleted when SE approved / CE approved (take in account secret exam)
+
+
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_published_from_gradeinstance -------')
+        logger.debug('    grade_instance: ' + str(grade_instance))
+        logger.debug('    examtype:       ' + str(examtype))
+        logger.debug('    this_item_cpt:  ' + str(this_item_cpt))
 
     err_list = []
     if grade_instance:
+        examperiod = getattr(grade_instance, 'examperiod')
+
+        if logging_on:
+            logger.debug('    examperiod:  ' + str(examperiod))
+            logger.debug('    examtype:  ' + str(examtype))
+            logger.debug('    _auth1by_id:    ' + str(getattr(grade_instance, examtype + '_auth1by_id')))
+            logger.debug('    _auth2by_id:    ' + str(getattr(grade_instance, examtype + '_auth2by_id')))
+            logger.debug('    _auth3by_id:    ' + str(getattr(grade_instance, examtype + '_auth3by_id')))
+            logger.debug('    _auth4by_id:    ' + str(getattr(grade_instance, examtype + '_auth4by_id')))
 
         is_blocked = getattr(grade_instance, examtype + '_blocked', False)
         is_published = True if getattr(grade_instance, examtype + '_published_id') else False
-        is_auth = True if getattr(grade_instance, examtype + '_auth1by_id') or \
-                          getattr(grade_instance, examtype + '_auth2by_id') or \
-                          getattr(grade_instance, examtype + '_auth3by_id') or \
-                          getattr(grade_instance, examtype + '_auth4by_id') else False
+
+        approved_by_auth1_or_auth2 = True if getattr(grade_instance, examtype + '_auth1by_id') or \
+                          getattr(grade_instance, examtype + '_auth2by_id') else False
+        if examperiod == c.EXAMPERIOD_EXEMPTION:
+            # no approval on exemption yet
+            # to be changed to: is_auth = approved_by_auth1_or_auth2
+            is_auth = False
+        else:
+            is_secret_exam = grade_instance.ce_exam.secret_exam if grade_instance.ce_exam else False
+            # when secret exam: only approval needed from auth 1 and auth 2
+            if is_secret_exam:
+                is_auth = approved_by_auth1_or_auth2
+            else:
+                approved_by_auth3 = True if getattr(grade_instance, examtype + '_auth3by_id') else False
+                if examtype in ('se', 'sr'):
+                    is_auth = approved_by_auth1_or_auth2 or approved_by_auth3
+                else:
+                    approved_by_auth4 = True if getattr(grade_instance, examtype + '_auth4by_id') else False
+                    is_auth = approved_by_auth1_or_auth2 or approved_by_auth3 or approved_by_auth4
+
         studsubj_dict = {'publ': is_published, 'bl': is_blocked, 'auth': is_auth}
 
         if logging_on:
-            logger.debug('studsubj_dict: ' + str(studsubj_dict))
+            logger.debug('    is_blocked:    ' + str(is_blocked))
+            logger.debug('    is_published:  ' + str(is_published))
+            logger.debug('    is_auth:       ' + str(is_auth))
+            logger.debug('    studsubj_dict: ' + str(studsubj_dict))
 
         err_list = validate_grade_auth_publ_from_dict(studsubj_dict, this_item_cpt)
 

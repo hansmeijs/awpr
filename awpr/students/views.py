@@ -3723,7 +3723,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
     for field, new_value in upload_dict.items():
 
 # +++ save changes in studsubj_instance fields
-        if field in ['schemeitem_pk']:
+        if field == 'schemeitem_pk':
             saved_schemeitem = getattr(studsubj_instance, 'schemeitem')
             new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(pk=new_value)
             if logging_on:
@@ -3921,14 +3921,17 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         update_reexcount_etc_in_student(field, studsubj_instance.student_id)
 
         elif field in ['has_exemption', 'has_reex', 'has_reex03']:
+            # upload_dict: {'student_pk': 4432, 'studsubj_pk': 27484, 'has_reex': False}
+            # field = 'has_reex', new_value = False
 
 # +++++ add or delete exemption, reex, reex03
-    # - toggle value of has_exemption, has_reex or has_reex03
-    # - when add: add grade with examperiod = 4, 2 or 3
-    # - when reex or reex03: add segrade, srgrade and pegrade in reex grade_instance
-    # - when delete: set 'tobedeleted' = True and reset all values of grade
-    # - recalc max_ etc in studsubj
-    # - recalc result in student
+            # - toggle value of has_exemption, has_reex or has_reex03
+            # - when add: add grade with examperiod = 4, 2 or 3
+            # - when reex or reex03: add segrade, srgrade and pegrade in reex grade_instance
+            # - when delete: set 'tobedeleted' = True and reset all values of grade
+            # - recalc max_ etc in studsubj
+            # - recalc result in student
+
             must_add_delete_exem_reex_reex03 = False
 
 # +++++ add exemption, reex, reex03
@@ -3968,16 +3971,19 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         # - get saved value
                 saved_value = getattr(studsubj_instance, field)
                 if logging_on:
-                    logger.debug(' delete reex, field: ' + str(saved_value))
+                    logger.debug(' delete reex, field: ' + str(field))
                     logger.debug(' delete reex, saved_value: ' + str(saved_value))
-                    logger.debug(' delete reex, new_value: ' + str(saved_value))
+                    logger.debug(' delete reex, new_value: ' + str(new_value))
 
         # - save when new_value != saved_value
                 if new_value != saved_value:
 
         # - check if deleting is allowed
                     #  check if grade is authorized, published or blocked
-                    err_list = grad_val.validate_exem_sr_reex_reex03_delete_allowed(studsubj_instance, field)
+                    err_list = grad_val.validate_exem_sr_reex_reex03_delete_allowed(
+                        studsubj_instance=studsubj_instance,
+                        field=field
+                    )
 
                     if err_list:
                         msg_list.extend(err_list)
@@ -4809,17 +4815,34 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                             idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
                             msg_list, error_list, log_list, request, skip_save):
     # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04
-    # log_list is only used when uploading students
+    # log_list is only used when uploading students, is None otherwise
+    instance_pk = instance.pk if instance else None
+
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_student_instance -------')
         logger.debug('    upload_dict: ' + str(upload_dict))
         logger.debug('    instance:    ' + str(instance))
-        instance_pk = instance.pk if instance else 'None'
         logger.debug('    instance.pk: ' + str(instance_pk))
     """
     upload_dict: {'mode': 'withdrawn', 'table': 'student', 'student_pk': 4053, 'withdrawn': True}
     """
+
+    def get_log_txt(caption, new_value, saved_value):
+        caption_str = (caption + ':' + c.STRING_SPACE_20)[:20]
+        new_value_str = (str(new_value) if new_value else str(_('blank')))[:20]
+        log_txt = ''.join(( caption_str, c.STRING_SPACE_05,  new_value_str ))
+
+        if logging_on:
+            logger.debug(' ------- update_student_instance -------')
+            logger.debug('    saved_value: ' + str(saved_value))
+            logger.debug('    _(blank): ' + str(_('blank')))
+
+        if saved_value:
+            saved_str = str(saved_value if saved_value else _('blank'))
+            log_txt += ''.join(('  (', str(_('was')), ': ', saved_str, ')'))
+        return log_txt
+
 # ----- get user_lang
     user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
 
@@ -4954,8 +4977,35 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
                         elif field == 'examnumber':
                             caption = _('Exam number')
+
+                            if logging_on:
+                                logger.debug(' ------- update examnumber -------')
+                                logger.debug('    caption: ' + str(caption))
+                                logger.debug('    examnumber_list: ' + str(examnumber_list))
+                                logger.debug('    new_value: ' + str(new_value))
+
                 # when uploading students: examnumber_list is filled, unless there were no examnumbers
-                            if examnumber_list and new_value in examnumber_list:
+                            # examnumber_list:  list of tuples (student_pk, examnumber) [(4445, '201'), (4545, '202'), (4546, '203'), (4547, '204'), (5888, '205'), (4549, '206'), (6016, '207')]
+                            examnumber_already_exists = False
+                            if new_value:
+                                # examnumber_list is None when updating single student,  examnumber_list existts when uploading students
+                                if examnumber_list is not None:
+                                     for row in examnumber_list:
+                                        # skip exam number of this student
+                                        if row[0] != instance_pk:
+                                            if row[1] and row[1].strip().lower() == new_value.strip().lower():
+                                                examnumber_already_exists = True
+                                                break
+                                else:
+                                # when updating single student, examnumber_list is not filled. Use validate_examnumber_exists instead
+                                    has_err = stud_val.validate_examnumber_exists(instance, new_value)
+                                    if has_err:
+                                        examnumber_already_exists = True
+                                        err_txt = _("%(cpt)s '%(val)s' already exists.") \
+                                                  % {'cpt': str(caption), 'val': new_value}
+                                        class_txt = "border_bg_warning"
+
+                            if examnumber_already_exists:
                                 err_txt = _("%(cpt)s '%(val)s' already exists.") \
                                           % {'cpt': str(caption), 'val': new_value}
                                 class_txt = "border_bg_warning"
@@ -4969,6 +5019,10 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 # add new_value to examnumber_list if it doesn't exist yet
                             if not err_txt:
                                 examnumber_list.append(new_value)
+
+                            if logging_on:
+                                logger.debug('    err_txt: ' + str(err_txt))
+                                logger.debug(' --------------')
 
                 # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
                     if err_txt:
@@ -5006,7 +5060,6 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
             # check if new_value already exists in value_list, but skip idnumber of this instance
                             value_list = diplomanumber_list if field == 'diplomanumber' else gradelistnumber_list
-                            caption = str(_('Diploma number')) if field == 'diplomanumber' else str(_('Gradelist number'))
 
                 # when updating single student, value_list is not filled yet. in that case: get diplomanumber_list
                             if not value_list:
@@ -5040,7 +5093,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                                             err_txt += '<br> - ' + full_name
 
                             if err_txt is None:
-                                # add new_value to idnumber_list if it doesn't exist yet
+                                # add new_value to value_list if it doesn't exist yet
                                 value_list.append(new_value)
 
             # = put err_txt in error_list
@@ -5054,10 +5107,8 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if new_value != saved_value:
                             setattr(instance, field, new_value)
                             save_changes = True
-                            log_list.append(str(_("%(cpt)s has changed from: '%(old_val)s' to: '%(new_val)s'") \
-                                            % {'cpt': str(caption),
-                                                'old_val': str(saved_value) if saved_value else str(_('blank')),
-                                                'new_val': str(new_value) if new_value else str(_('blank'))}))
+                            if log_list is not None:
+                                log_list.append(get_log_txt(caption, new_value, saved_value))
 
     # 2. save changes in birthdate field
                 elif field == 'birthdate':

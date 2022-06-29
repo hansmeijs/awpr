@@ -276,8 +276,8 @@ LOGGING_ON = config('LOGGING_ON', default=False, cast=bool)
 
 LOGGING = {
     'version': 1,
-    #'disable_existing_loggers': False,
-    'disable_existing_loggers': True,
+    'disable_existing_loggers': False,
+    #'disable_existing_loggers': True,
     'filters': {
         'require_debug_false': {
             '()': 'django.utils.log.RequireDebugFalse',
@@ -296,13 +296,14 @@ LOGGING = {
             'datefmt': '%Y-%m-%d %H:%M:%S'
         },
     },
+    # PR2022-06-27 write accounts_log also in production - to check password reset attempts, formatter: simple
     'handlers': {
         'accounts_log': {
             'level': 'DEBUG',
-            'filters': ['require_debug_true'],
+            'filters': ['require_debug_false'], # was: 'filters': ['require_debug_true']
             'class': 'logging.FileHandler',
             'filename': config('LOGGER_BASEDIR') + 'accounts.log',
-            'formatter': 'verbose'
+            'formatter': 'simple'  # was: 'formatter': 'verbose'
         },
         'awpr_log': {
             'level': 'DEBUG',

@@ -459,7 +459,7 @@ def get_score_from_inputscore(input_value, max_score=None):
 
 # - remove all comma's and dots
         input_no_comma = imput_trim.replace(',', '')
-        input_no_dots = input_no_comma.replace(',', '')
+        input_no_dots = input_no_comma.replace('.', '')
         if logging_on:
             logger.debug('     input_no_dots: ' + str(input_no_dots) + ' ' + str(type(input_no_dots)))
 # cast input_with_dots to integer
