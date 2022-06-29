@@ -1232,10 +1232,10 @@ def has_unread_mailbox_items(examyear, req_user):
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
-    pass
+
 # PR2021-03-26 run this to update text in ex-forms, when necessary
-    #if request.user.role == c.ROLE_128_SYSTEM:
-    #    awpr_lib.update_library(examyear, request)
+    if request.user.role == c.ROLE_128_SYSTEM:
+        awpr_lib.update_library(examyear, request)
 
     #get_long_pws_title_pws_subjectsONCEONLY(request)
 
