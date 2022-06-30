@@ -703,7 +703,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     sel_btn: selected_btn,
                     sel_examperiod: sel_examperiod
                 },
-                grade_rows: {cur_dep_only: true}
+                grade_rows: {cur_dep_only: true},
+                all_exam_rows: {get: true}
             };
             DatalistDownload(datalist_request);
         };
@@ -754,8 +755,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 page: "page_grade",
                 sel_examperiod: sel_examperiod
                 },
+
+            student_rows: {cur_dep_only: true},
+            studentsubject_rows: {cur_dep_only: true},
             grade_rows: {cur_dep_only: true},
+
             all_exam_rows: {get: true}
+
         };
         DatalistDownload(datalist_request);
     };  // HandleSbrPeriod
@@ -831,10 +837,11 @@ document.addEventListener("DOMContentLoaded", function() {
             // PR2022-05-12 debug. subject_rows etc added. needs refresh to show subjects of the new level
             subject_rows: {cur_dep_only: true},
             cluster_rows: {cur_dep_only: true, allowed_only: true},
+
             student_rows: {cur_dep_only: true},
             studentsubject_rows: {cur_dep_only: true},
-
             grade_rows: {cur_dep_only: true},
+
             all_exam_rows: {get: true}
         };
 
@@ -1026,6 +1033,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
                 grade_rows: {cur_dep_only: true},
+
                 all_exam_rows: {get: true}
             };
 
@@ -1314,13 +1322,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- make el readonly when not requsr_requsr_same_school or when not edit permission
                     const may_edit = permit_dict.requsr_same_school && permit_dict.permit_crud;
-                    const is_readonly = (!may_edit) ? true :
-                                        (data_dict.examperiod === 4) ?
-                                            (!["segrade", "cegrade"].includes(field_name))
-                                        :
-                                            (data_dict.secret_exam) ?
-                                                (["pescore", "cescore"].includes(field_name)) :
-                                                (["pegrade", "cegrade"].includes(field_name))
 
                     let is_enabled = false;
                     if (may_edit){
@@ -1331,22 +1332,13 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (data_dict.examperiod === 4) {
                             is_enabled = ["segrade", "cegrade"].includes(field_name)
                         } else if (data_dict.examperiod === 1) {
-                            if (["segrade", "srgrade"].includes(field_name)){
-                                is_enabled = true;
-                            } else {
-                                if (data_dict.secret_exam) {
-                                    is_enabled = ["pegrade", "cegrade"].includes(field_name);
-                                } else {
-                                    is_enabled = ["pescore", "cescore"].includes(field_name);
-                                };
-                            };
+                            is_enabled = ["segrade", "srgrade", "pescore", "cescore"].includes(field_name)
+                                //PR2022-06-30 in secret_exam you can also enter score
+                                // was: if (data_dict.secret_exam) {
+                                //    is_enabled = ["pegrade", "cegrade"].includes(field_name);
+                                //} else {
                         } else if ([2, 3].includes(data_dict.examperiod)) {
-                        //TODO SXM gives scores to schools, not grades. Also for Cur??
-                           if (data_dict.secret_exam) {
-                                is_enabled = ["pegrade", "cegrade"].includes(field_name);
-                            } else {
-                                is_enabled = ["pescore", "cescore"].includes(field_name);
-                            };
+                            is_enabled = ["pescore", "cescore"].includes(field_name);
                         };
                     };
 
@@ -3650,7 +3642,12 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if(!is_test) {
             const datalist_request = {
                 setting: {page: "page_grade"},
-                grade_rows: {cur_dep_only: true}
+
+                student_rows: {cur_dep_only: true},
+                studentsubject_rows: {cur_dep_only: true},
+                grade_rows: {cur_dep_only: true},
+
+                all_exam_rows: {get: true}
             };
             DatalistDownload(datalist_request);
         };
@@ -3985,6 +3982,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
                 grade_rows: {cur_dep_only: true},
+
                 all_exam_rows: {get: true}
             };
         DatalistDownload(datalist_request);
@@ -4101,6 +4099,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                 student_rows: {get: true},
                 studentsubject_rows: {get: true},
                 grade_rows: {get: true},
+
                 all_exam_rows: {get: true}
             };
 
@@ -4582,15 +4581,23 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if(all_exam_rows && all_exam_rows.length){
             for (let i = 0, data_dict; data_dict = all_exam_rows[i]; i++) {
 
+        console.log( "data_dict", data_dict);
+        console.log( "setting_dict", setting_dict);
             // add only when exam has same subject as grade, and also the same depbase and lvlbase_id
+            // also filter examperiod
             // PR2022-05-18 debug Mireille Peterson exam not showing
             // cause: sxm has different subj_pk, use subjbase_pk instead
                 let show_row = false;
                 if (mod_MSELEX_dict.subjbase_pk === data_dict.subjbase_id){
-                    if(mod_MSELEX_dict.student_lvlbase_pk){
-                        show_row = (mod_MSELEX_dict.student_lvlbase_pk === data_dict.lvlbase_id);
-                    } else {
-                        show_row = true;
+                    // PR2022-06-30 debug: showed wrong examperiod after switching examperiod in sel_btn
+                    // solved by downloading all_exam_rows when switching sel_btn
+                    // also added filter examperiod here, to be on the safe side
+                    if (data_dict.examperiod === setting_dict.sel_examperiod){
+                        if(mod_MSELEX_dict.student_lvlbase_pk){
+                            show_row = (mod_MSELEX_dict.student_lvlbase_pk === data_dict.lvlbase_id);
+                        } else {
+                            show_row = true;
+                        };
                     };
                 };
                 if (show_row){

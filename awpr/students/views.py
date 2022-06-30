@@ -1272,6 +1272,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 
 # +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
+                            err_fields = []
                             update_student_instance(
                                 instance=student,
                                 sel_examyear=sel_examyear,
@@ -1284,6 +1285,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                                 gradelistnumber_list=[],
                                 msg_list=messages,
                                 error_list=error_list,
+                                err_fields=err_fields,  # err_fields is only used in update student
                                 log_list=[], # log_list is only used in upload students
                                 request=request,
                                 skip_save=False
@@ -4813,7 +4815,7 @@ def create_student(school, department, upload_dict, messages, error_list, reques
 #######################################################
 def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
                             idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
-                            msg_list, error_list, log_list, request, skip_save):
+                            msg_list, error_list, err_fields, log_list, request, skip_save):
     # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04
     # log_list is only used when uploading students, is None otherwise
     instance_pk = instance.pk if instance else None
@@ -4829,17 +4831,19 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
     """
 
     def get_log_txt(caption, new_value, saved_value):
-        caption_str = (caption + ':' + c.STRING_SPACE_20)[:20]
-        new_value_str = (str(new_value) if new_value else str(_('blank')))[:20]
-        log_txt = ''.join(( caption_str, c.STRING_SPACE_05,  new_value_str ))
-
+        blank_str = str(_('blank'))
+        log_txt = ' = '.join(((caption + c.STRING_SPACE_20)[:20],
+                              (str(new_value) if new_value else blank_str)[:20]
+                              ))
         if logging_on:
-            logger.debug(' ------- update_student_instance -------')
+            logger.debug(' ------- get_log_txt -------')
+            logger.debug('    caption:     ' + str(caption))
+            logger.debug('    new_value:   ' + str(new_value))
             logger.debug('    saved_value: ' + str(saved_value))
-            logger.debug('    _(blank): ' + str(_('blank')))
+            logger.debug('    blank_str:   ' + blank_str)
 
         if saved_value:
-            saved_str = str(saved_value if saved_value else _('blank'))
+            saved_str = str(saved_value) if saved_value else blank_str
             log_txt += ''.join(('  (', str(_('was')), ': ', saved_str, ')'))
         return log_txt
 
@@ -4866,8 +4870,10 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 if field in ['lastname', 'firstname']:
                     saved_value = getattr(instance, field)
 
-                    if isinstance(new_value, int):
-                        new_value = str(new_value)
+                    # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                    if new_value is not None:
+                        if not isinstance(new_value, str):
+                            new_value = str(new_value)
 
                     if new_value != saved_value:
                         if logging_on:
@@ -4903,8 +4909,10 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     new_gender = None
                     has_error = False
 
-                    if not isinstance(new_value, str):
-                        new_value = str(new_value)
+                    # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                    if new_value is not None:
+                        if not isinstance(new_value, str):
+                            new_value = str(new_value)
 
                     if new_value:
                         new_gender = new_value[:1].upper()
@@ -4918,6 +4926,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         err_txt = _("%(cpt)s '%(val)s' is not allowed.") \
                                   % {'cpt': str(_('Gender')), 'val': new_value}
                         error_list.append(err_txt)
+                        err_fields.append(field)
                         msg_list.append({'class': "border_bg_warning", 'msg_html': err_txt})
                     else:
                         saved_value = getattr(instance, field)
@@ -4935,8 +4944,10 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     err_txt = None
                     class_txt = None
 
-                    if not isinstance(new_value, str):
-                        new_value = str(new_value)
+                    # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                    if new_value is not None:
+                        if not isinstance(new_value, str):
+                            new_value = str(new_value)
 
                     if new_value:
                         if field == 'idnumber':
@@ -5028,6 +5039,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if err_txt:
                         field_error = True
                         error_list.append(err_txt)
+                        err_fields.append(field)
                         msg_list.append({'class': class_txt, 'msg_html': err_txt})
                     else:
                         saved_value = getattr(instance, field)
@@ -5050,12 +5062,14 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     err_txt = None
                     class_txt = None
 
-                    if not isinstance(new_value, str):
-                        new_value = str(new_value)
+                    # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                    if new_value is not None:
+                        if not isinstance(new_value, str):
+                            new_value = str(new_value)
 
                     if new_value:
             # - validate length of new_value
-                        err_txt = stud_val.validate_length(_('The school code'), new_value, c.MAX_LENGTH_10, True)  # True = blank_allowed
+                        err_txt = stud_val.validate_length(caption, new_value, c.MAX_LENGTH_10, True)  # True = blank_allowed
                         if err_txt is None:
 
             # check if new_value already exists in value_list, but skip idnumber of this instance
@@ -5064,8 +5078,8 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 # when updating single student, value_list is not filled yet. in that case: get diplomanumber_list
                             if not value_list:
                                 value_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database(field, sel_school)
-                            # check if new_value already exists in value_list, but skip idnumber of this instance
-                            # list contains tuples with (id, value) id is needed to skip value of  this student
+
+                            # value_list contains tuples with (id, value), id is needed to skip value of this student
                             if value_list:
                                 double_student_id_list = []
                                 for row in value_list:
@@ -5100,6 +5114,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if err_txt:
                         field_error = True
                         error_list.append(err_txt)
+                        err_fields.append(field)
                         msg_list.append({'class': class_txt, 'msg_html': err_txt})
                     else:
                         saved_value = getattr(instance, field)
@@ -5129,8 +5144,14 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                 elif field in ('prefix', 'birthcountry', 'birthcity', 'classname'):
                     saved_value = getattr(instance, field)
 
-                    if not isinstance(new_value, str):
-                        new_value = str(new_value)
+                    # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                    if new_value is not None:
+                        if not isinstance(new_value, str):
+                            new_value = str(new_value)
+
+                    if logging_on:
+                        logger.debug('field: ' + field + ' saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                        logger.debug('field: ' + field + ' new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
                     if new_value != saved_value:
                         setattr(instance, field, new_value)
@@ -5208,6 +5229,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                                     err_txt1 = str(_('This candidate has submitted exemptions.'))
                                     err_txt2 = str(_('The bis-exam cannot be removed.'))
                                     error_list.append(' '.join((err_txt1, err_txt2)))
+                                    err_fields.append(field)
                                     msg_list.append({'class': "border_bg_warning", 'msg_html': '<br>'.join((err_txt1, err_txt2))})
                             else:
                                 remove_exemptions = True
@@ -5267,6 +5289,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                                     caption = 'landsexamen candidate' if field == 'islexstudent' else 'evening candidate'
                                     err_txt2 = str(_("The label '%(cpt)s' cannot be removed.") % {'cpt': caption})
                                     error_list.append(' '.join((err_txt1, err_txt2)))
+                                    err_fields.append(field)
                                     msg_list.append({'class': "border_bg_warning", 'msg_html': '<br>'.join((err_txt1, err_txt2))})
                                 else:
                                     remove_exemptions = True
@@ -5445,6 +5468,8 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
         logger.debug('changes_are_saved: ' + str(changes_are_saved))
         logger.debug('field_error: ' + str(field_error))
         logger.debug('error_list: ' + str(error_list))
+        logger.debug('err_fields: ' + str(err_fields))
+
     return changes_are_saved, save_error, field_error
 # - end of update_student_instance
 

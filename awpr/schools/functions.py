@@ -1027,6 +1027,8 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
              {'awpColdef': 'function', 'caption': 'Functie'}]
 
         """
+
+# +++ loop through default_coldef_list
         if default_coldef_list:
             for dict in default_coldef_list:
                 awpColdef = dict.get('awpColdef')
@@ -1045,7 +1047,7 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
                 else:
                     add_to_list = True
 
-# - loop through stored_coldef, add excColdef to corresponding item in coldef_list
+# --- loop through stored_coldef, add excColdef to corresponding item in coldef_list
                 if add_to_list:
                     # stored_coldef: {'examnumber': 'exnr', 'classname': 'KLAS', 'level': 'Payrollcode', 'sector': 'Profiel'}
                     if stored_coldef:

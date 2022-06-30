@@ -300,7 +300,7 @@ LOGGING = {
     'handlers': {
         'accounts_log': {
             'level': 'DEBUG',
-            'filters': ['require_debug_false'], # was: 'filters': ['require_debug_true']
+            'filters': [], # was: 'filters': ['require_debug_true']
             'class': 'logging.FileHandler',
             'filename': config('LOGGER_BASEDIR') + 'accounts.log',
             'formatter': 'simple'  # was: 'formatter': 'verbose'

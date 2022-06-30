@@ -1126,6 +1126,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
                     gradelistnumber_list=gradelistnumber_list,
                     msg_list=messagesNIU,
                     error_list=error_list,
+                    err_fields=[],  # err_fields is only used in update student
                     log_list=update_list,
                     request=request,
                     skip_save=is_test

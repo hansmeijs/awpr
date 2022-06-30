@@ -708,37 +708,38 @@
 
 //========= get_arrayRow_by_keyValue  ====================================
     function get_arrayRow_by_keyValue (dict_list, arrKey, keyValue) {
-        // Function returns row of array that contains keyValue in arrKey PR2019-01-05 PR2020-12-28
+        // Function returns row of array that contains keyValue in arrKey PR2019-01-05 PR2020-12-28 PR2022-06-29
         // stored_columns[3]: {awpCol: "lastname", caption: "Last name", excCol: "ANAAM" }
         // excel_columns[0]:    {excCol: "ANAAM", awpCol: "lastname", awpCaption: "Achternaam"}
         // PR2020-12-27 do not use Object.entries because it does not allow break
-        console.log("----- get_arrayRow_by_keyValue -----")
-        console.log("    dict_list", dict_list)
-        console.log("    keyValue", keyValue)
+
+        //console.log("----- get_arrayRow_by_keyValue -----")
+        //console.log("    dict_list", dict_list)
+        //console.log("    keyValue", keyValue)
 
         let row = null;
         if (dict_list && arrKey && keyValue != null){
             for (let i = 0, dict; dict = dict_list[i]; i++) {
                 // dict =  {awpKey: "examnumber", caption: "Examennummer", linkfield: true, excKey: "exnr"}
                 const value = dict[arrKey];
-        console.log("    value", value)
+
                 if (!!dict && value != null){
                     // convert number to string for text comparison
                     let isEqual = false;
                     if (typeof(keyValue) === "string"){
                         const value_str = (typeof(value) === "number") ? value.toString() : value;
-        console.log("    value_str", value_str)
+
                         isEqual = (keyValue.toLowerCase() === value_str.toLowerCase());
                     } else {
                         isEqual = (keyValue === value);
-                    }
-        console.log(" >> isEqual", isEqual)
+                    };
+
                     if (isEqual){
                         row = dict;
                         break;
-        }}}}
+        }}}};
         return row;
-    }  // get_arrayRow_by_keyValue
+    };  // get_arrayRow_by_keyValue
 
 //========= function get_object_value_by_key  ====================================
     function get_obj_value_by_key (obj, objKey) {

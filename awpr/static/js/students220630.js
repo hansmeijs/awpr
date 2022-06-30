@@ -569,9 +569,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15 PR2021-08-02
     function CreateTblHeader(field_setting, col_hidden) {
-        console.log("===  CreateTblHeader ===== ");
+        //console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
-        console.log("col_hidden", col_hidden);
+        //console.log("col_hidden", col_hidden);
 
 //--- get info from selected department_map
         let sct_caption = null, has_profiel = false,  lvl_req = false, sct_req = false;
