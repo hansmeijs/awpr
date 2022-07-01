@@ -1863,6 +1863,7 @@ def calc_grade_rows_tobe_updated(grade_row, tobe_updated_list, sel_examperiod, s
     if grade_row and sel_examtype and sel_examtype in ('se', 'sr', 'pe', 'ce'):
 
         grade_pk = grade_row.get('id')
+        # has_exemption = studsubj.has_exemption
         has_exemption = grade_row.get('has_exemption') or False
         is_secret_exam = grade_row.get('secret_exam') or False
 
@@ -1881,10 +1882,11 @@ def calc_grade_rows_tobe_updated(grade_row, tobe_updated_list, sel_examperiod, s
             add_to_update_list = False
 # skip if this grade has no value
     # PR2022-03-11 after tel with Nancy Josephina: blank grades can also be approved, give warning first
-# PR2022-05-31 after corrector has blocked all empty scores by approving: skip approve when empty
+    # PR2022-05-31 after corrector has blocked all empty scores by approving: skip approve when empty
             has_value = grade_row.get('has_value', False)
 
             if not has_value:
+                # TODO remove skip when has_exemp. Maybe this is still here because empty scores had to be approved. Can be deleted?
                 if not has_exemption:
                     af.add_one_to_count_dict(msg_dict, 'no_value')
                     if logging_on:
@@ -1900,13 +1902,17 @@ def calc_grade_rows_tobe_updated(grade_row, tobe_updated_list, sel_examperiod, s
                 auth4by_id = grade_row.get('auth4by_id')
 
     # - skip if this grade / examtype is not approved by all auth
+                # Ex2 and Ex2A must always be approved by  auth1 and auth2
                 auth_missing = auth1by_id is None or auth2by_id is None
 
                 # TODO change when submitting exemption grades (NIU yet)
                 if not auth_missing:
+                    # se_grade must also be approved by  auth3
+                    # sel_examtypes are : 'se', 'sr', 'pe', 'ce'
                     if sel_examtype in ('se', 'sr'):
                         auth_missing = auth3by_id is None
                     else:
+                        # secret_exam does not have to be approved by auth3
                         if not is_secret_exam:
                             auth_missing = auth3by_id is None
 
@@ -1929,10 +1935,11 @@ def calc_grade_rows_tobe_updated(grade_row, tobe_updated_list, sel_examperiod, s
                     # secretary cannot also approve as chairperson or as corrector
                     # examiner cannot also approve as corrector
                     # corrector cannot also approve as chairperson, secretary or examiner
-                    double_approved = (auth1by_id == auth2by_id) or \
-                                      (auth1by_id == auth4by_id) or \
-                                      (auth2by_id == auth4by_id) or \
-                                      (auth3by_id == auth4by_id)
+                    # in Python None == None = True, therefore add: auth1by_id and ...
+                    double_approved = (auth1by_id and auth1by_id == auth2by_id) or \
+                                      (auth1by_id and auth1by_id == auth4by_id) or \
+                                      (auth2by_id and auth2by_id == auth4by_id) or \
+                                      (auth3by_id and auth3by_id == auth4by_id)
                     if logging_on:
                         logger.debug('     double_approved: ' + str(double_approved))
 
@@ -2907,7 +2914,7 @@ def create_grade_stat_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 # --- end of create_grade_stat_icon_rows
 
 
-def create_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, setting_dict, request,
+def XXXXXXXXXXcreate_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, setting_dict, request,
                       append_dict=None, grade_pk_list=None, auth_dict=None,
                       remove_note_status=False, skip_allowed_filter=False):
     # --- create grade rows of all students of this examyear / school PR2020-12-14  PR2021-12-03 PR2022-02-09
@@ -3001,6 +3008,7 @@ def create_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel
                     grades, final_grade, status,
 
                     "exam.ete_exam, exam.secret_exam, exam.version, ntb.omschrijving AS ntb_omschrijving,",
+                    "exam.examperiod AS exam_examperiod,",
                     "grd.examperiod,",
                     "grd.se_auth1by_id, grd.se_auth2by_id, grd.se_auth3by_id, grd.se_auth4by_id, grd.se_published_id, grd.se_blocked,",
                     "grd.sr_auth1by_id, grd.sr_auth2by_id, grd.sr_auth3by_id, grd.sr_auth4by_id, grd.sr_published_id, grd.sr_blocked,",
@@ -3154,7 +3162,6 @@ def create_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel
 
                     row[field_name + 'by_usr'] = usrname
 
-
         # - add exam_name
                 ce_exam_id = row.get('ce_exam_id')
                 ce_exam_name = None
@@ -3165,7 +3172,7 @@ def create_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel
                         subj_name=row.get('subj_name'),
                         depbase_code=row.get('depbase_code'),
                         lvl_abbrev=row.get('lvl_abbrev'),
-                        examperiod=row.get('examperiod'),
+                        examperiod=row.get('exam_examperiod'),
                         version=row.get('version'),
                         ntb_omschrijving=row.get('ntb_omschrijving')
                     )
@@ -3190,7 +3197,7 @@ def create_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel
         logger.error(getattr(e, 'message', str(e)))
 
     return grade_rows
-# --- end of create_grade_rowsNIU
+# --- end of XXXXXXXXXXcreate_grade_rowsNIU
 
 
 def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, setting_dict, request,
@@ -3444,7 +3451,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                 if ce_exam_id:
                     ce_exam_name = subj_vw.get_exam_name(
                         ce_exam_id=ce_exam_id,
-                        ete_exam=row.get('ete_exam') or False,
+                        ete_exam=row.get('ete_exam'),
                         subj_name=row.get('subj_name'),
                         depbase_code=row.get('depbase_code'),
                         lvl_abbrev=row.get('lvl_abbrev'),

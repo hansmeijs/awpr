@@ -1303,6 +1303,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_examtype'] = TXT_Select_examtype
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
+
+        dict['Designated_exam'] = _('Designated exam')
+
         dict['Attachment'] = _('Attachment')
 
         # options_examperiod PR2020-12-20

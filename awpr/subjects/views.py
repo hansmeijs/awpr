@@ -3957,6 +3957,7 @@ def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, exa
     exam_name = None
     if ce_exam_id:
         exam_name = 'ETE' if ete_exam else 'DUO'
+
         if ete_exam:
             if depbase_code:
                 exam_name += ' ' + depbase_code
@@ -4098,20 +4099,31 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                             log_list.append(c.STRING_SINGLELINE_80)
                             for row in rows:
                                 # add school line
-                                if row[0] not in log_list:
+                                if row[0] not in log_list:  # row[0] = schoolbase.code, school.name
                                     log_list.append(row[0])
 
                                 # add line with student and subject / exam if already linked
                                 exam_name = ''
-                                if row[2]:  # ce_exam_id
-                                    if row[3]:  # ete_exam
-                                        exam_name = ' '.join(('ETE', row[4], row[5]))  # subj_name, depbase_code
-                                        if row[6]:  # level_req
-                                            exam_name += (row[7] if row[7] else '-') # lvlbase_code'
-                                        if row[8]:
-                                            exam_name += ' ' + row[8]  # version
-                                    else:
-                                        exam_name = ' '.join(('DUO', row[9] if row[9] else '-'))   # omschrijving
+                                if row[2]:  # row[2] = grd.ce_exam_id
+                                    #if row[3]:  # ete_exam
+                                    #    exam_name = ' '.join(('ETE', row[4], row[5]))  # subj_name, depbase_code
+                                    #    if row[6]:  # level_req
+                                    #        exam_name += (row[7] if row[7] else '-') # lvlbase_code'
+                                    #    if row[8]:
+                                    #        exam_name += ' ' + row[8]  # version
+                                    # else:
+                                    #    exam_name = ' '.join(('DUO', row[9] if row[9] else '-'))   # omschrijving
+
+                                    exam_name = get_exam_name(
+                                        ce_exam_id=row[2], # row[2] = grd.ce_exam_id - only used to return blank when no ce_exam_id
+                                        ete_exam=row[3], # row[3] = ete_exam
+                                        subj_name=row[4], # row[4] = subj.name
+                                        depbase_code=row[5], # row[5] = depbase.code,
+                                        lvl_abbrev=(row[7] if row[7] else '-'), # row[7] = lvlbase.code
+                                        examperiod=examperiod,
+                                        version=row[8], # row[8] = exam.version,
+                                        ntb_omschrijving=row[9] # row[9] = ntb.omschrijving"
+                                    )
 
                                 log_list.append(c.STRING_SPACE_05.join(((row[1] + c.STRING_SPACE_40)[:40], exam_name)))
                 else:
@@ -4717,7 +4729,7 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "CONCAT('n', ntb.id, 'd', dep.id, 's', subj.id, 'l', lvl.id) AS ndsl_pk,",
         "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-        "exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.secret_exam,",
+        "exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.ete_exam, exam.secret_exam,",
         "sb.code AS subjbase_code, subj.name AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
 

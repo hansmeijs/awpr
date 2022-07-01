@@ -1547,6 +1547,9 @@ document.addEventListener("DOMContentLoaded", function() {
                         inner_text = fld_value;
                         if (field_name === "ce_exam_name"){
                             title_text = fld_value
+                            if(data_dict.secret_exam && loc.Designated_exam){
+                                title_text += "\n" + loc.Designated_exam.toLowerCase();
+                            };
                         };
                     }
                     //el_div.innerText = (inner_text) ? inner_text : null;
@@ -1606,6 +1609,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 // Auth3 does not have to sign when secret exam (aangewezen examen)
                 const auth3_must_sign = (!data_dict.secret_exam);
+                // Auth4 does not have to sign when secret exam (aangewezen examen) or when se-grade
                 const auth4_must_sign = (!data_dict.secret_exam && ["pe_status", "ce_status"].includes(field_name));
 
         //console.log("field_blocked", field_blocked);
