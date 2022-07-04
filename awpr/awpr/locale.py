@@ -1448,6 +1448,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
+
+        dict['Ex6_pok'] = ' '.join(('Ex6', str(_('Proof of knowledge'))))
+        dict['Download_Ex6_pok'] = _('Download Ex6 Proof of knowledge')
+
         dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary
         dict['Corrector'] = TXT_Corrector
@@ -1500,6 +1504,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_final_gradelist_of'] = _('The final grade list of')
         dict['The_diploma_of'] = _('The diploma of')
         dict['The_diplomas_of'] = _('The diplomas of')
+        dict['The_diploma_of'] = _('The diploma of')
+
+        dict['The_pok_of'] = _('The proof of knowledge of')
+        dict['Print_date'] = _('Print date')
+
         dict['The_result_of'] = _('The result of')
         dict['candidates'] = _(' candidates')
 
@@ -1510,6 +1519,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['will_be_calculated'] = _('will be calculated.')
         dict['Logfile_with_details_willbe_downloaded'] = _('The logfile with details will be downloaded.')
 
+
+
+
         dict['Select_a_chairperson'] = _('Select a chairperson')
         dict['Select_a_secretary'] = _('Select a secretary')
         dict['No_chairperson'] = _('There is no chairperson')
@@ -1518,9 +1530,17 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Calculate_results'] = _('Calculate results')
         dict['Log_calculated_results'] = _('Log calculated results')
 
+        dict['mgl_error_noauth'] = _('The name of the chairperson and secretary and the print date must be entered.')
+        dict['mgl_error_noauth_pok'] = _('The name of the chairperson and the print date must be entered.')
+
+        dict['mgl_not_correct'] = _('Country of birth is not correct')
+
         dict['Birthcountry_not_correct'] = _('Country of birth is not correct')
         dict['Log_change_birth_country'] = _('Log change country of birth')
         dict['Log_change_birth_country'] = _('Log change country of birth')
+
+
+
 
 # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:

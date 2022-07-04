@@ -1055,7 +1055,6 @@ def draw_ex_box(canvas, border, exform_text):
     canvas.line(right - 16 * mm, top, right - 16 * mm, top - 12 * mm)
     canvas.line(right - 16 * mm, top - 12 * mm , right, top - 12 * mm )
 
-
     # add 'EX.3' in the right upper corner
     canvas.drawString(right - 13 * mm, top - 8 * mm, ex_code)
 # - end of draw_ex_box

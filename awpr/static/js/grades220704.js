@@ -4651,6 +4651,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
         let el_div = document.createElement("div");
             el_div.innerText = code_value;
+            td.title = code_value;
             el_div.classList.add("tw_360", "px-2", "pointer_show" )
         td.appendChild(el_div);
     }  // MSELEX_FillSelectRow

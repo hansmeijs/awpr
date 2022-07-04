@@ -464,6 +464,7 @@ class Subject_log(sch_mod.AwpBaseModel):
 # PR2022-02-28
 class Ntermentable(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
+    # PR2022-07-01 TODO in addition to link with examyear, add examyear as integer field, to prevent
 
     examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
 

@@ -288,6 +288,7 @@ urlpatterns = [
         path('get_auth', student_results.GetGradelistDiplomaAuthView.as_view(), name='url_get_auth'),
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
         path('download_gradelist/<lst>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
+        path('download_pok/<lst>/', student_results.DownloadPokView.as_view(), name='url_download_pok'),
 
         path('submit_ex5', grade_views.GradeSubmitEx5View.as_view(), name='url_grade_submit_ex5'),
 
@@ -324,7 +325,6 @@ urlpatterns = [
         path('copy', subject_views.ExamCopyView.as_view(), name='url_exam_copy'),
         path('copy_ntermen', subject_views.ExamCopyNtermenView.as_view(), name='url_exam_copy_ntermen'),
         path('link_ete_duo_exam_to_grade', subject_views.ExamLinkExamToGradesView.as_view(), name='url_link_exam_to_grades'),
-        path('url_calc_grades_from_exam', subject_views.ExamCalcGradesFromExamView.as_view(), name='url_calc_grades_from_exam'),
 
         path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),
         path('approve_publish_exam', subject_views.ExamApproveOrPublishExamView.as_view(), name='url_approve_publish_exam'),

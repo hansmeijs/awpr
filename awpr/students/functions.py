@@ -11,7 +11,7 @@ def convert_idnumber_withdots_no_char(id_number):
     # PR2022-06-17
     # function add dots to idnumber, if last 2 digits are not numeric: dont print letters, but print '00' instead
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- convert_idnumber_withdots_no_char -----')
 

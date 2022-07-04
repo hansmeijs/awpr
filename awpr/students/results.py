@@ -31,6 +31,7 @@ from awpr import downloads as dl
 from awpr import library as awpr_lib
 
 from grades import calc_results as calc_res
+from grades import exfiles as grd_exfiles
 
 from students import functions as stud_fnc
 
@@ -553,6 +554,125 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of DownloadGradelistDiplomaView
+
+
+@method_decorator([login_required], name='dispatch')
+class DownloadPokView(View):  # PR2022-07-02
+
+    def get(self, request, lst):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= DownloadPokView ============= ')
+        response = None
+
+        if request.user and request.user.country and request.user.schoolbase and lst:
+            upload_dict = json.loads(lst) if lst != '-' else {}
+            if logging_on:
+                logger.debug('     upload_dict: ' + str(upload_dict))
+                # upload_dict: {'mode': 'prelim', 'print_all': False, 'student_pk_list': [8629], 'auth1_pk': 116, 'printdate': '2021-11-18'}
+            req_user = request.user
+
+    # - reset language
+            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+   # - get selected examyear, school and department from usersettings
+            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
+                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
+            if logging_on:
+                logger.debug('     sel_school: ' + str(sel_school))
+                logger.debug('     sel_department: ' + str(sel_department))
+
+            if sel_school and sel_department:
+                student_pk_list = upload_dict.get('student_pk_list')
+                if logging_on:
+                    logger.debug('     student_pk_list: ' + str(student_pk_list))
+
+                auth1_pk = upload_dict.get('auth1_pk')
+                auth2_pk = upload_dict.get('auth2_pk')
+                printdate = upload_dict.get('printdate')
+
+                settings_key = c.KEY_GRADELIST
+                new_setting_dict = {
+                    'auth1_pk': auth1_pk,
+                    'auth2_pk': auth2_pk,
+                    'printdate': printdate,
+                }
+                new_setting_json = json.dumps(new_setting_dict)
+                request.user.schoolbase.set_schoolsetting_dict(settings_key, new_setting_json)
+
+        # - get library from examyearsetting
+                library = awpr_lib.get_library(sel_examyear, ['exform', 'ex6', 'gradelist'])
+
+                proof_of_knowledge_dict = calc_res.get_proof_of_knowledge_dict(sel_examyear, sel_school, sel_department, sel_lvlbase_pk, student_pk_list)
+                if proof_of_knowledge_dict:
+
+                    # - get arial font
+                    try:
+                        filepath = s.STATICFILES_FONTS_DIR + 'arial.ttf'
+                        ttfFile = TTFont('Arial', filepath)
+                        pdfmetrics.registerFont(ttfFile)
+                    except Exception as e:
+                        logger.error(getattr(e, 'message', str(e)))
+
+                    auth1_name = '---'
+                    # get auth1_pk from upload_dict, check if user exists and has auth1 permission
+                    if auth1_pk:
+                        auth1 = acc_mod.User.objects.get_or_none(
+                            pk=auth1_pk,
+                            schoolbase=request.user.schoolbase,
+                            activated=True,
+                            is_active=True,
+                            usergroups__contains='auth1'
+                        )
+
+                    buffer = io.BytesIO()
+                    canvas = Canvas(buffer)
+
+                    for student_dict in proof_of_knowledge_dict.values():
+                        draw_pok(canvas, library, student_dict, auth1_pk, printdate, request)
+
+                        canvas.showPage()
+
+                    canvas.save()
+                    pdf = buffer.getvalue()
+                    # pdf_file = File(temp_file)
+
+                    # was: buffer.close()
+
+                    """
+                    # TODO as test try to save file in
+                    studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
+                    content_type='application/pdf'
+                    file_name = 'test_try.pdf'
+                    if studsubjnote and pdf_file:
+                        instance = stud_mod.Noteattachment(
+                            studentsubjectnote=studsubjnote,
+                            contenttype=content_type,
+                            filename=file_name,
+                            file=pdf_file)
+                        instance.save()
+                        logger.debug('instance.saved: ' + str(instance))
+                    # gives error: 'bytes' object has no attribute '_committed'
+                    """
+
+                    response = HttpResponse(content_type='application/pdf')
+                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                    # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
+
+                    response.write(pdf)
+
+                # except Exception as e:
+                #     logger.error(getattr(e, 'message', str(e)))
+                #     raise Http404("Error creating Ex2A file")
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of DownloadPokView
 
 
 def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctbase_pk, student_pk_list):  # PR2021-11-19
@@ -2099,10 +2219,16 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, li
 
     txt_list = [
         {'txt': auth1_name, 'font': 'Times-Bold', 'size': 10, 'padding': 4,
-         'x': x + col_tab_list[0] * mm},
-        {'txt': auth2_name, 'font': 'Times-Bold', 'size': 10, 'padding': 4,
-         'x': x + col_tab_list[1] * mm},
+         'x': x + col_tab_list[0] * mm}
     ]
+
+    # pok has no auth2_name, skip when auth2_name has no value
+    if auth2_name:
+        txt_list.append(
+            {'txt': auth2_name, 'font': 'Times-Bold', 'size': 10, 'padding': 4,
+            'x': x + col_tab_list[1] * mm}
+        )
+
     line_height = 30
     pos_y_auth = coord[1] - line_height * mm
     # let signature never go lower than just above regnr line
@@ -2120,9 +2246,13 @@ def draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, li
     txt_list = [
         {'txt': library.get('chairperson', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
          'x': x + col_tab_list[0] * mm},
-        {'txt': library.get('secretary', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
-         'x': x + col_tab_list[1] * mm},
     ]
+    # pok has no auth2_name, skip when auth2_name has no value
+    if auth2_name:
+        txt_list.append(
+            {'txt': library.get('secretary', '---'), 'font': 'Times-Roman', 'size': 10, 'padding': 4,
+             'x': x + col_tab_list[1] * mm}
+        )
     draw_text_one_line(canvas, coord_auth_label, col_tab_list, 0, 1.25, False, None, txt_list)
 
     if logging_on:
@@ -2157,6 +2287,7 @@ def draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
 
     if not dont_print:
         for text_dict in text_list:
+            #  text_dict = {'txt': '-', 'font', 'Times-Roman', 'size', 10 'color', '#000000' 'align', 'l' 'padding': 4, 'x': x 4 * mm,},
     # - get info from text_dict
             text = text_dict.get('txt')
             if text:
@@ -2164,6 +2295,7 @@ def draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
                 font_size = text_dict.get('size', 10)
                 font_hexcolor = text_dict.get('color', '#000000')
                 text_align = text_dict.get('align', 'l')
+                padding = text_dict.get('padding', 0) * mm
 
                 x_pos = text_dict.get('x', 0)
 
@@ -2174,10 +2306,10 @@ def draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom,
                     x_pos_txt = x_pos
                     canvas.drawCentredString(x_pos_txt, y_pos_txt, text)
                 elif text_align == 'r':
-                    x_pos_txt = x_pos - text_dict.get('padding', 0) * mm
+                    x_pos_txt = x_pos - padding
                     canvas.drawRightString(x_pos_txt, y_pos_txt, text)
                 else:
-                    x_pos_txt = x_pos + text_dict.get('padding', 0) * mm
+                    x_pos_txt = x_pos + padding
                     canvas.drawString(x_pos_txt, y_pos_txt, text)
 
                 #draw_red_cross(canvas, x_pos_txt, y_pos_txt)
@@ -2539,3 +2671,312 @@ def draw_shortlist_one_line(canvas, coord, col_tab_list, line_height, offset_bot
 # - end of draw_shortlist_one_line
 
 #############################################
+
+def draw_pok(canvas, library, student_dict, auth1_pk, printdate, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug('+++++++++++++ draw_pok +++++++++++++')
+        logger.debug('     auth1_pk: ' + str(auth1_pk) + '' + str(type(auth1_pk)))
+        logger.debug('     student_dict: ' + str(student_dict))
+
+    auth1_name = '---'
+    if auth1_pk:
+        auth1 = acc_mod.User.objects.get_or_none(
+            pk=auth1_pk,
+            schoolbase=request.user.schoolbase,
+            activated=True,
+            is_active=True,
+            usergroups__contains='auth1'
+        )
+        if auth1:
+            auth1_name = auth1.last_name
+
+        if logging_on:
+            logger.debug('     auth1: ' + str(auth1))
+            logger.debug('     auth1_name: ' + str(auth1_name))
+            logger.debug('     auth1.usergroups: ' + str(auth1.usergroups))
+
+    is_eveningstudent = student_dict.get('iseveningstudent') or False
+    is_lexstudent = student_dict.get('islexstudent') or False
+    reg_number = student_dict.get('regnumber')
+    is_sxm = student_dict.get('country_abbrev') == 'Sxm'
+
+# - set the corners of the rectangle
+    # - 72 points = 1 inch   -  1 point = 20 pixels  - 1 mm = 2,8346 points
+    # only when prelim gradelist. rectangle is 180 mm wide and 270 mm high, 15 mm from bottom, 15 mm from left
+    top = 282 * mm
+    bottom = 15 * mm
+    left = 15 * mm
+    right = 195 * mm
+
+    border = [top, right, bottom, left]
+
+    coord = [left, top]
+    if logging_on:
+        logger.debug('     bottom: ' + str(bottom))
+        logger.debug('     left: ' + str(left))
+        logger.debug('     coord: ' + str(coord))
+        logger.debug('     1 * mm: ' + str(1 * mm))
+
+    canvas.setLineWidth(0.5)
+    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
+
+    col_tab_list = (4, 84, 104, 124, 144, 164, 174)
+
+# - draw page header
+    draw_pok_page_header(
+        canvas=canvas,
+        border=border,
+        coord=coord,
+        library=library,
+        student_dict=student_dict,
+        is_sxm=is_sxm,
+        is_eveningstudent=is_eveningstudent,
+        is_lexstudent=is_lexstudent
+    )
+
+# - draw column header
+    draw_gradelist_colum_header(canvas, coord, col_tab_list, library, is_lexstudent)
+
+# - loop through subjects
+    # subjects_dict = [{'subj_name': 'Algemene sociale wetenschappen', 'sesr_grade': '6.3', 'pece_grade': None, 'final_grade': '6'}
+    subject_list = student_dict.get('subjects')
+    for subj_dict in subject_list:
+        draw_gradelist_subject_row(canvas, coord, col_tab_list, subj_dict)
+
+# - draw page footer
+    draw_gradelist_footnote_row(canvas, coord, col_tab_list, library, student_dict, is_lexstudent)
+
+# - draw page signatures
+    draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name, None, printdate, reg_number)
+# - end of draw_pok
+
+
+def draw_pok_page_header(canvas, border, coord, library, student_dict, is_sxm, is_eveningstudent, is_lexstudent):
+    # loop through rows of page_header
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ----- draw_pok_page_header -----')
+        logger.debug('     student_dict: ' + str(student_dict))
+        logger.debug('     library: ' + str(library))
+
+    line_height = 7 * mm
+    padding_left = 4 * mm
+
+    x = coord[0] + padding_left
+    y = coord[1] - 8 * mm
+
+# - draw 'Ex.6' in upper right cormner
+    grd_exfiles.draw_ex_box(canvas, border, library)
+
+# draw MinOnd
+    canvas.setFont('Times-Bold', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+    canvas.drawString(x, y, library.get('minond', '-'))
+    y -= 10 * mm
+
+# draw Pok / Pex
+    key_str = 'ex6_pex' if is_eveningstudent else 'ex6_pok'
+    canvas.drawString(x, y, library.get(key_str, '-'))
+    y -= line_height
+
+# draw 'Landsbesluit', different text for sxm and cur  and eex and lex ex6_article_sxm_lex
+    canvas.setFont('Times-Roman', 11, leading=None)
+    key_str = '_'.join(('ex6', 'article', ('sxm' if is_sxm else 'cur'), ('lex' if is_lexstudent else 'eex')))
+    eex_article_txt = library.get(key_str, '-')
+    canvas.drawString(x, y, eex_article_txt)
+    y -= 10 * mm
+
+# draw 'De voorzitter van de examencommissie van' + school name
+    txt = ' '.join((
+        library.get('ex6_voorzitter', '-'),
+        student_dict.get('school_article', ''),
+    ))
+    txt_width = pdfmetrics.stringWidth(txt + '  ', 'Times-Roman', 11)
+    canvas.drawString(x, y, txt)
+
+    canvas.setFont('Arial', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000080"))
+    canvas.drawString(x + txt_width, y, student_dict.get('school_name', '---'))
+    y -= line_height
+
+# draw country, examyear
+    te_label = library.get('ex6_te', '')
+    te_label_width = pdfmetrics.stringWidth(te_label + '  ', 'Times-Roman', 11)
+    country_name = student_dict.get('country', '---')
+    country_name_width = pdfmetrics.stringWidth(country_name, 'Arial', 11)
+    examyear_label = ',  ' + library.get('ex6_examyear', '-')
+    examyear_label_width = pdfmetrics.stringWidth(examyear_label + '  ', 'Times-Roman', 11)
+    examyear_txt = student_dict.get('examyear_txt', '---')
+    examyear_txt_width = pdfmetrics.stringWidth(examyear_txt + '  ', 'Arial', 11)
+    belast_label = library.get('ex6_belast', '-')
+
+    canvas.setFont('Times-Roman', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+
+    canvas.drawString(x, y, te_label)
+    canvas.drawString(x + te_label_width + country_name_width, y, examyear_label)
+    canvas.drawString(x + te_label_width + country_name_width+ examyear_label_width + examyear_txt_width, y, belast_label)
+
+    canvas.setFont('Arial', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000080"))
+    canvas.drawString(x + te_label_width, y, country_name)
+    canvas.drawString(x + te_label_width + country_name_width + examyear_label_width, y, student_dict.get('examyear_txt', '---'))
+    y -= line_height
+
+# draw het_eindexamen, department, aan_deze_school, verklaart_dat
+    eindexamen = library.get('ex6_eindexamen', '-')
+    dep_name = student_dict.get('dep_name', '---')
+
+    key_str = 'ex6_instelling' if is_lexstudent else 'ex6_school'
+    school_instelling = library.get(key_str, '-')
+    txt_str = ''.join((
+        eindexamen, ' ',
+        dep_name, ' ',
+        library.get('ex6_aan_deze', '-'),
+        school_instelling,
+        library.get('ex6_verklaart_dat', '-')
+    ))
+
+    canvas.setFont('Times-Roman', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+    canvas.drawString(x, y, txt_str)
+    y -= 10 * mm
+
+# draw fullname
+    canvas.setFont('Arial', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000080"))
+    canvas.drawString(x + 5 * mm, y, student_dict.get('full_name', '---'))
+    y -= 10 * mm
+
+# draw geboren_op, geboren_te
+    txt_str = ' '.join((
+        library.get('ex6_geboren_op', '-'),
+        student_dict.get('birth_date_formatted') or '---',
+        te_label,
+        student_dict.get('birth_place') or '---'
+    ))
+    canvas.setFont('Times-Roman', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+    canvas.drawString(x, y, txt_str)
+
+    y -= line_height
+
+# draw ex6_bovengenoemde  instelling
+    aan_bovengenoemde_school = ''.join((library.get('ex6_bovengenoemde', '-'), school_instelling, library.get('ex6_het_eindexamen', '-')))
+    aan_bovengenoemde_school_width = pdfmetrics.stringWidth(aan_bovengenoemde_school + '  ', 'Times-Roman', 11)
+
+    canvas.setFont('Times-Roman', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+    canvas.drawString(x, y, aan_bovengenoemde_school)
+    y -= line_height
+
+# draw dep_name
+    canvas.setFont('Arial', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000080"))
+    canvas.drawString(x + 5 * mm, y, dep_name)
+    y -= line_height
+
+# draw level, if exists
+    lvl_name = student_dict.get('lvl_name', '---')
+    if lvl_name:
+        canvas.drawString(x + 5 * mm, y, lvl_name)
+        y -= line_height
+
+# draw heeft_afgelegd
+    gender = student_dict.get('gender')
+    hij_zij_str = None
+    if gender:
+        if gender.lower() == 'm':
+            hij_zij_str = library.get('ex6_hij')
+        elif gender.lower() == 'v':
+            hij_zij_str = library.get('ex6_zij')
+            gender_key = 'ex6_zij'
+    if not hij_zij_str:
+        hij_zij_str = '/'.join((library.get('ex6_hij', '-'),library.get('ex6_zij', '-')))
+
+    txt_str =' '.join((
+            library.get('ex6_afgelegd', '-'),
+            hij_zij_str,
+            library.get('ex6_volgend_jaar', '-'),
+            school_instelling,
+            library.get('ex6_geen_examen', '-')
+    ))
+    canvas.setFont('Times-Roman', 11, leading=None)
+    canvas.setFillColor(colors.HexColor("#000000"))
+    canvas.drawString(x, y, txt_str)
+    y -= line_height
+
+# draw hieronder_vermelde_vakken
+    canvas.drawString(x, y, library.get('ex6_hieronder_vermelde', '-'))
+    y -= line_height
+
+    coord[1] = y
+
+# - end of draw_pok_page_header
+
+
+def draw_pok_colum_headerNIU(canvas, coord, col_tab_list, library, is_lexschool):
+    #     col_tab_list = (10, 90, 110, 130, 150, 170, 180)
+
+    header_height = 15 * mm
+
+    x = coord[0]
+    y = coord[1] - 5 * mm
+    coord[1] = y
+
+# - draw horizontal lines above and below column header
+    left = coord[0] + col_tab_list[0] * mm
+    right = coord[0] + col_tab_list[4] * mm
+    canvas.line(left, y, right, y)
+
+    y1 = y - header_height
+    canvas.line(left, y1, right, y1)
+
+
+# - draw vertical lines of columns
+    y_top = coord[1]
+    y_top_minus = y_top - 5 * mm  # line height - 1 mm
+    y_bottom = y_top - header_height
+
+    for index in range(0, len(col_tab_list)):  # range(start_value, end_value, step), end_value is not included!
+        line_x = coord[0] + col_tab_list[index] * mm
+        y1_mod = y_top_minus if index == 2 else y_top
+        canvas.line(line_x, y1_mod, line_x, y_bottom)
+
+# - draw horizontal line  below 'Cijfers voor' and 'Eindcijfers'
+    left = coord[0] + col_tab_list[1] * mm
+    canvas.line(left, y_top_minus, right, y_top_minus)
+    #canvas.setFont('Arial', 8, leading=None)
+    #canvas.setFillColor(colors.HexColor("#000000"))
+
+   # line_height = 4 * mm
+    #y_txt1 = y - line_height - 1 * mm
+
+    # - draw page header
+    commissie_school_txt = library.get('ex6_Commissie' if is_lexschool else 'ex6_School', '-')
+    examen_txt = library.get('ex6_examen', '-')
+
+    txt_list = [
+        {'txt': library.get('ex6_examen_afgelegd', '-'), 'padding': 4, 'x': x + col_tab_list[0] * mm, 'offset_bottom': 1.25, 'line_height': 5},
+        {'txt': library.get('ex6_Cijfers_voor', '-'), 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[3]) / 2 * mm, 'offset_bottom': 1.25, 'line_height': 0},
+        {'txt': library.get('ex6_Eindcijfers', '-'), 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm, 'offset_bottom': 1.25, 'line_height': 0}
+    ]
+    # draw_text_one_line(canvas, coord, col_tab_list, line_height, offset_bottom, draw_line_below, vertical_lines, text_list, dont_print=False)
+    draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, False, None, txt_list)
+
+    txt_list = [
+        {'txt': commissie_school_txt, 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm, 'offset_bottom': 1, 'line_height': 5},
+        {'txt': library.get('ex6_Centraal', '-'), 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm, 'offset_bottom': 1.25, 'line_height': 0}
+    ]
+    draw_text_one_line(canvas, coord, col_tab_list, 5, 1.25, False, None, txt_list)
+
+    txt_list = [
+        {'txt': examen_txt, 'align': 'c', 'x': x + (col_tab_list[1] + col_tab_list[2]) / 2 * mm, 'offset_bottom': 1.25, 'line_height': 4},
+        {'txt': examen_txt, 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm, 'offset_bottom': 1.25, 'line_height': 0}
+    ]
+    draw_text_one_line(canvas, coord, col_tab_list, 4, 1.25, False, None, txt_list)
+# - end of draw_pok_colum_header
+

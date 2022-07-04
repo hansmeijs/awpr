@@ -3965,12 +3965,7 @@ class UploadImportNtermentableView(View):  # PR2022-02-26
                     logger.debug('has_permit: ' + str(has_permit))
 
 # - get selected examyear, school and department from usersettings
-                # may_edit = False when:
-                #  - not requsr_same_school
-                #  - country is locked,
-                #  - examyear is not found, not published or locked
-                #  - school is not found, not activated, or locked
-                #  - department is not found, not in user allowed depbase or not in school_depbase
+                # PR2022-07-01 TODO
                 sel_examyear, may_edit, err_list = dl.get_selected_examyear_from_usersetting(request)
                 if err_list:
                     msg_list.extend(err_list)

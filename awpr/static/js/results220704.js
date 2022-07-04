@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
 
     urls.url_download_gradelist = get_attr_from_el(el_data, "data-url_download_gradelist");
+    urls.url_download_pok = get_attr_from_el(el_data, "data-url_download_pok");
+
     urls.url_calc_results = get_attr_from_el(el_data, "data-url_calc_results");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
@@ -517,6 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(permit_dict.requsr_same_school && permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
             AddSubmenuButton(el_submenu, loc.Download_diploma, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
+            AddSubmenuButton(el_submenu, loc.Ex6_pok, function() {MGL_Open("pok")}, ["tab_show", "tab_btn_result"]);
         };
 
         AddSubmenuButton(el_submenu, loc.Download_result_overview, function() {ModConfirmOpen("overview")}, ["tab_show", "tab_btn_overview"]);
@@ -1327,79 +1330,85 @@ function RefreshDataRowsAfterUpload(response) {
                                     (mode === "prelim") ? loc.Preliminary_gradelist :
                                     (mode === "final") ? loc.Download_gradelist :
                                     (mode === "diploma") ? loc.Download_diploma :
+                                    (mode === "pok") ? loc.Download_Ex6_pok :
                                     null;
 
-        console.log("mode", mode)
-        console.log("el_MGL_print_reex_container", el_MGL_print_reex_container)
-
-        el_MGL_printdate_label.innerText = ((mode === "diploma") ? loc.Date_ofthe_diploma : loc.Date_ofthe_gradelist) + ":" ;
+        el_MGL_printdate_label.innerText = (
+            (mode === "diploma") ? loc.Date_ofthe_diploma :
+            (mode === "pok") ? loc.Print_date : loc.Date_ofthe_gradelist
+        ) + ":" ;
 
 // hide options
-        add_or_remove_class(el_MGL_select_container, cls_hide, mode === "calc_results")
+        add_or_remove_class(el_MGL_select_container, cls_hide, ["calc_results"].includes(mode))
         add_or_remove_class(el_MGL_print_reex_container, cls_hide, mode !== "prelim")
+
+        let msg_html = null;
+        let count_added_to_list = 0, count_selected = 0;
+        let student_pk_list = [], print_all = false;
+
+// --- count number of selected rows that are not hidden
+        const rows = tblBody_datatable.querySelectorAll("tr:not(.display_hide).tsa_tr_selected");
+        for (let i = 0, tr, el; tr = rows[i]; i++) {
+            count_selected += 1;
+
+            const pk_int = get_attr_from_el_int(tr, "data-pk");
+            if(pk_int){
+
+// --- get existing data_dict from data_rows
+                // check if student has passed - only when printing diploma
+                // check if student has not passed - only when downloading pok
+                // when mode is not "diploma" has_passed = true
+                const [index, data_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
+                if (!isEmpty(data_dict)) {
+                    const add_to_list = (mode === "diploma") ? data_dict.result === 1 :
+                                        (mode === "pok") ? data_dict.result !== 1 : true;
+                    if (add_to_list){
+                        student_pk_list.push(pk_int);
+                        count_added_to_list += 1;
+                    };
+                };
+            };
+        };
+
+// download all visible rows if there are no selected rows that are not hidden:
+        if (!count_selected){
+            count_selected = 0;
+            count_added_to_list = 0;
+
+// --- count number of rows that are not hidden
+            const elements = tblBody_datatable.querySelectorAll("tr:not(.display_hide)");
+            for (let i = 0, tr, el; tr = elements[i]; i++) {
+                const pk_int = get_attr_from_el_int(tr, "data-pk");
+                count_selected += 1;
+
+// --- get existing data_dict from data_rows
+                // check if student has passed - only when printing diploma
+                // check if student has not passed - only when downloading pok
+                // when mode is not "diploma" has_passed = true
+                const [index, data_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
+                if (!isEmpty(data_dict)) {
+                    const add_to_list = (mode === "diploma") ? data_dict.result === 1 :
+                                        (mode === "pok") ? data_dict.result !== 1 : true;
+                    if (add_to_list){
+                        student_pk_list.push(pk_int);
+                        count_added_to_list += 1;
+                    };
+                };
+            };
+        };
+
+// --- if all students are in list: set print_all = true, so you dont have to filter database on student_pk_list
 
         const student_rows_length = (student_rows) ? student_rows.length : 0;
 
-        let count_selected_passed = 0, count_selected_not_passed = 0, student_pk_list = [], print_all = false;
-
-// get all visible students selected
-        if (!student_rows_length){
-            msg_html = "no students"
-        } else {
-
-// --- count number of selected elements that are not hidden
-            const elements = tblBody_datatable.querySelectorAll("tr:not(.display_hide).tsa_tr_selected");
-
-            for (let i = 0, tr, el; tr = elements[i]; i++) {
-                const pk_int = get_attr_from_el_int(tr, "data-pk");
-                if(pk_int){
-
-// --- get existing data_dict from data_rows
-                    // check if student has passed - only when printing diploma
-                    // when mode is not "diploma" has_passed = true
-                    const [index, data_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
-                    const has_passed = (!isEmpty(data_dict) &&
-                            (mode !== "diploma" || data_dict.ep01_result === 1 || data_dict.ep02_result === 1 || data_dict.result === 1));
-                    if (has_passed){
-                        student_pk_list.push(pk_int);
-                        count_selected_passed += 1;
-
-                    } else {
-                        count_selected_not_passed += 1;
-                    };
-
-                };
-            };
-
-// if there are no selected elements that are not hidden:
-            if (!count_selected_passed && !count_selected_not_passed ){
-// --- count number of elements that are not hidden
-                const elements = tblBody_datatable.querySelectorAll("tr:not(.display_hide)");
-                for (let i = 0, tr, el; tr = elements[i]; i++) {
-                    const pk_int = get_attr_from_el_int(tr, "data-pk");
-
-                // check if student has passed - only when printing diploma
-                    // when mode is not "diploma" has_passed = true
-                    const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
-                    const has_passed = (!isEmpty(found_dict) &&
-                            (mode !== "diploma" || found_dict.ep01_result === 1 || found_dict.ep02_result === 1 || found_dict.result === 1));
-                    if (has_passed){
-                        student_pk_list.push(pk_int);
-                        count_selected_passed += 1;
-                    } else {
-                        count_selected_not_passed += 1;
-                    };
-
-                };
-            }
-// --- if all students are in list: set print_all = true, so you dont have to filter database on student_pk_list
-            if (student_pk_list.length === student_rows_length){
-                print_all = true;
-                student_pk_list = [];
-                count_selected_passed = student_rows_length;
-            }
+        const student_pk_list_length = student_pk_list.length;
+        if (student_pk_list_length === student_rows_length){
+            print_all = true;
+            student_pk_list = [];
+            count_added_to_list = student_rows_length;
         }
-        if(student_pk_list.length) {
+
+        if(student_pk_list_length) {
             mod_dict.student_pk_list = student_pk_list;
         }
         mod_dict.print_all = print_all;
@@ -1412,30 +1421,36 @@ function RefreshDataRowsAfterUpload(response) {
             loc.The_final_gradelist_of
         : (mode === "diploma") ?
             (count_selected_passed > 1) ? loc.The_diplomas_of : loc.The_diploma_of
+        : (mode === "pok") ?
+            loc.The_pok_of
         : null;
 
         console.log("msg01_txt", msg01_txt);
         let msg02_txt = '';
 
-        if (count_selected_passed === 1) {
+        if (student_pk_list_length === 1) {
             const pk_int = student_pk_list[0];
             const [index, found_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
             const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
             if (!isEmpty(data_dict)) {msg02_txt = (data_dict.fullname) ? data_dict.fullname : "---"};
         } else {
-            msg02_txt = count_selected_passed + loc.candidates
+            msg02_txt = student_pk_list_length + loc.candidates;
         };
 
-        let msg_html = null;
         if (mode === "calc_results"){
             msg_html = ["<p>", msg01_txt, "</p><p>",  msg02_txt, "</p><p>", loc.will_be_calculated, "</p><p>",
                             loc.Logfile_with_details_willbe_downloaded,
                              "</p>"
                           ].join("");
+
+        } else  if (mode === "pok"){
+            msg_html = ["<p>",
+                            msg01_txt, " ",  msg02_txt, " ", loc.will_be_downloaded_sing , "</p>"
+                          ].join("");
         } else {
             msg_html = ["<p>",
                             msg01_txt, " ",  msg02_txt, " ",
-                            (count_selected_passed === 1) ? loc.will_be_downloaded_sing : loc.will_be_downloaded_plur,
+                            (student_pk_list_length === 1) ? loc.will_be_downloaded_sing : loc.will_be_downloaded_plur,
                              "</p>"
                           ].join("");
         }
@@ -1444,27 +1459,30 @@ function RefreshDataRowsAfterUpload(response) {
         console.log("el_MGL_info_container", el_MGL_info_container);
         console.log("pres_secr_dict", pres_secr_dict);
 
-        if (mode !== "calc_results"){
+// hide autrh2 when pok
+        add_or_remove_class(document.getElementById("id_MGL_auth2_container"), cls_hide, ["pok"].includes(mode))
+
+        if (!["calc_results"].includes(mode)){
 // ---  get auth and printdate info from server
             UploadChanges({ get: true}, urls.url_get_auth);
         };
 // ---  disable save button
-        el_MGL_btn_save.disabled = (mode !== "calc_results");
+        el_MGL_btn_save.disabled = !["calc_results"].includes(mode);
 
 // show loader
-        add_or_remove_class(el_MGL_loader, cls_hide, mode === "calc_results" )
+        add_or_remove_class(el_MGL_loader, cls_hide, ["calc_results"].includes(mode) )
 
-// ---  show sg_info when printing final gardelist or diploma
-        add_or_remove_class(el_MGL_msg_info, cls_hide, !["final", "diploma"].includes(mod_dict.mode))
 
-        if (mode !== "calc_results"){
+// ---  show msg_info when printing final gardelist or diploma
+        add_or_remove_class(el_MGL_msg_info, cls_hide, !["final", "diploma"].includes(mod_dict.mode));
+
+        if (!["calc_results"].includes(mode)) {
             const selected_value = null;
             t_FillOptionsFromList(el_MGL_select_auth1, pres_secr_dict.auth1, "pk", "name",
                                         loc.Select_a_chairperson, loc.No_chairperson, selected_value);
             t_FillOptionsFromList(el_MGL_select_auth2, pres_secr_dict.auth2, "pk", "name",
                                         loc.Select_a_secretary, loc.No_secretary, selected_value);
         };
-
 
         $("#id_mod_gradelist").modal({backdrop: true});
     };  // MGL_Open
@@ -1497,9 +1515,9 @@ function RefreshDataRowsAfterUpload(response) {
         if (mod_dict.mode === "calc_results"){
             Calc_result()
             $("#id_mod_gradelist").modal("hide");
-        } else {
 
-            let href = null;
+        } else {
+            const url_str = (mod_dict.mode === "pok") ? urls.url_download_pok : urls.url_download_gradelist
             const upload_dict = {
                 mode: mod_dict.mode,
                 print_all: mod_dict.print_all,
@@ -1511,14 +1529,18 @@ function RefreshDataRowsAfterUpload(response) {
             if (Number(el_MGL_select_auth1.value)) { upload_dict.auth1_pk = Number(el_MGL_select_auth1.value)};
             if (Number(el_MGL_select_auth2.value)) { upload_dict.auth2_pk = Number(el_MGL_select_auth2.value)};
             if (el_MGL_printdate.value) { upload_dict.printdate = el_MGL_printdate.value};
-            if (upload_dict.auth1_pk && upload_dict.auth2_pk && upload_dict.printdate){
+
+            const may_save = (mod_dict.mode === "pok") ? (upload_dict.auth1_pk && upload_dict.printdate) :
+                                (upload_dict.auth1_pk && upload_dict.auth2_pk && upload_dict.printdate);
+            if (may_save){
                 const href_str = JSON.stringify(upload_dict);
-                href = urls.url_download_gradelist.replace("-", href_str);
+                const href = url_str.replace("-", href_str);
 
                 el_MGL_link.href = href;
                 el_MGL_link.click();
                 $("#id_mod_gradelist").modal("hide");
             } else {
+                el_MGL_msg_error.innerText = (mod_dict.mode === "pok") ? loc.mgl_error_noauth_pok : mgl_error_noauth;
                 add_or_remove_class(el_MGL_msg_error, cls_hide, false);
                 el_MGL_btn_save.disabled = true;
             };
@@ -1589,15 +1611,13 @@ function RefreshDataRowsAfterUpload(response) {
         let url_str = urls.url_calc_results;
         UploadChanges(upload_dict, url_str);
 
-
     };  // Calc_result
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-15 PR2021-07-23 PR2022-05-10
     function ModConfirmOpen(mode, response) {
         console.log(" -----  ModConfirmOpen   ----")
-        // only called by menubtn Delete_candidate and mod MSTUD btn delete
-        // values of mode are : "prelim_ex5",  "delete" , "validate_scheme", "correct_scheme"
+        // values of mode are : "check_birthcountry", "prelim_ex5", "pok", "overview", "withdrawn"
 
         const tblName = "student";
         let show_modal = false;
@@ -1611,23 +1631,6 @@ function RefreshDataRowsAfterUpload(response) {
 
 // ---  create mod_dict
         mod_dict.mode = mode;
-        if (mode === "check_birthcountry"){
-            //"Click <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>here</a> to go to its manual;</li>",
-            //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
-            el_confirm_btn_save.innerText = loc.Yes_change;
-            el_confirm_btn_cancel.innerText = loc.Cancel;
-            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
-
-        } else if(["prelim_ex5", "submit_ex5", "overview"].includes(mode)){
-
-            const has_selected_item = (!isEmpty(map_dict));
-
-            //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
-            el_confirm_btn_save.innerText = loc.OK;
-            el_confirm_btn_cancel.innerText = loc.Cancel;
-
-            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
-        };
 
 // ---  put text in modal for
         let header_text = "";
@@ -1641,19 +1644,26 @@ function RefreshDataRowsAfterUpload(response) {
             console.log("may_edit", may_edit)
             if (may_edit){
                 show_modal = true;
+
                 add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-md", true, "modal-lg");
                 header_text = loc.Birthcountry_not_correct;
                 msg_html = response.check_birthcountry_msg_html;
-            console.log("msg_html", msg_html)
 
                 const el_modconfirm_link = document.getElementById("id_modconfirm_link");
                 if (el_modconfirm_link) {
                     const url_str = urls.url_result_download_overview;
                     el_modconfirm_link.setAttribute("href", url_str);
                 };
+
+                //"Click <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>here</a> to go to its manual;</li>",
+                //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
+                el_confirm_btn_save.innerText = loc.Yes_change;
+                el_confirm_btn_cancel.innerText = loc.Cancel;
+                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
             };
         } else if(mode === "overview"){
             show_modal = true;
+
             header_text = loc.Download_result_overview;
             msg_html = ["<p>", loc.The_overview_of_results, " ", loc.will_be_downloaded_sing, "</p><p>"].join("");
 
@@ -1662,6 +1672,10 @@ function RefreshDataRowsAfterUpload(response) {
                 const url_str = urls.url_result_download_overview;
                 el_modconfirm_link.setAttribute("href", url_str);
             };
+
+            el_confirm_btn_save.innerText = loc.OK;
+            el_confirm_btn_cancel.innerText = loc.Cancel;
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
         } else if(mode === "short_gradelist"){
             show_modal = true;
@@ -1675,6 +1689,15 @@ function RefreshDataRowsAfterUpload(response) {
             };
         } else if(mode === "prelim_ex5"){
             show_modal = true;
+
+            const has_selected_item = (!isEmpty(map_dict));
+
+            //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
+            el_confirm_btn_save.innerText = loc.OK;
+            el_confirm_btn_cancel.innerText = loc.Cancel;
+
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
+
             header_text = loc.Download_Ex_form;
             msg_html = ["<p>", loc.The_preliminary_ex5_form, " ", loc.will_be_downloaded_sing, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join("");
 
@@ -1686,16 +1709,10 @@ function RefreshDataRowsAfterUpload(response) {
 
 
 
-
         } else if(mode === "withdrawn"){
-
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
-        console.log("mod_dict", mod_dict)
             if (may_edit){
                 show_modal = true;
-
-        console.log("mod_dict", mod_dict)
-        console.log("mod_dict.withdrawn", mod_dict.withdrawn)
                 header_text = loc.Withdraw_candidate;
                 if(mod_dict.withdrawn){
                     msg01_txt = loc.Candidate +  ":<br>&emsp;" + mod_dict.full_name + "<br>" + loc.will_be_withdrawn;
@@ -1704,7 +1721,31 @@ function RefreshDataRowsAfterUpload(response) {
                 };
                 msg02_txt = loc.Do_you_want_to_continue;
             };
-         };
+
+        } else if (mode === "pok"){
+            show_modal = true;
+
+            add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-md", true, "modal-lg");
+
+            header_text = loc.Birthcountry_not_correct;
+            msg_html = response.check_birthcountry_msg_html;
+
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                const url_str = urls.url_result_download_overview;
+                el_modconfirm_link.setAttribute("href", url_str);
+            };
+
+            //"Click <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>here</a> to go to its manual;</li>",
+            //el_confirm_btn_cancel.innerText = (has_selected_item) ? loc.No_cancel : loc.Close;
+            el_confirm_btn_save.innerText = loc.Yes_change;
+            el_confirm_btn_cancel.innerText = loc.Cancel;
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
+
+
+
+
+        };
 
         el_confirm_header.innerText = header_text;
         el_confirm_loader.classList.add(cls_visible_hide)
@@ -1719,7 +1760,6 @@ function RefreshDataRowsAfterUpload(response) {
         const caption_save = (mode === "delete") ? loc.Yes_delete : loc.OK;
         el_confirm_btn_save.innerText = caption_save;
         add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
-
 
 // set focus to cancel button
         set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
@@ -1846,7 +1886,7 @@ function RefreshDataRowsAfterUpload(response) {
         if (![1,2,3].includes(setting_dict.sel_examperiod) ){
             msg_html = loc.Please_select_examperiod;
         // sel_examtype = "se", "pe", "ce", "reex", "reex03", "exem"
-        } else if (mode === 'approve'){
+        } else if (mode === "approve"){
             // Ex5 has no approve mode
         } else if (mode === "submit_ex5") {
 

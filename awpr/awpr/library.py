@@ -173,8 +173,44 @@ def update_library(examyear, request):
         ('ex5', 'uitslag_ex', 'Uitslag van het examen'),
         ('ex5', 'uitslag_reex', 'Uitslag na tweede tijdvak'),
 
-        ('ex6', 'ex6_eex_article', '(Artikel 47 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
-        ('ex6', 'ex6_lex_article', '(Artikel 10 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex6', 'ex_code', 'EX.6'),
+        ('ex6', 'ex6_article_cur_eex', '(Artikel 47 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex6', 'ex6_article_cur_lex', '(Artikel 10 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+        ('ex6', 'ex6_article_sxm_eex', '(Artikel 47 Landsbesluit eindexamens v.w.o., h.a.v.o., v.s.b.o., 23 juni 2008, no 54)'),
+        ('ex6', 'ex6_article_sxm_lex', '(Artikel 10 Landsbesluit landsexamens v.w.o., h.a.v.o., v.s.b.o. van 3 mei 2016, no 21)'),
+
+        ('ex6', 'ex6_pex', 'Bewijs van vrijstelling'),
+        ('ex6', 'ex6_pok', 'Bewijs van kennis'),
+        ('ex6', 'ex6_voorzitter', 'De voorzitter van de examencommissie van'),
+        ('ex6', 'ex6_te', 'te'),
+        ('ex6', 'ex6_examyear', 'in het examenjaar'),
+
+        ('ex6', 'ex6_belast', 'belast met het afnemen van het'),
+        ('ex6', 'ex6_eindexamen', 'eindexamen'),
+        ('ex6', 'ex6_aan_deze', 'aan deze '),
+        ('ex6', 'ex6_bovengenoemde', 'aan de bovengenoemde '),
+        ('ex6', 'ex6_instelling', 'instelling'),
+        ('ex6', 'ex6_school', 'school'),
+        ('ex6', 'ex6_het_eindexamen', ' het eindexamen'),
+        ('ex6', 'ex6_verklaart_dat', ', verklaart dat'),
+        ('ex6', 'ex6_geboren_op', 'geboren op'),
+
+        ('ex6', 'ex6_afgelegd', 'heeft afgelegd, dat'),
+        ('ex6', 'ex6_hij', 'hij'),
+        ('ex6', 'ex6_zij', 'zij'),
+        ('ex6', 'ex6_volgend_jaar', 'in het volgend examenjaar aan deze'),
+        ('ex6', 'ex6_geen_examen', 'geen examen behoeft af te leggen'),
+        ('ex6', 'ex6_hieronder_vermelde', 'in de hieronder vermelde vakken, dat voor deze vakken de hieronder vermelde cijfers zijn vastgesteld:'),
+
+        ('ex6', 'ex6_commissie', 'Commissie'),
+
+        ('ex6', 'ex6_examen_afgelegd', 'Vakken waarin examen is afgelegd'),
+        ('ex6', 'ex6_Cijfers_voor', 'Cijfers voor'),
+        ('ex6', 'ex6_Eindcijfers', 'Eindcijfers'),
+        ('ex6', 'ex6_Commissie', 'Commissie'),
+        ('ex6', 'ex6_School', 'School-'),
+        ('ex6', 'ex6_Centraal', 'Centraal'),
+        ('ex6', 'ex6_examen', 'examen'),
 
         ('gradelist', 'preliminary', 'VOORLOPIGE CIJFERLIJST'),
 

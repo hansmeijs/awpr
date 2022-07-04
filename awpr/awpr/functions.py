@@ -1237,6 +1237,9 @@ def system_updates(examyear, request):
     #if request.user.role == c.ROLE_128_SYSTEM:
     awpr_lib.update_library(examyear, request)
 
+# PR 2022-07-03 one time function to add secret exams to
+    add_ntermONCEONLY(request)
+
     #get_long_pws_title_pws_subjectsONCEONLY(request)
 
     #recalc_reex_count(request)
@@ -1334,6 +1337,34 @@ def reset_show_msg(request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
+
+
+# get long psw_title and pws_subjcts
+def add_ntermONCEONLY(request):
+    values = [
+        {'nex_id': 22991, 'sty_id': 3, 'opl_code': 'VMBO', 'leerweg': 'BB', 'omschrijving': '*BB Frans GEHEIM EXAMEN tijdvak 2'},
+        {'nex_id': 22992, 'sty_id': 3, 'opl_code': 'VMBO', 'leerweg': 'KB', 'omschrijving': '*KB Frans GEHEIM EXAMEN tijdvak 2'},
+        {'nex_id': 22993, 'sty_id': 3, 'opl_code': 'VMBO', 'leerweg': 'BB', 'omschrijving': '*BB Spaans GEHEIM EXAMEN tijdvak 2'},
+        {'nex_id': 22994, 'sty_id': 3, 'opl_code': 'VMBO', 'leerweg': 'KB', 'omschrijving': '*KB Spaans GEHEIM EXAMEN tijdvak 2'}
+    ]
+
+    for value in values:
+        nex_id = value.get('nex_id')
+        exists = subj_mod.Ntermentable.objects.filter(
+            nex_id=nex_id
+        ).exists()
+        if not exists:
+            ntermentable_instance = subj_mod.Ntermentable(
+                nex_id=nex_id,
+                examyear_id=1,
+                sty_id=value.get('sty_id'),
+                opl_code=value.get('opl_code'),
+                leerweg=value.get('leerweg'),
+                omschrijving=value.get('omschrijving'),
+                tijdvak=2
+            )
+            ntermentable_instance.save(request=request)
+
 
 # get long psw_title and pws_subjcts
 def get_long_pws_title_pws_subjectsONCEONLY(request):

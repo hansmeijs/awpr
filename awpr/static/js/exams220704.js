@@ -89,7 +89,6 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
 
     urls.url_link_exam_to_grades = get_attr_from_el(el_data, "data-url_link_exam_to_grades");
-    urls.url_calc_grades_from_exam = get_attr_from_el(el_data, "data-url_calc_grades_from_exam");
 
     urls.url_grade_upload = get_attr_from_el(el_data, "data-url_grade_upload");
 
@@ -725,8 +724,7 @@ document.addEventListener("DOMContentLoaded", function() {
             AddSubmenuButton(el_submenu, loc.Link_DUO_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
             AddSubmenuButton(el_submenu, loc.Unlink_DUO_exam, function() {ModConfirmOpen("duo_exam", "delete")}, ["tab_show", "tab_btn_duo_exams"]);
             AddSubmenuButton(el_submenu, loc.Link_exam_to_grades, function() {ModConfirm_link_exam_to_grades_Open()}, ["tab_show", "tab_btn_ete_exams", "tab_btn_duo_exams"]);
-            AddSubmenuButton(el_submenu, loc.Calculate_grades, function() {ModConfirm_calculate_grades_Open()}, ["tab_show", "tab_btn_ete_exams", "tab_btn_duo_exams"]);
-        }
+         }
         if (permit_dict.requsr_role_admin){
             if (permit_dict.permit_approve_exam ){
                 AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_admin")}, ["tab_show", "tab_btn_ete_exams"]);
@@ -1120,11 +1118,11 @@ document.addEventListener("DOMContentLoaded", function() {
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const field_setting = field_settings[tblName];
-    console.log( "tblName", tblName);
+    //console.log( "tblName", tblName);
     //console.log( "field_setting", field_setting);
 
 // --- get data_rows
@@ -6365,96 +6363,6 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
     };  // ModConfirm_PartexCheck_Open
 
 
-//=========  ModConfirm_calculate_grades_Open  ================ PR2022-05-20
-    function ModConfirm_calculate_grades_Open() {
-            console.log(" -----  ModConfirm_calculate_grades_Open   ----")
-
-        // values of mode are : "delete", 'json', 'copy', 'save'
-        // values of table are : "ete_exam" "duo_exam" 'duo_grade_exam'
-
-        mod_dict = {mode: "calc_grades"};
-        if (permit_dict.permit_crud && permit_dict.requsr_role_admin) {
-
-            let hide_save_btn = false, has_selected_item = false;
-
-    // ---  get header_text
-            const header_text = loc.Calculate_grades;
-
-            const tblName = get_tblName_from_selectedBtn();
-            const selected_pk = setting_dict.sel_exam_pk;
-
-            mod_dict.table = tblName;
-
-console.log("tblName", tblName );
-console.log("selected_pk", selected_pk );
-
-// ---  lookup data_dict in exam_rows
-            const data_rows = (tblName === "ete_exam") ? ete_exam_rows :
-                              (tblName === "duo_exam") ? duo_exam_rows : null;
-            const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk);
-            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-console.log("data_dict", data_dict);
-
-    // ---  create mod_dict
-            has_selected_item = (!isEmpty(data_dict));
-            if(has_selected_item){
-                mod_dict.examyear_pk = setting_dict.sel_examyear_pk;
-                mod_dict.depbase_pk = setting_dict.sel_depbase_pk;
-                    mod_dict.mapid = data_dict.mapid;
-                    mod_dict.exam_pk = data_dict.id;
-                if (tblName === "ete_exam") {
-                    mod_dict.subject_pk = data_dict.subj_id;
-                    mod_dict.subj_name = data_dictdata_dict.subj_name;
-                } else  if (tblName === "duo_exam") {
-                    mod_dict.department_id = data_dict.department_id;
-                    mod_dict.subject_pk = data_dict.subj_id;
-                    mod_dict.subj_name = data_dict.subj_name;
-                };
-            };
-//console.log("mod_dict", mod_dict);
-    // ---  put text in modal form
-
-            const msg_list = [];
-            if(!has_selected_item){
-                msg_list.push( ["<p class='pb-2'>", loc.No_exam_selected, "</p>"].join("") );
-                hide_save_btn = true;
-            } else {
-                msg_list.push( ["<p class='pb-2'>", loc.Calculate_grades_01, "</p><p>",
-                                "&emsp;", data_dict.exam_name, "<br>",
-                                "&emsp;", data_dict.ntb_omschrijving, "</p><p class='py-2'>",
-                                loc.Calculate_grades_02, "</p><p>",
-                                loc.Do_you_want_to_continue, "</p>"
-                                ].join(""));
-            };
-            const msg_html = msg_list.join("");
-
-            el_confirm_loader.classList.add(cls_visible_hide);
-
-            const btn_save_txt = (has_selected_item) ? loc.Yes_calculate : loc.OK;
-            const btn_cancel_txt = (has_selected_item) ? loc.No_cancel : loc.Close;
-
-            el_confirm_header.innerText = header_text;
-
-            el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-            el_confirm_msg_container.innerHTML = msg_html;
-
-            el_confirm_btn_save.innerText = btn_save_txt;
-            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
-            add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
-            el_confirm_btn_cancel.innerText = btn_cancel_txt;
-
-    // set focus to cancel button
-            setTimeout(function (){
-                el_confirm_btn_cancel.focus();
-            }, 500);
-
-    // show modal
-            $("#id_mod_confirm").modal({backdrop: true});
-
-        };  //  if (permit_dict.permit_crud && permit_dict.requsr_role_admin )
-
-    };  // ModConfirm_calculate_grades_Open
-
 //=========  ModConfirm_link_exam_to_grades_Open  ================ PR2022-05-19 PR2022-06-14
     function ModConfirm_link_exam_to_grades_Open() {
         console.log(" -----  ModConfirm_link_exam_to_grades_Open   ----")
@@ -6487,10 +6395,10 @@ console.log("exam_dict", exam_dict);
     // ---  create mod_dict
             has_selected_item = (!isEmpty(exam_dict));
             if(has_selected_item){
-                mod_dict.examyear_pk = setting_dict.sel_examyear_pk;
                 mod_dict.depbase_pk = setting_dict.sel_depbase_pk;
                 mod_dict.mapid = exam_dict.mapid;
                 mod_dict.exam_pk = exam_dict.id;
+                mod_dict.examyear_pk = exam_dict.ey_id;
                 mod_dict.subject_pk = exam_dict.subj_id;
                 mod_dict.subj_name = exam_dict.subj_name;
             };
@@ -6521,6 +6429,7 @@ console.log("exam_dict", exam_dict);
                                    examyear_pk: mod_dict.examyear_pk,
                                    subject_pk: mod_dict.subject_pk,
                                    subj_name: mod_dict.subj_name,
+                                   exam_examyear_pk: mod_dict.exam_examyear_pk,
                                    is_test: true
                                 };
 
@@ -6606,7 +6515,7 @@ console.log("exam_dict", exam_dict);
 //=========  ModConfirmOpen  ================ PR2021-05-06 PR2022-06-02
     function ModConfirmOpen(table, mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
-        //console.log("mode", mode)
+        console.log("mode", mode)
         console.log("table", table)
         // values of mode are : "delete", 'json', 'copy', 'copy_ntermen', 'save' 'undo_published' 'undo_submitted'
         // values of table are : "ete_exam" "duo_exam" 'duo_grade_exam' "results"
@@ -6671,8 +6580,6 @@ console.log("exam_dict", exam_dict);
                         "&emsp;", mod_dict.fullname, "</p><p class='py-2'>",
                         loc.Do_you_want_to_continue, "</p>"].join("");;
             };
-
-            el_confirm_loader.classList.add(cls_visible_hide);
 
             btn_save_txt = !has_selected_item ? loc.OK : loc.Yes_remove ;
             btn_cancel_txt = (has_selected_item) ? loc.No_cancel : loc.Close;
@@ -6793,7 +6700,6 @@ console.log("exam_dict", exam_dict);
                     };
                 };
 
-                el_confirm_loader.classList.add(cls_visible_hide);
 
                 btn_save_txt = !has_selected_item ? loc.OK :
                                 (is_copy) ? loc.Yes_copy :
@@ -6802,6 +6708,8 @@ console.log("exam_dict", exam_dict);
                 btn_cancel_txt = (has_selected_item) ? loc.No_cancel : loc.Close;
 
             };  //  if(is_delete)
+
+            el_confirm_loader.classList.add(cls_visible_hide);
 
             el_confirm_header.innerText = header_text;
 
@@ -6863,25 +6771,13 @@ console.log("exam_dict", exam_dict);
         console.log("upload_dict: ", upload_dict);
                 UploadChanges(upload_dict, urls.url_exam_upload);
 
-            } else if (mod_dict.mode === "calc_grades"){
-
-            // mod_dict gets value in HandleInputChanged
-                const upload_dict = { mode: "calc_grades",
-                                       exam_pk: mod_dict.exam_pk,
-                                       examyear_pk: mod_dict.examyear_pk,
-                                       subject_pk: mod_dict.subject_pk
-                                    };
-
-                UploadChanges(upload_dict, urls.url_calc_grades_from_exam);
-                // mod_dict.save_value prevents putting back the old value in el_input
-                mod_dict.dont_rest_input_value = true;
-
             } else if (mod_dict.mode === "link_exam_to_grades"){
 
                 const upload_dict = { mode: "link_exam_to_grades",
                                        exam_pk: mod_dict.exam_pk,
                                        examyear_pk: mod_dict.examyear_pk,
                                        subject_pk: mod_dict.subject_pk,
+                                       subject_name: mod_dict.subject_name,
                                        is_test: false
                                     };
 

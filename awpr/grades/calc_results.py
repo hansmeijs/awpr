@@ -116,7 +116,6 @@ logger = logging.getLogger(__name__)
 'NB: in deze examenregeling worden zowel GemCE als GemidEindcijfer gebruikt PR 1 jun 13 
 """
 
-
 @method_decorator([login_required], name='dispatch')
 class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
@@ -261,7 +260,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict,
                         log_list, sql_studsubj_list, sql_student_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -270,6 +269,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
     depbase_is_vsbo = (depbase_code == 'vsbo')
     sr_allowed = examyear.sr_allowed
     no_practexam = examyear.no_practexam
+    no_centralexam = examyear.no_centralexam
 
 # - get isevlex and full name with (evening / lex student)
     isevlexstudent, partial_exam, withdrawn, full_name = get_isevlex_isreex_fullname(student_dict)
@@ -366,7 +366,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
                 if si_pk:
                     si_dict = schemeitems_dict.get(si_pk)
 
-                calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
+                calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, no_centralexam,
                                      studsubj_pk, studsubj_dict, si_dict, ep_list, log_list, sql_studsubj_list)
 
                 # - put the max values that will appear on the gradelist back in studsubj, also max_use_exem
@@ -396,7 +396,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 # - end of calc_student_result
 
 
-def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, studsubj_pk, studsubj_dict,
+def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, no_centralexam, studsubj_pk, studsubj_dict,
                          si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
@@ -546,6 +546,22 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
             #  'max_ep' 'max_sesr''max_pece' 'max_final', 'max_ni' 'max_use_exem'
             #  will be saved in studsubj by: get_sql_studsubj_values
             max_examperiod, max_ni = calc_max_grades(examperiod, this_examperiod_dict, studsubj_dict, gradetype)
+
+# --- calculate proof_of_knowledge,
+            # PR2022-07-02 TODO not in use yet.
+            calc_proof_of_knowledge(
+                subj_code=subj_code,
+                examperiod=examperiod,
+                studsubj_dict=studsubj_dict,
+                no_centralexam=no_centralexam,
+                gradetype=gradetype,
+                is_combi=is_combi,
+                weight_se=weight_se,
+                weight_ce=weight_ce,
+                has_reex=has_reexCALC,
+                has_reex03=has_reex03CALC,
+            )
+
 
 # - gl_max_examperiod is the max_examperiod of the highest examperiod (is 1, 2 or 3)
             if max_examperiod and examperiod != c.EXAMPERIOD_EXEMPTION:
@@ -1403,7 +1419,7 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
 
 
 def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR2021-12-22
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' @@@@@@@@@@@@@@@@ -----  calc_combi_and_add_to_totals  -----')
         logger.debug('examperiod: ' + str(examperiod))
@@ -1485,7 +1501,7 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
 
 
 def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-----  calc_pece_avg  -----')
         logger.debug('     examperiod: ' + str(examperiod))
@@ -1554,7 +1570,7 @@ def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
 
 
 def calc_final_avg(student_ep_dict):  # PR2021-12-23
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_final_avg  -----')
 
@@ -1811,7 +1827,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
     # is reex03 when reex03 student, reex when reex student, firstperiod otherwise
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
@@ -1830,6 +1846,8 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
             if logging_on:
                 logger.debug(' ')
                 logger.debug('--------- calc examperiod: ' + str(examperiod) + ' ---------------')
+                logger.debug('    withdrawn: ' + str(withdrawn) )
+                logger.debug('    partial_exam: ' + str(partial_exam) )
 
 # +++ calculate passed / failed for each exam period (ep1, ep2, ep3)
             # and put result back in student_ep_dict
@@ -1892,7 +1910,16 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
 
             if logging_on:
                 logger.debug('student_ep_dict: ' + str(student_ep_dict))
+            """
+            student_ep_dict: {'ep': 1, 
+            'final': {'sum': 52, 'cnt': 8, 'info': ' entl:7(vr) gs:6(vr) if:7 kv:7(vr) netl:6 pa:6(vr) sptl:6 combi:7', 'avg': '6.5', 'result': 'Gemiddeld eindcijfer: 6.5 (52/8) '}, 
+            'combi': {'sum': 13, 'cnt': 2, 'info': ' asw:7(vr) pws:6(vr)', 'final': 7, 'result': 'Combinatiecijfer: 7 (13/2) '}, 
+            'pece': {'sumX10': 354, 'cnt': 6, 'info': ' entl:5,9(vr) gs:5,2(vr) if:7,1 netl:5,8 pa:5,4(vr) sptl:6,0', 'avg': '5.9', 'result': 'Gemiddeld CE-cijfer: 5,9 (35,4/6) '}, 
+            'count': {'c3': 0, 'c4': 0, 'c5': 0, 'c6': 4, 'c7': 4, 'core4': 0, 'core5': 0}, 
+            'passed': {'cnt3457': 'Voor alle vakken een 6 of hoger.', 'core45': 'Geen onvoldoendes in kernvakken.', 'avgce55': 'Gemiddeld CE-cijfer is 5,9.'}, 
+            'result_index': 1}
 
+            """
     if logging_on:
         logger.debug('--------- end of loop through calc examperiods ')
 
@@ -1905,7 +1932,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
         last_student_ep_dict = student_dict[last_ep_str]
 
         result_info_list, result_info_log_list = calc_add_result_to_log(last_examperiod, last_student_ep_dict,
-                                                                        rule_avg_pece_sufficient, rule_core_sufficient)
+                                                                        rule_avg_pece_sufficient, rule_core_sufficient, partial_exam)
         log_list.extend(result_info_log_list)
 
 # - put result and grade info in sql_student_values
@@ -2367,7 +2394,7 @@ def calc_passfailed_pece_avg_rule(student_ep_dict):  # PR2021-12-24 PR2022-05-26
 # end of calc_passfailed_pece_avg_rule
 
 
-def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_sufficient, rule_core_sufficient):
+def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_sufficient, rule_core_sufficient, partial_exam):
     # PR2021-11-29 PR2022-06-05
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -2409,6 +2436,8 @@ def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_suffi
         result_info_log_list.append(result_str)
     elif result_index == c.RESULT_NORESULT:
         result_str += str(_('No result')).upper()
+        if partial_exam:
+            result_str += ''.join((' (', str(_('partial exam')).lower(), ')'))
         result_info_list.append(result_str)
         result_info_log_list.append(result_str)
         noin_info_list = last_student_ep_dict.get('noin_info')
@@ -3504,6 +3533,299 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
     return subj_grade_str
 # - end of log_list_subject_grade
 
+
+##########################################################################
+def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, student_pk_list=None):
+    # PR2022-07-02 temporary, to be replaced by calc_proof_of_knowledge as part of  calc_studsubj_result
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('---------  calc_proof_of_knowledge  --------- ')
+
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'student_pk_list': student_pk_list}
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+
+    sql_list = [
+        "SELECT studsubj.id AS studsubj_id, stud.id AS student_id, stud.idnumber, stud.regnumber, stud.gender,",
+        "stud.lastname, stud.firstname, stud.prefix, stud.birthdate, stud.birthcountry, stud.birthcity,",
+        "stud.iseveningstudent, stud.islexstudent,",
+
+        "school.name AS school_name, school.article AS school_article,",
+        "dep.name AS dep_name, ey.code AS examyear_code, country.name AS country_name, country.abbrev AS country_abbrev,",
+        "lvl.name AS lvl_name, subj.name AS subj_name, subjbase.code AS subj_code,",
+        "studsubj.gradelist_use_exem, studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
+        "si.gradetype, si.is_combi, si.weight_se, si.weight_ce, si.is_combi, si.is_combi, si.is_combi",
+
+        "FROM students_studentsubject AS studsubj",
+        "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+        "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+        "INNER JOIN schools_country AS country ON (country.id = ey.country_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+
+        "WHERE school.examyear_id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
+        "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted",
+    ]
+
+    if student_pk_list:
+        sql_keys['student_pk_arr'] = student_pk_list
+        sql_list.append("AND stud.id IN ( SELECT UNNEST( %(student_pk_arr)s::INT[]))")
+    else:
+        if lvlbase_pk:
+            sql_keys['lvlbase_pk'] = lvlbase_pk
+            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+
+    sql_list.append("ORDER BY stud.lastname, stud.firstname, subj.name")
+
+    sql = ' '.join(sql_list)
+
+    proof_of_knowledge_dict = {}
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        rows = af.dictfetchall(cursor)
+
+    if rows:
+        for row in rows:
+# calc if this subject has pok
+            sesr_grade = row.get('gradelist_sesrgrade')
+            pece_grade = row.get('gradelist_pecegrade')
+            final_grade = row.get('gradelist_finalgrade')
+
+            has_pok = calc_pok(
+                no_centralexam=examyear.no_centralexam,
+                gradetype=row.get('gradetype'),
+                is_combi=row.get('is_combi'),
+                weight_se=row.get('weight_se'),
+                weight_ce=row.get('weight_ce'),
+                subj_code=row.get('subj_code'),
+                use_exemp=row.get('gradelist_use_exem'),
+                no_input=False if final_grade else True,
+                sesr_grade=sesr_grade,
+                pece_grade=pece_grade,
+                final_grade=final_grade
+            )
+            if has_pok:
+                student_pk = row.get('student_id')
+
+# if pok: create student_dict if not yet exist
+                if student_pk not in proof_of_knowledge_dict:
+                    full_name = stud_fnc.get_firstname_prefix_lastname(row.get('lastname'), row.get('firstname'), row.get('prefix'))
+                    birth_date = row.get('birthdate', '')
+                    birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
+                    birth_country = row.get('birthcountry')
+                    birth_city = row.get('birthcity')
+
+                    birth_place = ''
+                    if birth_country:
+                        if birth_city:
+                            birth_place = ', '.join((birth_city, birth_country))
+                        else:
+                            birth_place = birth_country
+                    elif birth_city:
+                        birth_place = birth_city
+
+                    # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
+                    idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
+
+                    proof_of_knowledge_dict[student_pk] = {
+                        'school_name': row.get('school_name'),
+                        'school_article': row.get('school_article'),
+                        'iseveningstudent': row.get('iseveningstudent'),
+                        'islexstudent': row.get('islexstudent'),
+                        'dep_name': row.get('dep_name'),
+                        'lvl_name': row.get('lvl_name'),
+                        'examyear_txt': str(row.get('examyear_code')),
+                        'country': row.get('country_name'),
+                        'country_abbrev': row.get('country_abbrev'),
+                        'full_name': full_name,
+                        'gender': row.get('gender'),
+                        'birth_date_formatted': birth_date_formatted,
+                        'birth_place': birth_place,
+                        'idnumber': idnumber_withdots_no_char,
+                        'regnumber': row.get('regnumber'),
+                        'subjects': []
+                    }
+
+# if pok: add studsubj_dict to student_dict
+                student_dict = proof_of_knowledge_dict[student_pk]
+
+                student_dict['subjects'].append({
+                        'subj_name': row.get('subj_name'),
+                        'segrade': sesr_grade.replace('.', ',') if sesr_grade else None,
+                        'pecegrade': pece_grade.replace('.', ',') if pece_grade else None,
+                        'finalgrade': final_grade
+                    })
+
+    if logging_on:
+        logger.debug('    proof_of_knowledge_dict: ' + str(proof_of_knowledge_dict))
+    """
+    proof_of_knowledge_dict: {
+        4954: {'school_name': 'Abel Tasman College', 'article': 'het', 'department': 'Hoger Algemeen Voortgezet Onderwijs', 'examyear': 2022, 
+                'full_name': 'Deshawn Devanté Stan-Lee Apostel', 'birth_date_formatted': '28 april 2004', 'birth_place': 'Dordrecht, Nederland', 'idnumber': '2004.04.28.08', 
+                'subjects': [
+                    {'subj_name': 'Algemene sociale wetenschappen', 'sesr_grade': '6.3', 'pece_grade': None, 'final_grade': '6'}, 
+                    {'subj_name': 'Profielwerkstuk', 'sesr_grade': '7.9', 'pece_grade': None, 'final_grade': '8'}, 
+                    {'subj_name': 'Wiskunde A', 'sesr_grade': '6.5', 'pece_grade': '7.0', 'final_grade': '7'}]}, 
+    """
+    return proof_of_knowledge_dict
+# end of get_proof_of_knowledge
+
+
+def calc_proof_of_knowledge( subj_code ,examperiod, studsubj_dict, no_centralexam, gradetype, is_combi, weight_se, weight_ce,
+                 has_reex, has_reex03):
+    # PR2022-07-02
+    # only called by calc_studsubj_result
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('---------  calc_proof_of_knowledge  --------- ')
+
+    """
+    67838: {'si_id': 9734, 'subj': 'ec', 'is_extra_nocount': True, 'has_exemption': True, 
+        1: {'subj': 'ec', 'se': '7,4', 'sesr': '7.4', 'ni': ['ce'], 'max_ep': 4, 'max_sesr': None, 'max_pece': None, 'max_final': None, 
+            'max_ni': ['se', 'ce'], 'max_use_exem': True}, 
+        4: {'subj': 'ec', 'ni': ['se', 'ce'], 'max_ep': 4, 'max_sesr': None, 'max_pece': None, 'max_final': None, 
+            'max_ni': ['se', 'ce'], 'max_use_exem': True}}, 
+
+    this_examperiod_dict: {'subj': 'ec', 'se': '7,4', 'sesr': '7.4', 'ni': ['ce']} 
+    """
+
+# - get proof of knowledge only in first period, reex only if has_reex, reex03 only if has_reex03, skip in ep_exemption
+    if (examperiod == c.EXAMPERIOD_FIRST) or \
+            (examperiod == c.EXAMPERIOD_SECOND and has_reex) or \
+            (examperiod == c.EXAMPERIOD_THIRD and has_reex03):
+
+        this_examperiod_dict = studsubj_dict.get(examperiod)
+
+# - get grade info from this_examperiod_dict
+        has_pok = calc_pok(
+            no_centralexam=no_centralexam,
+            gradetype=gradetype,
+            is_combi=is_combi,
+            weight_se=weight_se,
+            weight_ce=weight_ce,
+            subj_code=subj_code,
+            use_exemp=this_examperiod_dict.get('max_use_exem'),
+            no_input=True if this_examperiod_dict.get('max_ni') else False,
+            sesr_grade=this_examperiod_dict.get('max_sesr'),
+            pece_grade=this_examperiod_dict.get('max_pece'),
+            final_grade=this_examperiod_dict.get('max_final')
+        )
+        if has_pok:
+            this_examperiod_dict['pok'] = has_pok
+
+        if logging_on:
+            logger.debug('   this_examperiod_dict: ' + str(this_examperiod_dict))
+# - end of calc_noinput
+
+
+def calc_pok (no_centralexam, gradetype, is_combi, weight_se, weight_ce,
+              subj_code, use_exemp, no_input, sesr_grade, pece_grade, final_grade):
+    # PR2022-07-01
+    # function calculates proof of knowledge
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ---------- calc_pok ----------')
+        logger.debug('    subj_code: ' + str(subj_code))
+        logger.debug('    sesr_grade: ' + str(sesr_grade))
+        logger.debug('    pece_grade: ' + str(pece_grade))
+        logger.debug('    final_grade: ' + str(final_grade))
+        logger.debug('    use_exemp: ' + str(use_exemp))
+        logger.debug('    no_input: ' + str(no_input))
+
+    """
+    PR2019-05-29 van Nancy Josefina: Inspectie
+        'Landsbesluit eindexamens vwo, havo, vsbo, Artikel 1 lid o:
+        'bewijs van kennis: een bewijs van een, bij een eindexamen, met goed gevolg afgelegd examen in een vak,
+        'waarin ten minste een zeven als eindcijfer is behaald,
+        'met dien verstande dat het cijfer van het schoolexamen en, indien van toepassing,
+        'van het centraal examen van dat vak ten minste 6,0 bedraagt;
+        
+    'PR2019-11-26 ovl Nancy Josephina: voorstel om een zes bij combivakken ook vrijstelling te geven. Nog niet geaccordeerd
+    'PR2020-05-20 ovl met Esther, Rubia, Nancy op 8 mei 2020: is van toepassing, vooruitlopend op vaststelling
+    'Alleen voor Curacao?
+    'dit filter is niet ingesteld: SXM filter: If booIsCombiOfKeuzeCombi And Not pblAfd.IsSXMschool Then
+    
+    PR2020-05-27: brief IG 17 okt 2019 aan schoolbesturen: combivakken met EC 6 en SE 5,5 krijgen vrijstelling
+
+    PR2020-05-26 debug: bij vrijstelling werd ook bewijs van kennis afgegeven. gewijzigd in: overslaan als vrjstelling wordt gebruikt voor dit vak
+    PR2020-05-27 LET OP: geslaagde kandidaten krijgen geen bewijs van kennis. BvK wordt gewist bij Kand_Verwerken: J. wis Bewijs van Kennis / Bewijs van Vrijstelling van geslaagde kandidaten
+    PR2019-08-29 vraag mw Bruno New Song,  antwoord Esther:
+        ' Nancy geeft aan in acht nemende artikel 14 van de onderwijswetgeving, lid 2, 6 en 7,
+        ' dat bij een voldoende (dus 6) een bewijs van vrijstelling gegeven kan worden.
+        ' ik: Weet Nancy zeker dat het artikel waar ze naar verwijst ook van toepassing is op de dagscholen?
+        ' Esther: Ja Hans. We hadden het over dagschool. Die ene artikel geeft dat niet expliciet aan.
+    dus ook een 'v' geeft bewijs van kennis:    
+    """
+    proof_of_knowledge_ok, final_grade_ok, sesr_grade_ok, pece_grade_ok = False, False, False, False
+
+# 1. geen BvK als het cijfer gebaseerd is op vrijstelling
+    if not use_exemp:
+# 2. geen BvK als het eindcijfer niet is ingevuld
+        if not no_input:
+# 3. als cijferType is VoldoendeOnvoldoende
+            if gradetype == c.GRADETYPE_02_CHARACTER:
+    # a. Eindcijfer moet een "v" of "g" zijn.
+                final_grade_ok = final_grade and final_grade.lower() in ('v', 'g')
+    # b. SE cijfer moet een "v" of "g" zijn.
+                if not weight_se:
+                    sesr_grade_ok = True
+                elif sesr_grade and sesr_grade.lower() in ('v', 'g'):
+                    sesr_grade_ok = True
+    # c. CE cijfer moet een "v" of "g" zijn. (crcCEweging > 0 komt niet voor)
+                #'PR2020-05-27 ovg vakken hebben geen CE, sla deze eis dus over
+                pece_grade_ok = True
+
+#4. als cijferType is Numeric
+            elif gradetype == c.GRADETYPE_01_NUMBER:
+    #4a. als het een combinatievak is
+                if is_combi:
+        # a. Eindcijfer moet minstens een 6 zijn.
+                    final_grade_ok = final_grade and Decimal(final_grade) >= 6
+        # b. SE cijfer moet minstens een 5,5 zijn.
+                    sesr_grade_ok = weight_se > 0 and sesr_grade and Decimal(sesr_grade) >= 5.5
+        # c. CE cijfer niet van toepassing bij combinatievak.
+                    pece_grade_ok = True
+
+    #4b. als het een gewoon vak is (geen combinatievak)
+                else:
+        # a. Eindcijfer moet minstens een 7 zijn.
+                    final_grade_ok = final_grade and Decimal(final_grade) >= 7
+        # b. SE cijfer moet minstens een 6 zijn.
+                    sesr_grade_ok = weight_se > 0 and sesr_grade and Decimal(sesr_grade) >= 6
+        # c. CE cijfer moet minstens een 6 zijn.
+                #PR2020-05-20 Corona: geen CE cijfer, sla deze eis daarom over
+                    if no_centralexam:
+                        pece_grade_ok = True
+                    elif not weight_ce:
+                        pece_grade_ok = True
+                    else:
+                        pece_grade_ok = pece_grade and Decimal(pece_grade) >= 6
+
+            if logging_on:
+                logger.debug('    sesr_grade_ok: ' + str(sesr_grade_ok))
+                logger.debug('    pece_grade_ok: ' + str(pece_grade_ok))
+                logger.debug('    final_grade_ok: ' + str(final_grade_ok))
+
+#5. bereken BewijsVanKennisOK
+    if final_grade_ok and sesr_grade_ok and pece_grade_ok:
+        proof_of_knowledge_ok = True
+
+    if logging_on:
+        logger.debug(' >> proof_of_knowledge_ok: ' + str(proof_of_knowledge_ok))
+
+    return proof_of_knowledge_ok
+# end of calc_pok
+
+############################################################################
 """
 from AWP function CalcPassedFailed PR2021-11-19
 

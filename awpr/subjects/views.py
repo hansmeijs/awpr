@@ -1774,8 +1774,17 @@ class ExamLinkExamToGradesView(View):
                 upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 190, 'examyear_pk': 2, 
                         'subject_pk': 159, 'subj_name': 'Spaanse taal en literatuur', 
                         'is_test': True}
+                SXM links DUO exam:
                 upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 190, 'examyear_pk': 2, 
-                        'subject_pk': 159, 'is_test': False}   
+                        'subject_pk': 159, 'is_test': False} 
+                SXM links DUO exam:
+                upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 258, 'examyear_pk': 2,
+                        'subject_pk': 172, 'subj_name': 'Franse taal', 'is_test': True}
+                SXM links ETE exam:
+                upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 30, 'examyear_pk': 1, 
+                'subject_pk': 133, 'subj_name': 'Administratie en commercie', 'is_test': True}
+                requsr_examyear_pk2
+                        
                 """
 
 # - get variables from upload_dict
@@ -1784,67 +1793,101 @@ class ExamLinkExamToGradesView(View):
                 # don't get it from usersettings, get it from upload_dict instead
                 mode = upload_dict.get('mode')
                 if mode == 'link_exam_to_grades':
-                    examyear_pk = upload_dict.get('examyear_pk')
+                    # examyear_pk is the examyear of the selected exam ( = exam.subject.examyear.pk)
+                    exam_examyear_pk = upload_dict.get('examyear_pk')
                     exam_pk = upload_dict.get('exam_pk')
                     is_test = upload_dict.get('is_test') or False
-                    if logging_on:
-                        logger.debug('    is_test' + str(is_test))
 
                     # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
                     subject_pk = upload_dict.get('subject_pk')
 
+                    if logging_on:
+                        logger.debug('    is_test: ' + str(is_test))
+                        logger.debug('    exam_pk: ' + str(exam_pk))
+                        logger.debug('    exam_examyear_pk: ' + str(exam_examyear_pk))
+                        logger.debug('    subject_pk: ' + str(subject_pk))
+
+                    # WARNING: let ETE only link CUr grades, and SXM only link Sxm grades
+
     # - check if examyear exists and equals selected examyear from Usersetting
                     # - exam is linked to subject > examyear > country. Therefore exam is country-specific
-                    # - Cur and SXM can each add their own DUO-exam, becasue SXM has some DUO exams that CUR doent have
-                    # - ETE exams are only Cur- exams, therefore SXM must be able to link ETE-Cur exams to grades
+                    # - ETE exams are only Cur-exams, cab be created or copied by ETE
+                    #       therefore SXM must be able to link ETE-Cur exams to grades, filte by ey_code, not by ey_pk
+                    # - Cur and SXM can each add their own DUO-exam, because SXM has some DUO exams that CUR doesn't have
+                    #       DUO -exams are created or deleted when linking a subject with a ntermen exam
+
+                    requsr_examyear_pk, requsr_depbase_pk = None, None
                     selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                    selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                    requsr_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
-                    if examyear_pk == selected_examyear_pk:
-                        # when SXM links ETE exam:
-                        # - examyear is SXM exam year
-                        examyear = sch_mod.Examyear.objects.get_or_none(
-                            id=examyear_pk,
-                            country=req_usr.country
+                    if selected_dict:
+                        requsr_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+                        requsr_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+
+                    if logging_on:
+                        logger.debug('    requsr_examyear_pk: ' + str(requsr_examyear_pk))
+
+            # get examyear and subjbase of exam.subject
+                    # when SXM links ETE exam:
+                    # - exam.examyear is CUR exam year
+                    # lookup exam_examyear, to get examyear_code
+                    examyear_code, subjbase = None, None
+                    exam_examyear = sch_mod.Examyear.objects.get_or_none(pk=exam_examyear_pk)
+
+            # get requsr_examyear_pk
+                    requsr_examyear = sch_mod.Examyear.objects.get_or_none(pk=requsr_examyear_pk)
+
+                    # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
+                    if exam_examyear and requsr_examyear and not requsr_examyear.locked:
+
+            # - get selected exam instance
+                        sel_exam = subj_mod.Exam.objects.get_or_none(
+                            id=exam_pk,
+                            subject__examyear=exam_examyear
                         )
-                        # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
-                        if examyear and not examyear.locked:
-        # - get subject - subject can be from different country when ETE exam > filter on examyear.code, not on examyear.pk
-                            # - when ETE exam: linked subject is then CUR subject
-                            subject = subj_mod.Subject.objects.get_or_none(
-                                id=subject_pk,
-                                examyear__code=examyear.code
-                            )
+                        if sel_exam:
                             if logging_on:
-                                logger.debug('subject:     ' + str(subject))
-                            if subject:
-        # - else: get existing exam instance
-                                # - exam is exam that is attached to CUR subject
-                                exam = subj_mod.Exam.objects.get_or_none(
-                                    id=exam_pk,
-                                    subject=subject
+                                logger.debug('    sel_exam: ' + str(sel_exam))
+
+                            sel_exam_subject = sel_exam.subject
+                            if logging_on:
+                                logger.debug('    sel_exam_subject: ' + str(sel_exam_subject))
+                            sel_exam_subjbase = sel_exam_subject.base
+                            if logging_on:
+                                logger.debug('    sel_exam_subjbase: ' + str(sel_exam_subjbase))
+                                logger.debug('    sel_exam_subjbase.code: ' + str(sel_exam_subjbase.code))
+
+                            if sel_exam_subjbase:
+
+            # - get subject  - subject can be from different country when ETE exam > filter on examyear.code, not on examyear.pk
+            # get subject of this country
+            # - PR2022-07-01 ERROR: spanish went back to ETE because ETE linked SXM grades.
+            # Let each country link their own grades
+                                # - DON'T: when ETE exam: linked subject is then CUR subject
+                                # was: examyear_code=examyear.code
+                                this_country_subject = subj_mod.Subject.objects.get_or_none(
+                                    base=sel_exam_subjbase,
+                                    examyear=requsr_examyear,
                                 )
+                                if this_country_subject:
+                                    if logging_on:
+                                        logger.debug('this_country_subject:     ' + str(this_country_subject))
+                                        logger.debug('this_country_subject.examyear.pk:     ' + str(this_country_subject.examyear.pk))
 
-                                if logging_on:
-                                    logger.debug('exam: ' + str(exam))
-
-                                if exam:
-                                    ete_duo_exam = str(_('The ETE exam') if exam.ete_exam else _('The DUO exam'))
+                                    ete_duo_exam = str(_('The ETE exam') if sel_exam.ete_exam else _('The DUO exam'))
                                     # def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
                                     exam_name = get_exam_name(
-                                        ce_exam_id=exam.pk,
-                                        ete_exam=exam.ete_exam,
-                                        subj_name=subject.name,
-                                        depbase_code=exam.department.base.code,
-                                        lvl_abbrev=exam.level.abbrev if exam.level else '-',
-                                        examperiod=exam.examperiod,
-                                        version=exam.version,
-                                        ntb_omschrijving=exam.ntermentable.omschrijving if exam.ntermentable else None
+                                        ce_exam_id=sel_exam.pk,
+                                        ete_exam=sel_exam.ete_exam,
+                                        subj_name=sel_exam.subject.name,
+                                        depbase_code=sel_exam.department.base.code,
+                                        lvl_abbrev=sel_exam.level.abbrev if sel_exam.level else '-',
+                                        examperiod=sel_exam.examperiod,
+                                        version=sel_exam.version,
+                                        ntb_omschrijving=sel_exam.ntermentable.omschrijving if sel_exam.ntermentable else None
                                     )
-    # --- add exam_pk to grades, only when there is only 1 exam for this subject / dep / level / examperiod
+# --- add exam_pk to grades, only when there is only 1 exam for this subject / dep / level / examperiod
                                     grd_count, log_list = link_exam_to_grades(
-                                        exam_instance=exam,
-                                        requsr_examyear_pk=examyear_pk,
+                                        exam_instance=sel_exam,
+                                        requsr_examyear_pk=requsr_examyear.pk,
                                         requsr_depbase_pk=requsr_depbase_pk,
                                         exam_name=exam_name,
                                         is_test=is_test,
@@ -1868,10 +1911,10 @@ class ExamLinkExamToGradesView(View):
                                             )))
                                             update_wrap['response_link_exam_is_saved'] = True
 
-                                            # --- return list of students with linked exams
+                            # --- return list of students with linked exams
                                             grd_countNIU, log_list = link_exam_to_grades(
-                                                exam_instance=exam,
-                                                requsr_examyear_pk=examyear_pk,
+                                                exam_instance=sel_exam,
+                                                requsr_examyear_pk=requsr_examyear.pk,
                                                 requsr_depbase_pk=requsr_depbase_pk,
                                                 exam_name=exam_name,
                                                 is_test=True,
@@ -1898,150 +1941,6 @@ class ExamLinkExamToGradesView(View):
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamLinkExamToGradesView
-
-
-# ============= ExamCalcGradesFromExamView ============= PR2022-06-03
-@method_decorator([login_required], name='dispatch')
-class ExamCalcGradesFromExamView(View):
-
-    def post(self, request):
-        logging_on = s.LOGGING_ON
-        if logging_on:
-            logger.debug('')
-            logger.debug(' ============= ExamCalcGradesFromExamView ============= ')
-
-        req_usr = request.user
-        update_wrap = {}
-        err_html = []
-
-# - reset language
-        user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
-        activate(user_lang)
-
-# - add edit permit
-        has_permit = False
-        if req_usr and req_usr.country:
-            permit_list = req_usr.permit_list('page_exams')
-            if permit_list:
-                has_permit = 'permit_crud' in permit_list
-            if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
-
-        if not has_permit:
-            err_txt = _("You don't have permission to perform this action.")
-            err_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
-        else:
-
-# - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                if logging_on:
-                    logger.debug('upload_dict' + str(upload_dict))
-
-# - get variables from upload_dict
-                # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
-
-                # don't get it from usersettings, get it from upload_dict instead
-                mode = upload_dict.get('mode')
-                if mode == 'calc_grades':
-                    examyear_pk = upload_dict.get('examyear_pk')
-                    exam_pk = upload_dict.get('exam_pk')
-                    # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
-                    subject_pk = upload_dict.get('subject_pk')
-
-# - check if examyear exists and equals selected examyear from Usersetting
-                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                    sel_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                    sel_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
-                    if examyear_pk == sel_examyear_pk:
-                        examyear = sch_mod.Examyear.objects.get_or_none(
-                            id=examyear_pk,
-                            country=req_usr.country
-                        )
-                        department = sch_mod.Department.objects.get_or_none(
-                            base__id=sel_depbase_pk,
-                            examyear=examyear
-                        )
-                        if logging_on:
-                            logger.debug('examyear' + str(examyear))
-                            logger.debug('department' + str(department))
-
-                        # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
-                        if examyear and not examyear.locked and department:
-# - get subject
-                            subject = subj_mod.Subject.objects.get_or_none(
-                                id=subject_pk,
-                                examyear=examyear
-                            )
-                            if logging_on:
-                                logger.debug('subject:     ' + str(subject))
-
-# - get exam instance
-                                exam_instance = subj_mod.Exam.objects.get_or_none(
-                                    id=exam_pk,
-                                    subject=subject,
-                                    department=department,
-                                    ete_exam=False
-                                )
-                                if logging_on:
-                                    logger.debug('exam_instance: ' + str(exam_instance))
-
-                                if exam_instance:
-# - recalc grade from score and update final grade in all students
-                                    ete_duo = 'ETE' if exam_instance.ete_exam else 'DUO'
-                                    updated_cegrade_count, updated_cegrade_listNIU, updated_student_pk_listNIU = \
-                                        calc_score.batch_update_finalgrade(
-                                            department_instance=department,
-                                            exam_instance=exam_instance
-                                        )
-                                    if logging_on:
-                                        logger.debug('updated_cegrade_count: ' + str(updated_cegrade_count))
-
-                                    subject_dep_lvl = subject.name + ' ' + exam_instance.department.base.code + ' '
-                                    if exam_instance.department.level_req:
-                                        if exam_instance.level:
-                                            subject_dep_lvl += exam_instance.level.base.code
-                                        else:
-                                            subject_dep_lvl += '-'
-
-                                    if logging_on:
-                                        logger.debug('subject_dep_lvl: ' + str(subject_dep_lvl))
-
-    # --- add exam_pk to grades, only when there is only 1 exam for this subject / dep / level / examperiod
-                                    is_test = False
-                                    # TODO remove this function
-                                    grd_count, log_list = link_exam_to_grades(
-                                        exam_instance=exam_instance,
-                                        exam_name='',
-                                        is_test=is_test
-                                    )
-                                    if logging_on:
-                                        logger.debug('subject_dep_lvl: ' + str(subject_dep_lvl))
-                                    if grd_count:
-                                        err_html.append(''.join((
-                                            "<div class='p-2 border_bg_valid'>",
-                                            str(_('The %(cpt)s exam') % {'cpt': ete_duo }), ": '", subject_dep_lvl, "'<br>",
-                                            str(_("has been linked to the corresponding subject")), "<br>",
-                                            str(_("of %(val)s candidates.") % {'val': str(grd_count)}),
-                                            '</div')))
-                                    else:
-                                        err_html.append(''.join((
-                                            "<div class='p-2 border_bg_transparent'>",
-                                            str(_('There are no candidates with the %(cpt)s exam') % {'cpt': ete_duo}), ':<br>', subject_dep_lvl,
-                                            '</div')))
-                                else:
-                                    err_html.append(''.join((
-                                        "<div class='p-2 border_bg_invalid'>",
-                                        str(_('The exam is not found')),
-                                        '</div')))
-
-        if err_html:
-            update_wrap['err_html'] = err_html
-# - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# --- end of ExamCalcGradesFromExamView
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -4002,7 +3901,9 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
 
     log_list = []
     if exam_instance.examperiod in (1, 2, 3):
+
         # - skip when there is more than 1 exam for this subject / dep / level / examperiod
+        # TODO: in SXM subject may have ETE exams (ey=cur) and DUO examns (ey=sxm) How to deal with this?
         crit = Q(subject=exam_instance.subject) & \
                Q(department=exam_instance.department) & \
                Q(examperiod=exam_instance.examperiod)
@@ -4467,13 +4368,36 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
     # PR2022-06-23 only used in page Grades
     # --- creates rows with exams that:
-    # - are both exam.ete_exam and not exam.ete_exam
-    # - this department
+    #       - show all exam.ete_exams (filter on sel_examyear.code) (only cur can create ete-exams
+    #       - show only DUO exams of this country (filter on sel_examyear.pk)
+    # - this depbase.id
     # - this exam_period
-    # - this examyear_code i.e both exams of Cur and Sxm are showing
+    # show ETE exams only when this subject has no DUO-exam
+
     # when school: only ETE published exams (DUO exams are not published)
 
-    sql_keys = {'depbase_id': sel_depbase.pk, 'ep': sel_examperiod}
+    sql_keys = {'depbase_id': sel_depbase.pk, 'ep': sel_examperiod, 'ey_code': sel_examyear.code, 'ey_pk': sel_examyear.pk}
+
+    duo_exams_sql_list = [
+        "SELECT sb.id",
+        "FROM subjects_exam AS exam",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+        "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+        "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+        # only show linked exams (all should be linked)
+        "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
+
+        "WHERE NOT exam.ete_exam AND depbase.id = %(depbase_id)s::INT",
+
+        "AND exam.examperiod = %(ep)s::INT",
+        "AND (exam.ete_exam AND ey.code = %(ey_code)s::INT) OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT) "
+    ]
+
+    duo_exams_sql = ' '.join(duo_exams_sql_list)
 
     sql_list = [
         "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
@@ -4518,15 +4442,11 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
         #"WHERE NOT exam.ete_exam AND depbase.id = %(depbase_id)s::INT"
         "WHERE depbase.id = %(depbase_id)s::INT",
-        "AND (exam.examperiod = %(ep)s::INT)"
-    ]
+        "AND exam.examperiod = %(ep)s::INT",
+        # dont show ETE exam when there is also a DUO exam
+        "AND (exam.ete_exam AND ey.code = %(ey_code)s::INT AND subj.base_id NOT IN (", duo_exams_sql, ")) OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT)"
 
-    #if req_usr.role == c.ROLE_008_SCHOOL:
-    sql_keys['ey_code'] = sel_examyear.code
-    sql_list.append("AND ey.code = %(ey_code)s::INT")
-    #else:
-    #    sql_keys['ey_pk'] = sel_examyear.pk
-    #     sql_list.append("AND ey.id = %(ey_pk)s::INT")
+    ]
 
 # when school: only ETE published exams (DUO exams are not published)
     if req_usr.role == c.ROLE_008_SCHOOL:
