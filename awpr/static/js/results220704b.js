@@ -1378,40 +1378,43 @@ function RefreshDataRowsAfterUpload(response) {
 // --- count number of rows that are not hidden
             const elements = tblBody_datatable.querySelectorAll("tr:not(.display_hide)");
             for (let i = 0, tr, el; tr = elements[i]; i++) {
-                const pk_int = get_attr_from_el_int(tr, "data-pk");
                 count_selected += 1;
+                const pk_int = get_attr_from_el_int(tr, "data-pk");
+                if (pk_int) {
 
 // --- get existing data_dict from data_rows
-                // check if student has passed - only when printing diploma
-                // check if student has not passed - only when downloading pok
-                // when mode is not "diploma" has_passed = true
-                const [index, data_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
-                if (!isEmpty(data_dict)) {
-                    const add_to_list = (mode === "diploma") ? data_dict.result === 1 :
-                                        (mode === "pok") ? data_dict.result !== 1 : true;
-                    if (add_to_list){
-                        student_pk_list.push(pk_int);
-                        count_added_to_list += 1;
+                    // check if student has passed - only when printing diploma
+                    // check if student has not passed - only when downloading pok
+                    // when mode is not "diploma" has_passed = true
+                    const [index, data_dict, compare] = b_recursive_integer_lookup(student_rows, "id", pk_int);
+                    if (!isEmpty(data_dict)) {
+                        const add_to_list = (mode === "diploma") ? data_dict.result === 1 :
+                                            (mode === "pok") ? data_dict.result !== 1 : true;
+                        if (add_to_list){
+                            student_pk_list.push(pk_int);
+                            count_added_to_list += 1;
+                        };
                     };
                 };
             };
         };
 
-// --- if all students are in list: set print_all = true, so you dont have to filter database on student_pk_list
+// --- if all students of student_rows are in student_pk_list: set print_all = true, so you dont have to filter database on student_pk_list
 
         const student_rows_length = (student_rows) ? student_rows.length : 0;
-
         const student_pk_list_length = student_pk_list.length;
         if (student_pk_list_length === student_rows_length){
             print_all = true;
             student_pk_list = [];
             count_added_to_list = student_rows_length;
         }
-
+        mod_dict.count_added_to_list = count_added_to_list;
         if(student_pk_list_length) {
             mod_dict.student_pk_list = student_pk_list;
         }
         mod_dict.print_all = print_all;
+
+        console.log(">>>>>>>>>> mod_dict", mod_dict);
 
         const msg01_txt = (mode === "calc_results") ?
             loc.The_result_of
@@ -1420,7 +1423,7 @@ function RefreshDataRowsAfterUpload(response) {
         : (mode === "final") ?
             loc.The_final_gradelist_of
         : (mode === "diploma") ?
-            (count_selected_passed > 1) ? loc.The_diplomas_of : loc.The_diploma_of
+            (student_pk_list_length > 1) ? loc.The_diplomas_of : loc.The_diploma_of
         : (mode === "pok") ?
             loc.The_pok_of
         : null;
@@ -1456,8 +1459,6 @@ function RefreshDataRowsAfterUpload(response) {
         }
 
         el_MGL_info_container.innerHTML = msg_html;
-        console.log("el_MGL_info_container", el_MGL_info_container);
-        console.log("pres_secr_dict", pres_secr_dict);
 
 // hide autrh2 when pok
         add_or_remove_class(document.getElementById("id_MGL_auth2_container"), cls_hide, ["pok"].includes(mode))
@@ -1471,7 +1472,6 @@ function RefreshDataRowsAfterUpload(response) {
 
 // show loader
         add_or_remove_class(el_MGL_loader, cls_hide, ["calc_results"].includes(mode) )
-
 
 // ---  show msg_info when printing final gardelist or diploma
         add_or_remove_class(el_MGL_msg_info, cls_hide, !["final", "diploma"].includes(mod_dict.mode));
@@ -1493,7 +1493,8 @@ function RefreshDataRowsAfterUpload(response) {
         console.log("pres_secr_dict", pres_secr_dict)
 
 // ---  enable save button
-        el_MGL_btn_save.disabled = false;
+        const enabled = (!!mod_dict.count_added_to_list || !!mod_dict.print_all);
+        el_MGL_btn_save.disabled = (!enabled);
 
 // ---  hide loader
         add_or_remove_class(el_MGL_loader, cls_hide, true)
