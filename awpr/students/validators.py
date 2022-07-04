@@ -1581,7 +1581,8 @@ def get_diplomanumberlist_gradelistnumberlist_from_database(field, sel_school):
     # PR2022-06-26
     # get list of diplomanumbers and gradelistnumbers of this school, used with import student and update student
     # list contains tuples with (id, value) id is needed to skip value of  this student
-
+    # PR2022-07-04 debug Angela Richardson Maris Stella: cannot enter number, already exists in other level
+    # solved by adding 'check only this level
     value_list = []
     if sel_school:
         sql_keys = {'sch_id': sel_school.pk}

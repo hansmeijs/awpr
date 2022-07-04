@@ -5070,45 +5070,46 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if new_value:
             # - validate length of new_value
                         err_txt = stud_val.validate_length(caption, new_value, c.MAX_LENGTH_10, True)  # True = blank_allowed
-                        if err_txt is None:
-
+                        #if err_txt is None:
+                            # PR2022-07-04 debug Angela Richardson Maris Stella: cannot enter number, already exists in other level
+                            # skip check for double numbers
             # check if new_value already exists in value_list, but skip idnumber of this instance
-                            value_list = diplomanumber_list if field == 'diplomanumber' else gradelistnumber_list
+                            #value_list = diplomanumber_list if field == 'diplomanumber' else gradelistnumber_list
 
                 # when updating single student, value_list is not filled yet. in that case: get diplomanumber_list
-                            if not value_list:
-                                value_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database(field, sel_school)
+                            #if not value_list:
+                            #    value_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database(field, sel_school)
 
                             # value_list contains tuples with (id, value), id is needed to skip value of this student
-                            if value_list:
-                                double_student_id_list = []
-                                for row in value_list:
-                                    # row is a tuple with (id, value)
-                                    if row[1] == new_value:
-                                        # unsaved instance has id = None
-                                        lookup_id = row[0]
-                                        skip_this_student = False
-                                        saved_id = getattr(instance, 'id')
-                                        if saved_id:
-                                            if saved_id and lookup_id == saved_id:
-                                                skip_this_student = True
-                                        if not skip_this_student:
-                                            double_student_id_list.append(lookup_id)
+                            #if value_list:
+                            #    double_student_id_list = []
+                            #    for row in value_list:
+                            #        # row is a tuple with (id, value)
+                            #        if row[1] == new_value:
+                            #            # unsaved instance has id = None
+                            #            lookup_id = row[0]
+                            #            skip_this_student = False
+                            #            saved_id = getattr(instance, 'id')
+                            #            if saved_id:
+                            #                if saved_id and lookup_id == saved_id:
+                            #                    skip_this_student = True
+                            #            if not skip_this_student:
+                            #                double_student_id_list.append(lookup_id)
+                            #
+                            #   if double_student_id_list:
+                            #        err_txt = _("%(cpt)s '%(val)s' already exists at:") \
+                            #                  % {'cpt': str(caption), 'val': new_value}
+                            #        class_txt = "border_bg_invalid"
+                            #
+                            #        for student_id in double_student_id_list:
+                            #            stud = stud_mod.Student.objects.get_or_none(pk=student_id)
+                            #            if stud:
+                            #                full_name = stud_fnc.get_full_name(stud.lastname, stud.firstname, stud.prefix)
+                            #                err_txt += '<br> - ' + full_name
 
-                                if double_student_id_list:
-                                    err_txt = _("%(cpt)s '%(val)s' already exists at:") \
-                                              % {'cpt': str(caption), 'val': new_value}
-                                    class_txt = "border_bg_invalid"
-
-                                    for student_id in double_student_id_list:
-                                        stud = stud_mod.Student.objects.get_or_none(pk=student_id)
-                                        if stud:
-                                            full_name = stud_fnc.get_full_name(stud.lastname, stud.firstname, stud.prefix)
-                                            err_txt += '<br> - ' + full_name
-
-                            if err_txt is None:
-                                # add new_value to value_list if it doesn't exist yet
-                                value_list.append(new_value)
+                            #if err_txt is None:
+                            #    # add new_value to value_list if it doesn't exist yet
+                            #    value_list.append(new_value)
 
             # = put err_txt in error_list
                     if err_txt:
