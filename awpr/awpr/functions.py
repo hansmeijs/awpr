@@ -537,6 +537,22 @@ def get_datetimelocal_from_datetime_utc(datetime_utc):
 
     return datetime_local
 
+def get_now_formatted_from_now_arr(now_arr):
+    #PR2022-07-08
+    now_formatted = ''
+    if now_arr:
+        year_str = str(now_arr[0])
+        month_str = ("00" + str(now_arr[1]))[-2:]
+        date_str = ("00" + str(now_arr[2]))[-2:]
+        hour_str = ("00" + str(now_arr[3]))[-2:]
+        minute_str = ("00" + str(now_arr[4]))[-2:]
+        now_formatted = ''.join((
+            str(now_arr[0]), "-",
+            ("00" + str(now_arr[1]))[-2:], "-",
+            ("00" + str(now_arr[2]))[-2:], " ",
+            ("00" + str(now_arr[3]))[-2:], "u",
+            ("00" + str(now_arr[4]))[-2:]))
+    return now_formatted
 
 def format_WDMY_from_dte(dte, user_lang, month_abbrev=True):  # PR2020-10-20
     # returns 'zo 16 juni 2019'
@@ -711,20 +727,27 @@ def get_submitted_at_formatted(grade_instance, user_lang):
 
 def get_dict_value(dictionry, key_tuple, default_value=None):
     # PR2020-02-04 like in base.js Iterate through key_tuple till value found
-    #logger.debug('  -----  get_dict_value  -----')
-    #logger.debug('     dictionry: ' + str(dictionry))
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  get_dict_value  -----')
+        logger.debug('     dictionry: ' + str(dictionry))
+        logger.debug('     key_tuple: ' + str(key_tuple))
     if key_tuple and dictionry:  # don't use 'dictionary' - is PyCharm reserved word
         for key in key_tuple:
-            #logger.debug('     key: ' + str(key) + ' key_tuple: ' + str(key_tuple))
+            if logging_on:
+                logger.debug('     key: ' + str(key) + ' key_tuple: ' + str(key_tuple))
             if isinstance(dictionry, dict) and key in dictionry:
                 dictionry = dictionry[key]
-                #logger.debug('     new dictionry: ' + str(dictionry))
+                if logging_on:
+                    logger.debug('     new dictionry: ' + str(dictionry))
             else:
                 dictionry = None
                 break
     if dictionry is None and default_value is not None:
         dictionry = default_value
-    #logger.debug('     return dictionry: ' + str(dictionry))
+
+    if logging_on:
+        logger.debug('     return dictionry: ' + str(dictionry))
     return dictionry
 
 
@@ -1000,6 +1023,18 @@ def is_allowed_depbase_school(depbase_pk, school):  # PR2021-06-14
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+def get_permit_of_this_page(page, permit, request):
+    # --- get permit for this page # PR2021-07-18 PR2021-09-05 PR2022-07-05
+    has_permit = False
+    if page and permit and request.user and request.user.country and request.user.schoolbase:
+        prefix_permit = 'permit_' + permit
+        permit_list = request.user.permit_list(page)
+        if permit_list:
+            has_permit = prefix_permit in permit_list
+
+    return has_permit
+
 
 def get_permit_crud_of_this_page(page, request):
     # --- get crud permit for this page # PR2021-07-18 PR2021-09-05
@@ -1310,7 +1345,7 @@ def system_updates(examyear, request):
 def reset_show_msg(request):
     # PR 2022-06-01 function resets open_args
     # called by Loggedin, to rest before setting is retrieved
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- reset_show_msg -------')
     try:

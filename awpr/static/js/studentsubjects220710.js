@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn_reex03:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "has_reex03", "reex03_status"],
+                                "subj_code", "subj_name", "has_reex03", "reex3_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn_pok:  {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Leerweg", "SectorProfiel_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "pok_validthru:", "pok_status"],
+                                "subj_code", "subj_name", "pok_validthru", "pok_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
@@ -878,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-07-22 PR2021-12-14
     function CreateTblHeader(field_setting, col_hidden) {
-        //console.log("===  CreateTblHeader ===== ");
+        // console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
         //console.log("col_hidden", col_hidden);
 
@@ -891,6 +891,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- loop through columns
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
+        console.log("field_name", field_name);
 
     // ---skip columns if in columns_hidden
             const col_is_hidden = get_column_is_hidden(field_name, col_hidden);
@@ -901,7 +902,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 let field_caption = (loc[key]) ? loc[key] : key;
                 if (field_name === "sct_abbrev") {
                     field_caption = (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector;
-                }
+                } else if (field_name === "pok_validthru") {
+                    field_caption = (setting_dict.sel_school_iseveningschool || setting_dict.sel_school_islexschool) ? loc.Proof_of_exemption_2lns : loc.Proof_of_knowledge_2lns;
+                };
+
 
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
@@ -1272,10 +1276,14 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  UpdateFieldStatus  ================ PR2021-07-25
     function UpdateFieldStatus(field, data_dict) {
         //console.log("=========  UpdateFieldStatus =========");
+        //console.log("    field", field);
+        //console.log("    data_dict", data_dict);
+        //console.log("    setting_dict.sel_examperiod", setting_dict.sel_examperiod);
+
         let className = "diamond_3_4";  // diamond_3_4 is blank img
         let title_text = null, filter_value = null;
 
-        // fields are: "subj_status", "sr_status", "reex_status", "reex03_status", "pok_status"
+        // fields are: "subj_status", "sr_status", "reex_status", "reex3_status", "pok_status"
         // note: exemption has no status, only exemption grades must be submitted
         if (field.includes("_status")){
             // skip when row has no studsubj_id
@@ -1285,6 +1293,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 ( (setting_dict.sel_examperiod === 1) ||
                                     (setting_dict.sel_examperiod === 2 && data_dict.has_reex) ||
                                     (setting_dict.sel_examperiod === 3 && data_dict.has_reex03) );
+
+        //console.log("    show_diamond", show_diamond);
             if (show_diamond) {
 
                 // examtype = 'subj', 'exem', 'sr', 'reex', 'reex03', 'pok'
@@ -1331,11 +1341,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
                             title_text += "\n" + function_str + ": " + auth_usr;
                         };
-                    }
-                }
+                    };
+                };
                 //const data_value = (auth_id) ? "1" : "0";
                 //el_div.setAttribute("data-value", data_value);
-            }
+            };
         };  // if (field === "select") {
         return [className, title_text, filter_value]
     }  // UpdateFieldStatus
@@ -1349,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // note: exemption has no status, only exemption grades must be submitted
         const mapped_field = (field === "reex_status") ? "has_reex" :
-                             (field === "reex03_status") ? "has_reex03" :
+                             (field === "reex3_status") ? "has_reex03" :
                              (field === "pok_validthru") ? "pok_status" : field;
         //console.log( "mapped_field", mapped_field);
 
@@ -1468,6 +1478,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const fldName = get_attr_from_el(el_input, "data-field");
                     // examtype = 'subj', 'exem', 'sr', 'reex', 'reex03', 'pok'
                     const examtype = fldName.replace("_status", "");
+                    // model_field = 'subj_auth1by'
+                    //PR2022-07-08 debug: Roxanne Wederfoort CAL: cannot approve reex03
+                    // db fields are: reex3_auth1by, reex3_auth2by, reex3_published, NOT reex03_
+                    const prefix = (examtype === "reex03") ? "reex3" : examtype;
+
 // - get auth info
                     const is_published = (!!data_dict[examtype + "_published_id"]);
                     const is_blocked = (!!data_dict[examtype + "_blocked"]);
@@ -1487,14 +1502,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
 
 // get auth index of requsr, null when multiple found
+
                         const usergroup_list = (permit_dict.usergroup_list) ? permit_dict.usergroup_list : [];
                         const is_auth1 = usergroup_list.includes("auth1");
                         const is_auth2 = usergroup_list.includes("auth2");
                         const auth_index = (is_auth1 && !is_auth2) ? 1 :
                                            (!is_auth1 && is_auth2) ? 2 : null;
                         if (examtype && auth_index){
-                            // model_field = 'subj_auth1by'
-                            const model_field = examtype + "_auth" +  auth_index + "by";
+
+
+                            const model_field = prefix + "_auth" +  auth_index + "by";
                             const field_auth_id = model_field + "_id";
                             // field_auth_id = 'subj_auth1by_id'
                             const auth_id = (data_dict[field_auth_id]) ? data_dict[field_auth_id] : null;
@@ -5077,14 +5094,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const is_approve = (open_mode === "approve");
         const is_submit = (open_mode === "submit");
         const examperiod = setting_dict.sel_examperiod;
-        const is_reex = [2, 3].includes(examperiod);
+        const is_reex = (examperiod === 2);
+        const is_reex03 = (examperiod === 3);
         const form_name = (examperiod == 3) ? 'ex4ep3' : (examperiod == 2) ? 'ex4' : 'ex1';
 
         // b_get_auth_index_of_requsr returns index of auth user, returns 0 when user has none or multiple auth usergroups
         // gives err messages when multiple found.
         // auth_index 1 = auth1, 2 = auth2
         const auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
-        //console.log("auth_index", auth_index);
+    console.log("auth_index", auth_index);
+    console.log("examperiod", examperiod);
 
         if (permit_dict.permit_approve_subject || permit_dict.permit_submit_subject) {
             if(auth_index){
@@ -5104,7 +5123,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth3")) ? loc.Examiner :
                                 (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth4")) ? loc.Corrector : "-";
 
-                let header_txt = (is_approve) ? (is_reex) ? loc.Approve_reex : loc.Approve_subjects : (is_reex) ? loc.Submit_Ex4_form : loc.Submit_Ex1_form;
+                let header_txt = (is_approve)
+                                    ? (is_reex)
+                                        ? loc.Approve_reex
+                                        : (is_reex03)
+                                            ? loc.Approve_reex_3rd_period
+                                            : loc.Approve_subjects
+                                    : (is_reex)
+                                        ? loc.Submit_Ex4_form
+                                        : (is_reex03)
+                                            ? loc.Submit_Ex4_form_3rd_period
+                                            : loc.Submit_Ex1_form;
                 header_txt += loc._by_ + permit_dict.requsr_name + " (" + function_str.toLowerCase() + ")";
                 el_MASS_header.innerText = header_txt;
                 el_MASS_subheader.innerText = (is_approve) ?

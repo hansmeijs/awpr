@@ -1049,7 +1049,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request, corr_insp_may_edit=False, skip_check_activated=False):
+def get_selected_ey_school_dep_from_usersetting(request, skip_same_school_clause=False, skip_check_activated=False):
     # PR2021-01-13 PR2021-06-14 PR2022-02-05
     logging_on = False # s.LOGGING_ON
     if logging_on:
@@ -1101,8 +1101,7 @@ def get_selected_ey_school_dep_from_usersetting(request, corr_insp_may_edit=Fals
             # used on entering students and grades. Schools can only enter grades of their own school
             # PR2022-03-13 debug: also correctors are allowed to make changes: add c.ROLE_016_CORR
             requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and req_user.schoolbase.pk == sel_schoolbase.pk) or \
-                                 (corr_insp_may_edit and req_user.role == c.ROLE_016_CORR) or \
-                                 (corr_insp_may_edit and req_user.role == c.ROLE_032_INSP)
+                                 (skip_same_school_clause)
             if not requsr_same_school:
                 msg_list.append(str(_('Only users of this school are allowed to make changes.')))
 

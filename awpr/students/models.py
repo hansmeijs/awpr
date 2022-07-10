@@ -116,8 +116,9 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     classname = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
     examnumber = CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
     regnumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
-    diplomanumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_10)
-    gradelistnumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_10)
+    # PR 2022-07-10 length of diploma- and gradelist number changed from 10 to 20
+    diplomanumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
+    gradelistnumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
 
     has_dyslexie = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
@@ -255,8 +256,9 @@ class Student_log(sch_mod.AwpBaseModel):
     classname = CharField(db_index=True, max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
     examnumber = CharField(db_index=True, max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
     regnumber = CharField(db_index=True, max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
-    diplomanumber = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
-    gradelistnumber = CharField(max_length=c.MAX_LENGTH_10, null=True, blank=True)
+    # PR 2022-07-10 length of diploma- and gradelist number changed from 10 to 20
+    diplomanumber = CharField(max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
+    gradelistnumber = CharField(max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
 
     has_dyslexie = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
@@ -379,6 +381,11 @@ class Studentsubject(sch_mod.AwpBaseModel):
     # has proof of knowledge = True when pok_validthru has value PR2021-09-07
     pok_validthru = PositiveSmallIntegerField(null=True)
 
+    # PR2022-07-10 pok_sesr etc added, to store proff of knowledge / proof of exemption
+    pok_sesr = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    pok_pece = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    pok_final = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -425,6 +432,7 @@ class Studentsubject(sch_mod.AwpBaseModel):
     gl_examperiod = PositiveSmallIntegerField(null=True)
 
 
+
 # PR2018-06-06
 class Studentsubject_log(sch_mod.AwpBaseModel):
     objects = CustomManager()
@@ -456,6 +464,11 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020)
     # has proof of knowledge = True when pok_validthru has value PR2021-09-07
     pok_validthru = PositiveSmallIntegerField(null=True)
+
+    # PR2022-07-10 pok_sesr etc added, to store proff of knowledge / proof of exemption
+    pok_sesr = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    pok_pece = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
+    pok_final = CharField(max_length=c.MAX_LENGTH_04, null=True, blank=True)
 
     subj_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)

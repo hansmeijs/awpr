@@ -3382,22 +3382,22 @@ def write_ex5_table_header(book, sheet, max_number_of_reex, row_index, ex5_forma
     sheet.merge_range(row_index -1, col_index, row_index + 1, col_index, 'Teruggetrokken', th_rotate)
     col_index = add_colnr_and_increase_index(col_index)
 
-    # Registratienummer
+# - Registratienummer
     sheet.set_column(col_index, col_index, 15)
     sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Registratienummer', th_align_center)
     col_index = add_colnr_and_increase_index(col_index)
 
-    # Diplomanummer
-    sheet.set_column(col_index, col_index, 5)
+# - Diplomanummer
+    sheet.set_column(col_index, col_index, 11)
     sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Diplomanummer', th_rotate)
     col_index = add_colnr_and_increase_index(col_index)
 
-    # Cijferlijstnummer
-    sheet.set_column(col_index, col_index, 5)
+# - Cijferlijstnummer
+    sheet.set_column(col_index, col_index, 11)
     sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Cijferlijstnummer', th_rotate)
     col_index = add_colnr_and_increase_index(col_index)
 
-# Opmerkingen
+# - Opmerkingen
     sheet.set_column(col_index, col_index, 17)
     sheet.merge_range(row_index - 1, col_index, row_index + 1, col_index, 'Opmerkingen\n(bij pre- en bis- examen de dit jaar geexamineerde vakken vermelden)', th_align_center)
     col_index = add_colnr_and_increase_index(col_index)

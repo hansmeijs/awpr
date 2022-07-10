@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220630.js' %}"></script>
-    <script src="{% static 'js/studentsubjects220627.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220710.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -120,7 +120,7 @@
                         <button data-btn="btn_reex03" class="btn btn-secondary ">{% trans 'Third exam period' %}</button>
                     {% endif %}
                 {% endif %}
-                <!-- <button data-btn="btn_pok" class="btn btn-secondary">{% trans 'Proof of knowledge' %}</button>-->
+                <button id="id_btn_pok" data-btn="btn_pok" class="btn btn-secondary">{{ pok_pex }}</button>
             </div>
 
     <!-- END OF CONTENT HEADER - LOADER -->

@@ -156,6 +156,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Re_examination_3rd_period'] = _('Re-exam third period')
     dict['Re_exam_3rd_2lns'] = _('Re-exam\n3rd period')
     dict['Proof_of_knowledge_2lns'] = _('Proof of\nknowledge')
+    dict['Proof_of_exemption_2lns'] = _('Proof of\nexemption')
 
     dict['Create'] = _('Create')
     dict['Publish'] = _('Publish')
@@ -785,16 +786,21 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Approve_subjects'] = _('Approve subjects')
         dict['Approve_reex'] = _('Approve re-examinations')
+        dict['Approve_reex_3rd_period'] = _('Approve re-examinations 3rd period')
         dict['Request_verifcode'] = TXT_Request_verifcode
 
         dict['Submit_Ex1_form'] = _('Submit %(form)s form') % {'form': 'Ex1'}
         dict['Submit_Ex4_form'] = _('Submit %(form)s form') % {'form': 'Ex4'}
+        dict['Submit_Ex4_form_3rd_period'] = _('Submit Ex4 form 3rd period')
 
         dict['Preliminary_Ex1_form'] = _('Preliminary %(form)s') % {'form': 'Ex1'}
         dict['The_preliminary_Ex1_form'] = _('The preliminary %(form)s form') % {'form': 'Ex1'}
 
         dict['Preliminary_Ex4_form'] = _('Preliminary %(form)s') % {'form': 'Ex4'}
         dict['The_preliminary_Ex4_form'] = _('The preliminary %(form)s form') % {'form': 'Ex4'}
+
+        dict['Preliminary_Ex4_form_3rd_period'] = _('Preliminary Ex4 form 3rd period')
+        dict['The_preliminary_Ex4_form_3rd_period'] = _('The preliminary Ex4 form 3rd period')
 
         dict['Download_Ex_form'] = _('Download Ex form')
 
@@ -1142,9 +1148,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_examtype'] = _('Please select one exam type in the vertical grey bar at the left.')
 
         dict['reex_msg_01'] = _("Only the re-examination subjects will be shown.")
-        dict['reex_msg_02'] = _("Go to the page 'Subjects' and tick off 'Re-examination' to add a re-examination subject.")
+        dict['reex_msg_02'] = _("Go to the page 'Subjects', click on the tab 'Second exam period',")
+        dict['reex_msg_03'] = _("and tick off 'Re-examination' to add a re-examination subject.")
+
         dict['reex03_msg_01'] = _("Only the subjects of the re-examination in the third period will be shown.")
-        dict['reex03_msg_02'] = _("Go to the page 'Subjects' and tick off 'Re-examination third period' to add a re-examination subject.")
+        dict['reex03_msg_02'] = _("Go to the page 'Subjects', click on the tab 'Third exam period',")
+        dict['reex03_msg_03'] = _("and tick off 'Re-examination third period' to add a re-examination subject.")
 
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
@@ -1436,9 +1445,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Diplomanumber_2lines'] = pgettext_lazy('2lines', 'Diploma\nnumber')
         dict['Gradelistnumber_2lines'] = pgettext_lazy('2lines', 'Gradelist\nnumber')
 
-        dict['Diplomanumber_mustbe_wholenumber'] = _('%(cpt)s must be a whole number greater than zero.') % {'cpt': _('The diploma number')}
-        dict['Gradelistnumber_mustbe_wholenumber'] = _('%(cpt)s must be a whole number greater than zero.') % {'cpt': _('The gradelist number')}
-
         dict['Preliminary_ex5_form'] = _('Preliminary %(form)s') % {'form': 'Ex5'}
         dict['The_preliminary_ex5_form'] = _('The preliminary %(form)s form') % {'form': 'Ex5'}
 
@@ -1519,16 +1525,14 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['will_be_calculated'] = _('will be calculated.')
         dict['Logfile_with_details_willbe_downloaded'] = _('The logfile with details will be downloaded.')
 
-
-
-
         dict['Select_a_chairperson'] = _('Select a chairperson')
         dict['Select_a_secretary'] = _('Select a secretary')
         dict['No_chairperson'] = _('There is no chairperson')
         dict['No_secretary'] = _('There is no secretary')
 
         dict['Calculate_results'] = _('Calculate results')
-        dict['Log_calculated_results'] = _('Log calculated results')
+        dict['Log_result_calculation'] = _('Log result calculation')
+
 
         dict['mgl_error_noauth'] = _('The name of the chairperson and secretary and the print date must be entered.')
         dict['mgl_error_noauth_pok'] = _('The name of the chairperson and the print date must be entered.')

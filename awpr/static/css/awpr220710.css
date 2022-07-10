@@ -364,6 +364,17 @@ select.form-control:not([size]):not([multiple]) {
   /* background-color: #fbedba !important; /* lighter shade of tsa yellow */
 }
 
+/* show pointer on hover PR2022-07-07 */
+
+.awp_pointer_show:hover {
+    cursor: pointer;
+    background-color: #e0e0e0 !important; /* licht grijs; tsa_tr_selected*/
+ }
+
+.awp_pointer_hide:hover {
+    cursor: auto;
+ }
+
 
 
 z_index_1070 {

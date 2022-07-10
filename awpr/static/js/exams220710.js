@@ -5874,7 +5874,7 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
     function MASE_Open(mode ) {  // PR2022-03-10
         console.log("===  MASE_Open  =====") ;
         console.log("mode", mode) ;
-        //console.log("setting_dict", setting_dict) ;
+        console.log("setting_dict", setting_dict) ;
         // modes are: "approve_admin", "submit_admin", "approve_school", "submit_school"
         const is_approve_mode = (mode.includes("approve"));
         const is_submit_mode = (mode.includes("submit"));
@@ -5885,20 +5885,21 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
 
 // check sel_examperiod
         // PR2022-04-24 debug when school: set sel_examperiod to firstperiod when not filled in
-        if (is_school_mode && ![1, 2].includes(setting_dict.sel_examperiod) ){
+        if (is_school_mode && ![1, 2, 3].includes(setting_dict.sel_examperiod) ){
             setting_dict.sel_examperiod = 1
 // ---  upload new setting
             const upload_dict = {selected_pk: {sel_examperiod: setting_dict.sel_examperiod}};
             b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
-        if (![1, 2].includes(setting_dict.sel_examperiod) ){
+        if (![1, 2, 3].includes(setting_dict.sel_examperiod) ){
             b_show_mod_message_html(loc.Please_select_examtype);
 
         } else {
 
 // put examperiod in el_MASE_examperiod
             el_MASE_examperiod.innerText = (setting_dict.sel_examperiod === 1) ? loc.Central_exam :
-                                    (setting_dict.sel_examperiod === 2) ? loc.Re_examination : null;
+                                    (setting_dict.sel_examperiod === 2) ? loc.Re_examination :
+                                    (setting_dict.sel_examperiod === 3) ? loc.Re_examination_3rd_period : null;
 
     //console.log("is_approve_mode", is_approve_mode) ;
     //console.log("is_submit_mode", is_submit_mode) ;

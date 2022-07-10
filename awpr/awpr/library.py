@@ -51,6 +51,7 @@ def update_library(examyear, request):
         ('exam', 'examtype', 'Soort examen'),
         ('exam', 'Central_exam', 'Centraal examen'),
         ('exam', 'Re_exam', 'Herexamen'),
+        ('exam', 'Re_exam_3rd_period', 'Herexamen 3e tijdvak'),
         ('exam', 'Ce_Re_exam', 'Centraal examen en Herexamen'),
         ('exam', 'subject', 'Vak'),
         ('exam', 'school', 'School'),
@@ -187,11 +188,13 @@ def update_library(examyear, request):
 
         ('ex6', 'ex6_belast', 'belast met het afnemen van het'),
         ('ex6', 'ex6_eindexamen', 'eindexamen'),
+        ('ex6', 'ex6_landsexamen', 'landsexamen'),
         ('ex6', 'ex6_aan_deze', 'aan deze '),
         ('ex6', 'ex6_bovengenoemde', 'aan de bovengenoemde '),
         ('ex6', 'ex6_instelling', 'instelling'),
         ('ex6', 'ex6_school', 'school'),
         ('ex6', 'ex6_het_eindexamen', ' het eindexamen'),
+        ('ex6', 'ex6_het_landsexamen', ' het landsexamen'),
         ('ex6', 'ex6_verklaart_dat', ', verklaart dat'),
         ('ex6', 'ex6_geboren_op', 'geboren op'),
 

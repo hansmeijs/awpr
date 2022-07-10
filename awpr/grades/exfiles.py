@@ -523,7 +523,7 @@ class DownloadEx3View(View):  # PR2021-10-07
                 """
 
                 response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                response['Content-Disposition'] = 'inline; filename="Ex3_voorblad.pdf"'
                 #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
                 response.write(pdf)
@@ -707,7 +707,7 @@ class DownloadEx3BackpageView(View):  # PR2022-02-26
                 pdf = buffer.getvalue()
 
                 response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="ex3_achterbald.pdf"'
+                response['Content-Disposition'] = 'inline; filename="Ex3_achterblad.pdf"'
 
                 response.write(pdf)
 

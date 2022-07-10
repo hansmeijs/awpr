@@ -79,18 +79,38 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25
 
 # ========  StudentsubjectListView  =======
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25
+class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25 PR2022-07-05
 
     def get(self, request):
-        #logger.debug(" =====  StudentsubjectListView  =====")
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(" =====  StudentsubjectListView  =====")
 
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
+# - for btn text 'Proof of Knowledge' or 'Proof of Exemption'
+        is_evelex_school = False
+        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        sel_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK) if selected_dict else None
+        if request.user:
+            sel_school = sch_mod.School.objects.get_or_none(
+                base=request.user.schoolbase,
+                examyear_id=sel_examyear_pk
+            )
+            if sel_school:
+                is_evelex_school = sel_school.iseveningschool or sel_school.islexschool
+
+        if is_evelex_school:
+            pok_pex_str = _('Proof of exemption')
+        else:
+            pok_pex_str = _('Proof of knowledge')
+
 # - get headerbar parameters
         page = 'page_studsubj'
-        params = awpr_menu.get_headerbar_param(request, page)
+        param = {'pok_pex': pok_pex_str}
+        params = awpr_menu.get_headerbar_param(request, page, param)
         return render(request, 'studentsubjects.html', params)
 
 
@@ -5069,7 +5089,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
                     if new_value:
             # - validate length of new_value
-                        err_txt = stud_val.validate_length(caption, new_value, c.MAX_LENGTH_10, True)  # True = blank_allowed
+                        err_txt = stud_val.validate_length(caption, new_value, c.MAX_LENGTH_EXAMNUMBER, True)  # True = blank_allowed
                         #if err_txt is None:
                             # PR2022-07-04 debug Angela Richardson Maris Stella: cannot enter number, already exists in other level
                             # skip check for double numbers
@@ -5167,10 +5187,23 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if field == 'profiel':
                         field = 'sector'
 
+                    #TODO PR2022-07-07 error on CAL and Omega: sector disappears when changing student, then subjects get deleted without deleting grade info
+                    if logging_on:
+                        logger.debug(' >> field: ' + str(field) + ' ' + str(type(field)))
+                        logger.debug('    new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                        logger.debug('    old_level: ' + str(getattr(instance, 'level')))
+                        logger.debug('    old_sector: ' + str(getattr(instance, 'sector')))
+                        logger.debug('    old_scheme: ' + str(getattr(instance, 'scheme')))
+                        logger.debug('    old_department: ' + str(getattr(instance, 'department')))
+
                     new_lvl_or_sct = None
                     school = getattr(instance, 'school')
+                    if logging_on:
+                        logger.debug('    school: ' + str(school) + ' ' + str(type(school)))
                     if school:
                         examyear = getattr(school, 'examyear')
+                        if logging_on:
+                            logger.debug('    examyear: ' + str(examyear) + ' ' + str(type(examyear)))
                         if examyear:
                             if field == 'level':
                                 new_lvl_or_sct = subj_mod.Level.objects.get_or_none(
@@ -5184,6 +5217,9 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                                 )
 
                     saved_lvl_or_sct = getattr(instance, field)
+                    if logging_on:
+                        logger.debug('    new_lvl_or_sct: ' + str(new_lvl_or_sct) + ' ' + str(type(new_lvl_or_sct)))
+                        logger.debug('    saved_lvl_or_sct: ' + str(saved_lvl_or_sct) + ' ' + str(type(saved_lvl_or_sct)))
 
                     # new_value is levelbase_pk or sectorbase_pk
                     if new_lvl_or_sct != saved_lvl_or_sct:
@@ -5318,9 +5354,9 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
             if logging_on:
                 logger.debug('     dep:    ' + str(department) + ' ' + str(type(department)))
-                logger.debug('     level:  ' + str(level) + ' ' + str(type(level)))
-                logger.debug('     sector: ' + str(sector) + ' ' + str(type(sector)))
-                logger.debug('     scheme: ' + str(scheme) + ' ' + str(type(scheme)))
+                logger.debug('     new_level:  ' + str(level) + ' ' + str(type(level)))
+                logger.debug('     new_sector: ' + str(sector) + ' ' + str(type(sector)))
+                logger.debug('     new_scheme: ' + str(scheme) + ' ' + str(type(scheme)))
 
             if scheme is None:
                 msg_arr = []
@@ -5455,8 +5491,8 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         #                    sql_studsubj_list, sql_student_list)
 
             if recalc_passed_failed:
-                sel_lvlbase_pk = instance.level.base_id  if instance.level else None
-                log_list = calc_res.calc_batch_student_result(
+                sel_lvlbase_pk = instance.level.base_id if instance.level else None
+                calc_res.calc_batch_student_result(
                     sel_examyear=sel_examyear,
                     sel_school=sel_school,
                     sel_department=sel_department,
@@ -5575,12 +5611,12 @@ def delete_exemptions(student_pk):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def update_scheme_in_studsubj(student, request):
-    # --- update_scheme_in_studsubj # PR2021-03-13
+    # --- update_scheme_in_studsubj # PR2021-03-13 PR2022-07-10
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_scheme_in_studsubj ----- ')
         logger.debug('     student: ' + str(student))
-
+    # TOD add 'is_test' and log_file before uopdating scheme
     if student:
         # - update scheme in student, also remove if necessary
         new_scheme = subj_mod.Scheme.objects.get_or_none(
@@ -5592,38 +5628,54 @@ def update_scheme_in_studsubj(student, request):
         if logging_on:
             logger.debug('     new_scheme: ' + str(new_scheme))
 
+        # PR2022-05-18 CAL, Omega: all subjects disappear.
+        # Cause: tobedeleted is set True. Dont know why yet
+
+        # delete studsubj when no scheme
+        # check if studsubj is submitted, set tobedeleted = True if submitted
+        # PR2022-05-18 debug: Omega College: grades have disappeared
+        # TODO instead of deleting studsubj: prevent making changes PR2022-07-10
+        # TODO delete or change exam in grades when changing level
+
+        if new_scheme:
     # - loop through studsubj of this student
-        studsubjects = stud_mod.Studentsubject.objects.filter(
-            student=student
-        )
-        for studsubj in studsubjects:
-            if new_scheme is None:
-                # delete studsubj when no scheme
-                # check if studsubj is submitted, set tobedeleted = True if submitted
-                #PR2022-05-18 debug: Omega College: grades have disappeared
-                set_studsubj_tobedeleted_or_tobechanged(studsubj, True, None, request)  # True = tobedeleted
-            else:
+            studsubjects = stud_mod.Studentsubject.objects.filter(
+                student=student
+            )
+            for studsubj in studsubjects:
                 old_subject = studsubj.schemeitem.subject
                 old_subjecttype = studsubj.schemeitem.subjecttype
 
                 if logging_on:
-                    logger.debug('     old_subject: ' + str(old_subject))
-                    logger.debug('     old_subjecttype: ' + str(old_subjecttype))
+                    logger.debug('....old_subject: ' + str(old_subject))
+                    logger.debug('    old_subjecttype: ' + str(old_subjecttype))
 
         # skip when studsub scheme equals new_scheme
                 if studsubj.schemeitem.scheme != new_scheme:
+                    save_studsubj = False
+
+            # check id studsubj is already approved or submitted
+                    studsubj_is_submitted = studsubj.subj_published is not None
+                    studsubj_is_approved = False
+                    if not studsubj_is_submitted:
+                        studsubj_is_approved = studsubj.subj_auth1by is not None or studsubj.subj_auth2by is not None
+
         # check how many times this subject occurs in new scheme
                     count_subject_in_newscheme = subj_mod.Schemeitem.objects.filter(
                         scheme=new_scheme,
                         subject=old_subject
                         ).count()
                     if logging_on:
-                        logger.debug('     count_subject_in_newscheme: ' + str(count_subject_in_newscheme))
+                        logger.debug('    count_subject_in_newscheme: ' + str(count_subject_in_newscheme))
 
                     if not count_subject_in_newscheme:
         # delete studsub when subject does not exist in new_scheme
                         # check if studsubj is submitted, set tobedeleted = True if submitted
-                        set_studsubj_tobedeleted_or_tobechanged(studsubj, True, None, request)  # True = tobedeleted
+                        # was: set_studsubj_tobedeleted_or_tobechanged(studsubj, True, None, request)  # True = tobedeleted
+                        setattr(studsubj, 'tobedeleted', True)
+                        save_studsubj = True
+                        if logging_on:
+                            logger.debug('    count = 0 > set deleted = True')
 
                     elif count_subject_in_newscheme == 1:
         # if subject occurs only once in new_scheme: replace schemeitem by new schemeitem
@@ -5633,7 +5685,13 @@ def update_scheme_in_studsubj(student, request):
                         )
                         if new_schemeitem:
                             # change schemeitem in studsubj, set tobechanged = True if submitted
-                            set_studsubj_tobedeleted_or_tobechanged(studsubj, False, new_schemeitem, request)  # False = tobechanged
+                            # was: set_studsubj_tobedeleted_or_tobechanged(studsubj, False, new_schemeitem, request)  # False = tobechanged
+                            setattr(studsubj, 'schemeitem', new_schemeitem)
+                            save_studsubj = True
+
+                            if logging_on:
+                                logger.debug('    count = 1 > setattr = new_schemeitem')
+                                logger.debug('    new_subjecttype: ' + str(new_schemeitem.subjecttype))
                     else:
         # if subject occurs multiple times in new_scheme: check if one exist with same subjecttype
                         new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(
@@ -5643,7 +5701,7 @@ def update_scheme_in_studsubj(student, request):
                         )
                         if new_schemeitem:
                             studsubj.schemeitem = new_schemeitem
-                            studsubj.save(request=request)
+                            save_studsubj = True
                         else:
         # if no schemeitem exist with same subjecttype: get schemeitem with lowest sequence
                             new_schemeitem = subj_mod.Schemeitem.objects.filter(
@@ -5652,12 +5710,19 @@ def update_scheme_in_studsubj(student, request):
                             ).order_by('subjecttype__base__sequence').first()
                             if new_schemeitem:
                                 studsubj.schemeitem = new_schemeitem
-                                studsubj.save(request=request)
+                                save_studsubj = True
+                                if logging_on:
+                                    logger.debug('    count = 1 > setattr = new_schemeitem')
+                                    logger.debug('    new_subjecttype: ' + str(new_schemeitem.subjecttype))
+                    if save_studsubj:
+                        studsubj.save(request=request)
+
+# end of update_scheme_in_studsubj
 
 
-def set_studsubj_tobedeleted_or_tobechanged(studsubj, tobedeleted, new_schemeitem, request):
+def set_studsubj_tobedeleted_or_tobechangedNIU (studsubj, tobedeleted, new_schemeitem, request):
     # PR2021-08-23
-    # delete studsubj when no scheme
+    # delete studsubj when no scheme > PR2022-07-10 don't, instead: prevent changes when no scheme
     # check if studsubj is submitted, set delete = True if submitted
     # called by  update_scheme_in_studsubj 3 times
 

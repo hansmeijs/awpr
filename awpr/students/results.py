@@ -538,8 +538,17 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 # gives error: 'bytes' object has no attribute '_committed'
                 """
 
+                file_name = 'Diploma' if mode == 'diploma' else 'Cijferlijst'
+                if len(student_list) == 1:
+                    file_name += ' van ' + student_list[0].get('fullname')
+                now_formatted = af.get_now_formatted_from_now_arr(upload_dict.get('now_arr'))
+                if now_formatted:
+                    file_name += ' ' + now_formatted
+                file_name += '.pdf'
+
                 response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                #response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
                 # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
                 response.write(pdf)
@@ -657,8 +666,17 @@ class DownloadPokView(View):  # PR2022-07-02
                     # gives error: 'bytes' object has no attribute '_committed'
                     """
 
+                    file_name = 'Ex6 Bewijs van vrijstelling' if sel_school.iseveningschool or sel_school.islexschool else 'Ex6 Bewijs van kennis'
+                    if len(proof_of_knowledge_dict) == 1:
+                        for pok_dict in  proof_of_knowledge_dict.values():
+                            file_name += ' ' + pok_dict.get('full_name')
+                            break
+                    now_formatted = af.get_now_formatted_from_now_arr(upload_dict.get('now_arr'))
+                    if now_formatted:
+                        file_name += ' ' + now_formatted
+                    file_name += '.pdf'
                     response = HttpResponse(content_type='application/pdf')
-                    response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
+                    response['Content-Disposition'] = 'inline; filename="' + file_name + '"'
                     # response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
 
                     response.write(pdf)
@@ -799,7 +817,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
         # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
                 idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
-                # - calc regnumber
+        # - calc regnumber - don't get it from database table
                 reg_number = stud_fnc.calc_regnumber(
                     school_code=row.get('school_code'),
                     gender=row.get('gender'),
@@ -1040,7 +1058,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
     # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
             idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
-    # - calc regnumber
+    # - calc regnumber - don't get it from database table
             reg_number = stud_fnc.calc_regnumber(
                 school_code=row.get('school_code'),
                 gender=row.get('gender'),
@@ -1393,7 +1411,6 @@ def draw_diploma_sxm(canvas, library, student_dict, auth1_name, auth2_name, prin
     canvas.drawString(left + 134 * mm, 30 * mm, student_dict.get('idnumber') or '-')
 # - end of draw_diploma_sxm
 
-################
 
 def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request):
     logging_on = s.LOGGING_ON
@@ -1572,9 +1589,6 @@ def draw_gradelist_sxm(canvas, library, student_dict, is_prelim, is_sxm, print_r
     draw_gradelist_signature_row(canvas, border, coord, col_tab_list, is_sxm, library, student_dict, auth1_name, auth2_name, printdate, reg_number)
 # - end of draw_gradelist_sxm
 
-
-
-################
 
 def draw_gradelist_cur(canvas, library, student_dict, is_prelim, is_sxm, print_reex, auth1_pk, auth2_pk, printdate, request):
     logging_on = s.LOGGING_ON
@@ -2778,7 +2792,7 @@ def draw_pok_page_header(canvas, border, coord, library, student_dict, is_sxm, i
     y -= 10 * mm
 
 # draw Pok / Pex
-    key_str = 'ex6_pex' if is_eveningstudent else 'ex6_pok'
+    key_str = 'ex6_pex' if is_eveningstudent or is_lexstudent else 'ex6_pok'
     canvas.drawString(x, y, library.get(key_str, '-'))
     y -= line_height
 
@@ -2827,7 +2841,8 @@ def draw_pok_page_header(canvas, border, coord, library, student_dict, is_sxm, i
     y -= line_height
 
 # draw het_eindexamen, department, aan_deze_school, verklaart_dat
-    eindexamen = library.get('ex6_eindexamen', '-')
+    key_str = 'ex6_landsexamen' if is_lexstudent else 'ex6_eindexamen'
+    eindexamen = library.get(key_str, '-')
     dep_name = student_dict.get('dep_name', '---')
 
     key_str = 'ex6_instelling' if is_lexstudent else 'ex6_school'
@@ -2865,9 +2880,11 @@ def draw_pok_page_header(canvas, border, coord, library, student_dict, is_sxm, i
     y -= line_height
 
 # draw ex6_bovengenoemde  instelling
-    aan_bovengenoemde_school = ''.join((library.get('ex6_bovengenoemde', '-'), school_instelling, library.get('ex6_het_eindexamen', '-')))
-    aan_bovengenoemde_school_width = pdfmetrics.stringWidth(aan_bovengenoemde_school + '  ', 'Times-Roman', 11)
-
+    key_str = 'ex6_het_landsexamen' if is_lexstudent else 'ex6_het_eindexamen'
+    aan_bovengenoemde_school = ''.join((
+        library.get('ex6_bovengenoemde', '-'),
+        school_instelling,
+        library.get(key_str, '-')))
     canvas.setFont('Times-Roman', 11, leading=None)
     canvas.setFillColor(colors.HexColor("#000000"))
     canvas.drawString(x, y, aan_bovengenoemde_school)

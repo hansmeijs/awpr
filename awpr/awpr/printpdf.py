@@ -1167,7 +1167,8 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
             title = form_text.get('title_scoretable_duo', '-') + str(subject.examyear.code)
 
         examperiod_cpt = form_text.get('Central_exam', '-') if examperiod == 1 else \
-                form_text.get('Re_exam', '-') if examperiod == 2 else '-'
+                form_text.get('Re_exam', '-') if examperiod == 2 else \
+                form_text.get('Re_exam_3rd_period', '-') if examperiod == 3 else '-'
 
         educationtype = form_text.get('educationtype', '-') + ':'
         examtype = form_text.get('examtype', '-') + ':'

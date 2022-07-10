@@ -177,12 +177,11 @@ class GradeBlockView(View):  # PR2022-04-16
                         logger.debug('examtype: ' + str(examtype))
 
     # - get selected examyear, school and department from usersettings
-
                     # - get selected examyear, school and department from usersettings
                     sel_examyear, sel_school, sel_department, may_edit, err_list = \
                         dl.get_selected_ey_school_dep_from_usersetting(
                             request=request,
-                            corr_insp_may_edit=True # This give Insepctorate permission to change grade
+                            skip_same_school_clause=req_usr.role == c.ROLE_032_INSP # This gives Insepctorate permission to change grade
                         )
                     if err_list:
                         update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': str(_('Block grade')),
@@ -313,10 +312,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08
 
         # - get selected examyear, school and department from usersettings
                             sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                                    dl.get_selected_ey_school_dep_from_usersetting(
-                                        request=request,
-                                        corr_insp_may_edit=True
-                                    )
+                                    dl.get_selected_ey_school_dep_from_usersetting(request=request)
                             if err_list:
                                 update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': str(_('Approve grade')),
                                             'msg_html': '<br>'.join(err_list)}]
@@ -1347,7 +1343,7 @@ class GradeSubmitEx5View(View):  # PR2022-06-12
                                             sel_school=sel_school,
                                             sel_department=sel_department,
                                             sel_level=sel_level,
-                                            sel_examtype=None,
+                                            sel_examtype='',
                                             sel_examperiod=sel_examperiod,
                                             is_test=is_test,
                                             is_ex5=True,
@@ -1556,8 +1552,6 @@ def create_submit_ex5_saved_msg_dict(saved_is_ok): # PR2022-06-12
 # - end of create_submit_ex5_msg_dict
 
 
-
-
 def create_published_instance(sel_examyear, sel_school, sel_department, sel_level,
                               sel_examtype, sel_examperiod, is_test, is_ex5, now_arr, request):  # PR2021-01-21 PR2022-04-21
     logging_on = False  # s.LOGGING_ON
@@ -1579,31 +1573,18 @@ def create_published_instance(sel_examyear, sel_school, sel_department, sel_leve
 
     ex_form, examperiod_str, examtype_caption = '', '', ''
 
-    if sel_examperiod == 1:
-        if is_ex5:
-            ex_form = 'Ex5'
-            examtype_caption = '-tv1'
-        elif sel_examtype == 'se':
-            ex_form = 'Ex2'
-        else:
-            ex_form = 'Ex2A'
-            examtype_caption = sel_examtype.upper() + '-tv1'
-    if sel_examperiod == 2:
-        if is_ex5:
-            ex_form = 'Ex5'
-            examtype_caption = '-tv2'
-        else:
-            ex_form = 'Ex2A'
+    if is_ex5:
+        ex_form = 'Ex5'
+    elif sel_examtype == 'se':
+        ex_form = 'Ex2'
+    else:
+        ex_form = 'Ex2A'
+        if sel_examperiod == 2:
             examtype_caption = sel_examtype.upper() + '-tv2'
-    elif sel_examperiod == 3:
-        if is_ex5:
-            ex_form = 'Ex5'
-            examtype_caption = '-tv3'
-        else:
-            ex_form = 'Ex2A'
+        elif sel_examperiod == 3:
             examtype_caption = sel_examtype.upper() + '-tv3'
-    elif sel_examperiod == 4:
-        ex_form = 'Ex2-vrst'
+        else:
+            examtype_caption = sel_examtype.upper() + '-tv1'
 
     file_extension = '.xlsx'
 
@@ -1618,12 +1599,13 @@ def create_published_instance(sel_examyear, sel_school, sel_department, sel_leve
 
     today_date = af.get_date_from_arr(now_arr)
 
-    year_str = str(now_arr[0])
-    month_str = ("00" + str(now_arr[1]))[-2:]
-    date_str = ("00" + str(now_arr[2]))[-2:]
-    hour_str = ("00" + str(now_arr[3]))[-2:]
-    minute_str = ("00" +str( now_arr[4]))[-2:]
-    now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
+    #year_str = str(now_arr[0])
+    #month_str = ("00" + str(now_arr[1]))[-2:]
+    #date_str = ("00" + str(now_arr[2]))[-2:]
+    #hour_str = ("00" + str(now_arr[3]))[-2:]
+    #minute_str = ("00" +str( now_arr[4]))[-2:]
+    #now_formatted = ''.join([year_str, "-", month_str, "-", date_str, " ", hour_str, "u", minute_str])
+    now_formatted = af.get_now_formatted_from_now_arr(now_arr)
 
     file_name = ' '.join((ex_form, school_code, school_abbrev, depbase_code, examtype_caption, now_formatted))
     # skip school_abbrev if total file_name is too long
@@ -2354,11 +2336,31 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
         elif field == 'exam_pk':
 
 # - validate if ce_exam is approved or submitted:
-            is_approved_or_submitted = getattr(grade_instance, 'ce_exam_auth1by') or \
+            # ce_exam_auth1by is approval of exam (wolf)
+            # ce_auth1by is approval of score
+
+            score_is_approved, exam_is_submitted, exam_is_approved = False, False, False
+            score_is_submitted = getattr(grade_instance, 'ce_published')
+            if not score_is_submitted:
+                score_is_approved = getattr(grade_instance, 'ce_auth1by') or \
+                                   getattr(grade_instance, 'ce_auth2by') or \
+                                   getattr(grade_instance, 'ce_auth3by') or \
+                                   getattr(grade_instance, 'ce_auth4by')
+            if not score_is_approved:
+                exam_is_submitted = getattr(grade_instance, 'ce_exam_published')
+            if not exam_is_submitted:
+                exam_is_approved = getattr(grade_instance, 'ce_exam_auth1by') or \
                                        getattr(grade_instance, 'ce_exam_auth2by') or \
-                                       getattr(grade_instance, 'ce_exam_auth3by') or \
-                                       getattr(grade_instance, 'ce_exam_published')
-            if not is_approved_or_submitted:
+                                       getattr(grade_instance, 'ce_exam_auth3by')
+
+            if score_is_submitted or score_is_approved or exam_is_submitted or exam_is_approved:
+                score_exam_txt = str(_('This score') if score_is_submitted or score_is_approved else _('This exam'))
+                submitted_approved_txt = str(_('Submitted') if score_is_submitted or score_is_approved else _('Approved')).lower()
+                change_delete = str(_('Change') if new_value else _('Delete')).lower()
+                err_list.append(str(_("%(cpt)s' is already %(publ_appr_cpt)s.") % {'cpt': score_exam_txt, 'publ_appr_cpt': submitted_approved_txt}))
+                err_list.append(str(_("You cannot %(ch_del)s %(cpt)s.") % {'ch_del': change_delete, 'cpt': score_exam_txt.lower()}))
+
+            else:
                 # 'pe_exam' is not in use. Let it stay in case they want to introduce pe-exam again
                 db_field = 'ce_exam'
                 saved_exam = getattr(grade_instance, db_field)
@@ -2391,16 +2393,22 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     setattr(grade_instance, "ce_exam_published", None)
                     setattr(grade_instance, "ce_exam_blocked", False)
 
-                    #PR2022-06-08 debug tel Angela Richardson Maris Stella: score diaapperas
+                    #PR2022-06-08 debug tel Angela Richardson Maris Stella: score disappears
                     # dont reset cescore cegrade
                     # was: setattr(grade_instance, "pescore", None)
                     # was: setattr(grade_instance, "cescore", None)
+                    # but do reset cegrade, pecegrade, finalgrade
+                    setattr(grade_instance, "cegrade", None)
+                    setattr(grade_instance, "pecegrade", None)
+                    setattr(grade_instance, "finalgrade", None)
 
                     # when score has changed: recalc grade when cesuur/nterm is given
                     # NIU recalc_grade_from_score_in_grade_instance(grade_instance, 'pescore', getattr(grade_instance, "pescore"))
                     recalc_grade_from_score_in_grade_instance(grade_instance, 'cescore', getattr(grade_instance, "cescore"))
 
                     save_changes = True
+                    recalc_finalgrade = True
+
                     if logging_on:
                         logger.debug('     save_exam:              ' + str(save_exam) + ' ' + str(type(save_exam)))
 
@@ -2532,8 +2540,7 @@ def recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_v
             logger.debug('....field_tobe_calculated:  ' + str(grade_field))
             logger.debug('    grade_examperiod:       ' + str(grade_instance.examperiod))
             logger.debug('    grade_instance.ce_exam: ' + str(grade_instance.ce_exam))
-            logger.debug(
-                '    grade_instance.cescore: ' + str(grade_instance.cescore) + ' ' + str(type(grade_instance.cescore)))
+            logger.debug('    grade_instance.cescore: ' + str(grade_instance.cescore) + ' ' + str(type(grade_instance.cescore)))
             logger.debug('    validated_value:        ' + str(validated_value) + ' ' + str(type(validated_value)))
 
         if grade_instance.ce_exam and grade_instance.cescore is not None:
@@ -2545,17 +2552,21 @@ def recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_v
             elif not exam_instance.ete_exam:
                 grade_value = calc_score.calc_grade_from_score_duo(validated_value, exam_instance.scalelength,
                                                                    exam_instance.nterm)
-            if logging_on:
-                logger.debug('    exam_instance:            ' + str(exam_instance))
 
         if logging_on:
             logger.debug('  > grade_value:            ' + str(grade_value))
 
         old_value = getattr(grade_instance, grade_field)
+        if logging_on:
+            logger.debug('    old_value:            ' + str(old_value))
+
 
         if grade_value != old_value:
             setattr(grade_instance, grade_field, grade_value)
+            if logging_on:
+                logger.debug('  > saved value:            ' + str(getattr(grade_instance, grade_field)))
 # - end of recalc_grade_from_score_in_grade_instance
+
 
 def update_studsubj_and_recalc_student_result(sel_examyear, sel_school, sel_department, student):
     # PR2022-01-01

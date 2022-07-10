@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         field_tags:["div", "div", "div", "div","div", "div", "div", "div", "input", "input"],
 
         filter_tags: ["select", "text", "text", "text" ,"text", "text", "text", "toggle", "text", "text"],
-        field_width:  ["020", "120", "390", "090", "090", "090", "120", "090", "090", "090"],
+        field_width:  ["020", "120", "390", "090", "090", "090", "120", "090", "120", "120"],
         field_align: ["c", "l", "l", "l", "l", "l", "l", "c", "c", "c"]
         };
 
@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("check_birthcountry_msg_html" in response) {
                     ModConfirmOpen("check_birthcountry", response);
-                    OpenLogfile(loc, response.check_birthcountry_rows, loc.Log_change_birth_country);
+                    OpenLogfile("check_birthcountry", response.check_birthcountry_rows);
                 };
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
@@ -498,11 +498,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function CreateSubmenu() {
         console.log("===  CreateSubmenu == ");
         //console.log("loc.Add_subject ", loc.Add_subject);
-        //console.log("loc ", loc);
+        console.log("permit_dict ", permit_dict);
+        console.log("permit_dict.permit_calc_results ", permit_dict.permit_calc_results);
 
         const el_submenu = document.getElementById("id_submenu")
 
-        if(permit_dict.permit_crud){
+        if(permit_dict.permit_calc_results){
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
         };
         if(permit_dict.requsr_same_school){
@@ -512,11 +513,12 @@ document.addEventListener('DOMContentLoaded', function() {
         //AddSubmenuButton(el_submenu, loc.Download_short_gradelist, function() {ModConfirmOpen("short_gradelist")}, ["tab_show", "tab_btn_result"]);
 
         AddSubmenuButton(el_submenu, loc.Preliminary_ex5_form, function() {ModConfirmOpen("prelim_ex5")}, ["tab_show", "tab_btn_result"]);
+
         if (permit_dict.requsr_same_school && permit_dict.permit_submit_ex5){
             AddSubmenuButton(el_submenu, loc.Submit_Ex5, function() {MAG_Open("submit_ex5")}, ["tab_show", "tab_btn_result"]);
         };
 
-        if(permit_dict.requsr_same_school && permit_dict.permit_crud){
+        if(permit_dict.requsr_same_school && permit_dict.permit_submit_gl_dipl){
             AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
             AddSubmenuButton(el_submenu, loc.Download_diploma, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
             AddSubmenuButton(el_submenu, loc.Ex6_pok, function() {MGL_Open("pok")}, ["tab_show", "tab_btn_result"]);
@@ -932,7 +934,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= HandleInputChange  =============== PR2022-06-19
     function HandleInputChange(el_input){
         //console.log(" --- HandleInputChange ---")
-        // only used for "pws_title", "pws_subjects",
+        // only used for "diplomanumber", "gradelistnumber"
         // may also change after submitting studsubject
 
 // ---  get selected.data_dict
@@ -954,46 +956,22 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const new_value = (el_input.value) ? el_input.value : null;
 
-                let has_error = false;
-                // el_input.value is string, therefore '0' is truish
-                if (new_value){
-                    //PR2015-12-27 debug: vervang komma door punt, anders wordt komma genegeerd
-                    const value_with_dots = new_value.replace(",", ".");
-                    const value_number = Number(value_with_dots);
+                if (new_value !== old_value){
+                // must loose focus, otherwise green / red border won't show
+                //el_input.blur();
 
-                    if(!value_number){
-                        has_error = true;
-                    } else if (value_number <= 0) {
-                        has_error = true;
-                    } else if (value_number % 1 !== 0 ) {
-                        has_error = true;
-                    };
+            // ---  upload changes
+                    const upload_dict = { table: data_dict.table,
+                                           mode: "update",
+                                           student_pk: data_dict.id,
+                                           };
+                    upload_dict[fldName] = new_value;
+                    UploadChanges(upload_dict, urls.url_student_upload);
                 };
-                if(has_error){
-                    const msg_html = (fldName === "diplomanumber") ? loc.Diplomanumber_mustbe_wholenumber : loc.Gradelistnumber_mustbe_wholenumber;
-                    b_show_mod_message_html(msg_html);
 
-                    UndoInvalidInput(el_input, old_value);
-
-                } else {
-                    if (new_value !== old_value){
-                        // must loose focus, otherwise green / red border won't show
-                        //el_input.blur();
-
-                    // ---  upload changes
-                            const upload_dict = { table: data_dict.table,
-                                                   mode: "update",
-                                                   student_pk: data_dict.id,
-                                                   };
-                            upload_dict[fldName] = new_value;
-                            UploadChanges(upload_dict, urls.url_student_upload);
-                    };
-                }
             };  // if (!permit_dict.permit_crud)
         };
     };  // HandleInputChange
-
-
 
 //========= Response_from_SBR_select_level_sector  ============= PR2021-11-17
     function Response_from_SBR_select_level_sector(tblName, selected_base_pk) {
@@ -1096,7 +1074,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         MGL_ResponseAuth(response.pres_secr_dict)
                     }
                     if ("log_list" in response) {
-                        OpenLogfile(loc, response.log_list, loc.Log_calculated_results);
+                        OpenLogfile("log_list", response.log_list, response.log_student_name);
                     }
                     if ("approve_msg_dict" in response) {
                         MAG_UpdateFromResponse (response);
@@ -1120,13 +1098,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 //=========   OpenLogfile   ====================== PR2021-11-20 PR2022-06-20
-    function OpenLogfile(loc, log_list, file_name) {
+    function OpenLogfile(mode, log_list, log_student_name) {
         //console.log(" ========== OpenLogfile ===========");
 
         if (!!log_list && log_list.length) {
             const today = new Date();
             const this_month_index = 1 + today.getMonth();
             const date_str = today.getFullYear() + "-" + this_month_index + "-" + today.getDate();
+            let file_name = "";
+            if (mode === "check_birthcountry") {
+                file_name = loc.Log_change_birth_country;
+            } else if (mode === "log_list") {
+                file_name = loc.Log_result_calculation;
+                if (log_student_name) {
+                    file_name += " " + log_student_name;
+                };
+            };
             const full_filename = ((file_name) ? file_name : "Log") + " dd " + get_now_formatted() + ".pdf";
 
             printPDFlogfile(log_list, full_filename )
@@ -1414,7 +1401,7 @@ function RefreshDataRowsAfterUpload(response) {
         }
         mod_dict.print_all = print_all;
 
-        console.log(">>>>>>>>>> mod_dict", mod_dict);
+        console.log("mod_dict", mod_dict);
 
         const msg01_txt = (mode === "calc_results") ?
             loc.The_result_of
@@ -1441,10 +1428,9 @@ function RefreshDataRowsAfterUpload(response) {
         };
 
         if (mode === "calc_results"){
-            msg_html = ["<p>", msg01_txt, "</p><p>",  msg02_txt, "</p><p>", loc.will_be_calculated, "</p><p>",
-                            loc.Logfile_with_details_willbe_downloaded,
-                             "</p>"
-                          ].join("");
+            msg_html = ["<div class='m-2'><p>", msg01_txt, "</p><ul class='mb-0'><li>", msg02_txt, "</li></ul><p>", loc.will_be_calculated,
+                        "</p><p class='mt-2'>", loc.Logfile_with_details_willbe_downloaded, "</p></div>"
+                        ].join("");
 
         } else  if (mode === "pok"){
             msg_html = ["<p>",
@@ -1521,6 +1507,7 @@ function RefreshDataRowsAfterUpload(response) {
             const url_str = (mod_dict.mode === "pok") ? urls.url_download_pok : urls.url_download_gradelist
             const upload_dict = {
                 mode: mod_dict.mode,
+                now_arr: get_now_arr(),  // only for timestamp on filename
                 print_all: mod_dict.print_all,
                 print_reex: el_MGL_print_reex.checked
             };
@@ -1973,6 +1960,9 @@ function RefreshDataRowsAfterUpload(response) {
                                 (setting_dict.sel_examperiod === 2) ? loc.examperiod_caption[2] :
                                 ([1, 4].includes(setting_dict.sel_examperiod)) ? loc.examperiod_caption[1] : "---"
 
+// --- hide select examperiod when downloadfing Ex5
+                add_or_remove_class(el_MAG_examperiod.parentNode, cls_hide, mode === "submit_ex5");
+
 // --- fill selectbox examtype
                 if (el_MAG_examtype){
                     const examtype_list = []
@@ -1986,6 +1976,7 @@ function RefreshDataRowsAfterUpload(response) {
                     t_FillOptionsFromList(el_MAG_examtype, examtype_list, "value", "caption",
                         loc.Select_examtype, loc.No_examtypes_found, setting_dict.sel_examtype);
                 };
+
 
 // --- hide select examtype, subject and cluster
                 add_or_remove_class(el_MAG_examtype.parentNode, cls_hide, true);
@@ -2030,9 +2021,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 // --- open modal
                 $("#id_mod_approve_grade").modal({backdrop: true});
-
             };  // if (permit_dict.permit_approve_grade || permit_dict.permit_submit_grade)
-
          };
     };  // MAG_Open
 

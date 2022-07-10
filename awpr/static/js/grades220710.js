@@ -1127,12 +1127,13 @@ document.addEventListener("DOMContentLoaded", function() {
             td = tblRow.insertCell(-1);
             td.setAttribute("colspan", 6);
             let el = document.createElement("p");
-            el.className = "border_bg_transparent text-muted p-2 my-4"
-            el.innerHTML = (selected_btn === "btn_reex03") ? loc.reex03_msg_01 + "<br>" + loc.reex03_msg_02 : loc.reex_msg_01 + "<br>" + loc.reex_msg_02;
+            el.className = "border_bg_transparent p-2 my-4"
+            el.innerHTML = (selected_btn === "btn_reex03") ?
+                                loc.reex03_msg_01 + "<br>" + loc.reex03_msg_02 + "<br>" + loc.reex03_msg_03 :
+                                loc.reex_msg_01 + "<br>" + loc.reex_msg_02 + "<br>" + loc.reex_msg_03;
             td.appendChild(el);
         };
-
-    }  // FillTblRows
+    };  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-22 PR2021-12-01
     function CreateTblHeader(field_setting, col_hidden) {
@@ -1481,8 +1482,8 @@ document.addEventListener("DOMContentLoaded", function() {
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = data_dict[field_name];
-        //console.log("field_name", field_name);
-        //console.log("fld_value", fld_value);
+    //console.log("     field_name", field_name);
+    //console.log("     fld_value", fld_value);
 
             if(field_name){
                 let title_text = null, filter_value = null;
@@ -1526,8 +1527,14 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 } else if (field_name === "download_conv_table"){
             // +++  create href and put it in button PR2021-05-07
-                    const href_str = (data_dict.ce_exam_id) ? data_dict.ce_exam_id.toString() : null;
-                    el_div.href = (href_str) ? urls.url_exam_download_conversion_pdf.replace("-", href_str) : null;
+                    const has_exam = !!data_dict.ce_exam_id;
+                    const href_str = (has_exam) ? urls.url_exam_download_conversion_pdf.replace("-", data_dict.ce_exam_id.toString()) : null;
+
+                    el_div.innerHTML = (has_exam) ? "&emsp;&#8681;&emsp;" : "&emsp;&emsp;&emsp;";
+                    add_or_remove_attr(el_div, "href", has_exam, href_str);
+                    add_or_remove_attr(el_div, "target", has_exam, "_blank");
+                    add_or_remove_attr(el_div.parentNode, "title", has_exam, loc.Download_conv_table);
+                    add_or_remove_class(el_div.parentNode, "awp_pointer_show", has_exam, "awp_pointer_hide" )
 
                 } else {
                     let inner_text = null;
@@ -1540,7 +1547,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         if (fld_value){
                             inner_text = (loc.user_lang === "en") ? fld_value : fld_value.replace(".", ",");
                             filter_value = fld_value.toLowerCase();
-                        }
+                        };
                     //} else if (field_name === "datepublished"){
                     //    inner_text = format_dateISO_vanilla (loc, data_dict.datepublished, true, false, true, false);
                     } else {
@@ -1551,18 +1558,18 @@ document.addEventListener("DOMContentLoaded", function() {
                                 title_text += "\n" + loc.Designated_exam.toLowerCase();
                             };
                         };
-                    }
+                    };
                     //el_div.innerText = (inner_text) ? inner_text : null;
                     el_div.innerText = (inner_text) ? inner_text : "\n"; // \n is necessary to show green field when blank
                     filter_value = (inner_text) ? inner_text.toString().toLowerCase() : null;
-                }
+                };
 
     // ---  add attribute title
                 add_or_remove_attr (el_div, "title", !!title_text, title_text);
     // ---  add attribute filter_value
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
-            }
-        }
+            };
+        };
     };  // UpdateField
 
 //=========  UpdateFieldStatus  ================ PR2021-12-19
@@ -3740,10 +3747,11 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                             el = td.children[0];
                             if(el){
                                 el_fldName = get_attr_from_el(el, "data-field")
-    //console.log(",,,,,,,,,,,,el_fldName", el_fldName);
+    console.log("el_fldName", el_fldName);
                                 const is_updated_field = updated_columns.includes(el_fldName);
                                 const is_err_field = error_columns.includes(el_fldName);
-    //console.log(",,,,,,,,,,,,is_updated_field", el_fldName);
+    console.log("     is_updated_field", is_updated_field);
+    console.log("     is_err_field", is_err_field);
         // update field and make field green when field name is in updated_columns
                                 if(is_updated_field){
                                     UpdateField(el, update_dict);
@@ -3751,13 +3759,13 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                                 } else if( is_err_field){
         // make field red when error and reset old value after 2 seconds
                                     reset_element_with_errorclass(el, update_dict)
-                                }
-                            }
-                        }
-                    }  //  for (let i = 1, el_fldName, td
-                 }  //  if(tblRow && (updated_columns.length || error_columns.length)){
-            }  //  if(!isEmpty(data_dict))
-        }  //  if(!isEmpty(update_dict)){
+                                };
+                            };
+                        };
+                    };  //  for (let i = 1, el_fldName, td
+                 };  //  if(tblRow && (updated_columns.length || error_columns.length)){
+            };  //  if(!isEmpty(data_dict))
+        };  //  if(!isEmpty(update_dict)){
     };  // RefreshDatarowItem
 
 //========= get_gradedict_by_gradepk =============  PR2021-09-20
@@ -4585,8 +4593,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         if(all_exam_rows && all_exam_rows.length){
             for (let i = 0, data_dict; data_dict = all_exam_rows[i]; i++) {
 
-        console.log( "data_dict", data_dict);
-        console.log( "setting_dict", setting_dict);
             // add only when exam has same subject as grade, and also the same depbase and lvlbase_id
             // also filter examperiod
             // PR2022-05-18 debug Mireille Peterson exam not showing

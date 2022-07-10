@@ -2270,17 +2270,18 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                             logger.debug('selected_dict: ' + str(selected_dict))
 
 # +++ get selected exam_rows
-                        sel_examperiod = sel_examperiod if sel_examperiod in (1, 2) else None
                         # exclude published rows??
                         # when published_id has value it means that admin has published the exam, so it is visible for the schools.
                         # submitting the exams by schools happens with grade.ce_exam_published_id, because answers are stored in grade
 
                         crit = Q(subject__examyear=sel_examyear) & \
                                Q(department=sel_department) & \
-                               Q(ete_exam=True)
+                               Q(ete_exam=True) & \
+                               Q(examperiod=sel_examperiod)
+
                         # examperiod=12 means both first and second examperiod are selected Not in use any more
-                        if sel_examperiod in (1, 2):
-                            crit.add(Q(examperiod=sel_examperiod), crit.connector)
+                        #if sel_examperiod in (1, 2, 3):
+                        #    crit.add(Q(examperiod=sel_examperiod), crit.connector)
 
                         if sel_lvlbase_pk:
                             crit.add(Q(level__base_id=sel_lvlbase_pk), crit.connector)
@@ -2480,10 +2481,7 @@ class ExamApproveOrSubmitGradeExamView(View):
 
 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(
-                        request=request,
-                        corr_insp_may_edit=False
-                    )
+                    dl.get_selected_ey_school_dep_from_usersetting(request=request)
 
 # - check if user is same_school
                 is_role_same_school = req_usr.is_role_school and sel_school and req_usr.schoolbase and req_usr.schoolbase.pk == sel_school.base_id
@@ -4355,7 +4353,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-06-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_all_exam_rows ============= ')
 

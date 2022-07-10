@@ -36,6 +36,7 @@ class CustomUserManager(UserManager):
         except:
             return None
 
+
 class User(AbstractUser):
     # PR2018-05-22 added to create a case-insensitive username
     objects = CustomUserManager()
@@ -195,6 +196,9 @@ class User(AbstractUser):
 
                 with connection.cursor() as cursor:
                     cursor.execute(sql, sql_keys)
+                    """
+                    accounts_userpermit = {role: 8, page: 'page_school', action: 'view', usergroups: 'admin;anlz;auth1;auth2;auth3;edit;read'} 
+                    """
                     for row in cursor.fetchall():
                         if logging_on:
                             logger.debug('row: ' + str(row) + ' ' + str(type(row)))
@@ -553,6 +557,7 @@ class Usergroup(sch_mod.AwpBaseModel):  # PR2021-06-19
     # AwpModelManager already is in AwpBaseModel
     # was: objects = sch_mod.AwpModelManager()
 
+    # PR2022-07-05 NOT IN USE
     name = CharField(max_length=c.USERNAME_SLICED_MAX_LENGTH, null=True)
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     roles = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)

@@ -133,7 +133,8 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
         activate(user_lang)
 
 # - get permit
-        has_permit = af.get_permit_crud_of_this_page('page_result', request)
+        has_permit = af.get_permit_of_this_page('page_result', 'calc_results', request)
+
         # note: this is part of get_permit_crud_of_this_page:
         #       'if has_permit and request.user and request.user.country and request.user.schoolbase:'
         if not has_permit:
@@ -157,7 +158,10 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
                 sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                    dl.get_selected_ey_school_dep_from_usersetting(
+                        request=request,
+                        skip_same_school_clause= request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN)
+                    )
 
 # - exit when examyear or school is locked etc
                 if not may_edit:
@@ -172,7 +176,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                     student_pk_list = upload_dict.get('student_pk_list')
 
 # +++++ calc_batch_student_result ++++++++++++++++++++
-                    log_list = calc_batch_student_result(
+                    log_list, single_student_name = calc_batch_student_result(
                         sel_examyear=sel_examyear,
                         sel_school=sel_school,
                         sel_department=sel_department,
@@ -180,6 +184,8 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                         sel_lvlbase_pk=sel_lvlbase_pk,
                         user_lang=user_lang
                     )
+                    update_wrap['log_list'] = log_list
+                    update_wrap['log_student_name'] = single_student_name
 
                     update_wrap['updated_student_rows'], error_dict = stud_view.create_student_rows(
                         sel_examyear=sel_examyear,
@@ -187,7 +193,6 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                         sel_depbase=sel_department.base,
                         append_dict={})
 
-                    update_wrap['log_list'] = log_list
 
 # - return html with log_list
         if messages:
@@ -200,7 +205,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
@@ -226,8 +231,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
         lvlbase_pk=sel_lvlbase_pk
     )
 
-    if logging_on and False:
-        logger.debug('############################### ')
+    if logging_on:
         logger.debug('student_dictlist: ' + str(student_dictlist))
 
 # - create log_list with header
@@ -236,6 +240,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
     sql_student_list = []
 
 # loop through student_dictlist - ordered list of students with grades
+
     for student_dict in student_dictlist:
         calc_student_result(sel_examyear, sel_department, student_dict, scheme_dict, schemeitems_dict, log_list,
                             sql_studsubj_list, sql_student_list)
@@ -253,7 +258,9 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 
     log_list.append(c.STRING_SINGLELINE_80)
 
-    return log_list
+    single_student_name = student_dictlist[0].get('fullname') if len(student_dictlist) == 1 else None
+
+    return log_list, single_student_name
 # - end of calc_batch_student_result
 
 
@@ -321,6 +328,9 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
     # otherwise error 'dictionary changed size during iteration' will come up
 
     if not skip_student:
+        # student_dict is created in get_students_with_grades_dictlist
+        # it also counts the number of grade_rows of exempttion, reex and reex_03 and puts it in 'c_ep4', 'c_ep2' and 'c_ep3'
+        # later these will be saved stored in table student, fields exemption_count, reex_count and reex03_count
         exemption_count = student_dict.get('c_ep4', 0)
         sr_count = student_dict.get('c_sr', 0)
         reex_count = student_dict.get('c_ep2', 0)
@@ -328,7 +338,13 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         thumbrule_count = student_dict.get('c_thumbrule') or 0
         thumbrule_combi = student_dict.get('thumbrule_combi') or False
 
-        ep_list = [c.EXAMPERIOD_EXEMPTION, c.EXAMPERIOD_FIRST]
+# - create ep_list, list of examperiods te be calculated
+        # always add EXAMPERIOD_FIRST,
+        # add exemption, reex and reex03 only when there are grades with this examperiod
+        ep_list = []
+        if exemption_count:
+            ep_list.append(c.EXAMPERIOD_EXEMPTION)
+        ep_list.append(c.EXAMPERIOD_FIRST)
         if reex_count:
             ep_list.append(c.EXAMPERIOD_SECOND)
         if reex03_count:
@@ -400,7 +416,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                          si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  ++++++++++++  calc_studsubj_result  ++++++++++++')
         logger.debug(' studsubj_dict: ' + str(studsubj_dict))
@@ -493,24 +509,27 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
         logger.debug(' =====================  ' + str(subj_name) + '   =====================')
         logger.debug('     has_exemptionCALC: ' + str(has_exemptionCALC))
         logger.debug('     has_reexCALC:      ' + str(has_reexCALC))
+        logger.debug('     has_reex03CALC:      ' + str(has_reex03CALC))
         logger.debug('     is_thumbrule:  ' + str(is_thumbrule))
 
     # gl_max_examperiod contains the examperiod that must be stored in studsubj, to be shown on gradelist
     gl_max_examperiod = c.EXAMPERIOD_FIRST
     gl_max_ni = []
 
-# ----------------------------------------
     log_subj_grade_dict = {}
 
+# +++++++++++++++++++++++++++++++++++++++++
 # - loop through examperiods, in order: exemption, ep_01, ep_02, ep_03;
-    # grade exemption, reex, reex03 only exist when has_exemption, is_reex_candidate or is_reex03_candidate
+    # ep_list always contains EXAMPERIOD_FIRST,
+    # contains exemption, reex and reex03 only when there are grades with this examperiod
     for examperiod in ep_list:
 
 # - these calculations are only made when examperiod exists in studsubj_dict
         if examperiod in studsubj_dict:
             this_examperiod_dict = studsubj_dict.get(examperiod)
             if logging_on :
-                logger.debug('--------------- this examperiod: ' + str(examperiod) + ' ---------------')
+                logger.debug(' ')
+                logger.debug('>>>>>>>>>>>>>>> this examperiod: ' + str(examperiod) + ' <<<<<<<<<<<<<<<')
 
 # --- check for '-noinput': if grade should have value, add '-noinput if required value not entered
             # also when exemption
@@ -532,49 +551,36 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                 exemp_no_ce=exemp_no_ce
             )
 
-            if logging_on:
-                logger.debug('    this_examperiod_dict: ' + str(this_examperiod_dict))
-                logger.debug('    this_examperiod_dict ni: ' + str(this_examperiod_dict.get('ni')))
-                logger.debug('    this_examperiod_dict noin: ' + str(this_examperiod_dict.get('noin')))
-                """
-                this_examperiod_dict: {'subj': 'pa', 'se': '6.8', 'sesr': '6.8', 'final': '7', 'noin': {'vr': {'pa': ['CE']}}, 'ni': ['ce']}
-                this_examperiod_dict ni: ['ce']
-                this_examperiod_dict noin: {'vr': {'pa': ['CE']}}
-                """
+            """
+            this_examperiod_dict: {'subj': 'pa', 'se': '6.8', 'sesr': '6.8', 'final': '7', 'noin': {'vr': {'pa': ['CE']}}, 'ni': ['ce']}
+            this_examperiod_dict ni: ['ce']
+            this_examperiod_dict noin: {'vr': {'pa': ['CE']}}
+            """
+
+# --- calculate proof_of_knowledge,
+            # function adds 'pok' to each examperiod of studsubj_dict (except exemption) if has_pok
+            calc_proof_of_knowledge(
+                subj_code=subj_code,
+                examperiod=examperiod,
+                this_examperiod_dict=this_examperiod_dict,
+                no_centralexam=no_centralexam,
+                gradetype=gradetype,
+                is_combi=is_combi,
+                weight_se=weight_se,
+                weight_ce=weight_ce
+            )
+
 # --- calculate max values, maximum grade when comparing exemption, ep_1, ep_2, ep_3
             #  calc_max_grades stores these keys to this_examperiod_dict:
             #  'max_ep' 'max_sesr''max_pece' 'max_final', 'max_ni' 'max_use_exem'
             #  will be saved in studsubj by: get_sql_studsubj_values
             max_examperiod, max_ni = calc_max_grades(examperiod, this_examperiod_dict, studsubj_dict, gradetype)
 
-# --- calculate proof_of_knowledge,
-            # PR2022-07-02 TODO not in use yet.
-            calc_proof_of_knowledge(
-                subj_code=subj_code,
-                examperiod=examperiod,
-                studsubj_dict=studsubj_dict,
-                no_centralexam=no_centralexam,
-                gradetype=gradetype,
-                is_combi=is_combi,
-                weight_se=weight_se,
-                weight_ce=weight_ce,
-                has_reex=has_reexCALC,
-                has_reex03=has_reex03CALC,
-            )
-
-
-# - gl_max_examperiod is the max_examperiod of the highest examperiod (is 1, 2 or 3)
+        # - gl_max_examperiod is the max_examperiod of the highest examperiod (is 1, 2 or 3)
             if max_examperiod and examperiod != c.EXAMPERIOD_EXEMPTION:
                 gl_max_examperiod = max_examperiod
                 if max_ni:
                     gl_max_ni = max_ni
-
-            if logging_on:
-                logger.debug('    this_examperiod_dict: ' + str(this_examperiod_dict))
-                logger.debug('    max_examperiod: ' + str(max_examperiod))
-                logger.debug('    gl_max_examperiod: ' + str(gl_max_examperiod))
-                logger.debug('    max_ni: ' + str(max_ni))
-                logger.debug('    gl_max_ni: ' + str(gl_max_ni))
 
 # add subj_grade_str to log_subj_grade_dict
             # subj_grade_str: '     Vrijstelling: SE:9,7 CE:6,0 Eindcijfer:8'
@@ -583,9 +589,17 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
             if subj_grade_str:
                 log_subj_grade_dict[examperiod] = subj_grade_str
 
+            if logging_on:
+                logger.debug('    this_examperiod: ' + str(examperiod))
+                logger.debug('    this_examperiod_dict: ' + str(this_examperiod_dict))
+                logger.debug('    max_examperiod: ' + str(max_examperiod))
+                logger.debug('    gl_max_examperiod: ' + str(gl_max_examperiod))
+                logger.debug('    gl_max_ni: ' + str(gl_max_ni))
+                logger.debug('>>>>>>>>>>>>>>> end of this examperiod: ' + str(examperiod) + ' <<<<<<<<<<<<<<<')
 # --- end of "if examperiod in studsubj_dict"
 
 # --- create student_ep_dicts with key ep1, ep2 and ep3 in student_dict[ep_key]
+        # necessary to put results of each ep in Ex5 form
         if examperiod != c.EXAMPERIOD_EXEMPTION:
             # when student has reex or reex03 and this subject is not a reex,
             # then this_examperiod_dict does not exist
@@ -603,9 +617,6 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
 
             ep_key = 'ep' + str(examperiod)
 
-            if logging_on:
-                logger.debug('----- examperiod: ' + str(examperiod) + ' ----- use_examperiod: ' + str(use_examperiod))
-
 # --- calculate totals for ep1, ep2 and ep3 and put them in student_ep_dicts, not when exemption
             if ep_key in student_dict:
 
@@ -617,13 +628,22 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                 max_final = use_studsubj_ep_dict.get('max_final')
                 max_ni = use_studsubj_ep_dict.get('max_ni')
                 max_noin = use_studsubj_ep_dict.get('max_noin')
+                max_pok = use_studsubj_ep_dict.get('max_pok')
+                max_pok_sesr = use_studsubj_ep_dict.get('max_pok_sesr')
+                max_pok_pece = use_studsubj_ep_dict.get('max_pok_pece')
+                max_pok_final = use_studsubj_ep_dict.get('max_pok_final')
 
                 if logging_on:
-                    logger.debug('     max_ep: ' + str(max_ep))
-                    logger.debug('     max_pece: ' + str(max_pece) + ' ' + str(type(max_pece)))
-                    logger.debug('     max_final: ' + str(max_final)+ ' ' + str(type(max_final)))
-                    logger.debug('     max_ni: ' + str(max_ni))
-                    logger.debug('     max_noin: ' + str(max_noin))
+                    logger.debug('---- examperiod:   ' + str(examperiod) + ' ----- use_examperiod: ' + str(use_examperiod))
+                    logger.debug('     max_ep:       ' + str(max_ep))
+                    logger.debug('     max_pece:     ' + str(max_pece) + ' ' + str(type(max_pece)))
+                    logger.debug('     max_final:    ' + str(max_final)+ ' ' + str(type(max_final)))
+                    logger.debug('     max_ni:       ' + str(max_ni))
+                    logger.debug('     max_noin:     ' + str(max_noin))
+                    logger.debug('     max_pok:      ' + str(max_pok))
+                    logger.debug('     max_pok_sesr: ' + str(max_pok_sesr))
+                    logger.debug('     max_pok_pece: ' + str(max_pok_pece))
+                    logger.debug('     max_pok_final ' + str(max_pok_final))
 
 # - calc no imput: pu noinput in student_ep for total and combi, to skip calculating result
                 put_noinput_in_student_ep_dict(is_combi, use_studsubj_ep_dict, calc_student_ep_dict)
@@ -649,10 +669,8 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
 
             if logging_on and False:
                 logger.debug('use_studsubj_ep_dict: ' + str(use_studsubj_ep_dict))
-    if logging_on and False:
-        logger.debug('>>>> end of loop through examperiods ')
 # - end of loop through examperiods,
-# ----------------------------------------
+# +++++++++++++++++++++++++++++++++++++++++
 
 # put subj_grade_str in log_list, add '>' when it is maxperiod
     # subj_grade_str: '     Vrijstelling: SE:9,7 CE:6,0 Eindcijfer:8'
@@ -666,8 +684,8 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
 # - put the max values that will appear on the gradelist back in studsubj, also max_use_exem, gl_ni_se etc
     max_examperiod_dict = studsubj_dict.get(gl_max_examperiod)
     if logging_on:
-        logger.debug('??????????????? studsubj_dict: ' + str(studsubj_dict))
-        logger.debug('max_examperiod_dict: ' + str(max_examperiod_dict))
+        logger.debug('    studsubj_dict: ' + str(studsubj_dict))
+        logger.debug('    max_examperiod_dict: ' + str(max_examperiod_dict))
     """
      max_examperiod_dict: {
         'subj': 'cav', 
@@ -689,8 +707,12 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
         gl_examperiod=gl_max_examperiod,
         has_exemption=has_exemptionCALC,
         has_reex=has_reexCALC,
-        has_reex03=has_reex03CALC
+        has_reex03=has_reex03CALC,
+        pok_sesr=max_examperiod_dict.get('max_pok_sesr'),
+        pok_pece=max_examperiod_dict.get('max_pok_pece'),
+        pok_final=max_examperiod_dict.get('max_pok_final')
     )
+
     if sql_studsubj_values:
         sql_studsubj_list.append(sql_studsubj_values)
 # - end of calc_studsubj_result
@@ -858,7 +880,10 @@ def calc_exemp_noce(exemption_year, no_ce_years):
 
 def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradetype):
     # PR2021-12-21 from AWP Calculations.CalcEindcijfer_Max
-    # values of examperiod are: 1, 2, 3
+    # PR2022-07-07
+    # values of examperiod are: 4, 1, 2, 3
+    # ep_list always contains EXAMPERIOD_FIRST,
+    # contains exemption, reex and reex03 only when there are grades with this examperiod
 
     # PR2020-05-18 Andere aanpak berekening Max cijfers per tijdvak: bereken meteen of Vrst gebruikt moet worden ipv eerst Max en dan Vrst.
     # - bereken eerst de 'kale' eindcijfers per tijdvak in CalcEindcijfer_CijferOvg
@@ -868,21 +893,46 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
     # 'NB: geen NoInput gebruiken, hoogste wordt altijd weergegeven ook al is een van de 2 niet ingevuld of als geen Her
 
     # - function is only called when this_examperiod exists in studsubj_dict
-    # loop through examperiods, in order: ep_01, ep_02, ep_03;
+    # loop through examperiods, in order: exemp(ep4), ep_01, ep_02, ep_03;
+    # function compares grades in each ep and puts the grades of ep with the highest grades in max_ variables
 
-    logging_on = False  # s.LOGGING_ON
+    # in ep1: if ep1 has noinput (ni = ['se', 'ce']) > use exemp if any, because ep1 no input is allowed
+    # in ep2 or ep3: if ep2 or ep3 has noinput > give no_result, regardless of exemp, because ep2 or ep3 no input is not allowed
+
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('  -----  calc_max_grades  -----')
+        logger.debug('--------------- calc_max_grades ---------------')
+        logger.debug('     subj           : ' + str(this_examperiod_dict.get('subj', '-')))
         logger.debug('     this_examperiod: ' + str(this_examperiod))
 
-# - loop through examperiod: firstperiod, reex and reex03
+    max_examperiod = None
+    max_sesr, max_pece, max_final, max_ni, max_noin, max_use_exemption = None, None, None, [], [], False
+
+    def get_normal_values_from_examperiod(examperiod_dict):
+        return examperiod_dict.get('sesr'), \
+               examperiod_dict.get('pece'), \
+               examperiod_dict.get('final')
+
+    def get_normal_ni_from_examperiod(examperiod_dict):
+        return examperiod_dict.get('ni') or [], \
+               examperiod_dict.get('noin') or []
+
+    def get_max_values_from_examperiod(examperiod_dict):
+        return examperiod_dict.get('max_sesr'), \
+               examperiod_dict.get('max_pece'), \
+               examperiod_dict.get('max_final')
+
+    def get_max_ni_from_examperiod(examperiod_dict):
+        return examperiod_dict.get('max_ni') or [], \
+               examperiod_dict.get('max_noin') or []
 
 # - get previous exam period:
-    #   - if reex03:      get reex period if exists, get firstperiod otherwise
-    #   - if reex:        get firstperiod otherwise
+    #   - if exemption:   previous_examperiod is None
     #   - if firstperiod: get exemption if exists, else None
-    #   firstperiod should always exist
-    previous_examperiod = None
+    #   - if reex:        get firstperiod
+    #   - if reex03:      get reex period if exists, get firstperiod otherwise
+    #   firstperiod always exist
+    previous_examperiod, prev_examperiod_dict = None, None
     if this_examperiod == c.EXAMPERIOD_THIRD:
         if c.EXAMPERIOD_SECOND in studsubj_dict:
             previous_examperiod = c.EXAMPERIOD_SECOND
@@ -894,101 +944,82 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
         if c.EXAMPERIOD_EXEMPTION in studsubj_dict:
             previous_examperiod = c.EXAMPERIOD_EXEMPTION
 
+# - get previous examperiod_dict
+    if previous_examperiod:
+        prev_examperiod_dict = studsubj_dict.get(previous_examperiod)
+
     if logging_on:
         logger.debug('     previous_examperiod: ' + str(previous_examperiod))
-
-    max_sesr, max_pece, max_final, max_ni, max_noin, max_use_exemption = None, None, None, [], [], False
-    max_examperiod = None
+        logger.debug('     this_examperiod_dict: ' + str(this_examperiod_dict))
+        logger.debug('     prev_examperiod_dict: ' + str(prev_examperiod_dict))
 
 # previous_examperiod is None when:
     #  - this is exemption or
     #  - this is first examperiod and no exemption
 # when previous_examperiod is None
-    #  - put values of first period in max_ fields
+    #  - put values of first period in max_fields
 
-    if previous_examperiod is None:
+    if prev_examperiod_dict is None:
         max_examperiod = this_examperiod
-        max_sesr = this_examperiod_dict.get('sesr')
-        max_pece = this_examperiod_dict.get('pece')
-        max_final = this_examperiod_dict.get('final')
-        max_ni = this_examperiod_dict.get('ni') or []
-        max_noin = this_examperiod_dict.get('noin') or []
         max_use_exemption = (this_examperiod == c.EXAMPERIOD_EXEMPTION)
+        max_sesr, max_pece, max_final = get_normal_values_from_examperiod(this_examperiod_dict)
+        max_ni, max_noin = get_normal_ni_from_examperiod(this_examperiod_dict)
+
         if logging_on:
-            logger.debug('     previous_examperiod is None ')
             logger.debug('     max_examperiod = this_examperiod: ' + str(max_examperiod))
             logger.debug('     max_ni: ' + str(max_ni))
     else:
-
-# - get previous examperiod_dict
-        prev_examperiod_dict = studsubj_dict.get(previous_examperiod)
-
-        if logging_on:
-            logger.debug('     this_examperiod_dict: ' + str(this_examperiod_dict))
-            logger.debug('     prev_examperiod_dict: ' + str(prev_examperiod_dict))
-
+        # this_ni: ['ce']
         this_ni = this_examperiod_dict.get('ni')
-        prev_ni = prev_examperiod_dict.get('ni')
+        # always get max variables from prev_examperiod_dict
+        prev_max_ni = prev_examperiod_dict.get('max_ni')
 
         if logging_on:
             logger.debug('     this_ni: ' + str(this_ni))
-            logger.debug('     prev_ni: ' + str(prev_ni))
+            logger.debug('     prev_max_ni: ' + str(prev_max_ni))
 
         if this_examperiod == c.EXAMPERIOD_FIRST:
-            # (exemptionperiod and firstperiod without exemption are already filtered out)
+            # (this_examperiod = exemption and firstperiod without exemption are already filtered out)
             # when exemption or first period have no input:
             #  - make exemption the max period, to prevent having exemptions without grades
             # otherwise:
             #  - compare firstperiod and exemption
 
-            if prev_ni or this_ni:
-                # make max_use_exemption = True when exemption has no input
-
+            if this_ni or prev_max_ni:
+                # make exemption the max_examperiod, get max_values from prev_examperiod max_values
                 max_examperiod = c.EXAMPERIOD_EXEMPTION
-                max_sesr = prev_examperiod_dict.get('sesr')
-                max_pece = prev_examperiod_dict.get('pece')
-                max_final = prev_examperiod_dict.get('final')
-                max_ni = prev_examperiod_dict.get('ni') or []
-                max_noin = prev_examperiod_dict.get('noin') or []
                 max_use_exemption = True
+                max_sesr, max_pece, max_final = get_max_values_from_examperiod(prev_examperiod_dict)
+                max_ni, max_noin = get_max_ni_from_examperiod(prev_examperiod_dict)
 
                 if logging_on:
-                    logger.debug('if prev_ni or this_ni')
-                    logger.debug('     max_ni: ' + str(max_ni))
-                    logger.debug('     max_noin: ' + str(max_noin))
-                    logger.debug('     max_use_exemption: ' + str(max_use_exemption))
+                    logger.debug('if this_ni or prev_max_ni')
+
             # else:
             #   max_examperiod = None, comparison takes place further, at if max_examperiod is None:
 
-# ---  examperiod is reex or reex03
-        elif this_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
-
-            # when this is reex or reex03 examperiod and this period has no input:
-            # - make reex / reex03 the max period, to show 'noinput' on the log_list and gradelist
+# ---  examperiod is reex
+        elif this_examperiod == c.EXAMPERIOD_SECOND:
+            # when this is reex examperiod and this period has no input:
+            # - make reex the max period, to show 'noinput' on the log_list and gradelist
+            # - get values from this_examperiod values (this_examperiod has no max_values)
             if this_ni:
                 max_examperiod = this_examperiod
-                max_sesr = this_examperiod_dict.get('sesr')
-                max_pece = this_examperiod_dict.get('pece')
-                max_final = this_examperiod_dict.get('final')
-                max_ni = this_examperiod_dict.get('ni') or []
-                max_noin = this_examperiod_dict.get('noin') or []
+                max_sesr, max_pece, max_final = get_normal_values_from_examperiod(this_examperiod_dict)
+                max_ni, max_noin = get_normal_ni_from_examperiod(this_examperiod_dict)
                 max_use_exemption = False
 
                 if logging_on:
                     logger.debug('if this_ni')
-                    logger.debug('     max_ni: ' + str(max_ni))
-                    logger.debug('     max_noin: ' + str(max_noin))
-                    logger.debug('     max_use_exemption: ' + str(max_use_exemption))
 
-            elif prev_ni:
-                # if reex03: previous = reex if exists, else firstperiod
+            elif prev_max_ni:
                 # if reex:   previous = firstperiod
 
                 # when this period has input and previous period has no input:
                 # - set max_examperiod = this_examperiod
 
                 # PR2022-06-30 Mireille Peterson Sundial: student failed afters reex, should have passed
-                # because of : max_pece = this_examperiod_dict.get('max_pece'),
+                # because of: max_pece = this_examperiod_dict.get('max_pece'),
                 # but max_pece has no value in this_examperiod_dict
                 # changed to max_pece = this_examperiod_dict.get('pece')
 
@@ -996,56 +1027,76 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 this_examperiod_dict: {'subj': 'zwi', 'se': '6.0', 'sr': None, 'sesr': '6.0', 'pe': None, 'ce': '6.6', 'pece': '6.6', 'final': '6'}
                 """
                 max_examperiod = this_examperiod
-                max_sesr = this_examperiod_dict.get('sesr')
-                max_pece = this_examperiod_dict.get('pece')
-                max_final = this_examperiod_dict.get('final')
-                max_ni = this_examperiod_dict.get('ni') or []
-                max_noin = this_examperiod_dict.get('noin') or []
-                max_use_exemption = this_examperiod_dict.get('use_exem') or False
+                max_sesr, max_pece, max_final = get_normal_values_from_examperiod(this_examperiod_dict)
+                max_ni, max_noin = get_normal_ni_from_examperiod(this_examperiod_dict)
+                max_use_exemption = False
 
             # else: # if reex / reex03 has input compare
                 # compare previous_examperiod and this examperiod
                 # happens further in this function
 
                 if logging_on:
-                    logger.debug('elif prev_ni')
-                    logger.debug('     this_examperiod_dict: ' + str(this_examperiod_dict))
-                    logger.debug('     max_examperiod: ' + str(max_examperiod))
-                    logger.debug('     max_sesr: ' + str(max_sesr))
-                    logger.debug('     max_pece: ' + str(max_pece))
-                    logger.debug('     max_final: ' + str(max_final))
-                    logger.debug('     max_ni: ' + str(max_ni))
-                    logger.debug('     max_noin: ' + str(max_noin))
-                    logger.debug('     max_use_exemption: ' + str(max_use_exemption))
-                    logger.debug('     max_use_exemption: ' + str(max_use_exemption))
+                    logger.debug('elif prev_max_ni')
 
-            if logging_on:
-                logger.debug('>>>> prev_examperiod_dict: ' + str(prev_examperiod_dict))
-                logger.debug('>>>> prev_examperiod_dict.get(sesr): ' + str(prev_examperiod_dict.get('sesr')))
-                logger.debug('>>>> prev_ni: ' + str(prev_ni))
+# ---  examperiod is reex03
+        elif this_examperiod == c.EXAMPERIOD_THIRD:
+            # TODO when prev has ni > max must be also ni
+            # when this is reex03 examperiod and this period has no input:
+            # - make reex03 the max period, to show 'noinput' on the log_list and gradelist
+            # - get values from this_examperiod values (this_examperiod has no max_values)
+            if this_ni:
+                max_examperiod = this_examperiod
+                max_sesr, max_pece, max_final = get_normal_values_from_examperiod(this_examperiod_dict)
+                max_ni, max_noin = get_normal_ni_from_examperiod(this_examperiod_dict)
+                max_use_exemption = False
 
-# - reex and reex03 have no sesr. Use sesr of first period instead, also put se and sr in ni if exists in prev period
-            # PR2021-12-27 not any more, when calculating final grade of reex and reex03,
-            # the values of se, sr, sesr, pe will pe put in the reex and reex03 grade
-            # was:
-            #this_examperiod_dict['sesr'] = prev_examperiod_dict.get('sesr')
-            #if (prev_ni) and ('se' in prev_ni or 'sr' in prev_ni):
-            #    if 'se' in prev_ni:
-            #        this_ni.append('se')
-            #    if 'sr' in prev_ni:
-            #        this_ni.append('sr')
-            #    this_examperiod_dict['ni'] = this_ni
+                if logging_on:
+                    logger.debug('if this_ni')
+
+            elif prev_max_ni:
+                if logging_on:
+                    logger.debug('>>>> elif prev_max_ni')
+                first_examperiod_dict = studsubj_dict.get(c.EXAMPERIOD_FIRST)
+                if logging_on:
+                    logger.debug('     previous_examperiod:   ' + str(previous_examperiod))
+                    logger.debug('     prev_examperiod_dict:  ' + str(prev_examperiod_dict))
+                    logger.debug('     first_examperiod_dict: ' + str(first_examperiod_dict))
+
+                # if reex03: previous = reex if exists, else firstperiod
+
+                # when this period has input and previous period has no input:
+                # - set max_examperiod = this_examperiod
+
+                # PR2022-06-30 Mireille Peterson Sundial: student failed afters reex, should have passed
+                # because of: max_pece = this_examperiod_dict.get('max_pece'),
+                # but max_pece has no value in this_examperiod_dict
+                # changed to max_pece = this_examperiod_dict.get('pece')
+
+                """
+                this_examperiod_dict: {'subj': 'zwi', 'se': '6.0', 'sr': None, 'sesr': '6.0', 'pe': None, 'ce': '6.6', 'pece': '6.6', 'final': '6'}
+                """
+                max_examperiod = this_examperiod
+                max_sesr, max_pece, max_final = get_normal_values_from_examperiod(this_examperiod_dict)
+                max_ni, max_noin = get_normal_ni_from_examperiod(this_examperiod_dict)
+                max_use_exemption = False
+
+                # else: # if reex / reex03 has input compare
+                # compare previous_examperiod and this examperiod
+                # happens further in this function
+
+                if logging_on:
+                    logger.debug('elif prev_max_ni')
 
 # - if both this_examperiod and previous_examperiod have values: compare
         # - calculate which examperiod gives the highest final grade, use max_value in prev period
         if max_examperiod is None:
             this_finalgrade = this_examperiod_dict.get('final')
-            prev_finalgrade = prev_examperiod_dict.get('max_final')
+            prev_max_finalgrade = prev_examperiod_dict.get('max_final')
 
             if logging_on:
                 logger.debug('------------- compare this and prev examperiod ------------------')
-                logger.debug('..... this_finalgrade: ' + str(this_finalgrade) + ' ' + str(type(this_finalgrade)))
-                logger.debug('..... prev_finalgrade: ' + str(prev_finalgrade) + ' ' + str(type(prev_finalgrade)))
+                logger.debug('    this_finalgrade:     ' + str(this_finalgrade) + ' ' + str(type(this_finalgrade)))
+                logger.debug('    prev_max_finalgrade: ' + str(prev_max_finalgrade) + ' ' + str(type(prev_max_finalgrade)))
             # prev_examperiod_dict: {
             #       'se': '6.0', 'sesr': '6.0', 'ce': '3.0', 'pece': '3.0', 'final': '5',
             #       'max_ep': 1, 'max_sesr': '6.0', 'max_pece': '3.0', 'max_final': '5'}
@@ -1055,19 +1106,26 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
                 #'Tv01 heeft de voorkeur boven vrijstelling: daaarom Tv01 invullen als eerste parameter
                 max_examperiod = calc_max_examperiod_gradetype_character(
                     this_examperiod, this_finalgrade,
-                    previous_examperiod, prev_finalgrade)
+                    previous_examperiod, prev_max_finalgrade)
                 if logging_on:
-                    logger.debug('     max_examperiod == calc_max_examperiod_gradetype_character')
+                    logger.debug('     calc_max_examperiod_gradetype_character = ' + str(max_examperiod))
 
             elif gradetype == c.GRADETYPE_01_NUMBER:
                 this_pece = this_examperiod_dict.get('pece')
-                prev_pece = prev_examperiod_dict.get('max_pece')
+                this_sesr = this_examperiod_dict.get('sesr')
+                prev_max_pece = prev_examperiod_dict.get('max_pece')
+                prev_max_sesr = prev_examperiod_dict.get('max_sesr')
+                if logging_on:
+                    logger.debug('    this_pece:     ' + str(this_pece) + ' ' + str(type(this_pece)))
+                    logger.debug('    prev_max_pece:     ' + str(prev_max_pece) + ' ' + str(type(prev_max_pece)))
+                    logger.debug('    this_sesr: ' + str(this_sesr) + ' ' + str(type(this_sesr)))
+                    logger.debug('    prev_max_sesr: ' + str(prev_max_sesr) + ' ' + str(type(prev_max_sesr)))
 
                 max_examperiod = calc_max_examperiod_gradetype_decimal(
-                    this_examperiod, this_finalgrade, this_pece,
-                    previous_examperiod, prev_finalgrade, prev_pece)
+                    this_examperiod, this_finalgrade, this_pece, this_sesr,
+                    previous_examperiod, prev_max_finalgrade, prev_max_pece, prev_max_sesr)
                 if logging_on:
-                    logger.debug('     max_examperiod == calc_max_examperiod_gradetype_decimal')
+                    logger.debug('     calc_max_examperiod_gradetype_decimal = ' + str(max_examperiod))
 
 # get max_use_exemption.
             # - is False when max_examperiod = this_examperiod
@@ -1076,26 +1134,109 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
 
             if max_examperiod == this_examperiod:
                 if logging_on:
-                    logger.debug('     max_examperiod == this_examperiod')
+                    logger.debug('     max_examperiod == this_examperiod = ' + str(max_examperiod))
                 # max_examperiod = this_examperiod
-                max_sesr = this_examperiod_dict.get('sesr')
-                max_pece = this_examperiod_dict.get('pece')
-                max_final = this_examperiod_dict.get('final')
-                max_ni = this_examperiod_dict.get('ni') or []
-                max_noin = this_examperiod_dict.get('noin') or []
+                max_sesr, max_pece, max_final = get_normal_values_from_examperiod(this_examperiod_dict)
+                max_ni, max_noin = get_normal_ni_from_examperiod(this_examperiod_dict)
                 max_use_exemption = False
+
             else:
                 if logging_on:
-                    logger.debug('     else: max_examperiod = previous_examperiod')
-                #max_examperiod = previous_examperiod
-                max_sesr = prev_examperiod_dict.get('max_sesr')
-                max_pece = prev_examperiod_dict.get('max_pece')
-                max_final = prev_examperiod_dict.get('max_final')
-                max_ni = prev_examperiod_dict.get('max_ni') or []
-                max_noin = prev_examperiod_dict.get('max_noin') or []
-                max_use_exemption = prev_examperiod_dict.get('max_use_exem', False)
-# -----------------------------------------------------------
+                    logger.debug('     max_examperiod = previous_examperiod = ' + str(max_examperiod))
+                # PR2022-07-06 debug: was not showong exemption after reex with lower grade,
+                # was: max_examperiod = max_examperiod, but that was 1. Must get max_ep of  prev_examperiod_dict
+                # get max_examperiod of prev_examperiod_dict, to show exemption instead of ep_01 / ep_02
+                max_examperiod = prev_examperiod_dict.get('max_ep')
 
+                max_sesr, max_pece, max_final = get_max_values_from_examperiod(prev_examperiod_dict)
+                max_ni, max_noin = get_max_ni_from_examperiod(prev_examperiod_dict)
+
+                max_use_exemption = prev_examperiod_dict.get('max_use_exem', False)
+
+# +++++ calc max_pok: +++++++++++++++++
+    max_pok, max_pok_sesr, max_pok_pece, max_pok_final = False, None, None, None
+
+# - skip when this_examperiod = exemption
+    if this_examperiod != c.EXAMPERIOD_EXEMPTION:
+        has_pok_this_ep = this_examperiod_dict and this_examperiod_dict.get('pok') or False
+        has_pok_prev_ep = prev_examperiod_dict and prev_examperiod_dict.get('max_pok') or False
+        if logging_on:
+            logger.debug('+++++ calc max_pok: +++++++++++++++++')
+            logger.debug('    this_examperiod:     ' + str(this_examperiod) + ' ' + str(type(this_examperiod)))
+            logger.debug('    has_pok_this_ep:     ' + str(has_pok_this_ep) + ' ' + str(type(has_pok_this_ep)))
+            logger.debug('    has_max_pok_prev_ep: ' + str(has_pok_prev_ep) + ' ' + str(type(has_pok_prev_ep)))
+
+        if not has_pok_this_ep:
+            # skip if if not has_pok_prev_ep
+            if has_pok_prev_ep:
+    # if this ep has no pok then prev has max_pok: get max_pok_values from prev_examperiod_dict
+                max_pok_sesr = prev_examperiod_dict.get('max_pok_sesr')
+                max_pok_pece = prev_examperiod_dict.get('max_pok_pece')
+                max_pok_final = prev_examperiod_dict.get('max_pok_final')
+        else:
+            max_pok = True
+            if not has_pok_prev_ep:
+    # if this_ep has pok and prev_ep has no max_pok: get values from this_examperiod_dict
+                max_pok_sesr = this_examperiod_dict.get('sesr')
+                max_pok_pece = this_examperiod_dict.get('pece')
+                max_pok_final = this_examperiod_dict.get('final')
+
+            else:
+                this_pok_sesr, this_pok_pece, this_pok_final = get_normal_values_from_examperiod(this_examperiod_dict)
+                prev_pok_sesr = prev_examperiod_dict.get('max_pok_sesr')
+                prev_pok_pece = prev_examperiod_dict.get('max_pok_pece')
+                prev_pok_final = prev_examperiod_dict.get('max_pok_final')
+
+                if logging_on:
+                    logger.debug('    prev_pok_sesr: ' + str(prev_pok_sesr) + ' prev_pok_pece: ' + str(prev_pok_pece) + ' prev_pok_final: ' + str(prev_pok_final))
+                    logger.debug('    this_pok_sesr: ' + str(this_pok_sesr) + ' this_pok_pece: ' + str(this_pok_pece) + ' this_pok_final: ' + str(this_pok_final))
+
+    # if this_ep has pok and prev_ep has max_pok:
+        # - compare normal values of this examperiod and max_pok values of previous examperiod
+                pok_max_examperiod = None
+                # default max_examperiod = first argument, make prev ep the first argument so it will return as default
+                if gradetype == c.GRADETYPE_02_CHARACTER:
+                    pok_max_examperiod = calc_max_examperiod_gradetype_character(
+                        previous_examperiod, prev_pok_final,
+                        this_examperiod, this_pok_final)
+                elif gradetype == c.GRADETYPE_01_NUMBER:
+                    pok_max_examperiod = calc_max_examperiod_gradetype_decimal(
+                        previous_examperiod, prev_pok_final, prev_pok_pece, prev_pok_sesr,
+                        this_examperiod, this_pok_final, this_pok_pece, this_pok_sesr)
+
+                if logging_on:
+                    logger.debug('    pok_max_examperiod:     ' + str(pok_max_examperiod) + ' ' + str(type(pok_max_examperiod)))
+
+                if pok_max_examperiod == this_examperiod:
+            # max_pok = True if this_examperiod has_pok
+
+                    if logging_on:
+                        logger.debug('    max_pok this_examperiod: ' + str(max_pok) + ' ' + str(type(max_pok)))
+                    max_pok_sesr = this_pok_sesr
+                    max_pok_pece = this_pok_pece
+                    max_pok_final = this_pok_final
+
+                elif pok_max_examperiod == previous_examperiod:
+                    max_pok = True
+                    if logging_on:
+                        logger.debug('    max_pok previous_examperiod : ' + str(max_pok) + ' ' + str(type(max_pok)))
+                    max_pok_sesr = prev_pok_sesr
+                    max_pok_pece = prev_pok_pece
+                    max_pok_final = prev_pok_final
+
+            if logging_on:
+                logger.debug('    max_pok:      ' + str(max_pok) + ' ' + str(type(max_pok)))
+
+        if max_pok:
+            this_examperiod_dict['max_pok'] = max_pok
+            this_examperiod_dict['max_pok_sesr'] = max_pok_sesr
+            this_examperiod_dict['max_pok_pece'] = max_pok_pece
+            this_examperiod_dict['max_pok_final'] = max_pok_final
+
+        if logging_on:
+            logger.debug('+++++ end of calc max_pok: +++++++++++++++++')
+
+# -----------------------------------------------------------
 # put max values in this_examperiod_dict
     # max_examperiod is used to put (h) (h3) or (vr) behind grade
     this_examperiod_dict['max_ep'] = max_examperiod
@@ -1107,20 +1248,25 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
     this_examperiod_dict['max_use_exem'] = max_use_exemption
 
     if logging_on:
-        logger.debug('max_examperiod: ' + str(max_examperiod))
-        logger.debug('..... max_sesr: ' + str(max_sesr))
-        logger.debug('..... max_pece: ' + str(max_pece))
-        logger.debug('..... max_final ' + str(max_final))
-        logger.debug('..... max_ni:   ' + str(max_ni))
-        logger.debug('..... max_noin:   ' + str(max_noin))
-        logger.debug('..... max_use_exemption: ' + str(max_use_exemption))
-        logger.debug('  @@@@@@@@@@@@@@  end of calc_max_grades  @@@@@@@@@@@@@@')
+        logger.debug('max_examperiod:      ' + str(max_examperiod))
+        logger.debug('..... max_sesr:      ' + str(max_sesr))
+        logger.debug('..... max_pece:      ' + str(max_pece))
+        logger.debug('..... max_final      ' + str(max_final))
+        logger.debug('..... max_ni:        ' + str(max_ni))
+        logger.debug('..... max_noin:      ' + str(max_noin))
+        logger.debug('..... max_use_exemp: ' + str(max_use_exemption))
+        logger.debug('..... max_pok:       ' + str(max_pok))
+        logger.debug('..... max_pok_sesr:  ' + str(max_pok_sesr))
+        logger.debug('..... max_pok_pece:  ' + str(max_pok_pece))
+        logger.debug('..... max_pok_final: ' + str(max_pok_final))
+        logger.debug('--------------- end of calc_max_grades ---------------')
     return max_examperiod, max_ni
 # - end of calc_max_grades
 
 
 def get_sql_studsubj_values(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem, gl_max_ni, gl_examperiod,
-            has_exemption, has_reex, has_reex03):  # PR2021-12-30 PR2022-01-03 PR2022-06-10
+            has_exemption, has_reex, has_reex03, pok_sesr, pok_pece, pok_final):
+    # PR2021-12-30 PR2022-01-03 PR2022-06-10 PR2022-07-09
     # only called by calc_studsubj_result
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1153,6 +1299,7 @@ def get_sql_studsubj_values(studsubj_pk, gl_sesr, gl_pece, gl_final, gl_use_exem
             get_sql_value_bool(has_exemption),
             get_sql_value_bool(has_reex),
             get_sql_value_bool(has_reex03)
+            #TODO add pok_sesr, pok_pece, pok_final
         ]
 
     except Exception as e:
@@ -1615,20 +1762,22 @@ def calc_final_avg(student_ep_dict):  # PR2021-12-23
 # - end of calc_final_avg
 
 
-def calc_max_examperiod_gradetype_decimal(examperiod_A, finalgrade_A, pece_A, examperiod_B, finalgrade_B, pece_B):
+def calc_max_examperiod_gradetype_decimal(examperiod_A, finalgrade_A, pece_A, sesr_A, examperiod_B, finalgrade_B, pece_B, sesr_B):
     # PR2021-11-21 from AWP Function Calculations.EindcijferTvMax
     # Function returns examperiod with the highest grade, returns A when grades are the same or not entered
     # when the final grades are the same, it returns te examperiod with the highest pece grade
-
+    # PR2022-07-06 sesr added, to compare when weighing_ce = 0
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug( '  -----  calc_max_examperiod_gradetype_decimal  -----')
         logger.debug('..... examperiod_A: ' + str(examperiod_A))
         logger.debug('..... finalgrade_A: ' + str(finalgrade_A) + ' ' + str(type(finalgrade_A)))
         logger.debug('..... pece_A: ' + str(pece_A) + ' ' + str(type(pece_A)))
+        logger.debug('..... sesr_A: ' + str(sesr_A) + ' ' + str(type(sesr_A)))
         logger.debug('..... examperiod_B: ' + str(examperiod_B) )
         logger.debug('..... finalgrade_B: ' + str(finalgrade_B) + ' ' + str(type(finalgrade_B)))
         logger.debug('..... pece_B: ' + str(pece_B) + ' ' + str(type(pece_B)))
+        logger.debug('..... sesr_B: ' + str(sesr_B) + ' ' + str(type(sesr_B)))
 
     final_A_dot_nz = finalgrade_A.replace(',', '.') if finalgrade_A else "0"
     final_decimal_A =  Decimal(final_A_dot_nz)
@@ -1642,12 +1791,16 @@ def calc_max_examperiod_gradetype_decimal(examperiod_A, finalgrade_A, pece_A, ex
 
     max_examperiod = examperiod_A
     # from https://www.geeksforgeeks.org/python-decimal-compare-method/
+
+# - compare final grades
     compare_final = final_decimal_B.compare(final_decimal_A)
 
     if compare_final == 1:  # b.compare(a) == 1 means b > a
         max_examperiod = examperiod_B
     elif compare_final == -1:  # b.compare(a) == -1 means b < a
         pass  # max_examperiod = examperiod_A
+
+# - if final grades as the same: compare pece grades
     elif compare_final == 0:  # # b.compare(a) == 0 means b = a
         pece_A_dot_nz = pece_A.replace(',', '.') if pece_A else "0"
         pece_decimal_A = Decimal(pece_A_dot_nz)
@@ -1658,6 +1811,21 @@ def calc_max_examperiod_gradetype_decimal(examperiod_A, finalgrade_A, pece_A, ex
         compare_pece = pece_decimal_B.compare(pece_decimal_A)
         if compare_pece == 1:  # b.compare(a) == 1 means b > a
             max_examperiod = examperiod_B
+
+        elif compare_pece == -1:  # b.compare(a) == -1 means b < a
+            pass  # max_examperiod = examperiod_A
+
+# - if pece grades as the same: compare sesr grades
+        elif compare_pece == 0:  # # b.compare(a) == 0 means b = a
+            sesr_A_dot_nz = sesr_A.replace(',', '.') if sesr_A else "0"
+            sesr_decimal_A = Decimal(sesr_A_dot_nz)
+
+            sesr_B_dot_nz = sesr_B.replace(',', '.') if sesr_B else "0"
+            sesr_decimal_B = Decimal(sesr_B_dot_nz)
+
+            compare_sesr = sesr_decimal_B.compare(sesr_decimal_A)
+            if compare_sesr == 1:  # b.compare(a) == 1 means b > a
+                max_examperiod = examperiod_B
 
     if logging_on:
         logger.debug('..... max_examperiod: ' + str(max_examperiod))
@@ -1832,10 +2000,78 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
         logger.debug('>>>>>>>>>>>> student_dict: ' + str(student_dict))
+    """
+    student_dict: {'fullname': 'Ignacia, Signaire-lee Lourdes', 'stud_id': 3790, 'country': 'Curaçao', 'examyear_txt': '2022', 
+                    'school_name': 'Juan Pablo Duarte Vsbo', 'school_code': 'CUR03', 'islexschool': False, 
+                    'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'depbase_code': 'Vsbo', 'dep_abbrev': 'V.S.B.O.', 
+                    'lvl_name': 'Praktisch Kadergerichte Leerweg', 'lvlbase_code': 'PKL', 'level_req': True, 
+                    'sct_name': 'Techniek', 'dep_id': 4, 'lvl_id': 5, 'sct_id': 12, 'scheme_id': 72, 'classname': 'K4A', 
+                    'has_profiel': False, 'examnumber': '2144', 'iseveningstudent': False, 'islexstudent': False, 'bis_exam': False, 
+                    'partial_exam': False, 'withdrawn': False, 'c_subj': 10, 
+                    20943: {'si_id': 1728, 'subj': 'cav', 
+                            1: {'subj': 'cav', 'se': '7.7', 'sr': None, 'sesr': '7.7', 'pe': None, 'ce': None, 'pece': None, 'final': '8', 
+                                'max_ep': 1, 'max_sesr': '7.7', 'max_pece': None, 'max_final': '8', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False, 'pok': True}}, 
+                    20940: {'si_id': 1725, 'subj': 'en', 
+                            1: {'subj': 'en', 'se': '6.1', 'sr': None, 'sesr': '6.1', 'pe': None, 'ce': '4.7', 'pece': '4.7', 'final': '5', 
+                                'max_ep': 1, 'max_sesr': '6.1', 'max_pece': '4.7', 'max_final': '5', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False}, 
+                            2: {'subj': 'en', 'se': '6.1', 'sr': None, 'sesr': '6.1', 'pe': None, 'ce': '4.1', 'pece': '4.1', 'final': '5', 
+                                'max_ep': 1, 'max_sesr': '6.1', 'max_pece': '4.7', 'max_final': '5', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False}, 
+                            'has_reexCALC': True}, 
+                    20948: {'si_id': 1738, 'subj': 'ict', 
+                            1: {'subj': 'ict', 'se': '6.9', 'sr': None, 'sesr': '6.9', 'pe': None, 'ce': None, 'pece': None, 'final': '7', 
+                            'max_ep': 1, 'max_sesr': '6.9', 'max_pece': None, 'max_final': '7', 
+                            'max_ni': [], 'max_noin': [], 'max_use_exem': False, 'pok': True}}, 
+                    20942: {'si_id': 1727, 'subj': 'lo', 
+                            1: {'subj': 'lo', 'se': '6.3', 'sr': None, 'sesr': '6.3', 'pe': None, 'ce': None, 'pece': None, 'final': '6', 
+                            'max_ep': 1, 'max_sesr': '6.3', 'max_pece': None, 'max_final': '6', 
+                            'max_ni': [], 'max_noin': [], 'max_use_exem': False, 'pok': True}}, 
+                    20941: {'si_id': 1726, 'subj': 'mm1', 
+                            1: {'subj': 'mm1', 'se': '6.0', 'sr': None, 'sesr': '6.0', 'pe': None, 'ce': None, 'pece': None, 'final': '6', 
+                                'max_ep': 1, 'max_sesr': '6.0', 'max_pece': None, 'max_final': '6', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False, 'pok': True}}, 
+                    20946: {'si_id': 1731, 'subj': 'nask1', 
+                            2: {'subj': 'nask1', 'se': '5.9', 'sr': None, 'sesr': '5.9', 'pe': None, 'ce': '4.9', 'pece': '4.9', 'final': '5', 
+                                'max_ep': 1, 'max_sesr': '5.9', 'max_pece': '5.0', 'max_final': '5', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False}, 
+                            'has_reexCALC': True, 
+                            1: {'subj': 'nask1', 'se': '5.9', 'sr': None, 'sesr': '5.9', 'pe': None, 'ce': '5.0', 'pece': '5.0', 'final': '5', 
+                                'max_ep': 1, 'max_sesr': '5.9', 'max_pece': '5.0', 'max_final': '5', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+                    20939: {'si_id': 1724, 'subj': 'ne', 
+                            1: {'subj': 'ne', 'se': '5.8', 'sr': None, 'sesr': '5.8', 'pe': None, 'ce': '5.5', 'pece': '5.5', 'final': '6', 
+                                'max_ep': 1, 'max_sesr': '5.8', 'max_pece': '5.5', 'max_final': '6', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+                    20944: {'si_id': 1729, 'subj': 'pa', 
+                            1: {'subj': 'pa', 'se': '7.8', 'sr': None, 'sesr': '7.8', 'pe': None, 'ce': '7.8', 'pece': '7.8', 'final': '8', 
+                                'max_ep': 1, 'max_sesr': '7.8', 'max_pece': '7.8', 'max_final': '8', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False, 'pok': True}}, 
+                    20947: {'si_id': 1737, 'subj': 'stg', 
+                            1: {'subj': 'stg', 'se': 'v', 'sr': None, 'sesr': 'v', 'pe': None, 'ce': None, 'pece': None, 'final': 'v', 
+                                'max_ep': 1, 'max_sesr': 'v', 'max_pece': None, 'max_final': 'v', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False, 'pok': True}}, 
+                    20945: {'si_id': 1730, 'subj': 'wk', 
+                            1: {'subj': 'wk', 'se': '5.0', 'sr': None, 'sesr': '5.0', 'pe': None, 'ce': '4.7', 'pece': '4.7', 'final': '5', 
+                                'max_ep': 1, 'max_sesr': '5.0', 'max_pece': '4.7', 'max_final': '5', 
+                                'max_ni': [], 'max_noin': [], 'max_use_exem': False}}, 
+                    'c_ep2': 2, 
+                    'ep1': {'ep': 1, 
+                            'final': {'sum': 36, 'cnt': 6, 'info': ' en:5 ict:7 nask1:5 ne:6 pa:8 wk:5'}, 
+                            'combi': {'sum': 20, 'cnt': 3, 'info': ' cav:8 lo:6 mm1:6'}, 
+                            'pece': {'sumX10': 277, 'cnt': 5, 'info': ' en:4,7 nask1:5,0 ne:5,5 pa:7,8 wk:4,7'}, 
+                            'count': {'c3': 0, 'c4': 0, 'c5': 3, 'c6': 1, 'c7': 2, 'core4': 0, 'core5': 0}}, 
+                    'ep2': {'ep': 2, 'final': {'sum': 36, 'cnt': 6, 'info': ' en:5 ict:7 nask1:5 ne:6 pa:8 wk:5'}, 
+                            'combi': {'sum': 20, 'cnt': 3, 'info': ' cav:8 lo:6 mm1:6'}, 
+                            'pece': {'sumX10': 277, 'cnt': 5, 'info': ' en:4,7 nask1:5,0 ne:5,5 pa:7,8 wk:4,7'}, 
+                            'count': {'c3': 0, 'c4': 0, 'c5': 3, 'c6': 1, 'c7': 2, 'core4': 0, 'core5': 0}}}
+    """
 
     last_examperiod = None
 
 # - loop through ep_list, skip exemption
+    # ep_list always contains [ep4, ep1], contains ep2 and ep3 only when reex_count > 0 or reex03_count > 0
     for examperiod in ep_list:
         if examperiod != c.EXAMPERIOD_EXEMPTION:
 
@@ -2519,11 +2755,12 @@ def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_suffi
         if final_cnt_int and final_sum_int > 0:
             final_avg = Decimal(final_sum_str) / Decimal(final_count_str)
             final_rounded_str = str(grade_calc.round_decimal_from_str(final_avg, digits=1))
+        final_rounded_with_comma = final_rounded_str.replace('.', ',')
 
         final_info = final_dict.get('info', '-')
         final_info_str = final_info[1:] if final_info else '-'
         log_txt = ''.join((str(_('Average final grade')), ': ',
-            final_rounded_str, ' (', final_sum_str, '/', final_count_str, ') ', '{' + final_info_str + '}'
+            final_rounded_with_comma, ' (', final_sum_str, '/', final_count_str, ') ', '{' + final_info_str + '}'
         ))
         result_info_log_list.append(('').join((c.STRING_SPACE_05, str(log_txt))))
 
@@ -2543,7 +2780,7 @@ def calc_add_result_to_log(examperiod, last_student_ep_dict, rule_avg_pece_suffi
 def save_studsubj_batch(sql_studsubj_list):  # PR2022-01-03 PR2022-06-10
     # this function saves calculated fields in studentsubject
     # also has_exemption, has_sr , has_reex, has_reex03
-
+    # TODO: add pok_sesr, pok_pece, pok_final
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- save_studsubj_batch  --------------------')
@@ -3002,9 +3239,6 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
         28264: {'si_id': 2561, 'subj': 'sp', 1: {'subj': 'sp', 'se': '6.1', 'sr': None, 'sesr': '6.1', 'pe': None, 'ce': '5.4', 'pece': '5.4', 'final': '6'}}, 
         28267: {'si_id': 2557, 'subj': 'stg', 1: {'subj': 'stg', 'se': 'v', 'sr': None, 'sesr': 'v', 'pe': None, 'ce': None, 'pece': None, 'final': 'v'}}, 
         28265: {'si_id': 2558, 'subj': 'wk', 1: {'subj': 'wk', 'se': '6.8', 'sr': None, 'sesr': '6.8', 'pe': None, 'ce': '5.9', 'pece': '5.9', 'final': '6'}}}
-[2022-06-10 11:45:09] DEBUG [grades.calc_results.calc_student_result:265]  
-
-
 
             """
     return grade_dictlist_sorted
@@ -3547,28 +3781,30 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
         logger.debug('sql_keys: ' + str(sql_keys))
 
     sql_list = [
-        "SELECT studsubj.id AS studsubj_id, stud.id AS student_id, stud.idnumber, stud.regnumber, stud.gender,",
+        "SELECT studsubj.id AS studsubj_id, stud.id AS student_id, stud.idnumber, stud.gender, stud.examnumber,",
         "stud.lastname, stud.firstname, stud.prefix, stud.birthdate, stud.birthcountry, stud.birthcity,",
-        "stud.iseveningstudent, stud.islexstudent,",
-
-        "school.name AS school_name, school.article AS school_article,",
-        "dep.name AS dep_name, ey.code AS examyear_code, country.name AS country_name, country.abbrev AS country_abbrev,",
-        "lvl.name AS lvl_name, subj.name AS subj_name, subjbase.code AS subj_code,",
+        "stud.iseveningstudent, stud.islexstudent, stud.bis_exam,",
+        "sb.code AS school_code, school.name AS school_name, school.article AS school_article,",
+        "db.code AS depbase_code, dep.name AS dep_name, ey.code AS examyear_code, country.name AS country_name, country.abbrev AS country_abbrev,",
+        "lvlbase.code AS lvlbase_code, lvl.name AS lvl_name, subj.name AS subj_name, subjbase.code AS subj_code,",
         "studsubj.gradelist_use_exem, studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
         "si.gradetype, si.is_combi, si.weight_se, si.weight_ce, si.is_combi, si.is_combi, si.is_combi",
 
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
         "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+        "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
         "INNER JOIN schools_country AS country ON (country.id = ey.country_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+        "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
 
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+        "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
         "WHERE school.examyear_id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
         "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted",
@@ -3634,6 +3870,17 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
                     # add dots to idnumber, if last 2 digits are not numeric: dont print letters, pprint '00' instead
                     idnumber_withdots_no_char = stud_fnc.convert_idnumber_withdots_no_char(row.get('idnumber'))
 
+            # - calc regnumber - don't get it from database table
+                    reg_number = stud_fnc.calc_regnumber(
+                        school_code=row.get('school_code'),
+                        gender=row.get('gender'),
+                        examyear_str=str(row.get('examyear_code')),
+                        examnumber_str=row.get('examnumber'),
+                        depbase_code=row.get('depbase_code'),
+                        levelbase_code=row.get('lvlbase_code'),
+                        bis_exam=row.get('bis_exam')
+                    )
+
                     proof_of_knowledge_dict[student_pk] = {
                         'school_name': row.get('school_name'),
                         'school_article': row.get('school_article'),
@@ -3649,7 +3896,7 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
                         'birth_date_formatted': birth_date_formatted,
                         'birth_place': birth_place,
                         'idnumber': idnumber_withdots_no_char,
-                        'regnumber': row.get('regnumber'),
+                        'regnumber': reg_number,
                         'subjects': []
                     }
 
@@ -3678,12 +3925,11 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
 # end of get_proof_of_knowledge
 
 
-def calc_proof_of_knowledge( subj_code ,examperiod, studsubj_dict, no_centralexam, gradetype, is_combi, weight_se, weight_ce,
-                 has_reex, has_reex03):
+def calc_proof_of_knowledge(subj_code, examperiod, this_examperiod_dict, no_centralexam, gradetype, is_combi, weight_se, weight_ce):
     # PR2022-07-02
     # only called by calc_studsubj_result
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_proof_of_knowledge  --------- ')
 
@@ -3697,14 +3943,29 @@ def calc_proof_of_knowledge( subj_code ,examperiod, studsubj_dict, no_centralexa
     this_examperiod_dict: {'subj': 'ec', 'se': '7,4', 'sesr': '7.4', 'ni': ['ce']} 
     """
 
-# - get proof of knowledge only in first period, reex only if has_reex, reex03 only if has_reex03, skip in ep_exemption
-    if (examperiod == c.EXAMPERIOD_FIRST) or \
-            (examperiod == c.EXAMPERIOD_SECOND and has_reex) or \
-            (examperiod == c.EXAMPERIOD_THIRD and has_reex03):
+    # ep_list always contains [ep4, ep1], contains ep2 and ep3 only when reex_count > 0 or reex03_count > 0
+    # skip exemption (exemption cannot have pok)
 
-        this_examperiod_dict = studsubj_dict.get(examperiod)
+    # TODO
+    # The following situation exists:
+    # - a student has an exemption with grade 9
+    # - she does exam this exam period and gets an 8
+    # - AWP calculates the result based on the exemption
+    #  - the student fails again
+    # - because she did the exam this year, she must get a new exemption
+    # - therefore calculating max_pok is not enough, because it looks at the exemption and gives pok = Fals
+    # - solution: add pok_sesr, pok_pece and pok_final to studsubject
+
+# - get proof of knowledge only in first period, reex only if has_reex, reex03 only if has_reex03, skip in ep_exemption
+    if examperiod in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
 
 # - get grade info from this_examperiod_dict
+        sesr_grade = this_examperiod_dict.get('sesr')
+        pece_grade = this_examperiod_dict.get('pece')
+        final_grade = this_examperiod_dict.get('final')
+        use_exem = this_examperiod_dict.get('use_exem') or False
+        no_input = True if this_examperiod_dict.get('max_ni') else False
+
         has_pok = calc_pok(
             no_centralexam=no_centralexam,
             gradetype=gradetype,
@@ -3712,24 +3973,30 @@ def calc_proof_of_knowledge( subj_code ,examperiod, studsubj_dict, no_centralexa
             weight_se=weight_se,
             weight_ce=weight_ce,
             subj_code=subj_code,
-            use_exemp=this_examperiod_dict.get('max_use_exem'),
-            no_input=True if this_examperiod_dict.get('max_ni') else False,
-            sesr_grade=this_examperiod_dict.get('max_sesr'),
-            pece_grade=this_examperiod_dict.get('max_pece'),
-            final_grade=this_examperiod_dict.get('max_final')
+            use_exemp=False, # skip use_exemp here, to calc pok even when use_exemp
+            no_input=no_input,
+            sesr_grade=sesr_grade,
+            pece_grade=pece_grade,
+            final_grade=final_grade
         )
         if has_pok:
+            # also when use_exemp, pok has value
+            # values of pok_sesr, pok_pece and pok_final are: sesr_grade,pece_grade and final_grade
             this_examperiod_dict['pok'] = has_pok
+            #this_examperiod_dict['pok_sesr'] = sesr_grade
+            #this_examperiod_dict['pok_pece'] = pece_grade
+            #this_examperiod_dict['pok_final'] = final_grade
 
         if logging_on:
             logger.debug('   this_examperiod_dict: ' + str(this_examperiod_dict))
 # - end of calc_noinput
 
 
-def calc_pok (no_centralexam, gradetype, is_combi, weight_se, weight_ce,
+def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
               subj_code, use_exemp, no_input, sesr_grade, pece_grade, final_grade):
     # PR2022-07-01
     # function calculates proof of knowledge
+    # called by get_proof_of_knowledge_dict (to be deprecated) and calc_studsubj_result.calc_proof_of_knowledge
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -3766,6 +4033,16 @@ def calc_pok (no_centralexam, gradetype, is_combi, weight_se, weight_ce,
     dus ook een 'v' geeft bewijs van kennis:    
     """
     proof_of_knowledge_ok, final_grade_ok, sesr_grade_ok, pece_grade_ok = False, False, False, False
+
+    # TODO pok is possible if use_exemp
+    # The following situation exists:
+    # - a student has an exemption with grade 9
+    # - she does exam this exam period and gets an 8
+    # - AWP calculates the result based on the exemption
+    #  - the student fails again
+    # - because she did the exam this year, she must get a new exemption
+    # - therefore calculating max_pok is not enough, because it looks at the exemption and gives pok = Fals
+    # - solution: add pok_sesr, pok_pece and pok_final to studsubject
 
 # 1. geen BvK als het cijfer gebaseerd is op vrijstelling
     if not use_exemp:
