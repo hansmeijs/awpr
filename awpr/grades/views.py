@@ -878,9 +878,9 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 
 
 def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_examperiod, sel_lvlbase_pk):
-    # PR2022-06-12
+    # PR2022-06-12 PR2022-07-12
     # called by GradeApproveView, GradeSubmitEx2Ex2aView
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- check_ex5_grade_approved_rows -----')
@@ -898,14 +898,16 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
         sql_list = [
             "SELECT grd.id, grd.examperiod, studsubj.id AS studsubj_id, ",
             "subj.base_id AS subjbase_id, lvl.base_id AS lvlbase_id, dep.base_id AS depbase_id, school.base_id AS schoolbase_id,",
-
+            "exam.secret_exam,"
             "subj.base_id AS subjbase_id, lvl.base_id AS lvlbase_id, dep.base_id AS depbase_id, school.base_id AS schoolbase_id,",
-            "CONCAT_WS (' ', stud.prefix, CONCAT(stud.lastname, ','), stud.firstname) AS stud_name, subj.name AS subj_name",
+            "stud.lastname, stud.firstname, stud.prefix, subj.name AS subj_name",
 
             "FROM students_grade AS grd",
             "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
             "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
             "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+
+            "LEFT JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
 
             "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
             "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
@@ -918,16 +920,12 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
             "WHERE ey.id = %(ey_id)s::INT AND grd.examperiod = %(experiod)s::INT",
             "AND school.base_id = %(schoolbase_id)s::INT AND dep.base_id = %(depbase_id)s::INT",
 
-            "AND NOT stud.withdrawn AND NOT studsubj.has_exemption",
-            # olny return grades that are not fully approved. Empty gardes dont have to be approved, skip when has_exemption
-            " AND ((si.weight_se > 0 AND segrade IS NOT NULL",
-                "AND (grd.se_auth1by_id IS NULL OR grd.se_auth2by_id IS NULL OR grd.se_auth3by_id IS NULL))",
-            "OR (si.weight_ce > 0 AND cescore IS NOT NULL",
-                "AND (grd.ce_auth1by_id IS NULL OR grd.ce_auth2by_id IS NULL OR grd.ce_auth3by_id IS NULL OR grd.ce_auth4by_id IS NULL)))",
-
+            # PR2022-07-12 was: "AND NOT stud.withdrawn AND NOT studsubj.has_exemption",
+            "AND NOT stud.withdrawn",
 
             #PR2022-04-22 Kevin Weert JPD error: cannot submit Ex2 because subjects are not approved
             # turned out to be deleted grade. Forgot to add 'NOT tobedeleted' filter
+
             "AND NOT stud.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted"
         ]
 
@@ -935,7 +933,7 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
             sql_keys['lvl_pk'] = sel_lvlbase_pk
             sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
 
-        sql_list.append('ORDER BY stud.lastname, stud.firstname')
+        sql_list.append('ORDER BY stud.lastname, stud.firstname, subj.name')
 
         sql = ' '.join(sql_list)
 
@@ -945,7 +943,27 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
             rows = af.dictfetchall(cursor)
             if rows:
                 for row in rows:
-                    log_list.append(' - '.join((row.get('stud_name', '-'), row.get('subj_name', '-'))))
+
+                    # PR2022-07-12 Dafna Azulai Dr. Albert Schweitzer College Parera Vsbo
+                    # error: cannot submit Ex5 because subject are is not approved
+                    # turned out to be secret exam. Forgot to skip auth3 auth 4 check when secret exam
+
+                    not_fully_approved = False
+                    # check if auth1, auth2 and auth3 have approved segrade, only when weight_se > 0 and segrade is not None
+                    if row.get('weight_se', 0) > 0 and row.get('segrade') is not None:
+                        not_fully_approved = not row.get('se_auth1by_id') or not row.get('se_auth2by_id') or not row.get('se_auth3by_id')
+                    if not not_fully_approved:
+                        if row.get('weight_ce', 0) > 0 and row.get('cescore') is not None:
+                    # check if auth1 and auth2 have approved cescore, only when weight_ce > 0 and cescore is not None
+                            not_fully_approved = not row.get('ce_auth1by_id') or not row.get('ce_auth2by_id')
+                            if not not_fully_approved and not row.get('secret_exam'):
+                    # check if auth3 and auth4 have approved cescore, when not secret_exam
+                                not_fully_approved = not row.get('ce_auth3by_id') or not row.get('ce_auth4by_id')
+                    if not_fully_approved:
+                        stud_name = stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix'))
+                        log_list.append(' - '.join((stud_name, row.get('subj_name', '-'))))
+                    if logging_on:
+                        logger.debug('row: ' + str(row))
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))

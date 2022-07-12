@@ -2,13 +2,6 @@
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateField
 
-from django.contrib.postgres.fields import ArrayField
-
-from django.core.validators import MaxValueValidator
-from django.utils import timezone
-#PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
-
 from awpr.settings import AUTH_USER_MODEL
 from awpr import constants as c
 from schools import models as sch_mod

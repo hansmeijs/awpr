@@ -1,25 +1,23 @@
 # PR2021-11-24
 from django.contrib.auth.decorators import login_required
-from django.core.files import File
 from django.db import connection
 
-from django.core.files.storage import default_storage, FileSystemStorage
+from django.core.files.storage import FileSystemStorage
 
 from django.http import HttpResponse, HttpResponseRedirect, Http404, HttpResponseNotFound, FileResponse
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, gettext_lazy as _
+from django.utils.translation import activate
 from django.views.generic import View
-
 
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
-from reportlab.lib.units import inch, mm
+from reportlab.lib.enums import TA_LEFT
+from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Frame, Spacer, Image
+from reportlab.platypus import Paragraph, Frame
 
 from awpr import constants as c
 from awpr import settings as s
@@ -30,15 +28,12 @@ from awpr import library as awpr_lib
 
 from accounts import views as acc_view
 from schools import models as sch_mod
-from students import models as stud_mod
 from students import functions as stud_fnc
 from subjects import models as subj_mod
 from grades import views as gr_vw
 
 from os import path
 import io
-
-import tempfile
 
 import json
 import logging
@@ -870,7 +865,6 @@ def testParagraph_pdf(canvas):
 def test_pdf(canvas):
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet
-    from reportlab import rl_config
     from reportlab.lib.units import inch
 
     # pagesize A4  = (595.27, 841.89) points, 1 point = 1/72 inch

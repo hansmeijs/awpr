@@ -1016,7 +1016,7 @@ def create_ex1_ex4_format_dict(book, sheet, school, department, subject_pk_list,
 
 def create_ex1_ex4_rows_dict(examyear, school, department, save_to_disk, examperiod, prefix, published_instance):  # PR2021-08-15
     # this function is only called by create_ex1_xlsx
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex1_ex4_rows_dict -----')
         logger.debug('     examperiod: ' + str(examperiod))
