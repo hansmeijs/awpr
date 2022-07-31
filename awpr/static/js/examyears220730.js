@@ -1,9 +1,9 @@
 // PR2020-09-29 added
 
 
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};  // locale_dict
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};  // locale_dict
 const urls = {};
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let school_map = new Map();
     let department_map = new Map();
 
-    let filter_dict = {};
+    //let filter_dict = {};
     let filter_mod_employee = false;
 
 // --- get data stored in page

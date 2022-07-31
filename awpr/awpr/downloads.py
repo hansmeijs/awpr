@@ -442,6 +442,8 @@ def download_setting(request_item_setting, user_lang, request):
     msg_list = []
 
 # ----- get page name from request_item_setting
+    # - page is saved in Usersetting in function: get_headerbar_param
+
     # request_item_setting: {'page': 'page_grade', 'sel_examperiod': 4}
     page = request_item_setting.get('page')
 

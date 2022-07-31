@@ -3,12 +3,12 @@
 // PR2021-07-23  declare variables outside function to make them global variables
 
 // selected_btn is also used in t_MCOL_Open
-let selected_btn = "btn_exform";
+//let selected_btn = "btn_exform";
 
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};
-let urls = {};
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};
+//let urls = {};
 
 let selected = {};
 
@@ -31,9 +31,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    // declared as global: let selected_btn = "btn_exform";
-    //let setting_dict = {};
-    //let permit_dict = {};
+    // declared as global: //let selected_btn = "btn_exform";
+    ////let setting_dict = {};
+    ////let permit_dict = {};
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
@@ -45,19 +45,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let level_map = new Map();
     let sector_map = new Map();
 
-    let filter_dict = {};
+    //let filter_dict = {};
 
 // --- get data stored in page
     const el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
 
-    // columns_hidden and columns_tobe_hidden are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
-    // columns_tobe_hidden contains the fields and captions that can be hidden
+    // columns_hidden and mod_MCOL_dict.columns are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
+    // mod_MCOL_dict.columns contains the fields and captions that can be hidden
     // key 'all' contains fields that will be hidden in all buttons
     // key with btn name contains fields that will be hidden in this selected_btn
     // either 'all' or selected_btn are used in a page
 
-    columns_tobe_hidden.all = {
+    mod_MCOL_dict.columns.all = {
         name: "Name_ex_form", datepublished: "Date_submitted", url: "Download_Exform"
     };
 
@@ -324,8 +324,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  get list of hidden columns
         // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
+
         // hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvlbase_id")};
 
@@ -755,7 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row);
         }
 

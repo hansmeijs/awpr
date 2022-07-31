@@ -2,14 +2,7 @@
 
 // PR2021-07-23  declare variables outside function to make them global variables
 
-// selected_btn is also used in t_MCOL_Open
-let selected_btn = "btn_ep_01";
-
-let permit_dict = {};
-let setting_dict = {};
-let filter_dict = {};
-let loc = {};
-let urls = {};
+    console.log("PAGE VARIABLES")
 
 const field_settings = {};
 
@@ -96,13 +89,14 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_exam_download_conversion_pdf = get_attr_from_el(el_data, "data-url_exam_download_conversion_pdf");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
-    columns_tobe_hidden.all = {
+    // variable 'mod_MCOL_dict.columns' is initialized in tables.js
+    mod_MCOL_dict.columns.all = {
         examnumber: "Examnumber", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
     };
-    columns_tobe_hidden.btn_exem = {exemption_year: "Exemption_year"};
-    columns_tobe_hidden.btn_ep_01 = {ce_exam_name: "Exam"};
-    columns_tobe_hidden.btn_reex = {ce_exam_name: "Exam"};
-    columns_tobe_hidden.btn_reex03 = {ce_exam_name: "Exam"};
+    mod_MCOL_dict.columns.btn_exem = {exemption_year: "Exemption_year"};
+    mod_MCOL_dict.columns.btn_ep_01 = {ce_exam_name: "Exam"};
+    mod_MCOL_dict.columns.btn_reex = {ce_exam_name: "Exam"};
+    mod_MCOL_dict.columns.btn_reex03 = {ce_exam_name: "Exam"};
 
 // --- get field_settings
     const field_settings = {
@@ -493,13 +487,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // ---  fill cols_hidden
                     if("cols_hidden" in setting_dict){
-                        //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
-                        //  skip when setting_dict.cols_hidden is not an array,
-                        // will be changed into an array when saving with t_MCOL_Save
-                        if (Array.isArray(setting_dict.cols_hidden)) {
-                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
-                        };
+                        b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                     };
+
+        // add level to cols_skipped when dep has no level
+                    mod_MCOL_dict.cols_skipped = (!setting_dict.sel_dep_level_req) ? {all: ["lvl_abbrev"]} : {};
                 };
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
@@ -638,32 +630,6 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  show only the elements that are used in this tab
         b_show_hide_selected_elements_byClass("tab_show", "tab_" + selected_btn);
 
-/*
-        setting_dict.sel_subject_pk = null;
-        setting_dict.sel_subject_code = null;
-        setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_code = null;
-        setting_dict.sel_student_pk = null;
-        setting_dict.sel_student_name = null;
-
-        if(setting_dict.sel_subject_pk ) {
-            setting_dict.sel_cluster_pk = null;
-            setting_dict.sel_cluster_name = null;
-            setting_dict.sel_student_pk = null;
-            setting_dict.sel_student_name = null;
-
-        } else if(setting_dict.sel_cluster_pk ) {
-            setting_dict.sel_subject_pk = null;
-            setting_dict.sel_subject_code = null;
-            setting_dict.sel_student_pk = null;
-            setting_dict.sel_student_name = null;
-        } else if(setting_dict.sel_student_pk ) {
-            setting_dict.sel_subject_pk = null;
-            setting_dict.sel_subject_code = null;
-            setting_dict.sel_cluster_pk = null;
-            setting_dict.sel_cluster_name = null;
-        };
-*/
         if(skip_upload){
         // skip_upload = true when called by DatalistDownload.
         //  - don't call DatalistDownload, otherwise it cretaed an indefinite loop
@@ -3747,11 +3713,11 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                             el = td.children[0];
                             if(el){
                                 el_fldName = get_attr_from_el(el, "data-field")
-    console.log("el_fldName", el_fldName);
+    //console.log("el_fldName", el_fldName);
                                 const is_updated_field = updated_columns.includes(el_fldName);
                                 const is_err_field = error_columns.includes(el_fldName);
-    console.log("     is_updated_field", is_updated_field);
-    console.log("     is_err_field", is_err_field);
+    //console.log("     is_updated_field", is_updated_field);
+    //console.log("     is_err_field", is_err_field);
         // update field and make field green when field name is in updated_columns
                                 if(is_updated_field){
                                     UpdateField(el, update_dict);
@@ -5238,7 +5204,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         // was:
         // col_hidden.push( "srgrade", "sr_status", "pescore", "pe_status", "pegrade");
 
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden);
 
 // - hide columns that are not in use this examyear or this department PR2021-12-04
         // PR2021-12-04 use spread operator. from https://stackoverflow.com/questions/4842993/javascript-push-an-entire-list
@@ -5270,11 +5236,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         // in field_setting are only columns of the seelected exan type
         // dont show examtype, Richard Westerink ATC didn't see that select btn.
 
-
         //console.log( "col_hidden", col_hidden);
         return col_hidden;
     };
-
 
 //========= GetNumberFromInputGrade  =============== PR2020-12-16
     function GetNumberFromInputGrade(loc, input_value){

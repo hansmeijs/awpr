@@ -3,13 +3,13 @@
 // PR2021-07-23  declare variables outside function to make them global variables
 
 // selected_btn is also used in t_MCOL_Open
-let selected_btn = "btn_ep_01";
+//let selected_btn = "btn_ep_01";
 
-let permit_dict = {};
-let setting_dict = {};
-let filter_dict = {};
-let loc = {};
-let urls = {};
+//let permit_dict = {};
+//let setting_dict = {};
+//let filter_dict = {};
+//let loc = {};
+//let urls = {};
 
 const selected = {
     studsubj_dict: null,
@@ -103,20 +103,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
-    columns_tobe_hidden.all = {
+    mod_MCOL_dict.columns.all = {
         examnumber: "Examnumber", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
     };
-    columns_tobe_hidden.btn_ep_01 = {
+    mod_MCOL_dict.columns.btn_ep_01 = {
         sjtp_abbrev: "Character", is_thumbrule: "Thumb_rule",
         is_extra_nocount: "Extra_subject_nocount",
         //NIU is_extra_counts:  "Extra_subject_count",
         pws_title: "Assignment_title", pws_subjects: "Assignment_subjects", subj_status: "Status"
     };
 
-    // don'/'t add exemption_year to columns_tobe_hidden PR2022-04-15
+    // don'/'t add exemption_year to mod_MCOL_dict.columns PR2022-04-15
     // exemption_year only in use when iseveningschool or islexschool
     // was: must remove this field after setting_dict got value
-    //      columns_tobe_hidden.btn_exem = {
+    //      mod_MCOL_dict.columns.btn_exem = {
     //          fields: ["exemption_year"],
     //          captions: ["Exemption_year"]}
 
@@ -573,14 +573,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
                         //  skip when setting_dict.cols_hidden is not an array,
                         // will be changed into an array when saving with t_MCOL_Save
-                        if (Array.isArray(setting_dict.cols_hidden)) {
-                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
-                            // don'/'t add exemption_year to columns_tobe_hidden
-                            // was: if (!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){
-                            //    b_remove_item_from_array(columns_tobe_hidden.btn_exem.fields, "exemption_year");
-                            //};
+                        b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
+                        // don'/'t add exemption_year to mod_MCOL_dict.columns
+                        // was: if (!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){
+                        //    b_remove_item_from_array(mod_MCOL_dict.columns.btn_exem.fields, "exemption_year");
+                        //};
 
-                        };
                     };
 
                     selected.studsubj_dict = null;
@@ -808,9 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_rows = studsubj_rows;
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
         // hide level when not level_req
         //if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
@@ -4590,9 +4586,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_created = (!!update_dict.created);
 
     // ---  get list of hidden columns
-            // copy col_hidden from mod_MCOL_dict.cols_hidden
-            const col_hidden = [];
-            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
     // ---  get list of columns that are not updated because of errors
             const error_columns = [];

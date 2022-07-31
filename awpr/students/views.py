@@ -4579,7 +4579,7 @@ def create_student(school, department, upload_dict, messages, error_list, reques
 # - end of create_student
 
 #######################################################
-def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
+def   update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
                             idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
                             msg_list, error_list, err_fields, log_list, request, skip_save):
     # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04

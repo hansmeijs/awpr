@@ -3,12 +3,12 @@
 // PR2021-07-23  declare variables outside function to make them global variables
 
 // selected_btn is also used in t_MCOL_Open
-let selected_btn = "btn_result";
+//let selected_btn = "btn_result";
 
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};
-let urls = {};
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};
+//let urls = {};
 
 let selected = {student_pk: null, student_dict: {}};
 
@@ -33,9 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    // declared as global: let selected_btn = "btn_result";
-    //let setting_dict = {};
-    //let permit_dict = {};
+    // declared as global: //let selected_btn = "btn_result";
+    ////let setting_dict = {};
+    ////let permit_dict = {};
 
     let mod_dict = {};
     let mod_MAG_dict = {};
@@ -57,14 +57,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // PR2021-07-23 moved outside this function, to make it available in import.js
     // let student_rows = [];
-    // let loc = {};
+    // //let loc = {};
 
     let subject_map = new Map();
     let studentsubject_map = new Map()
     let scheme_map = new Map()
     let schemeitem_map = new Map()
 
-    let filter_dict = {};
+    //let filter_dict = {};
 
 // --- get data stored in page
     const el_data = document.getElementById("id_data");
@@ -88,18 +88,18 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_result_download_short_gradelist = get_attr_from_el(el_data, "data-url_result_download_short_gradelist");
     urls.url_change_birthcountry = get_attr_from_el(el_data, "data-url_change_birthcountry");
 
-    // columns_hidden and columns_tobe_hidden are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
-    // columns_tobe_hidden contains the fields and captions that can be hidden
+    // columns_hidden and mod_MCOL_dict.columns are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
+    // mod_MCOL_dict.columns contains the fields and captions that can be hidden
     // key 'all' contains fields that will be hidden in all buttons
     // key with btn name contains fields that will be hidden in this selected_btn
     // either 'all' or selected_btn are used in a page
 
-    columns_tobe_hidden.btn_result = {
+    mod_MCOL_dict.columns.btn_result = {
         idnumber: "ID_number", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", classname: "Class",
         examnumber: "Examnumber", regnumber: "Regnumber", result_status: "Result", withdrawn: "Withdrawn", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
     };
 
-    columns_tobe_hidden.btn_overview = {
+    mod_MCOL_dict.columns.btn_overview = {
         idnumber: "ID_number", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", classname: "Class",
         examnumber: "Examnumber", regnumber: "Regnumber", result_status: "Result", withdrawn: "Withdrawn"
     };
@@ -426,9 +426,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
                         //  skip when setting_dict.cols_hidden is not an array,
                         // will be changed into an array when saving with t_MCOL_Save
-                        if (Array.isArray(setting_dict.cols_hidden)) {
-                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
-                        };
+                        b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                     };
                     must_update_headerbar = true;
                 };
@@ -597,9 +595,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_rows =  (selected_btn === "btn_overview") ? results_per_school_rows : student_rows;
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
         // hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
@@ -2542,7 +2538,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row);
             if (show_row) {item_count += 1};
         }

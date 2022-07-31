@@ -882,13 +882,13 @@ aXX:hover{
     height: 390px;
     width: 320px
 }
-.tbl_studsubj_h320_w_auto {
+.tbl_h320_w_auto {
     overflow-x: hidden;
     overflow-y: auto;
     height: 320px;
     width: auto
 }
-.tbl_studsubj_h240_w_auto {
+.tbl_h240_w_auto {
     overflow-x: hidden;
     overflow-y: auto;
     height: 240px;

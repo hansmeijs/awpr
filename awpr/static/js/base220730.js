@@ -1,5 +1,17 @@
     "use strict";
 
+// ========= GLOBAL VARIABLES=================== PR2022-07-21
+    // these variables are used in all pages
+
+    // selected_btn is also used in t_MCOL_Open
+    let selected_btn = null;
+    console.log("GLOBAL VARIABLES")
+    let permit_dict = {};
+    let setting_dict = {};
+    let filter_dict = {};
+    let loc = {};
+    let urls = {};
+
 // ============================
     // add csrftoken to ajax header to prevent error 403 Forbidden PR2018-12-03
     // from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -41,17 +53,19 @@
     }; //function SetMenubuttonActive()
 
 //=========  AddSubmenuButton  === PR2020-01-26 PR2021-04-26 PR2021-06-23 PR21-10-22
-    function AddSubmenuButton(el_div, a_innerText, a_function, classnames_list, a_id, a_href, a_download) {
+    function AddSubmenuButton(el_div, a_innerHTML, a_function, classnames_list, a_id, a_href, a_download) {
         //console.log(" ---  AddSubmenuButton --- ");
         let el_a = document.createElement("a");
             if(a_id){el_a.setAttribute("id", a_id)};
 
             if(a_href) {
                 el_a.setAttribute("href", a_href);
-                if(a_download){ el_a.setAttribute("target", "_blank") }
+                if(a_download){ el_a.setAttribute("target", "_blank") };
             };
-            el_a.innerText = a_innerText;
+            el_a.innerHTML = a_innerHTML;
+
             if(!!a_function){el_a.addEventListener("click", a_function, false)};
+
             el_a.classList.add("no_select");
             // set background color of btn
             el_a.classList.add("tsa_tr_selected");
@@ -59,10 +73,10 @@
             if (classnames_list && classnames_list.length) {
                 for (let i = 0, classname; classname = classnames_list[i]; i++) {
                     el_a.classList.add(classname);
-                }
-            }
+                };
+            };
 
-            el_div.classList.add("pointer_show")
+            el_div.classList.add("pointer_show");
         el_div.appendChild(el_a);
     };//function AddSubmenuButton
 
@@ -1530,9 +1544,11 @@
         return new_array;
     }; // b_remove_item_from_array2
 
-//=========  b_copy_array_noduplicates  ================ PR2021-12-16
-    function b_copy_array_noduplicates(old_array, new_array){
-        b_clear_array(new_array);
+//=========  b_copy_array_noduplicates  ================ PR2021-12-16 PR2022-07-21
+    function b_copy_array_noduplicates(old_array, new_array, skip_clear){
+        if (!skip_clear){
+            b_clear_array(new_array);
+        };
         // skip if old_array is not an array type
         if(old_array && Array.isArray(old_array)){
             if(old_array.length){
@@ -1548,6 +1564,24 @@
         // new_array = array.filter(item => true);
     };  // b_copy_array_noduplicates
 
+//=========  b_copy_array_noduplicates  ================ PR2022-07-21
+    function b_copy_array_to_new_noduplicates(old_array){
+        const new_array = [];
+        // skip if old_array is not an array type
+        if(old_array && Array.isArray(old_array)){
+            if(old_array.length){
+                for (let i = 0, item; item = old_array[i]; i++) {
+        // skip if item already exists in new_array
+                    if (!new_array.includes(item)){
+                        new_array.push(item);
+                    };
+                };
+            };
+        };
+        // from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter?retiredLocale=nl
+        // new_array = array.filter(item => true);
+        return new_array;
+    };  // b_copy_array_noduplicates
 //=========  b_clear_array  ================ PR2021-07-07 PR2022-03-24
     function b_clear_array(array){
         // according to https://stackoverflow.com/questions/1232040/how-do-i-empty-an-array-in-javascript

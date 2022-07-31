@@ -1,10 +1,10 @@
 // PR2020-09-29 added
 
-let selected_btn = "btn_school";
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};  // locale_dict
-let urls = {};
+//let selected_btn = "btn_school";
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};  // locale_dict
+//let urls = {};
 
 let selected_period = {};
 
@@ -34,11 +34,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    let selected_btn = "btn_school";
+    //let selected_btn = "btn_school";
 
     let selected_period = {};
-    let setting_dict = {};
-    let permit_dict = {};
+    //let setting_dict = {};
+    //let permit_dict = {};
 
     let mod_dict = {};
     let mod_MSCH_dict = {};
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let school_map = new Map();
 
-    let filter_dict = {};
+    //let filter_dict = {};
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
@@ -688,9 +688,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // ---  get list of columns that are not updated because of errors
         const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
@@ -1827,7 +1825,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows

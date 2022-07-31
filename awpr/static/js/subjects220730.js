@@ -2,12 +2,12 @@
 
 // PR2021-07-23  declare variables outside function to make them global variables
 
-let selected_btn = "btn_subject";
+//let selected_btn = "btn_subject";
 
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};  // locale_dict
-let urls = {};
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};  // locale_dict
+//let urls = {};
 
 
 const field_settings = {};
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let package_map = new Map();
     let packageitem_map = new Map();
 
-    let filter_dict = {};
+    //let filter_dict = {};
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
@@ -77,12 +77,12 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_schemeitem_upload = get_attr_from_el(el_data, "data-schemeitem_upload_url");
     urls.url_download_scheme_xlsx = get_attr_from_el(el_data, "data-url_download_scheme_xlsx");
 
-// columns_hidden and columns_tobe_hidden are also used in t_MCOL_Open and t_MCOL_Save
-    columns_tobe_hidden.btn_subject = {
+// columns_hidden and mod_MCOL_dict.columns are also used in t_MCOL_Open and t_MCOL_Save
+    mod_MCOL_dict.columns.btn_subject = {
         name: "Name", depbases: "Departments", sequence: "Sequence", addedbyschool:"Added_by_school"
     };
 
-    columns_tobe_hidden.btn_scheme = {
+    mod_MCOL_dict.columns.btn_scheme = {
         depbase_code: "Department", lvl_abbrev: "Leerweg", sct_abbrev: "SectorProfiel_twolines",
         min_subjects: "Minimum_subjects", max_subjects: "Maximum_subjects",
         min_mvt: "Minimum_MVT_subjects", max_mvt: "Maximum_MVT_subjects",
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
         rule_core_sufficient: "Core_subject_rule", rule_core_notatevlex: "Not_at_evening_lex_school"
     };
 
-    columns_tobe_hidden.btn_schemeitem = {
+    mod_MCOL_dict.columns.btn_schemeitem = {
         subj_name: "Subject", sjtp_abbrev: "Character", ete_exam: "ETE_exam", otherlang: "Other_languages",
         gradetype: "Grade_type", weight_se: "SE_weighing", weight_ce: "CE_weighing",
         multiplier: "Counts_double", is_mandatory: "Mandatory", is_mand_subj: "Mandatory_if_subject",
@@ -103,12 +103,12 @@ document.addEventListener('DOMContentLoaded', function() {
         has_practexam: "Has_practical_exam", sr_allowed: "Herkansing_SE_allowed",
         max_reex: "Maximum_reex", thumb_rule: "Thumbrule_applies", no_ce_years: "Examyears_without_CE"
     };
-    columns_tobe_hidden.btn_subjecttype = {
+    mod_MCOL_dict.columns.btn_subjecttype = {
         name: "Character_name", min_subjects: "Minimum_subjects",  max_subjects: "Maximum_subjects",
         min_extra_nocount: "Minimum_extra_nocount", max_extra_nocount: "Maximum_extra_nocount",
         min_extra_counts: "Minimum_extra_counts", max_extra_counts: "Maximum_extra_counts", has_pws: "Has_assignment"
     };
-    columns_tobe_hidden.btn_subjecttypebase = {
+    mod_MCOL_dict.columns.btn_subjecttypebase = {
         name: "Name", abbrev: "Abbreviation", sequence: "Sequence"
     };
 
@@ -478,9 +478,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
                         //  skip when setting_dict.cols_hidden is not an array,
                         // will be changed into an array when saving with t_MCOL_Save
-                        if (Array.isArray(setting_dict.cols_hidden)) {
-                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
-                        };
+                        b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                     };
                     //console.log("columns_hidden", columns_hidden)
                     must_update_headerbar = true;
@@ -674,9 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //console.log( "selected.scheme_pk", selected.scheme_pk);
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -1269,9 +1265,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // ---  get list of columns that are not updated because of errors
             const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
@@ -1492,7 +1486,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows

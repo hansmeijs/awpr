@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
-# AwpModelManager adds function get_or_none. Used in  Subjectbase to prevent DoesNotExist exception
+# AwpModelManager adds function get_or_none.
 class AwpModelManager(Manager):
     def get_or_none(self, **kwargs):
         try:
@@ -119,8 +119,11 @@ class Systemupdate(AwpBaseModel):
         return self.name
 
 
-class Country(AwpBaseModel):
-    # PR2018-07-20 from https://stackoverflow.com/questions/3090302/how-do-i-get-the-object-if-it-exists-or-none-if-it-does-not-exist
+class Country(Model):
+    # PR2022-07-29 debug: database has circular reference accounts.user > country.modifiedby and schoolbase.country.modifiedby
+    # this gives trouble when restoring database.
+    # Therefore remove fields modifiedby (and modifiedat) by using class Model instead of AwpBaseModel
+
     objects = AwpModelManager()
 
     name = CharField(max_length=c.MAX_LENGTH_NAME, unique=True)
@@ -375,6 +378,7 @@ class Department_log(AwpBaseModel):
 
 
 class Schoolbase(Model):  # PR2018-05-27 PR2018-11-11
+
     objects = AwpModelManager()
 
     country = ForeignKey(Country, related_name='+', on_delete=PROTECT)

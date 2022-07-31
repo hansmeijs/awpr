@@ -1,10 +1,10 @@
 // PR2021-09-12 added
 
-let selected_btn = "btn_received";
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};
-let urls = {};
+//let selected_btn = "btn_received";
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};
+//let urls = {};
 
 let mailmessage_draft_rows = [];
 let mailmessage_received_rows = [];
@@ -1301,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow, data_inactive_field);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow, data_inactive_field);
             add_or_remove_class(tblRow, cls_hide, !show_row);
             if (show_row) {item_count += 1};
         }

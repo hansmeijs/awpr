@@ -1,12 +1,12 @@
 // PR2020-07-30 added
 
 // PR2021-09-22  declare variables outside function to make them global variables
-let selected_btn = "btn_user";
-let setting_dict = {};
-let permit_dict = {};
+//let selected_btn = "btn_user";
+//let setting_dict = {};
+//let permit_dict = {};
 const field_settings = {};
-let loc = {};
-let urls = {};
+//let loc = {};
+//let urls = {};
 
 let user_list = [];
 let user_rows = [];
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let permit_map = new Map();
 
-    let filter_dict = {};
+    //let filter_dict = {};
     let filter_mod_employee = false;
 
 // --- get data stored in page
@@ -2499,9 +2499,7 @@ function RefreshDataRowsAfterUpload(response) {
 
 // NIU:
 // ---  get list of hidden columns
-            // copy col_hidden from mod_MCOL_dict.cols_hidden
-            //const col_hidden = [];
-            //b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+            //const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
@@ -2735,7 +2733,7 @@ function RefreshDataRowsAfterUpload(response) {
         const data_inactive_field = (selected_btn !== "btn_userpermit") ? "data-inactive" : null;
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow, data_inactive_field);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow, data_inactive_field);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
     }; // Filter_TableRows

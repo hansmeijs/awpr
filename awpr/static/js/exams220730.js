@@ -7,12 +7,12 @@
 // there would be all kinds of security issues if one tab could affect the JavaScript in another
 
 // selected_btn is also used in t_MCOL_Open
-let selected_btn = "btn_ep_01";
+//let selected_btn = "btn_ep_01";
 
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};  // locale_dict
-let urls = {};
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};  // locale_dict
+//let urls = {};
 
 const selected = {
     item_count: 0
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let grade_exam_rows = [];
     let grade_exam_result_rows = [];
 
-    let filter_dict = {};
+    //let filter_dict = {};
 
     let el_focus = null; // stores id of element that must get the focus after closing mod message PR2020-12-20
 
@@ -100,36 +100,33 @@ document.addEventListener("DOMContentLoaded", function() {
 
     urls.url_download_published = get_attr_from_el(el_data, "data-download_published_url");
 
-    // const columns_tobe_hidden and mod_MCOL_dict are defined in tables.js
-    //const mod_MCOL_dict = {selected_btn: null, cols_hidden: [], cols_skipped: {}}
-    // PR2022-05-15 cols_skipped is dict with key: sel_btn and value: list of fieldnames to be skipped when filling tables with columns
-
-    columns_tobe_hidden.btn_ete_exams = {
+    // mod_MCOL_dict is defined in tables.js
+    mod_MCOL_dict.columns.btn_ete_exams = {
         subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version",
         examperiod: "Exam_type", blanks: "Blanks", secret_exam: "Designated_exam", status: "Status", download_exam: "Download_exam",
         cesuur: "Cesuur", scalelength: "Maximum_score", download_conv_table: "Download_conv_table"
     };
-    columns_tobe_hidden.btn_duo_exams = {
+    mod_MCOL_dict.columns.btn_duo_exams = {
         subjbase_code: "Abbreviation", subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version",
         ntb_omschrijving: "DUO_description", examperiod: "Exam_type", nterm: "N_term", scalelength: "schaallengte",
         download_conv_table: "Download_conv_table"
     };
-    columns_tobe_hidden.btn_ntermen = {
+    mod_MCOL_dict.columns.btn_ntermen = {
         opl_code: "opl_code", leerweg: "leerweg", ext_code: "ext_code", tijdvak: "tijdvak", nex_id: "nex_id",
         omschrijving: "omschrijving", schaallengte: "schaallengte", n_term: "N_term",
         afnamevakid: "afnamevakid", extra_vakcodes_tbv_wolf: "extra_vakcodes_tbv_wolf",
         datum: "datum", begintijd: "begintijd", eindtijd: "eindtijd"
     };
-    columns_tobe_hidden.btn_results = {
+    mod_MCOL_dict.columns.btn_results = {
         lvl_abbrev: "Leerweg", school_name: "School",
         grd_count: "Number_of_exams", result_count: "Submitted_exams",
         result_avg: "Average_score_percentage", download_conv_table: "Download_conv_table"
     };
-    columns_tobe_hidden.btn_ep_01 = {
+    mod_MCOL_dict.columns.btn_ep_01 = {
         examnumber: "Examnumber", lvl_abbrev: "Leerweg", cluster_name: "Cluster",
         subj_name: "Subject", blanks: "Blanks", ce_exam_score: "Score", download_exam: "Download_exam"
     };
-    columns_tobe_hidden.btn_reex = columns_tobe_hidden.btn_ep_01;
+    mod_MCOL_dict.columns.btn_reex = mod_MCOL_dict.columns.btn_ep_01;
 
 // --- get field_settings
     const field_settings = {
@@ -606,7 +603,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     b_get_permits_from_permitlist(permit_dict);
                     must_update_headerbar = true;
-                 // PR2022-05-15 remove field "download_conv_table" from columns_tobe_hidden.btn_results when role != ROLE_008_SCHOOL
+                 // PR2022-05-15 remove field "download_conv_table" from mod_MCOL_dict.columns.btn_results when role != ROLE_008_SCHOOL
                     // because this field is removed from table 'results' when user is admin
                     if(permit_dict.requsr_same_school ){
                         // when school: skip column 'school_name'
@@ -634,9 +631,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
                         //  skip when setting_dict.cols_hidden is not an array,
                         // will be changed into an array when saving with t_MCOL_Save
-                        if (Array.isArray(setting_dict.cols_hidden)) {
-                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
-                        };
+                        b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                     };
                 };
 
@@ -1129,9 +1124,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const data_rows = get_datarows_from_tblName(tblName);
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // - hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
@@ -2154,9 +2147,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const field_setting = field_settings[tblName];
 
     // ---  get list of hidden columns
-            // copy col_hidden from mod_MCOL_dict.cols_hidden
-            const col_hidden = [];
-            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
     // - hide level when not level_req
             if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
@@ -2191,8 +2182,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // ---  get list of hidden columns
             // copy col_hidden from mod_MCOL_dict.cols_hidden
-            const col_hidden = [];
-            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
     // ---  get list of columns that are not updated because of errors
             const error_columns = [];
@@ -2653,7 +2643,7 @@ document.addEventListener("DOMContentLoaded", function() {
         selected.item_count = 0;
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i];
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row);
             if (show_row){ selected.item_count += 1};
         };

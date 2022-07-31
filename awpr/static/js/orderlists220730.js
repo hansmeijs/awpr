@@ -1,10 +1,10 @@
 // PR2020-09-29 added
 
-let selected_btn = "btn_user";
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};
-let urls = {};
+//let selected_btn = "btn_user";
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};
+//let urls = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let schemeitem_rows = [];
     let orderlist_rows = []
 
-    let filter_dict = {};
+    //let filter_dict = {};
     let filter_mod_employee = false;
 
 // --- get data stored in page
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_orderlist_request_verifcode = get_attr_from_el(el_data, "data-url_orderlist_request_verifcode");
     urls.url_orderlist_publish = get_attr_from_el(el_data, "data-url_orderlist_publish");
 
-    columns_tobe_hidden.btn_orderlist = {
+    mod_MCOL_dict.columns.btn_orderlist = {
         school_abbrev: "School_name", total_students: "Number_of_candidates",
         total: "Number_of_entered_subjects", publ_count: "Number_of_submitted_subjects", datepublished: "Date_submitted"
     };
@@ -348,9 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "data_rows", data_rows);
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // --- reset table
         tblHead_datatable.innerText = null;
@@ -1059,9 +1057,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 //$("#id_mod_subject").modal("hide");
             }
 // ---  get list of hidden columns
-            // copy col_hidden from mod_MCOL_dict.cols_hidden
-            const col_hidden = [];
-            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
             //arr.splice(index, 0, item); will insert item into arr at the specified index
@@ -1275,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
-            show_row = t_ShowTableRowExtended(filter_dict, tblRow);
+            show_row = t_Filter_TableRow_Extended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
         }
 

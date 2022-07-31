@@ -1,13 +1,13 @@
 // PR2020-09-29 added
 
 // PR2021-07-23  declare variables outside function to make them global variables
-let setting_dict = {};
-let permit_dict = {};
-let loc = {};
-let urls = {};
+//let setting_dict = {};
+//let permit_dict = {};
+//let loc = {};
+//let urls = {};
 
 // selected_btn is also used in t_MCOL_Open
-let selected_btn = "btn_student";
+//let selected_btn = "btn_student";
 const selected = {
     student_dict: {},
     student_pk: null,
@@ -33,9 +33,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
-    // declared as global: let selected_btn = "btn_student";
-    //let setting_dict = {};
-    //let permit_dict = {};
+    // declared as global: //let selected_btn = "btn_student";
+    ////let setting_dict = {};
+    ////let permit_dict = {};
 
     let mod_dict = {};
     let mod_MSTUD_dict = {};
@@ -57,14 +57,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // PR2021-07-23 moved outside this function, to make it available in import.js
     // let student_rows = [];
-    // let loc = {};
+    // //let loc = {};
 
     let subject_map = new Map();
     let studentsubject_map = new Map()
     let scheme_map = new Map()
     let schemeitem_map = new Map()
 
-    let filter_dict = {};
+    //let filter_dict = {};
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
@@ -78,10 +78,10 @@ document.addEventListener('DOMContentLoaded', function() {
     //const url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
-    columns_tobe_hidden.all = {
+    mod_MCOL_dict.columns.all = {
         idnumber: "ID_number", prefix: "Prefix", gender: "Gender",
         birthdate: "Birthdate", birthcountry: "Country_of_birth", birthcity: "Place_of_birth",
-        lvlbase_id:  "Leerweg",sctbase_id: "Sector",classname: "Class",
+        lvlbase_id:  "Leerweg", sctbase_id: "Sector",classname: "Class",
         examnumber: "Examnumber", regnumber: "Regnumber", bis_exam: "Bis_exam"
     };
 
@@ -373,9 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
                         //  skip when setting_dict.cols_hidden is not an array,
                         // will be changed into an array when saving with t_MCOL_Save
-                        if (Array.isArray(setting_dict.cols_hidden)) {
-                             b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
-                        };
+                        b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                     };
                     must_update_headerbar = true;
                 };
@@ -532,9 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_rows = student_rows;
 
 // ---  get list of hidden columns
-        // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = [];
-        b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
         // hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvlbase_id")};
 
@@ -952,9 +948,7 @@ function RefreshDataRowsAfterUpload(response) {
             const is_created = (!!update_dict.created);
 
 // ---  get list of hidden columns
-            // copy col_hidden from mod_MCOL_dict.cols_hidden
-            const col_hidden = [];
-            b_copy_array_noduplicates(mod_MCOL_dict.cols_hidden, col_hidden)
+            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // ---  get list of columns that are not updated because of errors
             const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
