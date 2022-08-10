@@ -4,8 +4,7 @@
     "use strict";
 
 // ============================ MOD IMPORT ============================ PR2020-12-03
-    //const cls_hide = "display_hide";
-    const cls_visible_hide = "visibility_hide";
+
     const cls_btn_selected = "tsa_btn_selected";
 
     const cls_unlinked = "tsa_td_unlinked"

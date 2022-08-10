@@ -12,7 +12,6 @@ let user_list = [];
 let user_rows = [];
 let permit_rows = [];
 
-let department_rows = [];
 let school_rows = [];
 let level_rows = [];
 let subject_rows = [];
@@ -31,10 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // all other permits get their value in function get_permits, after downloading permit_list
     const may_view_page = (!!el_loader)
 
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
 
     let mod_dict = {};
     let mod_MUA_dict = {};
@@ -347,9 +342,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     permit_rows = response.permit_rows
                     refresh_permit_map(response.permit_rows) };
 
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
+                if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
+                    b_fill_datamap(examyear_map, response.examyear_rows) ;
+                };
+                if ("department_rows" in response){
+                    department_rows = response.department_rows
+                };
                 if ("school_rows" in response)  {school_rows = response.school_rows};
-                if ("department_rows" in response){department_rows = response.department_rows};
 
                 if ("level_rows" in response)  {level_rows = response.level_rows};
                 if ("subject_rows" in response)  {subject_rows = response.subject_rows};
@@ -1302,7 +1302,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             el_div.innerText = abbrev;
                             td.appendChild(el_div);
 
-                        //td.classList.add("tw_200", "px-2", "pointer_show", "tsa_bc_transparent")
+                        //td.classList.add("tw_200", "px-2", "pointer_show", cls_bc_transparent)
 
         // ---  add addEventListener
                         tblRow.addEventListener("click", function() {MUA_SelectSchool(tblRow, event.target)}, false);
@@ -1727,7 +1727,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_div.innerText = abbrev;
             td.appendChild(el_div);
 
-        td.classList.add("tw_200", "px-2", "pointer_show") // , "tsa_bc_transparent")
+        td.classList.add("tw_200", "px-2", "pointer_show") // , cls_bc_transparent)
 
 //--------- add addEventListener
         tblRow.addEventListener("click", function() {MUPM_SelectDepartment(tblRow)}, false);

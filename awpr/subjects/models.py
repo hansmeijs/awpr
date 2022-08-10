@@ -1,6 +1,8 @@
 # PR2018-07-20
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateField
+
+from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField
+from django.utils import timezone
 
 from awpr.settings import AUTH_USER_MODEL
 from awpr import constants as c
@@ -47,6 +49,9 @@ class Level(sch_mod.AwpBaseModel): # PR2018-08-12
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE)
     sequence = PositiveSmallIntegerField(db_index=True, default=1)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
+    # color is used in envelop module PR2022-08-03
+    color = CharField(max_length=c.MAX_LENGTH_10, null=True)
 
     class Meta:
         ordering = ['sequence',]
@@ -147,6 +152,9 @@ class Level_log(sch_mod.AwpBaseModel):
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
+    # color is used in envelop module PR2022-08-03
+    color = CharField(max_length=c.MAX_LENGTH_10, null=True)
+
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
@@ -241,6 +249,8 @@ class Scheme(sch_mod.AwpBaseModel):
     # TODO check if fields is still in use, deprecate otherwise
     fields = CharField(max_length=255, null=True, blank=True)
 
+    min_studyloadhours = PositiveSmallIntegerField(null=True)
+
     min_subjects = PositiveSmallIntegerField(null=True)
     max_subjects = PositiveSmallIntegerField(null=True)
 
@@ -302,6 +312,8 @@ class Scheme_log(sch_mod.AwpBaseModel):
 
     name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     fields = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+
+    min_studyloadhours = PositiveSmallIntegerField(null=True)
 
     min_subjects = PositiveSmallIntegerField(null=True)
     max_subjects = PositiveSmallIntegerField(null=True)
@@ -422,6 +434,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
 
     # TODO remove otherlang from Subject
     #otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
+
     # pr2021-05-04 temporary, used when importing from AWP to determine if subject is uploaded from school
     addedbyschool = BooleanField(default=False)
 
@@ -452,6 +465,83 @@ class Subject_log(sch_mod.AwpBaseModel):
     addedbyschool = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+######################################
+# Module exam envelops PR2022-08-03
+
+class Envelopbundlebase(Model):  # PR2022-08-03
+    objects = AwpModelManager()
+
+
+class Envelopbundle(sch_mod.AwpBaseModel):  # PR2022-08-03
+    # contains groups of available envelop labels
+    objects = AwpModelManager()
+
+    base = ForeignKey(Envelopbundlebase, related_name='+', on_delete=PROTECT)
+    examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
+
+    name = CharField(max_length=c.MAX_LENGTH_NAME)
+
+
+class Enveloplabelbase(Model):  # PR2022-08-03
+    objects = AwpModelManager()
+
+
+class Enveloplabel(sch_mod.AwpBaseModel):  # PR2022-08-03
+    # contains available envelop labels
+    objects = AwpModelManager()
+
+    base = ForeignKey(Enveloplabelbase, related_name='+', on_delete=PROTECT)
+    examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
+
+    name = CharField(max_length=c.MAX_LENGTH_NAME)
+
+    # Fixed number of envelops
+    numberfixed = PositiveSmallIntegerField(null=True)
+    # numberperexam means: number of exams per envelop Number of envelops = Roundup( total_exams / numberperexam)
+    numberperexam = PositiveSmallIntegerField(null=True)
+
+
+class Envelopbundlelabel(sch_mod.AwpBaseModel):  # PR2022-08-03
+    # contains groups of available envelop labels
+    objects = AwpModelManager()
+
+    envelopbundle = ForeignKey(Envelopbundle, related_name='+', on_delete=CASCADE)
+    enveloplabel = ForeignKey(Enveloplabel, related_name='+', on_delete=CASCADE)
+
+
+class Envelopitembase(Model):  # PR2022-08-03
+    objects = AwpModelManager()
+
+
+class Envelopitem(sch_mod.AwpBaseModel):  # PR2022-08-03
+    # contains available envelop content items
+    objects = AwpModelManager()
+
+    base = ForeignKey(Envelopitembase, related_name='+', on_delete=PROTECT)
+    examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
+
+    content_nl = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    content_en = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    content_pa = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+
+    instruction_nl = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    instruction_en = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    instruction_pa = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    # color is used in envelop module PR2022-08-03
+    content_color = CharField(max_length=c.MAX_LENGTH_10, null=True)
+    instruction_color = CharField(max_length=c.MAX_LENGTH_10, null=True)
+
+
+class Enveloplabelitem(sch_mod.AwpBaseModel):  # PR2022-08-03
+    # contains groups of available envelop labels
+    objects = AwpModelManager()
+
+    enveloplabel = ForeignKey(Enveloplabel, related_name='+', on_delete=CASCADE)
+    envelopitem = ForeignKey(Envelopitem, related_name='+', on_delete=CASCADE)
+
+    sequence = PositiveSmallIntegerField(default=1)
 
 
 # PR2022-02-28
@@ -513,8 +603,8 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     # PR2021-03-04 contains exam with possible answers per exam question
     objects = AwpModelManager()
 
-    subject = ForeignKey(Subject, related_name='+', on_delete=PROTECT)
-    department = ForeignKey(sch_mod.Department, related_name='+', on_delete=PROTECT)
+    subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
+    department = ForeignKey(sch_mod.Department, related_name='+', on_delete=CASCADE)
     level = ForeignKey(Level, related_name='+', null=True, on_delete=SET_NULL)
     ntermentable = ForeignKey(Ntermentable, related_name='+', null=True, on_delete=SET_NULL)
 
@@ -527,7 +617,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
 
     has_partex = BooleanField(default=False)
     partex = CharField(max_length=2048, null=True)
-    # amount contains total amount of questions, amount per partex is stored in partex
+    # amount contains total number of questions, amount per partex is stored in partex
     amount = PositiveSmallIntegerField(null=True)
     blanks = PositiveSmallIntegerField(null=True)
 
@@ -546,10 +636,19 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
 
+    datum = DateField(null=True)
+    begintijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+    eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+
     # PR2022-05-14 'Geheim examen': school gets grade from ETE.
     # when  secret_exam = True: school can enter grade instead of scores.
     # All 3rd periodexams are secret, part of 2nd period exams are secret
     secret_exam = BooleanField(default=False)
+
+    envelopbundle = ForeignKey(Envelopbundle, related_name='+', db_index=True, null=True, on_delete=SET_NULL)
+
+    evl_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    evl_modifiedat = DateTimeField(default=timezone.now, null=True)
 
 
 class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
@@ -591,11 +690,16 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
     cesuur = PositiveSmallIntegerField(null=True)
     nterm = CharField(max_length=c.MAX_LENGTH_04, null=True)
 
+    datum = DateField(null=True)
+    begintijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+    eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+
     secret_exam = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
+#######################################
 # PR2018-06-05
 class Schemeitem(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
@@ -659,6 +763,9 @@ class Schemeitem(sch_mod.AwpBaseModel):
     no_ce_years = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     thumb_rule = BooleanField(default=False)
 
+    studyloadhours = PositiveSmallIntegerField(null=True)
+
+    notatdayschool = BooleanField(default=False)
     #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
     #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
     #   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28
@@ -784,6 +891,9 @@ class Schemeitem_log(sch_mod.AwpBaseModel):
 
     no_ce_years = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     thumb_rule = BooleanField(default=False)
+
+    studyloadhours = PositiveSmallIntegerField(null=True)
+    notatdayschool = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

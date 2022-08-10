@@ -959,7 +959,7 @@ def create_ex1_ex4_format_dict(book, sheet, school, department, subject_pk_list,
         ex1_formats['row_formats'].append(row_align_center)
         ex1_formats['totalrow_formats'].append(totalrow_align_center)
 
-# - add column 'Leerweg' if level_req
+# - add column 'Learning_path' if level_req
     if level_req:  # add column if level_req
         col_count += 1
         field_width.append(5)
@@ -2045,7 +2045,7 @@ def create_ex2_format_dict(book, sheet, school, department, subject_pk_list, sub
         ex2_formats['row_formats'].append(row_align_center)
         ex2_formats['totalrow_formats'].append(totalrow_align_center)
 
-    # - add column 'Leerweg' if level_req
+    # - add column 'Learning_path' if level_req
     if level_req:  # add column if level_req
         col_count += 1
         field_width.append(5)
@@ -2189,7 +2189,7 @@ def create_ex5_format_dict(book, sheet, school, department, subject_pk_list, sub
         ex5_formats['row_formats'].append(row_align_center)
         ex5_formats['totalrow_formats'].append(totalrow_align_center)
 
-    # - add column 'Leerweg' if level_req
+    # - add column 'Learning_path' if level_req
     if level_req:  # add column if level_req
         format_index += 1
         field_width.append(4)
@@ -5002,7 +5002,7 @@ class SchemeDownloadXlsxView(View):  # PR2021-07-13
                 sel_examyear_instance, sel_scheme_pk = \
                     dl.get_selected_examyear_scheme_pk_from_usersetting(request)
 
-                # TODO set sel_scheme_pk not working properly, set None for now
+                # TODO set sel_scheme_pk not working properly, set None for now. Add modconfirm on page, add list arg to url
                 sel_scheme_pk = None
 
                 if sel_examyear_instance :
@@ -5013,10 +5013,12 @@ class SchemeDownloadXlsxView(View):  # PR2021-07-13
                         scheme_pk=sel_scheme_pk)
                     subjecttype_rows = subj_view.create_subjecttype_rows(
                         examyear=sel_examyear_instance,
+                        append_dict={},
                         scheme_pk=sel_scheme_pk,
                         orderby_sequence=True)
                     schemeitem_rows = subj_view.create_schemeitem_rows(
                         examyear=sel_examyear_instance,
+                        append_dict={},
                         scheme_pk=sel_scheme_pk,
                         orderby_name=True)
                     if schemeitem_rows:
@@ -5097,12 +5099,10 @@ def create_scheme_xlsx(examyear, scheme_rows, subjecttype_rows, schemeitem_rows,
         # get number of columns
 
         field_width = [25, 12, 12, 12,
-                       12, 12, 12, 12, 12, 12,
-                       15, 15,
-                       12, 12, 12,
-                       12, 12, 12,
-                       12,15,
-                       15, 15
+                       12, 12, 12, 12,
+                       15, 12, 15, 15, 15,
+                       12, 12, 12, 12, 12, 15, 15,
+                       12, 12, 12, 12, 12, 15, 15
                        ]
 
 # --- set column width
@@ -5153,21 +5153,30 @@ def create_scheme_paragraph_xlsx(row_index, sheet, row, bold_format,
 
     # get number of columns
     field_names = ['name', 'dep_abbrev', 'lvl_abbrev', 'sct_abbrev',
-                   'min_subjects', 'max_subjects',
-                   'min_mvt', 'max_mvt',
-                   'min_combi', 'max_combi',
+                   'min_studyloadhours', 'min_subjects', 'max_subjects',
+                   'min_mvt', 'max_mvt', 'min_wisk', 'max_wisk',
+                   'min_combi', 'max_combi', 'max_reex',
+                   'rule_avg_pece_sufficient', 'rule_avg_pece_notatevlex', 'rule_core_sufficient', 'rule_core_notatevlex',
                    'modifiedat', 'modby_username']
-    field_captions = [str(_('Subject scheme')), str(_('Department')), str(_('Level')), str(_('Sector / Profiel')),
-                      str(_('Minimum amount of subjects')), str(_('Maximum amount of subjects')),
-                      str(_('Minimum amount of MVT subjects')), str(_('Maximum amount of MVT subjects')),
-                      str(_('Minimum amount of combination subjects')),
-                      str(_('Maximum amount of combination subjects')),
-                      str(_('Last modified on ')), str(_('Last modified by'))]
+    field_captions = [str(_('Subject scheme')), str(_('Department')), str(_('Level')), str(_('Sector / Profile')),
+                      str(_('Minimum studyload hours')), str(_('Minimum number of subjects')), str(_('Maximum number of subjects')),
+                      str(_('Minimum number of MVT subjects')), str(_('Maximum number of MVT subjects')),
+                      str(_('Minimum number of math subjects')), str(_('Maximum number of math subjects')),
+                      str(_('Minimum number of combination subjects')), str(_('Maximum number of combination subjects')),
+                      str(_('Maximum number of re-examinations')),
+
+                      str(_('Average CE grade rule')), str(_('Average CE grade rule not at eveningschool')),
+                      str(_('Final grade must be sufficient')), str(_('Final grade rule not at eveningschool')),
+
+                      str(_('Last modified on ')), str(_('Last modified by'))
+                      ]
+
     header_format = th_align_center
     row_formats = [row_align_left, row_align_center, row_align_center, row_align_center,
-                   row_align_center, row_align_center,
-                   row_align_center, row_align_center,
-                   row_align_center, row_align_center,
+                   row_align_center, row_align_center, row_align_center,
+                   row_align_center, row_align_center, row_align_center, row_align_center,
+                   row_align_center, row_align_center, row_align_center, row_align_center,
+                   row_align_center, row_align_center, row_align_center, row_align_center,
                    row_align_left, row_align_left
                    ]
 
@@ -5193,6 +5202,10 @@ def create_scheme_paragraph_xlsx(row_index, sheet, row, bold_format,
                 value = af.format_modified_at(modified_dte, user_lang)
             else:
                 value = row.get(field_name, '')
+
+                if isinstance(value, bool):
+                    value = 'x' if value else ''
+
             sheet.write(row_index, i, value, row_formats[i])
 
     return row_index
@@ -5207,14 +5220,17 @@ def create_subjecttype_paragraph_xlsx(row_index, sheet, subjecttype_rows, scheme
                    'min_subjects', 'max_subjects',
                    'min_extra_nocount', 'max_extra_nocount',
                    'min_extra_counts', 'max_extra_counts',
+                    'has_prac','has_pws',
                    'modifiedat', 'modby_username']
     field_captions = [str(_('Character')), str(_('Abbreviation')),
-                      str(_('Minimum amount of subjects')),
-                      str(_('Maximum amount of subjects')),
+                      str(_('Minimum number of subjects')),
+                      str(_('Maximum number of subjects')),
                       str(_("Minimum extra subject, doesn't count")),
                       str(_("Maximum extra subject, doesn't count")),
                       str(_("Minimum extra subject, counts")),
                       str(_("Maximum extra subject, counts")),
+                      str(_('Has practical exam')),
+                      str(_('Has assignment')),
                       str(_('Last modified on ')), str(_('Last modified by'))]
     header_format = th_align_center
     row_formats = [row_align_left, row_align_center,
@@ -5258,41 +5274,35 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
         logger.debug('row_index: ' + str(row_index))
 
     # get number of columns
-    field_names = ['subj_name', 'subj_code', 'sjtp_abbrev', 'gradetype',
-                   'weight_se', 'weight_ce',
-                   'is_mandatory', 'is_mand_subj',
-                   'is_combi', 'is_core_subject', 'is_mvt',
-
-                   "rule_grade_sufficient, rule_gradesuff_notatevlex,",
-
-                   'extra_count_allowed', 'extra_nocount_allowed',
-                   'has_practexam',
-                   'sr_allowed', 'max_reex',
-                   'no_thirdperiod', 'no_exemption_ce',
-                   'otherlang',
-                   'modifiedat', 'modby_username']
+    field_names = [
+        'subj_name', 'subj_code', 'sjtp_abbrev', 'gradetype',
+        'studyloadhours', 'notatdayschool', 'weight_se', 'weight_ce', 'multiplier', 'is_mandatory', 'is_mand_subj',
+        'is_combi', 'is_core_subject', 'is_mvt', 'is_wisk',
+        'extra_count_allowed', 'extra_nocount_allowed', 'has_practexam', 'sr_allowed',
+        'rule_grade_sufficient', 'rule_gradesuff_notatevlex,',
+        'thumb_rule', "no_ce_years", 'otherlang', 'ete_exam',
+        'modifiedat', 'modby_username'
+    ]
 
     col_count = len(field_names)
     if logging_on:
         logger.debug('col_count: ' + str(col_count))
 
-    field_captions = [str(_('Subjects of this subject scheme')), str(_('Abbreviation')),
-                      str(_('Subject type')), str(_('Grade type')),
+    field_captions = [
+        str(_('Subjects of this subject scheme')), str(_('Abbreviation')), str(_('Subject type')), str(_('Grade type')),
+        str(_('Studyload hours')),str(_('Subject not at dayschool')), str(_('SE weight')), str(_('CE weight')), str(_('Multiplier')), str(_('Mandatory')), str(_("Mandatory if candidate has this subject")),
+        str(_('Combination subject')), str(_('Core subject')), str(_('MVT subject')), str(_('Math subject')),
+        str(_('Extra subject counts allowed')), str(_('Extra subject does not count allowed')), str(_('Has practical exam')), str(_('Re-examination school exam allowed')),
+        str(_('Final grade must be sufficient')), str(_('Final grade rule not at eveningschool')),
+        str(_('Thumb rule applies')), str(_('Exam years without CE')), str(_('Other languages')), str(_('ETE exam')),
+        str(_('Last modified on')), str(_('Last modified by'))
+    ]
 
-                      str(_('SE weight')), str(_('CE weight')),
-                      str(_('Mandatory')),  str(_("'Mandatory-if' subject")),
-                      str( _('Combination subject')), str(_('Core subject')), str(_('MVT subject')),
-                      str(_('Extra subject counts allowed')), str(_('Extra subject does not count allowed')),
-                      str(_('Has practical exam')), str(_('Has assignment')),
-                      str(_('Herkansing SE allowed')), str(_('Maximum number of re-examinations')),
-                      str(_('Subject has no third period')), str(_('Exemption without CE allowed')),
-                      str(_('Other languages')),
-                      str(_('Last modified on ')), str(_('Last modified by'))]
     header_format = th_align_center
 
     row_formats = []
     for x in range(0, col_count):  # range(start_value, end_value, step), end_value is not included!
-        if 1 < x < col_count - 3:
+        if 1 < x < col_count - 2:
             row_formats.append(row_align_center)
         else:
             row_formats.append(row_align_left)
@@ -5306,9 +5316,13 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
         sheet.write(row_index, i, field_captions[i], header_format)
     if logging_on:
         logger.debug('field_captions end ')
-    # ---  loop through scheme rows
+
+# ---  loop through schemeitem_rows
     if len(schemeitem_rows):
         for row in schemeitem_rows:
+            if logging_on:
+                logger.debug('row: ' + str(row))
+
             scheme_id = row.get('scheme_id')
             if scheme_id == scheme_pk:
                 row_index += 1
@@ -5316,6 +5330,7 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                     if field_name == 'modifiedat':
                         modified_dte = row.get(field_name, '')
                         value = af.format_modified_at(modified_dte, user_lang)
+
                     elif field_name == 'gradetype':
                         gradetype = row.get(field_name)
                         if gradetype == 1:
@@ -5340,6 +5355,9 @@ def create_schemeitem_paragraph_xlsx(row_index, sheet, schemeitem_rows, scheme_p
                         """
                     else:
                         value = row.get(field_name, '')
+                        if logging_on and False:
+                            logger.debug('field_name: ' + str(field_name) + '  value: ' + str(value) + '  ' + str(type(value)))
+
                         if isinstance(value, bool):
                             value = 'x' if value else ''
 

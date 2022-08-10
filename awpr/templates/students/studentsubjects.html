@@ -5,8 +5,8 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import220630.js' %}"></script>
-    <script src="{% static 'js/studentsubjects220730.js' %}"></script>
+    <script src="{% static 'js/import220808.js' %}"></script>
+    <script src="{% static 'js/studentsubjects220808.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -17,7 +17,7 @@
         </div>
         {% if not no_access %}
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Learning path' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>

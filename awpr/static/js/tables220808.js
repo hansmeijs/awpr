@@ -2,21 +2,22 @@
     let mod_MSESD_dict = {};
 // ++++++++++++  TABLE  +++++++++++++++++++++++++++++++++++++++
     "use strict";
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_selected = "tsa_tr_selected";
-    const cls_bc_transparent = "tsa_bc_transparent";
 
 // ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
 
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
-        //console.log( "===== t_MSED_Open ========= ", tblName);
+        console.log( "===== t_MSED_Open ========= ", tblName);
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
         //console.log( "data_map", data_map);
         //console.log( "all_countries", all_countries);
         // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
+
+        console.log( "examyear_rows", examyear_rows);
+        console.log( "tblName", tblName);
+        console.log( "loc", loc);
+
         if (!isEmpty(loc)) {
             let may_open_modal = false, selected_pk = null;
             if (tblName === "examyear") {
@@ -37,13 +38,14 @@
 
 // set header text
                 const el_MSED_header_text = document.getElementById("id_MSED_header_text");
-                const header_text = (tblName === "examyear") ? loc.Select_examyear :// PR2021-11-16 debug was:  loc.Copy_to_examyear :
+                const header_text = (tblName === "examyear") ? loc.Select_examyear :
                                     (tblName === "department") ? loc.Select_department : null;
+        console.log( "header_text", header_text);
                 el_MSED_header_text.innerText = header_text;
 
 // ---  fill select table
-                t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries);
-
+                //t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries);
+                t_MSED_FillSelectRows(tblName, MSED_Response, selected_pk)
 // ---  show modal
                 $("#id_mod_select_examyear_or_depbase").modal({backdrop: true});
             }
@@ -52,7 +54,7 @@
 
 //=========  t_MSED_Save  ================ PR2021-05-10 PR2021-08-13 PR2021-09-24
     function t_MSED_Save(MSED_Response, tblRow) {
-        //console.log("===  t_MSED_Save =========");
+        console.log("===  t_MSED_Save =========");
     // --- put tblName, sel_pk and value in MSED_Response, MSED_Response handles uploading
 
         const tblName = get_attr_from_el(tblRow, "data-table");
@@ -100,7 +102,7 @@
         setting_dict.sel_subject_code = null;
         setting_dict.sel_subject_name = null;
 
-        //console.log("new_setting", new_setting);
+        console.log("new_setting", new_setting);
         MSED_Response(new_setting)
 
 // hide modal
@@ -108,7 +110,67 @@
 
     }  // t_MMSED_Save
 
-//=========  t_MSED_FillSelectTable  ================ PR2020-08-21 PR2020-12-18 PR2021-05-10 PR2021-09-24 PR2022-04-30
+//=========  t_MSED_FillSelectRows  ================
+//  PR2022-08-02
+    function t_MSED_FillSelectRows(tblName, MSED_Response, selected_pk) {
+        console.log( "===== t_MSED_FillSelectRows ========= ");
+        //console.log( "tblName", tblName);
+        //console.log( "all_countries", all_countries);
+        //console.log( "permit_dict", permit_dict);
+        //console.log( "data_rows", data_rows);
+
+        const tblBody_select = document.getElementById("id_MSED_tblBody_select");
+        tblBody_select.innerText = null;
+        const data_rows = (tblName === "examyear") ? examyear_rows :
+                          (tblName === "department") ? department_rows : null;
+// --- loop through data_rows
+        if(data_rows && data_rows.length){
+            // PR2022-04-19 Sentry Error: Expected identifier
+            // don't know why. Added: && data_rows.size to if clause
+
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                const pk_int = (tblName === "examyear") ? data_dict.id :
+                               (tblName === "department") ? data_dict.base_id : null;
+
+    // permit_dict.requsr_country_pk
+                const is_locked = (data_dict.locked) ? data_dict.locked : false;
+                const code_value = (tblName === "examyear") ? (data_dict.examyear_code) ? data_dict.examyear_code : "---" :
+                                (tblName === "department") ? (data_dict.base_code) ? data_dict.base_code : "---" : "---";
+
+        console.log( "data_dict", data_dict);
+        console.log( "code_value", code_value);
+        console.log( "is_locked", is_locked);
+                let skip_row = false;
+                if(tblName === "examyear") {
+                    skip_row = (permit_dict.requsr_country_pk !== data_dict.country_id);
+                } else if(tblName === "department"){
+                    // all_countries is only used in exams.js
+                    // all_countries = true, used to let ETE select all deps, schools must only be able to select their deps
+                    if (permit_dict.allowed_depbases && permit_dict.allowed_depbases.length){
+                        skip_row = !permit_dict.allowed_depbases.includes(pk_int);
+                    } else {
+                        // must set skip_row = false when allowed_depbases = []? Don't know, it seems to be OK like this
+                        skip_row = true;
+                    };
+                };
+        console.log( "skip_row", skip_row);
+                if(!skip_row){
+                    t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk)
+                };
+            };
+        };  // if(!!data_map)
+        const row_count = (tblBody_select.rows) ? tblBody_select.rows.length : 0;
+        if(!row_count){
+            const caption_none = (tblName === "examyear") ? loc.No_examyears :
+                                 (tblName === "department") ? loc.No_departments : null;
+            //t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk)
+            t_MSED_CreateSelectRowNew(tblName, tblBody_select, null, caption_none, false, MSED_Response, null)
+        };
+    };  // t_MSED_FillSelectRows
+
+//=========  t_MSED_FillSelectTable  ================
+// PR2020-08-21 PR2020-12-18 PR2021-05-10 PR2021-09-24 PR2022-04-30 PR2022-08-02
+// NOT IN USE
     function t_MSED_FillSelectTable(loc, tblName, data_map, permit_dict, MSED_Response, selected_pk, all_countries) {
         //console.log( "===== t_MSED_FillSelectTable ========= ");
         //console.log( "tblName", tblName);
@@ -171,6 +233,48 @@
             t_MSED_CreateSelectRow(loc, tblName, tblBody_select, null, caption_none, null, false, false, MSED_Response, selected_pk);
         };
     };  // t_MSED_FillSelectTable
+
+//=========  t_MSED_CreateSelectRowNew  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24 PR2022-08-02
+    function t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk) {
+        console.log( "===== t_MSED_CreateSelectRowNew ========= ");
+        console.log( "code_value", code_value);
+        console.log( "is_locked", is_locked);
+
+        const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
+
+// ---  insert tblRow  //index -1 results in that the new row will be inserted at the last position.
+        let tblRow = tblBody_select.insertRow(-1);
+        tblRow.setAttribute("data-table", tblName)
+        tblRow.setAttribute("data-pk", pk_int);
+
+        console.log( "pk_int", pk_int);
+// ---  add EventListener to tblRow
+        if(pk_int){
+            tblRow.addEventListener("click", function() { t_MSED_Save(MSED_Response, tblRow) }, false )
+// ---  add hover to tblRow
+            add_hover(tblRow);
+// ---  highlight clicked row
+            if (is_selected_pk){ tblRow.classList.add(cls_selected)}
+        }
+        const col_width = "tw_150"
+
+// --- add a element with code_value to td
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.innerText = code_value;
+            el_div.classList.add(col_width, "px-2")
+        td.appendChild(el_div);
+
+// --- add td to tblRow with icon locked.
+        if  (tblName === "examyear") {
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                const class_locked = (is_locked) ? "appr_2_6" :  "appr_0_0";
+                el_div.classList.add("tw_032", class_locked)
+                el_div.title = (is_locked) ? loc.This_examyear + loc.is_locked : "";
+            td.appendChild(el_div);
+        }
+    }  // t_MSED_CreateSelectRowNew
 
 //=========  t_MSED_CreateSelectRow  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24
     function t_MSED_CreateSelectRow(loc, tblName, tblBody_select, pk_int, code_value, country, all_countries, activated, locked, MSED_Response, selected_pk) {
@@ -446,7 +550,7 @@
                 el_div.innerText = code;
                 el_div.classList.add("tw_075", "px-1")
                 td.appendChild(el_div);
-            td.classList.add("tsa_bc_transparent");
+            td.classList.add(cls_bc_transparent);
         };
 
 // --- add td to tblRow.
@@ -456,7 +560,7 @@
             el_div.innerText = name;
             el_div.classList.add("tw_240", "px-1")
             td.appendChild(el_div);
-        td.classList.add("tsa_bc_transparent");
+        td.classList.add(cls_bc_transparent);
 
 // --- add second td to tblRow with icon locked, published or activated.
         if (tblName === "school") {
@@ -693,7 +797,7 @@
     // function serches for awpKey "sector" or "level" in excel_columns
     // column is linked when awpKey exists in excel_columns
     // and returns row_index 12 PR2019-01-10
-    // excCol_row: {index: 12, excKey: "Profiel", awpKey: "level", awpCaption: "Leerweg"}
+    // excCol_row: {index: 12, excKey: "Profiel", awpKey: "level", awpCaption: "Learning_path"}
         let col_index;
         if (!!objArray && !!awpKeyValue ) {
             for (let i = 0 ; i < objArray.length; i++) {
@@ -808,7 +912,7 @@
     function t_get_rowindex_by_sortby(tblBody, search_sortby) {
         //console.log(" ===== t_get_rowindex_by_sortby =====");
         //console.log("search_sortby", search_sortby);
-        // TODO to be deprecated, only used in schools.js, To be replaced by b_recursive_tblRow_lookup
+        // TODO to be deprecated, only used in examyear.js and schools.js, To be replaced by b_recursive_tblRow_lookup
         let row_index = -1;
 // --- loop through rows of tblBody_datatable
         if(search_sortby){
@@ -833,11 +937,10 @@
         return row_index
     }  // t_get_rowindex_by_sortby
 
-//=========  t_td_selected_clear  ================ PR2021-11-18
+//=========  t_td_selected_clear  ================ PR2021-11-18  PR2022-08-07
     function t_td_selected_clear(tableBody) {
         //console.log("=========  t_clear_td_selected =========");
-        //console.log("cls_selected", cls_selected, "cls_background", cls_background);
-
+        //console.log("cls_selected", cls_selected);
         if(tableBody){
             let tblrows = tableBody.getElementsByClassName(cls_selected);
             for (let i = 0, tblRow; tblRow = tblrows[i]; i++) {
@@ -853,19 +956,17 @@
         };
     };  // t_td_selected_clear
 
-//=========  t_td_selected_set  ================ PR2021-11-18
+//=========  t_td_selected_set  ================ PR2021-11-18 PR2022-08-07
     function t_td_selected_set(tblRow) {
-        //console.log("=========  t_clear_td_selectedy =========");
-        //console.log("cls_selected", cls_selected, "cls_background", cls_background);
-
+        //console.log("=========  t_td_selected_set =========");
         tblRow.classList.add(cls_selected);
-
         const td_01 = tblRow.cells[0];
         if(td_01){
             const el_select = td_01.children[0];
             if(el_select){
                 el_select.innerHTML = "&#9658;";  // black pointer right
             };
+        //console.log("el_select", el_select);
         };
     };  // t_td_selected_set
 
@@ -1013,12 +1114,12 @@
 */
         // when label has no id the text is Sector / Profiel, set in .html file
         const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label");
-        const all_sectors_profielen_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profielen : (has_profiel) ? loc.All_profielen :loc.All_sectors;
+        const All_sectors_profiles_txt = (!el_SBR_select_sector_label) ? loc.All_sectors_profiles : (has_profiel) ? loc.All_profiles :loc.All_sectors;
         let caption_all = null;
         const all_txt = "&#60" + (
                 (tblName === "depbase") ? loc.All_departments :
                 (tblName === "lvlbase") ? loc.All_levels :
-                (tblName === "sctbase") ? all_sectors_profielen_txt : "---"
+                (tblName === "sctbase") ? All_sectors_profiles_txt : "---"
              ) + "&#62";
 
         if (has_items){
@@ -1072,19 +1173,23 @@
          } else if (tblName === "sctbase"){
             add_or_remove_class(document.getElementById("id_SBR_container_sector"), cls_hide, false);
             // when label has no id the text is Sector / Profiel, set in .html file
-            if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":"};
+            if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profile : loc.Sector ) + ":"};
         };
     };  // t_SBR_FillSelectOptionsDepbaseLvlbaseSctbase
 
-//========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa PR2021-07-18
-    function t_FillOptionLevelSectorFromMap(tblName, pk_field, data_map, depbase_pk, selected_pk, firstoption_txt) {
+//========= t_FillOptionLevelSectorFromMap  ============= PR2020-12-11 from tsa PR2021-07-18 PR2022-08-05
+    function t_FillOptionLevelSectorFromMap(tblName, pk_field, data_map, depbase_pk, selected_pk, firstoption_txt, select_text) {
          //console.log( "===== t_FillOptionLevelSectorFromMap  ========= ");
          //console.log( "data_map", data_map);
          // used in page schemes
 // add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
         let option_text = "";
+        if (select_text){
+            option_text += "<option value=\"\" disabled selected hidden>" + select_text + "...</option>";
+        };
+
         if(firstoption_txt){
-            option_text = "<option value=\"0\" data-ppk=\"0\">" + firstoption_txt + "</option>";
+            option_text += "<option value=\"0\" data-ppk=\"0\">" + firstoption_txt + "</option>";
         }
 // --- loop through data_map, fill only items with department_pk in depbases
         for (const [map_id, item_dict] of data_map.entries()) {
@@ -1892,7 +1997,7 @@ const mod_MCOL_dict = {selected_btn: null, columns: {}, cols_skipped: {}, cols_h
                     const caption = dict.sortby;
     // - display 'Profiel' when sel_dep_has_profiel
                     const caption_str = (field === "sct_abbrev") ?
-                                    (setting_dict.sel_dep_has_profiel) ? loc.Profiel : loc.Sector :
+                                    (setting_dict.sel_dep_has_profiel) ? loc.Profile : loc.Sector :
                                     (loc[caption]) ? loc[caption] : caption;
                     const is_hidden = dict.hidden;
                     const tBody = (is_hidden) ? el_MCOL_tblBody_available : el_MCOL_tblBody_show;
@@ -2000,7 +2105,7 @@ const mod_MCOL_dict = {selected_btn: null, columns: {}, cols_skipped: {}, cols_h
         //console.log("show_select_element", show_select_element);
 
         const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels :
-                                        (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
+                                        (has_profiel) ? loc.All_profiles : loc.All_sectors ) + "&#62";
         if (!has_items){
              const caption_none = (tblName === "level") ? loc.No_level_found :
                                   (has_profiel) ? loc.No_profiel_found : loc.No_sector_found ;
@@ -2054,7 +2159,7 @@ const mod_MCOL_dict = {selected_btn: null, columns: {}, cols_skipped: {}, cols_h
 
             // when label has no id the text is Sector / Profiel, set in .html file
             const el_SBR_select_sector_label = document.getElementById("id_SBR_select_sector_label")
-            if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profiel : loc.Sector ) + ":"};
+            if(el_SBR_select_sector_label){el_SBR_select_sector_label.innerText = ( (has_profiel) ? loc.Profile : loc.Sector ) + ":"};
         }
 
 

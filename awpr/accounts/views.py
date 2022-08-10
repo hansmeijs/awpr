@@ -1491,6 +1491,7 @@ def create_permit_list(permit_pk=None):
 
 def get_userpermit_list(page, req_user):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
+
     logging_on = False  # s.LOGGING_ON
 
     role = req_user.role
@@ -1532,6 +1533,7 @@ def get_userpermit_list(page, req_user):
 
     return permit_list, requsr_usergroups_list
 # - end of get_userpermit_list
+
 
 ########################################################################
 
@@ -2280,11 +2282,11 @@ def get_userfilter_allowed_depbase(request, sql_keys, sql_list, depbase_pk=None,
     #       else:
     #           --> no filter
 
-
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_userfilter_allowed_depbase ----- ')
         logger.debug('depbase_pk: ' + str(depbase_pk) + ' ' + str(type(depbase_pk)))
+        logger.debug('skip_allowed_filter: ' + str(skip_allowed_filter))
 
     filter_single_pk, filter_pk_arr, filter_none = None, None, False
 
@@ -2303,10 +2305,10 @@ def get_userfilter_allowed_depbase(request, sql_keys, sql_list, depbase_pk=None,
             filter_pk_arr = allowed_depbase_arr
 
     if logging_on:
-        logger.debug('allowed_depbase_arr: ' + str(allowed_depbase_arr) + ' ' + str(type(allowed_depbase_arr)))
-        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
-        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
-        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+        logger.debug('    allowed_depbase_arr: ' + str(allowed_depbase_arr) + ' ' + str(type(allowed_depbase_arr)))
+        logger.debug('    filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('    filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('    filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
 
     if filter_single_pk:
         sql_keys['dep_pk'] = filter_single_pk
@@ -2553,4 +2555,26 @@ def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None,
     elif filter_none:
         sql_list.append("AND FALSE")
 # - end of get_userfilter_allowed_cluster
+
+
+def get_permit_crud(page, request):
+    # --- get crud permit for page # PR2022-08-07
+    logging_on = False  # s.LOGGING_ON
+
+    if logging_on:
+        logger.debug(' ----- get_permit_crud ----- ')
+
+    has_permit = False
+    if request.user and request.user.country and request.user.schoolbase:
+        permit_list = request.user.permit_list(page)
+        if permit_list:
+            has_permit = 'permit_crud' in permit_list
+
+        if logging_on:
+            logger.debug('permit_list: ' + str(permit_list))
+            logger.debug('has_permit: ' + str(has_permit))
+
+    return has_permit
+# - end of get_permit_crud
+
 

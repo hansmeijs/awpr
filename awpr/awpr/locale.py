@@ -44,6 +44,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['__first'] = pgettext_lazy('Please select ... first.', ' first.')
     dict['an_item'] = _('an item')
 
+    dict['Select_examyear_first'] = _('Please, select an exam year first.')
     dict['Select_examyear'] = _('Select an exam year')
     dict['Select_school'] = _('Select a school')
     dict['Select_department'] = _('Select a department')
@@ -52,12 +53,13 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['All_levels'] = _("All learning paths")
     dict['No_level_found'] = _("No learning paths found")
     dict['Select_sector'] = _("Select a sector")
+    dict['Select_profile'] = _("Select a profile")
     dict['All_sectors'] = _("All sectors")
     dict['No_sector_found'] = _("No sector found")
-    dict['All_profielen'] = _("All 'profielen'")
-    dict['No_profiel_found'] = _("No 'profiel' found")
-    dict['All_sectors_profielen'] = _("All sectors / profielen")
-    dict['All_sectors_profielen'] = _("All sectors / profielen")
+    dict['All_profiles'] = _("All profiles")
+    dict['No_profiles_found'] = _("No profile found")
+    dict['All_sectors_profiles'] = _("All sectors / profiles")
+    dict['All_sectors_profiles'] = _("All sectors / profiles")
     dict['All_clusters'] = _("All clusters")
 
     dict['There_is_no__'] = _('There is no ')
@@ -94,6 +96,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
     dict['Do_you_want_to_continue'] = _('Do you want to continue?')
     dict['Yes_delete'] = _('Yes, delete')
+    dict['Yes_undo'] = _('Yes, undo')
     dict['Yes_make_inactive'] = _('Yes, make inactive')
     dict['Yes_make_active'] = _('Yes, make active')
     dict['Yes_calculate'] = _('Yes, calculate')
@@ -118,13 +121,13 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Levels'] = _('Levels')
     dict['Sector'] = _('Sector')
 
-    dict['Profiel'] = _('Profiel')
-    dict['SectorProfiel'] = _('Sector / Profiel')
-    dict['SectorenProfielen'] = _('Sectoren / Profielen')
-    dict['SectorProfiel_twolines'] = _('Sector /\nProfiel')
-    dict['Leerweg'] = _('Leerweg')
-    dict['Leerwegen'] = _('Leerwegen')
-    dict['Leerweg_twolines'] = _('Leer-\nweg')
+    dict['Profile'] = _('Profile')
+    dict['SectorProfile'] = _('Sector / Profile')
+    dict['SectorsProfiles'] = _('Sectoren / Profiles')
+    dict['SectorProfile_twolines'] = _('Sector /\nProfile')
+    dict['Learning_path'] = _('Learning path')
+    dict['Learning_paths'] = _('Learning paths')
+    dict['Learningpath_twolines'] = _('Learning\npath')
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
     dict['Cluster'] = _('Cluster')
@@ -243,7 +246,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_data_found'] = _('No data found.')
 
         dict['Link_sectors'] = _('Link sectors')
-        dict['Link_profielen'] = _('Link profielen')
+        dict['Link_profiles'] = _('Link profiles')
         dict['examgrade_options'] = c.EXAMGRADE_OPTIONS
         dict['No_examgradetypes_found'] = _('No exam grade types found')
         dict['Select_examgradetype'] = _('Please select an exam grade type')
@@ -346,9 +349,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Not_published'] = _('Not published')
         dict['Published_at'] = TXT_Published_at
 
-        dict['Activated'] = _('Activated')
-        dict['Activated_on'] = _('Activated on')
-
         dict['Locked'] = _('Locked')
         dict['Not_locked'] = _('Not locked')
         dict['Locked_on'] = _('Locked on ')
@@ -361,11 +361,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Create_new_examyear'] = _('Create new exam year')
         dict['Publish_examyear'] = _('Publish exam year')
-        dict['Activate_examyear'] = _('Activate exam year')
         dict['Close_examyear'] = _('Close exam year')
-        dict['Delete_examyear'] = _('Delete exam year')
-        dict['Copy_examyear_to_SXM'] = _('Copy exam year to SXM')
-        dict['Delete_subjects_from_SXM'] = _('Delete subjects from SXM')
+        dict['Delete_last_examyear'] = _('Delete last exam year')
 
         dict['_of_'] = TXT__of_
 
@@ -374,9 +371,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Publish_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Publish exam year ')
         dict['Publish_examyear_part2'] = pgettext_lazy('NL_publiceren', ' ')
-
-        dict['Activate_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Activate exam year ')
-        dict['Activate_examyear_part2'] = pgettext_lazy('NL_activeren', ' ')
 
         dict['Close_examyear_part1'] = pgettext_lazy('NL_Examenjaar', 'Close exam year ')
         dict['Close_examyear_part2'] = pgettext_lazy('NL_afsluiten', ' ')
@@ -397,22 +391,17 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['msg_info'] = {
         'create': [
-                str(_("The new exam year will be created now. The data of the schools and subjects will be copied from the previous exam year.")),
-                str(_("WHen the new exam year is created, you can go to the pages 'Schools' and 'Subjects' to update the data if necessary.")),
+                str(_("The new exam year will be created now. The data of the schools and subject schemes will be copied from the previous exam year.")),
+                str(_("When the new exam year is created, you can go to the pages 'Schools' and 'Subject schemes' to update the data if necessary.")),
                 str(_("Then you can publish the new exam year by clicking the 'Publish' button.")),
                 str(_("Schools will not be able to view the new exam year until you have published it."))
         ],
         'publish': [
             str(_("The exam year will be published now.")),
-            str(_("When you have published the examyear, schools will be able to activate the new exam year and enter data.")),
-            str(_("After a school has activated the new exam year, you can no longer undo the publication."))
-        ],
-        'activate': [
-            str(_("The exam year will be activated now.")),
-            str(_("After you have activated the examyear, you will be able to enter data."))
+            str(_("When you have published the examyear, schools will be able to open the new exam year and enter data.")),
+            str(_("After a school has entered candidates, you can no longer undo the publication."))
         ],
         'nopermit': [
-            str(_("You don't have permission to activate the examyear.")),
             str(_("You don't have permission to edit this exam year."))
         ],
         'close': [
@@ -503,7 +492,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Add_subjecttype'] = _('Add character')
         dict['to_subject_scheme'] = _(' to subject scheme')
 
-        dict['Subjecttypebase'] = _('Character base')
+        #dict['Subjecttypebase'] = _('Character base')
+        dict['Characterbase'] = _('Character base')
         dict['Add_subjecttypebase'] = _('Add character base')
         dict['Delete_characterbase'] = _('Delete character base')
 
@@ -545,9 +535,11 @@ def get_locale_dict(table_dict, user_lang, request):
         # NIU: dict['Final_grade_rule_Vsbo'] = _('Final grade rule Vsbo')
         # NIU: dict['Final_grade_rule_HavoVwo'] = _('Final grade rule Havo Vwo')
         dict['Average_CE_grade_rule'] = _('Average CE grade rule')
-        dict['Subject_must_be_sufficient'] = _('Subject must be sufficient')
+        dict['AverageCEgraderule_notatevelex'] = _('Average CE grade rule not at eveningschool')
+        dict['Final_grade_rule'] = _('Final grade must be sufficient')
+        dict['Final_grade_rule_notatevelex'] = _('Final grade rule not at eveningschool')
         dict['Core_subject_rule'] = _('Core subject rule')
-
+        dict['Coresubjectrule_notatevelex'] = _('Core subject rule not at eveningschool')
 
         dict['Not_at_evening_lex_school'] = _('Not at eveningschool or landsexamen')
 
@@ -556,6 +548,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_third_period'] = _('Subject has no third period')
         dict['Thumbrule_applies'] = _('Thumbrule applies')
         dict['Examyears_without_CE'] = _('Examyears without CE')
+        dict['Minimum_studyloadhours'] = _('Minimum studyload hours')
+        dict['Minimum_studyloadhours_2lines'] = _('Minimum\nstudyload hours')
+        dict['Studyloadhours'] = _('Studyload hours')
+        dict['Studyloadhours_2lines'] = _('Studyload\nhours')
+        dict['Not_at_dayschool'] = _('Subject does not exist at dayschool')
 
         dict['Delete_subject'] = _('Delete subject')
         dict['Delete_department'] = _('Delete department')
@@ -577,15 +574,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Package_item'] = _('Package item')
         dict['ETE_exam'] = _('ETE exam')
         dict['Added_by_school'] = _('Added by school')
-        dict['Minimum_subjects'] = _('Minimum amount of subjects')
-        dict['Maximum_subjects'] = _('Maximum amount of subjects')
+        dict['Minimum_subjects'] = _('Minimum number of subjects')
+        dict['Maximum_subjects'] = _('Maximum number of subjects')
 
-        dict['Minimum_MVT_subjects'] = _('Minimum amount of MVT subjects')
-        dict['Maximum_MVT_subjects'] = _('Maximum amount of MVT subjects')
-        dict['Minimum_Wisk_subjects'] = _('Minimum amount of Wiskunde subjects')
-        dict['Maximum_Wisk_subjects'] = _('Maximum amount of Wiskunde subjects')
-        dict['Minimum_combi_subjects'] = _('Minimum amount of combination subjects')
-        dict['Maximum_combi_subjects'] = _('Maximum amount of combination subjects')
+        dict['Minimum_MVT_subjects'] = _('Minimum number of MVT subjects')
+        dict['Maximum_MVT_subjects'] = _('Maximum number of MVT subjects')
+        dict['Minimum_Wisk_subjects'] = _('Minimum number of math subjects')
+        dict['Maximum_Wisk_subjects'] = _('Maximum number of math subjects')
+        dict['Minimum_combi_subjects'] = _('Minimum number of combination subjects')
+        dict['Maximum_combi_subjects'] = _('Maximum number of combination subjects')
 
         dict['Minimum_extra_nocount'] = _("Minimum extra subject, doesn't count")
         dict['Maximum_extra_nocount'] = _("Maximum extra subject, doesn't count")
@@ -631,7 +628,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Article'] = _('Article')
         dict['Short_name'] = _('Short name')
-        dict['Activated'] = _('Activated')
         dict['Locked'] = _('Locked')
 
         dict['Add_school'] = _('Add school')
@@ -922,7 +918,7 @@ def get_locale_dict(table_dict, user_lang, request):
         #dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
         dict['opl_code'] = _("Opl. code")
-        dict['leerweg'] = _("Leerweg")
+        dict['leerweg'] = _("Learning path")
         dict['ext_code'] = _("Ext. code")
         dict['tijdvak'] = _("Tijdvak")
         dict['nex_id'] = _("nex_ID")
@@ -1059,9 +1055,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['err_list'] = {
             'Amount': _("Amount"),
             'not_allowed': _(" is not allowed."),
-            'Amount_cannot_be_blank': _("The amount of questions cannot be blank."),
-            'amount_mustbe_between_1_and_100': _('The amount of questions must be a whole number between 1 and %(max)s.') % {'max': 100},
-            'amount_mustbe_between_1_and_250': _('The amount of questions must be a whole number between 1 and %(max)s.') % {'max': 250},
+            'Amount_cannot_be_blank': _("The number of questions cannot be blank."),
+            'amount_mustbe_between_1_and_100': _('The number of questions must be a whole number between 1 and %(max)s.') % {'max': 100},
+            'amount_mustbe_between_1_and_250': _('The number of questions must be a whole number between 1 and %(max)s.') % {'max': 250},
 
             'Max_score_cannot_be_blank': _("The maximum score cannot be blank."),
             'characters_not_allowed': _("Characters ';', '#' and '|' are not allowed."),
@@ -1521,7 +1517,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Date_ofthe_gradelist'] = _('Date of the grade list')
         dict['Date_ofthe_diploma'] = _('Date of the diploma')
 
-        dict['will_be_downloaded_sing'] = _('will be downloaded.')
         dict['will_be_calculated'] = _('will be calculated.')
         dict['Logfile_with_details_willbe_downloaded'] = _('The logfile with details will be downloaded.')
 
@@ -1557,11 +1552,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['File_not_found'] = _('This file has not been found.')
 
 
-    # ====== PAGE ORDERLIST =========================
+# ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
         dict['School_code'] = TXT_School_code
         dict['School_name'] = _('School name')
-        dict['Activated'] = _('Activated')
         dict['Number_of_candidates'] = _('Number of candidates')
         dict['Number_of_entered_subjects'] = _('Number of entered subjects')
         dict['Number_of_submitted_subjects'] = _('Number of submitted subjects')
@@ -1583,6 +1577,23 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Language'] = _('Language')
         dict['Extra_exams'] = _('Extra exams')
         dict['the_exam_bureau'] = _('the exam bureau')
+
+        dict['Label_name'] = _('Label name')
+        dict['Exams_per_envelop'] = _('Exams per envelop')
+        dict['Number_of_envelops'] = _('Number of envelops')
+
+        dict['New_label'] = _('New label')
+        dict['Edit_label'] = _('Edit label')
+        dict['Delete_label'] = _('Delete label')
+
+        dict['Envelop_content'] = _('Envelop content')
+        dict['Label_item'] = _('Label item')
+        dict['New_label_item'] = _('New label item')
+        dict['Edit_label_item'] = _('Edit label item')
+        dict['Delete_label_item'] = _('Delete label item')
+        dict['Please_select_label_item'] = _('Please select a label item first.')
+        dict['Content'] = _('Content')
+        dict['Instruction'] = _('Instruction')
 
         dict['MPUBORD_info'] = {
             'request_verifcode_01': _("When you publish the orderlist, AWP will create an Excel file with the total exams, plus an Excel file for each school."),

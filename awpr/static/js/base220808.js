@@ -3,15 +3,28 @@
 // ========= GLOBAL VARIABLES=================== PR2022-07-21
     // these variables are used in all pages
 
+    //console.log("GLOBAL VARIABLES")
+
     // selected_btn is also used in t_MCOL_Open
     let selected_btn = null;
-    console.log("GLOBAL VARIABLES")
     let permit_dict = {};
     let setting_dict = {};
     let filter_dict = {};
+    let selected = {};
     let loc = {};
     let urls = {};
 
+    // examyear_rows and department_rows are used in t_MSED_ PR2022-08-01
+    let examyear_rows = [];
+    let department_rows = [];
+
+    const cls_hide = "display_hide";
+    const cls_hover = "tr_hover";
+    const cls_visible_hide = "visibility_hide";
+    const cls_selected = "tsa_tr_selected";
+    const cls_error = "tsa_tr_error";
+
+    const cls_bc_transparent = "tsa_bc_transparent";
 // ============================
     // add csrftoken to ajax header to prevent error 403 Forbidden PR2018-12-03
     // from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
@@ -109,8 +122,6 @@
         //console.log(" --- UpdateHeaderbar ---" )
         //console.log("setting_dict", setting_dict )
         //console.log("permit_dict", permit_dict )
-
-        const cls_hide = "display_hide";
 
 // --- EXAM YEAR
        //console.log("setting_dict.sel_examyear_pk", setting_dict.sel_examyear_pk )
@@ -367,7 +378,6 @@
 
 //========= b_ShowTblrowError set_element_class  ====  PR2020-04-13
     function b_ShowTblrowError(tblRow) {
-        const cls_error = "tsa_tr_error";
         if(tblRow){
             tblRow.classList.add(cls_error);
             setTimeout(function (){ tblRow.classList.remove(cls_error); }, 2000);
@@ -934,22 +944,6 @@
         }}};
         return dict_clone;
     };  // deepcopy_dict
-
-//=========  deepcopy_dict  ================ PR2021-05-31
-// TODO replace old one with this one
-    let deepcopy_dictNEW = function copy_fnc(data_dict) {
-        //console.log(" === Deepcopy_Dict ===")
-        let dict_clone = {};
-        for (const [key, value] of Object.entries(data_dict)) {
-            if (typeof value==='object' && value!==null && !(value instanceof Array) && !(value instanceof Date)) {
-               dict_clone[key] = copy_fnc(value);
-            } else {
-                dict_clone[key] = value;
-            };
-        };
-        return dict_clone;
-    };  // deepcopy_dict
-
 
 //#########################################################################
 // +++++++++++++++++ SORT DICTIONARY +++++++++++++++++++++++++++++++++++++++
@@ -1706,7 +1700,8 @@
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
-    function b_show_mod_message_html(msg_html, header_text, ModMessageClose){// PR2021-01-26 PR2021-03-25 PR2021-07-03
+    function b_show_mod_message_html(msg_html, header_text, ModMessageClose){
+    // PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
 
         const el_msg_header = document.getElementById("id_mod_message_header");
@@ -1749,16 +1744,12 @@
         //console.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
-        // added for anouncemenets: key 'zzize' and 'btn_hide'
+        // added for anouncements: key 'size' and 'btn_hide'
         //  {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
 
         const el_container = document.getElementById("id_mod_message_container");
         if(el_container){
             if(msg_dictlist && msg_dictlist.length){
-
-            /*
-            msg_dict
-            */
 
                 // when skip_warning_messages = true:
                 // skip showing warning messages,
@@ -1771,41 +1762,43 @@
                 //console.log("el_container", el_container)
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
+        // skip if msg_dict is not a dictionary
+                    if (typeof msg_dict  === "object") {
 
-        //console.log("msg_dict", msg_dict)
-                    let class_str = null;
-                    if ("header" in msg_dict && msg_dict.header ) {
-                        // msgbox only has 1 header. Use first occurring header
-                        if (!header_text){ header_text = msg_dict.header};
+            //console.log("msg_dict", msg_dict)
+                        let class_str = null;
+                        if ("header" in msg_dict && msg_dict.header ) {
+                            // msgbox only has 1 header. Use first occurring header
+                            if (!header_text){ header_text = msg_dict.header};
+                        };
+
+                        if ("class" in msg_dict && msg_dict.class ) {
+                            // each msg_html has a border
+                            class_str = msg_dict.class;
+                            if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
+                        };
+
+                        if ("msg_html" in msg_dict && msg_dict.msg_html ) {
+                // --- create div element with alert border for each message in messages
+                            const el_border = document.createElement("div");
+                            if (!class_str) { class_str = "border_bg_transparent"};
+                            el_border.classList.add(class_str, "p-2", "my-2");
+                            const el_div = document.createElement("div");
+                            el_div.innerHTML = msg_dict.msg_html;
+                            el_border.appendChild(el_div);
+                            el_container.appendChild(el_border);
+                        };
+
+            // set size of modal - used in anouncements
+                        // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+                        if (msg_dict.size === "lg") {
+                            max_size = "lg";
+                        };
+
+                        if (msg_dict.btn_hide){
+                            show_btn_dontshowagain = true;
+                        };
                     };
-
-                    if ("class" in msg_dict && msg_dict.class ) {
-                        // each msg_html has a border
-                        class_str = msg_dict.class;
-                        if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
-                    };
-
-                    if ("msg_html" in msg_dict && msg_dict.msg_html ) {
-            // --- create div element with alert border for each message in messages
-                        const el_border = document.createElement("div");
-                        if (!class_str) { class_str = "border_bg_transparent"};
-                        el_border.classList.add(class_str, "p-2", "my-2");
-                        const el_div = document.createElement("div");
-                        el_div.innerHTML = msg_dict.msg_html;
-                        el_border.appendChild(el_div);
-                        el_container.appendChild(el_border);
-                    };
-
-        // set size of modal - used in anouncements
-                    // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-                    if (msg_dict.size === "lg") {
-                        max_size = "lg";
-                    };
-
-                    if (msg_dict.btn_hide){
-                        show_btn_dontshowagain = true;
-                    };
-
                 };
     // set size of modal - used in anouncements
                 // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}

@@ -32,10 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // all other permits get their value in function get_permits, after downloading permit_list
     const may_view_page = (!!el_loader)
 
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
 
     const mod_dict = {};
     const mod_MMM_dict = {};
@@ -958,7 +954,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // msg_list only contains 1 message
                 const msg_dict = msg_list[0];
                 if(msg_dict){
-                    el_confirm_msg_container.classList.add(msg_dict.class);
+                    el_confirm_msg_container.classList.add(msg_dict.class, "p-2");
                     el_confirm_msg_container.innerHTML = msg_dict.msg_html;
                 }
             }
@@ -1647,7 +1643,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!is_user) { el_div.innerHTML = "<b>" + code + "</b>"};
             el_div.classList.add("tw_075");
             td.appendChild(el_div);
-        td.classList.add("tsa_bc_transparent");
+        td.classList.add(cls_bc_transparent);
 
 // --- add second td to tblRow.
         td = tblRow.insertCell(-1);
@@ -1655,7 +1651,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_div.innerHTML = (is_user) ? name :  "<b>" + name + "</b>";
             el_div.classList.add("tw_360");
             td.appendChild(el_div);
-        td.classList.add("tsa_bc_transparent");
+        td.classList.add(cls_bc_transparent);
 
     }; // MMR_CreateSelectRow
 
@@ -1930,14 +1926,14 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("recipients", recipients);
         //console.log("recipients[key]", recipients[key]);
         //console.log("row.id", row.id);
-                    const selected = (recipients[key] && recipients[key].includes(row.id));
+                    const is_selected = (recipients[key] && recipients[key].includes(row.id));
                     const dict = { id: row.id,  // note: id = string in usergroups ("auth'), id = sb_id in key 'sb'
                             country: (row.country) ? row.country : null,
                             country_pk: (row.country_pk) ? row.country_pk : null,
                             role: (row.defaultrole) ? row.defaultrole : null,
                             code: (row.code) ? row.code : null,
                             name: (row.name) ? row.name : null,
-                            selected: selected
+                            selected: is_selected
                         }
                         if(row.abbrev) {dict.abbrev = row.abbrev};
                         if(row.username) {dict.username = row.username};
@@ -2060,7 +2056,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_div.innerText = inner_txt;
             el_div.classList.add(td_width)
             td.appendChild(el_div);
-        td.classList.add("tsa_bc_transparent")
+        td.classList.add(cls_bc_transparent)
 
 // --- add second td to tblRow.
         if (["sb", "us", "ug"].includes(key)) {    // --- add third td to tblRow.
@@ -2074,7 +2070,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.innerText = inner_txt;
                 el_div.classList.add(td_width)
                 td.appendChild(el_div);
-            td.classList.add("tsa_bc_transparent")
+            td.classList.add(cls_bc_transparent)
         }
         if ( key === "us") {    // --- add third td to tblRow.
             td = tblRow.insertCell(-1);
@@ -2083,7 +2079,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.innerText = user_name;
                 el_div.classList.add("tw_220")
                 td.appendChild(el_div);
-            td.classList.add("tsa_bc_transparent")
+            td.classList.add(cls_bc_transparent)
         }
 
 //--------- add addEventListener
@@ -2856,7 +2852,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.innerText = code;
                 el_div.classList.add("tw_060")
                 td.appendChild(el_div);
-            td.classList.add("tsa_bc_transparent")
+            td.classList.add(cls_bc_transparent)
 
     // --- add second td to tblRow.
             const td_width = (list === "us") ? "tw_120" : "tw_360";
@@ -2866,7 +2862,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.innerText = name;
                 el_div.classList.add(td_width)
                 td.appendChild(el_div);
-            td.classList.add("tsa_bc_transparent")
+            td.classList.add(cls_bc_transparent)
 
     // --- add third td to tblRow.
             if(list === "us"){
@@ -2876,7 +2872,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_div.innerText = user_name;
                         el_div.classList.add("tw_220", "px-1")
                         td.appendChild(el_div);
-                    td.classList.add("tsa_bc_transparent");
+                    td.classList.add(cls_bc_transparent);
 
             };
     //--------- add addEventListener

@@ -358,7 +358,7 @@ KEY_COLDEF = {
 
         {'awpColdef': 'level', 'caption': _('Level'), 'linkrequired': True},
         {'awpColdef': 'sector', 'caption': _('Sector'), 'linkrequired': True},
-        {'awpColdef': 'profiel', 'caption': _('Profiel'), 'linkrequired': True},
+        {'awpColdef': 'profiel', 'caption': _('Profile'), 'linkrequired': True},
         {'awpColdef': 'diplomanumber', 'caption': _('Diploma number')},
         {'awpColdef': 'gradelistnumber', 'caption': _('Gradelist number')}
          ],
@@ -551,6 +551,19 @@ PAGE_LIST = {
     'grades': _('Grades'),
     'archive': _('Archive')
 }
+
+LABEL_COLOR = {
+    'black': '#000000', # rgb 0 0 0  #000000
+    'red': '#ff0000', # rgb 255 0 0  #ff0000
+    'blue': '#0000ff', # rgb 0 0 255  #0000ff
+    #'yellow': '#ffff00', # rgb 255 255 0 #ffff00
+    'yellow': '#ffd700', # gold: rgb 255 215 0 #ffd700
+    'green': '#538135',  # rgb 83 129 53  #538135
+    'orange': '#ed7d31', # rgb 237 125 49  #ed7d31
+    'purple': '#7030a0' # rgb 112 48 160  #7030a0
+}
+
+
 
 # XLSWRITER FORMATS
 

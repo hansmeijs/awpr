@@ -352,7 +352,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
                 ep_list.append(c.EXAMPERIOD_SECOND)
             ep_list.append(c.EXAMPERIOD_THIRD)
 
-# - add amount of sr, reex, reex03 to log_list
+# - add number of sr, reex, reex03 to log_list
         # TODO add extra_nocount
         if log_list is not None:
             log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thumbrule_count, thumbrule_combi, log_list)
@@ -3662,7 +3662,7 @@ def log_list_add_scheme_notfound(dep_level_req, log_list):  # PR2021-12-19
     # - add msg when scheme not found
     log_list.append(''.join((c.STRING_SPACE_05, str(_('The subjectscheme of this candidate could not be found.')))))
     log_list.append(''.join((c.STRING_SPACE_05, str(_('The result cannot be calculated.')))))
-    msg_txt = _('Please enter the leerweg and sector.') if dep_level_req else _('Please enter the profiel.')
+    msg_txt = _('Please enter the learning path and sector.') if dep_level_req else _('Please enter the profile.')
     log_list.append(('').join((c.STRING_SPACE_05, str(msg_txt))))
 # - end of log_list_add_scheme_notfound
 

@@ -8,11 +8,6 @@
 
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_student";
-const selected = {
-    student_dict: {},
-    student_pk: null,
-    item_count: 0
-    };
 
 let student_rows = [];
 let school_rows = [];
@@ -22,15 +17,16 @@ const field_settings = {};
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
+    selected = {
+        student_dict: {},
+        student_pk: null,
+        item_count: 0
+    };
+
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     const el_loader = document.getElementById("id_loader");
     const el_hdr_left = document.getElementById("id_header_left");
     const may_view_page = (!!el_loader);
-
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
     // declared as global: //let selected_btn = "btn_student";
@@ -52,8 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
     //let department_map = new Map();
     //let level_map = new Map();
     //let sector_map = new Map();
-    //let selected = {student_pk: null,
-    //                student_dict: {}};
 
     // PR2021-07-23 moved outside this function, to make it available in import.js
     // let student_rows = [];
@@ -81,14 +75,14 @@ document.addEventListener('DOMContentLoaded', function() {
     mod_MCOL_dict.columns.all = {
         idnumber: "ID_number", prefix: "Prefix", gender: "Gender",
         birthdate: "Birthdate", birthcountry: "Country_of_birth", birthcity: "Place_of_birth",
-        lvlbase_id:  "Leerweg", sctbase_id: "Sector",classname: "Class",
+        lvlbase_id:  "Learning_path", sctbase_id: "Sector",classname: "Class",
         examnumber: "Examnumber", regnumber: "Regnumber", bis_exam: "Bis_exam"
     };
 
 // --- get field_settings
     // declared as global: let field_settings = {};
     field_settings.student = {
-        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Leerweg", "Sector", "Class", "Examnumber_twolines", "Regnumber_twolines", "Bis_exam"],
+        field_caption: ["", "ID_number", "Last_name", "First_name", "Prefix_twolines", "Gender", "Birthdate", "Country_of_birth", "Place_of_birth", "Learning_path", "Sector", "Class", "Examnumber_twolines", "Regnumber_twolines", "Bis_exam"],
         field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvlbase_id", "sctbase_id", "classname", "examnumber", "regnumber", "bis_exam"],
         filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "text", "text", "text","text", "text", "toggle"],
         field_width:  ["020", "120", "220", "240", "090", "090", "120", "180", "180", "090", "090", "090", "090", "120","090"],
@@ -381,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("permit_dict" in response) {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
-                    b_get_permits_from_permitlist(permit_dict);
+                    //b_get_permits_from_permitlist(permit_dict);
                     isloaded_permits = true;
                     must_update_headerbar = true;
                 }
@@ -397,11 +391,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_show_mod_message_dictlist(response.messages);
                 }
 
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
+                if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
+                    b_fill_datamap(examyear_map, response.examyear_rows);
+                };
+                if ("department_rows" in response) {
+                    department_rows = response.department_rows;
+                    b_fill_datamap(department_map, response.department_rows)
+                };
                 if ("school_rows" in response)  {
                     school_rows =  response.school_rows;
                     b_fill_datamap(school_map, response.school_rows)};
-                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows)};
 
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows);
@@ -482,10 +482,13 @@ document.addEventListener('DOMContentLoaded', function() {
         UpdateHeaderText();
     }  // HandleBtnSelect
 
-//=========  HandleTblRowClicked  ================ PR2020-08-03
+//=========  HandleTblRowClicked  ================ PR2020-08-03  PR2022-08-05
     function HandleTblRowClicked(tr_clicked) {
         //console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+
+// ---  deselect all highlighted rows, select clicked row
+        t_td_selected_toggle(tr_clicked, true);  // select_single = true
 
 // ---  get selected.student_dict
         selected.student_pk = get_attr_from_el_int(tr_clicked, "data-pk");
@@ -499,10 +502,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
         selected.student_pk = (data_dict) ? data_dict.id : null
 
-
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        DeselectHighlightedRows(tr_clicked, cls_selected);
-        tr_clicked.classList.add(cls_selected)
 
     }  // HandleTblRowClicked
 
@@ -594,7 +593,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // --- get field_caption from field_setting, display 'Profiel' in column sctbase_id if has_profiel
                 const key = field_setting.field_caption[j];
-                const field_caption = (field_name === "sctbase_id" && has_profiel) ? loc.Profiel : (loc[key]) ? loc[key] : key;
+                const field_caption = (field_name === "sctbase_id" && has_profiel) ? loc.Profile : (loc[key]) ? loc[key] : key;
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
                 const class_align = "ta_" + field_setting.field_align[j];
@@ -674,7 +673,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  lookup index where this row must be inserted
         const ob1 = (data_dict.lastname) ? data_dict.lastname : "";
         const ob2 = (data_dict.firstname) ? data_dict.firstname : "";
-        // NIU:  const ob3 = (data_dict.firstname) ? data_dict.firstname : "";
 
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2);
 
@@ -688,7 +686,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
         tblRow.setAttribute("data-ob2", ob2);
-        // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
         tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
@@ -733,7 +730,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         add_hover(td);
                     };
                 };
-
 
     // --- put value in field
                UpdateField(el, data_dict)
@@ -925,7 +921,7 @@ function RefreshDataRowsAfterUpload(response) {
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[tblName];
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
+                RefreshDatarowItem(tblName, field_setting, data_rows, update_dict);
             }
         } else if (!is_update) {
             // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
@@ -935,7 +931,7 @@ function RefreshDataRowsAfterUpload(response) {
     }  //  RefreshDataRows
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
-    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
+    function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
         console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         console.log("update_dict", update_dict);
@@ -1119,7 +1115,7 @@ function RefreshDataRowsAfterUpload(response) {
 
             //console.log("dep_dict", dep_dict)
             //console.log("sct_req", sct_req)
-            const sct_caption = (dep_dict.has_profiel) ? loc.Profiel : loc.Sector;
+            const sct_caption = (dep_dict.has_profiel) ? loc.Profile : loc.Sector;
 
             document.getElementById("id_MSTUD_level_label").innerText = loc.Leerweg + ':';
             document.getElementById("id_MSTUD_sector_label").innerText = sct_caption + ':';

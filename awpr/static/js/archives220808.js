@@ -5,13 +5,6 @@
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_exform";
 
-//let setting_dict = {};
-//let permit_dict = {};
-//let loc = {};
-//let urls = {};
-
-let selected = {};
-
 let school_rows = [];
 let published_rows = [];
 
@@ -24,11 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const el_loader = document.getElementById("id_loader");
     const el_hdr_left = document.getElementById("id_header_left");
     const may_view_page = (!!el_loader);
-
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
     // declared as global: //let selected_btn = "btn_exform";
@@ -223,13 +211,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!skip_messages && "messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
                 }
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
+                if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
+                    b_fill_datamap(examyear_map, response.examyear_rows);
+                };
+                if ("department_rows" in response) {
+                    department_rows = response.department_rows;
+                    b_fill_datamap(department_map, response.department_rows)
+                };
                 if ("school_rows" in response)  {
                     school_rows =  response.school_rows;
                     b_fill_datamap(school_map, response.school_rows)};
-                if ("department_rows" in response) {
-                    b_fill_datamap(department_map, response.department_rows)
-                    };
+
                 if ("published_rows" in response) {
                     published_rows = response.published_rows;
                 };
@@ -376,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // --- get field_caption from field_setting, display 'Profiel' in column sctbase_id if has_profiel
                 const key = field_setting.field_caption[j];
-                const field_caption = (field_name === "sctbase_id" && has_profiel) ? loc.Profiel : (loc[key]) ? loc[key] : key;
+                const field_caption = (field_name === "sctbase_id" && has_profiel) ? loc.Profile : (loc[key]) ? loc[key] : key;
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
                 const class_align = "ta_" + field_setting.field_align[j];

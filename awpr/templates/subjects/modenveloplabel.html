@@ -1,0 +1,65 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL ENVELOP LABELS  =================== -->
+    <div class="modal" id="id_mod_enveloplabel" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MENVLAB_header" class="modal-title mx-2" ></h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div id="id_MENVLAB_form_controls" class="flex_container p-2">
+
+                    <div class="flex_2 m-2">
+                        <h6 class="px-2">{% trans 'Available label items' %}:</h6>
+                        <table class="tableX tsa_tbl border_bg_message tbl_studsubj_h390_w_auto">
+                            <tbody id="id_MENVLAB_tblBody_available"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex_4 m-2">
+                        <h6 class="px-2">{% trans 'Label name' %}:</h6>
+                        <input id="id_MENVLAB_name" type="text" data-field= "name" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+
+                        <div class="flex_container">
+                             <div class="flex_1 mr-2">
+                                <label class="mx-2 my-1">{% trans 'Fixed number of envelops' %}:</label>
+                                <input id="id_MENVLAB_numberfixed" type="text" data-field= "numberfixed" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                             </div>
+                             <div class="flex_1 ml-2">
+                                <label class="mx-2 my-1">{% trans 'Number of exams per envelop' %}:</label>
+                                <input id="id_MENVLAB_numberperexam" type="text" data-field= "numberperexam" class="form-control"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                             </div>
+                        </div>
+                        <h6 class="px-2 pt-2">{% trans 'Label items' %}:</h6>
+                        <table class="tableX tsa_tbl border_bg_lightblue tbl_h240_w_auto">
+                            <tbody id="id_MENVLAB_tblBody_selected"></tbody>
+                        </table>
+
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1">
+                        <button id="id_MENVLAB_btn_delete" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete label' %}</button>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MENVLAB_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MENVLAB_btn_save" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>

@@ -1,7 +1,7 @@
 # PR2018-04-14
-from django.contrib.auth.decorators import login_required # PR2018-04-01
+from django.contrib.auth.decorators import login_required  # PR2018-04-01
 from django.core.files import File
-from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.core.mail import EmailMessage
 from mimetypes import guess_type
 from os.path import basename
 
@@ -11,10 +11,8 @@ from django.utils.functional import Promise
 
 # PR2022-02-13 From Django 4 we dont have force_text You Just have to Use force_str Instead of force_text.
 from django.utils.encoding import force_text
-from django.utils.html import strip_tags
 
 from django.db import connection
-from django.db.models import Q
 from django.db.models.functions import Lower
 from django.http import HttpResponse, HttpResponseRedirect
 
@@ -39,7 +37,6 @@ from schools import functions as sf
 from schools import dicts as sch_dicts
 from schools import models as sch_mod
 from students import models as stud_mod
-from subjects import models as subj_mod
 from subjects import views as subj_view
 
 import xlsxwriter
@@ -162,7 +159,7 @@ class MailListView(View):
 
 
 @method_decorator([login_required], name='dispatch')
-class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
+class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -226,6 +223,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
                 updated_rows = []
                 log_list = []
                 error_list = []
+                append_dict = {}
 
                 # PR2021-11-03 debug: new message with attachment was not made green, because the 'created' tag was False .
                 # - when an attachment is uploaded before saving the draft message,
@@ -242,12 +240,11 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
                     logger.debug('is_create: ' + str(is_create))
 
 # ++++ Create new mailmessage_instance:
-                deleted_ok = False
                 if is_create:
                     mailmessage_instance = create_mailmessage_instance(sel_examyear,
                                            header, body_txt, recipients_json, is_send, messages, request)
                     if mailmessage_instance:
-                        is_created = True
+                        append_dict['created'] = True
 
                 else:
 # +++  get existing mailmessage instance
@@ -260,12 +257,22 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
                     logger.debug('..... mailmessage_instance: ' + str(mailmessage_instance))
 
                 if mailmessage_instance:
+                    header_txt = _("Message '%(tbl)s' ") % {'tbl': str(mailmessage_instance.header)}
 
 # ++++ Delete mailmessage_instance
                     if is_delete:
-                        deleted_ok = delete_mailmessage_instance(mailmessage_instance, updated_rows, messages, error_list, request)
+                        deleted_row, err_html = delete_mailmessage_instance(mailmessage_instance, request)
+                        if err_html:
+                            messages.append(
+                                {'header': str(header_txt),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': err_html}
+                            )
+                        elif deleted_row:
+                            mailmessage_instance = None
+                            updated_rows.append(deleted_row)
 
-# +++ Update mailmessage, not when it is created, nor when deleted
+    # +++ Update mailmessage, not when it is created, nor when deleted
                     elif not is_create:
                         update_mailmessage_instance(mailmessage_instance, header, body_txt, recipients_json, error_list, request)
 
@@ -300,30 +307,21 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11
 # - create mailmessage_row, also when is_delete (then deleted=True)
                 # PR2021-09-04 debug. gave error on subject.pk: 'NoneType' object has no attribute 'pk'
                 # PR2021-11-02 debug. deleted updated_row was replaced by create_mailmessage_draft_or_sent_rows, added: not deleted_ok
-                if mailmessage_instance and not deleted_ok:
+                if mailmessage_instance:
                     updated_rows = sch_dicts.create_mailmessage_draft_or_sent_rows(
                         is_sent=is_send,
                         examyear=sel_examyear,
                         request=request,
+                        append_dict=append_dict,
                         mailmessage_pk=mailmessage_instance.pk
                     )
 
 # - add messages to updated_row (there is only 1 updated_row
                 if updated_rows:
-                    row = updated_rows[0]
-                    if row:
-                        if is_created:
-                            updated_rows[0]['created'] = True
-
-                        # TODO fix it or remove
-                        # - add error_list to updated_rows[0]
-                        if error_list:
-                            updated_rows[0]['error'] = error_list
                     if is_send:
                         update_wrap['mailmessage_log_list'] = log_list
                     else:
                         update_wrap['updated_mailmessage_draft_rows'] = updated_rows
-
 
 # - Create new studsubjnote if is_create:
 
@@ -534,7 +532,17 @@ class MailinglistUploadView(View):  # PR2021-10-23
 
 # ++++ Delete mailinglist_instance
                     if is_delete:
-                        deleted_ok = delete_mailinglist(mailinglist_instance, is_public, updated_rows, messages, error_list, request)
+                        deleted_row, err_html = delete_mailinglist(mailinglist_instance, is_public, request)
+                        if err_html:
+                            messages.append(
+                                {'header': str(_("Delete mailing list")),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': err_html}
+                            )
+                        elif deleted_row:
+                            mailinglist_instance = None
+                            updated_rows.append(deleted_row)
+
 
 # +++ Update mailmessage, also when it is created, nor when deleted
                     else:
@@ -640,40 +648,35 @@ def create_mailmessage_instance(examyear, header, body, recipients_json, is_send
 # - end of create_mailmessage_instance
 
 
-def delete_mailmessage_instance(mailmessage_instance, mailmessage_rows, msg_list, error_list, request):
-    # --- delete mailmessage PR2021-11-02
+def delete_mailmessage_instance(mailmessage_instance, request):
+    # --- delete mailmessage PR2021-11-02 PR2022-08-06
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_mailmessage_instance ----- ')
         logger.debug('mailmessage_instance: ' + str(mailmessage_instance))
 
-# - create mailmessage_row - to be returned after successfull delete
-    mailmessage_row = {'id': mailmessage_instance.pk,
-                   'mapid': 'mailmessage_' + str(mailmessage_instance.pk),
-                   'deleted': True}
-
+    msg_html = None
     this_txt = _("Message '%(tbl)s'") % {'tbl': mailmessage_instance.header}
-    header_txt = _("Delete message")
 
-    deleted_ok = sch_mod.delete_instance(mailmessage_instance, msg_list, error_list, request, this_txt, header_txt)
-
-    if deleted_ok:
-# - add deleted_row to mailmessage_row
-        mailmessage_rows.append(mailmessage_row)
-        # delete instance, otherwise
-        mailmessage_instance = None
+    deleted_row, err_html = sch_mod.delete_instance(
+        table='mailmessage',
+        instance=mailmessage_instance,
+        request=request,
+        this_txt=this_txt
+    )
+    if err_html:
+        msg_html = err_html
 
     if logging_on:
-        logger.debug('mailmessage_rows' + str(mailmessage_rows))
-        logger.debug('msg_list' + str(msg_list))
-        logger.debug('error_list' + str(error_list))
+        logger.debug('deleted_row' + str(deleted_row))
+        logger.debug('msg_html' + str(msg_html))
 
-    return deleted_ok
+    return deleted_row, msg_html
 # - end of delete_mailmessage_instance
 
 
-def delete_mailbox_instance(mailbox_instance, request):
+def delete_mailbox_instanceNIU(mailbox_instance, request):
     # --- delete mailbox instance # PR2021-10-12
     # set deleted=True insted of deleting instance
     deleted_ok = False
@@ -759,7 +762,6 @@ def update_mailmessage_instance(mailmessage_instance, header, body, recipients_j
     if logging_on:
         logger.debug('messages: ' + str(messages))
 # - end of update_mailmessage_instance
-
 
 
 def update_mailbox_instance(mailbox_instance, upload_dict, messages, request):
@@ -1334,38 +1336,35 @@ def send_email_message(examyear, userlist_dict, log_list, header, body_txt, requ
 
 # ===================================
 
-def delete_mailinglist(instance, is_public, updated_rows, messages, error_list, request):
+def delete_mailinglist(mailinglist_instance, is_public, request):
 
-    logging_on = s.LOGGING_ON  # PR2021-10-24
+    logging_on = s.LOGGING_ON  # PR2021-10-24 PR2022-08-07
     if logging_on:
         logger.debug(' ----- delete_mailinglist ----- ')
-        logger.debug('instance: ' + str(instance))
+        logger.debug('mailinglist_instance: ' + str(mailinglist_instance))
 
-    deleted_ok = False
+    deleted_row = None
+    msg_html = None
 
-# - create mailinglist_row - to be returned after successfull delete
-    updated_row = {'id': instance.pk,
-                   'mapid': 'mailinglist_' + str(instance.pk),
-                   'deleted': True}
-
-    this_txt = _("Mailing list '%(tbl)s' ") % {'tbl': instance.name}
-    header_txt = _("Delete mailing list")
+    this_txt = _("Mailing list '%(tbl)s' ") % {'tbl': mailinglist_instance.name}
 
 # - check if mailinglist is private or req_usr is sysadmin
     if is_public and not request.user.is_usergroup_admin:
         msg_html = ''.join(
-            (str(_("This is a general mailing list.")), '<br>',
-             str(_(  "It can only be deleted by the system administrator."))))
-        class_str = "border_bg_invalid"
-        error_list.append({'header': str(header_txt), 'class': class_str, 'msg_html': msg_html})
+            (str(_("%(cpt)s is a general mailing list.") % {'cpt': this_txt}), '<br>',
+             str(_("It can only be deleted by the system administrator."))))
     else:
-        deleted_ok = sch_mod.delete_instance(instance, messages, error_list, request, this_txt)
 
-# - add deleted_row to updated_rows
-        if deleted_ok:
-            updated_rows.append(updated_row)
+        deleted_row, err_html = sch_mod.delete_instance(
+            table='mailinglist',
+            instance=mailinglist_instance,
+            request=request,
+            this_txt=this_txt
+        )
+        if err_html:
+            msg_html = err_html
 
-    return deleted_ok
+    return deleted_row, msg_html
 # - end of delete_mailinglist
 
 
@@ -1717,16 +1716,23 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
                     elif mode == 'delete':
                         mailattachment = sch_mod.Mailattachment.objects.get_or_none(pk=mailattachment_pk)
                         if mailattachment:
-                            deleted_dict = {
-                                'deleted': True,
-                                'id': mailattachment.pk,
-                                'mailmessage_id': mailattachment.mailmessage_id
-                            }
-                            this_text = _("Attachment '%(tbl)s' ") % {'tbl': str(mailattachment.filename)}
-                            error_list = []
-                            deleted_ok = sch_mod.delete_instance(mailattachment, msg_list, error_list, request, this_text)
-                            if deleted_ok:
-                                update_wrap['updated_mailattachment_row'] = deleted_dict
+                            this_txt = _("Attachment '%(tbl)s' ") % {'tbl': str(mailattachment.filename)}
+                            deleted_row, err_html = sch_mod.delete_instance(
+                                table='mailinglist',
+                                instance=mailattachment,
+                                request=request,
+                                this_txt=this_txt
+                            )
+                            if err_html:
+                                header_txt = str(_("Attachment"))
+                                messages.append(
+                                    {'header': str(header_txt),
+                                     'class': "border_bg_invalid",
+                                     'msg_html': err_html}
+                                )
+
+                            else:
+                                update_wrap['updated_mailattachment_row'] = deleted_row
         if messages:
             update_wrap['messages'] = messages
 
@@ -1769,147 +1775,317 @@ class ExamyearListView(View):
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30
+class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
 
     def post(self, request):
         logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= ExamyearUploadView ============= ')
 
         update_wrap = {}
-        examyear_rows = []
 
-        if request.user is not None and request.user.country is not None:
-            req_usr = request.user
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
-            has_permit = 'permit_crud' in permit_list
-
-            if logging_on:
-                logger.debug(' ')
-                logger.debug(' ============= ExamyearUploadView ============= ')
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit:  ' + str(has_permit))
-
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if has_permit and upload_json:
-                upload_dict = json.loads(upload_json)
-
-                append_dict = {}
-                error_list = []
-
-# - get mode
-                mode = upload_dict.get('mode')
+# - get permit
+        has_permit = af.get_permit_crud_of_this_page('page_examyear', request)
+        if has_permit:
 
 # - get country of requsr, only if country is not locked
-                country = None
-                if request.user.country and not request.user.country.locked:
-                    country = request.user.country
-                if logging_on:
-                    # upload_dict: {'id': {'table': 'examyear', 'mode': 'delete', 'mapid': 'examyear_59'}}
-                    logger.debug('upload_dict: ' + str(upload_dict))
-                    logger.debug('country: ' + str(country))
-                    logger.debug('mode:    ' + str(mode))
+            if request.user.country and not request.user.country.locked:
+                req_usr_country = request.user.country
 
-                if country:
-                    new_examyear_instance = None
+# - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
 
-# - get current examyear from upload_dict - when mode is 'create': examyear is None. It will be created at "elif mode == 'create'"
-                    examyear_pk = upload_dict.get('examyear_pk')
-                    current_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=examyear_pk)
+# - get upload_dict from request.POST
+                upload_json = request.POST.get('upload', None)
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
 
                     if logging_on:
-                        logger.debug('current_examyear_instance: ' + str(current_examyear_instance))
+                        logger.debug('upload_dict: ' + str(upload_dict))
+                    """
+                    upload_dict: {'table': 'examyear', 'country_pk': 1, 'examyear_pk': 85, 'mapid': 'examyear_85', 'mode': 'update', 'published': True} 
+                    """
 
-# +++ delete current_examyear_instance
-                    if mode == 'delete':
-                        if current_examyear_instance:
-                            this_text = _("Exam year '%(tbl)s' ") % {'tbl': str(current_examyear_instance.code)}
-        # - check if current_examyear_instance is closed or schools have activated or locked it
-                            msg_err = av.validate_delete_examyear(current_examyear_instance)
-                            if msg_err:
-                                error_list.append(msg_err)
-                                if logging_on:
-                                    logger.debug('msg_err: ' + str(msg_err))
+# - get mode
+                    mode = upload_dict.get('mode')
+                    is_create = (mode == 'create')
+                    is_delete = (mode == 'delete')
+                    is_check = upload_dict.get('check') or False
+
+ # - get  variables
+                    return_dict = {}
+                    updated_rows = []
+                    error_list = []
+                    log_list = []
+                    messages = []
+
+                    header_txt = _('Add exam year') if is_create else _('Delete exam year') if is_delete else _(
+                        'Edit exam year')
+
+# +++ create new examyear, copy data from last exam year
+                    if is_create:
+                        examyear_instance, err_html, log_lst = create_examyear_instance(upload_dict, request)
+
+                        if logging_on:
+                            logger.debug('    examyear_instance: ' + str(examyear_instance))
+                            logger.debug('    err_html: ' + str(err_html))
+                            logger.debug('    log_lst: ' + str(log_lst))
+
+                        if log_lst:
+                            log_list.extend(log_lst)
+
+                        if err_html:
+                            if len(updated_rows) == 0:
+                                updated_rows.append({})
+                            updated_rows[0]['error'] = [err_html]
+
+                        elif examyear_instance:
+                            msg_html = str(_('Exam year %(exyr)s has been created.') % {'exyr': str(examyear_instance.code)})
+
+                            return_dict = {'created': True, 'msg_html': msg_html}
+
+
+                            append_dict = {'created': True}
+                            examyear_pk = getattr(examyear_instance, 'pk')
+
+            # - add update_dict to update_wrap
+                            updated_rows = sch_dicts.create_examyear_rows(
+                                req_usr=request.user,
+                                append_dict=append_dict,
+                                examyear_pk=examyear_pk
+                            )
+                            if logging_on:
+                                logger.debug('    examyear_pk: ' + str(examyear_pk))
+                                logger.debug('    updated_rows: ' + str(updated_rows))
+
+# +++ delete last_examyear_instance
+                    elif is_delete:
+
+                        deleted_row, tobedeleted_row, err_html = delete_examyear_instance(is_check, request)
+
+                        if is_check:
+                            # when is_check err_html contains 'will be deleted text', tobedeleted_row is None when error
+
+                            if tobedeleted_row:
+                                msg_html = ''.join(("<div class='p-2'>", str(err_html), "</div>"))
+                                return_dict = {
+                                    'examyear_tobedeleted': tobedeleted_row,
+                                    'msg_html': msg_html
+                                }
+
+                            elif err_html:
+                                msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(err_html), "</div>"))
+                                return_dict = {'error': True, 'msg_html': msg_html}
+                        else:
+                            # when not is_check err_html has only value when error
+                            if err_html:
+                                msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(err_html), "</div>"))
+                                # return_dict = {'error': True, 'msg_html': msg_html}
+                                #messages.append(msg_html)
+
+                                messages.append({'class': "border_bg_invalid", 'header': header_txt, 'msg_html': err_html})
 
                             else:
-                                if logging_on:
-                                    logger.debug('delete current_examyear_instance: ' + str(current_examyear_instance))
-                                msg_list = []  # TODO
-                                current_examyear_instance_pk = current_examyear_instance.pk
-                                deleted_ok = sch_mod.delete_instance(current_examyear_instance, msg_list, error_list, request, this_text)
-                                if logging_on:
-                                    logger.debug('deleted_ok' + str(deleted_ok))
+                                updated_rows.append(deleted_row)
 
-                                if deleted_ok:
-                                    # - add deleted_row to current_examyear_instance_rows
-                                    examyear_rows.append({'pk': current_examyear_instance_pk,
-                                                         'mapid': 'examyear_' + str(current_examyear_instance_pk),
-                                                         'deleted': True})
-                                    instance = None
-                                    if logging_on:
-                                        logger.debug('examyear_rows' + str(examyear_rows))
-# +++ create new examyear
-                    elif mode == 'create':
-     # - validate unique examyear_code_int
-                        country = request.user.country
-                        examyear_code_int = upload_dict.get('examyear_code')
-                        msg_err = av.validate_unique_examyear(country, examyear_code_int, request)
-                        if msg_err:
-                            error_list.append(msg_err)
-                            if logging_on:
-                                logger.debug('msg_err: ' + str(msg_err))
-                        else:
-     # - create new examyear
-                            new_examyear_instance, msg_err = create_examyear(country, examyear_code_int, request)
-                            if new_examyear_instance:
-                                append_dict['created'] = True
-    # - copy all tables from last examyear existing examyear
-                                also_copy_schools = True
-                                # prev_examyear_instance, msg_err = sf.get_previous_examyear_instance(new_examyear_instance)
-                                log_list = []
-                                copy_tables_from_last_year(current_examyear_instance, new_examyear_instance, also_copy_schools, log_list, request)
-                            if msg_err:
-                                error_list.append(msg_err)
+                        if logging_on:
+                            logger.debug('    deleted_row: ' + str(deleted_row))
+                            logger.debug('    updated_rows: ' + str(updated_rows))
+                            logger.debug('    tobedeleted_row: ' + str(tobedeleted_row))
+                            logger.debug('    err_html: ' + str(err_html))
+
+    # +++ update examyear, not when it is created. All fields are saved in create_examyear
+                    else:
+
+     # - get current examyear from upload_dict - when mode is 'create': examyear is None. It will be created at "elif mode == 'create'"
+                        examyear_pk = upload_dict.get('examyear_pk')
+                        current_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=examyear_pk)
+                        if logging_on:
+                            logger.debug('current_examyear_instance: ' + str(current_examyear_instance))
+
+                        if current_examyear_instance:
+                            if is_check:
+                                # upload_dict: {'mode': 'update', 'check': True, 'examyear_pk': 1, 'published': False}
+                                if 'published' in upload_dict:
+                                    # - check if last_examyear_instance is closed or schools have activated or locked it
+                                    msg_err = av.validate_undo_published_examyear(current_examyear_instance)
+
+                                    if msg_err:
+                                        msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(msg_err), "</div>"))
+                                        return_dict = {'error': True, 'msg_html': msg_html}
+
+                                    else:
+                                        msg_html = '<br>'.join((str(_("Publication of exam year %(exyr)s will be undone.") % {
+                                            'exyr': current_examyear_instance.code}),
+                                            str(_('Do you want to continue?'))))
+                                        return_dict = {'msg_html': msg_html}
+
+                                # upload_dict: {'mode': 'update', 'check': True, 'examyear_pk': 1, 'published': False}
+                                elif 'locked' in upload_dict:
+                                    # upload_dict: {'mode': 'update', 'check': True, 'examyear_pk': 65, 'locked': False}
+                                    # - check if last_examyear_instance is already locked
+                                    msg_err = av.validate_undo_locked_examyear(current_examyear_instance)
+
+                                    if msg_err:
+                                        msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(msg_err), "</div>"))
+                                        return_dict = {'error': True, 'msg_html': msg_html}
+
+                                    else:
+                                        msg_html = '<br>'.join((str(_("Exam year %(exyr)s will be unlocked.") % {
+                                            'exyr': current_examyear_instance.code}),
+                                            str(_('Do you want to continue?'))))
+                                        return_dict = {'msg_html': msg_html}
+
+                            else:
+
+                                updated = update_examyear(current_examyear_instance, upload_dict, error_list, request)
+                                if updated:
+                                    updated_rows = sch_dicts.create_examyear_rows(
+                                        req_usr=request.user,
+                                        append_dict={},
+                                        examyear_pk=current_examyear_instance.pk
+                                    )
                                 if logging_on:
-                                    logger.debug('msg_err: ' + str(msg_err))
+                                    logger.debug('error_list: ' + str(error_list))
 
-# +++ update examyear, skip when it is created. All fields are saved in create_examyear
-                    if logging_on:
-                        logger.debug('new_examyear_instance: ' + str(new_examyear_instance))
-                        logger.debug('mode: ' + str(mode))
-
-                    if current_examyear_instance and mode == 'update':
-                        updated = update_examyear(current_examyear_instance, upload_dict, error_list, request)
-                        if updated:
-                            examyear_rows = sch_dicts.create_examyear_rows(
-                                req_usr=req_usr,
-                                append_dict={},
-                                examyear_pk=current_examyear_instance.pk
-                            )
-                    if logging_on:
-                        logger.debug('error_list: ' + str(error_list))
+                    if return_dict:
+                        update_wrap['checked_examyear'] = return_dict
+                    if messages:
+                        update_wrap['messages'] = messages
 
                     if error_list:
-                        update_wrap['messages'] = error_list
-# - add update_dict to update_wrap
-                    if new_examyear_instance:
-                        examyear_rows = sch_dicts.create_examyear_rows(
-                            req_usr=req_usr,
-                            append_dict=append_dict,
-                            examyear_pk=new_examyear_instance.pk
-                        )
-                    else:
-                        # examyear is None when error on creating examyear. Return msg_err still
-                        if append_dict:
-                            examyear_rows = [append_dict]
-        update_wrap['updated_examyear_rows'] = examyear_rows
+                        if len(updated_rows) == 0:
+                            updated_rows.append({})
+                        updated_rows[0]['error'] = error_list
+
+                    if logging_on:
+                        logger.debug('updated_rows' + str(updated_rows))
+
+                    update_wrap['updated_examyear_rows'] = updated_rows
+
+
+        if logging_on:
+            logger.debug('update_wrap' + str(update_wrap))
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ExamyearUploadView
+
+
+def create_examyear_instance(upload_dict, request):
+    # --- create_examyear_instance PR2022-08-09
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_examyear_instance ----- ')
+
+    examyear_instance = None
+    msg_html = None
+    log_list = []
+
+    req_usr_country = request.user.country
+
+# - get last_examyear_instance of this req_usr_country
+    last_examyear_instance = sch_mod.Examyear.objects.filter(
+        country=req_usr_country
+    ).order_by('-pk').first()
+
+    if last_examyear_instance is None:
+        caption = _('Exam year')
+        examyear_code = upload_dict.get('examyear_code') or '---'
+        msg_html = '<br>'.join((
+            str(_('There is no previous exam year.')),
+            str(_("%(caption)s '%(val)s' could not be created.")
+                % {'caption': caption, 'val': str(examyear_code)})))
+
+    else:
+        last_examyear_pk = last_examyear_instance.pk
+        new_examyear_code_int = 1 + last_examyear_instance.code
+
+# - create new examyear
+        new_examyear_pk, msg_err, log_txt = create_examyear(last_examyear_pk, new_examyear_code_int)
+
+        if log_txt:
+            log_list.append(c.STRING_SPACE_05 + log_txt)
+
+        if msg_err:
+            msg_html = msg_err
+
+        elif new_examyear_pk:
+            examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=new_examyear_pk)
+# - copy all tables from last examyear
+            log_lst = copy_tables_from_last_year(last_examyear_pk, new_examyear_pk, new_examyear_code_int, True)  # also_copy_schools = True
+            if log_lst:
+                log_list.extend(log_lst)
+
+    return examyear_instance, msg_html, log_list
+# - end of create_examyear_instance
+
+
+def delete_examyear_instance(is_check, request):
+    # --- delete examyear_instancee # PR2022-08-07
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- delete_examyear_instance -------')
+
+    deleted_row = None
+    tobedeleted_row = None
+    msg_html = None
+
+# - get last_examyear_instance of this req_usr_country
+    last_examyear_instance = sch_mod.Examyear.objects.filter(
+        country=request.user.country
+    ).order_by('-pk').first()
+
+    if last_examyear_instance:
+        last_examyear_pk = last_examyear_instance.pk
+        last_examyear_code = last_examyear_instance.code
+
+# - check if last_examyear_instance is closed or schools have activated or locked it
+        msg_err = av.validate_delete_examyear(last_examyear_instance)
+
+        if is_check:
+            if msg_err:
+                #msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", str(msg_err), "</div>"))
+                msg_html = str(msg_err)
+
+            else:
+# - add deleted_row to last_examyear_instance
+                tobedeleted_row = {'pk': last_examyear_pk,
+                                        'mapid': 'examyear_' + str(last_examyear_pk),
+                                        'tobedeleted': True}
+                msg_html = '<br>'.join((
+                    str(_('Exam year %(exyr)s will be deleted.') % {'exyr': last_examyear_code}),
+                    str(_('Do you want to continue?'))
+                ))
+        else:
+            if msg_err:
+                # should not be possible, because error is trapped on check
+                msg_html = msg_err
+            else:
+                this_txt = _("Exam year '%(tbl)s' ") % {'tbl': str(last_examyear_instance.code)}
+
+                deleted_row, err_html = sch_mod.delete_instance(
+                    table='examyear',
+                    instance=last_examyear_instance,
+                    request=request,
+                    this_txt=this_txt
+                )
+                if err_html:
+                    msg_html = err_html
+
+                if logging_on:
+                    logger.debug('    deleted_row: ' + str(deleted_row))
+                    logger.debug('    err_html: ' + str(err_html))
+
+    if logging_on:
+        logger.debug('deleted_row' + str(deleted_row))
+        logger.debug('msg_html' + str(msg_html))
+
+    return deleted_row, tobedeleted_row, msg_html
+# - end of delete_examyear_instance
+
 
 
 ############ ORDER LIST ##########################
@@ -3006,8 +3182,11 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                     logger.debug('sxm_examyear_instance: ' + str(sxm_examyear_instance))
 
 # - create new examyear if it does not exist yet
+                log_list = []
                 if sxm_examyear_instance is None:
-                    sxm_examyear_instance, msg_err = create_examyear(sxm_country_instance, sel_examyear.code, request)
+                    sxm_examyear_instance, msg_err, log_txt = create_examyear(sxm_country_instance, sel_examyear.code)
+                    if log_txt:
+                        log_list.append(c.STRING_SPACE_05 + log_txt)
                     if msg_err:
                         error_list.append(msg_err)
                     if logging_on:
@@ -3024,7 +3203,6 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                         logger.debug('curacao_examyear_instance and sxm_examyear_instance')
 
                     also_copy_schools = False
-                    log_list = []
                     copy_tables_from_last_year(curacao_examyear_instance, sxm_examyear_instance, also_copy_schools, log_list, request)
 
         update_wrap['error_list'] = error_list
@@ -3115,146 +3293,86 @@ class CopySchemesFromExamyearView(View):  # PR2021-09-24
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of CopySchemesFromExamyearView
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-@method_decorator([login_required], name='dispatch')
-class ExamyearDeleteSubjectsFromSxmView(View):  # PR2021-08-06
-
-    def post(self, request):
-        logging_on = s.LOGGING_ON
-
-        update_wrap = {}
-        error_list = []
-        SXM_deletedlist = []
-        if request.user is not None and request.user.country is not None:
-            req_usr = request.user
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
-            # only admin of system may do this
-            has_permit = (req_usr.role == c.ROLE_128_SYSTEM and requsr_usergroups_list and 'admin' in requsr_usergroups_list)
-
-            # DISABLE THIS FUNCTION,it will remove all students and subjects of SXM
-            # has_permit = False
-            if logging_on:
-                logger.debug(' ')
-                logger.debug(' ============= ExamyearDeleteSubjectsFromSxmView ============= ')
-                logger.debug('has_permit: ' + str(has_permit))
-
-# - reset language
-            user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get upload_dict from request.POST - upload_dict not in use
-            upload_json = request.POST.get('upload', None)
-            if has_permit and upload_json:
-                upload_dict = json.loads(upload_json)
-                if logging_on:
-                    logger.debug('upload_dict: ' + str(upload_dict))
-                    # upload_dict: {'mode': 'delete_subjects_from_sxm', 'examyear_code': 2022}
-
-# - get current examyear and check if it is SXM and user country is also SXM
-                sxm_examyear_instance = None
-                sel_examyear, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
-
-                if sel_examyear:
-                    sel_country = sel_examyear.country
-
-                    if sel_country and req_usr.country == sel_country:
-                        if sel_country.abbrev and sel_country.abbrev.lower() == 'sxm':
-                            sxm_examyear_instance = sel_examyear
-
-                SXM_deletedlist.append('sxm_examyear_instance: ' + str(sxm_examyear_instance))
-                if sxm_examyear_instance:
-                    SXM_deletedlist.append('sxm_examyear_country: ' + str(sxm_examyear_instance.country))
-
-                if sxm_examyear_instance:
-
-# +++ Delete all students of this SXM examyear
-                    # - first make sure that no sudsubjects exist
-                    # relationship studsubj - subj is PROTECT, but better safe than sorry
-                    students = stud_mod.Student.objects.filter(
-                        school__examyear=sxm_examyear_instance
-                    )
-                    for student in students:
-                        sch_mod.delete_instance(student, msg_list, error_list, request, '', '')
-                        SXM_deletedlist.append('deleted student: ' + str(student))
-
-# +++ Delete all subjects of this SXM examyear
-                    subjects = subj_mod.Subject.objects.filter(
-                        examyear=sxm_examyear_instance
-                    )
-                    for subject in subjects:
-                        sch_mod.delete_instance(subject, msg_list, error_list, request, '', '')
-                        SXM_deletedlist.append('deleted subject: ' + str(subject))
-
-# +++ Delete all departments of this SXM examyear
-                    # relationship with Published - CASCADE, PrivateDocument=CASCADE, Scheme=CASCADE,
-                    # relationship with student=PROTECT Exam=PROTECT Cluster=PROTECT
-                    # relationship scheme - lvl is CASCADE, so also schemes, schemitems and subjecttypes will be deleted
-                    departments = sch_mod.Department.objects.filter(
-                        examyear=sxm_examyear_instance
-                    )
-                    for department in departments:
-                        sch_mod.delete_instance(department, msg_list, error_list, request, '', '')
-                        SXM_deletedlist.append('deleted subject: ' + str(department))
-
-# +++ Delete all level of this SXM examyear
-                    # relationship with student=SET_NULL Exam=SET_NULL
-                    # relationship scheme=CASCADE, so also schemes, schemitems and subjecttypes will be deleted
-                    levels = subj_mod.Level.objects.filter(
-                        examyear=sxm_examyear_instance
-                    )
-                    for level in levels:
-                        sch_mod.delete_instance(level, msg_list, error_list, request, '', '')
-                        SXM_deletedlist.append('deleted level: ' + str(level))
-
-# +++ Delete all sectors of this SXM examyear
-                    # relationship scheme - sct is CASCADE, so also schemes, schemitems and subjecttypes will be deleted
-                    sectors = subj_mod.Sector.objects.filter(
-                        examyear=sxm_examyear_instance
-                    )
-                    for sector in sectors:
-                        sch_mod.delete_instance(sector, msg_list, error_list, request, '', '')
-                        SXM_deletedlist.append('deleted sector: ' + str(sector))
-        update_wrap['SXM_deletedlist'] = SXM_deletedlist
-        update_wrap['error_list'] = error_list
-
-# - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of ExamyearDeleteSubjectsFromSxmView
-
-
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_examyear(country, examyear_code_int, request):
-    # --- create examyear # PR2019-07-30 PR2020-10-05 PR2021-07-14 PR2021-08-21
+def create_examyear(prev_examyear_pk, new_examyear_code_int):
+    # --- create examyear # PR2019-07-30 PR2020-10-05 PR2021-07-14 PR2021-08-21  PR2022-08-01
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_examyear ----- ')
-        logger.debug('examyear_code_int: ' + str(examyear_code_int) + ' ' + str(type(examyear_code_int)))
+        logger.debug('new_examyear_code_int: ' + str(new_examyear_code_int) + ' ' + str(type(new_examyear_code_int)))
 
-    instance = None
+    caption = _('Exam year')
+    name = str(new_examyear_code_int) if new_examyear_code_int else '---'
+
+    new_examyear_pk = None
     msg_err = None
-    if country and examyear_code_int:
+    log_txt = None
 
-# - create and save examyear
+    if prev_examyear_pk and new_examyear_code_int:
+
         try:
-            instance = sch_mod.Examyear(
-                country=country,
-                code=examyear_code_int,
-                createdat=timezone.now()
-            )
-            instance.save(request=request)
+            # the following fields got value in create_examyear:
+            #    code=examyear_code_int,
+            #    createdat=timezone.now()
+            # the following fields got default value:
+            #    published = False
+            #    locked = False
+            #    publishedat = None
+            #    lockedat = None
+            # the following fields get value from previous examyear::
+            field_list = ', '.join(( 'country_id',
+                      # these fields get calculated value: 'country_id', 'code', 'createdat',
+                      # these fields get default value: 'published', 'locked','publishedat', 'lockedat',
+                      'no_practexam', 'sr_allowed', 'no_centralexam', 'no_thirdperiod',
+                      'order_extra_fixed', 'order_extra_perc', 'order_round_to',
+                      'order_tv2_divisor', 'order_tv2_multiplier', 'order_tv2_max',
+                      'order_admin_divisor', 'order_admin_multiplier', 'order_admin_max',
+                      'modifiedat', 'modifiedby_id'))
+
+            createdat_str = str(timezone.now())
+
+            sql_keys = {'prev_ey_id': prev_examyear_pk, 'new_ey_code': new_examyear_code_int}
+            sql_list = [
+                "INSERT INTO schools_examyear(",
+                    "code, createdat,",
+                    "published, locked,",
+                    field_list,
+                    ")",
+                "(SELECT",
+                    "%(new_ey_code)s::INT,",
+                    "'" + createdat_str + "',",
+                    "FALSE, FALSE,",
+                    field_list,
+                "FROM schools_examyear",
+                "WHERE id = %(prev_ey_id)s::INT)",
+                "RETURNING id;"
+            ]
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = cursor.fetchall()
+                if rows:
+                    row = rows[0]
+                    if row:
+                        new_examyear_pk = row[0]
+
+            log_txt = str(_("%(caption)s '%(val)s' has been created.") % {'caption': caption, 'val': name})
+
+            if logging_on:
+                logger.debug('log_txt: ' + str(log_txt))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             caption = _('Exam year')
-            name = str(examyear_code_int) if examyear_code_int else '---'
-            msg_err = str(_('An error occurred.')) + ' ' + \
-                      str(_("%(caption)s '%(val)s' could not be created.") % {'caption': caption, 'val': name})
+            msg_err = ''.join((
+                str(_('An error occurred')), ': ', '<br>&emsp;&emsp;<i>', str(e), '</i><br>',
+                str(_("%(caption)s '%(val)s' could not be created.") % {'caption': caption, 'val': name})
+            ))
 
-    return instance, msg_err
+    return new_examyear_pk, msg_err, log_txt
 # - end of create_examyear
 
 
@@ -3344,48 +3462,60 @@ def update_examyear(instance, upload_dict, msg_list, request):
 # - end of update_examyear
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, also_copy_schools, log_list, request):
+def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, new_examyear_code_int, also_copy_schools ):
     # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_tables_from_last_year -------')
-        logger.debug('prev_examyear_instance: ' + str(prev_examyear_instance) + '' + str(prev_examyear_instance.country.abbrev))
-        logger.debug('new_examyear_instance: ' + str(new_examyear_instance) + '' + str(new_examyear_instance.country.abbrev))
+        logger.debug('prev_examyear_pk: ' + str(prev_examyear_pk))
+    log_list = []
+    if new_examyear_pk and prev_examyear_pk:
 
-    if new_examyear_instance and prev_examyear_instance:
+        new_examyear_code = str(new_examyear_code_int) if new_examyear_code_int else '---'
 
-        sf.copy_examyear_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
+        # NIU all fields are copiedwhile creating newexamyear
+        #sf.copy_examyear_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        sf.copy_exfilestext_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
+        sf.copy_exfilestext_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        mapped_deps = sf.copy_deps_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
+        mapped_deps = sf.copy_deps_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
         if also_copy_schools:
-            sf.copy_schools_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
+            sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        # TODO mailinglist Schoolsetting
+        mapped_levels = sf.copy_levels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        mapped_sectors = sf.copy_sectors_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        mapped_levels = sf.copy_levels_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
-        mapped_sectors = sf.copy_sectors_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
+        mapped_schemes = sf.copy_schemes_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_sectors, log_list)
 
-        mapped_schemes = sf.copy_schemes_from_prev_examyear(request, prev_examyear_instance, mapped_deps, mapped_levels, mapped_sectors, log_list)
+        mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
+        mapped_subjects = sf.copy_subjects_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
 
-        mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, log_list)
-        mapped_subjects = sf.copy_subjects_from_prev_examyear(request, prev_examyear_instance, new_examyear_instance, log_list)
-        mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
-        mapped_packages = sf.copy_packages_from_prev_examyear(request, prev_examyear_instance, mapped_schemes, log_list)
-        sf.copy_packageitems_from_prev_examyear(request, prev_examyear_instance, mapped_packages, mapped_schemeitems, log_list)
+        sf.copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_subjects, log_list)
+
+
+        if logging_on:
+            logger.debug('    mapped_schemeitems: ' + str(mapped_schemeitems))
+        # Not in use
+        #mapped_packages = sf.copy_packages_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
+        #sf.copy_packageitems_from_prev_examyear(prev_examyear_pk, mapped_packages, mapped_schemeitems, log_list)
 
         # these tables are not copied:
-        # Exam
-        # Norm
+        # Country
         # School_message
         # Published
         # PrivateDocument
         # Entrylist
         # Schoolsetting
-        # Cluster
+        # Mailmessage
+        # Mailattachment
+        # Mailbox
+
         # Birthcountry
         # Birthplace
         # Student
+        # Studentnote
         # Result
         # Resultnote
         # Studentsubject
@@ -3393,6 +3523,10 @@ def copy_tables_from_last_year(prev_examyear_instance, new_examyear_instance, al
         # Noteattachment
         # Grade
 
+        # Ntermentable
+        # Exam
+        # Cluster
+    return log_list
 # end of copy_tables_from_last_year
 
 # === School =====================================
@@ -3422,143 +3556,123 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 
         messages = []
         update_wrap = {}
-        if request.user and request.user.country and request.user.schoolbase:
 
 # - get permit
-            has_permit = False
-            req_usr = request.user
-            if req_usr and req_usr.country and req_usr.schoolbase:
-                permit_list = req_usr.permit_list('page_school')
-                if permit_list:
-                    has_permit = 'permit_crud' in permit_list
-                if logging_on:
-                    logger.debug('permit_list: ' + str(permit_list))
-                    logger.debug('has_permit: ' + str(has_permit))
-
-            if has_permit:
+        has_permit = acc_view.get_permit_crud('page_school', request)
+        if has_permit:
 
 # - reset language
-                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                activate(user_lang)
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
 
 # --- get upload_dict from request.POST
-                upload_json = request.POST.get('upload', None)
-                if upload_json:
-                    upload_dict = json.loads(upload_json)
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
 
 # --- get variables from upload_dict PR2020-12-25
-                    school_pk = upload_dict.get('school_pk')
-                    mode = upload_dict.get('mode')
-                    is_create = (mode == 'create')
-                    is_delete = (mode == 'delete')
+                school_pk = upload_dict.get('school_pk')
+                mode = upload_dict.get('mode')
+                is_create = (mode == 'create')
+                is_delete = (mode == 'delete')
 
-                    message_header = _('Delete school') if is_delete \
-                                else _('Create school') if is_create \
-                                else _('Update school')
+                if logging_on:
+                    logger.debug('upload_dict' + str(upload_dict))
+                    logger.debug('school_pk: ' + str(school_pk))
+                    logger.debug('is_create: ' + str(is_create))
+                    logger.debug('is_delete: ' + str(is_delete))
 
-                    school_dict = {}
-                    error_dict = {}
+                updated_rows = []
+                error_list = []
+                messages = []
+                append_dict = {}
 
-                    if logging_on:
-                        logger.debug('upload_dict' + str(upload_dict))
-                        logger.debug('school_pk: ' + str(school_pk))
-                        logger.debug('is_create: ' + str(is_create))
-                        logger.debug('is_delete: ' + str(is_delete))
+                header_txt = _('Add school') if is_create else _('Delete school') if is_delete else _('Edit school')
 
 # - get selected examyear from Usersetting
-                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                    selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                    examyear = None
-                    if selected_examyear_pk:
-                        examyear = sch_mod.Examyear.objects.get_or_none(
-                            id=selected_examyear_pk,
-                            country=request.user.country
-                        )
-
-# - exit when no examyear or examyear is locked
-                    # note: subjects may be changed before publishing, therefore don't exit on examyear.published
-                    if examyear is None:
-                        messages.append({'class': "border_bg_warning",
-                                         'header': str(message_header),
-                                         'msg_html': str(_('No exam year selected'))})
-                    elif examyear.locked:
-                        messages.append({'class': "border_bg_warning",
-                                         'header': str(message_header),
-                                         'msg_html': str(
-                                             _("Exam year %(exyr)s is locked.") % {'exyr': str(examyear.code)})
-                                         })
-                    else:
-# +++ Delete school
-                        if is_delete:
-                            school = sch_mod.School.objects.get_or_none(id=school_pk)
-                            if logging_on:
-                                logger.debug('school: ' + str(school))
-
-                            if school:
-                                this_text = _("School '%(tbl)s' ") % {'tbl': school.name}
-                                # a. TODO check if school has child rows, put msg_err in update_dict when error
-                                msg_err = None  # validate_employee_has_emplhours(employee)
-                                if msg_err:
-                                    # error_dict['error'] = msg_err
-                                    pass
-                                else:
-                                    # b. check if there are teammembers with this employee: absence teammembers, remove employee from shift teammembers
-                                    # delete_employee_from_teammember(employee, request)
-                                    # c. delete school
-                                    # format of error_list: [err_str1, err_str2]
-                                    # TODO msg and err not correct
-                                    err_list = []
-                                    deleted_ok = sch_mod.delete_instance(school, messages, err_list, request, this_text)
-                                    if deleted_ok:
-                                        # - add deleted_row to school_rows
-                                        school_dict.update({'pk': school_pk,
-                                                            'table': 'school',
-                                                            'mapid': 'school_' + str(school_pk),
-                                                            'deleted': True})
-                                        school = None
+                # get_selected_examyear_from_usersetting gives error message when:
+                # - country is locked
+                # - no exam year selected
+                # - exam year is locked
+                # - (skip check for not published)
+                sel_examyear, may_edit, sel_msg_list = \
+                    dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                if sel_msg_list:
+                    msg_html = '<br>'.join(sel_msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                    if logging_on:
+                        logger.debug('messages:   ' + str(messages))
+                else:
 
 # +++ Create new school
-                        if is_create:
+                    if is_create:
+                        school_instance, error_list = create_school_instance(sel_examyear, upload_dict, request)
+                        if error_list:
+                            messages.append(
+                                {'header': str(header_txt),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': '<br>'.join(error_list)}
+                            )
 
-                            school = create_school_instance(examyear, upload_dict, error_dict, request)
-                            if school:
-                                school_dict['created'] = True
+                        if school_instance:
+                            append_dict['created'] = True
+# --- get existing school
+                    else:
+                        school_instance = sch_mod.School.objects.get_or_none(
+                            id=school_pk,
+                            examyear=sel_examyear
+                        )
+                    if logging_on:
+                        logger.debug('school_instance: ' + str(school_instance))
+
+                    if school_instance:
+
+# +++ Delete school
+                        if is_delete:
+                            deleted_row, err_html = delete_school_instance(school_instance, request)
+                            if err_html:
+                                messages.append(
+                                    {'header': str(header_txt),
+                                     'class': "border_bg_invalid",
+                                     'msg_html': err_html}
+                                )
+                            elif deleted_row:
+                                school_instance = None
+                                updated_rows.append(deleted_row)
 
                             if logging_on:
-                                logger.debug('school: ' + str(school))
+                                logger.debug('    deleted_row: ' + str(deleted_row))
+                                logger.debug('    err_html: ' + str(err_html))
 
-    # --- get existing school
-                        else:
-                            school = sch_mod.School.objects.get_or_none(id=school_pk)
+                    else:
 
-                        if school:
 # --- Update school, also when it is created. When deleted: school is None
-                        #  Not necessary when created. Most fields are required. All fields are saved in create_school_instance
+                    #  Not necessary when created. Most fields are required. All fields are saved in create_school_instance
 
-                            saved_ok = update_school_instance(school, upload_dict, error_dict, request)
-                            if saved_ok:
-                                school_dict['updated'] = True
-
-                            permit_dict = {
-                                'requsr_role': req_usr.role,
-                                'requsr_schoolbase_pk': req_usr.schoolbase_id
-                            }
-                            school_rows = sch_dicts.create_school_rows(
-                                examyear=examyear,
-                                permit_dict=permit_dict,
-                                request=request,
-                                school_pk=school.pk
+                        error_list = update_school_instance(school_instance, sel_examyear, upload_dict, request)
+                        if error_list:
+                            messages.append(
+                                {'header': str(header_txt),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': '<br>'.join(error_list)}
                             )
-                            if school_rows:
-                                # update appends dict to dict. school_row may have value like 'created = True
-                                school_dict.update(school_rows[0])
-                    if error_dict:
-                        school_dict['error'] = error_dict
-                    update_wrap['updated_school_rows'] = [school_dict]
+# - create subject_row, also when deleting failed (when deleted ok there is no subject, subject_row is made above)
+# PR2021-089-04 debug. gave error on subject.pk: 'NoneType' object has no attribute 'pk'
+                    if school_instance:
+                        updated_rows = sch_dicts.create_school_rows(
+                            request=request,
+                            examyear=sel_examyear,
+                            append_dict=append_dict,
+                            school_pk=school_instance.pk
+                        )
 
+                        update_wrap['updated_school_rows'] = updated_rows
+
+                if messages:
+                    update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
-
+# - end of SchoolUploadView
 
 @method_decorator([login_required], name='dispatch')
 class SchoolImportView(View):  # PR2020-10-01
@@ -3686,37 +3800,6 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
         return HttpResponse(json.dumps(schoolsetting_dict, cls=LazyEncoder))
 # --- end of SubjectImportUploadSetting
 
-@method_decorator([login_required], name='dispatch')
-class SchoolImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
-
-    def post(self, request):
-        #logger.debug(' ========================== SchoolImportUploadData ========================== ')
-        params = {}
-        has_permit = False
-        is_not_locked = False
-        if request.user is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
-            # TODO change request.user.examyear to sel_examyear
-            is_not_locked = not request.user.examyear.locked
-
-        if is_not_locked and has_permit:
-            # - Reset language
-            # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                params = import_schools(upload_dict, user_lang, request)
-
-        return HttpResponse(json.dumps(params, cls=LazyEncoder))
-
-# --- end of SubjectImportUploadData
-
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
 @method_decorator([login_required], name='dispatch')
 class SchoolAwpUploadView(View):  # PR2021-05-03
@@ -3770,15 +3853,17 @@ class SchoolAwpUploadView(View):  # PR2021-05-03
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-def create_school_instance(examyear, upload_dict, error_dict, request):
-    # --- create school # PR2019-07-30 PR2020-10-22 PR2021-06-20
-    logging_on = s.LOGGING_ON
+def create_school_instance(examyear, upload_dict, request):
+    # --- create school # PR2019-07-30 PR2020-10-22 PR2021-06-20 PR2022-08-07
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_school_instance ----- ')
         logger.debug('examyear: ' + str(examyear))
         logger.debug('upload_dict: ' + str(upload_dict))
 
-    school = None
+    school_instance = None
+    error_list = []
+
     if examyear:
 # - get value of 'abbrev'
         code = upload_dict.get('code')
@@ -3787,6 +3872,7 @@ def create_school_instance(examyear, upload_dict, error_dict, request):
         article = upload_dict.get('article')
         depbases = upload_dict.get('depbases')
         defaultrole = upload_dict.get('defaultrole')  # default role = c.ROLE_008_SCHOOL
+
         if logging_on:
             logger.debug('code: ' + str(code))
             logger.debug('abbrev: ' + str(abbrev))
@@ -3796,25 +3882,14 @@ def create_school_instance(examyear, upload_dict, error_dict, request):
             logger.debug('defaultrole: ' + str(defaultrole) + str(type(defaultrole)))
 
         if abbrev and name and code and defaultrole:
-            lookup_value = code
-# - validate if code already exists
-            schoolbase, school, msg_err_multiple_found = lookup_schoolbase(examyear, lookup_value, request)
-            if msg_err_multiple_found is None:
-                if schoolbase is not None:
-                    if school is not None:
-                        error_dict['general'] = [_("School code '%(fld)s' already exists.") % {'fld': lookup_value}]
-                    else:
-                        error_dict['general'] = [_("School code '%(fld)s' already exists in other exam years.") % {'fld': lookup_value}]
-# - if schoolbase exitsts but child school does not exist this examyear: add school
+            msg_html = av.validate_schoolcode_blank_length_exists(examyear, code, request)
 
-            if logging_on:
-                logger.debug('schoolbase: ' + str(schoolbase))
-                logger.debug('error_dict: ' + str(error_dict))
+            if msg_html:
+                error_list.append(str(msg_html))
+                if logging_on:
+                    logger.debug('msg_html: ' + str(msg_html))
 
 # - create and save school
-            if error_dict:
-                pass
-                #error_dict['error_create'] = msg_err
             else:
                 try:
                     # First create base record. base.id is used in School. Create also saves new record
@@ -3823,7 +3898,7 @@ def create_school_instance(examyear, upload_dict, error_dict, request):
                         code=code,
                         defaultrole=defaultrole
                     )
-                    school = sch_mod.School(
+                    school_instance = sch_mod.School(
                         base=schoolbase,
                         examyear=examyear,
                         name=name,
@@ -3831,22 +3906,99 @@ def create_school_instance(examyear, upload_dict, error_dict, request):
                         article=article,
                         depbases=depbases
                     )
-                    school.save(request=request)
-                    if logging_on:
-                        logger.debug('schoolbase: ' + str(schoolbase))
-                        logger.debug('school: ' + str(school))
-                except Exception as e:
-                    school = None
-                    logger.error(getattr(e, 'message', str(e)))
-                    msg_err = str(_("An error occurred. School '%(val)s' could not be added.") % {'val': name})
-                    error_dict['error_create'] = msg_err
+                    school_instance.save(request=request)
 
-    return school
+                except Exception as e:
+                    school_instance = None
+                    logger.error(getattr(e, 'message', str(e)))
+
+                    error_list.append(''.join((
+                        str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                        str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': _('School'), 'val': name})
+                    )))
+
+    if logging_on:
+        logger.debug('school_instance: ' + str(school_instance))
+
+    return school_instance, error_list
 # - end of create_school_instance
 
+
+def delete_school_instance(school_instance, request):
+    # --- delete subject PR2022-08-07
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- delete_school_instance ----- ')
+        logger.debug('school_instance: ' + str(school_instance))
+
+    deleted_row = None
+    msg_html = None
+
+    base_pk = school_instance.base.pk
+
+    this_txt = _("School '%(tbl)s'") % {'tbl': school_instance.name}
+
+# - check if this school has students that are not tobedeleted
+    has_students = stud_mod.Student.objects.filter(
+        school=school_instance,
+        tobedeleted=False
+    ).exists()
+
+    if has_students:
+        msg_html = '<br>'.join((
+            str(_('This school has candidates.')),
+            str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})
+        ))
+
+    else:
+# - check if this school has tobedeleted students
+        tobedeleted_students = stud_mod.Student.objects.filter(
+            school=school_instance,
+            tobedeleted=True
+        )
+        if tobedeleted_students:
+            for student in tobedeleted_students:
+        # delete school does not cascade delete students, therefore delete each tobedeleted student
+                deleted_rowNIU, err_html = sch_mod.delete_instance(
+                    table='student',
+                    instance=student,
+                    request=request,
+                    this_txt='-'
+                )
+                if err_html:
+                    msg_html = ''.join((
+                        str(_('An error occurred')), ':<br>', '&emsp;<i>', str(_('Error deleting deleted candidate.')), '</i><br>',
+                        str(_('%(cpt)s could not be deleted.') % {'cpt': this_txt})
+                    ))
+                    break
+
+    if msg_html is None:
+
+# - delete school
+        deleted_row, err_html = sch_mod.delete_instance(
+            table='school',
+            instance=school_instance,
+            request=request,
+            this_txt=this_txt
+        )
+        if err_html:
+            msg_html = err_html
+
+
+    if logging_on:
+        logger.debug('deleted_row' + str(deleted_row))
+        logger.debug('msg_html' + str(msg_html))
+
+    return deleted_row, msg_html
+# - end of delete_school_instance
+
+
+
+
 #######################################################
-def update_school_instance(instance, upload_dict, err_dict, request):
-    # --- update existing and new instance PR2019-06-06 PR2021-05-13
+def update_school_instance(school_instance, examyear, upload_dict, request):
+    # --- update existing and new instance PR2019-06-06 PR2021-05-13 PR2022-08-07
     # add new values to update_dict (don't reset update_dict, it has values)
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -3856,22 +4008,24 @@ def update_school_instance(instance, upload_dict, err_dict, request):
     # upload_dict = {id: {table: "school", ppk: 1, pk: 1, mapid: "school_1"},
     #                depbases: {value: Array(1), update: true} }
 
-    # format of error_list: [err_str1, err_str2]
-    saved_ok = False
-    if instance:
+    error_list = []
+    if school_instance:
         save_changes = False
         save_parent = False
-        schoolbase = instance.base
+
+        schoolbase = school_instance.base
+
         for field, new_value in upload_dict.items():
 
             if field == 'code':
                 saved_value = getattr(schoolbase, field)
                 if new_value and new_value != saved_value:
-                    # TODO validate_code_name_id checks for null, too long and exists. Puts err_msg in update_dict
-                    #err_msg = av.validate_code_name_identifier()
-                    #err_dict[field] = [err_msg]
-                    setattr(schoolbase, field, new_value)
-                    save_parent = True
+                    msg_html = av.validate_schoolcode_blank_length_exists(examyear, new_value, request, school_instance)
+                    if msg_html:
+                        error_list.append(msg_html)
+                    else:
+                        setattr(schoolbase, field, new_value)
+                        save_parent = True
 
             elif field == 'defaultrole':
                 saved_value = getattr(schoolbase, field)
@@ -3880,52 +4034,50 @@ def update_school_instance(instance, upload_dict, err_dict, request):
                     save_parent = True
 
             elif field in ['name', 'abbrev']:
-                saved_value = getattr(instance, field)
+                saved_value = getattr(school_instance, field)
                 if new_value and new_value != saved_value:
-                    # TODO validate_code_name_id checks for null, too long and exists. Puts err_msg in update_dict
-                    # err_msg = validate_code_name_identifier(
-                    err_msg = None
-                    if not err_msg:
-                        setattr(instance, field, new_value)
+                    # TODO validate_code_name_blank_length_exists_id checks for null, too long and exists. Puts err_msg in update_dict
+                    # err_msg = validate_code_name_blank_length_exists(
+                    msg_html = None
+                    if msg_html is None:
+                        setattr(school_instance, field, new_value)
                         save_changes = True
                     else:
-                        err_dict[field] = [err_msg]
+                        error_list.append(msg_html)
 
             elif field in('article', 'otherlang'):
-                saved_value = getattr(instance, field)
+                saved_value = getattr(school_instance, field)
                 # article / otherlang can be None
                 if new_value != saved_value:
-                    setattr(instance, field, new_value)
+                    setattr(school_instance, field, new_value)
                     save_changes = True
 
 # 3. save changes in depbases
             elif field == 'depbases':
-                saved_value = getattr(instance, field)
+                saved_value = getattr(school_instance, field)
                 # depbases is string:  "1;2;3", sorted, otherwise "1;2;3" and "3;1;2" will not be equal
                 new_value = '' if new_value is None else new_value
                 saved_value = '' if saved_value is None else saved_value
                 if new_value != saved_value:
-                    setattr(instance, field, new_value)
+                    setattr(school_instance, field, new_value)
                     save_changes = True
 
 # 4. save changes in boolean fields
-            elif field in ['activated', 'locked', 'isdayschool', 'iseveningschool', 'islexschool' ]:
-                saved_value = getattr(instance, field)
+            elif field in ['locked', 'isdayschool', 'iseveningschool', 'islexschool' ]:
+                saved_value = getattr(school_instance, field)
                 new_value = False if new_value is None else new_value
 
                 if new_value != saved_value:
-                    setattr(instance, field, new_value)
+                    setattr(school_instance, field, new_value)
                     save_changes = True
 
                     # set time modified if new_value = True, remove time modified when new_value = False
                     mod_at_field = None
-                    if field == 'activated':
-                        mod_at_field = 'activatedat'
-                    elif field == 'locked':
+                    if field == 'locked':
                         mod_at_field = 'lockedat'
                     if mod_at_field:
                         mod_at = timezone.now() if new_value else None
-                        setattr(instance, mod_at_field, mod_at)
+                        setattr(school_instance, mod_at_field, mod_at)
 
                 if logging_on:
                     logger.debug('----- field:  ' + str(field))
@@ -3939,368 +4091,33 @@ def update_school_instance(instance, upload_dict, err_dict, request):
 # 5. save changes
         if save_parent:
             try:
-                schoolbase = instance.base
+                schoolbase = school_instance.base
                 schoolbase.save()
                 if logging_on:
                     logger.debug('parent changes saved')
             except Exception as e:
+
                 logger.error(getattr(e, 'message', str(e)))
-                err_dict['general'] = [_('An error occurred: ') + str(e),  _('The changes have not been saved.')]
-                saved_ok = False
-            else:
-                saved_ok = True
+                msg_html = ''.join((str(_('An error occurred')), ':<br>&emsp;<i>', str(e), '</i><br>',
+                                    str(_('The changes have not been saved.'))))
+                error_list.append(msg_html)
+
         if save_changes:
             try:
-                instance.save(request=request)
+                school_instance.save(request=request)
                 if logging_on:
-                    logger.debug('instance changes saved')
+                    logger.debug('school_instance changes saved')
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                err_dict['general'] = [_('An error occurred: ') + str(e),  _('The changes have not been saved.')]
-                saved_ok = False
-            else:
-                saved_ok = True
-    return saved_ok
+                msg_html = ''.join((str(_('An error occurred')), ':<br>&emsp;<i>', str(e), '</i><br>',
+                                    str(_('The changes have not been saved.'))))
+                error_list.append(msg_html)
+
+    return error_list
 # - -end of update_school_instance
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
-def import_schools(upload_dict, user_lang, request):
-
-    #logger.debug(' -----  import_schools ----- ')
-    #logger.debug('upload_dict: ' + str(upload_dict))
-# - get is_test, codecalc, dateformat, awpKey_list
-    is_test = upload_dict.get('test', False)
-    awpKey_list = upload_dict.get('awpKey_list')
-    dateformat = upload_dict.get('dateformat', '')
-
-    params = {}
-    if awpKey_list:
-# - get lookup_field
-        # lookup_field is field that determines if employee alreay exist.
-        # check if one of the fields 'payrollcode', 'identifier' or 'code' exists
-        # first in the list is lookup_field
-        lookup_field = 'code'
-
-# - get upload_dict from request.POST
-        school_list = upload_dict.get('schools')
-        if school_list:
-
-            today_dte = af.get_today_dateobj()
-            today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-            double_line_str = '=' * 80
-            indent_str = ' ' * 5
-            space_str = ' ' * 30
-            logfile = []
-            logfile.append(double_line_str)
-            logfile.append( '  ' + str(request.user.schoolbase.code) + '  -  ' +
-                            str(_('Import schools')) + ' ' + str(_('date')) + ': ' + str(today_formatted))
-            logfile.append(double_line_str)
-
-            if lookup_field is None:
-                info_txt = str(_('There is no field given to lookup schools. Schools cannot be uploaded.'))
-                logfile.append(indent_str + info_txt)
-            else:
-                if is_test:
-                    info_txt = str(_("This is a test. The school data are not saved."))
-                else:
-                    info_txt = str(_("The school data are saved."))
-                logfile.append(indent_str + info_txt)
-                lookup_caption = str(get_field_caption('school', lookup_field))
-                info_txt = str(_("Schools are looked up by the field: '%(fld)s'.") % {'fld': lookup_caption})
-                logfile.append(indent_str + info_txt)
-                #if dateformat:
-                #    info_txt = str(_("The date format is: '%(fld)s'.") % {'fld': dateformat})
-                #    logfile.append(indent_str + info_txt)
-                update_list = []
-                for school_dict in school_list:
-                    # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
-
-                    update_dict = upload_school_NIU(school_list, school_dict, lookup_field,
-                                                 awpKey_list, is_test, dateformat, indent_str, space_str, logfile, request)
-                    # json_dumps_err_list = json.dumps(msg_list, cls=f.LazyEncoder)
-                    if update_dict:  # 'Any' returns True if any element of the iterable is true.
-                        update_list.append(update_dict)
-
-                if update_list:  # 'Any' returns True if any element of the iterable is true.
-                    params['school_list'] = update_list
-            if logfile:  # 'Any' returns True if any element of the iterable is true.
-                params['logfile'] = logfile
-                        # params.append(new_employee)
-    return params
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def upload_school_NIU(school_list, school_dict, lookup_field, awpKey_list,
-                   is_test, dateformat, indent_str, space_str, logfile, request):  # PR2019-12-17 PR2020-10-21
-    #logger.debug('----------------- import school  --------------------')
-    #logger.debug(str(school_dict))
-    # awpKeys are: 'code', 'name', 'sequence', 'depbases'
-
-# - get index and lookup info from school_dict
-    row_index = school_dict.get('rowindex', -1)
-    new_code = school_dict.get('code')
-    new_name = school_dict.get('name')
-    new_sequence = school_dict.get('sequence')
-    new_depbases = school_dict.get('depbases')
-
-# - create update_dict
-    update_dict = {'id': {'table': 'school', 'rowindex': row_index}}
-
-# - give row_error when lookup went wrong
-    # multiple_found and value_too_long return the lookup_value of the error field
-
-    lookup_field_caption = str(get_field_caption('school', lookup_field))
-    lookup_field_capitalized = '-'
-    if lookup_field_caption:
-        lookup_field_capitalized = lookup_field_caption.capitalize()
-    is_skipped_str = str(_("is skipped."))
-    skipped_str = str(_("Skipped."))
-    logfile.append(indent_str)
-    msg_err = None
-    log_str = ''
-
-    schoolbase = None
-    school = None
-
-# check if lookup_value has value ( lookup_field = 'code')
-    lookup_value = school_dict.get(lookup_field)
-    if not lookup_value:
-        log_str = str(_("No value for lookup field: '%(fld)s'.") % {'fld': lookup_field_caption})
-        msg_err = ' '.join((skipped_str, log_str))
-
-# check if lookup_value is not too long
-    elif len(lookup_value) > c.MAX_LENGTH_SCHOOLCODE:
-        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': lookup_value})
-        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_SCHOOLCODE})
-        log_str = value_too_long_str + ' ' + max_str
-        msg_err = ' '.join((skipped_str, value_too_long_str, max_str))
-
-# check if new_name has value
-    elif new_name is None:
-        field_caption = str(get_field_caption('school', 'name'))
-        log_str = str(_("No value for required field: '%(fld)s'.") % {'fld': field_caption})
-        msg_err = ' '.join((skipped_str, log_str))
-
-# check if school name  is not too long
-    elif len(new_name) > c.MAX_LENGTH_NAME:
-        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': lookup_value})
-        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_NAME})
-        log_str = value_too_long_str + ' ' + max_str
-        msg_err = ' '.join((skipped_str, value_too_long_str, max_str))
-    else:
-
-# - check if lookup_value occurs mutiple times in Excel file
-        excel_list_multiple_found = False
-        excel_list_count = 0
-        for dict in school_list:
-            value = dict.get(lookup_field)
-            if value and value == lookup_value:
-                excel_list_count += 1
-            if excel_list_count > 1:
-                excel_list_multiple_found = True
-                break
-        if excel_list_multiple_found:
-            log_str = str(_("%(fld)s '%(val)s' is not unique in Excel file.") % {'fld': lookup_field_capitalized, 'val': lookup_value})
-            msg_err = ' '.join((skipped_str, log_str))
-
-    if msg_err is None:
-
-# - check if schoolbase with this code exists in request.user.country. schoolbase has value when only one found
-        # lookup_value = school_dict.get(lookup_field)
-
-        schoolbase, school, msg_err_multiple_found = lookup_schoolbase(lookup_value, request)
-        if msg_err_multiple_found:
-            log_str = msg_err_multiple_found
-            msg_err = msg_err_multiple_found
-
-    code_text = (new_code + space_str)[:30]
-
-# - if error: put msg_err in update_dict and logfile
-    if msg_err:
-        update_dict['row_error'] = msg_err
-        update_dict[lookup_field] = {'error': msg_err}
-        logfile.append(code_text + is_skipped_str)
-        logfile.append(' ' * 30 + log_str)
-    else:
-
-# - create new schoolbase when schoolbase not found in database
-        if schoolbase is None:
-            try:
-                schoolbase = sch_mod.Schoolbase(
-                    country=request.user.country,
-                    code=new_code
-                )
-                if schoolbase:
-                    schoolbase.save()
-            except:
-# - give error msg when creating schoolbase failed
-                error_str = str(_("An error occurred. The school is not added."))
-                logfile.append(" ".join((code_text, error_str )))
-                update_dict['row_error'] = error_str
-
-        if schoolbase :
-# - create new school when school not found in database
-            is_existing_school = False
-            save_instance = False
-
-            if school is None:
-                try: # TODO change request.user.examyear to sel_examyear
-                    school = sch_mod.School(
-                        base=schoolbase,
-                        examyear=request.user.examyear,
-                        name=new_name
-                    )
-                    if school:
-                        school.save(request=request)
-                        update_dict['id']['created'] = True
-                        logfile.append(code_text + str(_('is added.')))
-                except:
-    # - give error msg when creating school failed
-                    error_str = str(_("An error occurred. The school is not added."))
-                    logfile.append(" ".join((code_text, error_str )))
-                    update_dict['row_error'] = error_str
-            else:
-                is_existing_school = True
-                logfile.append(code_text + str(_('already exists.')))
-
-            if school:
-                # add 'id' at the end, after saving the school. Pk doent have value until instance is saved
-                #update_dict['id']['pk'] = school.pk
-                #update_dict['id']['ppk'] = school.company.pk
-                #if school:
-                #    update_dict['id']['created'] = True
-
-                # PR2020-06-03 debug: ... + (list_item) gives error: must be str, not __proxy__
-                # solved bij wrapping with str()
-
-                blank_str = '<' + str(_('blank')) + '>'
-                was_str = str(_('was') + ': ')
-                # FIELDS_schoolS = ('base', 'examyear', 'name', 'abbrev', 'sequence', 'depbases', 'modifiedby', 'modifiedat')
-                for field in ('name', 'abbrev', 'sequence', 'depbases'):
-                    # --- get field_dict from  upload_dict  if it exists
-                    if field in awpKey_list:
-                        #('field: ' + str(field))
-                        field_dict = {}
-                        field_caption = str(get_field_caption('school', field))
-                        caption_txt = (indent_str + field_caption + space_str)[:30]
-
-                        if field in ('code', 'name', 'namefirst', 'email', 'address', 'city', 'country'):
-                            if field == 'code':
-                                # new_code is created in this function and already checked for max_len
-                                new_value = new_code
-                            else:
-                                new_value = school_dict.get(field)
-                # check length of new_value
-                            max_len = c.MAX_LENGTH_NAME \
-                                if field in ('namelast', 'namefirst', 'email', 'address', 'city', 'country') \
-                                else c.MAX_LENGTH_CODE
-
-                            if max_len and new_value and len(new_value) > max_len:
-                                msg_err = str(_("'%(val)s' is too long. Maximum is %(max)s characters'.") % {
-                                    'val': new_value, 'max': max_len})
-                                field_dict['error'] = msg_err
-                            else:
-                    # - replace '' by None
-                                if not new_value:
-                                    new_value = None
-                                field_dict['value'] = new_value
-                                if not is_existing_school:
-                                    logfile.append(caption_txt + (new_value or blank_str))
-                    # - get saved_value
-                                saved_value = getattr(school, field)
-                                if new_value != saved_value:
-                    # put new value in school instance
-                                    setattr(school, field, new_value)
-                                    field_dict['updated'] = True
-                                    save_instance = True
-                    # create field_dict and log
-                                    if is_existing_school:
-                                        old_value_str = was_str + (saved_value or blank_str)
-                                        field_dict['info'] = field_caption + ' ' + old_value_str
-                                        update_str = ((new_value or blank_str) + space_str)[:25] + old_value_str
-                                        logfile.append(caption_txt + update_str)
-
-                # add field_dict to update_dict
-                        update_dict[field] = field_dict
-
-               # dont save data when it is a test run
-                #if not is_test and save_instance:
-                    #employee.save(request=request)
-                    #update_dict['id']['pk'] = employee.pk
-                    #update_dict['id']['ppk'] = employee.company.pk
-                    # wagerate wagecode
-                    # priceratejson additionjson
-                    #try:
-                        #employee.save(request=request)
-                        #update_dict['id']['pk'] = employee.pk
-                        #update_dict['id']['ppk'] = employee.company.pk
-                    #except:
-        # - give error msg when creating employee failed
-                        #error_str = str(_("An error occurred. The school data is not saved."))
-                        #logfile.append(" ".join((code_text, error_str)))
-                        #update_dict['row_error'] = error_str
-
-    return update_dict
-# --- end of upload_school_NIU
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def lookup_schoolbase(examyear, lookup_value, request, this_pk=None):  # PR2020-10-22 PR2021-06-20
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug('----------- lookup_schoolbase ----------- ')
-        logger.debug('lookup_value: ' + str(lookup_value) + ' ' + str(type(lookup_value)))
-
-    # function searches for existing schoolbase
-    schoolbase = None
-    school = None
-    msg_err_multiple_found = None
-    if lookup_value and request:
-# --- check if 'code' exists multiple times in Schoolbase with filter country
-        crit = Q(country=request.user.country) & \
-               Q(code__iexact=lookup_value)
-# --- exclude this record
-        if this_pk:
-            crit.add(~Q(pk=this_pk), crit.connector)
-        row_count = sch_mod.Schoolbase.objects.filter(crit).count()
-        if row_count > 1:
-            msg_err_multiple_found = _("School code '%(fld)s' is found multiple times.") % {'fld': lookup_value}
-        elif row_count == 1:
-    # get schoolbase when only one found (get_or_none does not work with Q, is not necessary, use first() instead)
-            schoolbase = sch_mod.Schoolbase.objects.filter(crit).first()
-            if schoolbase:
-    # --- if 1 found: check if it has school this examyear
-                crit = Q(base=schoolbase) & Q(examyear=examyear)
-                school_count = sch_mod.School.objects.filter(crit).count()
-                if school_count > 1:
-                    msg_err_multiple_found = _("School code '%(fld)s' is found multiple times in this exam year.") % {'fld': lookup_value}
-                elif row_count == 1:
-    # get school when only one found (get_or_none does not work with Q, is not necessary, use first() instead)
-                    school = sch_mod.School.objects.filter(crit).first()
-
-    return schoolbase, school, msg_err_multiple_found
-
-
-def lookup_school(schoolbase, request):  # PR2019-12-17 PR2020-10-20
-    #logger.debug('----------- lookup_school ----------- ')
-
-    school = None
-    multiple_schools_found = False
-
-# - search school by schoolbase and request.user.examyear
-    # TODO change request.user.examyear to sel_examyear
-    if schoolbase:
-        # check if school exists multiple times
-        row_count = sch_mod.School.objects.filter(base=schoolbase, examyear=request.user.examyear).count()
-        if row_count > 1:
-            multiple_schools_found = True
-        elif row_count == 1:
-            # get school when only one found
-            school = sch_mod.School.objects.get_or_none(base=schoolbase, examyear=request.user.examyear)
-
-    return school, multiple_schools_found
-
 
 def get_field_caption(table, field):
     caption = ''
@@ -4380,3 +4197,4 @@ class Validate_examyear(object):
                     # examyear does not exist in country: add examyear OK, new examyear can be added
                     _isOK = True
         return _isOK
+

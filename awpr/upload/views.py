@@ -763,7 +763,7 @@ def ImportSubject(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
                     sequence = row_data.get('sequence')
                     if sequence is None:
                         sequence = 9999
-                    addedbyschool = True if row_data.get('addedbyuser') == 1 else False
+                    # NIU addedbyschool = True if row_data.get('addedbyuser') == 1 else False
                     depbases = row_data.get('depbases')
 
                     subject = subj_mod.Subject(
@@ -772,7 +772,7 @@ def ImportSubject(ws_name, row_data, logfile, mapped, examyear, request):  #PR20
                         name=name,
                         sequence=sequence,
                         depbases=depbases,
-                        addedbyschool=addedbyschool
+                        addedbyschool=False
                     )
                     subject.save(request=request)
                     logfile.append(ws_name + ' created: ' + str(subject))

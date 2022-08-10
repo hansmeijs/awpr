@@ -75,7 +75,7 @@ def create_mailmessage_received_rows(examyear, request, mailmessage_pk=None):
 # --- end of create_mailmessage_received_rows
 
 
-def create_mailmessage_draft_or_sent_rows(is_sent, examyear, request, mailmessage_pk=None):
+def create_mailmessage_draft_or_sent_rows(is_sent, examyear, request, append_dict, mailmessage_pk=None):
     # --- create received mail_message rows of this user, this examyear PR2021-10-28
     #       use INNER JOIN mailbox to filter messages for this user
     logging_on = False # s.LOGGING_ON
@@ -119,6 +119,14 @@ def create_mailmessage_draft_or_sent_rows(is_sent, examyear, request, mailmessag
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             mailmessage_rows = af.dictfetchall(cursor)
+
+# - add messages to student_row
+        if mailmessage_pk and mailmessage_rows and append_dict:
+            # when mailmessage_pk has value there is only 1 row
+            row = mailmessage_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
 
         if logging_on:
             logger.debug('mailmessage_rows: ' + str(mailmessage_rows))
@@ -408,48 +416,59 @@ def create_mailbox_usergroup_rows():
 
 
 #############################
+def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
+    #  PR2020-10-04 PR2021-09-24 PR2021-12-02 PR2022-07-31
+    # --- create rows of all published examyears of this country
+    # - create_examyear_rows is used in each page to switch examyears
+    # - when role = school: show only published examyears of this school
+    # - when role = admin: show also un-published examyears, set filter unpublished also in mod select
+    # - when examyear_pk has value it is used in updated create_examyear_rows
 
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_examyear_rows ============= ')
 
-def create_examyear_rows(req_usr, append_dict, examyear_pk):
-    # --- create rows of all examyears of this country PR2020-10-04 PR2021-09-24 PR2021-12-02
-    #logger.debug(' =============== create_examyear_rows ============= ')
-
-    # when role = school: show examyear plus school.isactivated
-
-    sql_keys = {}
+    sql_keys = {'country_id': req_usr.country.pk}
     if req_usr.role <= c.ROLE_008_SCHOOL:
         sql_keys['sb_id'] = req_usr.schoolbase.pk
-        sql_list = ["SELECT sch.id AS school_id, ey.country_id, sch.examyear_id, CONCAT('examyear_', ey.id::TEXT) AS mapid,",
-            "ey.code AS examyear_code, sch.name, sch.activated, sch.activatedat, sch.locked, sch.lockedat,",
-            "sch.modifiedby_id, sch.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+        sql_list = ["SELECT ey.id, ey.country_id, ey.code AS examyear_code, CONCAT('examyear_', ey.id::TEXT) AS mapid,",
+            "sch.id AS school_id, sch.name, sch.locked, sch.lockedat,",
+            "ey.published AS examyear_published, ey.locked AS examyear_locked,",
+            "sch.modifiedby_id, sch.modifiedat, au.last_name AS modby_username",
             "FROM schools_school AS sch",
             "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = sch.modifiedby_id)",
-            "WHERE sch.base_id = %(sb_id)s::INT"]
+            "WHERE ey.country_id = %(country_id)s::INT",
+            "AND sch.base_id = %(sb_id)s::INT"
+        ]
     else:
-        sql_keys['cntr_id'] = req_usr.country.pk
-        sql_list = ["SELECT ey.id AS examyear_id, ey.country_id, cntr.name AS country,",
+        sql_list = ["SELECT ey.id, ey.country_id, cntr.name AS country,",
                     "CONCAT('examyear_', ey.id::TEXT) AS mapid,",
             "ey.code AS examyear_code, ey.published, ey.locked, ey.createdat, ey.publishedat, ey.lockedat,",
             "ey.no_practexam, ey.sr_allowed, ey.no_centralexam, ey.no_thirdperiod,",
             "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
             "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",
             "ey.order_admin_divisor, ey.order_admin_multiplier, ey.order_admin_max,",
-            "ey.modifiedby_id, ey.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+            "ey.modifiedby_id, ey.modifiedat, au.last_name AS modby_username",
             "FROM schools_examyear AS ey",
             "INNER JOIN schools_country AS cntr ON (cntr.id = ey.country_id)",
             "LEFT JOIN accounts_user AS au ON (au.id = ey.modifiedby_id)",
-            "WHERE ey.country_id = %(cntr_id)s::INT"
+            "WHERE ey.country_id = %(country_id)s::INT"
         ]
 
     if examyear_pk:
-        # when examyear_pk has value: skip other filters
+        # when examyear_pk has value: skip published filter
         sql_list.append('AND ey.id = %(ey_id)s::INT')
         sql_keys['ey_id'] = examyear_pk
+    elif req_usr.role < c.ROLE_064_ADMIN:
+        sql_list.append("AND ey.published")
 
     sql_list.append('ORDER BY ey.id')
 
     sql = ' '.join(sql_list)
+
+    if logging_on:
+            logger.debug('    sql: ' + str(sql))
 
     newcursor = connection.cursor()
     newcursor.execute(sql, sql_keys)
@@ -463,33 +482,50 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk):
             for key, value in append_dict.items():
                 row[key] = value
 
+    if logging_on:
+        for row in examyear_rows:
+            logger.debug('    row: ' + str(row))
     return examyear_rows
 # --- end of create_examyear_rows
 
 
-def create_department_rows(examyear):
-    # --- create rows of all departments of this examyear / country PR2020-09-30
-    #logger.debug(' =============== create_department_rows ============= ')
+def create_department_rows(examyear, skip_allowed_filter, request):
+    # --- create rows of all departments of this examyear / country PR2020-09-30 PR2022-08-03
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_department_rows ============= ')
 
     sql_keys = {'ey_id': examyear.pk}
 
     sql_list = ["SELECT dep.id, dep.base_id, dep.examyear_id, ey.code AS examyear_code, ey.country_id,",
         "CONCAT('department_', dep.id::TEXT) AS mapid, depbase.code AS base_code,",
         "dep.name, dep.abbrev, dep.sequence, dep.level_req AS lvl_req, dep.sector_req AS sct_req, dep.has_profiel,",
-        "dep.modifiedby_id, dep.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+        "dep.modifiedby_id, dep.modifiedat, au.last_name AS modby_username",
 
         "FROM schools_department AS dep",
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
         "LEFT JOIN accounts_user AS au ON (au.id = dep.modifiedby_id)",
 
-        "WHERE ey.id = %(ey_id)s::INT",
-        "ORDER BY dep.id"]
+        "WHERE ey.id = %(ey_id)s::INT"
+    ]
+    acc_view.get_userfilter_allowed_depbase(
+        request=request,
+        sql_keys=sql_keys,
+        sql_list=sql_list,
+        depbase_pk=None,
+        skip_allowed_filter=skip_allowed_filter
+    )
+    sql_list.append("ORDER BY dep.id")
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
+
+    if logging_on:
+        for row in rows:
+            logger.debug('    row: ' + str(row))
 
     return rows
 # --- end of create_department_rows
@@ -510,7 +546,7 @@ def create_level_rows(request, examyear, depbase, cur_dep_only, skip_allowed_fil
         sql_list = ["SELECT lvl.id, lvl.base_id, lvlbase.code AS lvlbase_code, lvl.examyear_id, ey.code AS examyear_code, ey.country_id,",
             "CONCAT('level_', lvl.id::TEXT) AS mapid,",
             "lvl.name, lvl.abbrev, lvl.sequence, lvl.depbases,",
-            "lvl.modifiedby_id, lvl.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+            "lvl.modifiedby_id, lvl.modifiedat, au.last_name AS modby_username",
 
             "FROM subjects_level AS lvl ",
             "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
@@ -585,7 +621,7 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
         sql_list = ["SELECT sct.id, sct.base_id, sctbase.code AS sctbase_code, sct.examyear_id, ey.code AS examyear_code, ey.country_id,",
                     "CONCAT('sector_', sct.id::TEXT) AS mapid,",
                     "sct.name, sct.abbrev, sct.sequence, sct.depbases,",
-                    "sct.modifiedby_id, sct.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+                    "sct.modifiedby_id, sct.modifiedat, au.last_name AS modby_username",
 
                     "FROM subjects_sector AS sct ",
                     "INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
@@ -626,15 +662,16 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
 # --- end of create_sector_rows
 
 
-def create_school_rows(examyear, permit_dict, request, skip_allowed_filter=False, school_pk=None):
-    # --- create rows of all schools of this examyear / country PR2020-09-18 PR2021-04-23 PR2022-03-13
+def create_school_rows(request, examyear, append_dict, skip_allowed_filter=False, school_pk=None):
+    # --- create rows of all schools of this examyear / country
+    # PR2020-09-18 PR2021-04-23 PR2022-03-13 PR2022-08-07
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_school_rows ============= ')
-        logger.debug('permit_dict: ' + str(permit_dict))
 
-    requsr_role = permit_dict.get('requsr_role', 0)
-    requsr_schoolbase_pk =  permit_dict.get('requsr_schoolbase_pk')
+
+    requsr_role = request.user.role
+    requsr_schoolbase_pk = request.user.schoolbase.pk
 
     sql_keys = {'ey_id': examyear.pk, 'max_role': requsr_role}
 
@@ -642,7 +679,7 @@ def create_school_rows(examyear, permit_dict, request, skip_allowed_filter=False
         "CONCAT('school_', school.id::TEXT) AS mapid, sb.defaultrole,",
         "school.name, school.abbrev, school.article, sb.code AS sb_code, school.depbases, school.otherlang,",
         "school.isdayschool, school.iseveningschool, school.islexschool, school.activated, school.activatedat, school.locked, school.lockedat,",
-        "school.modifiedby_id, school.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+        "school.modifiedby_id, school.modifiedat, au.last_name AS modby_username",
 
         "FROM schools_school AS school",
         "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
@@ -679,6 +716,14 @@ def create_school_rows(examyear, permit_dict, request, skip_allowed_filter=False
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
         school_rows = af.dictfetchall(cursor)
+
+# - add messages to school_row, only if school_pk has value
+    if school_pk and school_rows and append_dict:
+        # when subject_pk has value there is only 1 row
+        row = school_rows[0]
+        if row:
+            for key, value in append_dict.items():
+                row[key] = value
 
     return school_rows
 # --- end of create_school_rows

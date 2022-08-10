@@ -4134,7 +4134,7 @@ def get_all_result_with_assignment_dict_CALC_SCORE_BLANKS(partex_str, assignment
                             if logging_on:
                                 logger.debug('     partex_amount: ' + str(partex_amount))
 
-    # - add amount of questions of this partex to total_amount
+    # - add number of questions of this partex to total_amount
                             total_amount += partex_amount
 
     # - get result_dict of this partex
@@ -4416,7 +4416,7 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
                         total_no_key += this_partex_no_key
                         this_partex_has_errors = True
 
-# - add amount of questions of this partex to total_amount
+# - add number of questions of this partex to total_amount
                     all_q_dict = this_partex_assignment_keys_dict.get('q')
                     if logging_on:
                         logger.debug('all_q_dict: ' + str(all_q_dict))
@@ -4886,7 +4886,7 @@ def get_grade_assignment_detail_dict(assignment_str, keys_str):
                 pa_arr = pa.split('|')
                 if pa_arr:
                     """
-                    when no score: the key/value of that question is missing. Loop through amount of questions
+                    when no score: the key/value of that question is missing. Loop through number of questions
                     pa_arr: ['5;10;0', '2;D;;', '3;D;;', '4;D;;', '6;;1;', '7;;1;', '8;;1;', '9;C;;', '10;C;;']
                     """
                     # first item contains partex_pk, amount and max_score
@@ -5086,7 +5086,7 @@ def get_exam_assignment_detail_dict(assignment_str, keys_str):
                     if logging_on:
                         logger.debug('pa_arr: ' + str(pa_arr))
                         """
-                        when no score: the key/value of that question is missing. Loop through amount of questions
+                        when no score: the key/value of that question is missing. Loop through number of questions
                         pa_arr: ['5;10;0', '2;D;;', '3;D;;', '4;D;;', '6;;1;', '7;;1;', '8;;1;', '9;C;;', '10;C;;']
                         """
                     # first item contains partex_pk, amount and max_score
@@ -5348,7 +5348,7 @@ def create_grade_rows_with_modbyTEMP(sel_examyear_pk, sel_schoolbase_pk, sel_dep
         sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix,",
                     "lvl.abbrev AS lvl, sct.abbrev AS sct,",
                     "segrade, subj.name AS subject, ",
-                    "grd.modifiedat, SUBSTRING(au.username, 7) AS modifiedby",
+                    "grd.modifiedat, au.last_name AS modifiedby",
 
                     "FROM students_grade AS grd",
                     "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",

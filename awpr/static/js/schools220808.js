@@ -8,16 +8,16 @@
 
 let selected_period = {};
 
-const selected = {
-    school_pk: null,
-    school_dict: {}
-}
 
-let department_rows = [];
 let school_rows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
+
+    selected = {
+        school_pk: null,
+        school_dict: {}
+    };
 
     let el_loader = document.getElementById("id_loader");
 
@@ -27,11 +27,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Note: may_view_page is the only permit that gets its value on DOMContentLoaded,
     // all other permits get their value in function get_permits, after downloading permit_list
     const may_view_page = (!!el_loader)
-
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
     //let selected_btn = "btn_school";
@@ -62,11 +57,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language", "Activated",  "Locked"],
-                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "activated", "locked"],
-                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle", "toggle"],
-                 field_width:  ["020", "075", "075", "360", "180", "120", "150", "120", "100", "100"],
-                 field_align: ["c", "l", "l", "l","l", "l", "l", "l", "c", "c"]}
+        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language", "Locked"],
+                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "locked"],
+                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle"],
+                 field_width:  ["020", "075", "075", "360", "180", "120", "150", "120",  "100"],
+                 field_align: ["c", "l", "l", "l","l", "l", "l", "l",  "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -132,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let el_ModSelSch_tblBody_select = document.getElementById("id_MSED_tblBody_select");
 
 // ---  MODAL SCHOOL
+        const el_MSCH_loader = document.getElementById("id_MSCH_loader");
         const el_MSCH_code = document.getElementById("id_MSCH_code")
         const el_MSCH_abbrev = document.getElementById("id_MSCH_abbrev")
         const el_MSCH_article = document.getElementById("id_MSCH_article")
@@ -270,12 +266,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     i_UpdateSchoolsettingsImport(response.schoolsetting_dict);
                 };
                 if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows);
                 };
-
                 if ("department_rows" in response) {
                     department_rows = response.department_rows;
-        console.log("department_rows:", department_rows);
                     const tblName = "department";
                     const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
                     RefreshDataMap(tblName, field_names, response.department_rows, department_map)
@@ -478,9 +473,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  lookup index where this row must be inserted
         const ob1 = (map_dict.sb_code) ? map_dict.sb_code : "";
-        // NIU:  const ob2 = (map_dict.firstname) ? map_dict.firstname : "";
-        // NIU:  const ob3 = (map_dict.firstname) ? map_dict.firstname : "";
-
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1);
 
 // --- insert tblRow into tblBody at row_index
@@ -492,8 +484,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
-        // NIU: tblRow.setAttribute("data-ob2", ob2);
-        // NIU: tblRow.setAttribute("data-ob3", ---);
 
 // --- add EventListener to tblRow
         tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
@@ -557,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let filter_value = null, display_txt = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["activated", "locked"].includes(field_name)){
+                } else if (field_name === "locked"){
                     el_div.className = (fld_value) ? "tickmark_2_2" : "tickmark_0_0";
                     filter_value = (fld_value) ? "1" : "0";
                 } else if (["sb_code", "article", "name", "abbrev"].indexOf(field_name) > -1){
@@ -613,7 +603,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( response);
 
                     if ("updated_school_rows" in response) {
-                        const el_MSCH_loader = document.getElementById("id_MSCH_loader");
                         if(el_MSCH_loader){ el_MSCH_loader.classList.add(cls_visible_hide)};
 
                         $("#id_mod_confirm").modal("hide");
@@ -622,6 +611,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
 
                         RefreshDataRows(tblName, response.updated_school_rows, school_rows, true)  // true = update
+                    };
+
+                    if ("messages" in response) {
+                        b_show_mod_message_dictlist(response.messages);
                     };
                     $("#id_mod_school").modal("hide");
 
@@ -814,8 +807,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // el_input is undefined when called by submenu btn 'Add new'
             const is_addnew = (!el_input);
-            mod_MSCH_dict = {is_addnew: is_addnew}
-            console.log("is_addnew", is_addnew)
+            mod_MSCH_dict = {is_addnew: is_addnew};
+            console.log("is_addnew", is_addnew);
+
+            el_MSCH_loader.classList.add(cls_visible_hide);
 
             let tblName = null;
             if(is_addnew){
@@ -928,7 +923,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function MSCH_Save(crud_mode) {
         console.log(" -----  MSCH_save  ----", crud_mode);
         console.log( "mod_MSCH_dict: ", mod_MSCH_dict);
-
+        //TODO show modconfirm when deleting schoo, update rows after response
         if(permit_dict.permit_crud){
             const is_delete = (crud_mode === "delete")
 
@@ -1056,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_div.innerText = abbrev;
             td.appendChild(el_div);
 
-        td.classList.add("tw_200", "px-2", "pointer_show") // , "tsa_bc_transparent")
+        td.classList.add("tw_200", "px-2", "pointer_show") // , cls_bc_transparent)
 
 //--------- add addEventListener
         tblRow.addEventListener("click", function() {MSCH_SelectDepartment(tblRow)}, false);
@@ -1791,7 +1786,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } else if (filter_tag === "activated") {
-// ---  toggle activated
+// ---  toggle activated PR2022-08-07 NIU
             let filter_checked = (col_index in filter_dict) ? filter_dict[col_index] : 0;
             filter_checked += 1
             if (filter_checked > 1) { filter_checked = -2 }
@@ -1884,6 +1879,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 if (el_value) {hide_row = true};
                             }
                         } else if(filter_tag === "activated"){
+                         //PR2022-08-07 NIU
                             const el_value = get_attr_from_el_int(el, "data-value")
                             if (filter_text && el_value !== filter_text ) {hide_row = true};
                         }
@@ -2181,7 +2177,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // permit.view_page: (!!el_loader), got value at start of script
 
-        const locked = (setting_dict.sel_examyear_locked || setting_dict.sel_school_locked);
+        const locked = (permit_dict.examyear_locked || setting_dict.sel_school_locked);
         //permit_dict.permit_crud = (!locked && permit_list.includes("crud"));
     }  // get_permits
 

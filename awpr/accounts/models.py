@@ -66,6 +66,8 @@ class User(AbstractUser):
         ],)
     email = EmailField( _('email address'),)
 
+    telephone = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_SCHOOLABBREV)
+
     role = PositiveSmallIntegerField(default=0)
 
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)

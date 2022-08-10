@@ -183,7 +183,7 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
                 "st.ep01_result, st.ep02_result, st.result, st.result_status, st.result_info, st.tobedeleted,",
 
                 "st.modifiedby_id, st.modifiedat,",
-                "SUBSTRING(au.username, 7) AS modby_username",
+                "au.last_name AS modby_username",
 
                 "FROM students_student AS st",
                 "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
@@ -231,8 +231,8 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
                     prefix = row.get('prefix')
                     row['name_first_init'] = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
 
-            # - add messages to student_row
-            if student_pk and student_rows:
+        # - add messages to student_row
+            if student_pk and student_rows and append_dict:
                 # when student_pk has value there is only 1 row
                 row = student_rows[0]
                 if row:
@@ -809,29 +809,50 @@ def loop_cluster_list(sel_examyear, sel_school, sel_department, cluster_list, ma
     # +++  or get existing cluster
             # filter out 'new_1', should not happen
             elif isinstance(cluster_pk, int):
-                cluster = subj_mod.Cluster.objects.get_or_none(
+                cluster_instance = subj_mod.Cluster.objects.get_or_none(
                     pk=cluster_pk,
                     school=sel_school,
                     department=sel_department
                 )
                 if logging_on:
-                    logger.debug('cluster: ' + str(cluster))
+                    logger.debug('cluster_instance: ' + str(cluster_instance))
 
-                if cluster:
+                if cluster_instance:
     # +++ Delete cluster
                     if is_delete:
-                        deleted_ok, err_lst, deleted_cluster_pk = delete_cluster(cluster, request)
-                        if err_lst:
-                            err_list.extend(err_lst)
-                        if deleted_cluster_pk:
-                            deleted_cluster_pk_list.append(deleted_cluster_pk)
+                        # TODO fix messages and updated_rows PR2022-08-08
+                        updated_rows = []
+                        messages = []
+                        deleted_row, err_html = delete_cluster_instance(cluster_instance, request)
+                        if err_html:
+                            messages.append(
+                                {'header': str(_("Delete cluster")),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': err_html}
+                            )
+
+                            err_list.append(err_html)
+                        elif deleted_row:
+                            updated_rows.append(deleted_row)
+                            deleted_cluster_pk = deleted_row.get('id')
+                            if deleted_cluster_pk:
+                                deleted_cluster_pk_list.append(deleted_cluster_pk)
 
                         if logging_on:
-                            logger.debug('deleted_cluster_pk: ' + str(deleted_cluster_pk))
+                            logger.debug('    deleted_row: ' + str(deleted_row))
+                            logger.debug('    msg_html: ' + str(err_html))
+
+                        if logging_on:
                             logger.debug('deleted_cluster_pk_list: ' + str(deleted_cluster_pk_list))
     # +++ Update cluster, not when it is created, not when delete has failed (when deleted ok there is no cluster)
                     else:
-                        err_lst, updated_cluster_pk = update_cluster_instance(sel_school, sel_department, cluster, cluster_dict, request)
+                        err_lst, updated_cluster_pk = update_cluster_instance(
+                            school=sel_school,
+                            department=sel_department,
+                            instance=cluster_instance,
+                            upload_dict=cluster_dict,
+                            request=request
+                        )
                         if err_lst:
                             err_list.extend(err_lst)
                         if updated_cluster_pk:
@@ -947,7 +968,6 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
             logger.debug(' ============= StudentUploadView ============= ')
 
         update_wrap = {}
-        messages = []
 
 # - get upload_dict from request.POST
         upload_json = request.POST.get('upload', None)
@@ -971,8 +991,11 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                 is_delete =  mode == 'delete'
 
                 updated_rows = []
-                append_dict = {}
                 error_list = []
+                messages = []
+                append_dict = {}
+
+                header_txt = _('Add candidate') if is_create else _('Delete candidate') if is_delete else _('Edit candidate')
 
 # ----- get selected examyear, school and department from usersettings
                 # may_edit = False when:
@@ -988,59 +1011,66 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                     )
 
                 if logging_on:
-                    logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('sel_school:     ' + str(sel_school))
-                    logger.debug('sel_department: ' + str(sel_department))
-                    logger.debug('may_edit:       ' + str(may_edit))
-                    logger.debug('sel_msg_list:       ' + str(sel_msg_list))
+                    logger.debug('    may_edit:       ' + str(may_edit))
+                    logger.debug('    sel_msg_list:       ' + str(sel_msg_list))
+                    logger.debug('    upload_dict:       ' + str(upload_dict))
                 """
                 sel_msg_list = msg_list.append(str(_("You don't have permission to view department %(val)s.") % {'val': sel_depbase.code}))
+                upload_dict:  {'table': 'student', 'mode': 'create', 'lastname': 'aa', 'firstname': 'aa', 'gender': 'M', 'idnumber': '2000101010', 'level': 6, 'sector': 12}
+               
                 """
-                if len(sel_msg_list):
+                if sel_msg_list:
                     msg_html = '<br>'.join(sel_msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                    if logging_on:
+                        logger.debug('messages:   ' + str(messages))
                 else:
 
 # +++  Create new student
                     if is_create:
-                        err_list = []
-                        student = create_student(sel_school, sel_department,
-                            upload_dict, messages, err_list, request, False)  # skip_save = False
-                        """
-                        msg_html = '<br>'.join(msg_list)
-                        messages.append({'header': str(_('Add candidate')), 'class': "border_bg_invalid", 'msg_html': msg_html})
-                        error_list.extend(msg_list)
-                        """
-                        if err_list:
-                            messages.extend(err_list)
-
-                        if student:
+                        student_instance, error_list = create_student(sel_examyear, sel_school, sel_department, upload_dict, request, False)  # skip_save = False
+                        if error_list:
+                            messages.append(
+                                {'header': str(header_txt),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': '<br>'.join(error_list)}
+                            )
+                        if student_instance:
                             append_dict['created'] = True
                     else:
 
 # +++  or get existing student
-                        student = stud_mod.Student.objects.get_or_none(
+                        student_instance = stud_mod.Student.objects.get_or_none(
                             id=student_pk,
                             school=sel_school
                         )
                     if logging_on:
-                        logger.debug('student: ' + str(student))
+                        logger.debug('student_instance: ' + str(student_instance))
 
-                    deleted_ok = False
+                    if student_instance:
 
-                    if student:
 # +++ Delete student
                         if is_delete:
-                            err_list = []
-                            deleted_ok = delete_student(student, updated_rows, err_list, request)
-                            if err_list:
-                                messages.extend(err_list)
+                            deleted_row, err_html = delete_student_instance(student_instance, request)
+                            if err_html:
+                                messages.append(
+                                    {'header': str(header_txt),
+                                     'class': "border_bg_invalid",
+                                     'msg_html': err_html}
+                                )
+                            elif deleted_row:
+                                student_instance = None
+                                updated_rows.append(deleted_row)
+
+                            if logging_on:
+                                logger.debug('    deleted_row: ' + str(deleted_row))
+                                logger.debug('    msg_html: ' + str(err_html))
 
 # +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
                             err_fields = []
                             update_student_instance(
-                                instance=student,
+                                instance=student_instance,
                                 sel_examyear=sel_examyear,
                                 sel_school=sel_school,
                                 sel_department=sel_department,
@@ -1058,20 +1088,19 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                             )
 
 # - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
-                    if not deleted_ok:
-                        student_pk = student.pk if student else None
+                    if student_instance:
                         updated_rows, error_dictNIU = create_student_rows(
                             sel_examyear=sel_school.examyear,
                             sel_schoolbase=sel_school.base,
                             sel_depbase=sel_department.base,
                             append_dict=append_dict,
-                            student_pk=student_pk)
+                            student_pk=student_instance.pk)
 
                 update_wrap['updated_student_rows'] = updated_rows
 
 # - addd messages to update_wrap
-        if len(messages):
-            update_wrap['messages'] = messages
+                if messages:
+                    update_wrap['messages'] = messages
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -3177,13 +3206,18 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
 
 # +++ delete studsubj ++++++++++++
                         if mode == 'delete':
-                            # published fields are: subj_published, exem_published, reex_published, reex3_published, pok_published
-                            # if published: don't delete, but set 'tobedeleted' = True, so its remains in the Ex1 form
-                            #       also remove approved and published info
-                            #       also set grades 'tobedeleted'=True
-                            # if not published: delete studsubj, grades will be cascade deleted
                             if studsubj:
-                                deleted_ok = delete_studentsubject(student, studsubj, updated_rows, err_list, request)
+                                deleted_row, err_html = delete_studentsubject(student, studsubj, updated_rows,  request)
+                                if err_html:
+                                    messages.append(
+                                        {'header': str(_('Delete subject')),
+                                         'class': "border_bg_invalid",
+                                         'msg_html': err_html}
+                                    )
+                                elif deleted_row:
+                                    studsubj = None
+                                    updated_rows.append(deleted_row)
+
 
 # +++ create new studentsubject, also create grade of first examperiod
                         elif mode == 'create':
@@ -3264,50 +3298,59 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
 # --- end of StudentsubjectUploadView
 
 
-def delete_studentsubject(student, studsubj, updated_rows, err_list, request):
-    # --- delete student # PR2021-07-18 PR2022-02-16
+def delete_studentsubject(student_instance, studsubj_instance, updated_rows, request):
+    # --- delete student # PR2021-07-18 PR2022-02-16 PR2022-08-05
+
+    # published fields are: subj_published, exem_published, reex_published, reex3_published, pok_published
+    # if published: don't delete, but set 'tobedeleted' = True, so its remains in the Ex1 form
+    #       also remove approved and published info
+    #       also set grades 'tobedeleted'=True
+    # if not published: delete studsubj, grades will be cascade deleted
+
+    # PR2022-02-15 studentsubject can always be deleted
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_studentsubject ----- ')
-        logger.debug('studsubj: ' + str(studsubj))
+        logger.debug('studsubj_instance: ' + str(studsubj_instance))
 
-    deleted_ok = False
+    deleted_row = None
+    msg_html = None
 
-# - create updated_row - to be returned after successfull delete
-    updated_row = {'stud_id': student.pk,
-                          'studsubj_id': studsubj.pk,
-                          'mapid': 'studsubj_' + str(student.pk) + '_' + str(studsubj.pk),
+# - create tobedeleted_row - to be returned after successfull delete
+    tobedeleted_row = {'stud_id': student_instance.pk,
+                          'studsubj_id': studsubj_instance.pk,
+                          'mapid': 'studsubj_' + str(student_instance.pk) + '_' + str(studsubj_instance.pk),
                           'deleted': True}
 
     this_txt = None
-    if studsubj.schemeitem:
-        subject = studsubj.schemeitem.subject
+    if studsubj_instance.schemeitem:
+        subject = studsubj_instance.schemeitem.subject
         if subject and subject.name:
             this_txt = _("Subject '%(tbl)s' ") % {'tbl': subject.name}
 
 # - check if studentsubject has submitted grades or school is locked or examyear is locked PR2021-08-21
     # PR2022-02-15 studentsubject can always be deleted
 
-    try:
-        # delete studentsubject will also cascade delete grades, studentsubjectnote, noteattachment
-        deleted_ok = sch_mod.delete_instance(studsubj, [], err_list, request, this_txt)
-
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-
-    else:
-# - add deleted_row to updated_rows
-        deleted_ok = True
-        studsubj = None
-        updated_rows.append(updated_row)
+    # delete student will also cascade delete Grades
+    deleted_rowNIU, err_html = sch_mod.delete_instance(
+        table='studsubj', # used to create mapid in deleted_row
+        instance=student_instance,
+        request=request,
+        this_txt=this_txt
+    )
+    if err_html:
+        msg_html = err_html
+    elif deleted_rowNIU:
+        # weird code is necessary because mapid of studsubjct is different
+        deleted_row = tobedeleted_row
+        updated_rows.append(deleted_row)
 
     if logging_on:
-        logger.debug('deleted_ok: ' + str(deleted_ok))
-        logger.debug('updated_rows' + str(updated_rows))
-        logger.debug('err_list' + str(err_list))
+        logger.debug('msg_html: ' + str(msg_html))
+        logger.debug('deleted_row' + str(deleted_row))
 
-    return deleted_ok
+    return deleted_row, msg_html
 # - end of delete_studentsubject
 
 
@@ -3708,7 +3751,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
     # - validate if adding reex or reex03 is allowed
                 err_list = stud_val.validate_studsubj_add_reex_reex03_allowed(field, si_dict)
 
-                # don't check if the amount of re-examinations equals or exceeds the maximum
+                # don't check if the number of re-examinations equals or exceeds the maximum
                 #   students that have been sick may do multiple reex
                 #   was: if not err_list:
                 #           err_list = stud_val.validate_reex_count(studsubj_instance, si_dict)
@@ -4329,53 +4372,40 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def delete_student(student_instance, updated_rows, err_list, request):
-    # --- delete student # PR2021-07-18 PR2022-02-16
+def delete_student_instance(student_instance, request):
+    # --- delete student # PR2021-07-18 PR2022-02-16 PR2022-08-05
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- delete_subject ----- ')
+        logger.debug(' ----- delete_student_instance ----- ')
         logger.debug('student_instance: ' + str(student_instance))
 
-    deleted_ok = False
-
-# - create updated_row - to be returned after successfull delete
-    updated_row = {'id': student_instance.pk,
-                   'mapid': 'student_' + str(student_instance.pk),
-                   'deleted': True}
-
+    deleted_row = None
+    msg_html = None
     this_txt = _("Candidate '%(tbl)s' ") % {'tbl': student_instance.fullname}
-    header_txt = _("Delete candidate")
 
 # - check if student has submitted subjects PR2021-08-21 PR2022-05-15
-
     has_publ_studsubj = stud_mod.Studentsubject.objects.filter(
         student=student_instance,
         subj_published_id__isnull=False
     ).exists()
+
     if has_publ_studsubj:
         msg_html = ''.join((
-            str(_('This candidate has submitted subjects.')), '<br>',
+            str(_("%(cpt)s has submitted subjects.") % {'cpt': this_txt}), '<br>',
             str(_('You cannot delete %(cpt)s.') % {'cpt': str(_('This candidate')).lower()})
         ))
-        msg_dict = {'header': header_txt, 'class': 'border_bg_warning', 'msg_html': msg_html}
-        err_list.append(msg_dict)
+
     else:
-
-        try:
-
-            # delete student will also cascade delete studsubj, Grades, Studentsubjectnote, Noteattachment
-            deleted_ok = sch_mod.delete_instance(student_instance, [], err_list, request, this_txt, header_txt)
-            if logging_on:
-                logger.debug('deleted_ok: ' + str(deleted_ok))
-
-
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-        else:
-    # - add deleted_row to updated_rows
-            deleted_ok = True
-            updated_rows.append(updated_row)
+        # delete student will also cascade delete studsubj, Grades, Studentsubjectnote, Noteattachment
+        deleted_row, err_html = sch_mod.delete_instance(
+            table='student',
+            instance=student_instance,
+            request=request,
+            this_txt=this_txt
+        )
+        if err_html:
+            msg_html = err_html
 
     # - check if this student also exists in other examyears.
             # PR2022-02-15 deleting student_base not necessary, student will be set tobedeleted
@@ -4386,12 +4416,12 @@ def delete_student(student_instance, updated_rows, err_list, request):
             #    if student_base:
             #        student_base.delete()
 
-        if logging_on:
-            logger.debug('updated_rows' + str(updated_rows))
-            logger.debug('err_list' + str(err_list))
+    if logging_on:
+        logger.debug('    deleted_row: ' + str(deleted_row))
+        logger.debug('    msg_html: ' + str(msg_html))
 
-    return deleted_ok
-# - end of delete_student
+    return deleted_row, msg_html
+# - end of delete_student_instance
 
 
 def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_save):
@@ -4445,17 +4475,20 @@ def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_s
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_student(school, department, upload_dict, messages, error_list, request, skip_save):
-    # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15
-    logging_on = s.LOGGING_ON
+def create_student(examyear, school, department, upload_dict, request, skip_save):
+    # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15 PR2022-08-05
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' +++++++++++++++++ create_student +++++++++++++++++ ')
+        logger.debug('school: ' + str(school))
+        logger.debug('department: ' + str(department))
 
+    student = None
+    error_list = []
 # - create but don't save studentbase
     # save studentbase at the end, to prevent studentbases without student
     studentbase = stud_mod.Studentbase()
 
-    student = None
     if studentbase and school:
 
 # - get value of 'idnumber', 'lastname', 'firstname', 'prefix'
@@ -4469,48 +4502,56 @@ def create_student(school, department, upload_dict, messages, error_list, reques
         prefix_stripped = prefix.strip() if prefix else ''
         full_name = stud_val.get_prefix_lastname_comma_firstname(lastname_stripped, firstname_stripped, prefix_stripped)
 
-        msg_list = []
         has_error = False
+        error_list = []
 
         idnumber_nodots, msg_err, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
+        if logging_on:
+            logger.debug('    get_idnumber_nodots_stripped_lower msg_err: ' + str(msg_err))
         if msg_err:
             has_error = True
-            msg_list.append(str(msg_err))
+            error_list.append(str(msg_err))
 
         msg_err = av.validate_notblank_maxlength(lastname_stripped, c.MAX_LENGTH_FIRSTLASTNAME, _('The last name'))
+        if logging_on:
+            logger.debug('    validate_lastname_stripped msg_err: ' + str(msg_err))
         if msg_err:
             has_error = True
-            msg_list.append(str(msg_err))
+            error_list.append(str(msg_err))
 
         msg_err = av.validate_notblank_maxlength(firstname_stripped, c.MAX_LENGTH_FIRSTLASTNAME, _('The first name'))
+        if logging_on:
+            logger.debug('    validate_firstname_stripped msg_err: ' + str(msg_err))
         if msg_err:
             has_error = True
-            msg_list.append(str(msg_err))
+            error_list.append(str(msg_err))
+
+# - get value of 'idnumber', 'lastname', 'firstname', 'prefix'
+        msg_err = av.validate_level_sector_in_student(examyear, school, department, upload_dict)
+        if logging_on:
+            logger.debug('    validate_firstname_stripped msg_err: ' + str(msg_err))
+        if msg_err:
+            has_error = True
+            error_list.append(str(msg_err))
 
         if not has_error:
 # - validate if student already exists
             # either student, not_found or has_error is trueish
+            err_list = []
             student, not_found, has_error = \
                 stud_val.lookup_student_by_idnumber_nodots(
                     school=school,
                     department=department,
                     idnumber_nodots=idnumber_nodots,
                     upload_fullname=full_name,
-                    error_list=msg_list,
+                    error_list=err_list,
                     found_is_error=True
                 )
+            if err_list:
+                has_error = True
+                error_list.extend(str(err_list))
 
-        if logging_on:
-            logger.debug('msg_list: ' + str(msg_list))
-
-        if has_error:
-            #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-            msg_html = '<br>'.join(msg_list)
-            messages.append({'header': str(_('Add candidate')), 'class': "border_bg_invalid", 'msg_html': msg_html})
-            error_list.extend(msg_list)
-            if logging_on:
-                logger.debug('msg_list: ' + str(msg_list))
-        else:
+        if not has_error:
 
 # - make iseveningstudent / islexstudent true when iseveningschool / islexschool, not when also isdayschool
             # PR 2021-09-08 debug tel Lionel Mongen CAL: validation still chekcs for required subjects
@@ -4528,6 +4569,8 @@ def create_student(school, department, upload_dict, messages, error_list, reques
             if not skip_save and studentbase.pk is None:
                studentbase.save()
 
+            if logging_on:
+                logger.debug('    studentbase: ' + str(studentbase))
 # - create and save student
             try:
                 student = stud_mod.Student(
@@ -4540,41 +4583,27 @@ def create_student(school, department, upload_dict, messages, error_list, reques
                     iseveningstudent=is_evening_student,
                     islexstudent=is_lex_student
                 )
+                if logging_on:
+                    logger.debug('    student: ' + str(student))
                 if not skip_save:
                     student.save(request=request)
-
-# - also activate school if not activated PR2021-07-20
-                    if student:
-                        school = student.school
-                        if school:
-                            activated = getattr(school, 'activated')
-                            if not activated:
-                                setattr(school, 'activated', True)
-                                setattr(school, 'activatedat', timezone.now())
-                                # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
-                                school.save(request=request)
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
 
                 name = ' '.join([first_name, last_name])
-                #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-                err_01 = str(_('An error occurred:'))
-                err_02 = str(e)
-                err_03 = str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Candidate')), 'val': name})
-                error_list.extend((err_01, err_02, err_03))
-
-                msg_html = '<br>'.join((err_01, '<i>' + err_02 + '</i>', err_03))
-                messages.append({'class': "alert-danger", 'msg_html': msg_html})
+                error_list.append(''.join((
+                    str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                    str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': _('Candidate'), 'val': name})
+                )))
 
     if logging_on:
         student_pk = student.pk if student else 'None'
-        logger.debug('student:    ' + str(student))
-        logger.debug('student_pk: ' + str(student_pk))
-        logger.debug('messages:   ' + str(messages))
-        logger.debug('error_list: ' + str(error_list))
+        logger.debug(' ---student:    ' + str(student))
+        logger.debug('    student_pk: ' + str(student_pk))
+        logger.debug('    error_list: ' + str(error_list))
 
-    return student
+    return student, error_list
 
 # - end of create_student
 
@@ -4591,10 +4620,6 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
         logger.debug(' ------- update_student_instance -------')
         logger.debug('    upload_dict: ' + str(upload_dict))
         logger.debug('    instance:    ' + str(instance))
-        logger.debug('    instance.pk: ' + str(instance_pk))
-    """
-    upload_dict: {'mode': 'withdrawn', 'table': 'student', 'student_pk': 4053, 'withdrawn': True}
-    """
 
     def get_log_txt(caption, new_value, saved_value):
         blank_str = str(_('blank'))
@@ -4801,7 +4826,7 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                                 logger.debug('    err_txt: ' + str(err_txt))
                                 logger.debug(' --------------')
 
-                # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
+                # validate_code_name_blank_length_exists_id checks for null, too long and exists. Puts msg_err in update_dict
                     if err_txt:
                         field_error = True
                         error_list.append(err_txt)
@@ -5708,7 +5733,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "studsubj.pok_published_id, pok_published.modifiedat AS pok_publ_modat,",
 
             "studsubj.tobedeleted, studsubj.modifiedby_id, studsubj.modifiedat,",
-            "SUBSTRING(au.username, 7) AS modby_username",
+            "au.last_name AS modby_username",
 
             "FROM students_studentsubject AS studsubj",
 
@@ -6013,126 +6038,6 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
 # - end of create_studentsubjectnote_rows
 
 
-#/////////////////////////////////////////////////////////////////
-def create_orderlist_rows(request, sel_examyear):
-    # --- create rows of all schools with published subjects PR2021-08-18
-    # PR2022-02-15 filter also on student.tobedeleted=False
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' =============== students.view create_orderlist_rows ============= ')
-        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
-
-    # create list of schools of this examyear (CUR and SXM), only where defaultrole = school
-    # for sxm: only sxm schools
-    # with left join of studentsubjects with deleted=False, group by school_id with count(*)
-
-
-    #logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk))
-    #logger.debug('sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
-    #logger.debug('sel_depbase_pk: ' + str(sel_depbase_pk))
-
-
-#CASE WHEN  POSITION(';" + sch.otherlang + ";' IN CONCAT(';', subj.otherlang, ';')) > 0 THEN ELSE END
-
-    """
-    
-    "si.ete_exam AS si_ete_exam,",
-    CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL  THEN 'ne'   ELSE
-    CASE WHEN POSITION(sch.otherlang IN subj.otherlang) > 0 THEN sch.otherlang ELSE 'ne' END END AS lang
-    
-    or even better with delimiters:
-    CASE WHEN subj.otherlang IS NULL OR sch.otherlang IS NULL 
-        THEN 
-            'ne' 
-        ELSE
-            CASE WHEN POSITION(';" + sch.otherlang + ";' IN CONCAT(';', subj.otherlang, ';')) > 0 
-                THEN 
-                ELSE 
-            END
-    END    
-    
-    """
-    rows = []
-    if sel_examyear:
-
-        requsr_country_pk = request.user.country.pk
-        is_curacao = request.user.country.abbrev.lower() == 'cur'
-        show_sxm_only = "AND ey.country_id = %(requsr_country_pk)s::INT" if not is_curacao else ''
-
-        sel_exam_period = 1
-        sql_keys = {'ey_code_int': sel_examyear.code,
-                    'ex_period_int': sel_exam_period,
-                    'default_role': c.ROLE_008_SCHOOL,
-                    'requsr_country_pk': requsr_country_pk}
-
-        sql_sublist = ["SELECT st.school_id AS school_id, publ.id AS subj_published_id, count(*) AS publ_count,",
-            "publ.datepublished, publ.examperiod",
-
-            "FROM students_studentsubject AS studsubj",
-            "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-
-            "INNER JOIN schools_published AS publ ON (publ.id = studsubj.subj_published_id)",
-            "WHERE publ.examperiod = %(ex_period_int)s::INT",
-            "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted",
-
-            "GROUP BY st.school_id, publ.id, publ.datepublished, publ.examperiod"
-        ]
-        sub_sql = ' '.join(sql_sublist)
-
-        total_sublist = ["SELECT st.school_id AS school_id, count(*) AS total",
-            "FROM students_studentsubject AS studsubj",
-            "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-            "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted",
-            "GROUP BY st.school_id"
-        ]
-        total_sql = ' '.join(total_sublist)
-        # see https://www.postgresqltutorial.com/postgresql-group-by/
-        total_students_sublist = ["SELECT st.school_id, count(*) AS total_students",
-            "FROM students_student AS st",
-            "WHERE NOT st.tobedeleted",
-            "GROUP BY st.school_id"
-        ]
-        total_students_sql = ' '.join(total_students_sublist)
-
-        sql_list = ["WITH sub AS (", sub_sql, "), total AS (", total_sql, "), total_students AS (", total_students_sql, ")",
-            "SELECT sch.id AS school_id, schbase.code AS schbase_code, sch.abbrev AS school_abbrev, sub.subj_published_id,",
-            "total.total, total_students.total_students, sub.publ_count, sub.datepublished, sub.examperiod",
-
-            "FROM schools_school AS sch",
-            "INNER JOIN schools_schoolbase AS schbase ON (schbase.id = sch.base_id)",
-            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-
-            "LEFT JOIN sub ON (sub.school_id = sch.id)",
-            "LEFT JOIN total ON (total.school_id = sch.id)",
-            "LEFT JOIN total_students ON (total_students.school_id = sch.id)",
-
-            "WHERE schbase.defaultrole = %(default_role)s::INT",
-            "AND ey.code = %(ey_code_int)s::INT",
-            show_sxm_only,
-            "ORDER BY sch.id"
-            ]
-        sql = ' '.join(sql_list)
-
-        if logging_on:
-            logger.debug('sql: ' + str(sql))
-
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-            rows = af.dictfetchall(cursor)
-
-            for row in rows:
-                published_pk = row.get('subj_published_id')
-                if published_pk:
-        # can't use sql because of file field
-                    published = sch_mod.Published.objects.get_or_none(pk=published_pk)
-                    if published and published.file:
-                        row['file_name'] = str(published.file)
-                        row['url'] = published.file.url
-
-    return rows
-# --- end of create_orderlist_rows
-
-
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_cluster(school, department, subject, cluster_pk, cluster_name, mapped_cluster_pk_dict, request):
     # --- create cluster # PR2022-01-06
@@ -6191,49 +6096,32 @@ def create_cluster(school, department, subject, cluster_pk, cluster_name, mapped
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def delete_cluster(cluster, request):
-    # --- delete cluster # PR2022-01-06
+def delete_cluster_instance(cluster_instance, request):
+    # --- delete cluster # PR2022-01-06  PR2022-08-08
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- delete_cluster ----- ')
-        logger.debug('cluster: ' + str(cluster))
+        logger.debug(' ----- delete_cluster_instance ----- ')
+        logger.debug('cluster_instance: ' + str(cluster_instance))
 
-    deleted_ok = False
-    err_list = []
-    deleted_cluster_pk = None
-# - create updated_row - to be returned after successfull delete
-    #updated_row = {'id': cluster.pk, 'deleted': True}
+    msg_html = None
+    this_txt = _("Cluster '%(val)s' ") % {'val': cluster_instance.name}
 
-    this_txt = ''.join((str(_('Cluster')), " '", cluster.name, "' "))
-    header_txt = _("Delete cluster")
-
-# - delete cluster
-    error_list = []
-    tobedeleted_cluster_pk = cluster.pk
-    deleted_ok = sch_mod.delete_instance(cluster, [], error_list, request, this_txt, header_txt)
-    if logging_on:
-        logger.debug('deleted_ok' + str(deleted_ok))
-        logger.debug('error_list' + str(error_list))
-
-    if error_list:
-        err_list.extend(error_list)
-    if deleted_ok:
-        deleted_cluster_pk = tobedeleted_cluster_pk
-
-# - add deleted_row to updated_rows
-    #if deleted_ok:
-    #    updated_rows.append(updated_row)
-
-# - check if this cluster is used in studsubj
-        #  not necessary,  cluster has on_delete=SET_NULL in studsubj
+    deleted_row, err_html = sch_mod.delete_instance(
+        table='student',
+        instance=cluster_instance,
+        request=request,
+        this_txt=this_txt
+    )
+    if err_html:
+        msg_html = err_html
 
     if logging_on:
-        #logger.debug('updated_rows' + str(updated_rows))
-        logger.debug('err_list' + str(err_list))
+        logger.debug('    deleted_row: ' + str(deleted_row))
+        logger.debug('    msg_html: ' + str(msg_html))
 
-    return deleted_ok, err_list, deleted_cluster_pk
-# - end of delete_cluster
+    return deleted_row, msg_html
+# - end of delete_cluster_instance
 
 
 def update_cluster_instance(school, department, instance, upload_dict, request):

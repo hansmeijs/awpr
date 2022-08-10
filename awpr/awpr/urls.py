@@ -29,6 +29,8 @@ from schools import imports as school_imports
 from students import views as student_views
 from students import results as student_results
 from subjects import views as subject_views
+from subjects import orderlists as subject_orderlists
+
 from grades import views as grade_views
 from grades import exfiles as grade_exfiles
 from grades import calc_results as grade_calc_res
@@ -198,7 +200,6 @@ urlpatterns = [
         path('examyears', school_views.ExamyearListView.as_view(), name='examyears_url'),
         path('examyear_upload', school_views.ExamyearUploadView.as_view(), name='url_examyear_upload'),
         path('examyear_copytosxm', school_views.ExamyearCopyToSxmView.as_view(), name='url_examyear_copytosxm'),
-        path('examyear_deletesubjectsfromsxm', school_views.ExamyearDeleteSubjectsFromSxmView.as_view(), name='url_examyear_deletesubjectsfromsxm'),
         path('subjectscheme_copyfrom', school_views.CopySchemesFromExamyearView.as_view(), name='url_subjectscheme_copyfrom'),
 
         path('school', school_views.SchoolListView.as_view(), name='schools_url'),
@@ -206,8 +207,7 @@ urlpatterns = [
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 
 
-        path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url'),
-        path('uploaddata', school_views.SchoolImportUploadData.as_view(), name='school_uploaddata_url')
+        path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url')
     ])),
 
 # ===== SUBJECTS ==========================  PR2018-08-23 PR2020-10-20
@@ -316,6 +316,9 @@ urlpatterns = [
         path('orderlist_parameters', school_views.OrderlistsParametersView.as_view(), name='url_orderlist_parameters'),
         path('orderlist_request_verifcode', school_views.OrderlistRequestVerifcodeView.as_view(), name='url_orderlist_request_verifcode'),
         path('orderlist_publish', school_views.OrderlistsPublishView.as_view(), name='url_orderlist_publish'),
+
+        path('envelopitem_upload', subject_orderlists.EnvelopItemUploadView.as_view(), name='url_envelopitem_upload'),
+        path('enveloplabel_upload', subject_orderlists.EnvelopLabelUploadView.as_view(), name='url_enveloplabel_upload'),
     ])),
 
 # ===== EXAMS ========================== PR2021-04-04

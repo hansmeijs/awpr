@@ -15,7 +15,7 @@
                 <div class="modal-body py-2">
                     <div class="modal_containerXX">
 <!-- modal_body_right contains input elements -->
-                        <div id="id_div_form_controls" class="mx-">
+                        <div id="id_MCREY_form_controls" class="mx-">
                             <div id="id_MCREY_loader" class="image_container visibility_hide">
                                 <img  src="{% static 'img/loader.gif' %}" height="24" width="24">
                             </div>
@@ -26,8 +26,8 @@
                                         <div class="flex_container">
                                             <div class="flex_3 mx-4">
                                                 <label for="id_MCREY_examyear_code" class="mx-2">{% trans 'Exam year' %}:</label>
-                                                <input id="id_MCREY_examyear_code" type="number" min=2017 data-field="examyear_code"
-                                                class="form-control awp_input_text" disabledXX
+                                                <input id="id_MCREY_examyear_code" data-field="examyear_code"
+                                                class="form-control awp_input_text" disabled
                                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                             </div>
                                         </div>
@@ -36,15 +36,7 @@
                                                 <small id="id_MCREY_msg_examyear" class="text-danger "></small>
                                             </div>
                                         </div>
-                                     <!--    <div id="id_msg_container" class="border_bg_message m-4 p-2">   -->
-                                         <div id="id_msg_container">
-                                             <!--
-                                            <p data-index="0" class="label_margin_top_m3"></p>
-                                            <p data-index="1" class="label_margin_top_m3"></p>
-                                            <p data-index="2" class="label_margin_top_m3"></p>
-                                            <p data-index="3" class="label_margin_top_m3 mb-4"></p>
-                                             -->
-                                        </div>
+                                         <div id="id_MCREY_msg_container"></div>
                                     </div>
                                 </div>
                                 <div class="mx-3 mt-2">
@@ -54,9 +46,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <div class="content_subheader_left mx-1 ">
-                        <button id="id_MCREY_btn_delete"  class="btn btn-outline-danger"></button>
-                    </div>
+
                     <div class="content_subheader_right">
                         <button id="id_MCREY_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
                         <button id="id_MCREY_btn_save" class="btn btn-primary"></button>

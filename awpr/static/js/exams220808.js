@@ -9,15 +9,6 @@
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_ep_01";
 
-//let setting_dict = {};
-//let permit_dict = {};
-//let loc = {};  // locale_dict
-//let urls = {};
-
-const selected = {
-    item_count: 0
-};
-
 let school_rows = [];
 let subject_rows = [];
 let cluster_rows = [];
@@ -29,6 +20,10 @@ let id_new = 0;
 document.addEventListener("DOMContentLoaded", function() {
     "use strict";
 
+    selected = {
+        item_count: 0
+    };
+
     let el_loader = document.getElementById("id_loader");
 
 // ---  get permits
@@ -39,10 +34,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const may_view_page = (!!el_loader);
 
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
 
     const cls_selected_item = "tsa_td_unlinked_selected";
 
@@ -102,12 +93,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // mod_MCOL_dict is defined in tables.js
     mod_MCOL_dict.columns.btn_ete_exams = {
-        subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version",
+        subj_name: "Subject", lvl_abbrev: "Learning_path", version: "Version",
         examperiod: "Exam_type", blanks: "Blanks", secret_exam: "Designated_exam", status: "Status", download_exam: "Download_exam",
         cesuur: "Cesuur", scalelength: "Maximum_score", download_conv_table: "Download_conv_table"
     };
     mod_MCOL_dict.columns.btn_duo_exams = {
-        subjbase_code: "Abbreviation", subj_name: "Subject", lvl_abbrev: "Leerweg", version: "Version",
+        subjbase_code: "Abbreviation", subj_name: "Subject", lvl_abbrev: "Learning_path", version: "Version",
         ntb_omschrijving: "DUO_description", examperiod: "Exam_type", nterm: "N_term", scalelength: "schaallengte",
         download_conv_table: "Download_conv_table"
     };
@@ -118,19 +109,19 @@ document.addEventListener("DOMContentLoaded", function() {
         datum: "datum", begintijd: "begintijd", eindtijd: "eindtijd"
     };
     mod_MCOL_dict.columns.btn_results = {
-        lvl_abbrev: "Leerweg", school_name: "School",
+        lvl_abbrev: "Learning_path", school_name: "School",
         grd_count: "Number_of_exams", result_count: "Submitted_exams",
         result_avg: "Average_score_percentage", download_conv_table: "Download_conv_table"
     };
     mod_MCOL_dict.columns.btn_ep_01 = {
-        examnumber: "Examnumber", lvl_abbrev: "Leerweg", cluster_name: "Cluster",
+        examnumber: "Examnumber", lvl_abbrev: "Learning_path", cluster_name: "Cluster",
         subj_name: "Subject", blanks: "Blanks", ce_exam_score: "Score", download_exam: "Download_exam"
     };
     mod_MCOL_dict.columns.btn_reex = mod_MCOL_dict.columns.btn_ep_01;
 
 // --- get field_settings
     const field_settings = {
-        ete_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Leerweg", "Version",
+        ete_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Learning_path", "Version",
                                 "Exam_type", "Designated_exam_2lines", "Blanks", "Maximum_score_2lines", "",
                                 "Download_exam", "Cesuur", "Download_conv_table_2lines"],
                 field_names: ["select", "subjbase_code", "subj_name", "lvl_abbrev", "version",
@@ -149,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                "l", "c", "c","c", "c",
                                "c", "c", "c"]},
 
-        duo_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Leerweg", "DUO_description",
+        duo_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Learning_path", "DUO_description",
                                 "Exam_type", "Designated_exam_2lines", "schaallengte_2lines", "N_term", "Download_conv_table_2lines"],
                 field_names: ["select", "subjbase_code", "subj_name", "lvl_abbrev", "ntb_omschrijving",
                             "examperiod", "secret_exam", "scalelength", "nterm", "download_conv_table"],
@@ -161,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "120", "075", "075", "120"],
                 field_align: ["c",  "c", "l", "l", "l", "l", "c", "c", "c", "c"]},
 
-        grades: {field_caption: ["", "Examnumber_twolines", "Candidate",  "Leerweg", "Cluster", "Abbrev_subject_2lines",
+        grades: {field_caption: ["", "Examnumber_twolines", "Candidate",  "Learning_path", "Cluster", "Abbrev_subject_2lines",
                                 "Subject", "Exam", "Blanks", "Score", "", "Download_exam"],
             field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "cluster_name", "subj_code",
                           "subj_name", "ceex_name", "blanks", "ce_exam_score", "status", "download_exam"],
@@ -174,7 +165,7 @@ document.addEventListener("DOMContentLoaded", function() {
             field_align: ["c", "l", "l", "l", "l", "c",
                          "l", "l", "c", "c", "c", "c"]},
 
-        results: {field_caption: ["", "Abbrev_subject_2lines", "Leerweg", "Exam", "Exam_type",
+        results: {field_caption: ["", "Abbrev_subject_2lines", "Learning_path", "Exam", "Exam_type",
                                 "Schoolcode_2lines", "School", "Number_of_exams", "Submitted_exams", "Average_score_percentage",
                                 "Download_conv_table_2lines"],
             field_names: ["select", "subj_code", "lvl_abbrev", "exam_name", "examperiod",
@@ -645,13 +636,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     b_show_mod_message_dictlist(response.messages);
                 };
                 if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows);
+                };
+                if ("department_rows" in response) {
+                    department_rows = response.department_rows;
+                    b_fill_datamap(department_map, response.department_rows);
                 };
                 if ("school_rows" in response)  {
                     school_rows = response.school_rows;
-                };
-                if ("department_rows" in response) {
-                    b_fill_datamap(department_map, response.department_rows);
                 };
                 if ("level_rows" in response) {
                     b_fill_datamap(level_map, response.level_rows);
@@ -990,7 +983,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const has_items = (!!rows && !!rows.length);
         const has_profiel = setting_dict.sel_dep_has_profiel;
 
-        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels : (has_profiel) ? loc.All_profielen : loc.All_sectors ) + "&#62";
+        const caption_all = "&#60" + ( (tblName === "level") ? loc.All_levels : (has_profiel) ? loc.All_profiles : loc.All_sectors ) + "&#62";
         if (has_items){
             if (rows.length === 1){
                 // if only 1 level: make that the selected one

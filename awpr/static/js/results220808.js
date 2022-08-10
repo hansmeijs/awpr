@@ -5,12 +5,6 @@
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_result";
 
-//let setting_dict = {};
-//let permit_dict = {};
-//let loc = {};
-//let urls = {};
-
-let selected = {student_pk: null, student_dict: {}};
 
 let student_rows = [];
 let results_per_school_rows = [];
@@ -22,15 +16,15 @@ const field_settings = {};
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
+    selected = {
+        student_pk: null,
+        student_dict: {}
+    };
+
 // ---  check if user has permit to view this page. If not: el_loader does not exist PR2020-10-02
     const el_loader = document.getElementById("id_loader");
     const el_hdr_left = document.getElementById("id_header_left");
     const may_view_page = (!!el_loader);
-
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
 
 // ---  id of selected customer and selected order
     // declared as global: //let selected_btn = "btn_result";
@@ -52,8 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let department_map = new Map();
     let level_map = new Map();
     let sector_map = new Map();
-    //let selected = {student_pk: null,
-    //                student_dict: {}};
 
     // PR2021-07-23 moved outside this function, to make it available in import.js
     // let student_rows = [];
@@ -95,18 +87,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // either 'all' or selected_btn are used in a page
 
     mod_MCOL_dict.columns.btn_result = {
-        idnumber: "ID_number", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", classname: "Class",
+        idnumber: "ID_number", lvl_abbrev: "Learning_path", sct_abbrev: "Sector", classname: "Class",
         examnumber: "Examnumber", regnumber: "Regnumber", result_status: "Result", withdrawn: "Withdrawn", diplomanumber: "Diploma_number", gradelistnumber: "Gradelist_number"
     };
 
     mod_MCOL_dict.columns.btn_overview = {
-        idnumber: "ID_number", lvl_abbrev: "Leerweg", sct_abbrev: "Sector", classname: "Class",
+        idnumber: "ID_number", lvl_abbrev: "Learning_path", sct_abbrev: "Sector", classname: "Class",
         examnumber: "Examnumber", regnumber: "Regnumber", result_status: "Result", withdrawn: "Withdrawn"
     };
 // --- get field_settings
     // declared as global: let field_settings = {};
     field_settings.student = {
-        field_caption: ["", "Examnumber_twolines", "Name", "Leerweg", "Sector", "Class",  "Result", "Withdrawn_2lines", "Diplomanumber_2lines", "Gradelistnumber_2lines"],
+        field_caption: ["", "Examnumber_twolines", "Name", "Learning_path", "Sector", "Class",  "Result", "Withdrawn_2lines", "Diplomanumber_2lines", "Gradelistnumber_2lines"],
         field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "classname", "result_status", "withdrawn", "diplomanumber", "gradelistnumber"],
         field_tags:["div", "div", "div", "div","div", "div", "div", "div", "input", "input"],
 
@@ -449,14 +441,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!skip_messages && "messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
                 }
+                if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
+                    b_fill_datamap(examyear_map, response.examyear_rows);
+                };
+                if ("department_rows" in response) {
+                    department_rows = response.department_rows;
+                    b_fill_datamap(department_map, response.department_rows)
+                };
 
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows)};
                 if ("school_rows" in response)  {
                     school_rows =  response.school_rows;
                     b_fill_datamap(school_map, response.school_rows)};
-                if ("department_rows" in response) {
-                    b_fill_datamap(department_map, response.department_rows)
-                    };
 
                 if ("level_rows" in response)  {
                     b_fill_datamap(level_map, response.level_rows);
@@ -661,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!col_hidden.includes(field_name)){
         // --- get field_caption from field_setting, display 'Profiel' in column sct_abbrev if has_profiel
                 const key = field_setting.field_caption[j];
-                const field_caption = (field_name === "sct_abbrev" && has_profiel) ? loc.Profiel : (loc[key]) ? loc[key] : key;
+                const field_caption = (field_name === "sct_abbrev" && has_profiel) ? loc.Profile : (loc[key]) ? loc[key] : key;
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
                 const class_align = "ta_" + field_setting.field_align[j];

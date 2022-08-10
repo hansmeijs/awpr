@@ -805,10 +805,13 @@ def get_selected_examyear_school_instance_from_usersettingNIU(request):  # PR202
 # - end of get_selected_examyear_instance_from_usersetting
 
 
-def get_sel_examyear_instance(request, request_item_examyear_pk=None):  # PR2020-12-25 PR2021-08-12
+def get_sel_examyear_instance(request, request_item_examyear_pk=None):
+    # PR2020-12-25 PR2021-08-12
     # called by: get_headerbar_param, download_setting create_or_validate_user_instance, UploadOldAwpView
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  get_sel_examyear_instance  -----')
 
-    #logger.debug('  -----  get_sel_examyear_instance  -----')
     sel_examyear_instance = None
     sel_examyear_save = False
     multiple_examyears = False
@@ -846,7 +849,11 @@ def get_sel_examyear_instance(request, request_item_examyear_pk=None):  # PR2020
 
 # - check if there are multiple examyears, used to enable select examyear
         multiple_examyears = (sch_mod.Examyear.objects.filter(country=requsr_country).count() > 1)
-
+        if logging_on:
+            logger.debug('    username: ' + str(request.user.username))
+            logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
+            logger.debug('    multiple_examyears: ' + str(multiple_examyears))
+            logger.debug('    sel_examyear_save: ' + str(sel_examyear_save))
 # - also add sel_examperiod and sel_examtype, used in page grades
 
     return sel_examyear_instance, sel_examyear_save, multiple_examyears
@@ -1281,7 +1288,7 @@ def system_updates(examyear, request):
 
     # show_unmatched_reex_rows()
 
-# PR 2022-06-05 one time function to recalc amount of exemptions, reex, reex03, thumbrule and put it in student
+# PR 2022-06-05 one time function to recalc number of exemptions, reex, reex03, thumbrule and put it in student
     #calc_count_reex_etc(request)
 
 # PR 2022-05-28 one time function to set rule_avg_pece_sufficient = TRUE, rule_core_notatevlex = FALSE
@@ -1709,7 +1716,7 @@ def set_ce_avg_rule(request):
 
 
 def calc_count_reex_etc(request):
-    # PR 2022-06-05 one time function to recalc amount of exemptions, reex, reex03, thumbrule and put it in student
+    # PR 2022-06-05 one time function to recalc number of exemptions, reex, reex03, thumbrule and put it in student
     # for all departments SXM and CUR departments Havo/Vwo
     logging_on = s.LOGGING_ON
     if logging_on:

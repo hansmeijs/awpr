@@ -491,15 +491,15 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
     # - check required subjects
                 validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-    # - check total amount of subjects
+    # - check total number of subjects
                 validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-    # - check amount of mvt and combi subjects
+    # - check number of mvt and combi subjects
                 validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
                 validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
                 validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-    # - check amount of subjects per subjecttype
+    # - check number of subjects per subjecttype
                 validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
                 if len(msg_list):
                     msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
@@ -757,12 +757,12 @@ def validate_studentsubjects_no_msg(student):
             validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
-# - check total amount of subjects
+# - check total number of subjects
             validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
 
-# - check amount of mvt and combi subjects
+# - check number of mvt and combi subjects
             validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
@@ -773,7 +773,7 @@ def validate_studentsubjects_no_msg(student):
             if msg_list:
                 return True
 
-# - check amount of subjects per subjecttype
+# - check number of subjects per subjecttype
             validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
@@ -783,7 +783,7 @@ def validate_studentsubjects_no_msg(student):
 
 
 def validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
-    # - validate amount of subjects PR2021-07-10
+    # - validate number of subjects PR2021-07-10
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -847,7 +847,7 @@ def convert_code_list_to_display_str(code_list):
 
 
 def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
-    # - validate amount of subjects PR2021-07-11
+    # - validate number of subjects PR2021-07-11
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -906,7 +906,7 @@ def validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict,
 
 
 def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list):
-    # - validate amount of subjects PR2021-07-10
+    # - validate number of subjects PR2021-07-10
     # - skip validate minimum subjects when is_evening_or_lex_student
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -968,7 +968,7 @@ def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, stud
     msg_txt, msg_available = '', ''
     if min_subj and max_subj and min_subj == max_subj:
         if subject_count != min_subj:
-            msg_txt = _("The amount of %(cpt)s must be %(max)s.") % {'cpt': captions, 'max': max_subj}
+            msg_txt = _("The number of %(cpt)s must be %(max)s.") % {'cpt': captions, 'max': max_subj}
     elif min_subj or max_subj:
         minmax_txt = None
         minmax_val = None
@@ -1034,7 +1034,7 @@ def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, stud
             minmax_val = max_subj
 
         if minmax_txt:
-            msg_txt = _("The %(minmax_txt)s amount of %(cpt)s is %(minmax_val)s.") \
+            msg_txt = _("The %(minmax_txt)s number of %(cpt)s is %(minmax_val)s.") \
                       % {'cpt': captions, 'minmax_txt': minmax_txt, 'minmax_val': minmax_val}
 
             #msg_available += _("<br>Available MVT subjects are: %(list)s.") % {'list': 'min_mvt'}
@@ -1073,7 +1073,7 @@ def validate_minmax_count(field, is_evening_or_lex_student, scheme_dict, subject
     # note: min_subj and max_subj can be None (no restrictions) or zero (amount = 0)
     if min_subj is not None and max_subj is not None and min_subj == max_subj:
         if subject_count != min_subj:
-            msg_txt = _("The amount of %(cpt)s must be %(max)s.") % {'cpt': captions, 'max': max_subj}
+            msg_txt = _("The number of %(cpt)s must be %(max)s.") % {'cpt': captions, 'max': max_subj}
     elif min_subj is not None or max_subj is not None:
         minmax_txt = None
         minmax_val = None
@@ -1123,7 +1123,7 @@ def validate_minmax_count(field, is_evening_or_lex_student, scheme_dict, subject
             minmax_val = max_subj
 
         if minmax_txt:
-            msg_txt = _("The %(minmax_txt)s amount of %(cpt)s is %(minmax_val)s.") \
+            msg_txt = _("The %(minmax_txt)s number of %(cpt)s is %(minmax_val)s.") \
                       % {'cpt': captions, 'minmax_txt': minmax_txt, 'minmax_val': minmax_val}
 
             #msg_available += _("<br>Available MVT subjects are: %(list)s.") % {'list': 'min_mvt'}
@@ -1858,7 +1858,7 @@ def get_idnumber_nodots_stripped_lower(id_number):
             logger.error(getattr(e, 'message', str(e)))
             msg_err = _("ID number '%(val)s' is not valid.") % {'val': id_number}
     else:
-        msg_err = _("ID number is not entered.")
+        msg_err = _("The ID number cannot be blank.")
 
     if logger_on:
         logger.debug('    msg_err: ' + str(msg_err))
@@ -2021,7 +2021,7 @@ def validate_gender(value):
 
 # Not in use, maybe can be used for warning
 
-# don't check if the amount of re-examinations equals or exceeds the maximum
+# don't check if the number of re-examinations equals or exceeds the maximum
 #   students that have been sick may do multiple reex
 #   was: if not err_list:
 
@@ -2051,7 +2051,7 @@ def validate_reex_count(studsubj_instance, si_dict):  # PR2021-12-19
                     % {'val': str(reex_count), 'cpt': str(caption).lower(), 'is_are': is_are, 'max': str(max_reex)})
 
     return err_list
-# function checks if the amount of re-examination equals or exceeds the maximum
+# function checks if the number of re-examination equals or exceeds the maximum
 
 
 def validate_studsubj_sr_allowed(si_dict):  # PR2021-12-25

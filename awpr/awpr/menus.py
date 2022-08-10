@@ -99,7 +99,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     # this is used for arguments that are passed to headerbar
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('===== get_headerbar_param ===== ' + str(sel_page))
+        logger.debug('===== get_headerbar_param ===== ')
+        logger.debug('    sel_page: ' + str(sel_page))
 
 # - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
     # PR2021-06-24 debug. Firefox gives sudenly error: 'AnonymousUser' object has no attribute 'set_usersetting_dict'
@@ -160,11 +161,11 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
                     permit_list.append('permit_view')
 
         if logging_on:
-            logger.debug('sel_page:           ' + str(sel_page))
-            logger.debug('req_user.role:  ' + str(req_user.role))
-            logger.debug('permit_list:    ' + str(permit_list))
-            logger.debug('usergroup_list: ' + str(usergroup_list))
-            logger.debug('auth_list: ' + str(auth_list))
+            logger.debug('    sel_page:           ' + str(sel_page))
+            logger.debug('    req_user.role:  ' + str(req_user.role))
+            logger.debug('    permit_list:    ' + str(permit_list))
+            logger.debug('    usergroup_list: ' + str(usergroup_list))
+            logger.debug('    auth_list: ' + str(auth_list))
 
 # +++ display examyear -------- PR2020-11-17 PR2020-12-24 PR2021-06-14
     # - get selected examyear from Usersetting
@@ -207,11 +208,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             no_thirdperiod = sel_examyear.no_thirdperiod
 
         if logging_on:
-            logger.debug('no_practexam:   ' + str(no_practexam))
-            logger.debug('sr_allowed:     ' + str(sr_allowed))
-            logger.debug('no_centralexam: ' + str(no_centralexam))
-            logger.debug('no_thirdperiod: ' + str(no_thirdperiod))
-
+            logger.debug(' -- sel_examyear: ' + str(sel_examyear))
+        if logging_on:
+            logger.debug('    no_practexam:   ' + str(no_practexam))
+            logger.debug('    sr_allowed:     ' + str(sr_allowed))
+            logger.debug('    no_centralexam: ' + str(no_centralexam))
+            logger.debug('    no_thirdperiod: ' + str(no_thirdperiod))
 
 # +++ give warning when examyear is different from current examyear,
             # is moved to downloadsettings
@@ -237,8 +239,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         # if sel_examyear and display_school:
         if sel_examyear:
-
-
             sel_schoolbase, save_sel_schoolbase_NIU = af.get_sel_schoolbase_instance(request)
             school_name = sel_schoolbase.code if sel_schoolbase.code else ''
     # - get school from sel_schoolbase and sel_examyear
@@ -299,10 +299,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         if no_examyears:
             no_access_message = _("There are no exam years yet.")
             messages.append(no_access_message)
+
         elif country_locked:
             no_access_message = _("%(country)s has no license to use AWP-online.") % \
                                                  {'country': sel_country_name}
             messages.append(no_access_message)
+
        # elif examyear_locked:
             # this is a warning, dont block access when examyear_locked
             #no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear.code)}
@@ -325,12 +327,14 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
                                                  {'admin': admin_name, 'exyr': str(sel_examyear_code)}
             messages.append(no_access_message)
 
-        elif not sel_school_activated:
+
+        # sel_school_activated is not in use
+        #elif not sel_school_activated:
             # block certain pages when not sel_school_activated
             # diable for now PR2022-05-13
-            if sel_page in ('page_studentXXX', 'page_studsubjXXX', 'page_gradeXXX'):
-                no_access_message = _("The school has not activated this examyear yet.")
-                messages.append(no_access_message)
+            #if sel_page in ('page_studentXXX', 'page_studsubjXXX', 'page_gradeXXX'):
+            #    no_access_message = _("The school has not activated this examyear yet.")
+            #    messages.append(no_access_message)
 
 # - sentr_src contains link for Sentry awp_js PR2021-09-19
         sentry_src = s.SENTRY_SRC

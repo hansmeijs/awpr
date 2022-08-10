@@ -22,6 +22,7 @@ from schools import functions as sch_fnc
 from schools import dicts as school_dicts
 from subjects import models as subj_mod
 from subjects import views as sj_vw
+from subjects import orderlists as sj_ol
 from students import views as stud_view
 from grades import views as gr_vw
 
@@ -121,17 +122,18 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['permit_rows'] = acc_view.create_permit_list()
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
-                    cur_ey_only = af.get_dict_value(datalist_request, ('examyear_rows', 'cur_ey_only'), False)
-                    sel_examyear_pk = None
-                    if cur_ey_only and sel_examyear:
-                        sel_examyear_pk = sel_examyear.pk
-                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {}, sel_examyear_pk)
+                    datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {})
 # ----- schools
                 if datalist_request.get('school_rows'):
-                    datalists['school_rows'] = school_dicts.create_school_rows(sel_examyear, permit_dict, request)
+                    datalists['school_rows'] = school_dicts.create_school_rows(
+                        request=request,
+                        examyear=sel_examyear,
+                        append_dict={}
+                    )
 # ----- departments
                 if datalist_request.get('department_rows'):
-                    datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear)
+                    skip_allowed_filter = af.get_dict_value(datalist_request, ('department_rows', 'skip_allowed_filter'), False)
+                    datalists['department_rows'] = school_dicts.create_department_rows(sel_examyear, skip_allowed_filter, request)
 # ----- levels
                 if datalist_request.get('level_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('level_rows', 'cur_dep_only'), False)
@@ -152,6 +154,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     cur_dep_only = af.get_dict_value(datalist_request, ('subjecttype_rows', 'cur_dep_only'), False)
                     datalists['subjecttype_rows'] = sj_vw.create_subjecttype_rows(
                         examyear=sel_examyear,
+                        append_dict={},
                         depbase=sel_depbase,
                         cur_dep_only=cur_dep_only)
                     datalists['subjecttypebase_rows'] = sj_vw.create_subjecttypebase_rows()
@@ -160,10 +163,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
                     skip_allowed_filter = af.get_dict_value(datalist_request, ('subject_rows', 'skip_allowed_filter'), False)
                     datalists['subject_rows'] = sj_vw.create_subject_rows(
-                        setting_dict=new_setting_dict,
+                        request=request,
+                        sel_examyear=sel_examyear,
+                        sel_depbase=sel_depbase,
+                        sel_lvlbase=None,
                         skip_allowed_filter=skip_allowed_filter,
-                        cur_dep_only=cur_dep_only,
-                        request=request)
+                        cur_dep_only=cur_dep_only)
+
 # ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
                 if datalist_request.get('duo_subject_rows'):
                     datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
@@ -173,6 +179,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
                     )
+# ----- subjects for page subjectscheme
+                if datalist_request.get('subject_rows_page_subjects'):
+                    datalists['subject_rows'] = sj_vw.create_subjectrows_for_page_subjects(
+                        sel_examyear=sel_examyear,
+                        append_dict={}
+                    )
+
 # ----- clusters
                 if datalist_request.get('cluster_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('cluster_rows', 'cur_dep_only'), False)
@@ -196,6 +209,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     cur_dep_only = af.get_dict_value(datalist_request, ('schemeitem_rows', 'cur_dep_only'), False)
                     datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(
                         examyear=sel_examyear,
+                        append_dict={},
                         cur_dep_only=cur_dep_only,
                         depbase=sel_depbase)
 # ----- ete_exams
@@ -245,7 +259,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         append_dict={})
                     if error_dict:
                         message_list.append(error_dict)
-
 # ----- check birthcountry
                 if datalist_request.get('check_birthcountry_rows'):
                     datalists['check_birthcountry_rows'], msg_html = stud_view.create_check_birthcountry_rows(
@@ -254,7 +267,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_depbase=sel_depbase)
                     if msg_html:
                         datalists['check_birthcountry_msg_html'] = msg_html
-
 # ----- studentsubjects
                 if datalist_request.get('studentsubject_rows'):
                     datalists['studentsubject_rows'] = stud_view.create_studentsubject_rows(
@@ -271,11 +283,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 #if request_item:
                 #    datalists['studentsubjectnote_rows'] = stud_view.create_studentsubjectnote_rows(request_item, request)
 
-# ----- orderlists
-                if datalist_request.get('orderlist_rows'):
-                    datalists['orderlist_rows'] = stud_view.create_orderlist_rows(
-                        sel_examyear=sel_examyear,
-                        request=request)
 
 # ----- grade_exam_rows
                 if datalist_request.get('grade_exam_rows'):
@@ -288,7 +295,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             setting_dict=new_setting_dict,
                             request=request
                         )
-
 # ----- grade_exam_result_rows
                 if datalist_request.get('grade_exam_result_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -300,7 +306,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             setting_dict=new_setting_dict,
                             request=request
                         )
-
 # ----- grades
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -333,7 +338,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             studsubj_pk=None,
                             request=request
                         )
-
 # ----- results_per_school_rows
                 if datalist_request.get('results_per_school_rows'):
                     datalists['results_per_school_rows'], error_dict = stud_view.create_results_per_school_rows(
@@ -343,7 +347,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     )
                     if error_dict:
                         message_list.append(error_dict)
-
 # ----- published
                 if datalist_request.get('published_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
@@ -362,11 +365,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['mailmessage_sent_rows'] = school_dicts.create_mailmessage_draft_or_sent_rows(
                         is_sent=True,
                         examyear=sel_examyear,
+                        append_dict={},
                         request=request
                     )
                     datalists['mailmessage_draft_rows'] = school_dicts.create_mailmessage_draft_or_sent_rows(
                         is_sent=False,
                         examyear=sel_examyear,
+                        append_dict={},
                         request=request
                     )
                     datalists['mailinglist_rows'] = school_dicts.create_mailinglist_rows(
@@ -385,6 +390,46 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         request=request
                     )
                     datalists['mailbox_usergroup_rows'] = school_dicts.create_mailbox_usergroup_rows()
+
+# ----- orderlist_rows
+                if datalist_request.get('orderlist_rows'):
+                    datalists['orderlist_rows'] = sj_ol.create_orderlist_rows(
+                        request=request,
+                        sel_examyear=sel_examyear
+                    )
+
+# ----- envelopbundle_rows
+                if datalist_request.get('envelopbundle_rows'):
+                    datalists['envelopbundle_rows'] = sj_ol.create_envelopbundle_rows(
+                        sel_examyear=sel_examyear
+                    )
+
+# ----- enveloplabel_rows
+                if datalist_request.get('enveloplabel_rows'):
+                    datalists['enveloplabel_rows'] = sj_ol.create_enveloplabel_rows(
+                        sel_examyear=sel_examyear,
+                        append_dict={}
+                    )
+# ----- envelopitem_rows
+                if datalist_request.get('envelopitem_rows'):
+                    datalists['envelopitem_rows'] = sj_ol.create_envelopitem_rows(
+                        sel_examyear=sel_examyear,
+                        append_dict={}
+                    )
+
+ # ----- envelopbundlelabel_rows
+                if datalist_request.get('envelopbundlelabel_rows'):
+                    datalists['envelopbundlelabel_rows'] = sj_ol.create_envelopbundlelabel_rows(
+                        sel_examyear=sel_examyear
+                    )
+
+# ----- enveloplabelitem_rows
+                if datalist_request.get('enveloplabelitem_rows'):
+                    datalists['enveloplabelitem_rows'] = sj_ol.create_enveloplabelitem_rows(
+                        sel_examyear=sel_examyear
+                    )
+
+
 
         if message_list:
             datalists['messages'] = message_list
@@ -461,9 +506,9 @@ def download_setting(request_item_setting, user_lang, request):
         permit_dict['usergroup_list'] = usergroup_list
 
     if logging_on:
-        logger.debug('permit_list: ' + str(permit_list) )
-        logger.debug('usergroup_list: ' + str(usergroup_list) )
-        logger.debug('permit_dict: ' + str(permit_dict) )
+        logger.debug('    permit_list: ' + str(permit_list) )
+        logger.debug('    usergroup_list: ' + str(usergroup_list) )
+        logger.debug('    permit_dict: ' + str(permit_dict) )
 
 # - selected_pk_dict contains saved selected_pk's from Usersetting, key: selected_pk
     # changes are stored in this dict, saved at the end when
@@ -476,7 +521,7 @@ def download_setting(request_item_setting, user_lang, request):
     permit_dict['requsr_country_pk'] = requsr_country.pk  if requsr_country else None
     permit_dict['requsr_country'] = requsr_country.name if requsr_country else None
     if requsr_country.locked:
-        permit_dict['requsr_country_locked'] = True
+        permit_dict['country_locked'] = True
 
 # ===== SCHOOLBASE ======================= PR2020-12-18
 # - get schoolbase from settings / request when role is insp, admin or system, from req_user otherwise
@@ -511,11 +556,15 @@ def download_setting(request_item_setting, user_lang, request):
 
 # - get selected examyear from request_item_setting, Usersetting, this_examyear or latest
     request_item_examyear_pk = request_item_setting.get(c.KEY_SEL_EXAMYEAR_PK)
-    sel_examyear_instance, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request, request_item_examyear_pk)
+    sel_examyear_instance, sel_examyear_save, multiple_examyears = af.get_sel_examyear_instance(request, request_item_examyear_pk)
 
-    permit_dict['may_select_examyear'] = may_select_examyear
+    permit_dict['may_select_examyear'] = multiple_examyears
 
-    #logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+    if logging_on:
+        logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+        logger.debug('    multiple_examyears: ' + str(multiple_examyears))
+        logger.debug('    permit_dict: ' + str(permit_dict))
+
 # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_examyear_save:
         # sel_examyear_instance has always value when selected_pk_dict_has_changed
@@ -525,20 +574,32 @@ def download_setting(request_item_setting, user_lang, request):
 # - add info to setting_dict, will be sent back to client
     if sel_examyear_instance:
         setting_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
-
+        # sel_country_is_sxm is only used in page studsubj show_thumbrule = (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");
         setting_dict['sel_country_is_sxm'] = (sel_examyear_instance.country.abbrev == 'Sxm')
 
         setting_dict['sel_examyear_code'] = sel_examyear_instance.code if sel_examyear_instance.code else None
-        if sel_examyear_instance.published:
-            setting_dict['sel_examyear_published'] = sel_examyear_instance.published
+        if not sel_examyear_instance.published:
+            permit_dict['examyear_not_published'] = True
+
+            # - add message when school is not published PR22021-12-04
+            # not when role is admin PR2022-08-09
+            if req_user.role < c.ROLE_064_ADMIN:
+                msg_list.append({'msg_html': [
+                    '<br>'.join((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
+                                                     {'admin': _('The Division of Examinations'), 'exyr': str(sel_examyear_instance.code)}),
+                                 str(_('You cannot enter data.'))))
+                ], 'class': 'border_bg_warning'})
+
         if sel_examyear_instance.locked:
-            setting_dict['sel_examyear_locked'] = sel_examyear_instance.locked
+            permit_dict['examyear_locked'] = True
 
 # - add message when school is locked PR22021-12-04
-            msg_list.append({'msg_html': [
-                '<br>'.join((str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
-                             str(_('You cannot make changes.'))))
-            ], 'class': 'border_bg_warning'})
+            # not when page_examyear PR2022-08-09
+            if req_user.role != c.ROLE_064_ADMIN or page != 'page_examyear':
+                msg_list.append({'msg_html': [
+                    '<br>'.join((str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
+                                 str(_('You cannot make changes.'))))
+                ], 'class': 'border_bg_warning'})
 
         if sel_examyear_instance.no_practexam:
             setting_dict['no_practexam'] = sel_examyear_instance.no_practexam
@@ -566,7 +627,6 @@ def download_setting(request_item_setting, user_lang, request):
             if message:
                 msg_list.append(message)
             acc_view.set_usersetting_dict(c.KEY_OPENARGS, {'show_msg': False}, request)
-
 
 # - add message when examyear is different from this eaxamyear
     message = val.message_diff_exyr(sel_examyear_instance)  # PR2020-10-30
@@ -1181,8 +1241,8 @@ def get_selected_ey_school_dep_from_usersetting(request, skip_same_school_clause
 # - end of get_selected_ey_school_dep_from_usersetting
 
 
-def get_selected_examyear_from_usersetting(request):
-    # PR2021-09-08 PR2022-02-26 PR2022-04-16
+def get_selected_examyear_from_usersetting(request, allow_not_published=False):
+    # PR2021-09-08 PR2022-02-26 PR2022-04-16 PR2022-08-04
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
@@ -1217,7 +1277,7 @@ def get_selected_examyear_from_usersetting(request):
                 logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
     # - add info to msg_list, will be sent back to client
-            message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
+            message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published)
 
     may_edit = not msg_list
     if not may_edit:
@@ -1231,13 +1291,18 @@ def get_selected_examyear_from_usersetting(request):
 # - end of get_selected_examyear_from_usersetting
 
 
-def message_examyear_missing_notpublished_locked(sel_examyear, msg_list):  # PR2021-12-04
+def message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published=False):  # PR2021-12-04 PR2022-08-04
     if sel_examyear is None:
         msg_list.append(str(_('There is no exam year selected.')))
-    elif not sel_examyear.published:
-        msg_list.append(str(_('Exam year %(ey_code)s is not published yet.') % {'ey_code': str(sel_examyear.code)}))
     elif sel_examyear.locked:
         msg_list.append(str(_('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)}))
+    elif not allow_not_published and not sel_examyear.published:
+        msg_list.extend((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
+                             {'admin': _('The Division of Examinations'), 'exyr': str(sel_examyear.code)}),
+                         str(_('You cannot enter data.'))))
+
+
+
 # - end of message_examyear_missing_notpublished_locked
 
 
@@ -1315,6 +1380,7 @@ def create_permit_dict(req_user):
         permit_dict['may_select_school'] = (req_user.role > c.ROLE_008_SCHOOL)
 
     return permit_dict
+
 
 def get_requsr_allowed(req_user, permit_dict):
     # PR2022-03-18

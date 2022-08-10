@@ -13,20 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let el_loader = document.getElementById("id_loader");
     const may_view_page = (!!el_loader)
 
-    const cls_hide = "display_hide";
-    const cls_hover = "tr_hover";
-    const cls_visible_hide = "visibility_hide";
-    const cls_selected = "tsa_tr_selected";
-
     let mod_dict = {};
-    let mod_MSTUD_dict = {};
     let mod_MPUBORD_dict = {};
+    let mod_MENV_dict = {};
 
 // mod_MSTUDSUBJ_dict stores available studsubj for selected candidate in MSTUDSUBJ
-    let mod_MSTUDSUBJ_dict = {
-        schemeitem_dict: {}, // stores available studsubj for selected candidate in MSTUDSUBJ
-        studentsubject_dict: {}  // stores studsubj of selected candidate in MSTUDSUBJ
-    };
+    //let mod_MSTUDSUBJ_dict = {
+    //    schemeitem_dict: {}, // stores available studsubj for selected candidate in MSTUDSUBJ
+    //    studentsubject_dict: {}  // stores studsubj of selected candidate in MSTUDSUBJ
+    //};
 
     let user_list = [];
     let examyear_map = new Map();
@@ -39,9 +34,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let student_rows = [];
     let subject_rows = [];
-    let studentsubject_rows = [];
+    //let studentsubject_rows = [];
     let schemeitem_rows = [];
-    let orderlist_rows = []
+
+    let orderlist_rows = [];
+    let envelopbundle_rows = [];
+    let enveloplabel_rows = [];
+    let envelopbundlelabel_rows = [];
+    let envelopitem_rows = [];
+    let enveloplabelitem_rows = [];
 
     //let filter_dict = {};
     let filter_mod_employee = false;
@@ -55,6 +56,8 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_orderlist_parameters = get_attr_from_el(el_data, "data-url_orderlist_parameters");
     urls.url_orderlist_request_verifcode = get_attr_from_el(el_data, "data-url_orderlist_request_verifcode");
     urls.url_orderlist_publish = get_attr_from_el(el_data, "data-url_orderlist_publish");
+    urls.url_envelopitem_upload = get_attr_from_el(el_data, "data-url_envelopitem_upload");
+    urls.url_enveloplabel_upload = get_attr_from_el(el_data, "data-url_enveloplabel_upload");
 
     mod_MCOL_dict.columns.btn_orderlist = {
         school_abbrev: "School_name", total_students: "Number_of_candidates",
@@ -75,8 +78,42 @@ document.addEventListener('DOMContentLoaded', function() {
                                    "120", "120", "120", "150", "120"],
                     field_align: ["c", "l", "l",
                                     "r", "r", "r", "l", "c"]
-                     }
-        }
+                     },
+
+        ete_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Learning_path", "Version",
+                                "Exam_type", "Designated_exam_2lines", "Blanks", "Maximum_score_2lines", "",
+                                "Download_exam", "Cesuur", "Download_conv_table_2lines"],
+                field_names: ["select", "subjbase_code", "subj_name", "lvl_abbrev", "version",
+                                "examperiod", "secret_exam", "blanks", "scalelength", "status",
+                                "download_exam", "cesuur", "download_conv_table"],
+                field_tags: ["div", "div", "div", "div", "div",
+                            "div", "div", "div", "div", "div",
+                            "a", "input", "a"],
+                filter_tags: ["text",  "text", "text", "text", "text",
+                              "text", "toggle", "text", "text", "status",
+                              "text", "text", "text"],
+                field_width: ["020", "075", "240", "120", "120",
+                              "150", "090", "075", "075","032",
+                              "090", "075", "100"],
+                field_align: ["c",  "c", "l", "l", "l",
+                               "l", "c", "c","c", "c",
+                               "c", "c", "c"]},
+
+        enveloplabel: {field_caption: ["", "Label_name", "Exams_per_envelop", "Number_of_envelops"],
+                    field_names: ["select", "name", "numberperexam", "numberfixed"],
+                    field_tags: ["div", "div", "div", "div"],
+                    filter_tags: ["", "text", "text","text"],
+                    field_width:  ["020", "240", "120", "120"],
+                    field_align: ["c", "l", "c",  "c"]
+                     },
+        envelopitem: {field_caption: ["", "Content", "Instruction"],
+                    field_names: ["select", "content_nl", "instruction_nl"],
+                    field_tags: ["div", "div", "div"],
+                    filter_tags: ["", "text", "text"],
+                    field_width:  ["020", "360", "720"],
+                    field_align: ["c", "l", "l"]
+                     },
+        };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -143,6 +180,44 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         const el_MPUBORD_btn_cancel = document.getElementById("id_MPUBORD_btn_cancel");
 
+
+// ---  MODAL ENVELOP LABELS
+        const el_MENVLAB_header = document.getElementById("id_MENVLAB_header");
+        const el_MENVLAB_tblBody_available = document.getElementById("id_MENVLAB_tblBody_available");
+        const el_MENVLAB_tblBody_selected = document.getElementById("id_MENVLAB_tblBody_selected");
+
+        const el_MENVLAB_name = document.getElementById("id_MENVLAB_name");
+        if(el_MENVLAB_name){el_MENVLAB_name.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_name)}, false)}
+        const el_MENVLAB_numberfixed = document.getElementById("id_MENVLAB_numberfixed");
+        if(el_MENVLAB_numberfixed){el_MENVLAB_numberfixed.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_numberfixed)}, false)}
+        const el_MENVLAB_numberperexam = document.getElementById("id_MENVLAB_numberperexam");
+        if(el_MENVLAB_numberperexam){el_MENVLAB_numberperexam.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_numberperexam)}, false)}
+
+        const el_MENVLAB_btn_delete = document.getElementById("id_MENVLAB_btn_delete");
+        if(el_MENVLAB_btn_delete){el_MENVLAB_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete_envelopitem")}, false)}
+        const el_MENVLAB_btn_save = document.getElementById("id_MENVLAB_btn_save");
+        if(el_MENVLAB_btn_save){ el_MENVLAB_btn_save.addEventListener("click", function() {MENVLAB_Save("save")}, false)}
+
+// ---  MODAL ENVELOP ITEMS
+        const el_MENVIT_hdr = document.getElementById("id_MENVIT_hdr");
+        const el_MENVIT_form_controls = document.getElementById("id_MENVIT_form_controls")
+        if(el_MENVIT_form_controls){
+            const form_elements = el_MENVIT_form_controls.querySelectorAll(".form-control")
+            for (let i = 0, el; el = form_elements[i]; i++) {
+                if(el.tagName === "INPUT"){
+                    el.addEventListener("keyup", function() {MENVIT_InputKeyup(el)}, false )
+                } else if(el.tagName === "SELECT"){
+                    el.addEventListener("change", function() {MENVIT_InputSelect(el)}, false )
+                //} else if(el.tagName === "DIV"){
+                //    el.addEventListener("click", function() {MENVIT_InputToggle(el)}, false );
+                };
+            };
+        };
+        const el_MENVIT_btn_delete = document.getElementById("id_MENVIT_btn_delete");
+        if(el_MENVIT_btn_delete){el_MENVIT_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete_envelopitem")}, false)}
+        const el_MENVIT_btn_save = document.getElementById("id_MENVIT_btn_save");
+        if(el_MENVIT_btn_save){ el_MENVIT_btn_save.addEventListener("click", function() {MENVIT_Save("save")}, false)}
+
 // ---  MOD SELECT COLUMNS  ------------------------------------
         let el_MCOL_tblBody_available = document.getElementById("id_MCOL_tblBody_available");
         let el_MCOL_tblBody_show = document.getElementById("id_MCOL_tblBody_show");
@@ -170,19 +245,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 setting: {page: "page_orderlist"},
                 schoolsetting: {setting_key: "import_studsubj"},
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload", "page_orderlist"]},
-                examyear_rows: {cur_ey_only: true},
+                examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
-                student_rows: {cur_dep_only: true},
-                studentsubject_rows: {cur_dep_only: true},
+                //student_rows: {cur_dep_only: true},
+                //studentsubject_rows: {cur_dep_only: true},
                 schemeitem_rows: {cur_dep_only: true},
-                orderlist_rows: {get: true}
+
+                orderlist_rows: {get: true},
+                envelopbundle_rows: {get: true},
+                enveloplabel_rows: {get: true},
+                envelopbundlelabel_rows: {get: true},
+                envelopitem_rows: {get: true},
+                enveloplabelitem_rows: {get: true}
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
-    }
+    };
 //  #############################################################################################################
 
 //========= DatalistDownload  ===================== PR2020-07-31
@@ -244,25 +325,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(must_create_submenu){CreateSubmenu()};
                 if(must_update_headerbar){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
 
-                if ("examyear_rows" in response) { b_fill_datamap(examyear_map, response.examyear_rows) };
-                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
-                if ("department_rows" in response) { b_fill_datamap(department_map, response.department_rows) };
+                if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
+                    b_fill_datamap(examyear_map, response.examyear_rows);
+                };
+                if ("department_rows" in response) {
+                    department_rows = response.department_rows;
+                    b_fill_datamap(department_map, response.department_rows)
+                };
 
+                if ("school_rows" in response)  { b_fill_datamap(school_map, response.school_rows) };
                 if ("level_rows" in response)  { b_fill_datamap(level_map, response.level_rows) };
                 if ("sector_rows" in response) { b_fill_datamap(sector_map, response.sector_rows) };
 
                 if ("student_rows" in response) {
                     student_rows = response.student_rows;
                 }
-                if ("studentsubject_rows" in response) {
-                    studentsubject_rows = response.studentsubject_rows;
-                };
+                //if ("studentsubject_rows" in response) {
+                //    studentsubject_rows = response.studentsubject_rows;
+                //};
                 if ("schemeitem_rows" in response)  {
                     schemeitem_rows = response.schemeitem_rows;
                 };
                 if ("orderlist_rows" in response)  {
                     orderlist_rows = response.orderlist_rows;
                 };
+                if ("envelopbundle_rows" in response)  {
+                    envelopbundle_rows = response.envelopbundle_rows;
+                };
+                if ("enveloplabel_rows" in response)  {
+                    enveloplabel_rows = response.enveloplabel_rows;
+                };
+                if ("envelopbundlelabel_rows" in response)  {
+                    envelopbundlelabel_rows = response.envelopbundlelabel_rows;
+                };
+                if ("envelopitem_rows" in response)  {
+                    envelopitem_rows = response.envelopitem_rows;
+                };
+                if ("enveloplabelitem_rows" in response)  {
+                    enveloplabelitem_rows = response.enveloplabelitem_rows;
+                };
+
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
             },
             error: function (xhr, msg) {
@@ -271,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(msg + '\n' + xhr.responseText);
             }
         });
-    }  // function DatalistDownload
+    };  // function DatalistDownload
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
@@ -286,6 +389,13 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             if (permit_dict.permit_crud){
                 AddSubmenuButton(el_submenu, loc.Variables_for_extra_exams, function() {MOLEX_Open()});
+
+                AddSubmenuButton(el_submenu, loc.New_label_item, function() {MENVIT_Open()});
+                AddSubmenuButton(el_submenu, loc.Delete_label_item, function() {ModConfirmOpen("delete_envelopitem")});
+
+                AddSubmenuButton(el_submenu, loc.New_label, function() {MENVLAB_Open()});
+                AddSubmenuButton(el_submenu, loc.Delete_label, function() {ModConfirmOpen("delete_enveloplabel")});
+
             };
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_orderlist")}, [], "id_submenu_columns")
 
@@ -297,9 +407,15 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ", data_btn);
+        console.log( "===== HandleBtnSelect ========= ", data_btn);
         selected_btn = data_btn
         if(!selected_btn){selected_btn = "btn_orderlist"}
+
+// ---  upload new selected_btn, not after loading page (then skip_upload = true)
+        if(!skip_upload){
+            const upload_dict = {page_orderlist: {sel_btn: selected_btn}};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+        };
 
 // ---  highlight selected button
         b_highlight_BtnSelect(document.getElementById("id_btn_container"), selected_btn)
@@ -314,16 +430,22 @@ document.addEventListener('DOMContentLoaded', function() {
         UpdateHeaderText();
     }  // HandleBtnSelect
 
-//=========  HandleTblRowClicked  ================ PR2020-08-03
+//=========  HandleTblRowClicked  ================ PR2020-08-03 PR2022-08-04
     function HandleTblRowClicked(tr_clicked) {
-        //console.log("=== HandleTblRowClicked");
+        console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        DeselectHighlightedRows(tr_clicked, cls_selected);
-        tr_clicked.classList.add(cls_selected)
+// ---  deselect all highlighted rows, select clicked row
+        t_td_selected_toggle(tr_clicked, true);  // select_single = true
 
-    }  // HandleTblRowClicked
+// --- get existing data_dict from data_rows
+        const pk_int = get_attr_from_el_int(tr_clicked, "data-pk");
+        const [index, data_dict, compare] = b_recursive_integer_lookup(envelopitem_rows, "id", pk_int);
+        selected.envelopitem_pk = (!isEmpty(data_dict)) ? data_dict.id : null;
+
+        console.log( "data_dict: ", data_dict);
+        console.log( "selected: ", selected);
+    };  // HandleTblRowClicked
 
 //========= UpdateHeaderText  ================== PR2020-07-31
     function UpdateHeaderText(){
@@ -335,18 +457,18 @@ document.addEventListener('DOMContentLoaded', function() {
             header_text = loc.Permissions;
         }
         //document.getElementById("id_hdr_text").innerText = header_text;
-    }   //  UpdateHeaderText
+    };   //  UpdateHeaderText
 
 //========= FillTblRows  ==================== PR2021-07-01
     function FillTblRows() {
-        //console.log( "===== FillTblRows  === ");
-        //console.log( "setting_dict", setting_dict);
+        console.log( "===== FillTblRows  === ");
+        console.log( "setting_dict", setting_dict);
 
-        const tblName = "orderlist";
+        const data_rows = get_datarows_from_selectedbtn();
+        const tblName = get_tblName_from_selectedbtn();
         const field_setting = field_settings[tblName]
-        const data_rows = orderlist_rows;
-        //console.log( "data_rows", data_rows);
 
+        console.log( "data_rows", data_rows);
 // ---  get list of hidden columns
         const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
@@ -359,12 +481,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- create table rows
         if(data_rows && data_rows.length){
-            for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
-                const map_id = map_dict.mapid;
-                let tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, map_dict)
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                const map_id = data_dict.mapid;
+                let tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, data_dict)
           };
         }  // if(data_rows)
-    }  // FillTblRows
+    } ; // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31
     function CreateTblHeader(field_setting, col_hidden) {
@@ -447,10 +569,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // for (let j = 0; j < column_count; j++)
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09 PR2021-03-15
-    function CreateTblRow(tblName, field_setting, col_hidden, map_id, map_dict) {
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-03-15 PR2022-08-04
+    function CreateTblRow(tblName, field_setting, col_hidden, map_id, data_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
-        //console.log("map_dict", map_dict);
+        //console.log("data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -458,18 +580,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_align = field_setting.field_align;
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
-        //console.log("field_names", field_names);
+    //console.log("field_names", field_names);
 
 // ---  lookup index where this row must be inserted
-        const row_index = -1;
+        const ob1 = (data_dict.content_nl) ? data_dict.content_nl : "";
+        const ob2 = (data_dict.instruction_nl) ? data_dict.instruction_nl : "";
+
+        const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2);
 
 // --- insert tblRow into tblBody at row_index
         let tblRow = tblBody_datatable.insertRow(row_index);
-        tblRow.id = map_id
+        if (data_dict.mapid) {tblRow.id = data_dict.mapid};
 
 // --- add data attributes to tblRow
         tblRow.setAttribute("data-table", tblName);
-        tblRow.setAttribute("data-pk", map_dict.id);
+        tblRow.setAttribute("data-pk", data_dict.id);
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+        tblRow.setAttribute("data-ob1", ob1);
+        tblRow.setAttribute("data-ob2", ob2);
 
 // --- add EventListener to tblRow
         tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
@@ -501,8 +630,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(filter_tag === "number"){el.classList.add("pr-3")}
                 td.appendChild(el);
 
+        // --- add EventListener to td
+                if (["content_nl", "instruction_nl"].includes(field_name)){
+                    td.addEventListener("click", function() {MENVIT_Open(el)}, false)
+                    td.classList.add("pointer_show");
+                    add_hover(td);
+                } else if (["name", "numberperexam", "numberfixed"].includes(field_name)){
+                    td.addEventListener("click", function() {MENVLAB_Open(el)}, false)
+                    td.classList.add("pointer_show");
+                    add_hover(td);
+                };
+
 // --- put value in field
-               UpdateField(el, map_dict)
+               UpdateField(el, data_dict)
             }  //  if (columns_hidden[field_name])
         }  // for (let j = 0; j < 8; j++)
 
@@ -510,51 +650,39 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // CreateTblRow
 
 //=========  UpdateTblRow  ================ PR2020-08-01
-    function UpdateTblRow(tblRow, tblName, map_dict) {
+    function UpdateTblRow(tblRow, tblName, data_dict) {
         //console.log("=========  UpdateTblRow =========");
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
-                UpdateField(td.children[0], map_dict);
+                UpdateField(td.children[0], data_dict);
             }
         }
     };  // UpdateTblRow
 
 //=========  UpdateField  ================ PR2020-08-16
-    function UpdateField(el_div, map_dict) {
+    function UpdateField(el_div, data_dict) {
         //console.log("=========  UpdateField =========");
-        //console.log("map_dict", map_dict);
+        //console.log("data_dict", data_dict);
 
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
-            const fld_value = (map_dict[field_name]) ? map_dict[field_name] : null;
+            const fld_value = data_dict[field_name];
 
+    //console.log("field_name", field_name);
+    //console.log("fld_value", fld_value);
             if(field_name){
-                let inner_text = null, h_ref = null, filter_value = null;
-                if (field_name === "select") {
-                 } else if (["schbase_code", "school_abbrev"].includes(field_name)){
-                    inner_text = fld_value;
-                    filter_value = (inner_text) ? inner_text.toLowerCase() : null;
-
-                } else if (["total_students", "publ_count", "total"].includes(field_name)){
-                    inner_text = f_format_count(setting_dict.user_lang, fld_value);
-                    filter_value = (fld_value) ? fld_value : 0;
-
-                } else if (field_name.includes("datepublished")){
-                    inner_text = format_dateISO_vanilla (loc, fld_value, true, false, true, false);
-                    filter_value = (inner_text) ? inner_text : 0;
-                } else if (field_name === "url"){
-                    h_ref = fld_value;
-                };  // if (field_name === "select") {
-
-// ---  put value in innerText or h_ref in href
-                if (el_div.tagName === "A"){
-                    el_div.href = h_ref;
-                    el_div.innerHTML = (h_ref) ? "download &#8681;" : null;
-                } else {
-                    el_div.innerText = inner_text;
-                }
-
+                el_div.innerText = (fld_value) ? fld_value : "\n";
+                if (["content_nl", "instruction_nl"].includes(field_name)){
+                    const hex_color = (field_name === "content_nl" && data_dict.content_hexcolor) ?
+                            data_dict.content_hexcolor :
+                        (field_name === "instruction_nl" && data_dict.instruction_hexcolor) ?
+                            data_dict.instruction_hexcolor :
+                            "#000000";
+                    el_div.style.color = hex_color;
+                };
     // ---  add attribute filter_value
+                const filter_value = (fld_value) ? (typeof fld_value === 'string' || fld_value instanceof String) ?
+                                     fld_value.toLowerCase() : fld_value  : null;
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
             }  // if(field_name)
         }  // if(el_div)
@@ -583,6 +711,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( "response");
                     console.log( response);
 
+                    if ("messages" in response) {
+                        b_show_mod_message_dictlist(response.messages);
+                    };
+
                     if ("updated_examyear_rows" in response) {
                         const el_MSTUD_loader = document.getElementById("id_MSTUD_loader");
                         if(el_MSTUD_loader){ el_MSTUD_loader.classList.add(cls_visible_hide)};
@@ -592,15 +724,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     $("#id_mod_student").modal("hide");
 
-                    if ("updated_studsubj_rows" in response) {
-                        const tblName = "studsubj";
-                        RefreshDataRows(tblName, response.updated_studsubj_rows, studentsubject_rows, true)  // true = update
-                    }
+                    if ("updated_envelopitem_rows" in response) {
+                        RefreshDataRows("envelopitem", envelopitem_rows, response.updated_envelopitem_rows, true)  // true = update
+                    };
 
                     if ("publish_orderlist_msg_html" in response) {
                         MPUBORD_UpdateFromResponse(response);
                     };
-
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -612,10 +742,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // UploadChanges
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2021-08-22
+//=========  ModConfirmOpen  ================ PR2021-08-22 PR2022-08-04
     function ModConfirmOpen(mode) {
         console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "prelim_orderlist", "orderlist_per_school"
+        console.log("mode", mode)
+        // values of mode are : "prelim_orderlist", "orderlist_per_school", "delete_envelopitem
 
         if (["prelim_orderlist", "orderlist_per_school"].includes(mode)){
             mod_dict = {mode: mode}
@@ -668,6 +799,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 500);
         // show modal
             $("#id_mod_confirm").modal({backdrop: true});
+
+// +++ delete_envelopitem +++
+        } else if (mode === "delete_envelopitem") {
+
+            const header_txt = loc.Delete_label_item;
+
+// --- get existing data_dict from data_rows
+            const pk_int = selected.envelopitem_pk;
+            const [index, data_dict, compare] = b_recursive_integer_lookup(envelopitem_rows, "id", pk_int);
+            console.log( "data_dict: ", data_dict);
+            console.log( "selected: ", selected);
+
+            if (isEmpty(data_dict)){
+                b_show_mod_message_html(loc.Please_select_label_item, header_txt);
+            } else {
+                mod_dict = {
+                    mode: mode,
+                    table: "envelopitem",
+                    envelopitem_pk: data_dict.id,
+                    map_id: data_dict.mapid
+                };
+
+                const content_nl = (data_dict.content_nl) ? data_dict.content_nl : "---";
+                const msg_html = ["<div class='mx-2'>",
+                                "<p>", loc.Label_item, " '", content_nl, "' ", loc.will_be_deleted, "</p>",
+                                "<p>", loc.Do_you_want_to_continue, "</p>",
+                             "</div>"].join("")
+
+                el_confirm_header.innerText = header_txt;
+                el_confirm_loader.classList.add(cls_visible_hide)
+                el_confirm_msg_container.className = "p-3";
+
+                el_confirm_msg_container.innerHTML = msg_html;
+
+    // set focus to save button
+                setTimeout(function (){
+                    el_confirm_btn_save.focus();
+                }, 500);
+        // show modal
+                $("#id_mod_confirm").modal({backdrop: true});
+            };
+
         };
     };  // ModConfirmOpen
 
@@ -692,8 +865,21 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_loader.classList.remove(cls_visible_hide)
             close_modal_with_timout = true;
 
+        } else if (mod_dict.mode === "delete_envelopitem") {
+            if (permit_dict.permit_crud){
+                let upload_dict = {
+                    table: "envelopitem",
+                    mode: "delete",
+                    envelopitem_pk: mod_dict.envelopitem_pk,
+                    map_id: mod_dict.map_id
+                };
+                UploadChanges(upload_dict, urls.url_envelopitem_upload);
 
+                const tblRow = document.getElementById(mod_dict.map_id)
+                ShowClassWithTimeout(tblRow, "tsa_tr_error")
+            };
         };
+
 // ---  hide modal
         if(close_modal_with_timout) {
         // close modal after 5 seconds
@@ -701,7 +887,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             $("#id_mod_confirm").modal("hide");
         };
-    }  // ModConfirmSave
+    };  // ModConfirmSave
 
 //=========  ModConfirmResponse  ================ PR2019-06-23
     function ModConfirmResponse(response) {
@@ -748,7 +934,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // hide mod_confirm when no message
             $("#id_mod_confirm").modal("hide");
         }
-    }  // ModConfirmResponse
+    };  // ModConfirmResponse
 
 
 //========= MODAL PUBLISH ORDERLIST ================ PR2021-09-08
@@ -775,7 +961,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             $("#id_mod_publish_orderlist").modal({backdrop: true});
         }
-    }  // MPUBORD_Open
+    };  // MPUBORD_Open
 
 //=========  MPUBORD_Save  ================ PR2021-09-08
     function MPUBORD_Save () {
@@ -818,12 +1004,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         MPUBORD_SetInfoboxesAndBtns (response);
 
-        //if ("updated_studsubj_approve_rows" in response){
-        //    RefreshDataRows("studsubj", response.updated_studsubj_approve_rows, studsubj_rows, true);
-        //}
         if ( (mod_MPUBORD_dict.is_approve && mod_MPUBORD_dict.step === 3) || (mod_MPUBORD_dict.is_submit && mod_MPUBORD_dict.step === 5)){
                 const datalist_request = { setting: {page: "page_studsubj"},
-                                studentsubject_rows: {cur_dep_only: true},
+                                //studentsubject_rows: {cur_dep_only: true},
                                 published_rows: {get: true}
                                 }
                 DatalistDownload(datalist_request);
@@ -921,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  set innerText of cancel_btn
-     } //  MPUBORD_SetInfoboxesAndBtns
+     }; //  MPUBORD_SetInfoboxesAndBtns
 
 //=========  MPUBORD_InputVerifcode  ================ PR2021-09-08
      function MPUBORD_InputVerifcode(el_input, event_key) {
@@ -932,7 +1115,488 @@ document.addEventListener('DOMContentLoaded', function() {
             MPUBORD_Save("save")
         }
      };  // MPUBORD_InputVerifcode
+
 /////////////////////////////////////////////
+
+// ++++++++++++  MODAL ENVELOP LABEL  +++++++++++++++++++++++++++++++++++++++
+
+//=========  MENVLAB_Open  ================  PR2022-08-06
+    function MENVLAB_Open(el_input) {
+        console.log(" -----  MENVLAB_Open   ----")
+
+        console.log("permit_dict.permit_crud", permit_dict.permit_crud)
+        console.log("el_input", el_input)
+
+        mod_MENV_dict = {};
+
+        if (permit_dict.permit_crud){
+            // el_input is undefined when called by submenu btn 'Add new'
+            mod_MENV_dict.is_addnew = (!el_input);
+
+// --- get existing data_dict from enveloplabel_rows
+            if(!mod_MENV_dict.is_addnew){
+                const tblRow = t_get_tablerow_selected(el_input);
+                const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        console.log("pk_int", pk_int)
+                const [index, data_dict, compare] = b_recursive_integer_lookup(enveloplabel_rows, "id", pk_int);
+        console.log("data_dict", data_dict)
+                if (!isEmpty(data_dict)) {
+                    mod_MENV_dict.enveloplabel_pk = data_dict.id;
+                    mod_MENV_dict.name = data_dict.name;
+                    mod_MENV_dict.numberperexam = data_dict.numberperexam;
+                    mod_MENV_dict.modby_username = data_dict.modby_username;
+                    mod_MENV_dict.modifiedat = data_dict.modifiedat;
+                    mod_MENV_dict.numberfixed = data_dict.numberfixed;
+                }
+            };
+
+            MENVLAB_FillDictlist();
+            MENVLAB_FillTable();
+            MENVLAB_SetInputElements();
+        console.log("mod_MENV_dict", mod_MENV_dict)
+
+            el_MENVLAB_header.innerText = (mod_MENV_dict.is_addnew) ? loc.New_label : loc.Edit_label;
+
+            if (!mod_MENV_dict.is_addnew){
+
+                const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
+                const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
+                const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
+                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                document.getElementById("id_MENVIT_msg_modified").innerText = display_txt;
+            };
+
+    // ---  disable btn submit, hide delete btn when is_addnew
+        //console.log( "el_MENVLAB_btn_delete: ", el_MENVLAB_btn_delete);
+        //console.log( "is_addnew: ", is_addnew);
+            add_or_remove_class(el_MENVLAB_btn_delete, cls_hide, mod_MENV_dict.is_addnew );
+            //const disable_btn_save = (!el_MENVLAB_abbrev.value || !el_MENVLAB_name.value  )
+            //el_MENVLAB_btn_save.disabled = disable_btn_save;
+
+            MENVLAB_validate_and_disable();
+
+            set_focus_on_el_with_timeout(el_MENVLAB_name, 50);
+// show modal
+            $("#id_mod_enveloplabel").modal({backdrop: true});
+        };
+    };  // MENVLAB_Open
+
+
+    function MENVLAB_FillDictlist(){
+       console.log(" -----  MENVLAB_FillDictlist   ----")
+// - fill columns_excl_skipped
+        mod_MENV_dict.envelopitems = [];
+
+// - loop through envelopitem_rows and add to mod_MENV_dict
+       for (let i = 0, envelopitem; envelopitem = envelopitem_rows[i]; i++) {
+
+            const enveloplabel_pk = (mod_MENV_dict.enveloplabel_pk) ? mod_MENV_dict.enveloplabel_pk : null;
+            const envelopitem_pk = (envelopitem.id) ? envelopitem.id : null;
+            let is_selected = false, labelitem_pk = null, labelitem_sequence = null;
+            if (envelopitem_pk){
+
+// - check if this item is in list of labelitems of this label
+                for (let j = 0, labelitem_dict; labelitem_dict = enveloplabelitem_rows[j]; j++) {
+                // only check labelitems of this label
+                    if(labelitem_dict.enveloplabel_id === enveloplabel_pk &&
+                        labelitem_dict.envelopitem_id === envelopitem_pk
+                        ) {
+                            is_selected = true;
+                            labelitem_pk = labelitem_dict.id
+                            labelitem_sequence = labelitem_dict.sequence
+                            break;
+                    };
+                }
+            };
+
+            mod_MENV_dict.envelopitems.push({
+                envelopitem_pk: envelopitem_pk,
+                labelitem_pk: labelitem_pk,
+                labelitem_sequence: labelitem_sequence,
+                sortby: envelopitem.content_nl,
+                selected: is_selected
+            });
+        };
+        mod_MENV_dict.envelopitems.sort(b_comparator_sortby);
+        console.log("mod_MENV_dict", mod_MENV_dict)
+    };  // MENVLAB_FillDictlist
+
+//=========  MENVLAB_Save  ================   PR2022-08-06
+    function MENVLAB_Save(crud_mode) {
+        console.log(" -----  MENVLAB_save  ----", crud_mode);
+        console.log( "mod_MENV_dict: ", mod_MENV_dict);
+
+        if (permit_dict.permit_crud){
+            const is_create = (mod_MENV_dict.is_addnew);
+            const is_delete = (crud_mode === "delete");
+            const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
+
+    // ---  put changed values of input elements in upload_dict
+            const name = el_MENVLAB_name.value;
+            const numberfixed = (el_MENVLAB_numberfixed.value && Number(el_MENVLAB_numberfixed.value)) ? Number(el_MENVLAB_numberfixed.value) : null;
+            const numberperexam = (el_MENVLAB_numberperexam.value && Number(el_MENVLAB_numberperexam.value)) ? Number(el_MENVLAB_numberperexam.value) : null;
+
+            let upload_dict = {
+                table: 'enveloplabel',
+                mode: upload_mode,
+                enveloplabel_pk: mod_MENV_dict.enveloplabel_pk,
+                name: name,
+                numberfixed: numberfixed,
+                numberperexam: numberperexam,
+                labelitem_list: []
+            };
+
+
+// loop through envelopitems
+            for (let i = 0, menv_dict; menv_dict = mod_MENV_dict.envelopitems[i]; i++) {
+                upload_dict.labelitem_list.push({
+                    envelopitem_pk: menv_dict.envelopitem_pk,
+                    labelitem_pk: menv_dict.labelitem_pk,
+                    labelitem_sequence: menv_dict.labelitem_sequence,
+                    selected: menv_dict.selected
+                });
+            };
+            UploadChanges(upload_dict, urls.url_enveloplabel_upload);
+        };
+    // ---  hide modal
+            $("#id_mod_enveloplabel").modal("hide");
+    } ; // MENVLAB_Save
+
+//========= MENVLAB_FillTable  ============= PR2022-08-06
+    function MENVLAB_FillTable(just_linked_unlinked_pk) {
+        console.log("===== MENVLAB_FillTable ===== ");
+
+        el_MENVLAB_tblBody_available.innerText = null;
+        el_MENVLAB_tblBody_selected.innerText = null;
+
+// ---  loop through mod_MENV_dict.envelopitems
+        //mod_MENV_dict.envelopitems = [ {envelopitem_pk: data_dict.id, sortby: data_dict.content_nl, selected: false } ]
+        for (let i = 0, data_dict; data_dict = mod_MENV_dict.envelopitems[i]; i++) {
+        console.log("data_dict", data_dict);
+        console.log("data_dict.selected", data_dict.selected);
+            const tblBody = (data_dict.selected) ? el_MENVLAB_tblBody_selected : el_MENVLAB_tblBody_available;
+            MENVLAB_CreateTblRow(tblBody, data_dict, data_dict.selected,  just_linked_unlinked_pk);
+        };
+    }; // MENVLAB_FillTable
+
+
+//========= MENVLAB_CreateTblRow  ============= PR2022-08-06
+    function MENVLAB_CreateTblRow(tblBody, data_dict, is_table_selected, just_linked_unlinked_pk) {
+        //console.log("===== MENVLAB_CreateTblRow ===== ");
+        //console.log("data_dict", data_dict);
+
+//--- get info from data_dict
+        const pk_int = (data_dict.envelopitem_pk) ? data_dict.envelopitem_pk : null;
+        const caption = (data_dict.sortby) ? data_dict.sortby : null;
+
+        const is_just_linked = (pk_int === just_linked_unlinked_pk);
+
+// ---  lookup index where this row must be inserted
+        // available items are sorted by name (sortby), selected items are sorted by sequence
+        const ob1 = (data_dict.selected && data_dict.sequence) ? ("0000" + data_dict.sequence).slice(-4) : "0000";
+        const ob2 = (caption) ? caption.toLowerCase() : "";
+        const row_index = b_recursive_tblRow_lookup(tblBody, loc.user_lang, ob1, ob2);
+
+//--------- insert tblBody row at row_index
+        const tblRow = tblBody.insertRow(row_index);
+        tblRow.setAttribute("data-pk", pk_int);
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+        tblRow.setAttribute("data-ob1", ob1);
+        tblRow.setAttribute("data-ob2", ob2);
+
+//- add hover to select row
+        add_hover(tblRow)
+
+// --- add td to tblRow.
+        let td = null, el_div = null;
+// --- add td to tblRow.
+        const tw = (data_dict.selected) ? "tw_240" : "tw_360";
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("pointer_show")
+            el_div.innerText = caption;
+            el_div.classList.add("tw_240", "px-1")
+            td.appendChild(el_div);
+            td.addEventListener("click", function() {MENVLAB_SelectItem(tblRow)}, false);
+
+        //td.classList.add(cls_bc_transparent);
+
+        if (data_dict.selected){
+
+// --- add black triangle up tblRow when selected table
+          // &#9650 black triangle up symbol
+          // &#9651 outline black triangle up symbol
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.classList.add("tw_020")
+                el_div.innerHTML = "&#9651;"
+                el_div.title = "Click to move this item up."
+            td.appendChild(el_div);
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.classList.add("tw_020")
+                el_div.innerHTML = "&#9661;"
+                el_div.title = "Click to move this item down."
+            td.appendChild(el_div);
+        };
+//--------- add addEventListener
+
+    }; // MENVLAB_CreateTblRow
+
+//=========  MENVLAB_SelectItem  ================ PR2022-08-07
+    function MENVLAB_SelectItem(tblRow) {
+        console.log( "===== MENVLAB_SelectItem ========= ");
+        console.log( "tblRow", tblRow);
+        // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
+
+// ---  get clicked tablerow
+        if(tblRow) {
+            let just_linked_unlinked_pk = null;
+            const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+            for (let i = 0, data_dict; data_dict = mod_MENV_dict.envelopitems[i]; i++) {
+        console.log( "data_dict.envelopitem_pk", data_dict.envelopitem_pk);
+        console.log( "pk_int", pk_int);
+                if(data_dict.envelopitem_pk === pk_int){
+                    data_dict.selected = !data_dict.selected;
+        console.log( "data_dict.selected", data_dict.selected);
+                    just_linked_unlinked_pk = data_dict.envelopitem_pk;
+                    break;
+                };
+            };
+        console.log( "just_linked_unlinked_pk", just_linked_unlinked_pk);
+
+        MENVLAB_FillTable(just_linked_unlinked_pk);
+
+        console.log( "mod_MENV_dict.envelopitems", mod_MENV_dict.envelopitems);
+// ---  save and close
+            //MENVLAB_Save();
+        }
+    }  // MENVLAB_SelectItem
+
+//=========  MENVLAB_InputKeyup  ================ PR2022-08-08
+    function MENVLAB_InputKeyup(el_input) {
+        console.log( "===== MENVLAB_InputKeyup  ========= ");
+        const fldName = get_attr_from_el(el_input, "data-field");
+// ---  get value of new_filter
+        let new_value = el_input.value;
+        console.log( "new_value", new_value);
+        if(!new_value) {
+
+        } else {
+
+            if (["numberperexam", "numberfixed"].includes(fldName)) {
+                if(!Number(new_value)){
+                    el_input.value = null;
+        console.log( "not Number");
+                } else {
+                    const value_number = Number(new_value);
+        console.log( "value_number", value_number);
+                    if(!Number.isInteger(value_number)){
+                        el_input.value = null;
+        console.log( "not Number.isInteger");
+                    } else {
+                        if (!value_number){
+                            el_input.value = null;
+                        } else {
+                            if (fldName === "numberperexam") {
+                                mod_MENV_dict.numberperexam = value_number;
+                                mod_MENV_dict.numberfixed = null;
+                                el_MENVLAB_numberfixed.value = null;
+                            } else if (fldName === "numberfixed") {
+                                mod_MENV_dict.numberfixed = value_number;
+                                mod_MENV_dict.el_MENVLAB_numberperexam = null;
+                                el_MENVLAB_numberperexam.value = null;
+                            };
+                        };
+                    };
+                }
+
+            } else {
+            //el_MENVLAB_name
+            }
+        }
+    }; // MENVLAB_InputKeyup
+
+
+//=========  MENVLAB_validate_and_disable  ================  PR2022-08-06
+    function MENVLAB_validate_and_disable(crud_mode) {
+        console.log(" -----  MENVLAB_validate_and_disable  ----", crud_mode);
+        console.log( "mod_MENV_dict: ", mod_MENV_dict);
+    };  // MENVLAB_validate_and_disable
+
+//=========  MENVLAB_SetInputElements  ================  PR2022-08-08
+    function MENVLAB_SetInputElements() {
+        el_MENVLAB_name.value = (mod_MENV_dict.name) ? mod_MENV_dict.name : null;
+        el_MENVLAB_numberfixed.value = (mod_MENV_dict.numberfixed) ? mod_MENV_dict.numberfixed : null;
+        el_MENVLAB_numberperexam.value = (mod_MENV_dict.numberperexam) ? mod_MENV_dict.numberperexam : null;
+    };  // MENVLAB_SetInputElements
+
+
+    function MENVLAB_NoItems_txt(tblName){
+        // PR2022-05-01
+        const caption = (tblName === "student") ? (loc.Candidates) ? loc.Candidates.toLowerCase() : "" :
+                        (tblName === "subject") ? (loc.Subjects) ? loc.Subjects.toLowerCase() : "" :
+                        (tblName === "cluster") ? (loc.Clusters) ? loc.Clusters.toLowerCase() : "" :
+                        (tblName === "school") ? (loc.Schools) ? loc.Schools.toLowerCase() : "" : "";
+        return "<" + loc.No_ + caption + ">";
+    }
+
+// ++++++++++++  END OF MODAL ENVELOP LABEL  +++++++++++++++++++++++++++++++++++++++
+
+//=========  MENVIT_Open  ================ PR2022-08-04
+    function MENVIT_Open(el_input) {
+        //console.log(" -----  MENVIT_Open   ----")
+
+        console.log("permit_dict.permit_crud", permit_dict.permit_crud)
+        console.log("el_input", el_input)
+
+        mod_MENV_dict = {};
+
+        if (permit_dict.permit_crud){
+
+            // el_input is undefined when called by submenu btn 'Add new'
+            const is_addnew = (!el_input);
+
+            const tblName = "envelopitem";
+            if(is_addnew){
+                mod_MENV_dict = {is_addnew: is_addnew}
+            } else {
+                const tblRow = t_get_tablerow_selected(el_input);
+// --- get existing data_dict from data_rows
+                const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+                const [index, found_dict, compare] = b_recursive_integer_lookup(envelopitem_rows, "id", pk_int);
+                mod_MENV_dict = (!isEmpty(found_dict)) ? found_dict : null;
+            };
+
+        console.log("mod_MENV_dict", mod_MENV_dict)
+
+            el_MENVIT_hdr.innerText = (mod_MENV_dict.content_nl) ? loc.Edit_label_item : loc.New_label_item;
+
+            MENVIT_SetElements();
+
+            if (!is_addnew){
+
+                const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
+                const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
+                const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
+                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                document.getElementById("id_MENVIT_msg_modified").innerText = display_txt;
+            };
+
+    // ---  disable btn submit, hide delete btn when is_addnew
+        //console.log( "el_MENVIT_btn_delete: ", el_MENVIT_btn_delete);
+        //console.log( "is_addnew: ", is_addnew);
+            add_or_remove_class(el_MENVIT_btn_delete, cls_hide, is_addnew );
+            //const disable_btn_save = (!el_MENVIT_abbrev.value || !el_MENVIT_name.value  )
+            //el_MENVIT_btn_save.disabled = disable_btn_save;
+
+            MENVIT_validate_and_disable();
+
+// show modal
+            $("#id_mod_envelopitem").modal({backdrop: true});
+        };
+    };  // MENVIT_Open
+
+
+//=========  MENVIT_Save  ================  PR2020-10-01
+    function MENVIT_Save(crud_mode) {
+        console.log(" -----  MENVIT_save  ----", crud_mode);
+        console.log( "mod_MENV_dict: ", mod_MENV_dict);
+
+        if (permit_dict.permit_crud){
+            const is_create = (mod_MENV_dict.is_addnew);
+            const is_delete = (crud_mode === "delete");
+            const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
+
+            let upload_dict = {table: 'envelopitem', mode: upload_mode}
+            if(mod_MENV_dict.id){upload_dict.envelopitem_pk = mod_MENV_dict.id};
+            if(mod_MENV_dict.mapid){upload_dict.mapid = mod_MENV_dict.mapid};
+
+    // ---  put changed values of input elements in upload_dict
+            let new_level_pk = null, new_sector_pk = null, level_or_sector_has_changed = false;
+            //let form_elements = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_select")
+            let form_elements = el_MENVIT_form_controls.getElementsByClassName("form-control")
+            for (let i = 0, el_input; el_input = form_elements[i]; i++) {
+                const fldName = get_attr_from_el(el_input, "data-field");
+                let new_value = null, old_value = null;
+                //if(el_input.tagName === "INPUT"){
+                //} else if(el_input.tagName === "SELECT"){
+                //}
+
+                new_value = (el_input.value) ? el_input.value : null;
+                old_value = (mod_MENV_dict[fldName]) ? mod_MENV_dict[fldName] : null;
+
+                if (new_value !== old_value) {
+                    upload_dict[fldName] = new_value;
+                };
+            };
+
+            UploadChanges(upload_dict, urls.url_envelopitem_upload);
+        };
+
+    // ---  hide modal
+            $("#id_mod_envelopitem").modal("hide");
+    } ; // MENVIT_Save
+
+
+
+
+
+//========= MENVIT_InputKeyup  ============= PR2020-10-01
+    function MENVIT_InputKeyup(el_input){
+        //console.log( "===== MENVIT_InputKeyup  ========= ");
+        MENVIT_validate_and_disable();
+    }; // MENVIT_InputKeyup
+
+//========= MENVIT_InputSelect  ============= PR2020-12-11
+    function MENVIT_InputSelect(el_input){
+        //console.log( "===== MENVIT_InputSelect  ========= ");
+        MENVIT_validate_and_disable();
+    }; // MENVIT_InputSelect
+
+//=========  MENVIT_validate_and_disable  ================  PR2020-10-01
+    function MENVIT_validate_and_disable() {
+        //console.log(" -----  MENVIT_validate_and_disable   ----")
+        let disable_save_btn = false;
+// ---  loop through input fields on MENVIT_Open
+        let form_elements = el_MENVIT_form_controls.querySelectorAll(".awp_input_text")
+        for (let i = 0, el_input; el_input = form_elements[i]; i++) {
+            const fldName = get_attr_from_el(el_input, "data-field");
+            const msg_err = MENVIT_validate_field(el_input, fldName);
+// ---  show / hide error message NOT IN USE
+            const el_msg = document.getElementById("id_MENVIT_msg_" + fldName);
+            if(el_msg){
+                el_msg.innerText = msg_err;
+                disable_save_btn = true;
+                add_or_remove_class(el_msg, cls_hide, !msg_err)
+            };
+        };
+// ---  disable save button on error
+        el_MENVIT_btn_save.disabled = disable_save_btn;
+    };  // MENVIT_validate_and_disable
+
+//========= MENVIT_SetElements  ============= PR2022-08-04
+    function MENVIT_SetElements(focus_field){
+        //console.log( "===== MENVIT_SetElements  ========= ");
+        //console.log( "mod_MENV_dict", mod_MENV_dict);
+        //console.log( "focus_field", focus_field);
+// --- loop through input elements
+        let form_elements = el_MENVIT_form_controls.querySelectorAll(".form-control")
+        for (let i = 0, el, fldName, fldValue; el = form_elements[i]; i++) {
+            fldName = get_attr_from_el(el, "data-field");
+            fldValue = (mod_MENV_dict[fldName]) ? mod_MENV_dict[fldName] : null;
+
+            if(["bis_exam", "partial_exam", "iseveningstudent"].includes(fldName)){
+                el.setAttribute("data-value", (fldValue) ? "1" : "0");
+                const el_img = el.children[0];
+                add_or_remove_class(el_img, "tickmark_2_2", !!fldValue, "tickmark_1_1")
+            } else {
+                el.value = fldValue;
+            };
+        };
+    };  // MENVIT_SetElements
+
 
 // +++++++++++++++++ MODAL ORDERLIST EXTRA EXAMS +++++++++++++++++++++++++++++++++++++++++++
 //=========  MOLEX_Open  ================ PR2021-08-31
@@ -942,7 +1606,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(permit_dict.permit_crud && setting_dict.sel_examyear_pk){
             const map_dict = get_mapdict_from_datamap_by_tblName_pk(examyear_map, "examyear", setting_dict.sel_examyear_pk)
 
-            mod_dict = deepcopy_dictNEW(map_dict);
+            mod_dict = deepcopy_dict(map_dict);
 
             const el_MOLEX_form_controls = document.getElementById("id_MOLEX_form_controls")
             if(el_MOLEX_form_controls){
@@ -1005,40 +1669,61 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA ROWS +++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataRows  ================  PR2021-06-21
-    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
+//=========  RefreshDataRows  ================  PR2021-06-21 PR2022-08-04
+    function RefreshDataRows(tblName, data_rows, update_rows, is_update) {
         console.log(" --- RefreshDataRows  ---");
         console.log("tblName", tblName);
+        console.log("data_rows", data_rows);
+        console.log("update_rows", update_rows);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
             const field_setting = field_settings[tblName];
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(tblName, field_setting, update_dict, data_rows);
+                RefreshDatarowItem(tblName, field_setting, data_rows, update_dict);
             }
         } else if (!is_update) {
             // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
             // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
            data_rows = [];
-        }
-    }  //  RefreshDataRows
+        };
+    };  //  RefreshDataRows
 
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21
-    function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
+    function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
         console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         console.log("update_dict", update_dict);
+        console.log("field_setting.field_names", field_setting.field_names);
 
         if(!isEmpty(update_dict)){
-            const field_names = field_setting.field_names;
+            // add color fields to fieldnames
+            // _color is used in modal from, _hexcol is used in tblRow
+            const field_names = ["content_color", "instruction_color", "content_hexcolor", "instruction_hexcolor"]
+            if(field_setting.field_names && field_setting.field_names.length){
+                // use i < lenn, otherwise loop stops at first blank item ""
+                for (let i = 0, len = field_setting.field_names.length; i < len; i++) {
+                    const field_name = field_setting.field_names[i];
+                    if (field_name){
+                        field_names.push(field_name);
+                    };
+                };
+            };
+        console.log("field_names", field_names);
 
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
 
+        console.log("map_id", map_id);
+        console.log("is_deleted", is_deleted);
+        console.log("is_created", is_created);
+
             const error_list = get_dict_value(update_dict, ["error"], []);
         console.log("error_list", error_list);
+
+            const data_rows = get_datarows_from_selectedbtn()
 
             let updated_columns = [];
             let field_error_list = []
@@ -1047,11 +1732,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // - show modal messages
                 b_show_mod_message_dictlist(error_list);
 
-    // - add fields with error in updated_columns, to put old value back in field
+    // - add fields with error in field_error_list, to put old value back in field
                 for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
                     if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
                 };
-
             //} else {
             // close modal MSJ when no error --- already done in modal
                 //$("#id_mod_subject").modal("hide");
@@ -1071,11 +1755,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
     // ---  add new item in data_rows at end
                 data_rows.push(update_dict);
-
-        console.log("data_rows", data_rows);
     // ---  create row in table., insert in alphabetical order
                 const new_tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
-
     // ---  scrollIntoView,
                 if(new_tblRow){
                     new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' })
@@ -1084,33 +1765,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } else {
 
-// +++ get existing map_dict from data_rows
-                const map_rows = (tblName === "subjecttype") ? subjecttype_rows :
-                                (tblName === "subjecttypebase") ? subjecttypebase_rows :
-                                (tblName === "scheme") ? scheme_rows :
-                                (tblName === "schemeitem") ? schemeitem_rows : []
-                const [index, dict, compare] = b_recursive_lookup(map_rows, map_id, setting_dict.user_lang);
-                const map_dict = dict;
-                const datarow_index = index;
-            console.log("map_rows", map_rows);
-            console.log("map_id", map_id);
-            console.log("datarow_index", datarow_index);
-            console.log("map_dict", map_dict);
-            console.log("compare", compare);
+// +++ get existing data_dict from data_rows
+                const [datarow_index, data_dict, compare] = b_recursive_lookup(data_rows, map_id, setting_dict.user_lang);
 
 // ++++ deleted ++++
                 if(is_deleted){
                     // delete row from data_rows. Splice returns array of deleted rows
                     const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
-
-            console.log("deleted_row_dict", deleted_row_dict);
     //--- delete tblRow
-
-            console.log("deleted_row_dict.mapid", update_dict.mapid);
                     const tblRow_tobe_deleted = document.getElementById(update_dict.mapid);
     // ---  when delete: make tblRow red for 2 seconds, before uploading
-            console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
                     //ShowClassWithTimeout(tblRow_tobe_deleted, "tsa_tr_error");
                     tblRow_tobe_deleted.classList.add("tsa_tr_error")
                     setTimeout(function() {
@@ -1120,17 +1785,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++ updated row +++++++++++
     // ---  check which fields are updated, add to list 'updated_columns'
-                    if(!isEmpty(map_dict) && field_names){
+                    if(!isEmpty(data_dict) && field_names){
+            console.log("data_dict", data_dict);
 
-                        // skip first column (is margin)
-                        for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            if (col_field in map_dict && col_field in update_dict){
-                                if (map_dict[col_field] !== update_dict[col_field] ) {
+                        for (let i = 0, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+
+            console.log("col_field", col_field);
+            console.log("old_value", data_dict[col_field]);
+            console.log("new_value", update_dict[col_field]);
+
+                            if (col_field in data_dict && col_field in update_dict){
+                                if (data_dict[col_field] !== update_dict[col_field] ) {
         // ---  add field to updated_columns list
                                     updated_columns.push(col_field)
         // ---  update field in data_row
-                                    map_dict[col_field] = update_dict[col_field];
-                                }}
+                                    data_dict[col_field] = update_dict[col_field];
+        // -- when color fiels has changed: also add textfield to update_dict, to show green
+                                    if (col_field === "content_hexcolor"){
+                                        updated_columns.push("content_nl");
+                                    } else if (col_field === "instruction_hexcolor"){
+                                        updated_columns.push("instruction_nl");
+                                    };
+                                }};
                         };
 
         // ---  update field in tblRow
@@ -1143,13 +1819,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
                             if(tblRow){
-                // to make it perfect: move row when first or last name have changed
-                                if (updated_columns.includes("name")){
-                                //--- delete current tblRow
-                                    tblRow.parentNode.removeChild(tblRow);
-                                //--- insert row new at new position
-                                    tblRow = CreateTblRow(tblName, field_setting, col_hidden, map_id, update_dict)
-                                };
 
         //console.log("tblRow", tblRow);
                 // loop through cells of row
@@ -1193,7 +1862,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };  //  if(is_deleted)
             }; // if(is_created)
         };  // if(!isEmpty(update_dict))
-    }  // RefreshDatarowItem
+    };  // RefreshDatarowItem
 
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1206,9 +1875,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
             for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
                 RefreshDatamapItem(tblName, field_names, update_dict, data_map);
-            }
-        }
-    }  //  RefreshDataMap
+            };
+        };
+    };  //  RefreshDataMap
 
 //=========  RefreshDatamapItem  ================ PR2020-08-16 PR2020-09-30 PR2021-03-15
     function RefreshDatamapItem(tblName, field_names, update_dict, data_map) {
@@ -1219,7 +1888,7 @@ document.addEventListener('DOMContentLoaded', function() {
             data_map.set(map_id, update_dict)
         //console.log("data_map", data_map);
         }
-    }  // RefreshDatamapItem
+    };  // RefreshDatamapItem
 
 
 //###########################################################################
@@ -1273,16 +1942,16 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow = tblBody_datatable.rows[i]
             show_row = t_Filter_TableRow_Extended(filter_dict, tblRow);
             add_or_remove_class(tblRow, cls_hide, !show_row)
-        }
+        };
 
     }; // Filter_TableRows
 
 //========= ResetFilterRows  ====================================
-    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
-       //console.log( "===== ResetFilterRows  ========= ");
+    function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20 PR2022-08-04
+        //console.log( "===== ResetFilterRows  ========= ");
 
-        selected_school_depbases = [];
-        filter_dict = {};
+        b_clear_dict(selected);
+        b_clear_dict(filter_dict);
         filter_mod_employee = false;
 
         Filter_TableRows();
@@ -1329,7 +1998,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }; //MPUBORD_OpenLogfile
 
-//////////////////////////////////////////////////////////////////////
+
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT  ++++++++++++++++++++
@@ -1345,12 +2014,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: new_setting,
                 student_rows: {get: true},
-                studentsubject_rows: {get: true},
+                //studentsubject_rows: {get: true},
                 grade_rows: {get: true},
                 schemeitem_rows: {get: true}
             };
         DatalistDownload(datalist_request);
 
-    }  // MSED_Response
+    };  // MSED_Response
+
+//=========  get_datarows_from_selectedbtn  ================ PR2022-08-04
+    function get_datarows_from_selectedbtn() {
+        const data_rows = (selected_btn === "btn_orderlist") ? orderlist_rows :
+                        (selected_btn === "btn_exam") ? envelopbundle_rows :
+                        (selected_btn === "btn_bundle") ? envelopbundlelabel_rows :
+                        (selected_btn === "btn_label") ? enveloplabel_rows :
+                        (selected_btn === "btn_item") ? envelopitem_rows : [];
+        return data_rows;
+    };
+
+//=========  get_tblName_from_selectedbtn  ================ PR2022-08-04
+    function get_tblName_from_selectedbtn() {
+        const tblName = (selected_btn === "btn_orderlist") ? "orderlist" :
+                        (selected_btn === "btn_exam") ? "ete_exam" :
+                        (selected_btn === "btn_bundle") ? "envelopbundlelabel" :
+                        (selected_btn === "btn_label") ? "enveloplabel" :
+                        (selected_btn === "btn_item") ? "envelopitem" : null;
+        return tblName;
+    };
 
 })  // document.addEventListener('DOMContentLoaded', function()

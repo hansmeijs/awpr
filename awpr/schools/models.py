@@ -91,12 +91,13 @@ class AwpBaseModel(Model):
             _request = kwargs.pop('request')
             _request_user = _request.user if _request else None
         #logger.debug('AwpBaseModel _request: ' + str(_request))
+            # PR2022-08-09 Only save new req_usr and date when request exists.
+            # In this way old user names and dates can be copied to new examyear by using save() instead of save(request=request)
+            self.modifiedby = _request_user
+            self.modifiedat = timezone.now()  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
 
         _is_update = self.pk is not None # self.pk is None before new record is saved
         _mode = ('c', 'u')[_is_update]  # result = (on_false, on_true)[condition]
-
-        self.modifiedby = _request_user
-        self.modifiedat = timezone.now()  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
 
         # when adding record: self.id=None, set force_insert=True; otherwise: set force_update=True PR2018-06-09
         super(AwpBaseModel, self).save(force_insert=not _is_update, force_update=_is_update)
@@ -345,6 +346,9 @@ class Department(AwpBaseModel):# PR2018-08-10
     sector_req = BooleanField(default=True)
     has_profiel = BooleanField(default=False)
 
+    # color is used in envelop module PR2022-08-03
+    color = CharField(max_length=c.MAX_LENGTH_10, null=True)
+
     class Meta:
         ordering = ['sequence',]
 
@@ -370,6 +374,9 @@ class Department_log(AwpBaseModel):
     level_req = BooleanField(default=True)
     sector_req = BooleanField(default=True)
     has_profiel = BooleanField(default=False)
+
+    # color is used in envelop module PR2022-08-03
+    color = CharField(max_length=c.MAX_LENGTH_10, null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -459,9 +466,10 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     name = CharField(max_length=c.MAX_LENGTH_NAME)
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLABBREV)
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
+    telephone = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_SCHOOLABBREV)
+
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
     # TODO deprecate, not in use any more
     no_order = BooleanField(default=False)
 
@@ -469,6 +477,8 @@ class School(AwpBaseModel):  # PR2018-08-20 PR2018-11-11
     iseveningschool = BooleanField(default=False)
     islexschool = BooleanField(default=False)
 
+    # TODO deprecate activated and activatedat, not in use any more
+    # TODO locked is not in use, but let it stay PR2022-07-31
     # school will be activated when adding student in create_student
     activated = BooleanField(default=False)
     activatedat = DateTimeField(null=True)
@@ -506,6 +516,7 @@ class School_log(AwpBaseModel):
     name = CharField(max_length=c.MAX_LENGTH_NAME,null=True)
     abbrev = CharField(max_length=c.MAX_LENGTH_SCHOOLABBREV,null=True)
     article = CharField(max_length=c.MAX_LENGTH_SCHOOLARTICLE, null=True)
+    telephone = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_SCHOOLABBREV)
 
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
@@ -517,8 +528,10 @@ class School_log(AwpBaseModel):
     iseveningschool = BooleanField(default=False)
     islexschool = BooleanField(default=False)
 
+    # TODO deprecate activated and activatedat, not in use any more
     activated = BooleanField(default=False)
     activatedat = DateTimeField(null=True)
+
     locked = BooleanField(default=False)
     lockedat = DateTimeField(null=True)
 
@@ -662,13 +675,14 @@ class Mailinglist(AwpBaseModel):
     recipients = CharField(max_length=2048, null=True, blank=True)
 
 
-def delete_instance(instance, msg_list, error_list, request, this_txt=None, header_txt=None):
+def delete_instance(table, instance, request, this_txt=None):
+    # PR2019-08-25 PR2020-10-23 PR2021-06-20  PR2022-08-04
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
         logger.debug('instance: ' + str(instance))
 
-    # function deletes instance of table,  PR2019-08-25 PR2020-10-23 PR2021-06-20
+    # function deletes instance of table,  PR2019-08-25 PR2020-10-23 PR2021-06-20  PR2022-08-04
 
     # error_list is list of strings, used for error message under input field,
     #  messages is list of dicts with format:
@@ -677,41 +691,68 @@ def delete_instance(instance, msg_list, error_list, request, this_txt=None, head
     #  error_list is to be deprecated PR2021-10-24
     # P2022-01-10 I think it is best to use error_list instead of msg_html.
     # error_list doenst have 'header' and 'class', is better when there are multiple errors in err_list
-    deleted_ok = False
 
-    if instance:
+    err_html = None
+    deleted_row = None
+
+    caption = this_txt if this_txt else _('This item')
+
+    if instance is None:
+        err_html = str(_('%(cpt)s is not found.') % {'cpt': caption})
+    else:
+# - create deleted_row, to be sent back to page
+        deleted_row = {'id': instance.pk,
+                       'mapid': '_'.join((table, str(instance.pk))),
+                       'deleted': True}
+
         try:
-            instance.delete(request=request)
+            #PR2022-08-06 debug: error when deleting subjecttypebase: Model.delete() got an unexpected keyword argument 'request'
+            if 'base' in table:
+                instance.delete()
+            else:
+                instance.delete(request=request)
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 
-            caption = this_txt if this_txt else _('This item')
-
-            # &emsp; add 4 'hard' spaces
-            err_tx1 = '<br>'.join((
-                str(_('An error occurred')) + ':',
-                '&emsp;<i>' + str(e) + '</i>'
+            err_html = ''.join((
+                str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                str(_('%(cpt)s could not be deleted.') % {'cpt': caption})
             ))
+            deleted_row = None
+            # msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
 
-            err_txt2 = str(_("%(cpt)s could not be deleted.") % {'cpt': caption})
-
-            error_list.append(err_tx1)
-            error_list.append(err_txt2)
-
-            msg_html = ''.join((err_tx1, ': ', '<br><i>', str(e), '</i><br>', err_txt2))
-            msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-            msg_list.append(msg_dict)
-        else:
-            instance = None
-            deleted_ok = True
+            """
+            new approach PR2022-08-04:
+            if this_text is None:
+                this_text = str(_('This item'))
+            # &emsp; add 4 'hard' spaces
+            err_html = ''.join((
+                str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                str(_('%(cpt)s could not be deleted.') % {'cpt': this_text})
+            ))
+            return err_html
+            ...
+            deleted_row, err_html = delete_customer_instance (customer_instance, request)
+            if msg_html:
+                error_dict['nonfield'] = err_html
+            
+            if error_dict:
+                updated_row['error'] = error_dict
+            .....    
+            if updated_rows and updated_rows[0]:
+                updated_row = updated_rows[0]
+                if is_created:
+                # - add 'created' to updated_row, to show OK when new row is added to table
+                    updated_row['created'] = True
+                if error_dict:
+                    updated_row['error'] = error_dict
+            """
 
     if logging_on:
-        logger.debug('messages: ' + str(msg_list))
-        logger.debug('error_list: ' + str(error_list))
-        logger.debug('instance: ' + str(instance))
-        logger.debug('deleted_ok: ' + str(deleted_ok))
+        logger.debug('deleted_row: ' + str(deleted_row))
+        logger.debug('err_html: ' + str(err_html))
 
-    return deleted_ok
+    return deleted_row, err_html
 
 

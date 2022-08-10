@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Orderlists' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/orderlists220730.js' %}"></script>
+    <script src="{% static 'js/orderlists220808.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -16,7 +16,7 @@
         </div>
         {% if not no_access %}
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Leerweg' %}:</h6>
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Learning path' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
@@ -66,6 +66,8 @@
             {% include 'includes/modconfirm.html' %}
             {% include 'schools/modorderlistextra.html' %}
             {% include 'schools/modpublishorderlist.html' %}
+            {% include 'subjects/modenvelopitem.html' %}
+            {% include 'subjects/modenveloplabel.html' %}
 
             <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
@@ -93,6 +95,10 @@
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_orderlist" class="btn btn-secondary ">{% trans 'Orderlist' %}</button>
+                    <button data-btn="btn_exam" class="btn btn-secondary ">{% trans 'Exams' %}</button>
+                    <button data-btn="btn_bundle" class="btn btn-secondary ">{% trans 'Label bundles' %}</button>
+                    <button data-btn="btn_label" class="btn btn-secondary ">{% trans 'Labels' %}</button>
+                    <button data-btn="btn_item" class="btn btn-secondary ">{% trans 'Label items' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -117,9 +123,8 @@
                 data-url_orderlist_parameters="{% url 'url_orderlist_parameters' %}"
                 data-url_orderlist_request_verifcode="{% url 'url_orderlist_request_verifcode' %}"
                 data-url_orderlist_publish="{% url 'url_orderlist_publish' %}"
-
-
-
+                data-url_envelopitem_upload="{% url 'url_envelopitem_upload' %}"
+                data-url_enveloplabel_upload="{% url 'url_enveloplabel_upload' %}"
             >
             </div>
         {% endif %}

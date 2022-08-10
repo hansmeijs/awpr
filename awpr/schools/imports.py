@@ -842,6 +842,7 @@ class UploadImportStudentView(View):
                                 student_dict, is_existing, is_new_student, is_diff_dep_student, has_error, might_be_bisexam = \
                                     upload_student_from_datalist(
                                         data_dict=data_dict,
+                                        examyear=sel_examyear,
                                         school=sel_school,
                                         department=sel_department,
                                         is_test=is_test,
@@ -897,11 +898,11 @@ class UploadImportStudentView(View):
 
 
 # ========  upload_student_from_datalist  =======
-def upload_student_from_datalist(data_dict, school, department, is_test,
+def upload_student_from_datalist(data_dict, examyear, school, department, is_test,
                                  double_idnumber_list, double_diplomanumber_list, double_gradelistnumber_list,
                                  idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
                                  log_list, request):
-    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26
+    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-05
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_student_from_datalist  --------------------')
@@ -944,7 +945,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
 # - skip when student is from different department
     # PR2022-06-26 debug: Havo student was added to Vsbo in ATC. Must filter out students from different departments
     # not when student_depbase_pk has no value
-    if student_depbase_pk is None or student_depbase_pk != department.base_id:
+    if student_depbase_pk and student_depbase_pk != department.base_id:
         is_diff_dep_student = True
         error_list.append(str(_("This candidate belongs to a different department.")))
 
@@ -974,6 +975,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
     if logging_on:
         logger.debug('    idnumber_nodots: ' + str(idnumber_nodots))
         logger.debug('    full_name: ' + str(full_name))
+        logger.debug('    student_depbase_pk: ' + str(student_depbase_pk))
 
 # - create student_dict
     student_dict = {}
@@ -1004,7 +1006,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
     if not has_error and not is_diff_dep_student:
         has_error = stud_val.validate_student_name_length(lastname_stripped, firstname_stripped, prefix_stripped, error_list)
 
-    student = None
+    student_instance = None
     is_new_student, error_create, changes_are_saved, error_save, field_error = False, False, False, False, False
 
     if not has_error and not is_diff_dep_student:
@@ -1054,9 +1056,9 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
         if logging_on:
             logger.debug('    birthdate_iso: ' + str(birthdate_iso) + ' ' + str(type(birthdate_iso)))
 
-        if student:
+        if student_instance:
             is_existing_student = True
-            student_dict['student_pk'] = student.pk
+            student_dict['student_pk'] = student_instance.pk
         else:
 
 # +++ create new student when student not found in database
@@ -1079,14 +1081,22 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
             upload_dict = {'idnumber': idnumber_nodots, 'lastname': lastname_stripped, 'firstname': firstname_stripped}
 
     # - create student record
-            student = stud_view.create_student(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
+            student_instance, error_list = stud_view.create_student(
+                examyear=examyear,
+                school=school,
+                department=department,
+                upload_dict=upload_dict,
+                request=request,
+                skip_save=is_test
+            )
+            #student = stud_view.create_student(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
             if logging_on:
-                student_pk = student.pk if student else 'None'
-                logger.debug('student:    ' + str(student))
-                logger.debug('student_pk: ' + str(student_pk))
-                logger.debug('error_list: ' + str(error_list))
+                student_pk = student_instance.pk if student_instance else 'None'
+                logger.debug('student_instance: ' + str(student_instance))
+                logger.debug('student_pk:       ' + str(student_pk))
+                logger.debug('error_list:       ' + str(error_list))
 
-            if student is None:
+            if student_instance is None:
     # - give error msg when creating student failed - is already done in create_student
                 error_create = True
 
@@ -1109,13 +1119,13 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
                 #        #logger.debug('bisexam_dict: ' + str(bisexam_dict))
 
 # - update fields, both in new and existing students
-        if student:
+        if student_instance:
 
             data_dict.pop('rowindex')
 
             changes_are_saved, error_save, field_error = \
                 stud_view.update_student_instance(
-                    instance=student,
+                    instance=student_instance,
                     sel_examyear=school.examyear,
                     sel_school=school,
                     sel_department=department,
@@ -1138,7 +1148,7 @@ def upload_student_from_datalist(data_dict, school, department, is_test,
                 sel_schoolbase=school.base,
                 sel_depbase=department.base,
                 append_dict=append_dict,
-                student_pk=student.pk)
+                student_pk=student_instance.pk)
 
             if rows and rows[0]:
                 student_dict = rows[0]
@@ -2339,8 +2349,8 @@ def update_student(instance, parent, upload_dict, msg_dict, request):
 # 2. save changes in field 'code', required field
                     if field in ['code', 'identifier']:
                         if new_value != saved_value:
-            # validate_code_name_id checks for null, too long and exists. Puts msg_err in update_dict
-                            msg_err = None #stud_val.validate_code_name_identifier(
+            # validate_code_name_blank_length_exists_id checks for null, too long and exists. Puts msg_err in update_dict
+                            msg_err = None #stud_val.validate_code_name_blank_length_exists(
                                # table='student',
                                 #field=field,
                                 #new_value=new_value, parent=parent,
@@ -2658,8 +2668,10 @@ def get_stud_subj_schemeitem_dict(sel_examyear, sel_department): # PR2021-12-12
     scheme_si_dict = {}
     schemeitem_rows = subj_view.create_schemeitem_rows(
         examyear=sel_examyear,
+        append_dict={},
         cur_dep_only=True,
-        depbase=sel_department.base)
+        depbase=sel_department.base
+    )
     if schemeitem_rows:
         for si_row in schemeitem_rows:
             si_id = si_row.get('id')
@@ -2691,6 +2703,7 @@ def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21 PR2
 
     rows = subj_view.create_schemeitem_rows(
         examyear=school.examyear,
+        append_dict={},
         cur_dep_only=True,
         depbase=department.base,
         orderby_sjtpbase_sequence=True

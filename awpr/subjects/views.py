@@ -229,28 +229,16 @@ class SubjectListView(View):
         return render(request, html_page, params)
 
 
-def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only=False, duo_exam_only=False):
-    # --- create rows of all subjects of this examyear  PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07
+def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase, skip_allowed_filter, subject_pk=None, cur_dep_only=False, duo_exam_only=False):
+    # PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07 PR2022-08-05
+    # --- create rows of all subjects of this examyear
     # skip_allowed_filter is used in userpage: when setting 'allowed_', all subjects must be shown
     logging_on = False  # s.LOGGING_ON
 
-    sel_examyear_pk = setting_dict.get('sel_examyear_pk')
-
     if logging_on:
         logger.debug(' =============== create_subject_rows ============= ')
-        logger.debug('setting_dict: ' + str(setting_dict) + ' ' + str(type(setting_dict)))
         logger.debug('skip_allowed_filter: ' + str(skip_allowed_filter))
         logger.debug('cur_dep_only: ' + str(cur_dep_only))
-
-    """
-    setting_dict: {'user_lang': 'nl', 'sel_page': 'page_grade', 
-    'sel_schoolbase_pk': 16, 'sel_schoolbase_code': 'CUR16', 'requsr_same_school': True, 
-    'sel_examyear_pk': 1, 'sel_examyear_code': 2022, 'sel_examyear_published': True, 
-    'no_practexam': True, 'sel_school_pk': 15, 'sel_school_name': 'Kolegio Alejandro Paula - KAP', 'sel_school_abbrev': 'KAP', 'sel_school_activated': True, 
-    'sel_depbase_pk': 3, 'sel_depbase_code': 'Vwo', 'sel_department_pk': 6, 'sel_dep_level_req': False, 'sel_dep_has_profiel': True, 
-    'sel_examperiod': 1, 'sel_examtype': 'se', 'sel_examtype_caption': 'Schoolexamen', 
-    'cols_hidden': ['examnumber', 'sct_abbrev', 'cluster_name', 'subj_name']} <class 'dict'>
-    """
 
     # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
     # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)
@@ -260,30 +248,36 @@ def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only
     # from https://www.postgresqltutorial.com/postgresql-like/
     # first_name LIKE '%Jen%';
 
-    #TODO PR2022-06-15 debug: new subject has no si yet, will not show, cvannot add si.
+    #PR2022-06-15 debug: new subject has no si yet, will not show, cannot add si.
     # Make separate sql for page Subjects, without si link
 
     subject_rows = []
-    if sel_examyear_pk:
-        sql_keys = {'ey_id': sel_examyear_pk}
+    if sel_examyear:
+        sql_keys = {'ey_id': sel_examyear.pk}
 
-        sub_sql_list = [ "SELECT si.subject_id",
+# create list subject_id with the following filter:
+        # - this examyear,
+        # - sel_depbase_pk and allowed_depbase
+        # - sel_lvlbase_pk and allowed_lvlbase
+        # - allowed_subjbase
+        # - if duo_exam_only: and not ete_exam
+
+        sub_sql_list = ["SELECT si.subject_id",
             "FROM subjects_schemeitem AS si",
             "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
             "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
             "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
             "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
-            "INNER JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
+            "LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id)",
 
-            "WHERE dep.examyear_id = %(ey_id)s::INT"
-
+            "WHERE subj.examyear_id = %(ey_id)s::INT"
             ]
         if duo_exam_only:
             sub_sql_list.append("AND NOT si.ete_exam")
 
         sel_depbase_pk = None
-        if cur_dep_only:
-            sel_depbase_pk = setting_dict.get('sel_depbase_pk')
+        if cur_dep_only and sel_depbase:
+            sel_depbase_pk = sel_depbase.pk
         acc_view.get_userfilter_allowed_depbase(
             request = request,
             sql_keys = sql_keys,
@@ -292,8 +286,8 @@ def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only
         )
 
         sel_lvlbase_pk = None
-        if not skip_allowed_filter:
-            sel_lvlbase_pk = setting_dict.get('sel_lvlbase_pk')
+        if not skip_allowed_filter and sel_lvlbase:
+            sel_lvlbase_pk = sel_lvlbase.pk
         acc_view.get_userfilter_allowed_lvlbase(
             request=request,
             sql_keys=sql_keys,
@@ -320,13 +314,13 @@ def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only
 
         user_line, user_join = '', ''
         if request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
-            user_line = "subj.modifiedby_id, subj.modifiedat, SUBSTRING(au.username, 7) AS modby_username,"
+            user_line = "subj.modifiedby_id, subj.modifiedat, au.last_name AS modby_username,"
             user_join = "LEFT JOIN accounts_user AS au ON (au.id = subj.modifiedby_id)"
 
         sql_list = [
             "SELECT subj.id, subj.base_id, subj.examyear_id,",
             "CONCAT('subject_', subj.id::TEXT) AS mapid,",
-            "subj.name, sb.code, subj.sequence, subj.depbases, subj.addedbyschool,",
+            "subj.name, sb.code, subj.sequence, subj.depbases,",
             user_line,
             "ey.code AS examyear_code",
     
@@ -334,8 +328,8 @@ def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only
             "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
             "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
             user_join,
-            #"INNER JOIN (", sub_sql ,  ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
-            "WHERE subj.id IN (", sub_sql ,  ")",
+            "INNER JOIN (", sub_sql ,  ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
+            #"WHERE subj.id IN (", sub_sql ,  ")",
             ]
 
         sql_list.append("ORDER BY subj.id")
@@ -348,11 +342,67 @@ def create_subject_rows(request, setting_dict, skip_allowed_filter, cur_dep_only
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
-            #cursor.execute(sub_sql, sql_keys)
             subject_rows = af.dictfetchall(cursor)
 
     return subject_rows
 # --- end of create_subject_rows
+
+
+def create_subjectrows_for_page_subjects(sel_examyear, append_dict, subject_pk=None):
+    # PR2022-08-05
+    # --- create rows of all subjects of this examyear for page subjects
+
+    # PR2022-06-15 debug: new subject has no si yet, will not show, cannot add si.
+    # Make separate sql for page Subjects, without si link
+
+    logging_on = False  # s.LOGGING_ON
+
+    if logging_on:
+        logger.debug(' =============== create_subjectrows_for_page_subjects ============= ')
+
+    subject_rows = []
+    if sel_examyear:
+        sql_keys = {'ey_id': sel_examyear.pk}
+
+        sql_list = [
+            "SELECT subj.id, subj.base_id, subj.examyear_id,",
+            "CONCAT('subject_', subj.id::TEXT) AS mapid,",
+            "subj.name, sb.code, subj.sequence, subj.depbases,",
+            "subj.modifiedby_id, subj.modifiedat, au.last_name AS modby_username,"
+            "ey.code AS examyear_code",
+
+            "FROM subjects_subject AS subj",
+            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = subj.modifiedby_id)"
+            "WHERE subj.examyear_id = %(ey_id)s::INT",
+        ]
+        if subject_pk:
+            sql_keys['subj_id'] = subject_pk
+            sql_list.append("AND subj.id = %(subj_id)s::INT")
+
+        sql_list.append("ORDER BY subj.id")
+        sql = ' '.join(sql_list)
+
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            subject_rows = af.dictfetchall(cursor)
+
+# - add messages to subject_row, only if subject_pk has value
+        if subject_pk and subject_rows and append_dict:
+            # when subject_pk has value there is only 1 row
+            row = subject_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+    return subject_rows
+
+# --- end of create_subjectrows_for_page_subjects
 
 
 def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
@@ -444,7 +494,6 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
             logger.debug(' ============= SubjectUploadView ============= ')
 
         # error_list is attached to updated row, messages is attached to update_wrap
-        messages = []
         update_wrap = {}
 
 # - get permit
@@ -472,89 +521,99 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 
                 updated_rows = []
                 error_list = []
-                is_created = False
-                message_header = _('Subject')
+                messages = []
+                append_dict = {}
+
+                header_txt = _('Add subject') if is_create else _('Delete subject') if is_delete else _('Edit subject')
 
 # - get selected examyear from Usersetting
-                selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
-                examyear = None
-                if selected_examyear_pk:
-                    examyear = sch_mod.Examyear.objects.get_or_none(
-                        id=selected_examyear_pk,
-                        country=request.user.country
-                    )
-
-                if logging_on:
-                    logger.debug('examyear' + str(examyear))
-
-# - exit when no examyear or examyear is locked
-                # TODO switch to get_selected_ey_school_dep_from_usersetting, it includes validation
-                # note: subjects may be changed before publishing, therefore don't exit on examyear.published
-                if examyear is None:
-                    messages.append({'class': "border_bg_warning",
-                                     'header': str(message_header),
-                                     'msg_html': str(_('No exam year selected'))})
-                elif examyear.locked:
-                    messages.append( {'class': "border_bg_warning",
-                                      'header': str(message_header),
-                                      'msg_html': str(_("Exam year %(exyr)s is locked.") % {'exyr': str(examyear.code)})
-                        })
+                # get_selected_examyear_from_usersetting gives error message when:
+                # - country is locked
+                # - no exam year selected
+                # - exam year is locked
+                # - (skip check for not published)
+                sel_examyear, may_edit, sel_msg_list = dl.get_selected_examyear_from_usersetting(request, True) # allow_not_published = True
+                if sel_msg_list:
+                    msg_html = '<br>'.join(sel_msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                    if logging_on:
+                        logger.debug('messages:   ' + str(messages))
                 else:
 
 # ++++ Create new subject:
                     if is_create:
-                        subject = create_subject(examyear, upload_dict, messages, request)
-                        if subject:
-                            is_created = True
+                        subject_instance, error_list = create_subject(sel_examyear, upload_dict, request)
+                        if error_list:
+                            messages.append(
+                                {'header': str(header_txt),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': '<br>'.join(error_list)}
+                            )
+
+                        if subject_instance:
+                            append_dict['created'] = True
+
                     else:
-# +++  get existing subject instance
-                        subject = sbj_mod.Subject.objects.get_or_none(
+
+# +++  or get existing subject
+                        subject_instance = sbj_mod.Subject.objects.get_or_none(
                             id=subject_pk,
-                            examyear=examyear
+                            examyear=sel_examyear
                         )
                     if logging_on:
-                        logger.debug('..... subject: ' + str(subject))
+                        logger.debug('..... subject_instance: ' + str(subject_instance))
 
-                    deleted_ok = False
+                    if subject_instance:
 
-                    if subject:
 # ++++ Delete subject
                         if is_delete:
-                            deleted_ok = delete_subject(subject, updated_rows, error_list, request)
+                            deleted_row, err_html = delete_subject_instance(subject_instance, request)
+                            if err_html:
+                                messages.append(
+                                    {'header': str(header_txt),
+                                     'class': "border_bg_invalid",
+                                     'msg_html': err_html}
+                                )
+                            elif deleted_row:
+                                subject_instance = None
+                                updated_rows.append(deleted_row)
 
-# - create subject_row, also when deleting failed, not when deleted ok, in that case subject_row is added in delete_subject
+                            if logging_on:
+                                logger.debug('    deleted_row: ' + str(deleted_row))
+                                logger.debug('    err_html: ' + str(err_html))
+
+# +++ Update subject, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
-                            update_subject_instance(subject, examyear, upload_dict, error_list, request)
+                            error_list = update_subject_instance(
+                                subject_instance=subject_instance,
+                                examyear=sel_examyear,
+                                upload_dict=upload_dict,
+                                request=request
+                            )
+                            if error_list:
+                                messages.append(
+                                    {'header': str(header_txt),
+                                     'class': "border_bg_invalid",
+                                     'msg_html': '<br>'.join(error_list)}
+                                )
 
 # - create subject_row, also when deleting failed (when deleted ok there is no subject, subject_row is made above)
                     # PR2021-089-04 debug. gave error on subject.pk: 'NoneType' object has no attribute 'pk'
-                    if not deleted_ok and subject:
-                        setting_dict = {'sel_examyear_pk': examyear.pk}
-                        updated_rows = create_subject_rows(
-                            setting_dict=setting_dict,
-                            skip_allowed_filter=True,
-                            cur_dep_only=False,
-                            request=request
+                    if subject_instance:
+                        updated_rows = create_subjectrows_for_page_subjects(
+                            sel_examyear=sel_examyear,
+                            append_dict=append_dict,
+                            subject_pk=subject_instance.pk
                         )
 
         # - add messages to subject_row (there is only 1 subject_row
-                    if updated_rows:
-                        row = updated_rows[0]
-                        if row:
-                            # TODO fix it or remove
-                            # - add error_list to updated_rows[0]
-                            if error_list:
-                                updated_rows[0]['error'] = error_list
-                            if is_created:
-                                updated_rows[0]['created'] = True
-
                         update_wrap['updated_subject_rows'] = updated_rows
 
                 if logging_on:
                     logger.debug('..... messages: ' + str(messages))
                     logger.debug('..... error_list: ' + str(error_list))
-                if len(messages):
+
+                if messages:
                     update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -563,10 +622,10 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 
 ##########################
 @method_decorator([login_required], name='dispatch')
-class SubjecttypebaseUploadView(View):  # PR2021-06-29
+class SubjecttypebaseUploadView(View):  # PR2021-06-29 PR2022-08-06
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SubjecttypebaseUploadView ============= ')
@@ -586,7 +645,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload')
             if upload_json:
-                # upload_dict = {'mapid': 'subjecttypebase_4', 'sjtbase_pk': 4, 'abbrev': 'w'}
+                # upload_dict = {'mapid': 'subjecttypebase_4', 'sjtpbase_pk': 4, 'abbrev': 'w'}
                 # upload_dict{'create': True, 'code': 'a', 'name': 'a', 'sequence': 3, 'abbrev': '2'}
                 upload_dict = json.loads(upload_json)
                 if logging_on:
@@ -597,6 +656,8 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
                 is_create = upload_dict.get('create', False)
                 is_delete = upload_dict.get('delete', False)
 
+                if logging_on:
+                    logger.debug('sjtpbase_pk: ' + str(sjtpbase_pk))
                 updated_rows = []
                 error_list = []
                 is_created = False
@@ -610,17 +671,31 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
 
 # +++  get existing subjecttypebase
                     subjecttypebase = sbj_mod.Subjecttypebase.objects.get_or_none(
-                        id=sjtpbase_pk
+                        pk=sjtpbase_pk
                     )
                 if logging_on:
                     logger.debug('subjecttypebase: ' + str(subjecttypebase))
 
                 if subjecttypebase:
-# ++++ Delete subjecttype
+
+# ++++ Delete subjecttypebase
                     if is_delete:
-                        deleted_ok = delete_subjecttypebase(subjecttypebase, updated_rows, messages, request)
-                        if deleted_ok:
+                        header_txt = _("Delete base character")
+                        deleted_row, err_html = delete_subjecttypebase(subjecttypebase, request)
+
+                        if err_html:
+                            messages.append(
+                                {'header': str(header_txt),
+                                 'class': "border_bg_invalid",
+                                 'msg_html': err_html}
+                            )
+                        elif deleted_row:
                             subjecttypebase = None
+                            updated_rows.append(deleted_row)
+
+                        if logging_on:
+                            logger.debug('    deleted_row: ' + str(deleted_row))
+                            logger.debug('    msg_html: ' + str(err_html))
 
 # +++ Update subjecttype
                     elif not is_create:
@@ -629,7 +704,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
 # - create subjecttype_rows
                     if subjecttypebase:
                         updated_rows = create_subjecttypebase_rows(
-                            sjtbase_pk=subjecttypebase.pk
+                            sjtpbase_pk=subjecttypebase.pk
                         )
 
     # - add error_list to subject_row (there is only 1 subject_row, or none
@@ -644,7 +719,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29
                             updated_rows[0]['created'] = True
                 update_wrap['updated_subjecttypebase_rows'] = updated_rows
 
-        if len(messages):
+        if messages:
             update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -724,19 +799,17 @@ def create_subjecttypebase(upload_dict, error_list, request):
 # - end of create_subjecttypebase
 
 
-def delete_subjecttypebase(subjecttypebase, subjecttypebase_rows, messages, request):
-    # --- delete subjecttype # PR2021-06-29
-    logging_on = False  # s.LOGGING_ON
+def delete_subjecttypebase(subjecttypebase, request):
+    # --- delete subjecttype # PR2021-06-29 PR2022-08-06
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_subjecttypebase ----- ')
         logger.debug('subjecttypebase: ' + str(subjecttypebase))
-    # this dict will be sent back to the client when row is deleted
-    subjecttypebase_row = {'pk': subjecttypebase.pk,
-                       'mapid': 'subjecttypebase_' + str(subjecttypebase.pk),
-                       'deleted': True}
+
+    msg_html = None
+    deleted_row = None
 
     this_txt = _("Base character '%(tbl)s'") % {'tbl': subjecttypebase.name}
-    header_txt = _("Delete base character")
 
 # check if there are students with subjects with this subjecttypebase
     students_with_this_subjecttypebase_exist = stud_mod.Studentsubject.objects.filter(
@@ -750,22 +823,22 @@ def delete_subjecttypebase(subjecttypebase, subjecttypebase_rows, messages, requ
         deleted_ok = False
         msg_html = ''.join((str(_('There are candidates with subjects with this base character.')), '<br>',
                             str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})))
-        msg_dict = {'class': 'border_bg_invalid', 'header': header_txt, 'msg_html': msg_html}
-        messages.append(msg_dict)
 
     else:
-        err_list = []  # TODO
-        deleted_ok = sch_mod.delete_instance(subjecttypebase, messages, err_list, request, this_txt, header_txt)
-
-    if deleted_ok:
-   # - add deleted_row to subjecttypebase_rows
-        subjecttypebase_rows.append(subjecttypebase_row)
+        deleted_row, err_html = sch_mod.delete_instance(
+            table='subjecttypebase',
+            instance=subjecttypebase,
+            request=request,
+            this_txt=this_txt
+        )
+        if err_html:
+            msg_html = err_html
 
     if logging_on:
-        logger.debug('subjecttypebase_rows' + str(subjecttypebase_rows))
-        logger.debug('messages' + str(messages))
+        logger.debug('deleted_row' + str(deleted_row))
+        logger.debug('msg_html' + str(msg_html))
 
-    return deleted_ok
+    return deleted_row, msg_html
 # - end of delete_subjecttypebase
 
 
@@ -914,30 +987,41 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
                             error_list = []
 
 # +++  get existing subjecttype
-                            subjecttype = sbj_mod.Subjecttype.objects.get_or_none(
+                            subjecttype_instance = sbj_mod.Subjecttype.objects.get_or_none(
                                 id=subjecttype_pk,
                                 scheme=scheme
                             )
                             if logging_on:
-                                logger.debug(' subjecttype: ' + str(subjecttype))
+                                logger.debug(' subjecttype_instance: ' + str(subjecttype_instance))
                                 logger.debug(' is_delete: ' + str(is_delete))
 
-                            if subjecttype:
+                            if subjecttype_instance:
 # ++++ Delete subjecttype
                                 if is_delete:
-                                    # delete_subjecttype will set subjecttype to None if deleted_ok
-                                    deleted_row = delete_subjecttype(subjecttype, messages, request)
-                                    # deleted_row has value when deleted = OK, will be returned to client
-                                    if deleted_row:
+                                    # delete_subjecttype will also cascade delete schemitem
+                                    deleted_row, err_html = delete_subjecttype(subjecttype_instance, request)
+                                    if err_html:
+                                        messages.append(
+                                            {'header': str(_('Delete character')),
+                                             'class': 'border_bg_invalid',
+                                             'msg_html': err_html}
+                                        )
+                                    elif deleted_row:
+                                        subjecttype_instance = None
                                         updated_rows.append(deleted_row)
+
+                                    if logging_on:
+                                        logger.debug('    deleted_row: ' + str(deleted_row))
+                                        logger.debug('    msg_html: ' + str(err_html))
 
 # +++ Update subjecttype
                                 else:
-                                    update_subjecttype_instance(subjecttype, scheme, upload_dict, error_list, request)
+                                    update_subjecttype_instance(subjecttype_instance, scheme, upload_dict, error_list, request)
             # - create subjecttype_rows
                                     updated_rows = create_subjecttype_rows(
                                         examyear=examyear,
-                                        sjtp_pk=subjecttype.pk
+                                        append_dict={},
+                                        sjtp_pk=subjecttype_instance.pk
                                     )
 
             # - add error_list to subject_row (there is only 1 subject_row, or none
@@ -961,7 +1045,7 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
 class SchemeUploadView(View):  # PR2021-06-27
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= SchemeUploadView ============= ')
@@ -993,7 +1077,7 @@ class SchemeUploadView(View):  # PR2021-06-27
                 updated_rows = []
                 error_list = []
 
-                msg_header = _('Update subject scheme')
+                msg_header = _('Edit subject scheme')
 
 # - get selected examyear from Usersetting
                 examyear = get_sel_examyear(msg_header, msg_dictlist, request)
@@ -1071,12 +1155,10 @@ class SchemeitemUploadView(View):  # PR2021-06-25
                 messages = []
 
 # - get  variables
-                message_header = _('Update subject scheme')
+                message_header = _('Edit subject scheme')
 
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
-
-                error_list = []
 
 # - get selected examyear from Usersetting
                 examyear = get_sel_examyear(message_header, messages, request)
@@ -1094,7 +1176,7 @@ class SchemeitemUploadView(View):  # PR2021-06-25
 # +++ update subjects of scheme from si_list
                         si_list = upload_dict.get('si_list')
                         if si_list:
-                            update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list, request)
+                            update_si_list(examyear, scheme, si_list, updated_rows, messages, request)
 
 # +++ if upload_dict does not have si_list: it is single schemeitem update
                         else:
@@ -1103,10 +1185,11 @@ class SchemeitemUploadView(View):  # PR2021-06-25
                             si_pk = upload_dict.get('si_pk')
                             schemeitem = get_schemeitem_instance(scheme, si_pk, logging_on)
                             if schemeitem:
-                                update_schemeitem_instance(schemeitem, examyear, upload_dict, updated_rows, error_list, request)
+                                update_schemeitem_instance(schemeitem, examyear, upload_dict, updated_rows, request)
        # - create schemeitem_rows
                                 updated_rows = create_schemeitem_rows(
                                     examyear=examyear,
+                                    append_dict={},
                                     schemeitem_pk=schemeitem.pk
                                 )
                         update_wrap['updated_schemeitem_rows'] = updated_rows
@@ -4906,7 +4989,7 @@ def calc_recursive(maxscore_list, total_score_dict, used_score_str, total_score,
 
         new_listindex = list_index - 1
         this_used_score_str = used_score_str
-        # loop through amount of occurrencies
+        # loop through number of occurrencies
         for multiplier in range(0, occurrencies + 1, 1):  # range(start_value, end_value, step), end_value is not included!
             new_total_score = total_score + max_score * multiplier
             if multiplier:
@@ -5452,72 +5535,79 @@ def get_field_caption(table, field):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-def delete_subject(subject, updated_rows, err_list, request):
-    # --- delete subject # PR2021-05-14 PR2021-07-18 PR2022-02-16
+def delete_subject_instance(subject_instance, request):
+    # --- delete subject # PR2021-05-14 PR2021-07-18 PR2022-02-16 PR2022-08-05
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- delete_subject ----- ')
-        logger.debug('subject: ' + str(subject))
+        logger.debug(' ----- delete_subject_instance ----- ')
+        logger.debug('subject_instance: ' + str(subject_instance))
 
-    deleted_ok = False
+    deleted_row = None
+    msg_html = None
 
-# - create updated_row - to be returned after successfull delete
-    updated_row = {'id': subject.pk,
-                   'mapid': 'subject_' + str(subject.pk),
-                   'deleted': True}
-    base_pk = subject.base.pk
+    base_pk = subject_instance.base.pk
 
-    this_txt = _("Subject '%(tbl)s'") % {'tbl': subject.name}
-    header_txt = _("Delete subject")
+    this_txt = _("Subject '%(tbl)s'") % {'tbl': subject_instance.name}
 
 # - check if there are students with this subject
     students_with_this_subject_exist = stud_mod.Studentsubject.objects.filter(
-        schemeitem__subject=subject).exists()
-
+        schemeitem__subject=subject_instance
+    ).exists()
     if logging_on:
         logger.debug('students_with_this_subject_exist: ' + str(students_with_this_subject_exist))
 
     if students_with_this_subject_exist:
-        err_txt1 = str(_('There are candidates with this subject.'))
-        err_txt2 = str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})
-        err_list.append(' '.join((err_txt1, err_txt2)))
+        msg_html = '<br>'.join((
+            str(_('There are candidates with this subject.')),
+            str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})
+        ))
 
     else:
-        deleted_ok = sch_mod.delete_instance(subject, [], err_list, request, this_txt, header_txt)
+        # delete subject will also cascade delete Schemeitem, Exam and Cluster
+        deleted_row, err_html = sch_mod.delete_instance(
+            table='subject',
+            instance=subject_instance,
+            request=request,
+            this_txt=this_txt
+        )
+        if err_html:
+            msg_html = err_html
+        else:
 
-    if deleted_ok:
-# - add deleted_row to updated_rows
-        updated_rows.append(updated_row)
-
-# - check if this subject also exists in other examyears.
-        subjects = subj_mod.Subject.objects.filter(base_id=base_pk).first()
-        # If not: delete also subject_base
-        if subjects is None:
-            subject_base = subj_mod.Subjectbase.objects.get_or_none(id=base_pk)
-            if subject_base:
-                subject_base.delete()
+    # - check if this subject also exists in other examyears.
+            subject_exists = subj_mod.Subject.objects.filter(
+                base_id=base_pk
+            ).exists()
+    # If not: delete also subject_base
+            if not subject_exists:
+                subject_base = subj_mod.Subjectbase.objects.get_or_none(
+                    id=base_pk
+                )
+                if subject_base:
+                    subject_base.delete()
 
     if logging_on:
-        logger.debug('updated_rows' + str(updated_rows))
-        logger.debug('err_list' + str(err_list))
+        logger.debug('deleted_row' + str(deleted_row))
+        logger.debug('msg_html' + str(msg_html))
 
-    return deleted_ok
-# - end of delete_subject
+    return deleted_row, msg_html
+# - end of delete_subject_instance
 
 
-def create_subject(examyear, upload_dict, messages, request):
-    # --- create subject # PR2019-07-30 PR2020-10-11 PR2021-05-13 PR2021-06-22
+def create_subject(examyear, upload_dict, request):
+    # --- create subject # PR2019-07-30 PR2020-10-11 PR2021-05-13 PR2021-06-22 PR2022-08-05
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_subject ----- ')
         logger.debug('examyear: ' + str(examyear))
         logger.debug('upload_dict: ' + str(upload_dict))
 
-    subject = None
-    caption = _('Create subject')
+    subject_instance = None
+    error_list = []
 
     if examyear:
+
 # - get values
         code = upload_dict.get('code')
         name = upload_dict.get ('name')
@@ -5529,144 +5619,147 @@ def create_subject(examyear, upload_dict, messages, request):
             logger.debug('sequence: ' + str(sequence))
             logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
 
-        msg_list = []
 # - validate code and name. Function checks null, max_len, exists
         msg_err = av.validate_notblank_maxlength(code, c.MAX_LENGTH_SCHOOLCODE, _('The abbreviation'))
         if msg_err:
-            msg_list.append(msg_err)
+            error_list.append(msg_err)
+
         msg_err = av.validate_notblank_maxlength(name, c.MAX_LENGTH_NAME, _('The name'))
         if msg_err:
-            msg_list.append(msg_err)
+            error_list.append(msg_err)
+
 # - check if subject code already exists
         msg_err = av.validate_subject_code_exists(code, subject)
         if msg_err:
-            msg_list.append(msg_err)
+            error_list.append(msg_err)
+
 # - check if subject name already exists
         msg_err = av.validate_subject_name_exists(name, subject)
         if msg_err:
-            msg_list.append(msg_err)
+            error_list.append(msg_err)
 
 # - create and save subject
-        if len(msg_list) > 0:
-            msg_html = '<br>'.join(msg_list)
-            messages.append({'header': str(caption), 'class': "border_bg_invalid", 'msg_html': msg_html})
-        else:
+        if not error_list:
             try:
                 # First create base record. base.id is used in Subject. Create also saves new record
                 base = sbj_mod.Subjectbase.objects.create(
                     code=code
                 )
-
-                subject = sbj_mod.Subject(
+# - create and save subject
+                subject_instance = sbj_mod.Subject(
                     base=base,
                     examyear=examyear,
                     name=name,
                     sequence=sequence,
                     depbases=depbases
                 )
-                subject.save(request=request)
+                subject_instance.save(request=request)
 
             except Exception as e:
+                subject_instance = None
                 logger.error(getattr(e, 'message', str(e)))
-                msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
-                                    str(_("%(cpt)s '%(val)s'could not be added.") % {'cpt': _('Subject'), 'val': name})))
-                messages.append(
-                    {'class': "border_bg_invalid", 'header': str(_('Create subject')), 'msg_html': msg_html})
+
+                error_list.append(''.join((
+                    str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                    str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': _('Subject'), 'val': name})
+                )))
 
     if logging_on:
-        logger.debug('subject: ' + str(subject))
-        logger.debug('messages: ' + str(messages))
+        logger.debug('subject_instance: ' + str(subject_instance))
+        logger.debug('error_list: ' + str(error_list))
 
-    return subject
+    return subject_instance, error_list
 # - end of create_subject
 
 
-def update_subject_instance(instance, examyear, upload_dict, error_list, request):
+def update_subject_instance(subject_instance, examyear, upload_dict, request):
     # --- update existing and new instance PR2019-06-06 PR2021-05-10
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_subject_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
 
-    if instance:
+    error_list = []
+    if subject_instance:
         save_changes = False
         save_changes_in_base = False
 
-        caption = _('Subject')
         for field, new_value in upload_dict.items():
-            if logging_on:
-                logger.debug('field: ' + str(field))
-                logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
-
-# - save changes in field 'code'
-            if field == 'code':
-                base = instance.base
-                saved_value = getattr(base, field)
+            if field in ('code', 'name', 'depbases', 'sequence'):
                 if logging_on:
-                    logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
 
-                if new_value != saved_value:
+    # - save changes in field 'code'
+                if field == 'code':
+                    base = subject_instance.base
+                    saved_value = getattr(base, field)
                     if logging_on:
-                        logger.debug('new_value != saved_value')
-    # - validate abbrev checks null, max_len, exists
-                    #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
-                    msg_html = av.validate_subject_code_exists(
-                        code=new_value,
-                        cur_subject=instance
-                    )
-                    if msg_html:
-                        error_list.append({'header': str(caption), 'class': 'alert-danger', 'msg_html': msg_html})
-                    else:
-     # - save field if changed and no_error
-                        setattr(base, field, new_value)
-                        save_changes_in_base = True
+                        logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
 
-# - save changes in field 'name'
-            elif field == 'name':
-                saved_value = getattr(instance, field)
-                if new_value != saved_value:
-    # - validate abbrev checks null, max_len, exists
-                    msg_html = av.validate_subject_name_exists(
-                        name=new_value,
-                        examyear=examyear,
-                        cur_subject=instance
-                    )
-                    if msg_html:
-                        error_list.append({'msg_html': msg_html, 'class': 'alert-danger'})
-                    else:
-                        # - save field if changed and no_error
-                        setattr(instance, field, new_value)
+                    if new_value != saved_value:
+                        if logging_on:
+                            logger.debug('new_value != saved_value')
+        # - validate abbrev checks null, max_len, exists
+                        #  msg_err = { 'field': 'code', msg_list: [text1, text2] }, (for use in imput modals)
+                        msg_html = av.validate_subject_code_exists(
+                            code=new_value,
+                            cur_subject=subject_instance
+                        )
+                        if msg_html:
+                            error_list.append(msg_html)
+                        else:
+         # - save field if changed and no_error
+                            setattr(base, field, new_value)
+                            save_changes_in_base = True
+
+    # - save changes in field 'name'
+                elif field == 'name':
+                    saved_value = getattr(subject_instance, field)
+                    if new_value != saved_value:
+        # - validate abbrev checks null, max_len, exists
+                        msg_html = av.validate_subject_name_exists(
+                            name=new_value,
+                            examyear=examyear,
+                            cur_subject=subject_instance
+                        )
+                        if msg_html:
+                            error_list.append(msg_html)
+                        else:
+                            # - save field if changed and no_error
+                            setattr(subject_instance, field, new_value)
+                            save_changes = True
+
+    # - save changes in depbases
+                elif field == 'depbases':
+                    saved_value = getattr(subject_instance, field)
+                    uploaded_field_arr = new_value.split(';') if new_value else []
+
+                    checked_field_arr = []
+                    checked_field_str = None
+                    if uploaded_field_arr:
+                        for base_pk_str in uploaded_field_arr:
+                            base_pk_int = int(base_pk_str)
+                            base_instance = sch_mod.Department.objects.get_or_none(
+                                base=base_pk_int,
+                                examyear=examyear
+                            )
+                            if base_instance:
+                                checked_field_arr.append(base_pk_str)
+
+                        if checked_field_arr:
+                            checked_field_arr.sort()
+                            checked_field_str = ';'.join(checked_field_arr)
+                    if checked_field_str != saved_value:
+                        setattr(subject_instance, field, new_value)
                         save_changes = True
 
-# 3. save changes in depbases
-            elif field == 'depbases':
-                saved_value = getattr(instance, field)
-                uploaded_field_arr = new_value.split(';') if new_value else []
-
-                checked_field_arr = []
-                checked_field_str = None
-                if uploaded_field_arr:
-                    for base_pk_str in uploaded_field_arr:
-                        base_pk_int = int(base_pk_str)
-                        base_instance = sch_mod.Department.objects.get_or_none(
-                            base=base_pk_int,
-                            examyear=examyear
-                        )
-                        if base_instance:
-                            checked_field_arr.append(base_pk_str)
-
-                    if checked_field_arr:
-                        checked_field_arr.sort()
-                        checked_field_str = ';'.join(checked_field_arr)
-                if checked_field_str != saved_value:
-                    setattr(instance, field, new_value)
-                    save_changes = True
-
-            elif field in ('sequence', 'addedbyschool'):
-                saved_value = getattr(instance, field)
-                if new_value != saved_value:
-                    setattr(instance, field, new_value)
-                    save_changes = True
+    # - save changes in sequence
+                elif field == 'sequence':
+                    saved_value = getattr(subject_instance, field)
+                    if new_value != saved_value:
+                        setattr(subject_instance, field, new_value)
+                        save_changes = True
 # --- end of for loop ---
 
 # 5. save changes
@@ -5674,19 +5767,16 @@ def update_subject_instance(instance, examyear, upload_dict, error_list, request
             try:
                 if save_changes_in_base:
                     # also save instance when base has changed, to update modifiedat and modifiedby
-                    instance.base.save()
-                instance.save(request=request)
+                    subject_instance.base.save()
+                subject_instance.save(request=request)
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                header_txt = _('Update subject')
-                msg_list = [_('An error occurred: ') + str(e),
-                            _('The changes have not been saved.')]
-                msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i>',
+                msg_html = ''.join((str(_('An error occurred')), ':<br>&emsp;<i>', str(e), '</i><br>',
                                     str(_('The changes have not been saved.'))))
-                error_list.append({'header': str(header_txt), 'class': 'border_bg_invalid', 'msg_html': msg_html})
-                # error_list = [ { 'header': 'Header text', 'field': 'code', msg_html: 'line1 <br> line2',
-                #                'class': 'border_bg_invalid')
+                error_list.append(msg_html)
 
+    return error_list
+# - end of update_subject_instance
 
 # >>>>>>>  SCHEMEITEM >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -5746,60 +5836,52 @@ def create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request):
 # - end of create_schemeitem
 
 
-def delete_schemeitem(schemeitem, messages, request):
+def delete_schemeitem(schemeitem_instance, request):
     # --- delete schemeitem # PR2021-06-25
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_schemeitem ----- ')
-        logger.debug('subject: ' + str(schemeitem))
+        logger.debug('schemeitem_instance: ' + str(schemeitem_instance))
 
     deleted_row = None
-    # get info from row before deleting it
-    row_tobe_deleted = {'pk': schemeitem.pk,
-                       'mapid': 'schemeitem_' + str(schemeitem.pk),
-                        'subj_name': schemeitem.subject.name,
-                       'deleted': True}
-    subject_name = schemeitem.subject.name
-    this_txt = _("Subject '%(tbl)s' of subject scheme '%(tbl)s'") % {'tbl': subject_name}
-    header_txt = _("Delete subject from subject scheme")
+    msg_html = None
+
+    this_txt = _("Subject '%(tbl)s' of subject scheme '%(tbl)s'") % {'tbl': schemeitem_instance.subject.name}
 
 # check if there are students with subjects with this schemeitem
     students_with_this_schemeitem_exist = stud_mod.Studentsubject.objects.filter(
-        schemeitem=schemeitem
+        schemeitem=schemeitem_instance
     ).exists()
-
     if logging_on:
         logger.debug('students_with_this_schemeitem_exist: ' + str(students_with_this_schemeitem_exist))
 
-    students_with_this_schemeitem_exist = False
     if students_with_this_schemeitem_exist:
-        deleted_ok = False
-        msg_list = [
-            _('There are candidates with subjects with this schemeitem.'),
-            _("%(cpt)s could not be deleted.") % {'cpt': this_txt}
-        ]
-        msg_dict = {'class': "border_bg_invalid", 'header': header_txt, 'msg_list': msg_list}
-        messages.append(msg_dict)
+        msg_html = '<br>'.join((
+            str(_('There are candidates with subjects with this schemeitem.')),
+            str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})
+        ))
 
     else:
-        err_list = []  # TODO
-        scheme_pk = schemeitem.pk
-        deleted_ok = sch_mod.delete_instance(schemeitem, messages, err_list, request, this_txt, header_txt)
-
-   # - create deleted_row, to be returned to client
-        # if deleting failed, schemeitem still exists and wil be returned to client, together with error message
-        if deleted_ok:
-            deleted_row = row_tobe_deleted
+        # delete schemeitem will also cascade delete Packageitem (not in use yet)
+        deleted_row, err_html = sch_mod.delete_instance(
+            table='schemeitem',
+            instance=schemeitem_instance,
+            request=request,
+            this_txt=this_txt
+        )
+        if err_html:
+            msg_html = err_html
 
     if logging_on:
-        logger.debug('messages' + str(messages))
+        logger.debug('deleted_row' + str(deleted_row))
+        logger.debug('msg_html' + str(msg_html))
 
-    return deleted_ok, deleted_row
+    return deleted_row, msg_html
 # - end of delete_schemeitem
 
 
-def update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list, request):
-    # --- delete schemeitem # PR2021-06-26
+def update_si_list(examyear, scheme, si_list, updated_rows, messages, request):
+    # --- add or delete schemeitem # PR2021-06-26 PR2022-08-07
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_si_list ----- ')
@@ -5807,74 +5889,93 @@ def update_si_list(examyear, scheme, si_list, updated_rows, messages, error_list
 
 # ++++ loop through list of schemeitems:
     for si_dict in si_list:
-        schemeitem = None
+        schemeitem_instance = None
         is_create = si_dict.get('create')
         is_delete = si_dict.get('delete')
-        is_created = False
 
+        append_dict = {}
+
+# ++++ Create new schemeitem:
         if is_create:
             subj_pk = si_dict.get('subj_pk')
             sjtp_pk = si_dict.get('sjtp_pk')
-            schemeitem = create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request)
-            if schemeitem:
-                is_created = True
-
-        elif is_delete:
+            schemeitem_instance = create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request)
+            if schemeitem_instance:
+                append_dict['created'] = True
 
 # ++++ Delete schemeitem
-# - get existing scheme item
+        elif is_delete:
+
+# +++  get schemeitem:
             si_pk = si_dict.get('si_pk')
-            schemeitem = sbj_mod.Schemeitem.objects.get_or_none(
+            schemeitem_instance = sbj_mod.Schemeitem.objects.get_or_none(
                 id=si_pk,
                 scheme=scheme
             )
+            if logging_on:
+                logger.debug('..... schemeitem_instance: ' + str(schemeitem_instance))
 
-            deleted_ok, deleted_row = delete_schemeitem(schemeitem, messages, request)
-            if deleted_ok:
-                schemeitem = None
-                updated_rows.append(deleted_row)
+            if schemeitem_instance:
+                deleted_row, err_html = delete_schemeitem(schemeitem_instance, request)
+                if err_html:
+                    header_txt = _("Delete subject from subject scheme")
+                    messages.append(
+                        {'header': str(header_txt),
+                         'class': "border_bg_invalid",
+                         'msg_html': err_html}
+                    )
+                elif deleted_row:
+                    schemeitem_instance = None
+                    updated_rows.append(deleted_row)
+
+                if logging_on:
+                    logger.debug('    deleted_row: ' + str(deleted_row))
+                    logger.debug('    err_html: ' + str(err_html))
+
 
 # - create schemeitem_rows[0], also when deleting failed (when deleted ok there is no subject, subject_row is made above)
-        if schemeitem:
+        if schemeitem_instance:
             schemeitem_rows = create_schemeitem_rows(
                 examyear=examyear,
-                schemeitem_pk=schemeitem.pk
+                append_dict=append_dict,
+                schemeitem_pk=schemeitem_instance.pk
             )
 
 # - add messages to row (there is only 1 row
-            if schemeitem_rows:
-                schemeitem_row = schemeitem_rows[0]
+            #if schemeitem_rows:
+            #    schemeitem_row = schemeitem_rows[0]
 
                 # - add error_list to subject_rows[0]
-                if error_list:
+                #if error_list:
                     # structure of error_list: [ { 'field': 'code', msg_list ['line 1', 'line 2'] } ]
                     # or general error:        [ { 'class': 'alert-danger', msg_list ['line 1', 'line 2'] } ]
-                    schemeitem_row['error'] = error_list
-                if is_created:
-                    schemeitem_row['created'] = True
+                #    schemeitem_row['error'] = error_list
 
-                updated_rows.append(schemeitem_row)
+
+                #updated_rows.append(schemeitem_row)
 # - end of update_si_list
 
 
-def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, error_list, request):
+def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, request):
     # --- update existing and new instance PR2021-06-26
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_schemeitem_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
-
+    error_list = []
     if instance:
         save_changes = False
-        msg_header_txt = _("Update subject of subject scheme")
+        msg_header_txt = _("Edit subject of subject scheme")
         # TODO when no_ce_years has changed after school have entered grades, recalc endgrade should be run on all grades
         # probably also when other fields have changed ('gradetype', 'weight_se', 'weight_ce')
         for field, new_value in upload_dict.items():
 
+            if logging_on:
+                logger.debug('field: ' + str(field))
             if field in ('gradetype', 'weight_se', 'weight_ce', 'multiplier', 'is_mandatory', 'is_mand_subj', 'is_combi',
                          'extra_count_allowed', 'extra_nocount_allowed',
                          'has_practexam', 'is_core_subject', 'is_mvt', 'is_wisk',
-
+                         'studyloadhours', 'notatdayschool',
                          # not in use: "rule_final_vsbo", "rule_finalvsbo_notatevlex",
                          # not in use: "rule_final_havovwo", "rule_finalhavovwo_notatevlex",
                          "rule_avg_pece_sufficient", "rule_avg_pece_notatevlex",
@@ -5886,9 +5987,9 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 
                 saved_value = getattr(instance, field)
                 if logging_on:
-                    logger.debug('field: ' + str(field))
-                    logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
-                    logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
+                    logger.debug('    field: ' + str(field))
+                    logger.debug('    new_value: <' + str(new_value) + '> ' + str(type(new_value)))
+                    logger.debug('    saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
 
                 if new_value != saved_value:
                     setattr(instance, field, new_value)
@@ -5904,8 +6005,8 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
                 instance.save(request=request)
                 if logging_on:
                     otherlang = getattr(instance, 'otherlang')
-                    logger.debug('instance: ' + str(instance))
-                    logger.debug('otherlang: ' + str(otherlang))
+                    logger.debug('    instance: ' + str(instance))
+                    logger.debug('    otherlang: ' + str(otherlang))
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 msg_html = ''.join((str(_('An error occurred: ')), '<br><i>', str(e), '</i><br>',
@@ -5917,8 +6018,8 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, er
 # >>>>>>>>  SCHEME >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_list, request):
-    # --- update existing and new instance PR2021-06-27 PR2021-11-28
-    logging_on = False  # s.LOGGING_ON
+    # --- update existing and new instance PR2021-06-27 PR2021-11-28 PR2022-08-01
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_scheme_instance -----')
         logger.debug('upload_dict: ' + str(upload_dict))
@@ -5927,7 +6028,7 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
         save_changes_in_base = False
         save_changes = False
 
-        msg_header_txt = _('Update subject scheme')
+        msg_header_txt = _('Edit subject scheme')
 
         for field, new_value in upload_dict.items():
 
@@ -5953,7 +6054,7 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                     setattr(instance, field, new_value)
                     save_changes = True
 
-            elif field in ('min_subjects', 'max_subjects', 'min_mvt', 'max_mvt',
+            elif field in ('min_studyloadhours', 'min_subjects', 'max_subjects', 'min_mvt', 'max_mvt',
                            'min_wisk', 'max_wisk', 'min_combi', 'max_combi', 'max_reex'):
                 msg_html = None
                 new_value_int = None
@@ -5969,6 +6070,7 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
                         new_value_int = int(new_value)
                         if logging_on:
                             logger.debug('new_value_int: <' + str(new_value_int) + '> ' + str(type(new_value_int)))
+
                         if field in ('min_subjects', 'min_mvt', 'min_wisk', 'min_combi'):
                             max_field = 'max_mvt' if field == 'min_mvt' else 'max_wisk' if field == 'min_wisk' else 'max_combi' if field == 'min_combi' else 'max_subjects'
                             max_subjects = getattr(instance, max_field)
@@ -5978,8 +6080,9 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
 
                             if max_subjects and new_value_int > max_subjects:
                                 msg_html = str(
-                                    _("Minimum amount of subjects cannot be greater than maximum (%(val)s).") % {
+                                    _("Minimum number of subjects cannot be greater than maximum (%(val)s).") % {
                                         'val': max_subjects})
+
                         elif field in ('max_subjects', 'max_mvt', 'max_wisk', 'max_combi'):
                             min_field = 'min_mvt' if field == 'max_mvt' else 'min_wisk' if field == 'max_wisk' else 'min_combi' if field == 'max_combi' else 'min_subjects'
                             min_subjects = getattr(instance, min_field)
@@ -5989,14 +6092,16 @@ def update_scheme_instance(instance, examyear, upload_dict, updated_rows, error_
 
                             if min_subjects and new_value_int < min_subjects:
                                 msg_html = str(
-                                    _("Maximum amount of subjects cannot be fewer than minimum (%(val)s).") % {
+                                    _("Maximum number of subjects cannot be fewer than minimum (%(val)s).") % {
                                         'val': min_subjects})
                         elif field == 'max_reex':
                             if not new_value_int:
                                 msg_html = str(_('%(cpt)s cannot be blank.') % {'cpt': _("Maximum number of re-examinations")})
                             elif new_value_int < 0:
                                 msg_html = str(_("Maximum number of re-examinations must be a positive whole number."))
-
+                        elif field == 'min_studyloadhours':
+                            if new_value_int < 0:
+                                msg_html = str(_("Minimum studyload hours must be a positive whole number."))
                 if msg_html:
                     msg_dict = {'field': field,
                                 'header': msg_header_txt,
@@ -6050,42 +6155,54 @@ def update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, reques
         logger.debug(' ----- update_sjtp_list ----- ')
         logger.debug('sjtp_list: ' + str(sjtp_list))
 
-    msg_header = _('Update character')
+    header_txt = _('Update character')
 # ++++ loop through list of subjecttypes:
     for sjtp_dict in sjtp_list:
-        subjecttype = None
+        subjecttype_instance = None
+        append_dict = {}
         is_create = sjtp_dict.get('create')
         is_delete = sjtp_dict.get('delete')
-        is_created = False
 
         if is_create:
             sjtpbase_pk = sjtp_dict.get('sjtpbase_pk')
-            subjecttype = create_subjecttype(sjtpbase_pk, scheme, sjtp_dict, messages, msg_header, request)
-            if subjecttype:
-                is_created = True
+            subjecttype_instance = create_subjecttype(sjtpbase_pk, scheme, sjtp_dict, messages, header_txt, request)
+            if subjecttype_instance:
+                append_dict['created'] = True
 
         elif is_delete:
 
 # ++++ Delete subjecttype
 # - get existing subjecttype
             sjtp_pk = sjtp_dict.get('sjtp_pk')
-            subjecttype = sbj_mod.Subjecttype.objects.get_or_none(
+            subjecttype_instance = sbj_mod.Subjecttype.objects.get_or_none(
                 id=sjtp_pk,
                 scheme=scheme
             )
             # delete_subjecttype will set subjecttype to None if deleted_ok
-            deleted_row = delete_subjecttype(subjecttype, messages, request)
-            if deleted_row:
+            deleted_row, err_html = delete_subjecttype(subjecttype_instance, request)
+            if err_html:
+                messages.append(
+                    {'header': str(header_txt),
+                     'class': "border_bg_invalid",
+                     'msg_html': err_html}
+                )
+            elif deleted_row:
+                subjecttype_instance = None
                 updated_rows.append(deleted_row)
 
+            if logging_on:
+                logger.debug('    deleted_row: ' + str(deleted_row))
+                logger.debug('    msg_html: ' + str(err_html))
+
         if logging_on:
-            logger.debug('subjecttype: ' + str(subjecttype))
+            logger.debug('subjecttype_instance: ' + str(subjecttype_instance))
 
 # - create schemeitem_rows[0], also when deleting failed (when deleted ok there is no subject, subject_row is made above)
-        if subjecttype:
+        if subjecttype_instance:
             subjecttype_rows = create_subjecttype_rows(
                 examyear=examyear,
-                sjtp_pk=subjecttype.pk,
+                append_dict={},
+                sjtp_pk=subjecttype_instance.pk,
                 cur_dep_only=False
             )
             if logging_on:
@@ -6093,13 +6210,11 @@ def update_sjtp_list(examyear, scheme, sjtp_list, updated_rows, messages, reques
 
 # - messages will be attached to update_wrap, not to updated_rows
             if subjecttype_rows:
-                subjecttype_row = subjecttype_rows[0]
-                if is_created:
-                    subjecttype_row['created'] = True
-
-                updated_rows.append(subjecttype_row)
+                updated_rows.extend(subjecttype_rows)
                 if logging_on:
                     logger.debug('updated_rows: ' + str(updated_rows))
+# ++++ end of loop
+
 # - end of update_sjtp_list
 
 
@@ -6169,52 +6284,47 @@ def create_subjecttype(sjtpbase_pk, scheme, upload_dict, messages, msg_header, r
 # - end of create_subjecttype
 
 
-def delete_subjecttype(subjecttype, messages, request):
-    # --- delete subjecttype # PR2021-06-23 PR2021-07-13
+def delete_subjecttype(subjecttype_instance, request):
+    # --- delete subjecttype # PR2021-06-23 PR2021-07-13 PR2022-08-06
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_subjecttype ----- ')
-        logger.debug('subjecttype: ' + str(subjecttype))
+        logger.debug('subjecttype_instance: ' + str(subjecttype_instance))
 
-    subjecttype_pk = subjecttype.pk
     deleted_row = None
-    this_txt = _("Character '%(tbl)s'") % {'tbl': subjecttype.name}
-    header_txt = _("Delete character")
+    msg_html = None
+    this_txt = _("Character '%(tbl)s'") % {'tbl': subjecttype_instance.name}
 
 # check if there are students with subjects with this subjecttype
     students_with_this_subjecttype_exist = stud_mod.Studentsubject.objects.filter(
-        schemeitem__subjecttype=subjecttype
+        schemeitem__subjecttype=subjecttype_instance
     ).exists()
 
     if logging_on:
         logger.debug('students_with_this_subjecttype_exist: ' + str(students_with_this_subjecttype_exist))
 
     if students_with_this_subjecttype_exist:
-        deleted_ok = False
         msg_html = ''.join((str(_('There are candidates with subjects with this character.')), '<br>',
                             str(_("%(cpt)s could not be deleted.") % {'cpt': this_txt})))
-        msg_dict = {'class': 'border_bg_invalid', 'header': header_txt, 'msg_html': msg_html}
-        messages.append(msg_dict)
 
     else:
-        # delete_instance will set subjecttype to None if deleted_ok
-        err_list = []  # TODO
-        deleted_ok = sch_mod.delete_instance(subjecttype, messages, err_list, request, this_txt, header_txt)
+        deleted_row, err_html = sch_mod.delete_instance(
+            table='subjecttype',
+            instance=subjecttype_instance,
+            request=request,
+            this_txt=this_txt
+        )
+        if err_html:
+            msg_html = err_html
 
-    if deleted_ok:
     # - check if this subjecttype base has other child subjecttypes, delet if none found
         # PR2021-06-27 debug: Don't delete base subjecttypes without children: they may be used another time
 
-   # - deleted_row gets value when deleted = ok, to be returnes to client
-        deleted_row = {'pk': subjecttype_pk,
-                       'mapid': 'subjecttype_' + str(subjecttype_pk),
-                       'deleted': True}
-
     if logging_on:
         logger.debug('deleted_row' + str(deleted_row))
-        logger.debug('messages' + str(messages))
+        logger.debug('msg_html' + str(msg_html))
 
-    return deleted_row
+    return deleted_row, msg_html
 # - end of delete_subjecttype
 
 
@@ -6294,34 +6404,34 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
                         if field == 'min_subjects':
                             max_subjects = getattr(instance, 'max_subjects')
                             if max_subjects is not None and new_value > max_subjects:
-                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
+                                msg_html = str(_("Minimum number of %(cpt)s cannot be greater than maximum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': max_subjects})
                         elif field == 'max_subjects':
                             min_subjects = getattr(instance, 'min_subjects')
                             if min_subjects is not None and new_value < min_subjects:
-                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
+                                msg_html = str(_("Maximum number of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_subjects})
 
                         elif field == 'min_extra_nocount':
                             max_extra_nocount = getattr(instance, 'max_extra_nocount')
                             if max_extra_nocount is not None and new_value > max_extra_nocount:
-                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
+                                msg_html = str(_("Minimum number of %(cpt)s cannot be greater than maximum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': max_extra_nocount})
                         elif field == 'max_extra_nocount':
                             min_extra_nocount = getattr(instance, 'min_extra_nocount')
                             if min_extra_nocount is not None and new_value < min_extra_nocount:
-                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
+                                msg_html = str(_("Maximum number of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_extra_nocount})
 
                         elif field == 'min_extra_counts':
                             max_extra_counts = getattr(instance, 'max_extra_counts')
                             if max_extra_counts is not None and new_value > max_extra_counts:
-                                msg_html = str(_("Minimum amount of %(cpt)s cannot be greater than maximum (%(val)s).") \
+                                msg_html = str(_("Minimum number of %(cpt)s cannot be greater than maximum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': max_extra_counts})
                         elif field == 'max_extra_counts':
                             min_extra_counts = getattr(instance, 'min_extra_counts')
                             if min_extra_counts is not None and new_value < min_extra_counts:
-                                msg_html = str(_("Maximum amount of %(cpt)s cannot be fewer than minimum (%(val)s).") \
+                                msg_html = str(_("Maximum number of %(cpt)s cannot be fewer than minimum (%(val)s).") \
                                                % {'cpt': _('subjects'), 'val': min_extra_counts})
 
                 if msg_html:
@@ -6379,7 +6489,7 @@ def update_subjecttype_instance(instance, scheme, upload_dict, error_list, reque
 # - end of update_subjecttype_instance
 
 
-def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only=False, sjtp_pk=None, orderby_sequence=False):
+def create_subjecttype_rows(examyear, append_dict, scheme_pk=None, depbase=None, cur_dep_only=False, sjtp_pk=None,  orderby_sequence=False):
     # --- create rows of all subjecttypes of this examyear / country  PR2021-06-24
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -6402,7 +6512,7 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
             "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
             "ey.code AS ey_code,",
             "dep.id AS department_id, depbase.code AS depbase_code, scheme.id AS scheme_id, scheme.name AS scheme_name,",
-            "sjtp.modifiedby_id, sjtp.modifiedat, SUBSTRING(au.username, 7) AS modby_username",
+            "sjtp.modifiedby_id, sjtp.modifiedat, au.last_name AS modby_username",
 
             "FROM subjects_subjecttype AS sjtp",
             "INNER JOIN subjects_subjecttypebase AS sjtpbase ON (sjtpbase.id = sjtp.base_id)",
@@ -6454,11 +6564,20 @@ def create_subjecttype_rows(examyear, scheme_pk=None, depbase=None, cur_dep_only
             cursor.execute(sql, sql_keys)
             subjecttype_rows = af.dictfetchall(cursor)
 
+    # - add messages to student_row
+        if sjtp_pk and subjecttype_rows and append_dict:
+            # when student_pk has value there is only 1 row
+            row = subjecttype_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+
     return subjecttype_rows
 # --- end of create_subjecttype_rows
 
 
-def create_subjecttypebase_rows(sjtbase_pk=None):
+def create_subjecttypebase_rows(sjtpbase_pk=None):
     # --- create rows of all subjecttypes of this examyear / country  PR2021-06-22
     #logger.debug(' =============== create_subjecttypebase_rows ============= ')
     rows =[]
@@ -6469,9 +6588,9 @@ def create_subjecttypebase_rows(sjtbase_pk=None):
         "sjtbase.code, sjtbase.name, sjtbase.abbrev, sjtbase.sequence",
         "FROM subjects_subjecttypebase AS sjtbase"]
 
-    if sjtbase_pk:
-        sql_keys['sjtbase_pk'] = sjtbase_pk
-        sql_list.append("WHERE sjtbase.id = %(sjtbase_pk)s::INT")
+    if sjtpbase_pk:
+        sql_keys['sjtpbase_pk'] = sjtpbase_pk
+        sql_list.append("WHERE sjtbase.id = %(sjtpbase_pk)s::INT")
 
     sql_list.append("ORDER BY sjtbase.id")
 
@@ -6491,7 +6610,7 @@ def create_subjecttypebase_rows(sjtbase_pk=None):
 
 
 def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=None):
-    # --- create rows of all schemes of this examyear PR2020-11-16 PR2021-06-24
+    # --- create rows of all schemes of this examyear PR2020-11-16 PR2021-06-24 PR2022-08-01
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_scheme_rows ============= ')
@@ -6502,9 +6621,10 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
     if examyear:
         sql_keys = {'ey_id': examyear.pk}
         sql_list = ["SELECT scheme.id, scheme.department_id, scheme.level_id, scheme.sector_id,",
-            "CONCAT('scheme_', scheme.id::TEXT) AS mapid,",
-            "scheme.name, scheme.min_subjects, scheme.max_subjects, scheme.min_mvt, scheme.max_mvt, ",
-            "scheme.min_wisk, scheme.max_wisk, scheme.min_combi, scheme.max_combi, scheme.max_reex,",
+            "CONCAT('scheme_', scheme.id::TEXT) AS mapid, scheme.name,",
+            "scheme.min_studyloadhours, scheme.min_subjects, scheme.max_subjects,",
+            "scheme.min_mvt, scheme.max_mvt, scheme.min_wisk, scheme.max_wisk,",
+            "scheme.min_combi, scheme.max_combi, scheme.max_reex,",
 
             "scheme.rule_avg_pece_sufficient, scheme.rule_avg_pece_notatevlex,",
             "scheme.rule_core_sufficient, scheme.rule_core_notatevlex,",
@@ -6513,7 +6633,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
             "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id,",
             "depbase.code AS depbase_code,"
             "scheme.modifiedby_id, scheme.modifiedat,",
-            "SUBSTRING(au.username, 7) AS modby_username",
+            "au.last_name AS modby_username",
 
             "FROM subjects_scheme AS scheme",
             "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
@@ -6547,7 +6667,7 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
 # --- end of create_scheme_rows
 
 
-def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
+def create_schemeitem_rows(examyear, append_dict, schemeitem_pk=None, scheme_pk=None,
                            cur_dep_only=False, depbase=None, orderby_name=False, orderby_sjtpbase_sequence=False):
     # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-07-01
 
@@ -6586,8 +6706,10 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
                 "si.sr_allowed AS si_sr_allowed, si.no_ce_years, si.thumb_rule,",
 
+                "si.studyloadhours, si.notatdayschool,",
+
                 "si.modifiedby_id, si.modifiedat,",
-                "SUBSTRING(au.username, 7) AS modby_username",
+                "au.last_name AS modby_username",
 
                 "FROM subjects_schemeitem AS si",
                 "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
@@ -6635,9 +6757,18 @@ def create_schemeitem_rows(examyear, schemeitem_pk=None, scheme_pk=None,
                 logger.debug('sql_keys: ' + str(sql_keys) )
                 logger.debug('sql: ' + str(sql) )
 
-            newcursor = connection.cursor()
-            newcursor.execute(sql, sql_keys)
-            schemeitem_rows = af.dictfetchall(newcursor)
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                schemeitem_rows = af.dictfetchall(cursor)
+
+# - add messages to schemeitem_row, only if subject_pk has value
+            if schemeitem_pk and schemeitem_rows and append_dict:
+                # when schemeitem_pk has value there is only 1 row
+                row = schemeitem_rows[0]
+                if row:
+                    for key, value in append_dict.items():
+                        row[key] = value
+
 
             if logging_on:
                 logger.debug('schemeitem_rows: ' + str(schemeitem_rows) )

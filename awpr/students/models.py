@@ -96,7 +96,7 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
 
     base = ForeignKey(Studentbase, related_name='students', on_delete=PROTECT)
 
-    school = ForeignKey(sch_mod.School, related_name='students', on_delete=CASCADE)
+    school = ForeignKey(sch_mod.School, related_name='students', on_delete=PROTECT)
     department = ForeignKey(sch_mod.Department, related_name='students', on_delete=PROTECT)
     level = ForeignKey(subj_mod.Level, null=True, blank=True, related_name='students', on_delete=SET_NULL)
     sector = ForeignKey(subj_mod.Sector, null=True,blank=True, related_name='students', on_delete=SET_NULL)
