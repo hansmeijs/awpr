@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         };
 
 // ---  SIDEBAR ------------------------------------
@@ -237,16 +237,16 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false)};
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if(el_SBR_select_subject){
-            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
 
         const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         if (el_SBR_select_cluster){
             el_SBR_select_cluster.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "cluster", cluster_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "cluster", cluster_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if(el_SBR_select_student){
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
             //el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false);
@@ -2829,7 +2829,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // reset mode_edit_clustername
         mod_MCL_dict.mode_edit_clustername = null;
         MCL_ShowClusterName();
-        t_MSSSS_Open(loc, "subject", subject_rows, false, setting_dict, permit_dict, MSSSS_Response);
+        t_MSSSS_Open(loc, "subject", subject_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
     };  // MCL_BtnSelectSubjectClick
 
   //=========  MCL_InputClusterName  ================ PR2022-01-06

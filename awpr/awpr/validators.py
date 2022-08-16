@@ -456,17 +456,25 @@ def validate_subject_code_exists(code, cur_subject=None):  # PR2020-12-11 PR2021
     return msg_html
 
 
-def validate_subject_name_exists(name, examyear, cur_subject=None):  # PR2021-06-22
+def validate_subject_name_exists(field, new_value, examyear, cur_subject=None):  # PR2021-06-22 PR2022-08-14
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- validate_subject_name_exists -----')
-        logger.debug('name: ' + str(name))
+        logger.debug('field: ' + str(field))
+        logger.debug('new_value: ' + str(new_value))
 
     msg_html = None
 
     # __iexact looks for the exact string, but case-insensitive. If value is None, it is interpreted as an SQL NULL
     crit = Q(examyear=examyear)
-    crit.add(Q(name__iexact=name), crit.connector)
+    if field == 'name_nl':
+        crit.add(Q(name_nl__iexact=new_value), crit.connector)
+
+    elif field == 'name_en':
+        crit.add(Q(name_en__iexact=new_value), crit.connector)
+
+    elif field == 'name_pa':
+        crit.add(Q(name_pa__iexact=new_value), crit.connector)
 
 # exclude this subject
     if cur_subject:
@@ -475,8 +483,10 @@ def validate_subject_name_exists(name, examyear, cur_subject=None):  # PR2021-06
     value_exists = subj_mod.Subject.objects.filter(crit).exists()
 
     if value_exists:
-        field_caption = ' '.join((str(_('Subject')), str(_('name'))))
-        msg_html = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': field_caption, 'val': name})
+        caption = _('Subject name in Papiamentu') if field == 'name_pa' \
+            else _('Subject name in English') if field == 'name_en' \
+            else _('Subject name in Dutch')
+        msg_html = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': caption, 'val': new_value})
 
     return msg_html
 
@@ -694,39 +704,42 @@ def validate_subjecttype_duplicate_base(scheme, sjtpbase, error_list, cur_subjec
 # - end of validate_subjecttype_duplicate_base
 
 
-# ============ ENVELOP  ===========
-def validate_enveloplabel_name_blank_length_exists(examyear, label_name, cur_enveloplabel=None):
-    # PR2022-08-08
+# ============ ENVELOP BUNDLE / LABEL  ===========
+def validate_bundle_label_name_blank_length_exists(table, examyear, name, cur_instance=None):
+    # PR2022-08-11
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----------- validate_enveloplabel_name_blank_length_exists ----------- ')
-        logger.debug('label_name: ' + str(label_name))
+        logger.debug('----------- validate_bundle_label_name_blank_length_exists ----------- ')
+        logger.debug('name: ' + str(name))
 
     msg_html = None
 
-    caption = _('Label name')
-    if not label_name:
+    caption = _('Label bundle name') if table == 'envelopbundle' else _('Label name')
+    if not name:
         msg_html = get_err_html_cannot_be_blank(caption)
 
-    elif len(label_name) > c.MAX_LENGTH_NAME:
-        msg_html = get_err_html_max_char(caption, label_name, c.MAX_LENGTH_NAME)
+    elif len(name) > c.MAX_LENGTH_NAME:
+        msg_html = get_err_html_max_char(caption, name, c.MAX_LENGTH_NAME)
 
     if msg_html is None:
 # --- if exists: check if label with this name exists this examyear
         crit = Q(examyear=examyear) & \
-               Q(name__iexact=label_name)
+               Q(name__iexact=name)
 # --- exclude this record
-        if cur_enveloplabel:
-            crit.add(~Q(pk=cur_enveloplabel.pk), crit.connector)
+        if cur_instance:
+            crit.add(~Q(pk=cur_instance.pk), crit.connector)
 
-        exists = sch_mod.School.objects.filter(crit).exists()
+        if table == 'envelopbundle':
+            exists = subj_mod.Envelopbundle.objects.filter(crit).exists()
+        else:
+            exists = subj_mod.Enveloplabel.objects.filter(crit).exists()
 
         if exists:
-            msg_html = _("%(cpt)s '%(val)s' already exists.") % {'val': label_name}
-
+            msg_html = _("%(cpt)s '%(val)s' already exists.") % {'val': name}
 
     return msg_html
-# - end of validate_enveloplabel_name_blank_length_exists
+# - end of validate_bundle_label_name_blank_length_exists
+
 
 
 def get_err_html_cannot_be_blank(caption):    # PR2022-08-08
@@ -789,14 +802,17 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     # reset_show_msg(request):
 
     # PR 2022-06-01 function 'reset_show_msg' resets open_args
-    # called only once by Loggedin, to rest before setting is retrieved
+    # called only once by Loggedin, to reset before setting is retrieved
     # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
 
     msg = ''.join((
-        '<p><b>', str(_("The 'Submit Ex5' button is now available")), '</b><br>',
-        str(_('Go to the page <i>Results</i> and click the grey button <i>Submit Ex5</i>.')), ' ',
-        str(_('There are now additional approvals needed, but all SE grades and CE scores must be approved.')), ' ',
-        str(_('Only the chairperson or secretary can submit the Ex5 form.')), '</p>',
+        '<p><b>', str(_("ETE has created examyear 2023 in AWP-online")), '</b><br>',
+        str(_("The schools in Curaçao can now start entering data.")), '<br>',
+        str(_("Selecting the new examyear goes as follows:")), '<br>',
+        str(_("Click on <i>Examyear 2022</i> beside the AWP-logo in the left upper corner of the page.")), '<br>',
+        str(_("The window <i>Select an examyear</i> opens. Select <i>2023</i>.")), '<br>',
+        '<b>', str(_('Make sure that you enter the new information in the correct examyear.')), '</b><br>',
+        str(_('AWP-online gives the warning below, when you open the previous exam year, but you can still enter data.')), '</p>',
         '</p>'
     ))
 
@@ -805,7 +821,13 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     return message
 
     """
-
+    msg = ''.join((
+        '<p><b>', str(_("The 'Submit Ex5' button is now available")), '</b><br>',
+        str(_('Go to the page <i>Results</i> and click the grey button <i>Submit Ex5</i>.')), ' ',
+        str(_('There are now additional approvals needed, but all SE grades and CE scores must be approved.')), ' ',
+        str(_('Only the chairperson or secretary can submit the Ex5 form.')), '</p>',
+        '</p>'
+    ))
     msg = ''.join((
         '<p><b>', str(_('How AWP-online will calculate the results')), '</b><br>',
         str(_('As soon as the conversion tables ares available, we will upload them in AWP-online.')), ' ',

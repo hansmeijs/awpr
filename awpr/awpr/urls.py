@@ -317,8 +317,11 @@ urlpatterns = [
         path('orderlist_request_verifcode', school_views.OrderlistRequestVerifcodeView.as_view(), name='url_orderlist_request_verifcode'),
         path('orderlist_publish', school_views.OrderlistsPublishView.as_view(), name='url_orderlist_publish'),
 
-        path('envelopitem_upload', subject_orderlists.EnvelopItemUploadView.as_view(), name='url_envelopitem_upload'),
+        path('envelopbundle_upload', subject_orderlists.EnvelopBundleUploadView.as_view(), name='url_envelopbundle_upload'),
         path('enveloplabel_upload', subject_orderlists.EnvelopLabelUploadView.as_view(), name='url_enveloplabel_upload'),
+        path('envelopitem_upload', subject_orderlists.EnvelopItemUploadView.as_view(), name='url_envelopitem_upload'),
+
+        path('envelop_print/<lst>/', subject_orderlists.EnvelopPrintView.as_view(), name='url_envelop_print'),
     ])),
 
 # ===== EXAMS ========================== PR2021-04-04

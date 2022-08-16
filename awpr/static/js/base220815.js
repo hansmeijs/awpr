@@ -415,6 +415,7 @@
             setTimeout(function (){el.classList.remove(className)}, timeout);
         };
     };
+
 //=========  UndoInvalidInput  ================ PR2022-06-19
     function UndoInvalidInput(el_input, old_value) {
         // show class, remove it after timeout milliseconds
@@ -944,6 +945,22 @@
         }}};
         return dict_clone;
     };  // deepcopy_dict
+
+
+//=========  copy_updatedict_to_datadict  ================ PR2022-08-14
+    function copy_updatedict_to_datadict(data_dict, update_dict, field_names, updated_columns){
+    // ---  loop through fields of update_dict
+        for (const [key, new_value] of Object.entries(update_dict)) {
+            if (key in data_dict){
+                if (new_value !== data_dict[key]) {
+// ---  update field in data_row when value has changed
+                    data_dict[key] = new_value;
+// ---  add field to updated_columns list when field exists in field_names
+                    if (field_names && field_names.includes(key)) {
+// ---  add field to updated_columns list
+                        updated_columns.push(key);
+        }}}};
+    };  // copy_updatedict_to_datadict
 
 //#########################################################################
 // +++++++++++++++++ SORT DICTIONARY +++++++++++++++++++++++++++++++++++++++
@@ -1718,7 +1735,7 @@
         const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
         add_or_remove_class(el_mod_message_btn_hide, cls_hide, true);
 
-        $("#id_mod_message").modal({backdrop: false});
+        $("#id_mod_message").modal({backdrop: true});
 
         /*
         'hide.bs.modal' executes when the .modal (modal window) gets closed.

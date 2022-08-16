@@ -331,14 +331,15 @@
 
 
 // +++++++++++++++++ MODAL SELECT SCHOOL SUBJECT STUDENT ++++++++++++++++++++++++++++++++
-//========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23
-    function t_MSSSS_Open (loc, tblName, data_rows, add_all, setting_dict, permit_dict, MSSSS_Response) {
-        //console.log(" ===  t_MSSSS_Open  =====", tblName) ;
+//========= t_MSSSS_Open ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13
+    function t_MSSSS_Open (loc, tblName, data_rows, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
+        console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
         //console.log( "tblName", tblName );
-        //console.log( "data_rows", data_rows, typeof data_rows );
-        // tblNames are: "school", "subject", "student"
+        console.log( "data_rows", data_rows, typeof data_rows );
+        console.log( "tblName", tblName );
+        // tblNames are: "school", "subject", "student", "envelopbundle
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
         // allow opening only when loc has value
@@ -348,7 +349,10 @@
             if (may_select){
                 const selected_pk = (tblName === "school") ? setting_dict.sel_school_pk :
                                    (tblName === "subject") ? setting_dict.sel_subject_pk :
-                                   (tblName === "student") ? setting_dict.sel_student_pk : null;
+                                   (tblName === "student") ? setting_dict.sel_student_pk :
+                                   (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
+        console.log( "setting_dict", setting_dict );
+        console.log( "selected_pk", selected_pk, typeof selected_pk );
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
     //console.log( "el_MSSSS_input", el_MSSSS_input);
@@ -361,6 +365,14 @@
                     el_MSSSS_input.value = null;
             // ---  set focus to input element
                     set_focus_on_el_with_timeout(el_MSSSS_input, 50);
+
+            // ---  show delete btn, only in page orderlist when select bundle
+                    const show_btn = show_delete_btn && selected_pk;
+                    const el_MSSSS_btn_delete = document.getElementById("id_MSSSS_btn_delete");
+                    const caption = (tblName === "envelopbundle") ? loc.Remove_bundle : loc.Delete;
+                    el_MSSSS_btn_delete.innerText = caption;
+                    add_or_remove_class(el_MSSSS_btn_delete, cls_hide, !show_btn )
+
             // ---  show modal
                      $("#id_mod_select_school_subject_student").modal({backdrop: true});
                  };
@@ -386,15 +398,16 @@
         const data_rows = (tblName === "school") ? school_rows :
                         (tblName === "subject") ? subject_rows :
                         (tblName === "cluster") ? cluster_rows :
-                        (tblName === "student") ? student_rows : null;
+                        (tblName === "student") ? student_rows :
+                        (tblName === "envelopbundle") ? envelopbundle_rows : null;
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
         const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
 /*
-        console.log("selected_pk_int", selected_pk_int);
-        console.log("selected_code", selected_code);
-        console.log("selected_name", selected_name);
-        console.log( "selected_dict", selected_dict);
-        console.log( "tblName", tblName);
+    console.log("selected_pk_int", selected_pk_int);
+    console.log("selected_code", selected_code);
+    console.log("selected_name", selected_name);
+    console.log( "selected_dict", selected_dict);
+    console.log( "tblName", tblName);
 */
         //console.log( "===== t_MSSSS_display_in_sbr  ========= ");
         t_MSSSS_display_in_sbr(tblName, selected_pk_int);
@@ -416,20 +429,23 @@
         $("#id_mod_select_school_subject_student").modal("hide");
     }  // t_MSSSS_Save
 
-//========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23  PR2021-07-23
+//========= t_MSSSS_Fill_SelectTable  ============= PR2021-01-23  PR2021-07-23 PR2022-08-12
     function t_MSSSS_Fill_SelectTable(loc, tblName, data_rows, setting_dict, el_input, MSSSS_Response, selected_pk, add_all) {
         //console.log("===== t_MSSSS_Fill_SelectTable ===== ", tblName);
         //console.log("data_rows", data_rows, typeof data_rows);
+        //console.log("tblName", tblName, typeof tblName);
 
 // set header text
         const label_text = loc.Select + (
                                     (tblName === "student") ?  loc.a_candidate :
                                     (tblName === "subject") ?  loc.a_subject :
-                                    (tblName === "school") ?  loc.a_school : ""
+                                    (tblName === "school") ?  loc.a_school :
+                                    (tblName === "envelopbundle") ?  loc.a_label_bundle : ""
                                      );
         const item = (tblName === "student") ? loc.a_candidate :
                      (tblName === "subject") ? loc.a_subject :
-                     (tblName === "school") ? loc.a_school : "";
+                     (tblName === "school") ? loc.a_school :
+                     (tblName === "envelopbundle") ? loc.a_label_bundle : "";
         const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list;
 
         document.getElementById("id_MSSSS_header").innerText = label_text;
@@ -467,6 +483,7 @@
                         (tblName === "subject") ? (loc.Subjects) ? loc.Subjects.toLowerCase() : "" :
                         (tblName === "cluster") ? (loc.Clusters) ? loc.Clusters.toLowerCase() : "" :
                         (tblName === "school") ? (loc.Schools) ? loc.Schools.toLowerCase() : "" : "";
+                        (tblName === "envelopbundle") ? (loc.Label_bundles) ? loc.Label_bundles.toLowerCase() : "" : "";
         return "<" + loc.No_ + caption + ">";
     }
 
@@ -480,16 +497,13 @@
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
-        //console.log("===== t_MSSSS_Create_SelectRow ===== ");
-        //console.log("..........tblName", tblName);
-        //console.log("map_dict", map_dict);
+        console.log("===== t_MSSSS_Create_SelectRow ===== ");
+        console.log("..........tblName", tblName);
+        console.log("map_dict", map_dict);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
-        const pk_int = (tblName === "school") ? map_dict.base_id :
-                    (tblName === "subject") ? map_dict.id :
-                    (tblName === "cluster") ? map_dict.id :
-                    (tblName === "student") ? map_dict.id : "";
+        const pk_int = (tblName === "school") ? map_dict.base_id : map_dict.id;
 
         const code = (tblName === "school") ? map_dict.sb_code :
                     (tblName === "subject") ? map_dict.code :
@@ -499,7 +513,9 @@
         const name =  (tblName === "school") ? map_dict.abbrev :
                     (tblName === "subject") ? map_dict.name :
                     (tblName === "cluster") ? map_dict.name :
-                    (tblName === "student") ? map_dict.fullname  : "";
+                    (tblName === "student") ? map_dict.fullname  :
+                    (tblName === "envelopbundle") ? map_dict.name : "";
+
         const is_selected_row = (pk_int === selected_pk);
 
 // ---  lookup index where this row must be inserted
@@ -517,6 +533,9 @@
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
         } else if(tblName === "school"){
             if (code) { ob1 = code.toLowerCase()};
+            row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
+        } else if(tblName === "envelopbundle"){
+            if (name) { ob1 = name.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
         }
 
@@ -1904,9 +1923,9 @@ const mod_MCOL_dict = {selected_btn: null, columns: {}, cols_skipped: {}, cols_h
 
 //=========  t_MCOL_Open  ================ PR2021-08-02 PR2021-12-02 PR2022-05-15 PR2022-07-21
     function t_MCOL_Open(page) {
-        //console.log(" -----  t_MCOL_Open   ----")
-    //console.log("    mod_MCOL_dict", mod_MCOL_dict)
-    //console.log("    mod_MCOL_dict.cols_skipped", mod_MCOL_dict.cols_skipped)
+        console.log(" -----  t_MCOL_Open   ----")
+    console.log("    mod_MCOL_dict", mod_MCOL_dict)
+    console.log("    mod_MCOL_dict.cols_skipped", mod_MCOL_dict.cols_skipped)
 
         // note: this function uses global variable 'selected_btn'
 
@@ -1942,7 +1961,7 @@ const mod_MCOL_dict = {selected_btn: null, columns: {}, cols_skipped: {}, cols_h
 
     // sort by field 'sortby'
         mod_MCOL_dict.columns_excl_skipped.sort(b_comparator_sortby);
-    //console.log("mod_MCOL_dict.columns_excl_skipped", mod_MCOL_dict.columns_excl_skipped)
+    console.log("mod_MCOL_dict.columns_excl_skipped", mod_MCOL_dict.columns_excl_skipped)
         t_MCOL_FillSelectTable();
 
 // ---  disable save btn
@@ -1955,7 +1974,7 @@ const mod_MCOL_dict = {selected_btn: null, columns: {}, cols_skipped: {}, cols_h
 
 //=========  t_MCOL_Save  ================ PR2021-08-02 PR2021-12-02 PR2022-07-21
     function t_MCOL_Save(url_usersetting_upload, HandleBtnSelect) {
-        //console.log(" -----  t_MCOL_Save   ----")
+        console.log(" -----  t_MCOL_Save   ----")
         const upload_dict = {};
         const upload_colhidden_list = []
         if (mod_MCOL_dict.columns_excl_skipped && mod_MCOL_dict.columns_excl_skipped.length){
@@ -1967,14 +1986,15 @@ const mod_MCOL_dict = {selected_btn: null, columns: {}, cols_skipped: {}, cols_h
             };
         };
         upload_dict[mod_MCOL_dict.page] = {cols_hidden: upload_colhidden_list}
-    //console.log("upload_dict", upload_dict);
-    //console.log("url_usersetting_upload", url_usersetting_upload);
+    console.log("upload_dict", upload_dict);
+    console.log("url_usersetting_upload", url_usersetting_upload);
 
         b_UploadSettings (upload_dict, url_usersetting_upload);
 
     // update mod_MCOL_dict.cols_hidden
         b_copy_array_noduplicates(upload_colhidden_list, mod_MCOL_dict.cols_hidden);
 
+    console.log("mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden);
         HandleBtnSelect(mod_MCOL_dict.selected_btn, true)  // true = skip_upload
 // hide modal
         // in HTML: data-dismiss="modal"

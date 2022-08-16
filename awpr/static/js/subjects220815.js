@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // columns_hidden and mod_MCOL_dict.columns are also used in t_MCOL_Open and t_MCOL_Save
     mod_MCOL_dict.columns.btn_subject = {
-        name: "Name", depbases: "Departments", sequence: "Sequence"
+        name_nl: "Name", depbases: "Departments", sequence: "Sequence"
     };
 
     mod_MCOL_dict.columns.btn_scheme = {
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     field_settings.btn_subject = {field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
-                    field_names: ["select", "code", "name", "depbases", "sequence"],
+                    field_names: ["select", "code", "name_nl", "depbases", "sequence"],
                     field_tags: ["div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text",  "text", "number"],
                     field_width:  ["020", "120", "300", "150", "120",  "120"],
@@ -353,7 +353,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         const el_MSUBJ_code = document.getElementById("id_MSUBJ_code");
-        const el_MSUBJ_name = document.getElementById("id_MSUBJ_name");
+        const el_MSUBJ_name_nl = document.getElementById("id_MSUBJ_name");
+        const el_MSUBJ_name_en = document.getElementById("id_MSUBJ_name_en");
+        const el_MSUBJ_name_pa = document.getElementById("id_MSUBJ_name_pa");
         const el_MSUBJ_sequence = document.getElementById("id_MSUBJ_sequence");
         //const el_MSUBJ_etenorm = document.getElementById("id_MSUBJ_etenorm");
         //if(el_MSUBJ_etenorm){el_MSUBJ_etenorm.addEventListener("click", function() {MSUBJ_Toggle(el_MSUBJ_etenorm)}, false )}
@@ -738,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const class_align = "ta_" + field_setting.field_align[j];
 
 // ++++++++++ insert columns in header row +++++++++++++++
-        // --- add th to tblRow_header +++
+        // --- add th to tblRow_header
                 let th_header = document.createElement("th");
         // --- add div to th, margin not working with th
                     const el_header = document.createElement("div");
@@ -900,7 +902,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 } else {
                     if (tblName === "subject"){
-                        if (["code", "name", "depbases", "sequence"].includes(field_name)){
+                        if (["code", "name_nl", "depbases", "sequence"].includes(field_name)){
                             td.addEventListener("click", function() {MSUBJ_Open(el)}, false)
                             td.classList.add("pointer_show");
                             add_hover(td);
@@ -958,7 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let inner_text = null, title_text = null, filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev", "no_ce_years"].includes(field_name)){
+                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name_nl", "name_en", "name_pa", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev", "no_ce_years"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["min_studyloadhours", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
@@ -1220,35 +1222,30 @@ document.addEventListener('DOMContentLoaded', function() {
             let field_error_list = []
 
             const error_list = get_dict_value(update_dict, ["error"], []);
-        //console.log("error_list", error_list);
 
             if(error_list && error_list.length){
 
     // - show modal messages
-                // TODO cannot show error_list in b_show_mod_message_dictlist.Already shown by response.messages
+                // TODO cannot show error_list in b_show_mod_message_dictlist. Already shown by response.messages
                 b_show_mod_message_dictlist(error_list);
 
-                // TODO error_list is list of strings, not a dict with 'field
     // - add fields with error in updated_columns, to put old value back in field
+               // TODO error_list is list of strings, not a dict with 'field
                 for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
                     if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
                 };
-
-        //console.log("field_error_list", field_error_list);
-            //} else {
-            // close modal MSJ when no error --- already done in modal
-                //$("#id_mod_subject").modal("hide");
-            }
+    // - close modal MSJ when no error --- already done in modal
+            };
 
 // ---  get list of hidden columns
-        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
+            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
 // ---  get list of columns that are not updated because of errors
             const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
 
 // ++++ created ++++
             // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
-            //arr.splice(index, 0, item); will insert item into arr at the specified index
+            // arr.splice(index, 0, item); will insert item into arr at the specified index
             // (deleting 0 items first, that is, it's just an insert).
 
             if(is_created){
@@ -1270,16 +1267,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  make new row green for 2 seconds,
                     ShowOkElement(new_tblRow);
-                }
+                };
             } else {
 
 // +++ get existing data_dict from data_rows
-                const map_rows = (tblName === "subject") ? subject_rows :
-                                (tblName === "scheme") ? scheme_rows :
-                                (tblName === "schemeitem") ? schemeitem_rows :
-                                (tblName === "subjecttype") ? subjecttype_rows :
-                                (tblName === "subjecttypebase") ? subjecttypebase_rows : [];
-
                 const pk_int = (update_dict && update_dict.id) ? update_dict.id : null;
                 const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
@@ -1287,11 +1278,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ++++ deleted ++++
                 if(is_deleted){
-                    // delete row from data_rows. Splice returns array of deleted rows
+    // --- delete row from data_rows. Splice returns array of deleted rows
                     const deleted_row_arr = data_rows.splice(datarow_index, 1)
                     const deleted_row_dict = deleted_row_arr[0];
 
-    //--- delete tblRow
+    // --- delete tblRow
                     if(deleted_row_dict && deleted_row_dict.mapid){
                         const tblRow_tobe_deleted = document.getElementById(update_dict.mapid);
     // ---  when delete: make tblRow red for 2 seconds, before uploading
@@ -1306,28 +1297,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
 
-                        // skip first column (is margin)
-                        for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            if (col_field in data_dict && col_field in update_dict){
-                                if (data_dict[col_field] !== update_dict[col_field] ) {
-        // ---  add field to updated_columns list
-                                    updated_columns.push(col_field)
-        // ---  update field in data_row
-                                    data_dict[col_field] = update_dict[col_field];
-                        }}};
+                        //PR2022-08-14 debug: not all data_dict fiels are in field_names. must update all fields instead
+                        // happens in copy_updatedict_to_datadict, also fills updated_columns
+                        // was: data_dict[col_field] = update_dict[col_field];
+
+                        copy_updatedict_to_datadict(data_dict, update_dict, field_names, updated_columns);
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
                         // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
                         if(updated_columns.length || field_error_list.length){
-        //console.log("updated_columns", updated_columns);
-        //console.log("field_error_list", field_error_list);
 
 // --- get existing tblRow
                             let tblRow = document.getElementById(map_id);
                             if(tblRow){
-                // to make it perfect: move row when first or last name have changed
-                                if (updated_columns.includes("name")){
+                // to make it perfect: move row when name has changed
+                                if (updated_columns.includes("name") || updated_columns.includes("name_nl")){
                                 //--- delete current tblRow
                                     tblRow.parentNode.removeChild(tblRow);
                                 //--- insert row new at new position
@@ -1343,13 +1328,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                         const is_err_field = error_columns.includes(el_fldName);
     // - update field and make field green when field name is in updated_columns
                                         if(is_updated_field){
-                                                UpdateField(el, update_dict);
-                                                ShowOkElement(el);
+                                            UpdateField(el, update_dict);
+                                            ShowOkElement(el);
                                         } else if( is_err_field){
     // - make field red when error and reset old value after 2 seconds
                                             reset_element_with_errorclass(el, update_dict, tobedeleted)
                                         };
-                                    }  //  if (el)
+                                    };  //  if (el)
                                 };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
                             };  // if(tblRow){
                         }; //  if(updated_columns.length){
@@ -1357,7 +1342,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };  //  if(is_deleted)
             }; // if(is_created)
         };  // if(!isEmpty(update_dict))
-    }  // RefreshDatarowItem
+    };  // RefreshDatarowItem
 
 //=========  reset_element_with_errorclass  ================ PR2021-12-15
     function reset_element_with_errorclass(el_input, update_dict, tobedeleted) {
@@ -2644,7 +2629,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
     // ---  set header text
-            document.getElementById("id_MSJTBASE_header").innerText = mod_headertext(is_addnew, tblName, mod_MSJTBASE_dict.name);
+            document.getElementById("id_MSJTBASE_header").innerText = mod_headertext(is_addnew, tblName, mod_MSJTBASE_dict.name_nl);
 
     // ---  remove value from input elements
             MSJTBASE_ResetElements(true);  // true = also_remove_values
@@ -2655,7 +2640,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!is_addnew){
                 el_MSUBJ_code.value = (mod_MSJTBASE_dict.code) ? mod_MSJTBASE_dict.code : null;
-                el_MSUBJ_name.value = (mod_MSJTBASE_dict.name) ? mod_MSJTBASE_dict.name : null;
+                el_MSUBJ_name_nl.value = (mod_MSJTBASE_dict.name_nl) ? mod_MSJTBASE_dict.name_nl : null;
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSJTBASE_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
@@ -2753,13 +2738,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++ MOD SUBJECT ++++++++++++++++ PR2020-09-30
 // --- also used for level, sector,
     function MSUBJ_Open(el_input){
-        //console.log(" -----  MSUBJ_Open   ----")
+        console.log(" -----  MSUBJ_Open   ----")
 
-        //if(permit_dict.permit_crud){
-        if(true){
+        if(permit_dict.permit_crud){
             const fldName = get_attr_from_el(el_input, "data-field");
-        //console.log("el_input", el_input)
-        //console.log("fldName", fldName)
 
             // el_input is undefined when called by submenu btn 'Add new'
             const is_addnew = (!el_input);
@@ -2769,22 +2751,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 mod_MSUBJ_dict = {is_addnew: is_addnew,
                                     examyear_pk: setting_dict.sel_examyear_pk,
                                     sequence: 1 + MSUBJ_get_max_sequence()
-                } // {is_addnew: is_addnew, db_code: setting_dict.sel_depbase_code}
+                };
 
             } else {
                 const tblRow = t_get_tablerow_selected(el_input);
-                const map_dict = get_recursive_integer_lookup(tblRow);
-                mod_MSUBJ_dict = deepcopy_dict(map_dict);
+                const data_dict = get_recursive_integer_lookup(tblRow);
+
+                console.log("data_dict", data_dict);
+
+                mod_MSUBJ_dict = (data_dict) ? deepcopy_dict(data_dict) : {};
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSUBJ_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSUBJ_dict.modby_username) ? mod_MSUBJ_dict.modby_username : "-";
                 const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
                 document.getElementById("id_MSUBJ_msg_modified").innerText = display_txt;
-            }
+            };
 
 // ---  set header text
-            document.getElementById("id_MSUBJ_header").innerText = mod_headertext(is_addnew, tblName, mod_MSUBJ_dict.name);
+            document.getElementById("id_MSUBJ_header").innerText = mod_headertext(is_addnew, tblName, mod_MSUBJ_dict.name_nl);
 
 // ---  remove value from input elements
             MSUBJ_ResetElements(true);  // true = also_remove_values
@@ -2794,7 +2779,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!is_addnew){
                 el_MSUBJ_code.value = (mod_MSUBJ_dict.code) ? mod_MSUBJ_dict.code : null;
-                el_MSUBJ_name.value = (mod_MSUBJ_dict.name) ? mod_MSUBJ_dict.name : null;
+                el_MSUBJ_name_nl.value = (mod_MSUBJ_dict.name_nl) ? mod_MSUBJ_dict.name_nl : null;
+                el_MSUBJ_name_en.value = (mod_MSUBJ_dict.name_en) ? mod_MSUBJ_dict.name_en : null;
+                el_MSUBJ_name_pa.value = (mod_MSUBJ_dict.name_pa) ? mod_MSUBJ_dict.name_pa : null;
                 el_MSUBJ_sequence.value = (mod_MSUBJ_dict.sequence) ? mod_MSUBJ_dict.sequence : null;
 
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSUBJ_dict.modifiedat);
@@ -2852,7 +2839,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 has_changes = true;
             } else {
                 upload_dict.subject_pk = mod_MSUBJ_dict.id;
-                upload_dict.mapid = mod_MSUBJ_dict.mapid;
+                //upload_dict.mapid = mod_MSUBJ_dict.mapid;
             }
     // ---  put changed values of input elements in upload_dict
             const form_elements = document.getElementById("id_MSUBJ_form_controls").querySelectorAll(".awp_input_text")
@@ -3105,7 +3092,7 @@ document.addEventListener('DOMContentLoaded', function() {
         el_MSUBJ_message_container.innerHTML = null;
     }  // MSUBJ_validate_and_disable
 
-//=========  MSUBJ_validate_field  ================  PR2020-10-01 PR2021-05-14
+//=========  MSUBJ_validate_field  ================  PR2020-10-01 PR2021-05-14 PR2022-08-14
     function MSUBJ_validate_field(el_input, fldName) {
         //console.log(" -----  MSUBJ_validate_field   ----")
         //console.log("fldName", fldName)
@@ -3113,31 +3100,32 @@ document.addEventListener('DOMContentLoaded', function() {
         if (el_input){
             const value = el_input.value;
             //console.log("value", value)
-            if (["code", "name"].includes(fldName)) {
+            if (["code", "name_nl", "name_en", "name_pa"].includes(fldName)) {
                 const caption = (fldName === "code") ? loc.Abbreviation : loc.Name;
                 const max_length = (fldName === "code") ? 8 : 50;
-                if (!value) {
+                // "name_en" and "name_pa" can be blank
+                if (!value && ["code", "name_nl"].includes(fldName)) {
                     msg_err = caption + loc.cannot_be_blank;
                 } else if (value.length > max_length) {
                     msg_err = caption + ( (fldName === "code") ? loc.is_too_long_MAX10 : loc.is_too_long_MAX50 );
-                }
+                };
             } else if(["sequence"].includes(fldName)){
                  if (!value) {
                     msg_err = loc.Sequence + loc.cannot_be_blank;
                  } else {
                     const arr = b_get_number_from_input(loc, fldName, el_input.value);
                     msg_err = arr[1];
-                }
-            }
-        }
+                };
+            };
+        };
         return msg_err;
-    }  // MSUBJ_validate_field
+    };  // MSUBJ_validate_field
 
 //========= MSUBJ_ResetElements  ============= PR2020-08-03
     function MSUBJ_ResetElements(also_remove_values){
         //console.log( "===== MSUBJ_ResetElements  ========= ");
         // --- loop through input elements
-        const fields = ["code", "sequence", "name", "department", "modified"]
+        const fields = ["code", "sequence", "name_nl", "name_en", "name_pa", "department", "modified"]
         for (let i = 0, field, el_input, el_msg; field = fields[i]; i++) {
             el_input = document.getElementById("id_MSUBJ_" + field);
             if(el_input){

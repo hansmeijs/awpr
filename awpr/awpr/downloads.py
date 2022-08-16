@@ -214,10 +214,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         depbase=sel_depbase)
 # ----- ete_exams
                 if datalist_request.get('ete_exam_rows'):
+                    # in page orderlist / envelop: show ete_exams of all deps
+                    show_all_deps = af.get_dict_value(datalist_request, ('ete_exam_rows', 'show_all_deps'), False)
+                    selected_depbase = sel_depbase if not show_all_deps else None
                     datalists['ete_exam_rows'] = sj_vw.create_ete_exam_rows(
                         req_usr=request.user,
                         sel_examyear=sel_examyear,
-                        sel_depbase=sel_depbase,
+                        sel_depbase=selected_depbase,
                         append_dict={},
                         setting_dict=new_setting_dict,
                         exam_pk_list=None
@@ -282,7 +285,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 #request_item = datalist_request.get('studentsubjectnote_rows')
                 #if request_item:
                 #    datalists['studentsubjectnote_rows'] = stud_view.create_studentsubjectnote_rows(request_item, request)
-
 
 # ----- grade_exam_rows
                 if datalist_request.get('grade_exam_rows'):
@@ -401,7 +403,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- envelopbundle_rows
                 if datalist_request.get('envelopbundle_rows'):
                     datalists['envelopbundle_rows'] = sj_ol.create_envelopbundle_rows(
-                        sel_examyear=sel_examyear
+                        sel_examyear=sel_examyear,
+                        append_dict={}
                     )
 
 # ----- enveloplabel_rows
@@ -416,19 +419,16 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_examyear=sel_examyear,
                         append_dict={}
                     )
-
- # ----- envelopbundlelabel_rows
+# ----- enveloplabelitem_rows
                 if datalist_request.get('envelopbundlelabel_rows'):
                     datalists['envelopbundlelabel_rows'] = sj_ol.create_envelopbundlelabel_rows(
                         sel_examyear=sel_examyear
                     )
-
 # ----- enveloplabelitem_rows
                 if datalist_request.get('enveloplabelitem_rows'):
                     datalists['enveloplabelitem_rows'] = sj_ol.create_enveloplabelitem_rows(
                         sel_examyear=sel_examyear
                     )
-
 
 
         if message_list:
@@ -897,7 +897,7 @@ def download_setting(request_item_setting, user_lang, request):
                 )
                 if subject:
                     setting_dict['sel_subject_code'] = subject.base.code
-                    setting_dict['sel_subject_name'] = subject.name
+                    setting_dict['sel_subject_name'] = subject.name_nl
 
             # use studentbase_pk instead of student_pk PR2022-02-07
             #elif key_str == c.KEY_SEL_STUDBASE_PK:

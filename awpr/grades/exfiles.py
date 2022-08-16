@@ -444,7 +444,7 @@ class DownloadEx3View(View):  # PR2021-10-07
 
         # - get arial font
                 try:
-                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial.ttf'
+                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Arial.ttf'
                     ttfFile = TTFont('Arial', filepath)
                     pdfmetrics.registerFont(ttfFile)
                 except Exception as e:
@@ -685,7 +685,7 @@ class DownloadEx3BackpageView(View):  # PR2022-02-26
 
         # - get arial font
                 try:
-                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial.ttf'
+                    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Arial.ttf'
                     ttfFile = TTFont('Arial', filepath)
                     pdfmetrics.registerFont(ttfFile)
                 except Exception as e:
@@ -1465,7 +1465,7 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     examperiod_caption = c.get_examperiod_caption(sel_examperiod)
     examtype_caption = c.get_examtype_caption(sel_examtype)
 
-    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'arial.ttf'
+    filepath = awpr_settings.STATICFILES_FONTS_DIR + 'Arial.ttf'
     #logger.debug('filepath: ' + str(filepath))
 
     try:

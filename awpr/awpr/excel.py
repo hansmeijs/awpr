@@ -25,6 +25,8 @@ from awpr import library as awpr_lib
 from schools import models as sch_mod
 from subjects import models as subj_mod
 from subjects import views as subj_view
+from subjects import calc_orderlist as subj_calc
+
 from students import views as stud_view
 from students import functions as stud_fnc
 
@@ -3818,7 +3820,7 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, req
         school_name = schoolbase_dict.get('sch_name')
 
 # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
-        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, request, schoolbase_pk)
+        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(sel_examyear_instance, request, schoolbase_pk)
 
         total_dict = count_dict.get('total')
 
@@ -3888,31 +3890,50 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 # --- get department dictlist
     # fields are: depbase_id, depbase_code, dep_name, dep_level_req
     department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
+    """
+    department_dictlist: [
+        {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}, 
+        {'depbase_id': 2, 'depbase_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 'dep_level_req': False}, 
+        {'depbase_id': 3, 'depbase_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'dep_level_req': False}]
+    """
 
 # --- get lvlbase dictlist
     lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
+    """
+    lvlbase_dictlist: [
+        {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}, 
+        {'lvlbase_id': 5, 'lvlbase_code': 'PKL', 'lvl_name': 'Praktisch Kadergerichte Leerweg'}, 
+        {'lvlbase_id': 4, 'lvlbase_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg'}, 
+        {'lvlbase_id': 0, 'lvlbase_code': '', 'lvl_name': ''}]
+    """
 
 # +++ get subjectbase dictlist
     # functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
     subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
+    """
+    subjectbase_dictlist: [
+        {'id': 133, 'code': 'ac'}, 
+        {'id': 140, 'code': 'ak'}, 
+        {'id': 166, 'code': 'am'},    
+    """
 
 # +++ get schoolbase dictlist
     # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
-
     """
-    schoolbase_dictlist: [
-        {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_name': 'Ancilla Domini Vsbo'}, 
-        {'sbase_id': 37, 'sbase_code': 'SXM03', 'sch_name': 'Sundial School'}
-        {'sbase_id': 23, 'sbase_code': 'CURETE', 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE'},
-        {'sbase_id': 39, 'sbase_code': 'SXMDOE', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations'}] 
-        ]
+    schoolbase_dictlist:  [
+        {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8}, 
+        {'sbase_id': 3, 'sbase_code': 'CUR02', 'sch_article': 'de', 'sch_name': 'Skol Avansá Amador Nita', 'sch_abbrev': 'SAAN', 'defaultrole': 
+        {'sbase_id': 23, 'sbase_code': 'CURETE', 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE', 'defaultrole': 64}, 
+        {'sbase_id': 30, 'sbase_code': 'SXM01', 'sch_article': 'het', 'sch_name': 'Milton Peters College', 'sch_abbrev': 'MPC', 'defaultrole': 8}, 
+        {'sbase_id': 33, 'sbase_code': 'SXM04', 'sch_article': 'de', 'sch_name': 'Landsexamens Sint Maarten', 'sch_abbrev': 'LEX St. Maarten', 'defaultrole': 8}, 
+        {'sbase_id': 34, 'sbase_code': 'SXMDOE', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations', 'defaultrole': 64}]
     """
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
-    count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, request)
+    count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(sel_examyear_instance, request)
 
-    if logging_on:
+    if logging_on and False:
         logger.debug('count_dict: ' + str(count_dict))
 
     response = None
@@ -4027,7 +4048,11 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
                                  row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                                  formats, col_header_formats, detail_row_formats, totalrow_formats):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ----- write_orderlist_summary -----')
+        logger.debug('ete_duo_dict: ' + str(ete_duo_dict))
 
 # ---  ETE / DUO title row
     sheet.merge_range(row_index, 0, row_index, col_count - 1, title, formats['ete_duo_headerrow'])
@@ -4045,7 +4070,9 @@ def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictl
                     is_herexamens, formats['totalrow_merge'], totalrow_formats)
 
 # +++++++++++++ loop through language  ++++++++++++++++++++++++++++
-    for lang in ('ne', 'pa', 'en'):
+    for lang in ('nl', 'pa', 'en'):
+        if logging_on:
+            logger.debug('lang: ' + str(lang))
 
         if lang in ete_duo_dict:
             lang_dict = ete_duo_dict.get(lang)
@@ -4137,7 +4164,7 @@ def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_
     eteduo_total_row_index = row_index
 
 # +++++++++++++ loop through language  ++++++++++++++++++++++++++++
-    for lang in ('ne', 'pa', 'en'):
+    for lang in ('nl', 'pa', 'en'):
 
         if lang in ete_duo_dict:
             lang_dict = ete_duo_dict.get(lang)
@@ -4334,7 +4361,7 @@ def write_orderlist_per_school(sheet, count_dict, department_dictlist, lvlbase_d
             eteduo_total_row_index = row_index
 
 # +++++++++++++ loop through language  ++++++++++++++++++++++++++++
-            for lang in ('ne', 'pa', 'en'):
+            for lang in ('nl', 'pa', 'en'):
                 if lang in ete_duo_dict:
                     lang_dict = ete_duo_dict.get(lang)
 
@@ -4474,31 +4501,39 @@ def write_summary_row(sheet, item_dict, is_herexamens, row_index, first_subject_
 
 def write_total_row(sheet, item_dict, row_index, field_names, first_subject_column, is_herexamens,
                     totalrow_merge, totalrow_formats):
-    item_dict_total = item_dict.get('total')
-    # {'total': {156: [101, 9, 25], [count, extra, tv2]
-    total = 0
-    for i, field_name in enumerate(field_names):
-        if i == 0:
-            # ??? sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL ', totalrow_merge)
-            pass
-        elif isinstance(field_name, int):
-            base_plus_extra = 0
-            count_arr = item_dict_total.get(field_name)
-            if count_arr:
-                if is_herexamens:
-                    base_plus_extra = count_arr[2]
-                else:
-                    base_plus_extra = count_arr[0] + count_arr[1]
+    logging_on = s.LOGGING_ON
+    if logging_on :
+        logger.debug('item_dict: ' + str(item_dict))
+    # PR2022-08-14 debug: error: 'NoneType' object has no attribute 'get', solved by adding if 'total' in item_dict
+    if 'total' in item_dict:
+        item_dict_total = item_dict.get('total')
+        if logging_on :
+            logger.debug('item_dict_total: ' + str(item_dict_total))
 
-                total += base_plus_extra
-            if base_plus_extra == 0:
-                base_plus_extra = None
-            sheet.write(row_index, i, base_plus_extra, totalrow_formats[i])
+        # {'total': {156: [101, 9, 25], [count, extra, tv2]
+        total = 0
+        for i, field_name in enumerate(field_names):
+            if i == 0:
+                # ??? sheet.merge_range(row_index, 0, row_index, first_subject_column - 1, 'TOTAAL ', totalrow_merge)
+                pass
+            elif isinstance(field_name, int):
+                base_plus_extra = 0
+                count_arr = item_dict_total.get(field_name)
+                if count_arr:
+                    if is_herexamens:
+                        base_plus_extra = count_arr[2]
+                    else:
+                        base_plus_extra = count_arr[0] + count_arr[1]
 
-    last_column = len(field_names) -1
-    if total == 0:
-        total = None
-    sheet.write(row_index, last_column, total, totalrow_formats[last_column - 1])
+                    total += base_plus_extra
+                if base_plus_extra == 0:
+                    base_plus_extra = None
+                sheet.write(row_index, i, base_plus_extra, totalrow_formats[i])
+
+        last_column = len(field_names) -1
+        if total == 0:
+            total = None
+        sheet.write(row_index, last_column, total, totalrow_formats[last_column - 1])
 # - end of write_total_row
 
 
@@ -4515,6 +4550,8 @@ def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subto
         border_bottom = formats['border_bottom']
 
         for i, field_name in enumerate(field_names):
+            if logging_on:
+                logger.debug('field_name: ' + str(field_name))
             if i == 0:
                 # PR2021-09-02 debug. Here merge_range doesn't work. Dont know why
                 #sheet.merge_range(subtotal_total_row_index, 0, subtotal_total_row_index, first_subject_column - 1, 'TOTAAL ', totalrow_merge)
@@ -4537,7 +4574,7 @@ def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subto
                 formula = ''.join(['=IF(', sum, '=0, "", ', sum, ')'])
 
                 sum_cell_ref = subj_view.xl_rowcol_to_cell(subtotal_total_row_index, i)
-                #sheet.write_formula(sum_cell_ref, formula, totalrow_formats[i])
+                sheet.write_formula(sum_cell_ref, formula, totalrow_formats[i])
 # - end of write_total_row_with_formula
 
 

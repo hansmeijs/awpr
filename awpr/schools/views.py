@@ -38,6 +38,7 @@ from schools import dicts as sch_dicts
 from schools import models as sch_mod
 from students import models as stud_mod
 from subjects import views as subj_view
+from subjects import calc_orderlist as subj_calc
 
 import xlsxwriter
 import tempfile
@@ -2330,7 +2331,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                         schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
-                        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance, request)
+                        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(sel_examyear_instance, request)
                         total_dict = count_dict.get('total')
                         if logging_on:
                             logger.debug('total_dict: ' + str(total_dict))
@@ -2445,7 +2446,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
 
                             # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
                                         schoolbase_pk = schoolbase_dict.get('sbase_id')
-                                        count_dict = subj_view.create_studsubj_count_dict(sel_examyear_instance,
+                                        count_dict, count_rowsNIU = subj_view.create_studsubj_count_dict(sel_examyear_instance,
                                                                                           request, schoolbase_pk)
 
                                         is_created = create_orderlist_per_school(

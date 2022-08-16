@@ -320,7 +320,7 @@ def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase, skip_al
         sql_list = [
             "SELECT subj.id, subj.base_id, subj.examyear_id,",
             "CONCAT('subject_', subj.id::TEXT) AS mapid,",
-            "subj.name, sb.code, subj.sequence, subj.depbases,",
+            "sb.code, subj.name_nl, subj.name_en, subj.name_pa, subj.sequence, subj.depbases,",
             user_line,
             "ey.code AS examyear_code",
     
@@ -367,7 +367,7 @@ def create_subjectrows_for_page_subjects(sel_examyear, append_dict, subject_pk=N
         sql_list = [
             "SELECT subj.id, subj.base_id, subj.examyear_id,",
             "CONCAT('subject_', subj.id::TEXT) AS mapid,",
-            "subj.name, sb.code, subj.sequence, subj.depbases,",
+            "sb.code, subj.name_nl, subj.name_en, subj.name_pa, subj.sequence, subj.depbases,",
             "subj.modifiedby_id, subj.modifiedat, au.last_name AS modby_username,"
             "ey.code AS examyear_code",
 
@@ -426,7 +426,7 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
             sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
             sql_list = ["SELECT cl.id, cl.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
                         "dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
-                        "subjbase.code AS subj_code, subj.name AS subj_name",
+                        "subjbase.code AS subj_code, subj.name_nl AS subj_name",
                         add_field_created_str,
                         "FROM subjects_cluster AS cl",
                         "INNER JOIN subjects_subject AS subj ON (subj.id = cl.subject_id)",
@@ -1409,7 +1409,8 @@ class ExamUploadView(View):
                 upload_dict{'table': 'duo_exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'lvlbase_pk': 4, 'exam_pk': 112, 'subject_pk': 122, 'auth_index': 1, 'auth_bool_at_index': True}
                 when sxm tries to update ete exam: gives exam does not exist error
                 upload_dict{'table': 'ete_exam', 'mode': 'update', 'exam_pk': 187, 'examyear_pk': 1, 'subject_pk': 118, 'cesuur': '44'}
-
+upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk': 21, 'subject_pk': 126, 'envelopbundle_pk': 2}
+     
                 """
                 # don't get it from usersettings, get it from upload_dict instead
                 subj_examyear_pk = upload_dict.get('examyear_pk')
@@ -3449,9 +3450,9 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_ex
                 "depbase.code AS dep_code, lvlbase.code AS lvl_code,",
                 "ce_exam.id AS ceex_exam_id, ce_exam.version AS ceex_exam_version,",
                 "ce_exam.amount AS ceex_amount, ce_exam.blanks AS ceex_blanks,",
-                "subj.name AS ceex_subj_name, subjbase.code AS ceex_subj_code,",
+                "subj.name_nl AS ceex_subj_name, subjbase.code AS ceex_subj_code,",
 
-                "CONCAT(subj.name,",
+                "CONCAT(subj.name_nl,",
                 "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
                 "CASE WHEN ce_exam.version IS NULL OR ce_exam.version = '' THEN NULL ELSE CONCAT(' - ', ce_exam.version) END ) AS exam_name",
 
@@ -4003,7 +4004,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
             ce_exam_pk = exam_instance.pk
 
             if logging_on:
-                logger.debug('    exam.subj.name: ' + str(exam_instance.subject.name))
+                logger.debug('    exam.subj.name_nl: ' + str(exam_instance.subject.name_nl))
                 logger.debug('    requsr_examyear_pk:    ' + str(requsr_examyear_pk))
                 logger.debug('    lvlbase_pk:     ' + str(lvlbase_pk))
                 logger.debug('    examperiod:     ' + str(examperiod))
@@ -4023,7 +4024,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                 else:
                     sub_sql_list = ["SELECT CONCAT_WS (' ', schoolbase.code, school.name),",
                                     "CONCAT_WS (' ', '   ', stud.prefix, CONCAT(stud.lastname, ','), stud.firstname),",
-                                    "grd.ce_exam_id, exam.ete_exam, subj.name, depbase.code, dep.level_req,",
+                                    "grd.ce_exam_id, exam.ete_exam, subj.name_nl, depbase.code, dep.level_req,",
                                     "lvlbase.code, exam.version, ntb.omschrijving"
                                     ]
 
@@ -4099,7 +4100,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                                     exam_name = get_exam_name(
                                         ce_exam_id=row[2], # row[2] = grd.ce_exam_id - only used to return blank when no ce_exam_id
                                         ete_exam=row[3], # row[3] = ete_exam
-                                        subj_name=row[4], # row[4] = subj.name
+                                        subj_name=row[4], # row[4] = subj.name_nl
                                         depbase_code=row[5], # row[5] = depbase.code,
                                         lvl_abbrev=(row[7] if row[7] else '-'), # row[7] = lvlbase.code
                                         examperiod=examperiod,
@@ -4269,11 +4270,6 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                             save_changes = True
                             calc_cegrade_from_exam_score = True
 
-                        if logging_on:
-                            logger.debug('     field:        ' + str(field))
-                            logger.debug('     new_value_str:    ' + str(new_value_str) + ' ' + str(type(new_value_str)))
-                            logger.debug('     old_value:    ' + str(old_value) + ' ' + str(type(old_value)))
-                            logger.debug('     save_changes: ' + str(save_changes))
 
             elif field == 'scalelength':
                 # only in DUO exams the scalelength can be entered
@@ -4390,6 +4386,52 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                 setattr(exam_instance, 'auth3by', None)
                 save_changes = True
 
+            elif field == 'envelopbundle_pk':
+                db_field = 'envelopbundle'
+
+                new_instance = subj_mod.Envelopbundle.objects.get_or_none(pk=new_value)
+                old_instance = getattr(exam_instance, db_field)
+
+                if logging_on:
+                    logger.debug('     field:        ' + str(field))
+                    logger.debug('     new_instance:    ' + str(new_instance) + ' ' + str(type(new_instance)))
+                    logger.debug('     old_instance:    ' + str(old_instance) + ' ' + str(type(old_instance)))
+
+                if new_instance != old_instance:
+                    setattr(exam_instance, db_field, new_instance)
+                    setattr(exam_instance, 'evl_modifiedby', request.user)
+                    setattr(exam_instance, 'evl_modifiedat', timezone.now())
+                    save_changes = True
+
+                if logging_on:
+                    logger.debug('     save_changes: ' + str(save_changes))
+
+
+            elif field == 'datum':
+    # new_value has format of date-iso, Excel ordinal format is already converted
+                saved_dateobj = getattr(exam_instance, field)
+
+                new_dateobj = af.get_date_from_ISO(new_value)
+
+                if new_dateobj != saved_dateobj:
+                    if logging_on:
+                        logger.debug('birthdate saved: ' + str(saved_dateobj) + ' ' + str(type(saved_dateobj)))
+                        logger.debug('birthdate new  : ' + str(new_dateobj) + ' ' + str(type(new_dateobj)))
+
+                    setattr(exam_instance, field, new_value)
+                    save_changes = True
+
+            elif field in ('begintijd', 'eindtijd'):
+                if logging_on:
+                    logger.debug('field: ' + str(field))
+                    logger.debug('new_value: ' + str(new_value))
+
+                old_value = getattr(exam_instance, field, False)
+                if new_value != old_value:
+                    setattr(exam_instance, field, new_value)
+                    save_changes = True
+                    logger.debug('save_changes: ' + str(save_changes))
+
 # - save exam_instance
         if save_changes:
             #try:
@@ -4484,7 +4526,7 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
         "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', exam.id::TEXT) AS mapid,",
 
-        #"CONCAT(subj.name,",
+        #"CONCAT(subj.name_nl,",
         #"CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
         #"CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
@@ -4492,7 +4534,7 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
         "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "exam.ete_exam, exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.secret_exam,",
-        "sb.code AS subjbase_code, subj.name AS subj_name,",
+        "sb.code AS subjbase_code, subj.name_nl AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
 
         "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
@@ -4610,11 +4652,10 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
     sql_keys = {'ey_code': sel_ey_code, 'depbase_id': sel_depbase_pk}
 
-    logger.debug('sql_keys: ' + str(sql_keys))
     sql_list = [
         "SELECT ex.id, ex.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', ex.id::TEXT) AS mapid,",
-        "CONCAT(subj.name,",
+        "CONCAT(subj.name_nl,",
             "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
             "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
 
@@ -4622,9 +4663,11 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
         "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm, ex.secret_exam,",
+        "ex.datum, ex.begintijd, ex.eindtijd,",
 
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
-        "sb.code AS subjbase_code, subj.name AS subj_name,",
+        "sb.code AS subjbase_code, subj.name_nl AS subj_name_nl, subj.name_en AS subj_name_en, subj.name_pa AS subj_name_pa,",
+        "bundle.id AS bundle_id, bundle.name AS bundle_name,"
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
         "au.last_name AS modby_username,",
 
@@ -4638,6 +4681,7 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "INNER JOIN schools_department AS dep ON (dep.id = ex.department_id)",
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = ex.level_id)",
+        "LEFT JOIN subjects_envelopbundle AS bundle ON (bundle.id = ex.envelopbundle_id)",
 
         "LEFT JOIN accounts_user AS auth1 ON (auth1.id = ex.auth1by_id)",
         "LEFT JOIN accounts_user AS auth2 ON (auth2.id = ex.auth2by_id)",
@@ -4646,9 +4690,10 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "LEFT JOIN accounts_user AS au ON (au.id = ex.modifiedby_id)",
         "WHERE ex.ete_exam",
         "AND ey.code = %(ey_code)s::INT",
-# always filter on department
-        "AND depbase.id = %(depbase_id)s::INT"
     ]
+    if sel_depbase_pk:
+        # PR2022-08-11 show ete_exams of all deps in page orderlist / envelop
+        "AND depbase.id = %(depbase_id)s::INT"
 
 # - only show exams that are published when user is not role_admin
     if not req_usr.is_role_admin:
@@ -4723,7 +4768,7 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
         "CONCAT('exam_', exam.id::TEXT) AS mapid,",
 
-        #"CONCAT(subj.name,",
+        #"CONCAT(subj.name_nl,",
         #"CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
         #"CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
@@ -4731,7 +4776,7 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.ete_exam, exam.secret_exam,",
-        "sb.code AS subjbase_code, subj.name AS subj_name,",
+        "sb.code AS subjbase_code, subj.name_nl AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
 
         "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
@@ -4841,7 +4886,7 @@ def create_duo_subject_rows(sel_examyear, sel_depbase, append_dict, setting_dict
         sql_keys = {'ey_id': sel_examyear.pk, 'depbase_id': sel_depbase.pk}
         sql_list = [
             "SELECT subj.id, subj.base_id AS subjbase_id,",
-            "sb.code AS subjbase_code, subj.name AS subj_name,",
+            "sb.code AS subjbase_code, subj.name_nl AS subj_name,",
             "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id, ",
             "dep.id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code",
 
@@ -4866,7 +4911,7 @@ def create_duo_subject_rows(sel_examyear, sel_depbase, append_dict, setting_dict
                 sql_keys['lvlbase_pk'] = sel_lvlbase_pk
                 sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-        sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name, lvl.id, lvl.abbrev, dep.id, depbase.id, depbase.code")
+        sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name_nl, lvl.id, lvl.abbrev, dep.id, depbase.id, depbase.code")
 
         sql = ' '.join(sql_list)
         if logging_on:
@@ -5596,7 +5641,7 @@ def delete_subject_instance(subject_instance, request):
 
 
 def create_subject(examyear, upload_dict, request):
-    # --- create subject # PR2019-07-30 PR2020-10-11 PR2021-05-13 PR2021-06-22 PR2022-08-05
+    # --- create subject # PR2019-07-30 PR2020-10-11 PR2021-05-13 PR2021-06-22 PR2022-08-14
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_subject ----- ')
@@ -5610,12 +5655,13 @@ def create_subject(examyear, upload_dict, request):
 
 # - get values
         code = upload_dict.get('code')
-        name = upload_dict.get ('name')
+        name_nl = upload_dict.get ('name_nl')
+
         sequence = upload_dict.get ('sequence', 9999)
         depbases = upload_dict.get('depbases')
         if logging_on:
             logger.debug('code: ' + str(code))
-            logger.debug('name: ' + str(name))
+            logger.debug('name_nl: ' + str(name_nl))
             logger.debug('sequence: ' + str(sequence))
             logger.debug('depbases: ' + str(depbases) + str(type(depbases)))
 
@@ -5624,17 +5670,21 @@ def create_subject(examyear, upload_dict, request):
         if msg_err:
             error_list.append(msg_err)
 
-        msg_err = av.validate_notblank_maxlength(name, c.MAX_LENGTH_NAME, _('The name'))
+        msg_err = av.validate_notblank_maxlength(name_nl, c.MAX_LENGTH_NAME, _('The name in Dutch'))
         if msg_err:
             error_list.append(msg_err)
 
 # - check if subject code already exists
-        msg_err = av.validate_subject_code_exists(code, subject)
+        msg_err = av.validate_subject_code_exists(code)
         if msg_err:
             error_list.append(msg_err)
 
 # - check if subject name already exists
-        msg_err = av.validate_subject_name_exists(name, subject)
+        msg_err = av.validate_subject_name_exists(
+            field='name_nl',
+            new_value=name_nl,
+            examyear=examyear
+        )
         if msg_err:
             error_list.append(msg_err)
 
@@ -5649,7 +5699,7 @@ def create_subject(examyear, upload_dict, request):
                 subject_instance = sbj_mod.Subject(
                     base=base,
                     examyear=examyear,
-                    name=name,
+                    name_nl=name_nl,
                     sequence=sequence,
                     depbases=depbases
                 )
@@ -5685,7 +5735,7 @@ def update_subject_instance(subject_instance, examyear, upload_dict, request):
         save_changes_in_base = False
 
         for field, new_value in upload_dict.items():
-            if field in ('code', 'name', 'depbases', 'sequence'):
+            if field in ('code', 'name_nl', 'name_en', 'name_pa', 'depbases', 'sequence'):
                 if logging_on:
                     logger.debug('field: ' + str(field))
                     logger.debug('new_value: <' + str(new_value) + '> ' + str(type(new_value)))
@@ -5713,22 +5763,40 @@ def update_subject_instance(subject_instance, examyear, upload_dict, request):
                             setattr(base, field, new_value)
                             save_changes_in_base = True
 
-    # - save changes in field 'name'
-                elif field == 'name':
+    # - save changes in field 'name_nl'
+                elif field in ('name_nl', 'name_en', 'name_pa'):
                     saved_value = getattr(subject_instance, field)
-                    if new_value != saved_value:
-        # - validate abbrev checks null, max_len, exists
-                        msg_html = av.validate_subject_name_exists(
-                            name=new_value,
-                            examyear=examyear,
-                            cur_subject=subject_instance
-                        )
-                        if msg_html:
-                            error_list.append(msg_html)
-                        else:
-                            # - save field if changed and no_error
-                            setattr(subject_instance, field, new_value)
-                            save_changes = True
+
+                    caption = _('Subject name in Papiamentu') if field == 'name_pa' \
+                        else _('Subject name in English') if field == 'name_en' \
+                        else _('Subject name in Dutch')
+                    blank_allowed = (field in ('name_en', 'name_pa'))
+
+                    msg_err = av.validate_notblank_maxlength(
+                        value=new_value,
+                        max_length=c.MAX_LENGTH_NAME,
+                        caption=caption,
+                        blank_allowed=blank_allowed
+                    )
+
+                    if msg_err:
+                        error_list.append(msg_err)
+                    else:
+
+                        if new_value != saved_value:
+            # - validate exists
+                            msg_html = av.validate_subject_name_exists(
+                                field=field,
+                                new_value=new_value,
+                                examyear=examyear,
+                                cur_subject=subject_instance
+                            )
+                            if msg_html:
+                                error_list.append(msg_html)
+                            else:
+                                # - save field if changed and no_error
+                                setattr(subject_instance, field, new_value)
+                                save_changes = True
 
     # - save changes in depbases
                 elif field == 'depbases':
@@ -6685,7 +6753,7 @@ def create_schemeitem_rows(examyear, append_dict, schemeitem_pk=None, scheme_pk=
             sql_keys = {'ey_id': examyear.pk}
             sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
                 "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
-                "si.subject_id AS subj_id, subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+                "si.subject_id AS subj_id, subj.name_nl_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
                 "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
                 "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
                 "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws,",
@@ -6743,7 +6811,7 @@ def create_schemeitem_rows(examyear, append_dict, schemeitem_pk=None, scheme_pk=
                     sql_list.append("AND FALSE")
 
             if orderby_name:
-                sql_list.append('ORDER BY LOWER(scheme.name), LOWER(subj.name)')
+                sql_list.append('ORDER BY LOWER(scheme.name), LOWER(subj.name_nl)')
             elif orderby_sjtpbase_sequence:
                 sql_list.append('ORDER BY sjtpbase.sequence')
             else:
@@ -6798,7 +6866,7 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
     try:
         if examyear_pk and depbase_pk:
             sql_keys = {'ey_id': examyear_pk, 'depbase_pk': depbase_pk}
-            sql_list = ["SELECT si.id, subj.name AS subj_name, subjbase.code AS subj_code,",
+            sql_list = ["SELECT si.id, subj.name_nl AS subj_name, subjbase.code AS subj_code,",
                 "sjtpbase.code AS sjtpbase_code,",
 
                 "scheme.name AS scheme_name, scheme.max_reex AS scheme_max_reex,",
@@ -7269,7 +7337,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                 sql_list = ["WITH grade_exams AS (" + sub_sql + ")",
                             "SELECT exam.id AS exam_id,",
                             "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
-                            "subjbase.code AS subj_code, subj.name AS subj_name,",
+                            "subjbase.code AS subj_code, subj.name_nl AS subj_name,",
 
                             "exam.examperiod, exam.version, exam.amount, exam.scalelength,",
                             "exam.partex, exam.assignment, exam.keys",
@@ -8044,7 +8112,7 @@ def get_ce_examresult_rows():
     sql_keys = {'ey_id': examyear_pk, 'sch_id': school_pk, 'dep_id': department_pk, 'experiod': examperiod}
     sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                 "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
-                "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name",
+                "subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -8065,7 +8133,7 @@ def get_ce_examresult_rows():
                 "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
                 "AND grd.examperiod = %(experiod)s::INT",
 
-                "ORDER BY LOWER(subj.name), LOWER(stud.lastname), LOWER(stud.firstname)"
+                "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
                 ]
     sql = ' '.join(sql_list)
 
@@ -8353,526 +8421,6 @@ def create_subjectbase_dictlist(examyear):  # PR2021-08-20
 # --- end of create_subjectbase_dictlist
 
 
-# /////////////////////////////////////////////////////////////////
-
-def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk=None):  # PR2021-08-19 PR2021-09-24
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- create_studsubj_count_dict ----- ')
-
-    #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
-    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
-    #  add extra for ETE and DOE PR2021-09-25
-    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
-
-# - get schoolbase_id of ETE and DOE
-
-    # key = country_id, value = row_dict
-    mapped_admin_dict = {}
-    sql_keys = {'ey_code_int': sel_examyear_instance.code, 'default_role': c.ROLE_064_ADMIN }
-    sql_list = ["SELECT sb.country_id, sch.base_id AS sb_id, sb.code AS c,",
-                "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
-                "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",
-                "ey.order_admin_divisor, ey.order_admin_multiplier, ey.order_admin_max",
-
-                "FROM schools_school AS sch",
-                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-                "WHERE ey.code = %(ey_code_int)s::INT",
-                "AND sb.defaultrole = %(default_role)s::INT"
-                ]
-    sql = ' '.join(sql_list)
-
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        rows = af.dictfetchall(cursor)
-        for row in rows:
-            country_id = row.get('country_id')
-            if country_id not in mapped_admin_dict:
-                mapped_admin_dict[country_id] = row
-
-    if logging_on:
-        logger.debug('mapped_admin_dict: ' + str(mapped_admin_dict) + ' ' + str(type(mapped_admin_dict)))
-        # mapped_admin_dict: {39: {'c': 'SXMDOE'}, 23: {'c': 'CURETE'}} <class 'dict'>
-
-    # - when print orderlist ETE: skip DUO of SXM school
-    # - when print orderlist SXM: skip all CUR schools, skip all ETE exams
-    #  when print per school: show all
-    skip_ete_or_duo = ''
-    requsr_country_pk = request.user.country.pk
-
-    if request.user.country.abbrev.lower() == 'cur':
-    # when print orderlist ETE
-        # - when request,user = ETE: add all ETE-exams and DUO-exams of CUR schools, but skip DUO-exams of SXM schools
-        # -  WHERE is_ete_exam OR (NOT is_ete_exam AND country = requsr_country)
-        skip_ete_or_duo = "AND ( (si.ete_exam) OR (NOT si.ete_exam AND ey.country_id = %(requsr_country_id)s::INT ))"
-    elif request.user.country.abbrev.lower() == 'sxm':
-    # when print orderlist DOE
-        # - when request,user = SXM: show only SXM schools, show ETE exams and DUO exams
-        # -  WHERE country = requsr_country
-        skip_ete_or_duo = "AND (ey.country_id = %(requsr_country_id)s::INT )"
-
-    sql_keys = {'ey_code_int': sel_examyear_instance.code, 'requsr_country_id': requsr_country_pk}
-    sql_studsubj_agg_list = [
-        "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id,",
-        "sch.otherlang AS sch_otherlang,",
-
-        "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
-        "subj.name AS subj_name,",  # for testing only, must also delete from group_by
-
-        #PR2021-10-12 subj.otherlang replaced by si.otherlang
-        # was: "subj.base_id AS subjbase_id, si.ete_exam, subj.otherlang AS subj_otherlang, count(*) AS subj_count",
-        "subj.base_id AS subjbase_id, si.ete_exam, si.otherlang AS si_otherlang, count(*) AS subj_count",
-
-        "FROM students_studentsubject AS studsubj",
-        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-
-        "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
-        "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-        "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
-
-# - show only exams that are not deleted
-        "WHERE NOT studsubj.tobedeleted",
-# - show only published exams
-        "AND studsubj.subj_published_id IS NOT NULL",
-# - show only exams that have a central exam
-        "AND NOT si.weight_ce = 0",
-# - skip DUO exams for SXM schools
-        skip_ete_or_duo,
-
-        # PR2021-10-12 subj.otherlang replaced by si.otherlang
-        #  was: "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
-        "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id,",
-        "lvl.abbrev, subj.name,", # for testing only, must also delete from group_by
-        "sch.otherlang, subj.base_id, si.ete_exam, si.otherlang"
-    ]
-    sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
-
-    sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
-                "SELECT studsubj.subjbase_id, studsubj.ete_exam,",
-
-                # PR2021-10-12 subj.otherlang replaced by si.otherlang
-                #  was:
-                # "CASE WHEN studsubj.subj_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'ne' ELSE",
-                # "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.subj_otherlang) > 0 ",
-                # "THEN studsubj.sch_otherlang ELSE 'ne' END END AS lang,",
-                "CASE WHEN studsubj.si_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'ne' ELSE",
-                "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.si_otherlang) > 0 ",
-                "THEN studsubj.sch_otherlang ELSE 'ne' END END AS lang,",
-
-                "cntr.id AS country_id,",  # PR2021-09-24 added, for extra exams ETE and DoE
-                "sb.code AS sb_code, studsubj.lvl_abbrev, studsubj.subj_name,",  # for testing only
-                "sch.base_id AS schoolbase_id, studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count",
-
-                "FROM schools_school AS sch",
-                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
-                "INNER JOIN schools_country AS cntr ON (cntr.id = sb.country_id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-                "INNER JOIN studsubj ON (studsubj.school_id = sch.id)",
-# - show only exams of this exam year
-                "WHERE ey.code = %(ey_code_int)s::INT"
-                ]
-
-# - filter on parameter schoolbase_pk when it has value
-    if prm_schoolbase_pk:
-        sql_keys['sb_pk'] = prm_schoolbase_pk
-        sql_list.append("AND sb.id = %(sb_pk)s::INT")
-
-    sql = ' '.join(sql_list)
-
-    #if logging_on:
-        #logger.debug('sql_keys: ' + str(sql_keys))
-        #logger.debug('sql: ' + str(sql))
-        #logger.debug('connection.queries: ' + str(connection.queries))
-
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        rows = af.dictfetchall(cursor)
-    if logging_on:
-        logger.debug('rows: ' + str(rows))
-
-    count_dict = {'total': {}}
-
-    for row in rows:
-        if logging_on:
-            logger.debug('row: ' + str(row))
-
-        row_sb_code = row.get('sb_code', '-')  # for testing only
-
-        # admin_id is schoolbase_id of school of ETE / DOE
-        admin_id, admin_code = None, None
-        order_extra_fixed, order_extra_perc, order_round_to = None, None, None
-        order_tv2_divisor, order_tv2_multiplier, order_tv2_max = None, None, None
-
-        country_id = row.get('country_id')
-        if country_id in mapped_admin_dict:
-            mapped_country_dict = mapped_admin_dict[country_id]
-            admin_id = mapped_country_dict.get('sb_id')
-            admin_code = mapped_country_dict.get('c')
-
-            order_extra_fixed = mapped_country_dict.get('order_extra_fixed')
-            order_extra_perc = mapped_country_dict.get('order_extra_perc')
-            order_round_to = mapped_country_dict.get('order_round_to')
-
-            order_tv2_divisor = mapped_country_dict.get('order_tv2_divisor')
-            order_tv2_multiplier = mapped_country_dict.get('order_tv2_multiplier')
-            order_tv2_max = mapped_country_dict.get('order_tv2_max')
-
-        if logging_on:
-            #logger.debug('mapped_country_dict: ' + str(mapped_country_dict))
-            logger.debug('admin_code: ' + str(admin_code))
-            #logger.debug('order_extra_fixed: ' + str(order_extra_fixed))
-            #logger.debug('order_extra_perc: ' + str(order_extra_perc))
-            logger.debug('order_round_to: ' + str(order_round_to))
-
-        exam = 'ETE' if row.get('ete_exam', False) else 'DUO'
-        if exam not in count_dict:
-            count_dict[exam] = {'total': {}}
-        exam_dict = count_dict[exam]
-
-        lang = row.get('lang', 'ne')
-        if lang not in exam_dict:
-            # lang_dict has no key 'total'
-            exam_dict[lang] = {}
-        lang_dict = exam_dict[lang]
-
-        depbase_pk = row.get('depbase_id')
-        if depbase_pk not in lang_dict:
-            # depbase_dict has no key 'total'
-            lang_dict[depbase_pk] = {}
-        depbase_dict = lang_dict[depbase_pk]
-
-        # value is '0' when lvlbase_id = None (Havo/Vwo)
-        lvlbase_pk = row.get('lvlbase_id', 0)
-        if lvlbase_pk is None:
-            lvlbase_pk = 0
-        lvl_abbrev = row.get('lvl_abbrev', '-')
-        if lvlbase_pk not in depbase_dict:
-            depbase_dict[lvlbase_pk] = {'c': lvl_abbrev, 'total': {}, 'country': {}}
-        lvlbase_dict = depbase_dict[lvlbase_pk]
-
-        row_sb_pk = row.get('schoolbase_id')
-        if row_sb_pk not in lvlbase_dict:
-            lvlbase_dict[row_sb_pk] = {'c': row_sb_code}
-        schoolbase_dict = lvlbase_dict[row_sb_pk]
-
-# +++ count extra exams and examns tv2 per school / subject
-        subjbase_pk = row.get('subjbase_id')
-        subj_count = row.get('subj_count', 0)
-
-        extra_count = 0
-        tv2_count = 0
-        if subj_count:
-            extra_count = calc_extra_exams(subj_count, order_extra_fixed, order_extra_perc, order_round_to)
-            tv2_count = calc_exams_tv02(subj_count, order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
-
-        if logging_on:
-            logger.debug('.........................................')
-            logger.debug('........schoolbase_pk: ' + str(row_sb_pk) + ' ' + str(row_sb_code))
-            logger.debug('........lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(lvl_abbrev))
-            logger.debug('........subjbase_pk: ' + str(subjbase_pk))
-            logger.debug('........subj_count: ' + str(subj_count))
-            logger.debug('.......extra_count: ' + str(extra_count))
-            logger.debug('.........tv2_count: ' + str(tv2_count))
-
-# +++ add to totals
-        if subjbase_pk not in schoolbase_dict:
-            schoolbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            schoolbase_dict[subjbase_pk][0] += subj_count
-            schoolbase_dict[subjbase_pk][1] += extra_count
-            schoolbase_dict[subjbase_pk][2] += tv2_count
-
-        if logging_on:
-            logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
-
-        lvlbase_total = lvlbase_dict.get('total')
-        if subjbase_pk not in lvlbase_total:
-            lvlbase_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            lvlbase_total[subjbase_pk][0] += subj_count
-            lvlbase_total[subjbase_pk][1] += extra_count
-            lvlbase_total[subjbase_pk][2] += tv2_count
-
-    # skip admin_total when calculate per school > when schoolbase_pk has value
-        if prm_schoolbase_pk is None:
-            lvlbase_country = lvlbase_dict.get('country')
-            if admin_id not in lvlbase_country:
-                lvlbase_country[admin_id] = {'c': admin_code}
-            admin_total = lvlbase_country[admin_id]
-
-            if subjbase_pk not in admin_total:
-                admin_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-            else:
-                admin_total[subjbase_pk][0] += subj_count
-                admin_total[subjbase_pk][1] += extra_count
-                admin_total[subjbase_pk][2] += tv2_count
-
-            if logging_on:
-                logger.debug(' - - - - ')
-                logger.debug('........admin_total: ' + str(admin_total))
-
-        exam_total = exam_dict.get('total')
-        if subjbase_pk not in exam_total:
-            exam_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            exam_total[subjbase_pk][0] += subj_count
-            exam_total[subjbase_pk][1] += extra_count
-            exam_total[subjbase_pk][2] += tv2_count
-
-        examyear_total = count_dict.get('total')
-        if subjbase_pk not in examyear_total:
-            examyear_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            examyear_total[subjbase_pk][0] += subj_count
-            examyear_total[subjbase_pk][1] += extra_count
-            examyear_total[subjbase_pk][2] += tv2_count
-
-# +++ after adding schools: calculate extra for ETE and DEX:
-    # skip when calculate per school > when schoolbase_pk has value
-    if prm_schoolbase_pk is None:
-        if logging_on:
-            logger.debug('schoolbase_pk is None')
-
-        for exam, exam_dict in count_dict.items():
-            if exam != 'total':
-                if logging_on:
-                    logger.debug('exam: ' + str(exam) + ' ' + str(type(exam)))
-
-                for lang, lang_dict in exam_dict.items():
-                    if lang != 'total':
-                        if logging_on:
-                            logger.debug('lang: ' + str(lang) + ' ' + str(type(lang)))
-
-                        for depbase_pk, depbase_dict in lang_dict.items():
-                            if isinstance(depbase_pk, int):
-                                for lvlbase_pk, lvlbase_dict in depbase_dict.items():
-                                    if isinstance(lvlbase_pk, int):
-                                        if logging_on:
-                                            logger.debug('lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(type(lvlbase_pk)))
-                                            logger.debug('lvlbase_dict: ' + str(lvlbase_dict) + ' ' + str(type(lvlbase_dict)))
-
-                                        lvlbase_country_dict = lvlbase_dict.get('country')
-                                        lvlbase_total_dict = lvlbase_dict.get('total')
-                                        exam_total_dict = exam_dict.get('total')
-                                        examyear_total_dict = count_dict.get('total')
-
-                                        if lvlbase_country_dict:
-                                            if logging_on:
-                                                logger.debug('lvlbase_country_dict: ' + str(lvlbase_country_dict) + ' ' + str(type(lvlbase_country_dict)))
-                                                # 'lvlbase_country_dict': {39: {'c': 'SXMDOE', 430: [82, 8, 20], 440: [52, 8, 15]},
-                                                #             23: {'c': 'CURETE', 430: [108, 12, 30], 440: [62, 13, 20], 435: [4, 6, 5]}},
-
-                                            #  country_id: 1
-                                            # mapped_country_dict: { 'country_id': 1, 'sb_id': 23, 'c': 'CURETE',
-                                            # 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5,
-                                            # 'order_tv2_divisor': 25, 'order_tv2_multiplier': 6, 'order_tv2_max': 25,
-                                            # 'order_admin_divisor': 30, 'order_admin_multiplier': 7, 'order_admin_max': 25}
-
-                            # - get admin_pk from mapped_country_dict with key: country_id
-                                            # admin_pk is schoolbase_id of school of ETE / DEX
-                                            for country_id, mapped_country_dict in mapped_admin_dict.items():
-                                                admin_pk = mapped_country_dict.get('sb_id')
-                                                admin_code = mapped_country_dict.get('c')
-                                                order_admin_divisor = mapped_country_dict.get('order_admin_divisor')
-                                                order_admin_multiplier = mapped_country_dict.get('order_admin_multiplier')
-                                                order_admin_max = mapped_country_dict.get('order_admin_max')
-
-                            # - lookup 'country_admin_dict' in lvlbase_country_dict, with key: admin_pk
-                                                # country_admin_dict contains subject_count of all subjects of this admin, this level
-                                                if admin_pk in lvlbase_country_dict:
-                                                    country_admin_dict = lvlbase_country_dict.get(admin_pk)
-                                                    if logging_on:
-                                                        logger.debug('country_id: ' + str(country_id) + ' ' + str(type(country_id)))
-                                                        logger.debug(
-                                                            'mapped_country_dict: ' + str(mapped_country_dict) + ' ' + str(
-                                                                type(mapped_country_dict)))
-                                                        logger.debug('admin_pk: ' + str(admin_pk) + ' ' + str(type(admin_pk)))
-                                                        logger.debug('admin_code: ' + str(admin_code) + ' ' + str(type(admin_code)))
-
-                            # - add extra row 'lvlbase_admin_dict' for ETE / DOE in lvlbase_dict, if not exists yet
-                                                    if admin_pk not in lvlbase_dict:
-                                                        lvlbase_dict[admin_pk] = {'c': admin_code}
-                                                    lvlbase_admin_dict = lvlbase_dict[admin_pk]
-
-                                                    if logging_on:
-                                                        logger.debug('lvlbase_admin_dict: ' + str(lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
-                                                        #  lvlbase_admin_dict = {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
-
-                            # - loop through subjects in country_admin_dict
-                                                    for subjbase_pk, count_list in country_admin_dict.items():
-                                                        if isinstance(subjbase_pk, int):
-                            # - caculate extra exams for ETE / DEX
-                                                            sj_count = count_list[0]
-                                                            tv2_count = count_list[2]
-
-                                                            admin_extra_count = calc_exams_tv02(sj_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
-                                                            # TODO tv2 calc for extra ETE / DEZ
-                                                            # TODO esparate varables for extra tv2 ETE/DEX
-                                                            admin_tv2_count = calc_exams_tv02(tv2_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
-                                                            if logging_on:
-                                                                logger.debug('admin_extra_count: ' + str(admin_extra_count) + ' ' + str(type(admin_extra_count)))
-                                                                logger.debug('admin_tv2_count: ' + str(admin_tv2_count) + ' ' + str(type(admin_tv2_count)))
-
-                            # - add extra exams to lvlbase_admin_dict
-                                                            # index 0 contains sj_count, but admins don't have exams, omly extra and tv2 extra
-                                                            lvlbase_admin_dict[subjbase_pk] = [0, admin_extra_count, admin_tv2_count ]
-
-                            # - also add admin_extra_count to total row of lvlbase_total_dict, exam_total_dict and examyear_total_dict
-                                                            if subjbase_pk in lvlbase_total_dict:
-                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
-                                                                lvlbase_total_dict[subjbase_pk][1] += admin_extra_count
-                                                                lvlbase_total_dict[subjbase_pk][2] += admin_tv2_count
-
-                                                            if subjbase_pk in exam_total_dict:
-                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
-                                                                exam_total_dict[subjbase_pk][1] += admin_extra_count
-                                                                exam_total_dict[subjbase_pk][2] += admin_tv2_count
-
-                                                            if subjbase_pk in examyear_total_dict:
-                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
-                                                                examyear_total_dict[subjbase_pk][1] += admin_extra_count
-                                                                examyear_total_dict[subjbase_pk][2] += admin_tv2_count
-
-                                                    if logging_on:
-                                                        logger.debug('lvlbase_admin_dict: ' + str( lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
-
-    if logging_on:
-        logger.debug('schoolbase_pk is NOT None')
-
-        """
-        lvlbase_pk: 13 <class 'int'>
-        lvlbase_dict: {'c': 'PKL', 
-                       'total': {'total': {427: [102, 8, 30]}, 
-                            1: {'c': 'Cur', 427: [51, 4, 15]}, 
-                            2: {'c': 'Sxm', 427: [51, 4, 15]}
-                            }, 
-                        2: {'c': 'CUR01', 427: [51, 4, 15]}, 
-                        35: {'c': 'SXM01', 427: [51, 4, 15]}} 
-        """
-
-        """
-        examyear_dict_sample = {'total': {137: 513, 134: 63, 156: 63, 175: 63},
-            'DUO': {'total': {137: 513, 134: 63, 156: 63, 175: 63},  # exam_dict: { 'total': {}, lang_dict: {}
-                'ne': {'total': {137: 513, 134: 63, 156: 63, 175: 63},  # lang_dict: { 'total': {}, depbase_dict: {}
-                    1: {'total': {137: 513, 134: 63, 156: 63, 175: 63},  # depbase_dict: { 'total': {}, lvlbase_dict: {}
-                        12: {'total': {137: 90},  # lvlbase_dict: { 'total': {}, schoolbase_pk: {}
-                             2: {137: [90, 5]}  #  schoolbase_pk: { subjbase_pk: [ subj_count, extra_count, tv2_count]
-                             },
-                        13: {'total': {134: 63, 137: 156, 156: 63, 175: 63},
-                             2: {134: 63, 137: 156, 156: 63, 175: 63}
-                             },
-                        14: {'total': {137: 267},
-                             2: {137: [267, 10]}
-                             }
-                    }
-                }
-            }
-        }
-
-    lvlbase_dict = {'c': 'PBL',
-            'total': {430: [190, 66, 50], 440: [114, 56, 35], 435: [4, 13, 5]},
-            'country': {
-                39: {'c': 'SXMDOE', 430: [82, 8, 20], 440: [52, 8, 15]},
-                23: {'c': 'CURETE', 430: [108, 12, 30], 440: [62, 13, 20], 435: [4, 6, 5]}},
-            35: {'c': 'SXM01', 430: [82, 8, 20], 440: [52, 8, 15]},
-             2: {'c': 'CUR01', 430: [82, 8, 20], 440: [52, 8, 15]},
-             4: {'c': 'CUR03', 430: [26, 4, 10], 440: [10, 5, 5], 435: [4, 6, 5]},
-            39: {'c': 'SXMDOE', 430: [0, 21, 0], 440: [0, 14, 0]},
-            23: {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
-
-"""
-
-    if logging_on:
-        logger.debug('studsubj_count_dict: ' + str(count_dict))
-
-    return count_dict
-# --- end of create_studsubj_count_dict
-
-
-def calc_extra_exams(subj_count, extra_fixed, extra_perc, round_to):  # PR2021-09-25
-    # - function counts extra exams and examns tv2 per school / subject
-    # - Note: values of extra_fixed, extra_perc, round_to are from table examyear,
-    #         thus can be different for CUR and SXM schools
-
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ------- calc_extra_exams -------')
-        logger.debug('subj_count:  ' + str(subj_count))
-        logger.debug('extra_fixed: ' + str(extra_fixed))
-        logger.debug('extra_perc:  ' + str(extra_perc))
-        logger.debug('round_to:  ' + str(round_to))
-
-    extra_count = 0
-    if subj_count:
-        total_not_rounded = subj_count + extra_fixed + (subj_count * extra_perc / 100)
-        total_divided = total_not_rounded / round_to
-        total_integer = int(total_divided)
-        # total_frac = (total_divided - total_integer)
-        total_roundup = total_integer + 1 if (total_divided - total_integer) else total_integer
-        # total_roundup = total_frac_roundup * order_round_to
-        extra_count = total_roundup * round_to - subj_count
-
-        if logging_on:
-            logger.debug('subj_count:  ' + str(subj_count))
-            logger.debug('total_not_rounded: ' + str(total_not_rounded))
-            logger.debug('total_divided:  ' + str(total_divided))
-            logger.debug('total_integer:  ' + str(total_integer))
-            logger.debug('total_frac: ' + str(total_divided - total_integer))
-            logger.debug('total_roundup: ' + str(total_roundup))
-            logger.debug('total_roundup:   ' + str(total_roundup))
-            logger.debug('extra_count:   ' + str(extra_count))
-            logger.debug('..........: ')
-
-    return extra_count
-# - end of calc_extra_exams
-
-
-def calc_exams_tv02(subj_count, divisor, multiplier, max_exams):  # PR2021-09-25
-    # - count examns tv2 per school / subject:
-    # - 'multiplier' tv02-examns per 'divisor' tv01-examns, roundup to 'multiplier', with max of 'max_exams'
-    # - Note: values of divisor, multiplier, max_exams are from table examyear,
-    #         thus can be different for CUR and SXM schools
-
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ------- calc_exams_tv02 -------')
-        logger.debug('subj_count:  ' + str(subj_count))
-        logger.debug('divisor: ' + str(divisor))
-        logger.debug('multiplier:  ' + str(multiplier))
-        logger.debug('max_exams:  ' + str(max_exams))
-
-    tv2_count = 0
-    if subj_count:
-        try:
-            # PR2021-10-12 debug: gave ZeroDivisionError. "if divisor else 0" added.
-            total_divided = subj_count / divisor if divisor else 0
-            total_integer = int(total_divided)
-            # total_frac = (total_divided - total_integer)
-            total_roundup = total_integer + 1 if (total_divided - total_integer) else total_integer
-            # total_roundup = total_frac_roundup * order_round_to
-            tv2_count = total_roundup * multiplier
-
-            if tv2_count > max_exams:
-                tv2_count = max_exams
-
-            if logging_on:
-                logger.debug('subj_count:  ' + str(subj_count))
-                logger.debug('total_divided:  ' + str(total_divided))
-                logger.debug('total_integer:  ' + str(total_integer))
-                logger.debug('total_frac: ' + str(total_divided - total_integer))
-                logger.debug('total_roundup: ' + str(total_roundup))
-                logger.debug('tv2_count:   ' + str(tv2_count))
-                logger.debug('..........: ')
-
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-
-    return tv2_count
-# - end of calc_exams_tv02
 
 # from https://github.com/jmcnamara/XlsxWriter/blob/main/xlsxwriter/utility.py PR2021-08-30
 

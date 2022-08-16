@@ -563,6 +563,125 @@ LABEL_COLOR = {
     'purple': '#7030a0' # rgb 112 48 160  #7030a0
 }
 
+LABEL_WEEKDAYS = {
+    'nl': {
+        0: 'zondag',
+        1: 'maandag',
+        2: 'dinsdag',
+        3: 'woensdag',
+        4: 'donderdag',
+        5: 'vrijdag',
+        6: 'zaterdag'
+    },
+    'en': {
+        0: 'Sunday',
+        1: 'Monday',
+        2: 'Tuesday',
+        3: 'Wednesday',
+        4: 'Thursday',
+        5: 'Friday',
+        6: 'Saturday'
+    },
+    'pa': {
+        0: 'djadomingo',
+        1: 'djaluna',
+        2:  'djamars',
+        3:  'djárason',
+        4: 'djaweps',
+        5: 'djabièrnè',
+        6:  'djasabra'
+    }
+}
+
+LABEL_MONTHS = {
+    'nl': {
+        1: 'januari',
+        2: 'februari',
+        3: 'maart',
+        4: 'april',
+        5: 'mei',
+        6: 'juni',
+        7: 'juli',
+        8: 'augustus',
+        9: 'september',
+        10: 'oktober',
+        11: 'november',
+        12: 'december'
+    },
+    'en': {
+        1: 'January',
+        2: 'February',
+        3: 'March',
+        4: 'April',
+        5: 'May',
+        6: 'June',
+        7: 'July',
+        8: 'August',
+        9: 'September',
+        10: 'October',
+        11: 'November',
+        12: 'December'
+    },
+    'pa': {
+        1: 'yanüari',
+        2: 'febrüari',
+        3: 'mart',
+        4: 'aprel',
+        5: 'mei',
+        6: 'yüni',
+        7: 'yüli',
+        8: 'ougùstùs',
+        9: 'sèptèmber',
+        10: 'òktober',
+        11: 'novèmber',
+        12: 'desèmber'
+    }
+}
+
+LABEL_TEXT = {
+    'nl': {
+        'exam': 'EXAMEN',
+        'ep': 'TIJDVAK',
+        'cse': 'CSE',
+        'cspe': 'CSPE',
+        'date': 'Afnamedatum',
+        'time': 'Afnametijd',
+        'school': 'Schoolnaam',
+        'numex': 'Aantal exemplaren',
+        'numenv': 'Aantal enveloppen',
+        'content': 'INHOUD',
+        'oclock': 'uur',
+        'of': 'van'
+    },
+    'en': {
+        'exam': 'EXAM',
+        'ep': 'PERIOD',
+        'cse': 'CSE',
+        'cspe': 'CWPE',
+        'date': 'Examination date',
+        'time': 'Time exam',
+        'school': 'School name',
+        'numex': 'Number of copys',
+        'numenv': 'Number of envelope',
+        'content': 'CONTENT',
+        'oclock':  "o'clock",
+        'of':  "of"
+    },
+    'pa': {
+        'exam': 'ÈKSAMEN',
+        'ep': 'PERIODO',
+        'cse': 'CSE',
+        'cspe': 'ESPS',
+        'date': 'Fecha di èksamen',
+        'time': 'Orario di èksamen',
+        'school': 'Nòmber di Skol',
+        'numex':'Kantidat di eksemplar',
+        'numenv':'Kantidat di ènvelòp',
+        'content':'KONTENIDO',
+        'oclock': 'or',
+        'of': 'di'}
+    }
+
 
 
 # XLSWRITER FORMATS

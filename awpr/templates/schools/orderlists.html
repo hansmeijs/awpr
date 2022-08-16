@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Orderlists' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/orderlists220808.js' %}"></script>
+    <script src="{% static 'js/orderlists220815.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -61,6 +61,7 @@
             {% include 'includes/message_noaccess.html' %}
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
@@ -68,6 +69,7 @@
             {% include 'schools/modpublishorderlist.html' %}
             {% include 'subjects/modenvelopitem.html' %}
             {% include 'subjects/modenveloplabel.html' %}
+            {% include 'subjects/modenvelopprint.html' %}
 
             <div class="content_margin_top78">
     <!-- CONTENT HEADER - LOADER -->
@@ -95,10 +97,10 @@
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_orderlist" class="btn btn-secondary ">{% trans 'Orderlist' %}</button>
-                    <button data-btn="btn_exam" class="btn btn-secondary ">{% trans 'Exams' %}</button>
+                    <button data-btn="btn_ete_exam" class="btn btn-secondary ">{% trans 'Exams' %}</button>
                     <button data-btn="btn_bundle" class="btn btn-secondary ">{% trans 'Label bundles' %}</button>
                     <button data-btn="btn_label" class="btn btn-secondary ">{% trans 'Labels' %}</button>
-                    <button data-btn="btn_item" class="btn btn-secondary ">{% trans 'Label items' %}</button>
+                    <button data-btn="btn_item" class="btn btn-secondary ">{% trans 'Label text' %}</button>
                 </div>
     <!-- end BUTTON GROUP -->
     <!-- END OF CONTENT HEADER -->
@@ -125,6 +127,10 @@
                 data-url_orderlist_publish="{% url 'url_orderlist_publish' %}"
                 data-url_envelopitem_upload="{% url 'url_envelopitem_upload' %}"
                 data-url_enveloplabel_upload="{% url 'url_enveloplabel_upload' %}"
+                data-url_envelopbundle_upload="{% url 'url_envelopbundle_upload' %}"
+                data-url_envelop_print="{% url 'url_envelop_print' '-' %}"
+
+                data-url_exam_upload="{% url 'url_exam_upload' %}"
             >
             </div>
         {% endif %}

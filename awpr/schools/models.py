@@ -103,7 +103,9 @@ class AwpBaseModel(Model):
         super(AwpBaseModel, self).save(force_insert=not _is_update, force_update=_is_update)
 
     def delete(self, *args, **kwargs):
-        _request = kwargs.pop('request')
+        if 'request' in kwargs:
+            _request = kwargs.pop('request')
+
         #save_to_log(self, 'delete', _request)
 
         super(AwpBaseModel, self).delete(*args, **kwargs)
@@ -680,7 +682,8 @@ def delete_instance(table, instance, request, this_txt=None):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
-        logger.debug('instance: ' + str(instance))
+        logger.debug('    instance: ' + str(instance))
+        logger.debug('    this_txt: ' + str(this_txt))
 
     # function deletes instance of table,  PR2019-08-25 PR2020-10-23 PR2021-06-20  PR2022-08-04
 
@@ -750,8 +753,8 @@ def delete_instance(table, instance, request, this_txt=None):
             """
 
     if logging_on:
-        logger.debug('deleted_row: ' + str(deleted_row))
-        logger.debug('err_html: ' + str(err_html))
+        logger.debug('    deleted_row: ' + str(deleted_row))
+        logger.debug('    err_html: ' + str(err_html))
 
     return deleted_row, err_html
 

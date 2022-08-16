@@ -1570,28 +1570,67 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Variables_for_extra_exams'] = _('Variables for extra exams')
 
+        dict['Abbrev_subject_2lines'] = '\n'.join((str(_('Abbreviation')), str(_('subject'))))
+        dict['Designated_exam'] = _('Designated exam')
+        dict['Designated_exam_2lines'] = _('Desig-\nnated exam')
         dict['Totals_only'] = _('Show totals per school only')
         dict['Extra_separate'] = _('Show extra per school separate')
         dict['Without_extra'] = _("Don't calculate extra exams")
         dict['File_per_school'] = _('Create Excelfile per school')
+
+        dict['Version'] = _('Version')
         dict['Language'] = _('Language')
         dict['Extra_exams'] = _('Extra exams')
         dict['the_exam_bureau'] = _('the exam bureau')
+        dict['Date'] = _('Date')
+        dict['Start_time'] = _('Start time')
+        dict['End_time'] = _('End time')
 
         dict['Label_name'] = _('Label name')
         dict['Exams_per_envelop'] = _('Exams per envelop')
         dict['Number_of_envelops'] = _('Number of envelops')
 
+        dict['Labels'] = _('Labels')
         dict['New_label'] = _('New label')
         dict['Edit_label'] = _('Edit label')
         dict['Delete_label'] = _('Delete label')
+        dict['Print_labels'] = _('Print labels')
 
         dict['Envelop_content'] = _('Envelop content')
-        dict['Label_item'] = _('Label item')
-        dict['New_label_item'] = _('New label item')
-        dict['Edit_label_item'] = _('Edit label item')
-        dict['Delete_label_item'] = _('Delete label item')
-        dict['Please_select_label_item'] = _('Please select a label item first.')
+        dict['Label_item'] = _('Label text')
+        dict['Label_items'] = _('Label texts')
+        dict['New_label_item'] = _('New label text')
+        dict['Edit_label_item'] = _('Edit label text')
+        dict['Delete_label_item'] = _('Delete label text')
+        dict['Available_label_items'] = _('Available label texts')
+        dict['Available_labels'] = _('Available labels')
+        dict['Please_select_label_bundle'] = _('Please select a label bundle first.')
+        dict['Please_select_label'] = _('Please select a label first.')
+        dict['Please_select_label_item'] = _('Please select a label text first.')
+
+        dict['Click_to_move_item_up'] = _('Click to move this item up.')
+        dict['Click_to_move_item_down'] = _('Click to move this item down.')
+
+        dict['No_labels'] = _('There are no labels.')
+        dict['No_label_items'] = _('There are no label texts.')
+
+        dict['Bundle'] = _('Label bundle')
+        dict['Bundle_name'] = _('Label bundle name')
+        dict['Label'] = _('Label')
+        dict['Label_name'] = _('Label name')
+
+        dict['a_label_bundle'] = _('a label bundle')
+        dict['Label_bundle'] = _('Label bundle')
+        dict['Label_bundles'] = _('Label bundles')
+        dict['New_bundle'] = _('New label bundle')
+        dict['Edit_bundle'] = _('Edit labelbundle')
+        dict['Delete_bundle'] = _('Delete label bundle')
+        dict['Remove_bundle'] = _('Remove label bundle')
+        dict['Please_select_bundle'] = _('Please select a label bundle first.')
+        dict['Please_select_exam'] = _('Please select an exam first.')
+        dict['An_example_of_labels_of_thisbundle'] = _('An example of the labels of this bundle')
+        #An example of the labels of bundle
+
         dict['Content'] = _('Content')
         dict['Instruction'] = _('Instruction')
 

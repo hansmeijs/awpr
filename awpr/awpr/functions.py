@@ -808,7 +808,7 @@ def get_selected_examyear_school_instance_from_usersettingNIU(request):  # PR202
 def get_sel_examyear_instance(request, request_item_examyear_pk=None):
     # PR2020-12-25 PR2021-08-12
     # called by: get_headerbar_param, download_setting create_or_validate_user_instance, UploadOldAwpView
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_sel_examyear_instance  -----')
 
@@ -1351,7 +1351,11 @@ def system_updates(examyear, request):
 
 def reset_show_msg(request):
     # PR 2022-06-01 function resets open_args
-    # called by Loggedin, to rest before setting is retrieved
+    # called by Loggedin, to reset before setting is retrieved
+    # this function deletes key 'open_args' from the usersetting of all users
+
+    # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- reset_show_msg -------')

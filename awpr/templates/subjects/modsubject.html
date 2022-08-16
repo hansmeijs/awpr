@@ -48,7 +48,7 @@
                                 <div class="flex_container">
                                     <div class="flex_1 mx-1 mt-2">
                                         <label for="id_MSUBJ_name" class="mx-2">{% trans 'Name' %}:</label>
-                                        <input id="id_MSUBJ_name" type="text" data-field="name"
+                                        <input id="id_MSUBJ_name" type="text" data-field="name_nl"
                                         class="form-control awp_input_text"
                                         autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                     </div>
@@ -56,7 +56,36 @@
 
                                 <div class="flex_container">
                                     <div class="flex_1 mx-2">
-                                        <small id="id_MSUBJ_msg_name" class="text-danger "></small>
+                                        <small id="id_MSUBJ_msg_name_nl" class="text-danger "></small>
+                                    </div>
+                                </div>
+                                <div class="flex_container">
+                                    <div class="flex_1 mx-1 mt-2">
+                                        <label for="id_MSUBJ_name_en" class="mx-2">{% trans 'Name in English (optional)' %}:</label>
+                                        <input id="id_MSUBJ_name_en" type="text" data-field="name_en"
+                                        class="form-control awp_input_text"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    </div>
+                                </div>
+
+                                <div class="flex_container">
+                                    <div class="flex_1 mx-2">
+                                        <small id="id_MSUBJ_msg_name_en" class="text-danger "></small>
+                                    </div>
+                                </div>
+
+                                <div class="flex_container">
+                                    <div class="flex_1 mx-1 mt-2">
+                                        <label for="id_MSUBJ_name_pa" class="mx-2">{% trans 'Name in Papiamentu (optional)' %}:</label>
+                                        <input id="id_MSUBJ_name_pa" type="text" data-field="name_pa"
+                                        class="form-control awp_input_text"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    </div>
+                                </div>
+
+                                <div class="flex_container">
+                                    <div class="flex_1 mx-2">
+                                        <small id="id_MSUBJ_msg_name_pa" class="text-danger "></small>
                                     </div>
                                 </div>
                             </div>

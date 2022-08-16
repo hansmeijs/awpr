@@ -428,7 +428,10 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     base = ForeignKey(Subjectbase, related_name='subjects', on_delete=PROTECT)
     examyear = ForeignKey(sch_mod.Examyear, related_name='subjects', on_delete=CASCADE)
 
-    name = CharField(max_length=c.MAX_LENGTH_NAME)
+    name_nl = CharField(max_length=c.MAX_LENGTH_NAME)
+    name_en = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    name_pa = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+
     sequence = PositiveSmallIntegerField(default=9999, db_index=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
@@ -442,7 +445,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
         ordering = ['sequence',]
 
     def __str__(self):
-        return self.name
+        return self.name_nl
 
 # PR2018-06-05 Subject is the base Model of all subjects
 class Subject_log(sch_mod.AwpBaseModel):
@@ -454,7 +457,10 @@ class Subject_log(sch_mod.AwpBaseModel):
 
     examyear_log = ForeignKey(sch_mod.Examyear_log, related_name='+', on_delete=CASCADE)
 
-    name = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    name_nl = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    name_en = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+    name_pa = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
+
     code = CharField(max_length=c.MAX_LENGTH_10, null=True)  # stored in subjectbase PR2020-12-11
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)

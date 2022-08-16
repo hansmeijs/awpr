@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, setting_dict, permit_dict, MSSSS_Response)}, false );
+                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         }
 
 // ---  SIDEBAR ------------------------------------
@@ -146,10 +146,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_sector.addEventListener("change", function() {t_SBR_select_level_sector("sector", el_SBR_select_sector, FillTblRows)}, false)};
         //const el_SBR_select_class = document.getElementById("id_SBR_select_class");
         //if(el_SBR_select_class){
-        //    el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+        //    el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if(el_SBR_select_student){
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, setting_dict, permit_dict, MSSSS_Response)}, false)};
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
             el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
@@ -1004,7 +1004,7 @@ function RefreshDataRowsAfterUpload(response) {
                         if (tblRow_tobe_deleted ){
                             tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
                         };
-                    }
+                    };
 
     // --- subtract 1 from item_count
                     selected.item_count -= 1;
