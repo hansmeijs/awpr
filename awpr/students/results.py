@@ -259,7 +259,7 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-06
 
                     # - get arial font
                     try:
-                        filepath = s.STATICFILES_FONTS_DIR + 'Arial.ttf'
+                        filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
                         ttfFile = TTFont('Arial', filepath)
                         pdfmetrics.registerFont(ttfFile)
                     except Exception as e:
@@ -423,7 +423,7 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 
         # - get arial font
                 try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Arial.ttf'
+                    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
                     ttfFile = TTFont('Arial', filepath)
                     pdfmetrics.registerFont(ttfFile)
                 except Exception as e:
@@ -619,7 +619,7 @@ class DownloadPokView(View):  # PR2022-07-02
 
                     # - get arial font
                     try:
-                        filepath = s.STATICFILES_FONTS_DIR + 'Arial.ttf'
+                        filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
                         ttfFile = TTFont('Arial', filepath)
                         pdfmetrics.registerFont(ttfFile)
                     except Exception as e:

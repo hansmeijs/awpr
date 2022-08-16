@@ -1501,14 +1501,14 @@ class EnvelopPrintView(View):  # PR2022=-8=10
                 #acc_view.set_usersetting_dict(c.KEY_EX3, setting_dict, request)
 
                 try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Arial.ttf'
+                    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
                     ttfFile = TTFont('Arial', filepath)
                     pdfmetrics.registerFont(ttfFile)
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
 
                 try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Arial_Black.ttf'
+                    filepath = s.STATICFILES_FONTS_DIR + 'arialblack220815.ttf'
                     logger.debug('filepath: ' + str(filepath))
                     ttfFile = TTFont('Arial_Black', filepath)
                     pdfmetrics.registerFont(ttfFile)

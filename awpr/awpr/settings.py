@@ -159,7 +159,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'),]
 
 # PR2021-01-22 path to fonts dir in statis
 # PR2021-02-07 debug: backslash + '\\' gives error on server, use / instead
-# still error ... because font was name 'arial.ttf' and I looked for 'Arial.ttf'
+# still error ... because font was name 'arial220815.ttf' and I looked for 'Arial.ttf'
 STATICFILES_FONTS_DIR = os.path.join(BASE_DIR, 'static', 'fonts') + '/'
 # 'static', 'media' goes wrong on server, becasue collectstatic puts all static file in one folder
 # was: STATICFILES_MEDIA_DIR = os.path.join(BASE_DIR, 'static', 'media') + '/'

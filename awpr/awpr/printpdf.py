@@ -115,7 +115,7 @@ def draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang):  # PR2021-05-
     number_questions = form_text.get('number_questions', '-') + ':'
     max_score = form_text.get('max_score', '-') + ':'
 
-    filepath = s.STATICFILES_FONTS_DIR + 'Arial.ttf'
+    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
     try:
         ttfFile = TTFont('Arial', filepath)
         #logger.debug('ttfFile: ' + str(ttfFile))
@@ -820,7 +820,7 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
         (subject_cpt, subject.name, score_blanks_error_cpt, score_blanks_error_str, has_error)
     ]
 
-    filepath = s.STATICFILES_FONTS_DIR + 'Arial.ttf'
+    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
     try:
         ttfFile = TTFont('Arial', filepath)
         #logger.debug('ttfFile: ' + str(ttfFile))
@@ -1203,7 +1203,7 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
                 form_text.get('duo_exam', '-') + ':',
                 omschrijving_txt, None, None))
 
-        filepath = s.STATICFILES_FONTS_DIR + 'Arial.ttf'
+        filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
         try:
             ttfFile = TTFont('Arial', filepath)
             #logger.debug('ttfFile: ' + str(ttfFile))
