@@ -3014,7 +3014,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
     cascade_dict = {}
 
     sub_list = ["SELECT studsubj.id,studsubj.student_id, si.id as si_id, si.is_combi,",
-                "subj.id AS subj_id, subj.name AS subj_name, subjbase.code AS subj, cl.name AS cluster_name,",
+                "subj.id AS subj_id, subj.name_nl AS subj_name, subjbase.code AS subj, cl.name AS cluster_name,",
                 "studsubj.is_extra_nocount, studsubj.is_extra_counts, studsubj.is_thumbrule, studsubj.has_sr,",
                 # these are calculated fields, dont get value from studsubj record:
                 #     "studsubj.has_exemption, studsubj.has_reex, studsubj.has_reex03, "
@@ -3336,7 +3336,7 @@ def get_schemeitems_dict(examyear, department):  # PR2021-11-19
 
         "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 
-        "subj.name AS subj_name, subjbase.code AS subj_code,",
+        "subj.name_nl AS subj_name, subjbase.code AS subj_code,",
         "sjtp.name AS sjtp_name, sjtpbase.code AS sjtp_code, sjtp.has_pws AS sjtp_has_pws",
 
         "FROM subjects_schemeitem AS si",
@@ -3786,7 +3786,7 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
         "stud.iseveningstudent, stud.islexstudent, stud.bis_exam,",
         "sb.code AS school_code, school.name AS school_name, school.article AS school_article,",
         "db.code AS depbase_code, dep.name AS dep_name, ey.code AS examyear_code, country.name AS country_name, country.abbrev AS country_abbrev,",
-        "lvlbase.code AS lvlbase_code, lvl.name AS lvl_name, subj.name AS subj_name, subjbase.code AS subj_code,",
+        "lvlbase.code AS lvlbase_code, lvl.name AS lvl_name, subj.name_nl AS subj_name, subjbase.code AS subj_code,",
         "studsubj.gradelist_use_exem, studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
         "si.gradetype, si.is_combi, si.weight_se, si.weight_ce, si.is_combi, si.is_combi, si.is_combi",
 
@@ -3818,7 +3818,7 @@ def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, s
             sql_keys['lvlbase_pk'] = lvlbase_pk
             sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-    sql_list.append("ORDER BY stud.lastname, stud.firstname, subj.name")
+    sql_list.append("ORDER BY stud.lastname, stud.firstname, subj.name_nl")
 
     sql = ' '.join(sql_list)
 

@@ -5700,7 +5700,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "studsubj.pws_title, studsubj.pws_subjects,",
             "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year, studsubj.pok_validthru,",
             "si.subject_id, si.subjecttype_id, si.gradetype,",
-            "subjbase.id AS subjbase_id, subjbase.code AS subj_code, subj.name AS subj_name,",
+            "subjbase.id AS subjbase_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
             "si.weight_se, si.weight_ce,",
             "si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
             "si.has_practexam,",

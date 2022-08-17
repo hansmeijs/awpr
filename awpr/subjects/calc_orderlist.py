@@ -61,7 +61,7 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 
         "dep.abbrev AS dep_abbrev,",  # for testing only, must also delete from group_by
         "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
-        "subj.name AS subj_name,",  # for testing only, must also delete from group_by
+        "subj.name_nl AS subj_name,",  # for testing only, must also delete from group_by
 
         #PR2021-10-12 subj.otherlang replaced by si.otherlang
         # was: "subj.base_id AS subjbase_id, si.ete_exam, subj.otherlang AS subj_otherlang, count(*) AS subj_count",
@@ -89,7 +89,7 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
         # PR2021-10-12 subj.otherlang replaced by si.otherlang
         #  was: "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
         "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id,",
-        "dep.abbrev, lvl.abbrev, subj.name,", # for testing only, must also delete from group_by
+        "dep.abbrev, lvl.abbrev, subj.name_nl,", # for testing only, must also delete from group_by
         "sch.otherlang, subj.base_id, si.ete_exam, si.otherlang"
     ]
     # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13

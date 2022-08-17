@@ -5,10 +5,9 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220815.js' %}"></script>
+    <script src="{% static 'js/exams220817.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import220808.js' %}"></script>
-
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -18,12 +17,12 @@
             <h3>{% trans 'Exams' %}</h3>
         </div>
         {% if not no_access %}
-                <div class="tw_200 m-2 display_hide">
-                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
-                    <select id="id_SBR_select_period" class="tw_200 border_none px-1"
-                        autocomplete="off" ondragstart="return false;" ondrop="return false;"
-                   ></select>
-                </div>
+            <div class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
+                <select id="id_SBR_select_period" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
 
             <div class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Learning path' %}:</h6>

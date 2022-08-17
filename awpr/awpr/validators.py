@@ -707,7 +707,7 @@ def validate_subjecttype_duplicate_base(scheme, sjtpbase, error_list, cur_subjec
 # ============ ENVELOP BUNDLE / LABEL  ===========
 def validate_bundle_label_name_blank_length_exists(table, examyear, name, cur_instance=None):
     # PR2022-08-11
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- validate_bundle_label_name_blank_length_exists ----------- ')
         logger.debug('name: ' + str(name))

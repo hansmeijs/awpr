@@ -3,12 +3,8 @@ from django.urls import reverse_lazy
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext_lazy as _
-from django.utils import timezone
 
 from django.views.generic import View
-#from django.contrib import messages
-
-import json #PR2018-12-21
 
 from accounts import views as acc_view
 from awpr import constants as c
@@ -16,7 +12,6 @@ from awpr import functions as af
 from awpr import settings as s
 
 from schools import models as sch_mod
-from schools import dicts as sch_dicts
 
 import logging
 logger = logging.getLogger(__name__)
@@ -32,11 +27,14 @@ pos_y = 18
 
 
 MENUS_ITEMS = {
-    c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
+    c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
+                        'page_studsubj', 'page_exams', 'page_grade',
                       'page_result', 'page_archive'], #  'page_report', 'page_analysis'],
-    c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade',
+    c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
+                       'page_studsubj', 'page_exams', 'page_grade',
                      'page_result', 'page_archive'],  #, 'page_report', 'page_analysis'],
-    c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],
+    c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
+                      'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],
     c.ROLE_016_CORR: ['page_school', 'page_student', 'page_grade', 'page_result', 'page_archive'],
     c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_archive'] # 'page_report',
 }

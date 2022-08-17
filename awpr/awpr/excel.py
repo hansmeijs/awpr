@@ -2865,7 +2865,7 @@ def create_exform_mapped_subject_rows(examyear, school, department, is_ex2a, is_
     subjects_dict = {}
 
     sql_list = [
-        "SELECT subj.id, subjbase.code, subj.name",
+        "SELECT subj.id, subjbase.code, subj.name_nl",
 
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",

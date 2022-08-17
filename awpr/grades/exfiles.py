@@ -179,7 +179,7 @@ class GetEx3infoView(View):  # PR2021-10-06
 
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
 
-        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
+        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
                     # TODO add cluster
                     # "MAX(studsubj.clustername) AS max_clustername, MAX(stud.classname) AS max_classname,",
                     "MAX(stud.classname) AS max_classname,",
@@ -202,9 +202,9 @@ class GetEx3infoView(View):  # PR2021-10-06
                     "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
                     "AND grd.examperiod = %(examperiod)s::INT",
 
-                    "GROUP BY subj.id, subjbase.code, subj.name",
+                    "GROUP BY subj.id, subjbase.code, subj.name_nl",
 
-                    "ORDER BY LOWER(subj.name)"
+                    "ORDER BY LOWER(subj.name_nl)"
                     ]
         sql = ' '.join(sql_list)
 
@@ -241,7 +241,7 @@ class GetEx3infoView(View):  # PR2021-10-06
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'experiod': examperiod}
         sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                     "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
-                    "subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name",
+                    "subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name",
 
                     "FROM students_grade AS grd",
                     "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -262,7 +262,7 @@ class GetEx3infoView(View):  # PR2021-10-06
                     "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
                     "AND grd.examperiod = %(experiod)s::INT",
 
-                    "ORDER BY LOWER(subj.name), LOWER(stud.lastname), LOWER(stud.firstname)"
+                    "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
                     ]
         sql = ' '.join(sql_list)
 
@@ -568,7 +568,7 @@ class DownloadEx3View(View):  # PR2021-10-07
         subject_filter = "AND subj.id IN ( SELECT UNNEST( %(subj_arr)s::INT[]))" if subject_list else ""
 
         logger.debug('subject_filter: ' + str(subject_filter))
-        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name AS subj_name,",
+        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
                     "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, ",
                     "stud.classname, cl.name AS cluster_name,",
                     "stud.level_id, lvl.name AS lvl_name",
@@ -593,7 +593,7 @@ class DownloadEx3View(View):  # PR2021-10-07
                     subject_filter,
                     "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
                     "AND grd.examperiod = %(experiod)s::INT",
-                    "ORDER BY LOWER(subj.name), LOWER(stud.lastname), LOWER(stud.firstname)"
+                    "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
                     ]
         sql = ' '.join(sql_list)
 

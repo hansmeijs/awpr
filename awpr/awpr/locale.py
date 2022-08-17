@@ -1554,6 +1554,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
 # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
+
+        dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_123ONLY
+
         dict['School_code'] = TXT_School_code
         dict['School_name'] = _('School name')
         dict['Number_of_candidates'] = _('Number of candidates')

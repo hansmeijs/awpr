@@ -93,12 +93,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // mod_MCOL_dict is defined in tables.js
     mod_MCOL_dict.columns.btn_ete_exams = {
-        subj_name: "Subject", lvl_abbrev: "Learning_path", version: "Version",
+        subj_name_nl: "Subject", lvl_abbrev: "Learning_path", version: "Version",
         examperiod: "Exam_type", blanks: "Blanks", secret_exam: "Designated_exam", status: "Status", download_exam: "Download_exam",
         cesuur: "Cesuur", scalelength: "Maximum_score", download_conv_table: "Download_conv_table"
     };
     mod_MCOL_dict.columns.btn_duo_exams = {
-        subjbase_code: "Abbreviation", subj_name: "Subject", lvl_abbrev: "Learning_path", version: "Version",
+        subjbase_code: "Abbreviation", subj_name_nl: "Subject", lvl_abbrev: "Learning_path", version: "Version",
         ntb_omschrijving: "DUO_description", examperiod: "Exam_type", nterm: "N_term", scalelength: "schaallengte",
         download_conv_table: "Download_conv_table"
     };
@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function() {
     };
     mod_MCOL_dict.columns.btn_ep_01 = {
         examnumber: "Examnumber", lvl_abbrev: "Learning_path", cluster_name: "Cluster",
-        subj_name: "Subject", blanks: "Blanks", ce_exam_score: "Score", download_exam: "Download_exam"
+        subj_name_nl: "Subject", blanks: "Blanks", ce_exam_score: "Score", download_exam: "Download_exam"
     };
     mod_MCOL_dict.columns.btn_reex = mod_MCOL_dict.columns.btn_ep_01;
 
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", function() {
         ete_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Learning_path", "Version",
                                 "Exam_type", "Designated_exam_2lines", "Blanks", "Maximum_score_2lines", "",
                                 "Download_exam", "Cesuur", "Download_conv_table_2lines"],
-                field_names: ["select", "subjbase_code", "subj_name", "lvl_abbrev", "version",
+                field_names: ["select", "subjbase_code", "subj_name_nl", "lvl_abbrev", "version",
                                 "examperiod", "secret_exam", "blanks", "scalelength", "status",
                                 "download_exam", "cesuur", "download_conv_table"],
                 field_tags: ["div", "div", "div", "div", "div",
@@ -142,7 +142,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         duo_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Learning_path", "DUO_description",
                                 "Exam_type", "Designated_exam_2lines", "schaallengte_2lines", "N_term", "Download_conv_table_2lines"],
-                field_names: ["select", "subjbase_code", "subj_name", "lvl_abbrev", "ntb_omschrijving",
+                field_names: ["select", "subjbase_code", "subj_name_nl", "lvl_abbrev", "ntb_omschrijving",
                             "examperiod", "secret_exam", "scalelength", "nterm", "download_conv_table"],
                 field_tags: ["div", "div", "div", "div", "div",
                              "div", "div", "input", "input", "a"],
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function() {
         grades: {field_caption: ["", "Examnumber_twolines", "Candidate",  "Learning_path", "Cluster", "Abbrev_subject_2lines",
                                 "Subject", "Exam", "Blanks", "Score", "", "Download_exam"],
             field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "cluster_name", "subj_code",
-                          "subj_name", "ceex_name", "blanks", "ce_exam_score", "status", "download_exam"],
+                          "subj_name_nl", "ceex_name", "blanks", "ce_exam_score", "status", "download_exam"],
             field_tags: ["div", "div", "div", "div", "div", "div",
                         "div", "div", "div", "div","div", "a"],
             filter_tags: ["select", "text", "text",  "text", "text", "text",
@@ -3185,8 +3185,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  MEX_get_subject  ================ PR2022-01-12
     function MEX_get_subject(sel_subject_pk) {
-        //console.log("===== MEX_get_subject =====");
-        //console.log("sel_subject_pk", sel_subject_pk);
+        console.log("===== MEX_get_subject =====");
+        console.log("sel_subject_pk", sel_subject_pk);
         // called by MEXQ_Open and by MSSSS_Response after selecting subject
 
         setting_dict.sel_subject_pk = sel_subject_pk;
@@ -3198,16 +3198,17 @@ document.addEventListener("DOMContentLoaded", function() {
 // -- lookup selected.subject_pk in subject_rows and get sel_subject_dict
         const [index, found_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", sel_subject_pk);
 
-    //console.log("subject_rows", subject_rows);
-    //console.log("found_dict", found_dict);
+    console.log("    subject_rows", subject_rows);
+    console.log("    found_dict", found_dict);
 
         //console.log("found_dict", found_dict);
         if (!isEmpty(found_dict)){
             mod_MEX_dict.subject_pk = found_dict.id;
             //mod_MEX_dict.subject_dict = found_dict;
-            mod_MEX_dict.subject_name = (found_dict.name) ? found_dict.name : null;
+            mod_MEX_dict.subject_name = (found_dict.name_nl) ? found_dict.name_nl : null;
             mod_MEX_dict.subject_code = (found_dict.code) ? found_dict.code : null;
         }
+    console.log("    mod_MEX_dict", mod_MEX_dict);
     }  // MEX_get_subject
 
 // ------- event handlers
@@ -5108,7 +5109,7 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
                             // these are entered in MEX_get_subject
                                 //mod_MEX_dict.subject_pk = (exam_dict.subj_id) ? exam_dict.subj_id : null;
                                 // mod_MEX_dict.subject_code = (exam_dict.subjbase_code) ? exam_dict.subjbase_code : null;
-                                //mod_MEX_dict.subject_name = (exam_dict.subj_name) ? exam_dict.subj_name : null;
+                                //mod_MEX_dict.subject_name = (exam_dict.subj_name_nl) ? exam_dict.subj_name_nl : null;
 
                     // ---  set header text
                             const examtype = (loc.examtype_caption && mod_MEX_dict.examtype) ? loc.examtype_caption[mod_MEX_dict.examtype] : loc.Exam;
@@ -5436,7 +5437,7 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
                     subj_id: data_dict.id,
                     subjbase_id: data_dict.subjbase_id,
                     subjbase_code: data_dict.subjbase_code,
-                    subj_name: data_dict.subj_name,
+                    subj_name_nl: data_dict.subj_name_nl,
                     lvl_id: data_dict.lvl_id,
                     lvlbase_id: data_dict.lvlbase_id,
                     lvl_abbrev: data_dict.lvl_abbrev,
@@ -5653,7 +5654,7 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
         if (tblName === "ntermentable"){
             tblRow.title = ob1;
         } else if (tblName === "subject") {
-             tblRow.title = data_dict.subj_name;
+             tblRow.title = data_dict.subj_name_nl;
         }
 // ---  add EventListener to tblRow
         tblRow.addEventListener("click", function() {MDUO_SelectItem(tblName, tblRow)}, false )
@@ -5960,7 +5961,7 @@ console.log("???? el_MEX_err_amount", el_MEX_err_amount)
                 let subject_text = null;
                 if(setting_dict.sel_subject_pk){
                     const data_dict = b_get_datadict_by_integer_from_datarows(subject_rows, "id", setting_dict.sel_subject_pk)
-                    subject_text =  (data_dict.name) ? data_dict.name : "---"
+                    subject_text =  (data_dict.name_nl) ? data_dict.name_nl : "---"
                 } else {
                     subject_text = "<" + loc.All_subjects + ">";
                 }
@@ -6384,7 +6385,7 @@ console.log("exam_dict", exam_dict);
                 mod_dict.exam_pk = exam_dict.id;
                 mod_dict.examyear_pk = exam_dict.ey_id;
                 mod_dict.subject_pk = exam_dict.subj_id;
-                mod_dict.subj_name = exam_dict.subj_name;
+                mod_dict.subj_name_nl = exam_dict.subj_name_nl;
             };
 //console.log("mod_dict", mod_dict);
     // ---  put text in modal form
@@ -6412,7 +6413,7 @@ console.log("exam_dict", exam_dict);
                                    exam_pk: mod_dict.exam_pk,
                                    examyear_pk: mod_dict.examyear_pk,
                                    subject_pk: mod_dict.subject_pk,
-                                   subj_name: mod_dict.subj_name,
+                                   subj_name_nl: mod_dict.subj_name_nl,
                                    exam_examyear_pk: mod_dict.exam_examyear_pk,
                                    is_test: true
                                 };
@@ -6547,7 +6548,7 @@ console.log("exam_dict", exam_dict);
                     mod_dict.grade_pk = data_dict.id;
 
                     mod_dict.subject_pk = data_dict.subj_id;
-                    mod_dict.subj_name = data_dict.subj_name;
+                    mod_dict.subj_name_nl = data_dict.subj_name_nl;
                     mod_dict.ceex_name = data_dict.ceex_name;
                     mod_dict.fullname = data_dict.fullname;
                     mod_dict.student_pk = data_dict.student_id;
@@ -6560,7 +6561,7 @@ console.log("exam_dict", exam_dict);
             } else {
                 msg_html = ["<p class='pb-2'>", loc.Submitted_will_be_removed_from_exam, "</p><p>",
                         "&emsp;", mod_dict.ceex_name, "<br>",
-                        "&emsp;", mod_dict.subj_name, "<br>",
+                        "&emsp;", mod_dict.subj_name_nl, "<br>",
                         "&emsp;", mod_dict.fullname, "</p><p class='py-2'>",
                         loc.Do_you_want_to_continue, "</p>"].join("");;
             };
@@ -6656,12 +6657,12 @@ console.log("exam_dict", exam_dict);
                         mod_dict.exam_pk = exam_dict.id;
                     if (tblName === "ete_exam") {
                         mod_dict.subject_pk = exam_dict.subj_id;
-                        mod_dict.subj_name = exam_dict.subj_name;
+                        mod_dict.subj_name_nl = exam_dict.subj_name_nl;
                         mod_dict.exam_name = exam_dict.exam_name;
                     } else  if (tblName === "duo_exam") {
                         mod_dict.department_id = exam_dict.department_id;
                         mod_dict.subject_pk = exam_dict.subj_id;
-                        mod_dict.subj_name = exam_dict.subj_name;
+                        mod_dict.subj_name_nl = exam_dict.subj_name_nl;
                         mod_dict.exam_name = exam_dict.exam_name;
                     };
                 };
@@ -6678,7 +6679,7 @@ console.log("exam_dict", exam_dict);
                     } else {
                         const will_be_deleted_copied_txt = (is_copy) ? loc.will_be_copied : (tblName === "duo_exam") ? loc.will_be_unlinked : loc.will_be_deleted;
 
-                        msg_html = ["<p class='pb-2'>", loc.Exam, " '", mod_dict.subj_name, "'",
+                        msg_html = ["<p class='pb-2'>", loc.Exam, " '", mod_dict.subj_name_nl, "'",
                                     will_be_deleted_copied_txt, "</p><p class='py-2'>",
                                 loc.Do_you_want_to_continue, "</p>"].join("");;
                     };
@@ -7192,7 +7193,7 @@ console.log("exam_dict", exam_dict);
 
             // when selecting cluster: also set subject to the subject of this cluster
             setting_dict.sel_subject_pk =  (selected_dict && selected_dict.subject_id) ? selected_dict.subject_id : null;
-            setting_dict.sel_subject_name = (selected_dict && selected_dict.subj_name) ? selected_dict.subj_name : null;
+            setting_dict.sel_subject_name = (selected_dict && selected_dict.subj_name_nl) ? selected_dict.subj_name_nl : null;
             setting_dict.sel_student_pk = null;
             setting_dict.sel_student_name = null;
 

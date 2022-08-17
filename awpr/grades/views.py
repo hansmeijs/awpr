@@ -761,7 +761,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 
         sql_list.extend([
             "subj.base_id AS subjbase_id, lvl.base_id AS lvlbase_id, dep.base_id AS depbase_id, school.base_id AS schoolbase_id,",
-            "CONCAT_WS (' ', stud.prefix, CONCAT(stud.lastname, ','), stud.firstname) AS stud_name, subj.name AS subj_name",
+            "CONCAT_WS (' ', stud.prefix, CONCAT(stud.lastname, ','), stud.firstname) AS stud_name, subj.name_nl AS subj_name",
 
             "FROM students_grade AS grd",
             "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -900,7 +900,7 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
             "subj.base_id AS subjbase_id, lvl.base_id AS lvlbase_id, dep.base_id AS depbase_id, school.base_id AS schoolbase_id,",
             "exam.secret_exam,"
             "subj.base_id AS subjbase_id, lvl.base_id AS lvlbase_id, dep.base_id AS depbase_id, school.base_id AS schoolbase_id,",
-            "stud.lastname, stud.firstname, stud.prefix, subj.name AS subj_name",
+            "stud.lastname, stud.firstname, stud.prefix, subj.name_nl AS subj_name",
 
             "FROM students_grade AS grd",
             "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -933,7 +933,7 @@ def check_ex5_grade_approved_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbas
             sql_keys['lvl_pk'] = sel_lvlbase_pk
             sql_list.append("AND lvl.base_id = %(lvl_pk)s::INT")
 
-        sql_list.append('ORDER BY stud.lastname, stud.firstname, subj.name')
+        sql_list.append('ORDER BY stud.lastname, stud.firstname, subj.name_nl')
 
         sql = ' '.join(sql_list)
 
@@ -3059,7 +3059,7 @@ def XXXXXXXXXXcreate_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depba
                     "si.is_core_subject, si.is_mvt, si.sr_allowed, si.no_ce_years, si.thumb_rule,",
                     "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 
-                    "subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+                    "subj.name_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
                     "NULL AS note_status", # will be filled in after downloading note_status
 
                     "FROM students_grade AS grd",
@@ -3338,7 +3338,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "si.is_core_subject, si.is_mvt, si.sr_allowed, si.no_ce_years, si.thumb_rule,",
                     "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 
-                    "subj.name AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+                    "subj.name_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
 
                     "NULL AS note_status", # will be filled in after downloading note_status
 
@@ -3577,7 +3577,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                     "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
                     "depbase.code AS depbase_code,",
                     "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-                    "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name AS subj_name,",
+                    "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name_nl AS subj_name,",
                     "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
                     "grd.examperiod, grd.pescore, grd.cescore,",
 
@@ -3788,15 +3788,15 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
                 "SELECT exam.id AS exam_id, ",
                 "school.id AS school_id, schoolbase.code AS schoolbase_code, school.name AS school_name,",
                 "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
-                "subjbase.code AS subj_code, subj.name AS subj_name,",
+                "subjbase.code AS subj_code, subj.name_nl AS subj_name,",
                 "exam.version, exam.examperiod,",
 
-                "CONCAT(subj.name,",
+                "CONCAT(subj.name_nl,",
                 "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
                 "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
                 "CASE WHEN exam.ete_exam THEN ",
-                    "CONCAT(subj.name,",
+                    "CONCAT(subj.name_nl,",
                     "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
                     "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END )",
                 "ELSE CASE WHEN ntt.id IS NOT NULL THEN ntt.omschrijving ELSE '---' END",
@@ -3863,7 +3863,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
             sql_keys['sjb_pk'] = sel_subjbase_pk
             sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
 
-    sql_list.append("GROUP BY exam.id, ntt.id, school.id, schoolbase.code, school.name, depbase.code, lvl.abbrev, subjbase.code, subj.name, exam.version, exam.examperiod")
+    sql_list.append("GROUP BY exam.id, ntt.id, school.id, schoolbase.code, school.name, depbase.code, lvl.abbrev, subjbase.code, subj.name_nl, exam.version, exam.examperiod")
     sql_list.append('ORDER BY exam.id, school.id')
 
     sql = ' '.join(sql_list)
@@ -5347,7 +5347,7 @@ def create_grade_rows_with_modbyTEMP(sel_examyear_pk, sel_schoolbase_pk, sel_dep
 
         sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix,",
                     "lvl.abbrev AS lvl, sct.abbrev AS sct,",
-                    "segrade, subj.name AS subject, ",
+                    "segrade, subj.name_nl AS subject, ",
                     "grd.modifiedat, au.last_name AS modifiedby",
 
                     "FROM students_grade AS grd",

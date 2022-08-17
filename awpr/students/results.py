@@ -736,7 +736,7 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 "studsubj.pws_title, studsubj.pws_subjects,",
 
                 "si.is_combi, (sjtpbase.code = 'stg')::BOOLEAN AS is_stg, (sjtpbase.code = 'wst')::BOOLEAN AS is_wst,",
-                "subj.id AS subj_id, subj.name AS subj_name, subjbase.code AS subjbase_code,",
+                "subj.id AS subj_id, subj.name_nl AS subj_name, subjbase.code AS subjbase_code,",
                 "sjtp.name AS sjtp_name, sjtpbase.sequence AS sjtpbase_sequence, sjtpbase.code AS sjtpbase_code",
 
                 "FROM students_studentsubject AS studsubj",

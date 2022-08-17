@@ -511,8 +511,8 @@
                     (tblName === "student") ? map_dict.name_first_init : "";
 
         const name =  (tblName === "school") ? map_dict.abbrev :
-                    (tblName === "subject") ? map_dict.name :
-                    (tblName === "cluster") ? map_dict.name :
+                    (tblName === "subject") ? map_dict.name_nl :
+                    (tblName === "cluster") ? map_dict.name_nl :
                     (tblName === "student") ? map_dict.fullname  :
                     (tblName === "envelopbundle") ? map_dict.name : "";
 

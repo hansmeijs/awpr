@@ -214,15 +214,15 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         depbase=sel_depbase)
 # ----- ete_exams
                 if datalist_request.get('ete_exam_rows'):
-                    # in page orderlist / envelop: show ete_exams of all deps
-                    show_all_deps = af.get_dict_value(datalist_request, ('ete_exam_rows', 'show_all_deps'), False)
-                    selected_depbase = sel_depbase if not show_all_deps else None
+                    # in page orderlist: show ete_exams of all deps
+                    show_all = af.get_dict_value(datalist_request, ('ete_exam_rows', 'show_all'), False)
                     datalists['ete_exam_rows'] = sj_vw.create_ete_exam_rows(
                         req_usr=request.user,
                         sel_examyear=sel_examyear,
-                        sel_depbase=selected_depbase,
+                        sel_depbase=sel_depbase,
                         append_dict={},
                         setting_dict=new_setting_dict,
+                        show_all=show_all,
                         exam_pk_list=None
                     )
 # ----- duo exams
@@ -430,7 +430,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_examyear=sel_examyear
                     )
 
-
         if message_list:
             datalists['messages'] = message_list
 
@@ -455,7 +454,8 @@ def download_setting(request_item_setting, user_lang, request):
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----------------- download_setting ---------------------- ')
-        logger.debug('request_item_setting: ' + str(request_item_setting) )
+        logger.debug('request_item_setting: ' + str(request_item_setting))
+
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
 
@@ -482,6 +482,9 @@ def download_setting(request_item_setting, user_lang, request):
         datalist_request: {'setting': {'page': 'page_grade', 'sel_btn': 'btn_exem', 'sel_examperiod': 4}} 
     page_studsubj, on changing SBR level:
         datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
+    page orderlist, select all depbases:
+      request_item_setting: {'page': 'page_orderlist', 'sel_depbase_pk': None}
+  
     """
     req_user = request.user
     msg_list = []
@@ -680,7 +683,8 @@ def download_setting(request_item_setting, user_lang, request):
         af.get_sel_depbase_instance(sel_school, request, request_item_depbase_pk)
 
     if logging_on:
-        logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
+        logger.debug('===== DEPBASE ==========')
+        logger.debug('    sel_depbase_instance: ' + str(sel_depbase_instance))
 
     permit_dict['allowed_depbases'] = allowed_depbases
     allowed_depbases_len = len(allowed_depbases)
@@ -711,9 +715,9 @@ def download_setting(request_item_setting, user_lang, request):
             permit_dict.pop('requsr_allowed_depbases')
 
     if logging_on:
-        logger.debug('allowed_depbases: ' + str(allowed_depbases) )
-        logger.debug('may_select_department: ' + str(may_select_department) )
-        logger.debug('permit_dict[display_department]: ' + str(permit_dict['display_department']) )
+        logger.debug('    allowed_depbases: ' + str(allowed_depbases) )
+        logger.debug('    may_select_department: ' + str(may_select_department) )
+        logger.debug('    permit_dict[display_department]: ' + str(permit_dict['display_department']) )
 
 # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_depbase_save:

@@ -163,10 +163,10 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
                         {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')},
                         {'value': EXAMPERIOD_EXEMPTION, 'caption': _('Exemption')}]
 
-EXAMPERIOD_OPTIONS_123ONLY = [{'value': 12, 'caption': ''.join(('&#60', str(_('All examtypes')), '&#62'))},
-                             {'value': EXAMPERIOD_FIRST, 'caption': _('Central exam')},
-                            {'value': EXAMPERIOD_SECOND, 'caption': _('Re-examination')},
-                            {'value': EXAMPERIOD_THIRD, 'caption': _('Re-ex 3rd period')}]
+EXAMPERIOD_OPTIONS_123ONLY = [{'value': 12, 'caption': ''.join(('&#60', str(_('All exam periods')), '&#62'))},
+                             {'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
+                            {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')},
+                            {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')}]
 
 # examgradetypes are: 'segrade', 'srgrade', 'pescore', 'pegrade', 'cescore', 'cegrade
 EXAMGRADE_OPTIONS = [

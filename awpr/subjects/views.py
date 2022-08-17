@@ -1320,7 +1320,7 @@ def get_subjecttypebase_instance(sjtpbase_pk, error_list, message_header, loggin
 class ExamListView(View):  # PR2021-04-04
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -4622,13 +4622,14 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 # --- end of create_all_exam_rows
 
 
-def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
+def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, show_all=False, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13  PR2022-06-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
         logger.debug('sel_examyear: ' + str(sel_examyear))
         logger.debug('sel_depbase: ' + str(sel_depbase))
+        logger.debug('show_all: ' + str(show_all))
 
     # PR2022-05-13 debug: Raymond Romney MPC: cannot open exam.
     # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
@@ -4646,6 +4647,8 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
     # - this examyear_code i.e Sxm also sees Cur ETE exams
     # - if not role = admin:
     #       - only shows published ETE exams
+
+    selected_depbase = sel_depbase if not show_all else None
 
     sel_depbase_pk = sel_depbase.pk if sel_depbase else 0
     sel_ey_code = sel_examyear.code if sel_examyear else 0
@@ -4691,35 +4694,37 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "WHERE ex.ete_exam",
         "AND ey.code = %(ey_code)s::INT",
     ]
-    if sel_depbase_pk:
-        # PR2022-08-11 show ete_exams of all deps in page orderlist / envelop
-        "AND depbase.id = %(depbase_id)s::INT"
+    if sel_depbase_pk and not show_all:
+        # PR2022-08-11 show ete_exams of all deps in page orderlist
+        sql_list.append("AND depbase.id = %(depbase_id)s::INT")
 
 # - only show exams that are published when user is not role_admin
     if not req_usr.is_role_admin:
         sql_list.append("AND ex.published_id IS NOT NULL")
 
 # skip other filters when exam_pk_list has value
-    if exam_pk_list:
-        sql_keys['pk_arr'] = exam_pk_list
-        sql_list.append("AND ex.id IN (SELECT UNNEST( %(pk_arr)s::INT[]))")
-    else:
-        if setting_dict:
-            sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
-            if sel_examperiod in (1, 2, 3):
-                sql_keys['ep'] = sel_examperiod
-                sql_list.append("AND (ex.examperiod = %(ep)s::INT)")
+    if not show_all:
+        if exam_pk_list:
+            sql_keys['pk_arr'] = exam_pk_list
+            sql_list.append("AND ex.id IN (SELECT UNNEST( %(pk_arr)s::INT[]))")
+        else:
+            if setting_dict:
+                sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
+                if sel_examperiod in (1, 2, 3):
+                    sql_keys['ep'] = sel_examperiod
+                    sql_list.append("AND (ex.examperiod = %(ep)s::INT)")
 
-            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-            if sel_lvlbase_pk:
-                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+                sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+                if sel_lvlbase_pk:
+                    sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                    sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
     sql_list.append("ORDER BY ex.id")
 
     sql = ' '.join(sql_list)
     if logging_on:
         logger.debug('sql_keys: ' + str(sql_keys))
+        logger.debug('sql: ' + str(sql))
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)
@@ -4733,7 +4738,7 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
                 for key, value in append_dict.items():
                     row[key] = value
 
-    if logging_on:
+    if logging_on and False:
         logger.debug('ete_exam_rows: ' + str(ete_exam_rows))
 
     return ete_exam_rows
@@ -6753,7 +6758,7 @@ def create_schemeitem_rows(examyear, append_dict, schemeitem_pk=None, scheme_pk=
             sql_keys = {'ey_id': examyear.pk}
             sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
                 "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
-                "si.subject_id AS subj_id, subj.name_nl_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+                "si.subject_id AS subj_id, subj.name_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
                 "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
                 "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
                 "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws,",
@@ -6838,11 +6843,11 @@ def create_schemeitem_rows(examyear, append_dict, schemeitem_pk=None, scheme_pk=
                         row[key] = value
 
 
-            if logging_on:
-                logger.debug('schemeitem_rows: ' + str(schemeitem_rows) )
-
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('schemeitem_rows: ' + str(schemeitem_rows))
 
     return schemeitem_rows
 # --- end of create_schemeitem_rows
