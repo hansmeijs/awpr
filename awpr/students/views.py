@@ -1111,14 +1111,16 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 # +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
                             err_fields = []
+                            idnumber_list = [],
+                            examnumber_list = []
                             update_student_instance(
                                 instance=student_instance,
                                 sel_examyear=sel_examyear,
                                 sel_school=sel_school,
                                 sel_department=sel_department,
                                 upload_dict=upload_dict,
-                                idnumber_list=[],
-                                examnumber_list=[],
+                                idnumber_list=idnumber_list,
+                                examnumber_list=examnumber_list,
                                 diplomanumber_list=[],
                                 gradelistnumber_list=[],
                                 msg_list=messages,
@@ -4533,7 +4535,7 @@ def create_student(examyear, school, department, idnumber_nodots,
                    lastname_stripped, firstname_stripped, prefix_stripped, full_name,
                     lvlbase_pk, sctbase_pk, request, found_is_error, skip_save):
     # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15 PR2022-08-20
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++++++++++++++ create_student +++++++++++++++++ ')
@@ -4650,7 +4652,7 @@ def create_student(examyear, school, department, idnumber_nodots,
 
 
 #######################################################
-def   update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
+def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
                             idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
                             msg_list, error_list, err_fields, log_list, request, skip_save):
     # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04
@@ -4709,7 +4711,7 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                             new_value = str(new_value)
 
                     if new_value != saved_value:
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('lastname firstname saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
                             logger.debug('lastname firstname new_value:   ' + str(new_value)+ ' ' + str(type(new_value)))
 
@@ -4765,7 +4767,7 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                         saved_value = getattr(instance, field)
 
                         if new_gender != saved_value:
-                            if logging_on:
+                            if logging_on and False:
                                 logger.debug('gender saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
                                 logger.debug('gender new_gender:  ' + str(new_gender) + ' ' + str(type(new_gender)))
 
@@ -4773,7 +4775,76 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                             save_changes = True
                             recalc_regnumber = True
 
-                elif field in ('idnumber', 'examnumber'):
+                elif field == 'idnumber':
+                    caption = _('ID-number')
+                    err_txt = None
+                    class_txt = None
+                    idnumber_nodots_stripped_lower = None
+
+                    # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                    if new_value is not None:
+                        if not isinstance(new_value, str):
+                            new_value = str(new_value)
+
+                    if new_value:
+
+            # - remove dots, check if idnumber is correct
+                        idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
+                        if msg_err:
+                            err_txt = msg_err
+                            class_txt = "border_bg_invalid"
+
+                    if err_txt is None:
+            # check idnumber_already_exists
+                        idnumber_already_exists = False
+
+                        # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
+                        if not idnumber_list:
+                            stud_val.get_idnumberlist_from_database(instance.school, idnumber_list)
+
+                        if logging_on :
+                            logger.debug('    idnumber_list: ' + str(idnumber_list))
+
+                        if idnumber_list:
+                            for row in idnumber_list:
+                                # row is a tuple with (id, idnumber), id=0 when instance not saved yet
+                                # skip idnumber of this student
+                                if instance_pk is None or row[0] != instance_pk:
+                                    if row[1] and row[1] == idnumber_nodots_stripped_lower:
+                                        idnumber_already_exists = True
+                                        break
+
+                        if idnumber_already_exists:
+                            err_txt = _("%(cpt)s '%(val)s' already exists.") % {'cpt': str(caption), 'val': idnumber_nodots_stripped_lower}
+                            class_txt = "border_bg_warning"
+                        else:
+                            # add new_value to idnumber_list if it doesn't exist yet
+
+                            # PR2022-08-22 debug Guribaldi Gouv Lauffer: string index out of range
+                            # cause: idnumber_list item is [studenk_pk_int, idnumber_str]
+                            # add student_pk as first value, add 0 when new student
+                            # was: idnumber_list.append(new_value)
+
+                            if logging_on:
+                                logger.debug('    instance_pk: ' + str(instance_pk))
+                            if instance_pk is None:
+                                idnumber_list.append((0, idnumber_nodots_stripped_lower))
+                            if logging_on:
+                                logger.debug('    idnumber_list: ' + str(idnumber_list))
+
+                    if err_txt:
+                        field_error = True
+                        error_list.append(err_txt)
+                        err_fields.append(field)
+                        msg_list.append({'class': class_txt, 'msg_html': err_txt})
+                    else:
+                        saved_value = getattr(instance, field)
+                        if new_value != saved_value:
+                            setattr(instance, field, new_value)
+                            save_changes = True
+
+                elif field == 'examnumber':
+                    caption = _('Exam number')
                     err_txt = None
                     class_txt = None
 
@@ -4783,92 +4854,48 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                             new_value = str(new_value)
 
                     if new_value:
-                        if field == 'idnumber':
-                            caption = _('ID-number')
+            # check max length
+                        new_value = new_value.strip()
+                        if len(new_value) > c.MAX_LENGTH_EXAMNUMBER:
+                            err_txt = str(_("%(cpt)s '%(val)s' is too long.<br>Maximum %(max)s characters.") \
+                                % {'cpt': caption, 'val': new_value, 'max': c.MAX_LENGTH_EXAMNUMBER})
+                            class_txt = "border_bg_invalid"
 
-                # remove dots, check if idnumber is correct
-                            idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
-                            if msg_err:
-                                err_txt = msg_err
-                                class_txt = "border_bg_invalid"
-                            else:
-                # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
-                                if not idnumber_list:
-                                    idnumber_list = stud_val.get_idnumberlist_from_database(instance.school)
-                # check if new_value already exists in idnumber_list, but skip idnumber of this instance
-                                if idnumber_list:
-                                    for row in idnumber_list:
-                                        # row is a tuple with (id, idnumber)
-                                        if row[1] == new_value:
-                                            # unsaved instance has id = None
-                                            skip_own_idnumber = False
-                                            saved_id = getattr(instance, 'id')
-                                            if saved_id:
-                                                if saved_id and row[0] == saved_id:
-                                                    skip_own_idnumber = True
-                                            if not skip_own_idnumber:
-                                                err_txt = _("%(cpt)s '%(val)s' already exists.") \
-                                                          % {'cpt': str(caption), 'val': new_value}
-                                                class_txt = "border_bg_warning"
-                                            break
+                    if err_txt is None:
 
-                            if not err_txt:
-                # replace new_value by idnumber_nodots_stripped_lower
-                                new_value = idnumber_nodots_stripped_lower
+            # check examnumber_already_exists
+                        examnumber_already_exists = False
 
-                # add new_value to idnumber_list if it doesn't exist yet
-                                idnumber_list.append(new_value)
+                        # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
+                        if not examnumber_list:
+                            stud_val.get_examnumberlist_from_database(instance.school, instance.department, examnumber_list)
 
-                        elif field == 'examnumber':
-                            caption = _('Exam number')
-
-                            if logging_on:
-                                logger.debug(' ------- update examnumber -------')
-                                logger.debug('    caption: ' + str(caption))
-                                logger.debug('    examnumber_list: ' + str(examnumber_list))
-                                logger.debug('    new_value: ' + str(new_value))
-
-                # when uploading students: examnumber_list is filled, unless there were no examnumbers
-                            # examnumber_list:  list of tuples (student_pk, examnumber) [(4445, '201'), (4545, '202'), (4546, '203'), (4547, '204'), (5888, '205'), (4549, '206'), (6016, '207')]
-                            examnumber_already_exists = False
-                            if new_value:
-                                # examnumber_list is None when updating single student,  examnumber_list existts when uploading students
-                                if examnumber_list is not None:
-                                     for row in examnumber_list:
-                                        # skip exam number of this student
-                                        if row[0] != instance_pk:
-                                            if row[1] and row[1].strip().lower() == new_value.strip().lower():
-                                                examnumber_already_exists = True
-                                                break
-                                else:
-                                # when updating single student, examnumber_list is not filled. Use validate_examnumber_exists instead
-                                    has_err = stud_val.validate_examnumber_exists(instance, new_value)
-                                    if has_err:
+                        if examnumber_list:
+                            # examnumber_list:  list of tuples (student_pk, LOWER(examnumber)) [(4445, '201'), (4545, '202'), (4546, '203'), (4547, '204'), (5888, '205'), (4549, '206'), (6016, '207')]
+                             for row in examnumber_list:
+                                # skip exam number of this student
+                                if instance_pk is None or row[0] != instance_pk:
+                                    if row[1] and row[1] == new_value.lower():
                                         examnumber_already_exists = True
-                                        err_txt = _("%(cpt)s '%(val)s' already exists.") \
-                                                  % {'cpt': str(caption), 'val': new_value}
-                                        class_txt = "border_bg_warning"
+                                        break
 
-                            if examnumber_already_exists:
-                                err_txt = _("%(cpt)s '%(val)s' already exists.") \
-                                          % {'cpt': str(caption), 'val': new_value}
-                                class_txt = "border_bg_warning"
-                            else:
-                # when updating single student, examnumber_list is not filled. Use validate_examnumber_exists instead
-                                has_err = stud_val.validate_examnumber_exists(instance, new_value)
-                                if has_err:
-                                    err_txt = _("%(cpt)s '%(val)s' already exists.") \
-                                              % {'cpt': str(caption), 'val': new_value}
-                                    class_txt = "border_bg_warning"
-                # add new_value to examnumber_list if it doesn't exist yet
-                            if not err_txt:
-                                examnumber_list.append(new_value)
+                        if examnumber_already_exists:
+                            err_txt = _("%(cpt)s '%(val)s' already exists.")  % {'cpt': str(caption), 'val': new_value}
+                            class_txt = "border_bg_warning"
+                        else:
+            # add new_value to examnumber_list if it doesn't exist yet
 
-                            if logging_on:
-                                logger.debug('    err_txt: ' + str(err_txt))
-                                logger.debug(' --------------')
+                            # PR2022-08-22 debug Guribaldi Gouv Lauffer: string index out of range
+                            # cause: examnumber_list item is [studenk_pk_int, examnumber_str]
+                            # add student_pk as first value, add 0 when new student
+                            # was: examnumber_list.append(new_value)
+                            if instance_pk is None:
+                                examnumber_list.append((0, new_value))
 
-                # validate_code_name_blank_length_exists_id checks for null, too long and exists. Puts msg_err in update_dict
+                        if logging_on and False:
+                            logger.debug('    err_txt: ' + str(err_txt))
+                            logger.debug(' --------------')
+
                     if err_txt:
                         field_error = True
                         error_list.append(err_txt)
@@ -4877,18 +4904,11 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                     else:
                         saved_value = getattr(instance, field)
 
-                        if logging_on and new_value != saved_value:
-                            logger.debug(
-                                'idnumber examnumber saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
-                            logger.debug('idnumber examnumber new_value: ' + str(new_value) + ' ' + str(type(new_value)))
-
                         if new_value != saved_value:
                             setattr(instance, field, new_value)
                             save_changes = True
-                            if field == 'examnumber':
-                                recalc_regnumber = True
-                            if logging_on:
-                                logger.debug('setattr(instance, field, new_value: ' + str(new_value))
+                            # TODO to be deprecated
+                            recalc_regnumber = True
 
                 elif field in ('diplomanumber', 'gradelistnumber'):
                     caption = str(_('Diploma number')) if field == 'diplomanumber' else str(_('Gradelist number'))
@@ -4967,7 +4987,7 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                     new_dateobj = af.get_date_from_ISO(new_value)
 
                     if new_dateobj != saved_dateobj:
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('birthdate saved: ' + str(saved_dateobj) + ' ' + str(type(saved_dateobj)))
                             logger.debug('birthdate new  : ' + str(new_dateobj) + ' ' + str(type(new_dateobj)))
 
@@ -4983,14 +5003,14 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                         if not isinstance(new_value, str):
                             new_value = str(new_value)
 
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('field: ' + field + ' saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
                         logger.debug('field: ' + field + ' new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
                     if new_value != saved_value:
                         setattr(instance, field, new_value)
                         save_changes = True
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('save_changes field: ' + field + ' new_value: ' + str(new_value))
 
     # 3. save changes in department, level or sector
@@ -5001,7 +5021,7 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                         field = 'sector'
 
                     #TODO PR2022-07-07 error on CAL and Omega: sector disappears when changing student, then subjects get deleted without deleting grade info
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug(' >> field: ' + str(field) + ' ' + str(type(field)))
                         logger.debug('    new_value: ' + str(new_value) + ' ' + str(type(new_value)))
                         logger.debug('    old_level: ' + str(getattr(instance, 'level')))
@@ -5011,11 +5031,11 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
 
                     new_lvl_or_sct = None
                     school = getattr(instance, 'school')
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('    school: ' + str(school) + ' ' + str(type(school)))
                     if school:
                         examyear = getattr(school, 'examyear')
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('    examyear: ' + str(examyear) + ' ' + str(type(examyear)))
                         if examyear:
                             if field == 'level':
@@ -5030,13 +5050,13 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                                 )
 
                     saved_lvl_or_sct = getattr(instance, field)
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('    new_lvl_or_sct: ' + str(new_lvl_or_sct) + ' ' + str(type(new_lvl_or_sct)))
                         logger.debug('    saved_lvl_or_sct: ' + str(saved_lvl_or_sct) + ' ' + str(type(saved_lvl_or_sct)))
 
                     # new_value is levelbase_pk or sectorbase_pk
                     if new_lvl_or_sct != saved_lvl_or_sct:
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('saved ' + str(field) + ': ' + str(saved_lvl_or_sct) + ' ' + str(type(saved_lvl_or_sct)))
                             logger.debug('new   ' + str(field) + ': ' + str(new_lvl_or_sct) + ' ' + str(type(new_lvl_or_sct)))
 
@@ -5092,7 +5112,7 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                     if not new_value:
                         new_value = False
                     saved_value = getattr(instance, field) or False
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('new_value: ' + str(new_value))
                         logger.debug('saved_value: ' + str(saved_value))
                     if new_value != saved_value:
@@ -5165,7 +5185,7 @@ def   update_student_instance(instance, sel_examyear, sel_school, sel_department
                 sector=sector)
             setattr(instance, 'scheme', scheme)
 
-            if logging_on:
+            if logging_on and False:
                 logger.debug('     dep:    ' + str(department) + ' ' + str(type(department)))
                 logger.debug('     new_level:  ' + str(level) + ' ' + str(type(level)))
                 logger.debug('     new_sector: ' + str(sector) + ' ' + str(type(sector)))

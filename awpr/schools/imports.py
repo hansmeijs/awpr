@@ -757,7 +757,7 @@ class UploadImportStudentView(View):
                     data_list = upload_dict.get('data_list')
                     filename = upload_dict.get('filename', '')
 
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('    is_test:        ' + str(is_test))
                         logger.debug('    awpColdef_list: ' + str(awpColdef_list))
                         logger.debug('    len(data_list): ' + str(len(data_list)))
@@ -802,27 +802,14 @@ class UploadImportStudentView(View):
                             stud_val.get_double_diplomanumber_gradelistnumber_from_uploadfile(data_list)
 
         # - get id_number_list, the list of idnumbers of this school
-                        # new idnumbers will be added to the idnumber_list in upload_student_from_datalist
-                        idnumber_list = stud_val.get_idnumberlist_from_database(sel_school)
-
-        # - get examnumber_list, the list of examnumbers of this department
-                        # new examnumbers will be added to the examnumber_list in upload_student_from_datalist
-                        examnumber_list = stud_val.get_examnumberlist_from_database(sel_school, sel_department)
+                        # idnumber_list and examnumber_list will be filled in upload_student_from_datalist
+                        # without a row the reference to these lists et lost. Cost me 2 hours to figure this out. PR2022-08-22
+                        idnumber_list, examnumber_list = [], []
 
         # - get diplomanumber_list, gradelistnumber_list, the list of examnumbers of this school
                         # new values will be added to the value_list in upload_student_from_datalist
                         diplomanumber_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database('diplomanumber', sel_school)
                         gradelistnumber_list = stud_val.get_diplomanumberlist_gradelistnumberlist_from_database('gradelistnumber', sel_school)
-
-                        if logging_on:
-                            logger.debug('school_name: ' + str(school_name))
-                            logger.debug('    double_idnumber_list: ' + str(double_idnumber_list))
-                            logger.debug('    double_diplomanumber_list: ' + str(double_diplomanumber_list))
-                            logger.debug('    double_gradelistnumber_list: ' + str(double_gradelistnumber_list))
-                            logger.debug('    idnumber_list: ' + str(idnumber_list))
-                            logger.debug('    examnumber_list: ' + str(examnumber_list))
-                            logger.debug('    diplomanumber_list: ' + str(diplomanumber_list))
-                            logger.debug('    gradelistnumber_list: ' + str(gradelistnumber_list))
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # +++++ loop through data_list
@@ -962,7 +949,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
     if student_sctbase_pk is None:
         student_sctbase_pk = data_dict.get('profiel')
 
-    if logging_on:
+    if logging_on and False:
         logger.debug('student_depbase_pk: ' + str(student_depbase_pk))
         logger.debug('student_lvlbase_pk: ' + str(student_lvlbase_pk))
         logger.debug('student_sctbase_pk: ' + str(student_sctbase_pk))
@@ -974,7 +961,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
 # - skip when student is from different department
     # PR2022-06-26 debug: Havo student was added to Vsbo in ATC. Must filter out students from different departments
-    # only student_depbase_pk has value
+    # only when student_depbase_pk has value (student_depbase_pk is None when school has only 1 department)
     if student_depbase_pk and student_depbase_pk != department.base_id:
         is_diff_dep_student = True
         error_list.append(str(_("This candidate belongs to a different department.")))
@@ -1002,7 +989,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
     full_name = stud_val.get_prefix_lastname_comma_firstname(lastname_stripped, firstname_stripped, prefix_stripped)
 
-    if logging_on:
+    if logging_on and False:
         logger.debug('    idnumber_nodots: ' + str(idnumber_nodots))
         logger.debug('    full_name: ' + str(full_name))
         logger.debug('    student_depbase_pk: ' + str(student_depbase_pk))
@@ -1032,6 +1019,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
             double_entrieslist=double_gradelistnumber_list,
             error_list=error_list
         )
+
 # - validate length of name firstname prefix
     if not has_error and not is_diff_dep_student:
         has_error = stud_val.validate_student_name_length(lastname_stripped, firstname_stripped, prefix_stripped, error_list)
@@ -1046,20 +1034,25 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
 # - lookup student in database
        # either student, not_found or has_error is trueish
-        student, not_found, err_str = \
+        student, not_found, msg_err = \
             stud_val.lookup_student_by_idnumber_nodots(
                 school=school,
                 department=department,
                 idnumber_nodots=idnumber_nodots,
                 upload_fullname=full_name,
-                found_is_error=False
+                found_is_error=True
             )
+
+        if msg_err:
+            has_error = True
+            error_list.append(str(msg_err))
+
         if logging_on:
             student_pk = student.pk if student else 'None'
             logger.debug(' >>>student.pk: ' + str(student_pk))
             logger.debug('    student:    ' + str(student))
             logger.debug('    not_found:  ' + str(not_found))
-            logger.debug('    err_str:    ' + str(err_str))
+            logger.debug('    msg_err:    ' + str(msg_err))
 
     if not has_error and not is_diff_dep_student:
         messagesNIU = []
@@ -1067,7 +1060,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 # - check if birthdate is a valid date
         # birthdate has format of excel ordinal
         birthdate_ordinal = data_dict.get('birthdate')
-        if logging_on:
+        if logging_on and False:
             logger.debug('birthdate_ordinal: ' + str(birthdate_ordinal) + ' ' + str(type(birthdate_ordinal)))
 
         birthdate_iso = af.get_dateiso_from_excel_ordinal(birthdate_ordinal, error_list)
@@ -1075,7 +1068,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
             birthdate_iso = af.get_birthdateiso_from_idnumber(idnumber_nodots)
             #if birthdate_iso:
             #    error_list.append(str(_("AWP has calculated the birthdate from the ID-number.")))
-            if logging_on:
+            if logging_on and False:
                 logger.debug('    birthdateiso_from_idnumber: ' + str(birthdate_iso) + ' ' + str(type(birthdate_iso)))
 
     # - replace birthdate with birthdate_iso in data_dict
@@ -1083,7 +1076,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
         data_dict['birthdate'] = birthdate_iso
 
-        if logging_on:
+        if logging_on and False:
             logger.debug('    birthdate_iso: ' + str(birthdate_iso) + ' ' + str(type(birthdate_iso)))
 
         if student_instance:
@@ -1162,7 +1155,6 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
 # - update fields, both in new and existing students
         if student_instance:
-
             data_dict.pop('rowindex')
 
             changes_are_saved, error_save, field_error = \

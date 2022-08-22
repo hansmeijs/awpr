@@ -56,6 +56,7 @@ def validate_unique_username(username, schoolbaseprefix, cur_user_id=None, skip_
 
 
 # === validate_unique_user_lastname ===================================== PR2021-08-05
+
 def validate_unique_user_lastname(schoolbase, user_lastname, cur_user_id=None, skip_msg_activated=False):
     #logger.debug ('=== validate_unique_username ====')
     # __iexact looks for the exact string, but case-insensitive. If username is None, it is interpreted as an SQL NULL
@@ -93,6 +94,7 @@ def validate_unique_user_lastname(schoolbase, user_lastname, cur_user_id=None, s
 # - end of validate_unique_user_lastname
 
 # === validate_email_address ========= PR2020-08-02
+
 def validate_email_address(email_address):
     msg_err = None
     if email_address:
@@ -162,6 +164,7 @@ def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False)
 
 
 # === validate_level_sector_in_student ========= PR2022-08-20
+
 def validate_level_sector_in_student(examyear, school, department, lvlbase_pk, sctbase_pk):
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -206,6 +209,7 @@ def validate_level_sector_in_student(examyear, school, department, lvlbase_pk, s
 
 
 # === validate_unique_examyear ======== PR2020-10-05
+
 def validate_unique_examyear(country, examyear_int, request):
     # logger.debug ('=== validate_unique_examyear ====')
 
@@ -273,6 +277,7 @@ def validate_delete_examyear(examyear):
 
 
 # === validate_locked_activated_examyear ======== PR2020-10-29
+
 def validate_locked_activated_examyear(examyear):
     #logger.debug ('  -----  validate_locked_activated_examyear  -----')
 
@@ -342,6 +347,7 @@ def validate_undo_published_examyear(examyear):
 
 
 # === validate_undo_published_examyear ======== PR2022-08-03
+
 def validate_undo_locked_examyear(examyear):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -703,6 +709,7 @@ def validate_subjecttype_duplicate_base(scheme, sjtpbase, error_list, cur_subjec
 
 
 # ============ ENVELOP BUNDLE / LABEL  ===========
+
 def validate_bundle_label_name_blank_length_exists(table, examyear, name, cur_instance=None):
     # PR2022-08-11
     logging_on = False  # s.LOGGING_ON

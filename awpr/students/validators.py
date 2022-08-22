@@ -732,6 +732,7 @@ def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperi
 
 
 # ========  validate_studentsubjects  ======= PR2021-07-24
+
 def validate_studentsubjects_no_msg(student):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1145,7 +1146,6 @@ def validate_minmax_count(field, is_evening_or_lex_student, scheme_dict, subject
         msg_html = ''.join(('<li>', msg_count, ' ', msg_txt, ' ', msg_available, '</li>'))
         msg_list.append(msg_html)
 # - end of validate_minmax_count
-
 
 
 def validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang):
@@ -1597,16 +1597,18 @@ def get_dateformat_from_uploadfileNIU(data_list, date_field):
 # - end of get_dateformat_from_uploadfile
 
 
-# ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20
-def get_idnumberlist_from_database(sel_school):
+# ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20 PR2022-08-22
+def get_idnumberlist_from_database(sel_school, idnumber_list):
     # get list of idnumbers of this school, used with import student and update student
     # idnumber_list contains tuples with (id, idnumber)
+    # PR2022-08-22 debug: idnumber_list must be parameter and use extend to keep reference
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_idnumberlist_from_database -----')
         logger.debug('sel_school: ' + str(sel_school))
 
-    idnumber_list = []
+    # add fake row to indicate that this function is called PR2022-08-22
+    idnumber_list.append((-9, '#$%#@'))
     if sel_school:
         sql_keys = {'sch_id': sel_school.pk}
         sql_list = ["SELECT st.id, st.idnumber",
@@ -1619,30 +1621,34 @@ def get_idnumberlist_from_database(sel_school):
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
-            idnumber_list = cursor.fetchall()
-
+            rows = cursor.fetchall()
+            if rows:
+                idnumber_list.extend(rows)
     if logging_on:
-        logger.debug('idnumber_list: ' + str(idnumber_list))
+        logger.debug('    idnumber_list: ' + str(idnumber_list))
+        logger.debug(' ----------')
 
-    return idnumber_list
 # - end of get_idnumberlist_from_database
 
 
 # ========  get_examnumberlist_from_database  =======
-def get_examnumberlist_from_database(sel_school, sel_department):
+def get_examnumberlist_from_database(sel_school, sel_department, examnumber_list):
     # PR2021-07-19 PR2022-06-26
     # get list of examnumbers of this school and this department, used with import student  and update student
     # list contains tuples with (id, examnumber) id is needed to skip value of  this student
+
+    # PR2022-08-22 debug: idnumber_list must be parameter and use extend to keep reference
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_examnumberlist_from_database -----')
         logger.debug('sel_school: ' + str(sel_school))
         logger.debug('sel_department: ' + str(sel_department))
 
-    examnumber_list = []
+    # add fake row to indicate that this function is called PR2022-08-22
+    examnumber_list.append((-9, '#$%#@'))
     if sel_school and sel_department:
         sql_keys = {'sch_id': sel_school.pk, 'dep_id': sel_department.pk}
-        sql_list = ["SELECT st.id, st.examnumber",
+        sql_list = ["SELECT st.id, LOWER(st.examnumber)",
             "FROM students_student AS st",
             "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
             "AND st.examnumber IS NOT NULL",
@@ -1652,11 +1658,13 @@ def get_examnumberlist_from_database(sel_school, sel_department):
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
-            examnumber_list = cursor.fetchall()
+            rows = cursor.fetchall()
+            if len(rows):
+                examnumber_list.extend(rows)
 
     if logging_on:
-        logger.debug('examnumber_list: ' + str(examnumber_list))
-    return examnumber_list
+        logger.debug('    examnumber_list: ' + str(examnumber_list))
+        logger.debug(' ----------')
 # - end of get_examnumberlist_from_database
 
 
