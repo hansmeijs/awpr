@@ -6,7 +6,6 @@
 //let selected_btn = "btn_ep_01";
 
 
-
 let school_rows = [];
 let student_rows = [];
 let subject_rows = [];
@@ -1967,6 +1966,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         sjtp_abbrev: row_dict.sjtp_abbrev,
                         sjtp_has_prac: row_dict.sjtp_has_prac,
                         sjtp_has_pws: row_dict.sjtp_has_pws,
+                        studyloadhours: row_dict.studyloadhours,
 
                         subj_id: row_dict.subj_id,
                         subj_code: row_dict.subj_code,
@@ -2066,6 +2066,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if(si_dict.is_combi) { subj_code += " *" };
             const subj_name = (si_dict.subj_name) ? si_dict.subj_name : null;
             const sjtp_abbrev = (si_dict.sjtp_abbrev) ? si_dict.sjtp_abbrev : null;
+            const si_studyloadhours = (si_dict.studyloadhours) ? si_dict.studyloadhours : null;
 
     // lookup if schemitem_pk exists in studsubj_dictlist
             const add_to_studsubj = ss_si_pk_list.includes(si_schemeitem_pk);
@@ -2084,11 +2085,11 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             if (add_to_studsubj){
     // add studsubj to tblBody_studsubjects if it exists in studsubj_dict, not tobedeleted
-                MSTUDSUBJ_CreateSelectRow("studsubj", el_tblBody_studsubjects, ss_mapid, si_schemeitem_pk, subj_code, subj_name,
+                MSTUDSUBJ_CreateSelectRow("studsubj", el_tblBody_studsubjects, ss_mapid, si_schemeitem_pk, subj_code, subj_name, si_studyloadhours,
                     si_dict.is_mandatory, si_dict.is_combi, sjtp_abbrev,  true, false, ss_tobedeleted)
             } else {
     // add schemeitem to tblBody_schemeitems if it does not exist in studsubj_dict, or when it is tobedeleted
-                MSTUDSUBJ_CreateSelectRow("schemeitem", el_tblBody_schemeitems, null, si_schemeitem_pk, subj_code, subj_name,
+                MSTUDSUBJ_CreateSelectRow("schemeitem", el_tblBody_schemeitems, null, si_schemeitem_pk, subj_code, subj_name, si_studyloadhours,
                     // enable subject in tblBody_schemeitems when not subj_exists_in_ss
                     si_dict.is_mandatory, si_dict.is_combi, sjtp_abbrev, !subj_exists_in_ss, false, ss_tobedeleted)
             };  // if (add_to_studsubj){
@@ -2107,7 +2108,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSTUDSUBJ_CreateSelectRow  ============= PR2020--09-30
     function MSTUDSUBJ_CreateSelectRow(tblName, tblBody_select,
-            map_id, schemeitem_id, subj_code, subj_name, is_mandatory, is_combi, sjtp_abbrev,
+            map_id, schemeitem_id, subj_code, subj_name, si_studyloadhours, is_mandatory, is_combi, sjtp_abbrev,
             enabled, highlighted, tobedeleted) {
         //console.log("===== MSTUDSUBJ_CreateSelectRow ===== ");
 
@@ -2151,16 +2152,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if(highlighted){ ShowClassWithTimeout(tblRow, "bg_selected_blue")};
 
 // --- add first td to tblRow.
-        let td = tblRow.insertCell(-1);
-        let el_div = document.createElement("div");
-            el_div.classList.add("tw_020")
-            el_div.className = "tickmark_0_0";
-              td.appendChild(el_div);
+        //let td = tblRow.insertCell(-1);
+        //let el_div = document.createElement("div");
+        //    el_div.classList.add("tw_020")
+        //    el_div.className = "tickmark_0_0";
+        //      td.appendChild(el_div);
 
 // --- add second td to tblRow.
-        td = tblRow.insertCell(-1);
-        el_div = document.createElement("div");
-            el_div.classList.add("tw_120")
+        let td = tblRow.insertCell(-1);
+        let el_div = document.createElement("div");
+           // el_div.classList.add("tw_120")
+            el_div.classList.add("tw_090")
             el_div.innerText = subj_code;
             td.appendChild(el_div);
 
@@ -2171,18 +2173,20 @@ document.addEventListener('DOMContentLoaded', function() {
             el_div.innerText = sjtp_abbrev;
             td.appendChild(el_div);
 
+// --- add srudyloadhour td to tblRow.
+        td = tblRow.insertCell(-1);
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_060")
+            el_div.innerText = (si_studyloadhours) ? si_studyloadhours.toString() + " " + loc.slh : null;
+            el_div.title = (si_studyloadhours) ? si_studyloadhours.toString() + " " + loc.Studyloadhours.toLowerCase() : null;
+            td.appendChild(el_div);
         //td.classList.add("tw_200X", "px-2", "pointer_show") // , cls_bc_transparent)
 
 //--------- add addEventListener
         if(enabled) {
             //tblRow.addEventListener("click", function() {MSTUDSUBJ_SelectSubject(tblName, tblRow)}, false);
             tblRow.addEventListener("click", function() {MSTUDSUBJ_ClickedOrDoubleClicked(tblName, tblRow, event)}, false);
-
         };
-
-    //console.log("mod_MSTUDSUBJ_dict.sel_studsubj_list", mod_MSTUDSUBJ_dict.sel_studsubj_list);
-    //console.log("mod_MSTUDSUBJ_dict.sel_schemeitem_list", mod_MSTUDSUBJ_dict.sel_schemeitem_list);
-    //console.log("map_id", map_id);
 
 // --- if added / removed row highlight row for 1 second
         let show_justLinked = false;
@@ -2257,9 +2261,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  put new value in this tblRow, show/hide tickmark PR2020-11-21
         tblRow.setAttribute("data-selected", ( (is_selected) ? 1 : 0) )
         add_or_remove_class(tblRow, "bg_selected_blue", is_selected )
-        const img_class = (is_selected) ? "tickmark_0_2" : "tickmark_0_0"
-        const el = tblRow.cells[0].children[0];
-        if (el){el.className = img_class}
+        //const img_class = (is_selected) ? "tickmark_0_2" : "tickmark_0_0"
+        //const el = tblRow.cells[0].children[0];
+        //if (el){el.className = img_class}
     }  // MSTUDSUBJ_SelectSubject
 
     function MSTUDSUBJ_SetInputFields(sel_studsubj_mapid, is_selected){

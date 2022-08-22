@@ -2124,17 +2124,23 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
                         logger.debug('     has_failed_count6: ' + str(has_failed_count6))
 
                     if rule_core_sufficient:
-                        # check for notatevlex is included in rule_core_sufficient
+
+                        # where is checked if notatevlex is included in rule_core_sufficient?
+                        # this happens in function get_rules_from_schemeitem:
+                        # it sets rule_core_sufficient to False when isevlexstudent = True and notatevlex = True
+
                         failed_core = calc_passfailed_core_rule(student_ep_dict)
                         if failed_core:
                             has_failed = True
                         if logging_on:
                             logger.debug('     failed_core: ' + str(failed_core))
 
-                    if logging_on:
-                        logger.debug('   ??????????????  rule_avg_pece_sufficient: ' + str(rule_avg_pece_sufficient))
                     if rule_avg_pece_sufficient:
-                        # check for notatevlex is included in rule_avg_pece_sufficient
+
+                        # where is checked if notatevlex is included in rule_avg_pece_sufficient?
+                        # this happens in function get_rules_from_schemeitem:
+                        # it sets rule_core_sufficient to False when isevlexstudent = True and notatevlex = True
+
                         failed_pece_avg = calc_passfailed_pece_avg_rule(student_ep_dict)
                         if failed_pece_avg:
                             has_failed = True
@@ -2488,7 +2494,7 @@ def calc_passfailed_core_rule(student_ep_dict):  # PR2021-12-24  PR2022-05-28
     if logging_on:
         logger.debug('-----  calc_passfailed_core_rule  -----')
 # 'count': {'c3': 0, 'c4': 1, 'c5': 1, 'c6': 2, 'c7': 2, 'core4': 0, 'core5': 0}
-
+    # TODO skip core rule when in scheme 'core rule not applicable' How is this implemented ??? PR2022-08-21
     """
     in kernvak geen vieren en niet meer dan 1 vijf 'PR2015-10-31
     """

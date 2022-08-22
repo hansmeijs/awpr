@@ -27,6 +27,8 @@ from awpr import downloads as dl
 from schools import models as sch_mod
 from students import validators as stud_val
 from subjects import models as subj_mod
+from subjects import views as subj_view
+from subjects import calc_orderlist as subj_calc
 
 # PR2019-01-04  https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
 from django.utils.functional import Promise
@@ -504,7 +506,7 @@ def update_enveloplabel_instance(examyear, enveloplabel_instance, upload_dict, r
     upload_dict: {
         'table': 'enveloplabel', 'mode': 'update',
         'parent_pk': 13, 'name': 'yyy', 
-        'numberfixed': 77, 'numberperexam': None, 
+        'numberinenvelop': 77, 'numberofenvelops': None, 
         'uniontable': 
             [{'picklist_pk': 5, 'uniontable_pk': 12, 'selected': False, 'sequence': 0},
             {'picklist_pk': 6, 'uniontable_pk': 13, 'selected': True, 'sequence': 0}, 
@@ -514,9 +516,10 @@ def update_enveloplabel_instance(examyear, enveloplabel_instance, upload_dict, r
 
     msg_html = None
     if enveloplabel_instance:
-
-        for field, new_value in upload_dict.items():
+        field_list = ('name', 'numberinenvelop', 'numberofenvelops', 'is_variablenumber', 'is_errata', 'uniontable')
+        for field in field_list:
             if field == 'name':
+                new_value = upload_dict.get(field)
                 err_html = av.validate_bundle_label_name_blank_length_exists('enveloplabel', examyear, new_value, enveloplabel_instance)
                 if err_html:
                     msg_html = err_html
@@ -526,7 +529,8 @@ def update_enveloplabel_instance(examyear, enveloplabel_instance, upload_dict, r
                         setattr(enveloplabel_instance, field, new_value)
                         save_changes = True
 
-            elif field in ('numberfixed', 'numberperexam'):
+            elif field in ('numberinenvelop', 'numberofenvelops'):
+                new_value = upload_dict.get(field)
                 if not new_value:
                     setattr(enveloplabel_instance, field, None)
                     save_changes = True
@@ -534,12 +538,23 @@ def update_enveloplabel_instance(examyear, enveloplabel_instance, upload_dict, r
                     saved_value = getattr(enveloplabel_instance, field)
                     if new_value != saved_value:
                         setattr(enveloplabel_instance, field, new_value)
-                        # set other field None when new_value has value
-                        other_field = 'numberperexam' if field == 'numberfixed' else 'numberfixed'
-                        setattr(enveloplabel_instance, other_field, None)
                         save_changes = True
 
+            elif field in ('is_variablenumber', 'is_errata'):
+                new_value = upload_dict.get(field) or False
+
+                saved_value = getattr(enveloplabel_instance, field)
+                if new_value != saved_value:
+                    setattr(enveloplabel_instance, field, new_value)
+                    save_changes = True
+                    # reset numberofenvelops when is_variablenumber = True
+                    # Note: field numberofenvelops must be changed first. Therefore loop through tuple to get right order
+                    if new_value and field == 'is_variablenumber':
+                        setattr(enveloplabel_instance, 'numberofenvelops', None)
+
+
             elif field == 'uniontable':
+                new_value = upload_dict.get(field)
                 if new_value: # new_value = labelitem_list
                     if logging_on:
                         logger.debug('    new_value: ' + str(new_value))
@@ -1070,7 +1085,7 @@ def create_enveloplabel_rows(sel_examyear, append_dict, enveloplabel_pk=None):
             sql_list = [
                 "SELECT lbl.id, lbl.base_id AS lblbase_id, lbl.examyear_id AS lbl_examyear_id,",
                 "CONCAT('enveloplabel_', lbl.id::TEXT) AS mapid,",
-                "lbl.name, lbl.numberperexam, lbl.numberfixed,",
+                "lbl.name, lbl.is_variablenumber, lbl.numberofenvelops, lbl.numberinenvelop, lbl.is_errata,",
                 "lbl.modifiedat, au.last_name AS modby_username",
 
                 "FROM subjects_enveloplabel AS lbl",
@@ -1239,7 +1254,7 @@ def create_enveloplabelitem_rows(sel_examyear):
             sql_keys = {'ey_id': sel_examyear.pk}
             sql_list = [
                 "SELECT lblitem.id, lblitem.enveloplabel_id, lblitem.envelopitem_id, lblitem.sequence,",
-                "lbl.examyear_id AS examyear_id, lbl.name AS lbl_name, lbl.numberperexam, lbl.numberfixed,",
+                "lbl.examyear_id AS examyear_id, lbl.name AS lbl_name, lbl.numberofenvelops, lbl.numberinenvelop,",
 
                 "envit.content_nl, envit.instruction_nl, envit.content_color, envit.instruction_color",
 
@@ -1347,15 +1362,56 @@ def get_schemeitem_info_per_dep_lvl(sel_examyear):
     """
     return info_dict
 
+def create_printlabel_dict(sel_examyear, sel_layout, exam_pk_list=None):
 
-def create_printlabel_rows(sel_examyear, exam_pk=None):
+    # values of sel_layout are: "no_errata", "errata_only", "all , None
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_printlabel_dict ----- ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug('    exam_pk_list: ' + str(exam_pk_list) + ' ' + str(type(exam_pk_list)))
+
+    printlabel_dict = {}
+
+    printlabel_rows = create_printlabel_rows(
+        sel_examyear=sel_examyear,
+        sel_layout=sel_layout,
+        exam_pk_list=exam_pk_list)
+    for row in printlabel_rows:
+        """
+        school_subject_count_row:  {'subjbase_id': 149, 'ete_exam': False, 'id_key': '2_0_149_0', 'lang': 'nl', 
+            'country_id': 1, 'sb_code': 'CUR13', 'lvl_abbrev': None, 'dep_abbrev': 'H.A.V.O.', 'subj_name': 'Wiskunde A', 
+            'schoolbase_id': 13, 'school_name': 'Abel Tasman College', 'depbase_id': 2, 'lvlbase_id': None, 
+            'subj_count': 13, 'extra_count': 7, 'tv2_count': 5}
+        """
+
+        dict_key = '_'.join((
+            str(row.get('depbase_id') or 0),
+            str(row.get('lvlbase_id') or 0),
+            str(row.get('subjbase_id') or 0),
+            str(1 if row.get('ete_exam') else 0)
+        ))
+        if dict_key not in printlabel_dict:
+            printlabel_dict[dict_key] = []
+        printlabel_dict[dict_key].append(row)
+
+    return printlabel_dict
+# - end of create_printlabel_dict
+
+
+def create_printlabel_rows(sel_examyear, sel_layout, exam_pk_list=None):
     # PR2022-08-12
+
+    # function converts list into dict with key depbase_id + lavlbase_id + subjbase_id + ete_exam
+
+    # values of sel_layout are: "no_errata", "errata_only", "all , None
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_printlabel_rows ============= ')
-        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
-        logger.debug('exam_pk: ' + str(exam_pk) + ' ' + str(type(exam_pk)))
+        logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug('    exam_pk_list: ' + str(exam_pk_list) + ' ' + str(type(exam_pk_list)))
 
     printlabel_rows = []
     if sel_examyear :
@@ -1386,11 +1442,13 @@ def create_printlabel_rows(sel_examyear, exam_pk=None):
                 "exam.department_id AS dep_id,"
                 "exam.level_id AS lvl_id,"
                 "exam.subject_id AS subj_id,"
-                "exam.examperiod,"
+                "exam.examperiod, exam.ete_exam, exam.version,"
                 "exam.datum, exam.begintijd, exam.eindtijd,"
+                "exam.has_errata, exam.subject_color,"
+                "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, subj.base_id AS subjbase_id,"
 
                 "bnd.name AS bnd_name,",
-                "lbl.name AS lbl_name, lbl.numberperexam, lbl.numberfixed,",
+                "lbl.name AS lbl_name, lbl.numberofenvelops, lbl.numberinenvelop,",
                 "items.content_nl_arr, items.content_en_arr, items.content_pa_arr,",
                 "items.instruction_nl_arr, items.instruction_en_arr, items.instruction_pa_arr,",
                 "items.content_color_arr, items.instruction_color_arr, items.sequence_arr",
@@ -1398,6 +1456,7 @@ def create_printlabel_rows(sel_examyear, exam_pk=None):
                 "FROM subjects_exam AS exam",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
                 "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
 
                 "INNER JOIN subjects_envelopbundle AS bnd ON (bnd.id = exam.envelopbundle_id)",
                 "INNER JOIN subjects_envelopbundlelabel AS bndlbl ON (bndlbl.envelopbundle_id = bnd.id)",
@@ -1406,19 +1465,23 @@ def create_printlabel_rows(sel_examyear, exam_pk=None):
 
                 "WHERE dep.examyear_id = %(ey_id)s::INT",
             ]
-            enveloplabel_pk = None
-            if exam_pk:
-                sql_keys['exam_pk'] = exam_pk
-                sql_list.append('AND exam.id = %(exam_pk)s::INT')
 
-            else:
-                sql_list.append('ORDER BY lbl.id')
+            if sel_layout == 'no_errata':
+                sql_list.append('AND NOT exam.has_errata')
+            elif sel_layout == 'errata_only':
+                sql_list.append('AND exam.has_errata')
+
+            if exam_pk_list:
+                sql_keys['exam_pk_lst'] = exam_pk_list
+                sql_list.append('AND exam.id IN ( SELECT UNNEST( %(exam_pk_lst)s::INT[]))')
+
+            sql_list.append('ORDER BY lbl.id')
 
             sql = ' '.join(sql_list)
 
             if logging_on:
-                logger.debug('sql_keys: ' + str(sql_keys) )
-                logger.debug('sql: ' + str(sql) )
+                logger.debug('    sql_keys: ' + str(sql_keys) )
+                logger.debug('??? sql: ' + str(sql) )
 
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
@@ -1431,17 +1494,19 @@ def create_printlabel_rows(sel_examyear, exam_pk=None):
 
             """
             printlabel_rows = [
-                {'exam_id': 26, 'dep_id': 4, 'lvl_id': 6, 'subj_id': 129, 'examperiod': 1, 
-                'bnd_name': 'ww7', 'lbl_name': 'Naam nw', 'name': 'Naam nw', 
-                'numberperexam': None, 'numberfixed': 4, 
-                'content_nl_arr': ['GROEN', 'ORANJE', 'ORANJE', 'PAARS'], 
-                'content_en_arr': [None, None, None, None], 
-                'content_pa_arr': ['aa', None, None, None], 
-                'instruction_nl_arr': ['GEEL', None, None, 'PAARS'], 
-                'instruction_en_arr': ['ff', None, None, None], 
-                'instruction_pa_arr': ['vv', None, None, None], 
-                'content_color_arr': ['green', 'purple', 'purple', 'purple'], 
-                'instruction_color_arr': ['green', None, None, 'purple']}
+                {'exam_id': 195, 'dep_id': 5, 'lvl_id': None, 'subj_id': 140, 'examperiod': 2,  'ete_exam': True, 
+                'datum': None, 'begintijd': None, 'eindtijd': None, 'has_errata': False, 'subject_color': None, 
+                'depbase_id': 2, 'lvlbase_id': None, 'subjbase_id': 140, 
+                'bnd_name': 'Bundel 2234', 'lbl_name': 'naam5', 'numberofenvelops': None, 'numberinenvelop': None, 
+                'content_nl_arr': [None, 'GROEN', 'PAARS'], 'content_en_arr': [None, None, None], 
+                'content_pa_arr': [None, 'aa', None], 
+                'instruction_nl_arr': ['EERST DE NAAM, DATUM EN TIJDSDUUR VOORLEZEN, DAARNA OPENEN!', 'GEEL', 'PAARS'], 
+                'instruction_en_arr': ['READ THE NAME, DATE AND TIME FIRST, THEN OPEN!', 'ff', None], 
+                'instruction_pa_arr': ['LESA PROMÉ NA BOS HALTU ÈKSAMEN, FECHA I DURASHON PROMÉ KU HABRI!', 'vv', None], 
+                'content_color_arr': ['black', 'green', 'purple'], 'instruction_color_arr': ['red', 'green', 'purple'], 
+                'sequence_arr': [0, 0, 0]
+                }]
+
             """
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -1453,8 +1518,91 @@ def create_printlabel_rows(sel_examyear, exam_pk=None):
 # /////////////////////////////////////////////////////////////////
 
 
+
 @method_decorator([login_required], name='dispatch')
-class EnvelopPrintView(View):  # PR2022=-8=10
+class EnvelopPrintCheckView(View):  # PR2022-08-19
+
+    def post(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= EnvelopPrintCheckView ============= ')
+
+        error_dict = {}
+        update_wrap = {}
+        messages = []
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+
+# - get permit
+            page_name = 'page_orderlist'
+            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+
+            if logging_on:
+                logger.debug('has_permit: ' + str(has_permit))
+                logger.debug('upload_dict: ' + str(upload_dict))
+            """
+            upload_dict: {'table': 'envelopitem', 'mode': 'create', 'content_nl': 'aa', 'content_color': 'blue'}
+            upload_dict: {'table': 'envelopitem', 'mode': 'delete', 'envelopitem_pk': 2, 'map_id': 'envelopitem_2'}
+            """
+
+            if has_permit:
+
+# - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+# ----- get selected examyear from usersettings
+                sel_examyear, may_edit, error_list = dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                if logging_on:
+                    logger.debug('sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('may_edit:       ' + str(may_edit))
+
+                if error_list:
+                    error_list.append(str(_('You cannot make changes.')))
+                    err_html = '<br>'.join(error_list)
+                    messages.append({'header': str(_('Download labels')), 'class': "border_bg_invalid", 'msg_html': err_html})
+                else:
+
+                    # +++ get schoolbase dictlist
+                    # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
+                    schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear, request)
+
+                    count_rows = create_orderlist_for_envelop(
+                        sel_examyear_instance=sel_examyear,
+                        request=request
+                    )
+
+                    exam_rows = subj_view.create_all_exam_rows(
+                        req_usr=request.user,
+                        sel_examyear=sel_examyear,
+                        sel_depbase=None,
+                        sel_examperiod=None,
+                        append_dict={},
+                        setting_dict={},
+                        exam_pk_list=None
+                    )
+
+                    update_wrap['updated_envelop_exam_rows'] = exam_rows
+                    update_wrap['updated_envelop_school_rows'] = schoolbase_dictlist
+                    update_wrap['updated_envelop_count_rows'] = count_rows
+
+# - addd messages to update_wrap
+        if messages:
+            update_wrap['messages'] = messages
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of EnvelopPrintCheckView
+
+
+
+@method_decorator([login_required], name='dispatch')
+class EnvelopPrintView(View):  # PR2022-08-19
 
     def get(self, request, lst):
         logging_on = s.LOGGING_ON
@@ -1462,6 +1610,10 @@ class EnvelopPrintView(View):  # PR2022=-8=10
             logger.debug(' ============= EnvelopPrintView ============= ')
             if logging_on:
                 logger.debug('     lst: ' + str(lst))
+            """
+            lst: {"subject_list":[12],"schoolbase_list":[2,5],"sel_layout":"none","lvlbase_pk_list":[]}
+ 
+            """
 
     # paper size of labels is: 'Statement', Width: 21.59 cm Height: 13.97 cm or 8.5 inch x 5.5 inch or 612 x 396 points
     # pagesize A4  = (595.27, 841.89) points, 1 point = 1/72 inch
@@ -1487,208 +1639,62 @@ class EnvelopPrintView(View):  # PR2022=-8=10
             sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
 
             if logging_on:
-                logger.debug('sel_examperiod: ' + str(sel_examperiod))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('    sel_school: ' + str(sel_school))
+                logger.debug('    sel_department: ' + str(sel_department))
 
             if sel_examperiod and sel_school and sel_department:
-                exam_pk =  upload_dict.get('exam_pk')
-                lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
-                subject_list = upload_dict.get('subject_list', [])
-
-# - save sel_layout and lvlbase_pk_list and in usersetting
-                setting_dict = {'subject_list': subject_list, 'lvlbase_pk_list': lvlbase_pk_list}
-                #acc_view.set_usersetting_dict(c.KEY_EX3, setting_dict, request)
-
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
-                    ttfFile = TTFont('Arial', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
-
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'arialblack220815.ttf'
-                    logger.debug('filepath: ' + str(filepath))
-                    ttfFile = TTFont('Arial_Black', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
-
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Calibri.ttf'
-                    ttfFile = TTFont('Calibri', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
-
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Calibri_Bold.ttf'
-                    ttfFile = TTFont('Calibri_Bold', filepath)
-                    pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
-
-                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
-
-                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
-                #temp_file = tempfile.TemporaryFile()
-                # canvas = Canvas(temp_file)
-
-                buffer = io.BytesIO()
-                canvas = Canvas(buffer)
-
-                # PR2022-05-05 debug Oscap Panneflek Vpco lines not printing on Ex3
-                # turn off setLineWidth (0)
-                # canvas.setLineWidth(0)
-
-                # paper size of labels is: 'Statement', Width: 21.59 cm Height: 13.97 cm or 8.5 inch x 5.5 inch or 612 x 396 points
-                canvas.setPageSize((612, 396))  # some page size, given as a tuple in points pdf.setPageSize((width,height)
-
-                max_rows = 30  # was:  24
-                line_height = 6.73 * mm  # was:  8 * mm
+                sel_layout = upload_dict.get('sel_layout') # values are: "no_errata", "errata_only", "all , None
+                exam_pk_list = upload_dict.get('exam_pk_list')
+                schoolbase_list = upload_dict.get('schoolbase_list')
 
                 schemeitem_dict = get_schemeitem_info_per_dep_lvl(sel_examyear)
-                #if logging_on:
-                #    logger.debug('schemeitem_dict: ' + str(schemeitem_dict))
 
-                printlabel_list = create_printlabel_rows(
-                    sel_examyear=sel_examyear,
-                    exam_pk=exam_pk
+    # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam with number of exams to order
+
+                school_subject_count_rows = subj_calc.create_studsubj_count_rows(
+                    sel_examyear_instance=sel_examyear,
+                    request=request,
+                    schoolbase_pk_list=schoolbase_list
                 )
-                for label_dict in printlabel_list:
-                    if logging_on:
-                        logger.debug(' --- label_dict: ' + str(label_dict))
-                    """
-                    label_dict = 
-                        {'exam_id': 26, 'dep_id': 4, 'lvl_id': 6, 'subj_id': 129, 'examperiod': 1, 
-                        'bnd_name': 'ww7', 'lbl_name': 'Naam nw', 'name': 'Naam nw', 
-                        'numberperexam': None, 'numberfixed': 4, 
-                        'content_nl_arr': ['GROEN', 'ORANJE', 'ORANJE', 'PAARS'], 
-                        'content_en_arr': [None, None, None, None], 
-                        'content_pa_arr': ['aa', None, None, None], 
-                        'instruction_nl_arr': ['GEEL', None, None, 'PAARS'], 
-                        'instruction_en_arr': ['ff', None, None, None], 
-                        'instruction_pa_arr': ['vv', None, None, None], 
-                        'content_color_arr': ['green', 'purple', 'purple', 'purple'], 
-                        'instruction_color_arr': ['green', None, None, 'purple']}
-                        
-                        label_dict: {
-                            'exam_id': 26, 'dep_id': 4, 'lvl_id': 6, 'subj_id': 129, 'examperiod': 1, 
-                            'datum': None, 'begintijd': None, 'eindtijd': None, 
-                            'bnd_name': 'ww7', 'lbl_name': 'naam5', 
-                            'numberperexam': 15, 'numberfixed': None, 
-                            'content_nl_arr': ['Correctievoorschrift', 'GROEN', 'PAARS'], 
-                            'content_en_arr': [None, None, None], 
-                            'content_pa_arr': [None, 'aa', None], 
-                            'instruction_nl_arr': ['EERST DE NAAM, DATUM EN TIJDSDUUR VOORLEZEN, DAARNA OPENEN!', 'GEEL', 'PAARS'], 
-                            'instruction_en_arr': [None, 'ff', None], 
-                            'instruction_pa_arr': [None, 'vv', None], 
-                            'content_color_arr': ['blue', 'green', 'purple'], 
-                            'instruction_color_arr': ['red', 'green', 'purple'], 
-                            'sequence_arr': [0, 0, 0]}    
-            
-                    """
+                """
+                school_subject_count_row:  {'subjbase_id': 149, 'ete_exam': False, 'id_key': '2_0_149_0', 'lang': 'nl', 
+                    'country_id': 1, 'sb_code': 'CUR13', 'lvl_abbrev': None, 'dep_abbrev': 'H.A.V.O.', 'subj_name': 'Wiskunde A', 
+                    'schoolbase_id': 13, 'school_name': 'Abel Tasman College', 'depbase_id': 2, 'lvlbase_id': None, 
+                    'subj_count': 13, 'extra_count': 7, 'tv2_count': 5}
+                """
 
-                    if label_dict:
-                     # get dep abbrev and lvl_abbrev, sub_name
-                        dep_pk = label_dict.get('dep_id')
-                        lvl_pk = label_dict.get('lvl_id') or 0
-                        subj_pk = label_dict.get('subj_id')
-                        examperiod = label_dict.get('examperiod')
-                        examdate = label_dict.get('datum')
-                        starttime = label_dict.get('begintijd')
-                        endtime = label_dict.get('eindtijd')
+                printlabel_dict = create_printlabel_dict(sel_examyear, sel_layout, exam_pk_list)
 
-                        numberperexam = label_dict.get('numberperexam')
-                        numberfixed = label_dict.get('eindtijd')
+                if logging_on:
+                    for key, value in printlabel_dict.items():
+                        logger.debug(' --- ' + str(key) + ': ' + str(value))
 
-                        bnd_lbl_name = ' '.join((label_dict.get('bnd_name') or '-', label_dict.get('lbl_name') or '-'))
+                """
+                key = depbase_pk lvlbase_pk subjbase_pk  (1 if ete_exam else 0)
+                printlabel_dict = { 1_5_126_1: [
+                    {'exam_id': 29, 'dep_id': 4, 'lvl_id': 5, 'subj_id': 126, 'examperiod': 2, 'ete_exam': True, 
+                    'datum': None, 'begintijd': None, 'eindtijd': None, 
+                    'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 126, 
+                    'bnd_name': 'Bundel 2234', 'lbl_name': 'naam5', 
+                    'numberofenvelops': None, 'numberinenvelop': None, 
+                    'content_nl_arr': [None, 'GROEN', 'PAARS'], 
+                    'content_en_arr': [None, None, None], 
+                    'content_pa_arr': [None, 'aa', None], 
+                    'instruction_nl_arr': ['EERST DE NAAM, DATUM EN TIJDSDUUR VOORLEZEN, DAARNA OPENEN!', 'GEEL', 'PAARS'],
+                    'instruction_en_arr': ['READ THE NAME, DATE AND TIME FIRST, THEN OPEN!', 'ff', None], 
+                    'instruction_pa_arr': ['LESA PROMÉ NA BOS HALTU ÈKSAMEN, FECHA I DURASHON PROMÉ KU HABRI!', 'vv', None], 
+                    'content_color_arr': ['black', 'green', 'purple'], 
+                    'instruction_color_arr': ['red', 'green', 'purple'], 'sequence_arr': [0, 0, 0]}]
+                """
 
-                        dep_abbrev, lvl_abbrev, subj_name_nl, subj_name_en, subj_name_pa = None, None, None, None, None
-                        has_practexam, otherlang_arr = False, []
+                pdf = create_enveloplabel_pdf(
+                    sel_examyear=sel_examyear,
+                    schemeitem_dict=schemeitem_dict,
+                    printlabel_dict=printlabel_dict,
+                    school_subject_count_rows=school_subject_count_rows
+                )
 
-                        if dep_pk in schemeitem_dict:
-                            dep_dict = schemeitem_dict.get(dep_pk)
-                            dep_abbrev = dep_dict.get('dep_abbrev')
-                            if lvl_pk in dep_dict:
-                                lvl_dict = dep_dict.get(lvl_pk)
-                                lvl_abbrev = lvl_dict.get('lvl_abbrev')
-
-                                if subj_pk in lvl_dict:
-                                    subj_dict = lvl_dict.get(subj_pk)
-                                    subj_name_nl = subj_dict.get('subj_name_nl')
-                                    subj_name_en = subj_dict.get('subj_name_en')
-                                    subj_name_pa = subj_dict.get('subj_name_pa')
-                                    has_practexam = subj_dict.get('has_practexam') or False
-                                    otherlang_arr = subj_dict.get('otherlang')
-
-                        dep_lvl_abbrev = dep_abbrev if dep_abbrev else '---'
-                        if lvl_abbrev:
-                            dep_lvl_abbrev += ' ' + lvl_abbrev
-
-                        if lvl_abbrev == 'PBL':
-                            dep_lvl_color = 'green'
-                        elif lvl_abbrev == 'PKL':
-                            dep_lvl_color = 'yellow'
-                        elif lvl_abbrev == 'TKL':
-                            dep_lvl_color = 'purple'
-                        elif dep_abbrev == 'HAVO':
-                            dep_lvl_color = 'blue'
-                        elif dep_abbrev == 'VWO':
-                            dep_lvl_color = 'orange'
-                        else:
-                            dep_lvl_color = 'black'
-
-    # - loop through languages of this subject
-                        lang_list = ['nl']
-                        if otherlang_arr:
-                            for lang in otherlang_arr:
-                                logger.debug('     lang: ' + str(lang))
-                                if lang not in lang_list:
-                                    lang_list.append(lang)
-                                    logger.debug('     lang_list: ' + str(lang_list))
-
-                        school_name = '---'
-
-                        for lang in lang_list:
-
-                            if lang == 'pa' and subj_name_pa:
-                                subj_name = subj_name_pa
-                            elif lang == 'en' and subj_name_en:
-                                subj_name = subj_name_en
-                            elif subj_name_nl:
-                                subj_name = subj_name_nl
-                            else:
-                                subj_name = '---'
-
-                            content_key = '_'.join(('content', 'pa' if lang == 'pa' else 'en' if lang == 'en' else 'nl', 'arr'))
-                            instruction_key = '_'.join(('instruction', 'pa' if lang == 'pa' else 'en' if lang == 'en' else 'nl', 'arr'))
-                            content_arr = label_dict.get(content_key) or []
-                            instruction_arr = label_dict.get(instruction_key) or []
-                            content_color_arr = label_dict.get('content_color_arr') or []
-                            instruction_color_arr = label_dict.get('instruction_color_arr') or []
-
-
-
-                            if logging_on:
-                                logger.debug(' ... lang: ' + str(lang))
-                            row_count = 1 #len(student_list)
-                            pages_not_rounded = row_count / max_rows
-                            pages_integer = int(pages_not_rounded)
-                            pages_roundup = pages_integer + 1 if (pages_not_rounded - pages_integer) else pages_integer
-                            pages_roundup = 1
-                            for page_index in range(0, pages_roundup):  # range(start_value, end_value, step), end_value is not included!
-
-                                draw_label(canvas, sel_examyear, examperiod, dep_lvl_abbrev, dep_lvl_color,
-                                           subj_name, school_name,
-                                           has_practexam, examdate, starttime, endtime, numberperexam, numberfixed, lang, bnd_lbl_name,
-                                           content_arr, instruction_arr, content_color_arr, instruction_color_arr
-                                           )
-                                canvas.showPage()
-
-                canvas.save()
-                pdf = buffer.getvalue()
                 # pdf_file = File(temp_file)
 
                 # was: buffer.close()
@@ -1725,134 +1731,353 @@ class EnvelopPrintView(View):  # PR2022=-8=10
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of EnvelopPrintView
+#####################################
 
-    def get_ex3_grade_rows (self, examyear, school, department, upload_dict, examperiod):
 
-        # note: don't forget to filter deleted = false!! PR2021-03-15
-        # grades that are not published are only visible when 'same_school'
-        # note_icon is downloaded in separate call
+def create_enveloplabel_pdf(sel_examyear, schemeitem_dict, printlabel_dict, school_subject_count_rows=None):  # PR2022-08-19
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' --- create_enveloplabel_pdf  -----')
 
-        logging_on = False  # s.LOGGING_ON
+    pdf = None
+
+    try:
+        filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
+        ttfFile = TTFont('Arial', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'arialblack220815.ttf'
+        ttfFile = TTFont('Arial_Black', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'Calibri.ttf'
+        ttfFile = TTFont('Calibri', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'Calibri_Bold.ttf'
+        ttfFile = TTFont('Calibri_Bold', filepath)
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
+
+    # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
+    # temp_file = tempfile.TemporaryFile()
+    # canvas = Canvas(temp_file)
+
+    buffer = io.BytesIO()
+    canvas = Canvas(buffer)
+
+    # PR2022-05-05 debug Oscap Panneflek Vpco lines not printing on Ex3
+    # turn off setLineWidth (0)
+    # canvas.setLineWidth(0)
+
+    # paper size of labels is: 'Statement', Width: 21.59 cm Height: 13.97 cm or 8.5 inch x 5.5 inch or 612 x 396 points
+    canvas.setPageSize(
+        (612, 396))  # some page size, given as a tuple in points pdf.setPageSize((width,height)
+
+    max_rows = 30  # was:  24
+    line_height = 6.73 * mm  # was:  8 * mm
+
+# +++ loop through subjects of selected schools:
+    # TODO if school_list = None: create fake school, to print labels before schools have submitted Ex1
+    """
+    school_subject_count_row:  {'subjbase_id': 149, 'ete_exam': False, 'id_key': '2_0_149_0', 'lang': 'nl', 
+        'country_id': 1, 'sb_code': 'CUR13', 'lvl_abbrev': None, 'dep_abbrev': 'H.A.V.O.', 'subj_name': 'Wiskunde A', 
+        'schoolbase_id': 13, 'school_name': 'Abel Tasman College', 'depbase_id': 2, 'lvlbase_id': None, 
+        'subj_count': 13, 'extra_count': 7, 'tv2_count': 5}
+    """
+
+    for count_row in school_subject_count_rows:
+        id_key = count_row.get('id_key')
+
+        school_name = count_row.get('school_name')
+        subj_count = count_row.get('subj_count') or 0
+        extra_count = count_row.get('extra_count') or 0
+        tv1_count = subj_count + extra_count
+        tv2_count = count_row.get('tv2_count') or 0
+
         if logging_on:
-            logger.debug(' ----- get_ex3_grade_rows -----')
-            logger.debug('upload_dict: ' + str(upload_dict))
+            logger.debug(' --- create_enveloplabel_pdf  -----')
 
-        # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}
+# +++ lookup labels with id_key and loop through labels of printlabel_list
+        lbl_list = printlabel_dict.get(id_key)
+        if lbl_list:
+            # each label is identified by
+            for lbl_dict in lbl_list:
+                if logging_on:
+                    logger.debug('lbl_dict: ' +  str(lbl_dict))
+                """
+                lbl_dict: {'exam_id': 195, 'dep_id': 5, 'lvl_id': None, 'subj_id': 140, 'examperiod': 2, 'ete_exam': True, 
+                'datum': None, 'begintijd': None, 'eindtijd': None, 
+                'depbase_id': 2, 'lvlbase_id': None, 'subjbase_id': 140, 
+                'bnd_name': 'Bundel 2234', 'lbl_name': 'naam5', 'numberofenvelops': None, 'numberinenvelop': None, 
+                'content_nl_arr': [None, 'GROEN', 'PAARS'], 
+                'content_en_arr': [None, None, None], 
+                'content_pa_arr': [None, 'aa', None], 
+                'instruction_nl_arr': ['EERST DE NAAM, DATUM EN TIJDSDUUR VOORLEZEN, DAARNA OPENEN!', 'GEEL', 'PAARS'], 
+                'instruction_en_arr': ['READ THE NAME, DATE AND TIME FIRST, THEN OPEN!', 'ff', None], 
+                'instruction_pa_arr': ['LESA PROMÉ NA BOS HALTU ÈKSAMEN, FECHA I DURASHON PROMÉ KU HABRI!', 'vv', None], 
+                'content_color_arr': ['black', 'green', 'purple'], 
+                'instruction_color_arr': ['red', 'green', 'purple'], 
+                'sequence_arr': [0, 0, 0]}
 
-        # values of sel_layout are:"none", "level", "class", "cluster"
-        # "none" or None: all students of subject on one form
-        # "level:" seperate form for each leeerweg
-        #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
-        #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
+                """
+                # get dep abbrev and lvl_abbrev, sub_name
+                dep_pk = lbl_dict.get('dep_id')
+                lvl_pk = lbl_dict.get('lvl_id') or 0
+                subj_pk = lbl_dict.get('subj_id')
+                examperiod = lbl_dict.get('examperiod')
+                examdate = lbl_dict.get('datum')
+                starttime = lbl_dict.get('begintijd')
+                endtime = lbl_dict.get('eindtijd')
 
-        lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
-        subject_list = upload_dict.get('subject_list', [])
-        sel_layout = upload_dict.get('sel_layout')
+                numberofenvelops = lbl_dict.get('numberofenvelops')
+                numberinenvelop = lbl_dict.get('eindtijd')
 
-        sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk,
-                    'lvlbase_pk_arr': lvlbase_pk_list, 'subj_arr': subject_list, 'experiod': examperiod}
-        if logging_on:
-            logger.debug('sql_keys: ' + str(sql_keys))
+                bnd_lbl_name = ' '.join((lbl_dict.get('bnd_name') or '-', lbl_dict.get('lbl_name') or '-'))
 
-        ex3_dict = {}
+                dep_abbrev, lvl_abbrev, subj_name_nl, subj_name_en, subj_name_pa, version = None, None, None, None, None, None
+                has_practexam, otherlang_arr = False, []
 
-        level_filter = "AND lvl.base_id IN ( SELECT UNNEST( %(lvlbase_pk_arr)s::INT[]))" if lvlbase_pk_list else ""
-        subject_filter = "AND subj.id IN ( SELECT UNNEST( %(subj_arr)s::INT[]))" if subject_list else ""
+                if dep_pk in schemeitem_dict:
+                    dep_dict = schemeitem_dict.get(dep_pk)
+                    dep_abbrev = dep_dict.get('dep_abbrev')
+                    if lvl_pk in dep_dict:
+                        lvl_dict = dep_dict.get(lvl_pk)
+                        lvl_abbrev = lvl_dict.get('lvl_abbrev')
 
-        logger.debug('subject_filter: ' + str(subject_filter))
-        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
-                    "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, ",
-                    "stud.classname, cl.name AS cluster_name,",
-                    "stud.level_id, lvl.name AS lvl_name",
+                        if subj_pk in lvl_dict:
+                            subj_dict = lvl_dict.get(subj_pk)
+                            subj_name_nl = subj_dict.get('subj_name_nl')
+                            subj_name_en = subj_dict.get('subj_name_en')
+                            subj_name_pa = subj_dict.get('subj_name_pa')
+                            has_practexam = subj_dict.get('has_practexam') or False
+                            otherlang_arr = subj_dict.get('otherlang')
+                            version = lbl_dict.get('version')
 
-                    "FROM students_grade AS grd",
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                    "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                            if logging_on:
+                                logger.debug('subj_dict: ' + str(subj_dict))
+                                logger.debug('printlabel_dict: ' + str(printlabel_dict))
+                                logger.debug('version: ' + str(version))
 
-                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                    "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+                dep_lvl_abbrev = dep_abbrev if dep_abbrev else '---'
+                if lvl_abbrev:
+                    dep_lvl_abbrev += ' ' + lvl_abbrev
 
-                    "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                if lvl_abbrev == 'PBL':
+                    dep_lvl_color = 'green'
+                elif lvl_abbrev == 'PKL':
+                    dep_lvl_color = 'yellow'
+                elif lvl_abbrev == 'TKL':
+                    dep_lvl_color = 'purple'
+                elif dep_abbrev == 'HAVO':
+                    dep_lvl_color = 'blue'
+                elif dep_abbrev == 'VWO':
+                    dep_lvl_color = 'orange'
+                else:
+                    dep_lvl_color = 'black'
 
-                    "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+                # - loop through languages of this subject
+                lang_list = ['nl']
+                if otherlang_arr:
+                    for lang in otherlang_arr:
+                        logger.debug('     lang: ' + str(lang))
+                        if lang not in lang_list:
+                            lang_list.append(lang)
+                            logger.debug('     lang_list: ' + str(lang_list))
 
-                    "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                    level_filter,
-                    subject_filter,
-                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
-                    "AND grd.examperiod = %(experiod)s::INT",
-                    "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
-                    ]
-        sql = ' '.join(sql_list)
+# +++ loop through languages of lang_list
+                for lang in lang_list:
+                    if lang == 'pa' and subj_name_pa:
+                        subj_name = subj_name_pa
+                    elif lang == 'en' and subj_name_en:
+                        subj_name = subj_name_en
+                    elif subj_name_nl:
+                        subj_name = subj_name_nl
+                    else:
+                        subj_name = ''
+                    if version:
+                        subj_name += ' - ' + version
 
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-            grade_rows = af.dictfetchall(cursor)
+                    if logging_on:
+                        logger.debug('subj_name: ' + str(subj_name) + ' ' + str(type(subj_name)))
 
-        if logging_on:
-            logger.debug('sql_keys: ' + str(sql_keys))
-            logger.debug('sql: ' + str(sql))
+                    content_key = '_'.join(
+                        ('content', 'pa' if lang == 'pa' else 'en' if lang == 'en' else 'nl', 'arr'))
+                    instruction_key = '_'.join(
+                        ('instruction', 'pa' if lang == 'pa' else 'en' if lang == 'en' else 'nl', 'arr'))
+                    content_arr = lbl_dict.get(content_key) or []
+                    instruction_arr = lbl_dict.get(instruction_key) or []
+                    content_color_arr = lbl_dict.get('content_color_arr') or []
+                    instruction_color_arr = lbl_dict.get('instruction_color_arr') or []
+
+                    if logging_on:
+                        logger.debug(' ... lang: ' + str(lang))
+
+                    row_count = 1  # len(student_list)
+                    pages_not_rounded = row_count / max_rows
+                    pages_integer = int(pages_not_rounded)
+                    pages_roundup = pages_integer + 1 if (
+                                pages_not_rounded - pages_integer) else pages_integer
+                    pages_roundup = 1
+
+# +++ loop through number of labels for this exam and this school
+                    for page_index in range(0, pages_roundup):  # range(start_value, end_value, step), end_value is not included!
+
+                        draw_label(canvas, sel_examyear, examperiod, dep_lvl_abbrev, dep_lvl_color,
+                                   subj_name, version, school_name,
+                                   has_practexam, examdate, starttime, endtime, numberofenvelops,
+                                   numberinenvelop, lang, bnd_lbl_name,
+                                   content_arr, instruction_arr, content_color_arr, instruction_color_arr
+                                   )
+                        canvas.showPage()
+
+    canvas.save()
+    pdf = buffer.getvalue()
+    # pdf_file = File(temp_file)
+
+    # was: buffer.close()
+
+    """
+    # TODO as test try to save file in
+    studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
+    content_type='application/pdf'
+    file_name = 'test_try.pdf'
+    if studsubjnote and pdf_file:
+        instance = stud_mod.Noteattachment(
+            studentsubjectnote=studsubjnote,
+            contenttype=content_type,
+            filename=file_name,
+            file=pdf_file)
+        instance.save()
+        logger.debug('instance.saved: ' + str(instance))
+    # gives error: 'bytes' object has no attribute '_committed'
+    """
+
+    return pdf
+# - end of create_enveloplabel_pdf
+###########################################
+
+
+def get_ex3_grade_rows (self, examyear, school, department, upload_dict, examperiod):
+
+    # note: don't forget to filter deleted = false!! PR2021-03-15
+    # grades that are not published are only visible when 'same_school'
+    # note_icon is downloaded in separate call
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_ex3_grade_rows -----')
+        logger.debug('upload_dict: ' + str(upload_dict))
+
+    # upload_dict: {'subject_list': [2206, 2165, 2166], 'sel_layout': 'level', 'level_list': [86, 85]}
+
+    # values of sel_layout are:"none", "level", "class", "cluster"
+    # "none" or None: all students of subject on one form
+    # "level:" seperate form for each leeerweg
+    #  Note: when lvlbase_pk_list has values: filter on lvlbase_pk_list in all lay-outs
+    #  filter on lvlbase_pk, not level_pk, to make filter also work in other examyears
+
+    lvlbase_pk_list = upload_dict.get('lvlbase_pk_list', [])
+    subject_list = upload_dict.get('subject_list', [])
+    sel_layout = upload_dict.get('sel_layout')
+
+    sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk,
+                'lvlbase_pk_arr': lvlbase_pk_list, 'subj_arr': subject_list, 'experiod': examperiod}
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+
+    ex3_dict = {}
+
+    level_filter = "AND lvl.base_id IN ( SELECT UNNEST( %(lvlbase_pk_arr)s::INT[]))" if lvlbase_pk_list else ""
+    subject_filter = "AND subj.id IN ( SELECT UNNEST( %(subj_arr)s::INT[]))" if subject_list else ""
+
+    logger.debug('subject_filter: ' + str(subject_filter))
+    sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
+                "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, ",
+                "stud.classname, cl.name AS cluster_name,",
+                "stud.level_id, lvl.name AS lvl_name",
+
+                "FROM students_grade AS grd",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+                "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
+
+                "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
+                level_filter,
+                subject_filter,
+                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                "AND grd.examperiod = %(experiod)s::INT",
+                "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
+                ]
+    sql = ' '.join(sql_list)
+
+    with connection.cursor() as cursor:
+        cursor.execute(sql, sql_keys)
+        grade_rows = af.dictfetchall(cursor)
+
+    if logging_on:
+        logger.debug('sql_keys: ' + str(sql_keys))
+        logger.debug('sql: ' + str(sql))
 
 # - add full name to rows, and array of id's of auth
-        if grade_rows:
-            for row in grade_rows:
-                subj_pk = row.get('subj_id')
-                subj_name = row.get('subj_name', '---')
-                classname = row.get('classname', '---')
-                cluster_name = row.get('cluster_name', '---')
-                level_id = row.get('level_id')
-                lvl_name = row.get('lvl_name', '---')
+    if grade_rows:
+        for row in grade_rows:
+            subj_pk = row.get('subj_id')
+            subj_name = row.get('subj_name', '---')
+            classname = row.get('classname', '---')
+            cluster_name = row.get('cluster_name', '---')
+            level_id = row.get('level_id')
+            lvl_name = row.get('lvl_name', '---')
 
+            if sel_layout == "level":
+                key = (subj_pk, level_id)
+            elif sel_layout == "class":
+                key = (subj_pk, classname)
+            elif sel_layout == "cluster":
+                key = (subj_pk, cluster_name)
+            else:
+                sel_layout = None
+                key = subj_pk
+            if key not in ex3_dict:
+                ex3_dict[key] = {'subject': subj_name}
                 if sel_layout == "level":
-                    key = (subj_pk, level_id)
+                    ex3_dict[key][sel_layout] = lvl_name
                 elif sel_layout == "class":
-                    key = (subj_pk, classname)
+                    ex3_dict[key][sel_layout] = classname
                 elif sel_layout == "cluster":
-                    key = (subj_pk, cluster_name)
-                else:
-                    sel_layout = None
-                    key = subj_pk
-                if key not in ex3_dict:
-                    ex3_dict[key] = {'subject': subj_name}
-                    if sel_layout == "level":
-                        ex3_dict[key][sel_layout] = lvl_name
-                    elif sel_layout == "class":
-                        ex3_dict[key][sel_layout] = classname
-                    elif sel_layout == "cluster":
-                        ex3_dict[key][sel_layout] = cluster_name
-                    ex3_dict[key]['students'] = []
+                    ex3_dict[key][sel_layout] = cluster_name
+                ex3_dict[key]['students'] = []
 
-                student_list = ex3_dict[key].get('students', [])
-                #student_list.append((examnumber, full_name))
+            student_list = ex3_dict[key].get('students', [])
+            #student_list.append((examnumber, full_name))
 
-        if logging_on:
-            logger.debug('ex3_dict: ' + str(ex3_dict))
+    if logging_on:
+        logger.debug('ex3_dict: ' + str(ex3_dict))
 
-        return ex3_dict
+    return ex3_dict
 
 # - end of DownloadEx3View
 
 
-def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj_name, school_name, has_practexam,
-               examdate, starttime, endtime, numberperexam, numberfixed, lang, bnd_lbl_name,
-                content_arr, instruction_arr, content_color_arr, instruction_color_arr
-               ):
+def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj_name, version, school_name, has_practexam,
+               examdate, starttime, endtime, numberofenvelops, numberinenvelop, lang, bnd_lbl_name,
+                content_arr, instruction_arr, content_color_arr, instruction_color_arr):
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_label -----')
-
-
-# - set the corners of the rectangle
-    top, right, bottom, left = 287 * mm, 200 * mm, 12 * mm, 10 * mm
-    top, right, bottom, left = 396, 612, 12 * mm, 10 * mm
-    #width = right - left  # 190 mm
-    #height = top - bottom  # 275 mm
-    border = [top, right, bottom, left]
-    coord = [left, top]
 
     pos_x = 0.625 * inch
     pos_x2 = 2.625 * inch  #   pos_x2 = 2.375 * inch
@@ -1898,7 +2123,32 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
     canvas.setFont('Calibri_Bold', 20, leading=None)
     canvas.setFillColor(colors.HexColor("#000000"))
     canvas.drawString(pos_x, pos_y, caption)
+
+    if logging_on:
+        logger.debug('version: ' + str(version))
+
+    hex_color = c.LABEL_COLOR.get('black')
+    if version:
+        version_lc = version.lower()
+        if 'blauw' in version_lc:
+            hex_color = c.LABEL_COLOR.get('blue')
+        elif 'rood' in version_lc:
+            hex_color = c.LABEL_COLOR.get('red')
+        elif 'groen' in version_lc:
+            hex_color = c.LABEL_COLOR.get('green')
+        elif 'geel' in version_lc:
+            hex_color = c.LABEL_COLOR.get('yellow')
+        elif 'oranje' in version_lc:
+            hex_color = c.LABEL_COLOR.get('orange')
+        elif 'paars' in version_lc:
+            hex_color = c.LABEL_COLOR.get('purple')
+
+    if logging_on:
+        logger.debug('hex_color: ' + str(hex_color))
+
+    canvas.setFillColor(colors.HexColor(hex_color))
     canvas.drawRightString(pos_x4, pos_y, subj_name)
+    canvas.setFillColor(colors.HexColor("#000000"))
 
     examdate_str = format_examdate_from_dte(examdate, label_txt, lang)
 
@@ -1918,24 +2168,24 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
 
     pos_y -= line_height
 
-    name_txt = label_txt.get('school_name') or '---'
     caption = label_txt.get('school') or '---'
     canvas.drawString(pos_x, pos_y, caption)
     canvas.drawString(pos_x2, pos_y, ':')
-    canvas.setFont('Arial_Black', 14, leading=None)
-    canvas.drawString(pos_x3, pos_y, name_txt)
+    if school_name:
+        canvas.setFont('Arial_Black', 14)
+        canvas.drawString(pos_x3, pos_y, school_name)
     canvas.setFont('Arial', 14, leading=None)
 
     pos_y -= line_height
     caption = label_txt.get('numex') or '---'
-    value = str(numberperexam) if numberperexam else ''
+    value = str(numberofenvelops) if numberofenvelops else ''
     canvas.drawString(pos_x, pos_y, caption)
     canvas.drawString(pos_x2, pos_y, ':')
     canvas.drawString(pos_x3, pos_y, value)
 
     pos_y -= line_height
     caption = label_txt.get('numenv') or '---'
-    value = str(numberfixed) if numberfixed else ''
+    value = str(numberinenvelop) if numberinenvelop else ''
     canvas.drawString(pos_x, pos_y, caption)
     canvas.drawString(pos_x2, pos_y, ':')
     canvas.drawString(pos_x3, pos_y, value)
@@ -1960,15 +2210,14 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
         for instruction in instruction_arr:
             if instruction:
                 row_count += 1
-# calculate heigth of bar
 
+# calculate heigth of bar
     canvas.setFillColor(colors.HexColor("#bfbfbf"))  # grey background in label  RGB 181, 181, 191
     bar_bottom = 0.375 * inch
     bar_height = 0.375 * inch + (row_count - 1 ) * line_height * .75 if row_count > 1 else 0.375 * inch
     bar_top = bar_bottom + bar_height
     canvas.rect(0.5 * inch, bar_bottom, 7.5 * inch, bar_height, stroke=0, fill=1)  # canvas.rect(left, bottom, page_width, height)
     canvas.setFillColor(colors.HexColor("#000000"))
-
 
     if instruction_arr:
         row_count = 0
@@ -1990,13 +2239,14 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
     #pos_y -= line_height * .75
     #canvas.drawCentredString(4.25 * inch, pos_y, 'I E ÈKSAMEN TA KEDA KORIGÍ DOR DI E KOMISHON DI ÈKSAMEN DI ESTADO')
 
-    canvas.setFillColor(colors.HexColor("#000000"))
-    canvas.setFont('Calibri', 8, leading=None)
-    canvas.drawRightString(pos_x4, bar_bottom - 0.125 * inch, bnd_lbl_name)
-    canvas.setFillColor(colors.HexColor("#000000"))
+# dont draw bnd_lbl_name when there is a school_name
+    if not school_name:
+        canvas.setFillColor(colors.HexColor("#000000"))
+        canvas.setFont('Calibri', 8)
+        canvas.drawRightString(pos_x4, bar_bottom - 0.125 * inch, bnd_lbl_name)
+        canvas.setFillColor(colors.HexColor("#000000"))
 
     canvas.setFont('Calibri', 12, leading=None)
-
 
 # - end of draw_label
 
@@ -2171,4 +2421,130 @@ def format_examtime_from_dte(starttime, endtime, label_txt):  # PR2022-08-13
     return examtime_formatted
 
 
+def create_orderlist_for_envelop(request, sel_examyear_instance, schoolbase_list=None):
+    # PR2022-08-19
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_orderlist_xlsx -----')
 
+# --- get department dictlist
+    # fields are: depbase_id, depbase_code, dep_name, dep_level_req
+    department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
+
+# --- get lvlbase dictlist
+    lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
+
+# +++ get subjectbase dictlist
+    # functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
+    subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
+
+
+# +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
+
+    rows = subj_calc.create_studsubj_count_rows(sel_examyear_instance, request, None)
+
+    if logging_on :
+        for row in rows:
+            logger.debug('row: ' + str(row))
+    """
+    row: {'subjbase_id': 121, 'ete_exam': True, 'lang': 'en', 
+        'country_id': 2, 'sb_code': 'SXM01', 
+        'lvl_abbrev': 'PBL', 'dep_abbrev': 'V.S.B.O.', 'subj_name': 'Wiskunde', 
+        'schoolbase_id': 30, 'school_name': 'Milton Peters College', 
+        'depbase_id': 1, 'lvlbase_id': 6, 
+        'subj_count': 11, 
+        'extra_count': 4, 
+        'tv2_count': 5}
+    """
+    return rows
+# - end of create_orderlist_xlsx
+
+
+def create_exam_with_label_rows(sel_examyear):
+    # PR2022-08-19
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_exam_with_label_rows ----- ')
+
+    rows = []
+    if sel_examyear:
+        # note: ORDER BY lblitm.id is added to make sure the agg listst have the samme order,
+        # even when they have the same sequence
+        sql_keys = {'ey_id': sel_examyear.pk}
+
+        sub_sql_list = [
+            "SELECT bndllbl.id, bndllbl.envelopbundle_id, bndllbl.enveloplabel_id,",
+            "lbl.name AS lbl_name, bundle.name AS bundle_name",
+
+            "ARRAY_AGG(itm.content_nl ORDER BY lblitm.sequence, lblitm.id) AS content_nl,",
+            "ARRAY_AGG(itm.content_en ORDER BY lblitm.sequence, lblitm.id) AS content_en,",
+            "ARRAY_AGG(itm.content_pa ORDER BY lblitm.sequence, lblitm.id) AS content_pa,",
+            "ARRAY_AGG(itm.instruction_nl ORDER BY lblitm.sequence, lblitm.id) AS instruction_nl,",
+            "ARRAY_AGG(itm.instruction_en ORDER BY lblitm.sequence, lblitm.id) AS instruction_en,",
+            "ARRAY_AGG(itm.instruction_pa ORDER BY lblitm.sequence, lblitm.id) AS instruction_pa,",
+            "ARRAY_AGG(itm.content_color ORDER BY lblitm.sequence, lblitm.id) AS content_color,",
+            "ARRAY_AGG(itm.instruction_color ORDER BY lblitm.sequence, lblitm.id) AS instruction_color,",
+            "ARRAY_AGG(lblitm.sequence ORDER BY lblitm.sequence, lblitm.id) AS sequence,",
+
+            "FROM subjects_enveloplabel AS lbl",
+            "INNER JOIN subjects_enveloplabelitem AS lblitm ON (lblitm.enveloplabel_id = lbl.id)",
+            "INNER JOIN subjects_envelopitem AS itm ON (itm.id = lblitm.envelopitem_id)",
+
+            "WHERE lbl.examyear_id = %(ey_id)s::INT",
+            "GROUP BY lbl.id"
+        ]
+        sub_sql = ' '.join(sub_sql_list)
+
+        sql_keys = {'ey_id': sel_examyear.pk}
+        sub_sql_list = [
+            "SELECT bndllbl.id, bndllbl.envelopbundle_id, bndllbl.enveloplabel_id,",
+            "lbl.name AS lbl_name, bundle.name AS bundle_name",
+
+            "FROM subjects_envelopbundle AS bundle",
+            "FROM subjects_envelopbundlelabel AS bndllbl",
+            "INNER JOIN subjects_envelopbundlelabel AS bndllbl ON (bndllbl.envelopbundle_id = bundle.id)",
+            "INNER JOIN subjects_enveloplabel AS lbl ON (lbl.id = bndllbl.enveloplabel_id)",
+            "INNER JOIN subjects_enveloplabel AS lbl ON (lbl.id = bndllbl.enveloplabel_id)",
+
+            "WHERE bundle.examyear_id = %(ey_id)s::INT",
+            "ORDER BY bndllbl.id"
+        ]
+        sub_sql = ' '.join(sub_sql_list)
+
+        sql_list = ["WITH enveloplabel AS (", sub_sql, ")",
+
+                "SELECT exam.id AS exam_id, exam.version, exam.examperiod, exam.ete_exam,",
+                "exam.datum, exam.begintijd, exam.eindtijd, exam.secret_exam,",
+                "exam.has_errata, exam.subject_color,",
+                "subjbase.id AS subjbase_id, subj.name AS subj_name,",
+                "depbase.id AS depbase_id, depbase.code AS depbase_code,",
+                "lvl.base_id AS lvlbase_id, level.abbrev AS lvl_abbrev,",
+
+                "FROM subjects_exam AS exam",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+                "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+
+                "LEFT JOIN enveloplabel ON (enveloplabel.envelopbundle_id = exam.envelopbundle_id)",
+
+# - show only exams of this exam year
+                "WHERE ey.code = %(ey_code_int)s::INT"
+                ]
+
+        sql = ' '.join(sql_list)
+
+        #if logging_on:
+            #logger.debug('sql_keys: ' + str(sql_keys))
+            #logger.debug('sql: ' + str(sql))
+            #logger.debug('connection.queries: ' + str(connection.queries))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            rows = af.dictfetchall(cursor)
+
+    return rows
+# - end of create_exam_with_label_rows

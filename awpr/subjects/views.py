@@ -229,8 +229,10 @@ class SubjectListView(View):
         return render(request, html_page, params)
 
 
-def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase, skip_allowed_filter, subject_pk=None, cur_dep_only=False, duo_exam_only=False):
-    # PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07 PR2022-08-05
+def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase,
+                        skip_allowed_filter=False, skip_notatdayschool=False,
+                        subject_pk=None, cur_dep_only=False, duo_exam_only=False):
+    # PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07 PR2022-08-21
     # --- create rows of all subjects of this examyear
     # skip_allowed_filter is used in userpage: when setting 'allowed_', all subjects must be shown
     logging_on = False  # s.LOGGING_ON
@@ -238,6 +240,7 @@ def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase, skip_al
     if logging_on:
         logger.debug(' =============== create_subject_rows ============= ')
         logger.debug('skip_allowed_filter: ' + str(skip_allowed_filter))
+        logger.debug('skip_notatdayschool: ' + str(skip_notatdayschool))
         logger.debug('cur_dep_only: ' + str(cur_dep_only))
 
     # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
@@ -251,6 +254,9 @@ def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase, skip_al
     #PR2022-06-15 debug: new subject has no si yet, will not show, cannot add si.
     # Make separate sql for page Subjects, without si link
 
+    # PR2022-08-21 notatdayschool added: show this subject only when school is evening school or lex school
+    # attention: day/evening school shows notatdayschool subjects. Must be filtered out when adding subjects to day student
+
     subject_rows = []
     if sel_examyear:
         sql_keys = {'ey_id': sel_examyear.pk}
@@ -261,6 +267,7 @@ def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase, skip_al
         # - sel_lvlbase_pk and allowed_lvlbase
         # - allowed_subjbase
         # - if duo_exam_only: and not ete_exam
+        # - if not evelex school: skip subjects with filter_notatdayschool
 
         sub_sql_list = ["SELECT si.subject_id",
             "FROM subjects_schemeitem AS si",
@@ -274,6 +281,9 @@ def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase, skip_al
             ]
         if duo_exam_only:
             sub_sql_list.append("AND NOT si.ete_exam")
+
+        if not skip_notatdayschool:
+            sub_sql_list.append("AND NOT si.notatdayschool")
 
         sel_depbase_pk = None
         if cur_dep_only and sel_depbase:
@@ -1187,11 +1197,14 @@ class SchemeitemUploadView(View):  # PR2021-06-25
                             if schemeitem:
                                 update_schemeitem_instance(schemeitem, examyear, upload_dict, updated_rows, request)
        # - create schemeitem_rows
+
                                 updated_rows = create_schemeitem_rows(
-                                    examyear=examyear,
+                                    sel_examyear=examyear,
                                     append_dict={},
-                                    schemeitem_pk=schemeitem.pk
+                                    schemeitem_pk=schemeitem.pk,
+                                    skip_notatdayschool=True
                                 )
+
                         update_wrap['updated_schemeitem_rows'] = updated_rows
 
             # - add messages to update_wrap, if any
@@ -1450,7 +1463,7 @@ upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk'
                         if logging_on:
                             logger.debug('    subject: ' + str(subject))
 
-    # +++++ Create new instance if is_create:
+# +++++ Create new instance if is_create:
                         if mode == 'create':
                             department = sch_mod.Department.objects.get_or_none(
                                 base=sel_department.base,
@@ -1478,6 +1491,7 @@ upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk'
                                 logger.debug('append_dict: ' + str(append_dict))
 
                         else:
+
     # - else: get existing exam instance
                             exam = subj_mod.Exam.objects.get_or_none(
                                 id=exam_pk,
@@ -1490,11 +1504,13 @@ upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk'
                             err_txt = _("AWP could not find this exam.")
                             err_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
                         else:
-    # +++++ Delete instance if is_delete
+
+# +++++ Delete instance if is_delete
                             if mode == 'delete':
                                 deleted_row = delete_exam_instance(exam, error_list, request)
                             else:
-    # +++++ Update instance, also when it is created, not when is_delete
+
+# +++++ Update instance, also when it is created, not when is_delete
                                 updated_cegrade_count = update_exam_instance(
                                     request=request,
                                     sel_examyear=sel_examyear,
@@ -4270,7 +4286,6 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                             save_changes = True
                             calc_cegrade_from_exam_score = True
 
-
             elif field == 'scalelength':
                 # only in DUO exams the scalelength can be entered
                 is_ete_exam = getattr(exam_instance, 'ete_exam', False)
@@ -4337,7 +4352,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
                 if field in ('partex', 'assignment', 'keys'):
                     calc_amount_and_scalelength = True
 
-            elif field == 'secret_exam':
+            elif field in ('secret_exam', 'has_errata'):
                 if not new_value:
                     new_value = False
 
@@ -4405,7 +4420,6 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
                 if logging_on:
                     logger.debug('     save_changes: ' + str(save_changes))
-
 
             elif field == 'datum':
     # new_value has format of date-iso, Excel ordinal format is already converted
@@ -4498,8 +4512,8 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
     # show ETE exams only when this subject has no DUO-exam
 
     # when school: only ETE published exams (DUO exams are not published)
-
-    sql_keys = {'depbase_id': sel_depbase.pk, 'ep': sel_examperiod, 'ey_code': sel_examyear.code, 'ey_pk': sel_examyear.pk}
+    sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+    sql_keys = {'depbase_id': sel_depbase_pk, 'ep': sel_examperiod, 'ey_code': sel_examyear.code, 'ey_pk': sel_examyear.pk}
 
     duo_exams_sql_list = [
         "SELECT sb.id",
@@ -4531,8 +4545,8 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
         #"CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
 
         "CONCAT('n', ntb.id, 'd', dep.id, 's', subj.id, 'l', lvl.id) AS ndsl_pk,",
-        "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
-        "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+        "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
+        "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev, lvl.sequence AS lvl_sequence,",
         "exam.ete_exam, exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.secret_exam,",
         "sb.code AS subjbase_code, subj.name_nl AS subj_name,",
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
@@ -4624,7 +4638,7 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
 def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, show_all=False, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13  PR2022-06-02
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
         logger.debug('sel_examyear: ' + str(sel_examyear))
@@ -4662,11 +4676,11 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
             "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
             "CASE WHEN ex.version IS NULL OR ex.version = '' THEN NULL ELSE CONCAT(' - ', ex.version) END ) AS exam_name,",
 
-        "ex.ete_exam, ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
-        "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
+        "ex.ete_exam, ex.examperiod, ex.department_id, depbase.id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
+        "ex.level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev, lvl.sequence AS lvl_sequence,",
         "ex.version, ex.has_partex, ex.partex, ex.assignment, ex.keys, ex.amount, ex.blanks,",
         "ex.nex_id, ex.scalelength, ex.cesuur, ex.nterm, ex.secret_exam,",
-        "ex.datum, ex.begintijd, ex.eindtijd,",
+        "ex.datum, ex.begintijd, ex.eindtijd, ex.has_errata, ex.subject_color,",
 
         "ex.status, ex.auth1by_id, ex.auth2by_id, ex.published_id, ex.locked, ex.modifiedat,",
         "sb.code AS subjbase_code, subj.name_nl AS subj_name_nl, subj.name_en AS subj_name_en, subj.name_pa AS subj_name_pa,",
@@ -5716,7 +5730,7 @@ def create_subject(examyear, upload_dict, request):
 
                 error_list.append(''.join((
                     str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
-                    str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': _('Subject'), 'val': name})
+                    str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': _('Subject'), 'val': name_nl})
                 )))
 
     if logging_on:
@@ -5955,6 +5969,7 @@ def delete_schemeitem(schemeitem_instance, request):
 
 def update_si_list(examyear, scheme, si_list, updated_rows, messages, request):
     # --- add or delete schemeitem # PR2021-06-26 PR2022-08-07
+    # si_list is created when adding or deleting si in mod_schemeitem
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_si_list ----- ')
@@ -6009,23 +6024,13 @@ def update_si_list(examyear, scheme, si_list, updated_rows, messages, request):
 # - create schemeitem_rows[0], also when deleting failed (when deleted ok there is no subject, subject_row is made above)
         if schemeitem_instance:
             schemeitem_rows = create_schemeitem_rows(
-                examyear=examyear,
+                sel_examyear=examyear,
                 append_dict=append_dict,
-                schemeitem_pk=schemeitem_instance.pk
+                schemeitem_pk=schemeitem_instance.pk,
+                skip_notatdayschool=True
             )
-
-# - add messages to row (there is only 1 row
-            #if schemeitem_rows:
-            #    schemeitem_row = schemeitem_rows[0]
-
-                # - add error_list to subject_rows[0]
-                #if error_list:
-                    # structure of error_list: [ { 'field': 'code', msg_list ['line 1', 'line 2'] } ]
-                    # or general error:        [ { 'class': 'alert-danger', msg_list ['line 1', 'line 2'] } ]
-                #    schemeitem_row['error'] = error_list
-
-
-                #updated_rows.append(schemeitem_row)
+            if schemeitem_rows:
+                updated_rows.append(schemeitem_rows[0])
 # - end of update_si_list
 
 
@@ -6740,22 +6745,23 @@ def create_scheme_rows(examyear, scheme_pk=None, cur_dep_only=False, depbase=Non
 # --- end of create_scheme_rows
 
 
-def create_schemeitem_rows(examyear, append_dict, schemeitem_pk=None, scheme_pk=None,
-                           cur_dep_only=False, depbase=None, orderby_name=False, orderby_sjtpbase_sequence=False):
-    # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-07-01
+def create_schemeitem_rows(sel_examyear, append_dict, schemeitem_pk=None, scheme_pk=None,
+                           cur_dep_only=False, depbase=None, skip_notatdayschool=False,
+                           orderby_name=False, orderby_sjtpbase_sequence=False):
+    # --- create rows of all schemeitems of this examyear PR2020-11-17 PR2021-07-01 PR2022-08-21
 
     logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_schemeitem_rows ============= ')
-        logger.debug('examyear: ' + str(examyear) + ' ' + str(type(examyear)))
+        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
         logger.debug('schemeitem: ' + str(schemeitem_pk) + ' ' + str(type(schemeitem_pk)))
         logger.debug('depbase: ' + str(depbase) + ' ' + str(type(depbase)))
 
     schemeitem_rows = []
     try:
-        if examyear :
-            sql_keys = {'ey_id': examyear.pk}
+        if sel_examyear :
+            sql_keys = {'ey_id': sel_examyear.pk}
             sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
                 "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
                 "si.subject_id AS subj_id, subj.name_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
@@ -6814,6 +6820,9 @@ def create_schemeitem_rows(examyear, append_dict, schemeitem_pk=None, scheme_pk=
                     sql_list.append('AND depbase.id = %(depbase_pk)s::INT')
                 else:
                     sql_list.append("AND FALSE")
+
+            if not skip_notatdayschool:
+                sql_list.append("AND NOT si.notatdayschool")
 
             if orderby_name:
                 sql_list.append('ORDER BY LOWER(scheme.name), LOWER(subj.name_nl)')
@@ -8372,7 +8381,8 @@ def create_schoolbase_dictlist(examyear, request):  # PR2021-08-20 PR2021-10-14
 
     sql_keys = {'ey_code_int': examyear.code, 'requsr_country_id': request.user.country.pk}
     sql_list = [
-        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev, sbase.defaultrole",
+        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.depbases,",
+        "sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev, sbase.defaultrole",
 
         "FROM schools_school AS sch",
         "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = sch.base_id)",

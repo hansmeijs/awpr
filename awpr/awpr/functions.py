@@ -442,6 +442,7 @@ def get_birthdateiso_from_idnumber(idnumber_nodots_stripped):
 
 
 # ========  get_dateiso_from_excel_ordinal  ======= PR2021-08-23
+
 def get_dateiso_from_excel_ordinal(date_ordinal, error_list):
     # - check if date is a valid date
     # date_ordinal has format of excel ordinal or number '20020823'
@@ -463,6 +464,7 @@ def get_dateiso_from_excel_ordinal(date_ordinal, error_list):
 
 
 # ========  get_date_from_excel_ordinal  ======= PR2021-07-20
+
 def get_date_from_excel_ordinal(excel_ordinal, error_list):
     date_obj = None
     if excel_ordinal:
@@ -480,6 +482,7 @@ def get_date_from_excel_ordinal(excel_ordinal, error_list):
 # - end of get_date_from_excel_ordinal
 
 # >>>>>> This is the right way, I think >>>>>>>>>>>>>
+
 def get_date_from_ISO(date_iso):  # PR2019-09-18 PR2020-03-20
     # this is the simple way, it works though
     #logger.debug('... get_date_from_ISO ...')
@@ -537,6 +540,7 @@ def get_datetimelocal_from_datetime_utc(datetime_utc):
 
     return datetime_local
 
+
 def get_now_formatted_from_now_arr(now_arr):
     #PR2022-07-08
     now_formatted = ''
@@ -553,6 +557,7 @@ def get_now_formatted_from_now_arr(now_arr):
             ("00" + str(now_arr[3]))[-2:], "u",
             ("00" + str(now_arr[4]))[-2:]))
     return now_formatted
+
 
 def format_WDMY_from_dte(dte, user_lang, month_abbrev=True):  # PR2020-10-20
     # returns 'zo 16 juni 2019'
@@ -650,6 +655,23 @@ def format_modified_at(modifiedat, user_lang, month_abbrev=True):
         datetime_formatted = date_formatted + ', ' + time_formatted
 
     return datetime_formatted
+
+
+def format_number(value, user_lang):
+    # PR2022-08-21
+
+    number_formatted = ''
+    value_str = str(value) if value else '0'
+    if isinstance(value, int):
+        if value < 1000:
+            number_formatted = value_str
+        else:
+            delimiter = ',' if user_lang == 'en' else '.'
+            number_formatted = delimiter.join((value_str[-4], value_str[-3:] ))
+    else:
+        number_formatted = value_str
+
+    return number_formatted
 
 
 def get_modifiedby_formatted(instance, user_lang, skip_modifiedby=False):

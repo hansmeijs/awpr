@@ -820,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", ob3 = "";
         if (tblName === "subject") {
-            if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
+            if (map_dict.name_nl) { ob1 = map_dict.name_nl.toLowerCase() };
         } else if (tblName === "scheme") {
             if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
         } else if (tblName === "schemeitem") {
@@ -960,7 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let inner_text = null, title_text = null, filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name_nl", "name_en", "name_pa", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev", "no_ce_years"].includes(field_name)){
+                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "name_nl", "name_en", "name_pa", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev", "no_ce_years"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["min_studyloadhours", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
@@ -2367,11 +2367,10 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
     } // MSJTP_FillDicts
 
-//========= MSJTP_FillTbls  ============= PR2021-06-26
-    function MSJTP_FillTbls(justclicked_pk) {
+//========= MSJTP_FillTbls  ============= PR2021-06-26 PR2022-08-21
+    function MSJTP_FillTbls() {
         //console.log("===== MSJTP_FillTbls ===== ");
         //console.log("mod_MSJTP_dict", mod_MSJTP_dict);
-        //console.log("justclicked_pk", justclicked_pk);
 
         el_MSJT_tblBody_subjecttype.innerText = null;
         el_MSJT_tblBody_sjtpbase.innerText = null;
@@ -2390,10 +2389,10 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("lookup_sjtpbase_pk", lookup_sjtpbase_pk);
         //console.log("lookup_deleted", lookup_deleted);
             if(lookup_sjtpbase_pk && !lookup_deleted){
-                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
-                MSI_MSJT_CreateSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtpbase_dict, null, justclicked_pk)
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk)
+                MSI_MSJT_CreateSelectRow("sjtp", el_MSJT_tblBody_subjecttype, sjtp_dict.sjtpbase_pk, sjtpbase_dict)
             } else {
-                MSI_MSJT_CreateSelectRow("subjecttypebase", el_MSJT_tblBody_sjtpbase, sjtpbase_pk, sjtpbase_dict, null, justclicked_pk)
+                MSI_MSJT_CreateSelectRow("subjecttypebase", el_MSJT_tblBody_sjtpbase, sjtpbase_pk, sjtpbase_dict)
             }
         }
     } // MSJTP_FillTbls
@@ -2444,8 +2443,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         }
-        const justclicked_pk = sjtpbase_pk;
-        MSJTP_FillTbls(justclicked_pk);
+        MSJTP_FillTbls();
 
     }  // MSJT_SubjecttypebaseClicked
 
@@ -2481,8 +2479,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 sjtp_dict.isdeleted = true;
             }
         }
-        const justclicked_pk = sjtpbase_pk;
-        MSJTP_FillTbls(justclicked_pk);
+        MSJTP_FillTbls();
 
     }  // MSJT_SjtpClicked
 
@@ -2502,27 +2499,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  get_scheme_dict  ================  PR2021-06-24
     function get_scheme_dict(department_pk, lvl_pk, sct_pk) {
-        console.log(" -----  get_scheme_dict   ----")
-        console.log("    department_pk", department_pk)
-        console.log("    lvl_pk", lvl_pk)
-        console.log("    sct_pk", sct_pk)
+        //console.log(" -----  get_scheme_dict   ----")
+    //console.log("    department_pk", department_pk)
+    //console.log("    lvl_pk", lvl_pk)
+    //console.log("    sct_pk", sct_pk)
         let scheme_dict = null;
         const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", department_pk);
 
-        console.log("dep_dict", dep_dict)
+    //console.log("dep_dict", dep_dict)
         if(!isEmpty(dep_dict)){
             const lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
             const sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
 
             for (let i = 0, row; row=scheme_rows[i]; i++) {
-        console.log("row", row)
+    //console.log("row", row)
                 const dep_found = (row.department_id === department_pk);
                 const level_found = (!lvl_req || row.level_id === lvl_pk);
                 const sector_found = (!sct_req || row.sector_id === sct_pk);
 
-        console.log("    dep_found", dep_found)
-        console.log("    level_found", level_found)
-        console.log("    sector_found", sector_found)
+    //console.log("    dep_found", dep_found)
+    //console.log("    level_found", level_found)
+    //console.log("    sector_found", sector_found)
                 if(dep_found && level_found && sector_found ){
                     scheme_dict = row;
                     break;
@@ -2530,7 +2527,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };  // for (let i = 0, row; row=scheme_rows[i]; i++)
         };  //  if(!isEmpty(dep_dict))
 
-        console.log("scheme_dict", scheme_dict)
+    //console.log("scheme_dict", scheme_dict)
         return scheme_dict;
     }  // get_scheme_dict
 
@@ -3327,12 +3324,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             el_tblBody_subjects.innerText = null;
             el_tblBody_schemeitems.innerText = null;
-            // hide selecrtboxes dep, lvl, sct when there is a scheme
+            // hide selectboxes dep, lvl, sct when there is a scheme
             //console.log("has_scheme", has_scheme)
             add_or_remove_class(el_MSI_deplvlsct_container, cls_hide, has_scheme)
 
             MSI_SetInputFields(null, false);
 
+            // MSI_InputChange also fills tables
             MSI_InputChange();
 
     // ---  set focus to el_MSTUD_abbrev
@@ -3418,18 +3416,18 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         };
 
-    console.log( "    mod_MSI_dict.depbase_pk", mod_MSI_dict.depbase_pk);
-    console.log( "    mod_MSI_dict.department_pk", mod_MSI_dict.department_pk);
-    console.log( "    mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk);
-    console.log( "    mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk);
+    //console.log( "    mod_MSI_dict.depbase_pk", mod_MSI_dict.depbase_pk);
+    //console.log( "    mod_MSI_dict.department_pk", mod_MSI_dict.department_pk);
+    //console.log( "    mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk);
+    //console.log( "    mod_MSI_dict.sct_pk", mod_MSI_dict.sct_pk);
 
         MSI_MSJT_set_selectbox_level_sector("MSI", mod_MSI_dict.department_pk);
 
         mod_MSI_dict.scheme_dict = get_scheme_dict(mod_MSI_dict.department_pk, mod_MSI_dict.lvl_pk, mod_MSI_dict.sct_pk);
         const scheme_pk = (mod_MSI_dict.scheme_dict) ? mod_MSI_dict.scheme_dict.id : null;
 
-    console.log( "scheme_pk", scheme_pk);
-    console.log( "mod_MSI_dict.scheme_dict", mod_MSI_dict.scheme_dict);
+    //console.log( "scheme_pk", scheme_pk);
+    //console.log( "mod_MSI_dict.scheme_dict", mod_MSI_dict.scheme_dict);
 
         MSI_set_headertext();
         MSI_FillDicts(mod_MSI_dict.depbase_pk, mod_MSI_dict.department_pk, scheme_pk);
@@ -3450,7 +3448,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSI_FillDicts  ============= PR2021-06-22
     function MSI_FillDicts(depbase_pk, department_pk, scheme_pk) {
-        //console.log("===== MSI_FillDicts ===== ");
+        console.log("===== MSI_FillDicts ===== ");
         //console.log("subjecttype_rows", subjecttype_rows);
         //console.log("department_pk", department_pk, typeof department_pk);
         //console.log("depbase_pk", depbase_pk, typeof depbase_pk);
@@ -3467,16 +3465,19 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("subject_rows", subject_rows);
         for (let i = 0, subj_dict; subj_dict = subject_rows[i]; i++) {
 
+        console.log("subj_dict", subj_dict);
+        console.log("    subj_dict.name_nl", subj_dict.name_nl);
+        console.log("    subj_dict.id", subj_dict.id);
             if(subj_dict.depbases && depbase_pk){
                 //subj_dict.depbases: "2;3;"
                 const db_wrapped = ";" + subj_dict.depbases + ";"
                 const db_lookup = ";" + depbase_pk + ";"
                 if (db_wrapped.includes(db_lookup)) {
-                    mod_MSI_dict.subject_dict[subj_dict.id] = {subj_pk: subj_dict.id, name: subj_dict.name};
+                    mod_MSI_dict.subject_dict[subj_dict.id] = {subj_pk: subj_dict.id, name: subj_dict.name_nl};
                 };
             };
         }
-        //console.log("mod_MSI_dict.subject_dict", mod_MSI_dict.subject_dict);
+    console.log("mod_MSI_dict.subject_dict", mod_MSI_dict.subject_dict);
 
 // ---  loop through subjecttype_rows, add only subjecttypes from this scheme
         for (let i = 0, sjtp_dict; sjtp_dict = subjecttype_rows[i]; i++) {
@@ -3497,7 +3498,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSI_FillTblSubjects  ============= PR2021-06-25
     function MSI_fill_si_list(scheme_pk) {
-        //console.log("===== MSI_fill_si_list ===== ");
+        console.log("===== MSI_fill_si_list ===== ");
 
 // ---  loop through schemeitem_rows, add schemeitems from this scheme with this subjecttype to si_list
         for (let i = 0, si_dict; si_dict=schemeitem_rows[i]; i++) {
@@ -3523,15 +3524,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSI_FillTblSubjects  ============= PR2021-06-24
     function MSI_FillTblSubjects() {
-        //console.log("===== MSI_FillTblSubjects ===== ");
+        console.log("===== MSI_FillTblSubjects ===== ");
+        console.log("mod_MSI_dict.subject_dict", mod_MSI_dict.subject_dict)
 
         el_tblBody_subjects.innerText = null;
 
 // ---  fill subjects list with rows of mod_MSI_dict.subject_dict
         for (const [subject_pk_str, dict] of Object.entries(mod_MSI_dict.subject_dict)) {
-        //console.log("dict", dict);
-        //console.log("dict.subj_pk", dict.subj_pk);
-                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+        console.log("dict", dict);
+        console.log("dict.subj_pk", dict.subj_pk);
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk)
             MSI_MSJT_CreateSelectRow("subject", el_tblBody_subjects, dict.subj_pk, dict);
         }
 
@@ -3560,7 +3562,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  add subjecttypes as subheader to list of schemeitems
                 //console.log("sjtp_dict", sjtp_dict);
                 //console.log("sjtp_dict.sjtp_pk", sjtp_dict.sjtp_pk);
-                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk)
                 MSI_MSJT_CreateSelectRow("subjecttype", el_tblBody_schemeitems, sjtp_dict.sjtp_pk, sjtp_dict);
 
     // ---  add subjects of this subjecttype
@@ -3572,7 +3574,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         //console.log("si_dict", si_dict);
                         // skip when si_dict isdeleted
                         if(!si_dict.isdeleted){
-                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk)
                             MSI_MSJT_CreateSelectRow("schemeitem", el_tblBody_schemeitems, si_dict.subj_pk, si_dict, sjtp_dict.sjtp_pk);
                         }
                     }
@@ -3593,7 +3595,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const schemeitem_pk = dict.schemeitem_id;
                     studsubj_si_list.push({si_pk: schemeitem_pk} )
 
-                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk, justclicked_pk)
+                // MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, dict, sjtp_pk)
                     MSI_MSJT_CreateSelectRow("schemeitem", el_tblBody_schemeitems, schemeitem_pk, dict);
                     has_rows = true;
                 }
@@ -3613,23 +3615,23 @@ document.addEventListener('DOMContentLoaded', function() {
     } // MSI_FillTblSchemeitems
 
 //========= MSI_MSJT_CreateSelectRow  ============= PR2020--09-30
-    function MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, map_dict, sjtp_pk, justclicked_pk) {
-        //console.log("===== MSI_MSJT_CreateSelectRow ===== ");
+    function MSI_MSJT_CreateSelectRow(tblName, tblBody_select, pk_int, map_dict, sjtp_pk) {
+        console.log("===== MSI_MSJT_CreateSelectRow ===== ");
         //console.log("..........pk_int", pk_int);
-        //console.log("..........tblName", tblName);
-        //console.log("map_dict", map_dict);
-
-        //console.log("justclicked_pk", justclicked_pk);
+        console.log("..........tblName", tblName);
+        console.log("map_dict", map_dict);
 
         if (!isEmpty(map_dict)){
             let subj_code = (map_dict.code) ? map_dict.code : "";
             if(map_dict.is_combi) { subj_code += " *" }
-            let display_txt = (map_dict.name) ? map_dict.name : null;
+            let display_txt = (tblName === "subject") ?
+                               (map_dict.name) ? map_dict.name : null :
+                               (map_dict.name) ? map_dict.name : null;
             const sjtp_abbrev = (map_dict.sjtp_abbrev) ? map_dict.sjtp_abbrev : null;
 
 // ---  lookup index where this row must be inserted
             let ob1 = "", row_index = -1;
-            if(tblName === "subject"){
+            if (tblName === "subject"){
                 if (map_dict.name) { ob1 = map_dict.name.toLowerCase()};
                 row_index = b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1);
             }
@@ -3647,18 +3649,18 @@ document.addEventListener('DOMContentLoaded', function() {
             //tblRow.setAttribute("data-ob2", ob2);
             //tblRow.setAttribute("data-ob3", ob3);
 
-
             if(tblName === "subjecttype"){
                 tblRow.classList.add("bg_selected_blue")
             } else {
-
                 //if(highlighted){ ShowClassWithTimeout(tblRow, "bg_selected_blue")};
             }
-            if (justclicked_pk && justclicked_pk === pk_int) {
+
+            if (map_dict.just_clicked){
                 tblRow.classList.add("bg_medium_blue")
                 setTimeout(function (){tblRow.classList.remove("bg_medium_blue")  }, 500);
                 setTimeout(function (){tblRow.classList.add("bg_transparent")  }, 500);
-            }
+                delete map_dict.just_clicked;
+            };
 
             add_hover(tblRow)
 
@@ -3677,7 +3679,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 //el_div.classList.add("tw_240")
                 td.classList.add("tw_100perc")
 
+        console.log(".......... display_txt", display_txt);
                 el_div.innerText = display_txt;
+
             td.appendChild(el_div);
     //--------- add addEventListener
             if(tblName === "subject"){
@@ -3696,8 +3700,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSI_SubjectClicked  ============= PR2020-10-01 PR2021-03-05 PR2021-06-24
     function MSI_SubjectClicked(tblName, tblRow){
-        //console.log( "===== MSI_SubjectClicked  ========= ");
-        //console.log( "tblName", tblName);
+        console.log( "===== MSI_SubjectClicked  ========= ");
+        console.log( "tblName", tblName);
 
         if(tblRow){
 
@@ -3708,6 +3712,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  show/hide blue color
             add_or_remove_class(tblRow, "bg_medium_blue", is_selected )  // was bg_selected_blue
+
 // ---  show/hide tickmark
             const img_class = (is_selected) ? "tickmark_0_2" : "tickmark_0_0"
             const el = tblRow.cells[0].children[0];
@@ -3750,8 +3755,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MSI_SubjecttypeClicked  ============= PR2021-06-24
     function MSI_SubjecttypeClicked(tr_clicked) {
-        //console.log("  =====  MSI_SubjecttypeClicked  =====");
-        //console.log("tr_clicked", tr_clicked);
+        console.log("  =====  MSI_SubjecttypeClicked  =====");
+        console.log("tr_clicked", tr_clicked);
 
         const sel_sjtp_pk = get_attr_from_el_int(tr_clicked, "data-pk")
         //console.log("sel_sjtp_pk", sel_sjtp_pk, typeof sel_sjtp_pk);
@@ -3767,10 +3772,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 sjtp_dict = dict;
             };
         };
-        //console.log("sjtp_dict", sjtp_dict);
+        console.log("sjtp_dict", sjtp_dict);
 
 // ---  loop through tblBody with subjects and add selected subject_pk's to subjecttype list
         const tblBody = el_tblBody_subjects;
+
         for (let i = 0, tblRow, is_selected, sel_subj_pk_int; tblRow = tblBody.rows[i]; i++) {
             is_selected = !!get_attr_from_el_int(tblRow, "data-selected")
             if (is_selected) {
@@ -3791,6 +3797,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log("===========mod_MSI_dict", mod_MSI_dict);
 
         //MSI_FillTblSubjects();
+
         MSI_FillTblSchemeitems();
     }  // MSI_SubjecttypeClicked
 
@@ -3804,7 +3811,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // get subject_dict
         // subject_dict = {id: 759, name: "Franse taal}
         const subject_dict = (mod_MSI_dict.subject_dict[subj_pk_int]) ? mod_MSI_dict.subject_dict[subj_pk_int] : {};
-        //console.log("subject_dict", subject_dict);
+        console.log("subject_dict", subject_dict);
 
 // ---  check if subject_pk already exists in sjtp_dict.si_list list
         let si_dict = null, found = false;
@@ -3827,7 +3834,8 @@ document.addEventListener('DOMContentLoaded', function() {
                   subj_pk: subj_pk_int,
                   sjtp_pk: sjtp_dict.sjtp_pk,
                   name: subject_dict.name,
-                  iscreated: true
+                  iscreated: true,
+                  just_clicked: true
               };
               sjtp_dict.si_list.push(si_dict)
         }
@@ -3871,13 +3879,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                 // set deleted=true when it is a saved si
                     si_dict.isdeleted = true;
-                }
-            }
-        }
-        const justclicked_pk = subj_pk_int;
-        MSI_FillTblSchemeitems(sel_schemeitem_pk_list, justclicked_pk)
+                    if (si_dict.just_clicked) {
+                        delete si_dict.just_clicked
+                    };
+                };
+            };
+        };
+        MSI_FillTblSchemeitems(sel_schemeitem_pk_list);
 
-    }  // MSI_SchemeitemClicked
+    };  // MSI_SchemeitemClicked
 
 //========= MSI_AddPackage  ============= PR2020-11-18
     function MSI_AddPackage() {
@@ -4165,13 +4175,13 @@ document.addEventListener('DOMContentLoaded', function() {
             let selected_pk = null;
             let map_dict = {};
 
-            if(tblName === "subject"){
+            if (tblName === "subject"){
                 map_dict = selected.subject_dict;
-            } else if(tblName === "schemeitem"){
+            } else if (tblName === "schemeitem"){
                 map_dict = selected.schemeitem_dict;
-            } else if(tblName === "subjecttype"){
+            } else if (tblName === "subjecttype"){
                 map_dict = selected.subjecttype_dict;
-            } else if(tblName === "subjecttypebase"){
+            } else if (tblName === "subjecttypebase"){
                 map_dict = selected.subjecttypebase_dict;
             } else if(tblName === "examyear"){
                 map_dict =selected.copyto_examyear_dict;
@@ -4196,7 +4206,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     mod_dict.mapid = map_dict.mapid;
                     mod_dict.scheme_pk = map_dict.scheme_id;
                     mod_dict.abbrev = map_dict.abbrev;
-                    mod_dict.name = map_dict.name;
+                    mod_dict.name = (tblName === "subject") ? map_dict.name_nl : map_dict.name;
                     mod_dict.sequence = map_dict.sequence;
                     mod_dict.depbases = map_dict.depbases;
                 };

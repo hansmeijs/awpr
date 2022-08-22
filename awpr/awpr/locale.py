@@ -182,7 +182,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Number'] = _('Number')
     dict['err_msg_is_invalid_number'] = _(' is an invalid number.')
     dict['err_msg_must_be_integer'] = _(' must be an integer.')
-    dict['err_msg_must_be_number_between'] =  _(' must be a number between ')
+    dict['err_msg_must_be_number_between'] = _(' must be a number between ')
     dict['err_msg_and'] = TXT__and_
     dict['err_msg_must_be_number_less_than_or_equal_to'] = _(' must be a number less than or equal to ')
     dict['err_msg_must_be_number_greater_than_or_equal_to'] = _(' must be a number greater than or equal to ')
@@ -764,6 +764,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['mandatory_subject'] = _('mandatory subject')
         dict['combination_subject'] = _('combination subject')
+
+        dict['slh'] = _('slh')
+        dict['Studyloadhours'] = _('Studyload hours')
 
         dict['Authorized_chairperson'] = _('Authorized\nchairperson')
         dict['Authorized_secretary'] = _('Authorized\nsecretary')
@@ -1581,6 +1584,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Without_extra'] = _("Don't calculate extra exams")
         dict['File_per_school'] = _('Create Excelfile per school')
 
+        dict['Exams'] = _('Exams')
         dict['Version'] = _('Version')
         dict['Language'] = _('Language')
         dict['Extra_exams'] = _('Extra exams')
@@ -1590,7 +1594,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['End_time'] = _('End time')
 
         dict['Label_name'] = _('Label name')
-        dict['Exams_per_envelop'] = _('Exams per envelop')
+        dict['Items_per_envelop'] = _('Items per envelop')
         dict['Number_of_envelops'] = _('Number of envelops')
 
         dict['Labels'] = _('Labels')
@@ -1637,6 +1641,16 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Content'] = _('Content')
         dict['Instruction'] = _('Instruction')
 
+        dict['Has_errata'] = _('Exam has errata')
+        dict['Subject_color'] = _('Subject color')
+        dict['Max_number'] = _('Maximum number')
+        dict['Number_in_envelop'] = _('Number of items in envelop')
+        dict['Max_number_in_envelop'] = _('Maximum number in envelop')
+        dict['Is_errata_label'] = _('Is errata label')
+        dict['Variable_number_envelops'] = _('Has variable number of envelops')
+        dict['Variable_number_envelops_2lines'] = _('Has variable number\nof envelops')
+
+
         dict['MPUBORD_info'] = {
             'request_verifcode_01': _("When you publish the orderlist, AWP will create an Excel file with the total exams, plus an Excel file for each school."),
             'request_verifcode_02': _("AWP will send an email to each 'voorzitter' and 'secretaris' with the orderlist of their school attached."),
@@ -1649,6 +1663,9 @@ def get_locale_dict(table_dict, user_lang, request):
             'Publishing_orderlist': _("AWP is publishing the orderlist"),
             'publish_ok': _("The orderlist is published succesfully."),
         }
+        dict['color_list'] = c.COLOR_LIST
+
+
     return dict
 
 TXT_School_code = _('School code')

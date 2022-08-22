@@ -3,71 +3,49 @@
 
  <!-- =================== MODAL ENVELOP PRINT  =================== -->
     <div class="modal" id="id_mod_envelop_print" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg " role="document">
+        <div class="modal-dialog modal-dialog-centered modal-xl " role="document">
 
             <div class="modal-content">
                 <div class="modal-header tsa_bc_lightlightgrey">
                     <a href="{% url 'manual_url' 'studsubj' 'intro' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
 
-                    <h4 id="id_MENVPR_hdr" class="modal-title mx-2" >{% trans 'Ex3 form' %}  -  {% trans 'Proces-verbaal van Toezicht' %}</h4>
+                    <h4 class="modal-title mx-2" >{% trans 'Download envelop labels' %}</h4>
                     <button class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
 
                 <div class="modal-body px-4">
-                    <div class="mx-4">{% trans 'AWP will create an Ex3 form for each selected subject.' %}</div>
-                    <div class="mx-4 px-4 my-0 py-0">
-                        <small>{% trans "First click on 'Ex3 back page' and print the number of back pages you need." %}</small>
-                        <small>{% trans "Then print the Ex3 forms on the other side." %}</small>
-                        <small>{% trans "Finally, fill in the name of the subject manually on each back page." %}</small>
-                    </div>
-                    <div class="mx-4 px-4 my-0 py-0">
-                        <small>{% trans 'Use the AWP messaging service to upload the Ex3 form to the Inspectorate and the Division of Examinations.' %}</small>
-                    </div>
-
-                    <div id="id_MENVPR_input_container " class="border_bg_transparent m-2">
-                        <div class="flex_container">
-
-                            <div class="flex_2 mx-2 mb-2">
-                                <div class="label_margin_top_m2">{% trans 'Select a lay-out' %}:</div>
-                                <select id="id_MENVPR_select_layout" size="4" class="form-control tbl_hide_scrollbar"
-
-                                       autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                     <option value="none">{% trans 'No subdivision' %}</option>
-                                     <option id="id_MENVPR_layout_option_level" value="level">{% trans 'Print each learning path on a separate form' %}</option>
-                                     <option value="class">{% trans 'Print each class on a separate form' %}</option>
-                                     <option value="cluster">{% trans 'Print each cluster on a separate form' %}</option>
-                                </select>
-                            </div>
-
-                            <div class="flex_2 mx-2 mb-2">
-                                <div class="label_margin_top_m2">{% trans 'Select a learning path' %}:</div>
-                                    <select id="id_MENVPR_select_level" size="4" class="form-control tbl_hide_scrollbar"
-                                            multiple
-                                       autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
                     <div id="id_MENVPR_loader" class="display_hide mx-4 mt-2 ">
                         <div class="image_container">
                             <img src="{% static 'img/loader.gif' %}" class="icon_24">
                         </div>
                     </div>
 
+
                     <div class="content_header">
-                         <div class="flex_4 p-2 ">
-                             <h6 class="px-2">{% trans 'Available subjects' %}:</h6>
-                             <table class="tableX tsa_tbl border_bg_message tbl_h240_w_auto">
-                                <tbody id="id_MENVPR_tblBody_available"></tbody>
+                        <div class="flex_1 p-2">
+                            <h6 class="px-2">{% trans 'Make e selection of the labels you want to download.' %}</h6>
+                            <select id="id_MENVPR_select_errata" size="3" class="form-control tbl_hide_scrollbar"
+                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                 <option value="no_errata">{% trans "Don't download errata labels" %}</option>
+                                 <option value="errata_only">{% trans 'Download errata labels only' %}</option>
+                                 <option value="all">{% trans 'Download all labels' %}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="content_header">
+                         <div class="flex_1 p-2 ">
+                             <h6 class="px-2">{% trans 'Select one or more schools' %}:</h6>
+                             <table class="tableX tsa_tbl border_bg_lightblue tbl_h240_w_auto">
+                                <tbody id="id_MENVPR_tblBody_school"></tbody>
                              </table>
                          </div>
-                         <div class="flex_4 p-2">
-                             <h6 class="px-2">{% trans 'Selected subjects' %}:</h6>
+                         <div class="flex_2 p-2">
+                             <h6 class="px-2">{% trans 'Select one or more exams' %}:</h6>
                               <table class="tableX tsa_tbl border_bg_lightblue tbl_h240_w_auto">
-                                <tbody id="id_MENVPR_tblBody_selected"></tbody>
+                                <tbody id="id_MENVPR_tblBody_exam"></tbody>
                               </table>
                         </div>
                     </div>

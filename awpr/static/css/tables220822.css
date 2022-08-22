@@ -804,6 +804,10 @@ aXX:hover{
     margin: 8px 8px 4px 8px; /* <top><right><bottom><left> */
     /*  m-1 = .25 rem 4px; m-2 = .2 rem 8px; m-3 = 1 rem 16px; m-4 = 1.5 rem 24px; m-5 = 3 rem 48px; 1 rem = 16 px  */
 }
+.label_margin_top_m1 {
+    margin: 4px 8px 4px 8px; /* <top><right><bottom><left> */
+    /*  m-1 = .25 rem 4px; m-2 = .2 rem 8px; m-3 = 1 rem 16px; m-4 = 1.5 rem 24px; m-5 = 3 rem 48px; 1 rem = 16 px  */
+}
 .awp_margin_top_48 {
     /* margin: <top><right><bottom><left> */
    margin-top: 48px
@@ -893,6 +897,13 @@ aXX:hover{
     overflow-x: hidden;
     overflow-y: auto;
     height: 240px;
+    width: auto
+}
+
+.tbl_h180_w_auto {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 180px;
     width: auto
 }
 .tbl_partex_h220_w_auto {

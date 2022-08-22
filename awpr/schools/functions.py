@@ -1,16 +1,15 @@
 from django.db import connection
-from django.utils import timezone
+
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import gettext_lazy as _
 # PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
-from datetime import datetime
 
 from awpr import constants as c
-from awpr import functions as af
 from awpr import settings as s
 
 from schools import models as sch_mod
 from subjects import models as subj_mod
+from  subjects import views as subj_vw
 
 import logging
 logger = logging.getLogger(__name__)
@@ -893,7 +892,7 @@ def get_schoolsettings(request, request_item_setting, sel_examyear, sel_schoolba
 
 # ===============================
 def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-08-01
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------- get_stored_coldefs_dict ---------------- ')
         logger.debug('    setting_key: ' + str(setting_key))
@@ -909,6 +908,7 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
     # sel_schoolbase can be different from request.user.schoolbase
     # This can be the case when role insp, admin or system has selected different school
     # only import students from the selected department
+    # only add 'department' to coldefs and tablelist when school has multiple departments
     sel_school = sch_mod.School.objects.get_or_none(base=sel_schoolbase, examyear=sel_examyear)
 
 # - is_level_req / is_sector_req is True when _req is True in the selected department of sel_school
@@ -918,16 +918,12 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
     sel_department = None
     school_has_multiple_deps = False
     if sel_school:
-        # doublecheck if sel_depbase is in sel_school.depbases
-        depbases_str_list = sel_school.depbases.split(';') if sel_school.depbases else None
-        sel_school_depbases_list = list(map(int, depbases_str_list)) if depbases_str_list else None
-
+        sel_school_depbases_list = get_list_int_from_delim_string(sel_school.depbases)
         if sel_school_depbases_list and len(sel_school_depbases_list) > 1:
             school_has_multiple_deps = True
 
         if logging_on:
             logger.debug('    sel_school.depbases: ' + str(sel_school.depbases))
-            logger.debug('    depbases_str_list: ' + str(depbases_str_list))
             logger.debug('    sel_school_depbases_list: ' + str(sel_school_depbases_list))
             logger.debug('    school_has_multiple_deps: ' + str(school_has_multiple_deps))
 
@@ -1082,7 +1078,19 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
                     elif tblName in ('sector', 'profiel'):
                         instances = subj_mod.Sector.objects.filter(examyear=sel_examyear)
                     elif tblName == 'subject':
-                        instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
+                       instances = subj_mod.Subject.objects.filter(examyear=sel_examyear)
+
+                        # TODO add filter on notatdayschool with create_subject_rows
+                        #    skip_notatdayschool = get_skip_notatdayschool(sel_school, request)
+                        #rows = subj_vw.create_subject_rows(
+                        #    request=request,
+                        #    sel_examyear=sel_examyear,
+                        #    sel_depbase=sel_depbase,
+                        #    sel_lvlbase=None,
+                       #     skip_allowed_filter=skip_allowed_filter,
+                        #    skip_notatdayschool=skip_notatdayschool,
+                        #    cur_dep_only=cur_dep_only)
+
                     # PR2021-08-11 NIU:
                     #elif tblName == 'subjecttype':
                     #    # PR2021-07-20 switched to subjecttypebase, because subjecttype is now per scheme
@@ -1090,8 +1098,7 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
 
         # - loop through instances of this examyear
                     for instance in instances:
-                        if logging_on:
-                            logger.debug('    instance ' + str(instance) + ' ' + str(type(instance)))
+
             # - check if one of the depbases of the instance is in the list of depbases of the school
                         add_to_list = False
                         if sel_department:
@@ -1154,10 +1161,50 @@ def get_stored_coldefs_dict(request, setting_key, sel_examyear, sel_schoolbase, 
     if logging_on:
         logger.debug('setting_dict: ' + str(setting_dict))
         logger.debug(' ---------------- end of get_stored_coldef_dict ---------------- ')
+
+    """
+    setting_dict: {'worksheetname': 'Kandidaten', 'noheader': False, 'examgradetype': None, 
+        'coldefs': [
+                {'awpColdef': 'idnumber', 'caption': 'ID-nummer', 'linkrequired': True, 'unique': True, 'excColdef': 'ID-nummer'}, 
+                {'awpColdef': 'lastname', 'caption': 'Achternaam', 'linkrequired': True, 'excColdef': 'Achternaam'}, 
+                {'awpColdef': 'firstname', 'caption': 'Voornamen', 'linkrequired': True, 'excColdef': 'Voornamen'}, 
+                {'awpColdef': 'prefix', 'caption': 'Voorvoegsel', 'excColdef': 'Voorvoegsel'}, 
+                {'awpColdef': 'gender', 'caption': 'Geslacht', 'excColdef': 'Geslacht'}, 
+                {'awpColdef': 'examnumber', 'caption': 'Examennummer', 'excColdef': 'Examennummer'}, 
+                {'awpColdef': 'birthdate', 'caption': 'Geboortedatum', 'datefield': True, 'excColdef': 'Geboortedatum'}, 
+                {'awpColdef': 'birthcountry', 'caption': 'Geboorteland', 'excColdef': 'Geboorteland'}, 
+                {'awpColdef': 'birthcity', 'caption': 'Geboorteplaats', 'excColdef': 'Geboorteplaats'}, 
+                {'awpColdef': 'classname', 'caption': 'Klas', 'excColdef': 'Klas'}, 
+                {'awpColdef': 'bis_exam', 'caption': 'Bis-examen'}, 
+                {'awpColdef': 'department', 'caption': 'Afdeling', 'excColdef': 'Afdeling'}, 
+                {'awpColdef': 'level', 'caption': 'Leerweg', 'linkrequired': True, 'excColdef': 'Leerweg'},
+                 {'awpColdef': 'sector', 'caption': 'Sector', 'linkrequired': True, 'excColdef': 'Sector___Profiel'}, 
+                 {'awpColdef': 'diplomanumber', 'caption': 'Diploma-nummer'}, 
+                 {'awpColdef': 'gradelistnumber', 'caption': 'Cijferlijst-nummer'}], 
+             'tablelist': ('coldef', 'department', 'level', 'sector', 'profiel'), 
+             'department': [{'awpBasePk': 1, 'awpValue': 'Vsbo'}], 
+             'level': [{'awpBasePk': 6, 'awpValue': 'PBL'}, {'awpBasePk': 5, 'awpValue': 'PKL'}, {'awpBasePk': 4, 'awpValue': 'TKL'}], 
+             'sector': [{'awpBasePk': 12, 'awpValue': 'tech'}, {'awpBasePk': 13, 'awpValue': 'ec'}, {'awpBasePk': 14, 'awpValue': 'z&w'}]}
+
+    """
+
+
     return setting_dict
+
+
+def get_list_int_from_delim_string(delim_string):
+    # PR2022-08-21 NIU yet
+    int_list = []
+    if delim_string:
+        str_list = delim_string.split(';')
+        if str_list:
+            int_list = list(map(int, str_list))
+    return int_list
+
 
 def get_alreadyexists_logtext(caption, value): # PR2021-09-26
     return c.STRING_SPACE_05 + str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': caption, 'val': value})
+
 
 def get_iscopied_logtext(caption, value): # PR2021-09-26
     return c.STRING_SPACE_05 + str(_("%(cpt)s '%(val)s' is copied.") % {'cpt': caption, 'val': value})
@@ -1166,3 +1213,14 @@ def get_iscopied_logtext(caption, value): # PR2021-09-26
 def get_error_logtext(caption, error): # PR2021-09-26
     cpt = caption.lower() if caption else ''
     return c.STRING_SPACE_05 + str(_("Error copying %(cpt)s: %(error)s") % {'cpt': cpt, 'val': str(error)})
+
+
+def get_skip_notatdayschool(sel_school, request):
+    # PR2022-08-21 notatdayschool added: show this subject only when school is evening school or lex school
+    # attention: day/evening school shows notatdayschool subjects. Must be filtered out when adding subjects to day student
+    # also don't filter on notatdayschool when user is admin
+
+    skip_notatdayschool = (sel_school and sel_school.islexschool) or \
+                          (sel_school and sel_school.iseveningschool) or \
+                          (request.user.role > c.ROLE_016_CORR)
+    return skip_notatdayschool

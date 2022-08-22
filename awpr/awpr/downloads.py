@@ -66,7 +66,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if logging_on:
                     logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
 
-                new_setting_dict, permit_dict, sel_examyear, sel_schoolbase, sel_depbase, \
+                new_setting_dict, permit_dict, sel_examyear, sel_schoolbase, sel_school, sel_depbase, \
                     sel_examperiod, sel_examtype, msg_list = \
                     download_setting(request_item_setting, user_lang, request)
                 if msg_list:
@@ -162,12 +162,19 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('subject_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
                     skip_allowed_filter = af.get_dict_value(datalist_request, ('subject_rows', 'skip_allowed_filter'), False)
+
+                    # PR2022-08-21 notatdayschool added: show this subject only when school is evening school or lex school
+                    # attention: day/evening school shows notatdayschool subjects. Must be filtered out when adding subjects to day student
+                    # also don't filter on notatdayschool when user is admin
+                    skip_notatdayschool = sch_fnc.get_skip_notatdayschool(sel_school, request)
+
                     datalists['subject_rows'] = sj_vw.create_subject_rows(
                         request=request,
                         sel_examyear=sel_examyear,
                         sel_depbase=sel_depbase,
                         sel_lvlbase=None,
                         skip_allowed_filter=skip_allowed_filter,
+                        skip_notatdayschool=skip_notatdayschool,
                         cur_dep_only=cur_dep_only)
 
 # ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
@@ -207,10 +214,17 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- schemeitems
                 if datalist_request.get('schemeitem_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('schemeitem_rows', 'cur_dep_only'), False)
+
+                    # PR2022-08-21 notatdayschool added: show this subject only when school is evening school or lex school
+                    # attention: day/evening school shows notatdayschool subjects. Must be filtered out when adding subjects to day student
+                    # also don't filter on notatdayschool when user is admin
+                    skip_notatdayschool = sch_fnc.get_skip_notatdayschool(sel_school, request)
+
                     datalists['schemeitem_rows'] = sj_vw.create_schemeitem_rows(
-                        examyear=sel_examyear,
+                        sel_examyear=sel_examyear,
                         append_dict={},
                         cur_dep_only=cur_dep_only,
+                        skip_notatdayschool=skip_notatdayschool,
                         depbase=sel_depbase)
 # ----- ete_exams
                 if datalist_request.get('ete_exam_rows'):
@@ -646,30 +660,28 @@ def download_setting(request_item_setting, user_lang, request):
     permit_dict['display_school'] = display_school
 
 # get school from sel_schoolbase and sel_examyear_instance
-    sel_school = sch_mod.School.objects.get_or_none(
+    sel_school_instance = sch_mod.School.objects.get_or_none(
         base=sel_schoolbase_instance,
         examyear=sel_examyear_instance)
     #logger.debug('get_or_none sel_school: ' + str(sel_school) )
 
-    if sel_school:
-        setting_dict['sel_school_pk'] = sel_school.pk
-        setting_dict['sel_school_name'] = sel_school.name
-        setting_dict['sel_school_abbrev'] = sel_school.abbrev
-        setting_dict['sel_school_depbases'] = sel_school.depbases
+    if sel_school_instance:
+        setting_dict['sel_school_pk'] = sel_school_instance.pk
+        setting_dict['sel_school_name'] = sel_school_instance.name
+        setting_dict['sel_school_abbrev'] = sel_school_instance.abbrev
+        setting_dict['sel_school_depbases'] = sel_school_instance.depbases
 
-        if sel_school.activated:
-            setting_dict['sel_school_activated'] = True
-        if sel_school.isdayschool:
+        if sel_school_instance.isdayschool:
             setting_dict['sel_school_isdayschool'] = True
-        if sel_school.iseveningschool:
+        if sel_school_instance.iseveningschool:
             setting_dict['sel_school_iseveningschool'] = True
-        if sel_school.islexschool:
+        if sel_school_instance.islexschool:
             setting_dict['sel_school_islexschool'] = True
-        if sel_school.locked:
+        if sel_school_instance.locked:
             setting_dict['sel_school_locked'] = True
 # - add message when school is locked PR2021-12-04
             msg_list.append( {'msg_html': [
-                    '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {'exyr': str(sel_school.examyear.code)}),
+                    '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {'exyr': str(sel_school_instance.examyear.code)}),
                                  str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
 
         #logger.debug('sel_school.depbases: ' + str(sel_school.depbases) )
@@ -680,7 +692,7 @@ def download_setting(request_item_setting, user_lang, request):
 # - get sel_depbase_instance from saved_setting or request_item_setting or first allowed, check if allowed
     request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_DEPBASE_PK)
     sel_depbase_instance, sel_depbase_save, allowed_depbases = \
-        af.get_sel_depbase_instance(sel_school, request, request_item_depbase_pk)
+        af.get_sel_depbase_instance(sel_school_instance, request, request_item_depbase_pk)
 
     if logging_on:
         logger.debug('===== DEPBASE ==========')
@@ -1022,7 +1034,7 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('..... setting_dict: ' + str(setting_dict))
         logger.debug('......................... ')
 
-    return setting_dict, permit_dict, sel_examyear_instance, sel_schoolbase_instance, sel_depbase_instance, \
+    return setting_dict, permit_dict, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance, sel_depbase_instance, \
             sel_examperiod, sel_examtype, msg_list
 # - end of download_setting
 
@@ -1115,7 +1127,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request):  # PR2021-01
 # - end of get_selected_experiod_extype_subject_from_usersetting
 
 
-def get_selected_ey_school_dep_from_usersetting(request, skip_same_school_clause=False, skip_check_activated=False):
+def get_selected_ey_school_dep_from_usersetting(request, skip_same_school_clause=False):
     # PR2021-01-13 PR2021-06-14 PR2022-02-05
     logging_on = False # s.LOGGING_ON
     if logging_on:
@@ -1128,7 +1140,6 @@ def get_selected_ey_school_dep_from_usersetting(request, skip_same_school_clause
         # - country, examyear or school is locked
         # - not requsr_same_school,
         # - not sel_examyear.published,
-        # - not sel_school.activated,
         # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
 
     req_user = request.user
@@ -1195,9 +1206,7 @@ def get_selected_ey_school_dep_from_usersetting(request, skip_same_school_clause
                 logger.debug('sel_school: ' + str(sel_school))
 
     # - add info to msg_list, will be sent back to client
-            # skip_check_activated is only used in StudentUploadView
-            # because school is_activated will be set True in create_student
-            message_school_missing_locked_notactivated(sel_school, sel_examyear, skip_check_activated, msg_list)
+            message_school_missing_locked(sel_school, sel_examyear, msg_list)
 
 # ===== DEPBASE =======================
             if sel_school:
@@ -1310,18 +1319,14 @@ def message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_n
 # - end of message_examyear_missing_notpublished_locked
 
 
-def message_school_missing_locked_notactivated(sel_school, sel_examyear, skip_check_activated, msg_list):
-    # PR2021-12-04  PR2022-02-05
-    # skip_check_activated is only used in StudentUploadView
-    # because school is_activated will be set True in create_student
+def message_school_missing_locked(sel_school, sel_examyear, msg_list):
+    # PR2021-12-04  PR2022-02-05 PR2022-08-20
 
     if sel_school is None:
         msg_list.append(str(_('School not found in this exam year.')))
     elif sel_school.locked:
         msg_list.append(str(_('Exam year %(ey_code)s of this school is locked.') % {'ey_code': str(sel_examyear.code)}))
-    elif not skip_check_activated and not sel_school.activated:
-        msg_list.append(str(_('The school has not activated exam year %(ey_code)s yet.') % {'ey_code': str(sel_examyear.code)}))
-# - end of message_school_missing_locked_notactivated
+# - end of message_school_missing_locked
 
 
 def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
@@ -1406,4 +1411,3 @@ def get_requsr_allowed(req_user, permit_dict):
         # note: allowed_clusterbases contains allowed_cluster_pk, cluster does not have base
         allowed_clusterbases_arr = req_user.allowed_clusterbases.split(';') if req_user.allowed_clusterbases else []
         permit_dict['requsr_allowed_clusters'] = list(map(int, allowed_clusterbases_arr))
-

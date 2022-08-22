@@ -552,6 +552,15 @@ PAGE_LIST = {
     'archive': _('Archive')
 }
 
+COLOR_LIST = [
+    ['black', ' '],
+    ['red', _('red')],
+    ['blue', _('blue')],
+    ['green', _('green')],
+    ['purple', _('purple')],
+    ['orange', _('orange')],
+    ['yellow', _('yellow')]
+]
 LABEL_COLOR = {
     'black': '#000000', # rgb 0 0 0  #000000
     'red': '#ff0000', # rgb 255 0 0  #ff0000

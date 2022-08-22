@@ -1113,12 +1113,8 @@ function RefreshDataRowsAfterUpload(response) {
             const lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
             const sct_req = (dep_dict.sct_req) ? dep_dict.sct_req : false;
 
-            //console.log("dep_dict", dep_dict)
-            //console.log("sct_req", sct_req)
-            const sct_caption = (dep_dict.has_profiel) ? loc.Profile : loc.Sector;
-
-            document.getElementById("id_MSTUD_level_label").innerText = loc.Leerweg + ':';
-            document.getElementById("id_MSTUD_sector_label").innerText = sct_caption + ':';
+            //document.getElementById("id_MSTUD_level_label").innerText = loc.Learning_path + ':';
+            document.getElementById("id_MSTUD_sector_label").innerText = ((dep_dict.has_profiel) ? loc.Profile : loc.Sector) + ':';
             document.getElementById("id_MSTUD_level_select").innerHTML = t_FillOptionLevelSectorFromMap("level", "base_id", level_map, depbase_pk, selected_pk)
             document.getElementById("id_MSTUD_sector_select").innerHTML = t_FillOptionLevelSectorFromMap("sector", "base_id", sector_map, depbase_pk, selected_pk)
 

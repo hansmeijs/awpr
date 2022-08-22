@@ -127,6 +127,10 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     bis_exam = BooleanField(default=False)
     partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
 
+    # PR2022-08-22 - is ok when subjects composition is correct. Inspection can give dispensation
+    subj_composition_ok = BooleanField(default=False)
+    subj_dispensation = BooleanField(default=False)
+
     # additional_exam is deprecated, field partial_exam is used (additional_exam is partial_exam on a day school
     # additional_exam =  when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
@@ -270,6 +274,10 @@ class Student_log(sch_mod.AwpBaseModel):
 
     # additional_exam is deprecated, field partial_exam is used (additional_exam is partial_exam on a day school
     # additional_exam = when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
+
+    # PR2022-08-22 - is ok when subjects composition is correct. Inspection can give dispensation
+    subj_composition_ok = BooleanField(default=False)
+    subj_dispensation = BooleanField(default=False)
 
     # islinked = BooleanField(default=False)
     linked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)

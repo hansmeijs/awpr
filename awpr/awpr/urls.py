@@ -321,6 +321,7 @@ urlpatterns = [
         path('enveloplabel_upload', subject_orderlists.EnvelopLabelUploadView.as_view(), name='url_enveloplabel_upload'),
         path('envelopitem_upload', subject_orderlists.EnvelopItemUploadView.as_view(), name='url_envelopitem_upload'),
 
+        path('envelop_print_check', subject_orderlists.EnvelopPrintCheckView.as_view(), name='url_envelop_print_check'),
         path('envelop_print/<lst>/', subject_orderlists.EnvelopPrintView.as_view(), name='url_envelop_print'),
     ])),
 

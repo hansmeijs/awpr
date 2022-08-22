@@ -441,6 +441,9 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     # pr2021-05-04 temporary, used when importing from AWP to determine if subject is uploaded from school
     addedbyschool = BooleanField(default=False)
 
+    # PR2022-08-22 moved from schemeitem
+    notatdayschool = BooleanField(default=False)
+
     class Meta:
         ordering = ['sequence',]
 
@@ -469,6 +472,9 @@ class Subject_log(sch_mod.AwpBaseModel):
     # otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     addedbyschool = BooleanField(default=False)
+
+    # PR2022-08-22 moved from schemeitem
+    notatdayschool = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -502,10 +508,13 @@ class Enveloplabel(sch_mod.AwpBaseModel):  # PR2022-08-03
 
     name = CharField(max_length=c.MAX_LENGTH_NAME)
 
-    # Fixed number of envelops
-    numberfixed = PositiveSmallIntegerField(null=True)
-    # numberperexam means: number of exams per envelop Number of envelops = Roundup( total_exams / numberperexam)
-    numberperexam = PositiveSmallIntegerField(null=True)
+    # labels can be printed with errata labels, without errata labels of errata labels only
+    is_errata = BooleanField(default=False)
+    is_variablenumber = BooleanField(default=False)
+    # when not is_variablenumber: numberinenvelop is a fixed number
+    # when is_variablenumber: numberinenvelop is the maximum number of exams in the envelop
+    numberinenvelop = PositiveSmallIntegerField(null=True)
+    numberofenvelops = PositiveSmallIntegerField(null=True)
 
 
 class Envelopbundlelabel(sch_mod.AwpBaseModel):  # PR2022-08-03
@@ -652,6 +661,9 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     secret_exam = BooleanField(default=False)
 
     envelopbundle = ForeignKey(Envelopbundle, related_name='+', db_index=True, null=True, on_delete=SET_NULL)
+    # labels can be printed with errata labels, without errata labels of errata labels only
+    has_errata = BooleanField(default=False)
+    subject_color = CharField(max_length=c.MAX_LENGTH_10, null=True)
 
     evl_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
     evl_modifiedat = DateTimeField(default=timezone.now, null=True)
@@ -702,6 +714,13 @@ class Exam_log(sch_mod.AwpBaseModel):  # PR2021-03-04
 
     secret_exam = BooleanField(default=False)
 
+    envelopbundle = ForeignKey(Envelopbundle, related_name='+', db_index=True, null=True, on_delete=SET_NULL)
+
+    has_errata = BooleanField(default=False)
+    subject_color = CharField(max_length=c.MAX_LENGTH_10, null=True)
+
+    evl_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    evl_modifiedat = DateTimeField(default=timezone.now, null=True)
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 
@@ -771,7 +790,10 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
     studyloadhours = PositiveSmallIntegerField(null=True)
 
+    # PR2022-08-22 tobe deprecated, moved to subject
     notatdayschool = BooleanField(default=False)
+
+
     #   extra_count_allowed: only at Havo Vwo) 'PR2017-01-28
     #   extra_nocount_allowed: at Vsbo TKL and Havo Vwo)) 'PR2017-01-28
     #   has_practexam: only at Vsbo PBL and PKL, all sectorprogramma's except uv 'PR2017-01-28

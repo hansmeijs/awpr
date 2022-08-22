@@ -26,23 +26,45 @@
                         <h6 id="id_MENVLAB_label_name" class="px-2"></h6>
                         <input id="id_MENVLAB_name" type="text" data-field= "name" class="form-control"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
-
+                         <div class="content_subheader_left mx-2">
+                              <small id="id_MENVLAB_name_err" class="text-danger"></small>
+                         </div>
                         <div id="id_MENVLAB_number_container">
                             <div class="flex_container">
-                                 <div class="flex_1 mr-2">
-                                    <label class="mx-2 my-1">{% trans 'Fixed number of envelops' %}:</label>
-                                    <input id="id_MENVLAB_numberfixed" type="text" data-field= "numberfixed" class="form-control"
+
+                                <div class="flex_1 mx-1">
+                                    <label for="id_MENVLAB_variable_number" class="label_margin_top_m2">{% trans 'Variable number of envelops' %}:</label>
+                                    <div id="id_MENVLAB_variable_number" data-field="is_variablenumber" class="form-control pt-2 pointer_show">
+                                        <div class="tickmark_1_1"></div>
+                                    </div>
+                                </div>
+                                <div class="flex_1 mx-1">
+                                    <label for="id_MENVLAB_errata" class="label_margin_top_m2">{% trans 'Is errata label' %}:</label>
+                                    <div id="id_MENVLAB_errata" data-field= "is_errata" class="form-control pt-2 pointer_show">
+                                        <div class="tickmark_1_1"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex_container">
+
+                                 <div class="flex_1 mx-1">
+                                    <label class="label_margin_top_m1">{% trans 'Number of envelops' %}:</label>
+                                    <input id="id_MENVLAB_numberofenvelops" type="text" data-field= "numberofenvelops" class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                  </div>
-                                 <div class="flex_1 ml-2">
-                                    <label class="mx-2 my-1">{% trans 'Number of exams per envelop' %}:</label>
-                                    <input id="id_MENVLAB_numberperexam" type="text" data-field= "numberperexam" class="form-control"
+                                 <div class="flex_1 mx-1">
+                                    <label id="id_MENVLAB_numberinenvelop_label" class="label_margin_top_m1"></label>
+                                    <input id="id_MENVLAB_numberinenvelop" type="text" data-field= "numberinenvelop" class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                  </div>
                             </div>
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MENVLAB_number_err"  class="text-danger"></small>
+                            </div>
                         </div>
                         <h6 id="id_MENVLAB_label_selected" class="px-2 pt-2"></h6>
-                        <table class="tableX tsa_tbl border_bg_lightblue tbl_h240_w_auto">
+                        <table class="tableX tsa_tbl border_bg_lightblue tbl_h180_w_auto">
                             <tbody id="id_MENVLAB_tblBody_selected"></tbody>
                         </table>
                     </div>

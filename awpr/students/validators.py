@@ -198,9 +198,8 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
 
 # ########################### validate students ##############################
 
-def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, upload_fullname,
-                   error_list, found_is_error=False):
-    # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21  PR2021-09-22
+def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, upload_fullname, found_is_error):
+    # PR2019-12-17 PR2020-12-06 PR2020-12-31  PR2021-02-27  PR2021-06-19  PR2021-07-21  PR2021-09-22 PR2022-08-21
     # called before creating new student, by upload_student_from_datalist and create_student
     # function searches for existing student by idnumber, only in this school and this examyear
     # if student exists in other schools is checked by StudentLinkStudentView
@@ -250,7 +249,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
                 if found_is_error:
                     err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
                 else:
-                    # return student when importing, to update student infoPR2021-08-23
+                    # return student when importing, to update student info PR2021-08-23
                     student = row
             else:
 
@@ -268,7 +267,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
             # info from Richard Westerink, confirmed by Nancy Josephina August 2021
 
     # - check which department both students have
-            # - if one student exists in this department: return thisstudent
+            # - if one student exists in this department: return this student
             # - if both students exists in this department: return error
             # - if both students exists in other departments: return error
 
@@ -359,12 +358,18 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
-def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
+def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, user_lang):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('student: ' + str(student))
         logger.debug('studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
+    """
+    studsubj_dictlist_with_tobedeleted: [
+        {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20635, 'studsubj_id': None, 'subj_id': 2641, 'subj_code': 'ak', 'is_extra_counts': False, 'is_extra_nocount': False}, 
+        {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20231, 'studsubj_id': None, 'subj_id': 2637, 'subj_code': 'sk', 'is_extra_counts': False, 'is_extra_nocount': False}, 
+        {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20420, 'studsubj_id': None, 'subj_id': 2647, 'subj_code': 'asw', 'is_extra_counts': False, 'is_extra_nocount': False}, 
+    """
 
     # PR2021-09-29 debug: 'tobedeleted' subjects must be filtered out
     # PR2021-12-27 debug: also subjects with 'is_extra_nocount' must be filtered out
@@ -423,7 +428,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
             else:
 
     # ++++++++++++++++++++++++++++++++
-    # - get min max subjects and mvt from scheme
+    # - get min max subjects and mvt from scheme, also min studyloadhours
                 scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
     # ++++++++++++++++++++++++++++++++
     # - get info from studsubjects
@@ -480,7 +485,8 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
                     'wisk_list': [], 
                     'core_list': [], 
                     'sufficient_list': [], 
-                    'notatevlex_list': []}
+                    'notatevlex_list': [],
+                    'total_studyloadhours': 1450}
                 """
 
     # ++++++++++++++++++++++++++++++++
@@ -501,6 +507,11 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
 
     # - check number of subjects per subjecttype
                 validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+
+    # - check total_studyloadhours
+                validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang)
+
+    # wrap messages in a bullet list
                 if len(msg_list):
                     msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
                     msg_list.insert(0, msg_str)
@@ -627,8 +638,11 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 
-        msg_html = ' '.join(("<div class='p-2 border_bg_invalid'><p>",
-                    str(_('An error occurred.')), str(_('AWP has not checked the composition of the subjects.')),"</p></div>"))
+        msg_html = ''.join((
+            "<div class='p-2 border_bg_invalid'><p>",
+            str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+            str(_('AWP has not checked the composition of the subjects.')),
+            "</p></div>"))
 
     if logging_on:
         logger.debug('msg_html: ' + str(msg_html))
@@ -1133,8 +1147,34 @@ def validate_minmax_count(field, is_evening_or_lex_student, scheme_dict, subject
 # - end of validate_minmax_count
 
 
+
+def validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang):
+    # - validate number studyloadhours PR2022-08-21
+    # - skip when is_evening_or_lex_student
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  validate_min_studyloadhours  -----')
+
+    min_studyloadhours = scheme_dict.get('min_studyloadhours')
+    total_studyloadhours = studsubj_dict.get('total_studyloadhours') or 0
+    if min_studyloadhours and not is_evening_or_lex_student:
+        if total_studyloadhours < min_studyloadhours:
+            total_str = af.format_number(total_studyloadhours, user_lang)
+            min_str = af.format_number(min_studyloadhours, user_lang)
+            msg_txt = ' '.join((str(_("The candidate has %(val)s studyload hours.") % {'val': total_str}),
+                               str(_("The minimum number must be %(val)s.") % { 'val': min_str})))
+
+            msg_html = ''.join(('<li>', msg_txt, '</li>'))
+            msg_list.append(msg_html)
+
+            if logging_on:
+                logger.debug('msg_txt: ' + str(msg_txt))
+                logger.debug('msg_list: ' + str(msg_html))
+# - validate_min_studyloadhourst
+
+
 def get_scheme_si_sjtp_dict(scheme):
-# - get info from scheme, subjecttypes and schemeitems PR2021-07-10
+# - get info from scheme, subjecttypes and schemeitems PR2021-07-10 PR2022-08-20
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_scheme_si_sjtp_dict  -----')
@@ -1150,6 +1190,7 @@ def get_scheme_si_sjtp_dict(scheme):
     max_wisk = getattr(scheme, 'max_wisk')
     min_combi = getattr(scheme, 'min_combi')
     max_combi = getattr(scheme, 'max_combi')
+    min_studyloadhours = getattr(scheme, 'min_studyloadhours')
 
 # - get info from subjecttypes
     sjtp_dict = {}
@@ -1214,7 +1255,7 @@ def get_scheme_si_sjtp_dict(scheme):
         'max_wisk': max_wisk,
         'min_combi': min_combi,
         'max_combi': max_combi,
-
+        'min_studyloadhours': min_studyloadhours,
         'sjtp_dict': sjtp_dict,
 
         'mand_list': mand_list,
@@ -1235,7 +1276,7 @@ def get_scheme_si_sjtp_dict(scheme):
 def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list, msg_list):
     # - get info from student subjects PR2021-08-17
     # si_dictlist contains studentsubject values from studsubj modal, not from the database
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_studsubj_dict_from_modal  -----')
         logger.debug('scheme: ' + str(student))
@@ -1254,6 +1295,9 @@ def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list
     sufficient_list = []  # PR2021-11-23
     notatevlex_list = []
 
+    # PR2022-08-21 put total slu in a list, so it will be passed to get_schemitem_info as a 'by reference' parameter
+    total_studyloadhour_list = [0]  # PR2022-08-21
+
     if not si_dictlist:
         msg_list.append(str(_("This candidate has no subjects.")))
     else:
@@ -1265,7 +1309,7 @@ def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list
             is_extra_counts = si_dict.get('is_extra_counts', False)
             if schemeitem_pk:
                 schemeitem = subj_mod.Schemeitem.objects.get_or_none(pk=schemeitem_pk)
-            get_schemitem_info(stud_scheme, schemeitem, is_extra_nocount, is_extra_counts,
+            get_schemitem_info(stud_scheme, schemeitem, is_extra_nocount, is_extra_counts, total_studyloadhour_list,
                                    subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
                                    mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list)
 
@@ -1280,16 +1324,42 @@ def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list
         'wisk_list': wisk_list,
         'core_list': core_list,
         'sufficient_list': sufficient_list,
-        'notatevlex_list': notatevlex_list
+        'notatevlex_list': notatevlex_list,
+        'total_studyloadhours': total_studyloadhour_list[0]
     }
 
     if logging_on:
         logger.debug('studsubj_dict: ' + str(studsubj_dict))
+    """
+    studsubj_dict: {
+        'subject_list': [2623, 2647, 2640, 2667, 2630, 2651, 2639, 2676, 2677], 
+        'doubles_list': [], 
+        'sjtp_dict': {
+            3783: {'min': 6, 'max': 6, 'name': 'Gemeenschappelijk deel', 
+                    'subj_list': [2623, 2647, 2676, 2677], 
+                    'nocount_list': [], 'counts_list': [], 
+                    'studyloadhours': 1050}, 
+            3784: {'min': 3, 'max': 3, 'name': 'Profieldeel', 
+                    'subj_list': [2640, 2630, 2639], 'nocount_list': [], 'counts_list': [], 
+                    'studyloadhours': 400}, 
+            3785: {'min': 1, 'max': 1, 'name': 'Profielwerkstuk', 
+                    'subj_list': [2667], 'nocount_list': [], 'counts_list': [], 
+                    'studyloadhours': 0}, 
+            3773: {'min': 1, 'max': 3, 'name': 'Vrije deel', 
+                    'subj_list': [2651], 'nocount_list': [], 'counts_list': [], 
+                    'studyloadhours': 0}}, 
+            'mand_list': [2623, 2647, 2667, 2639, 2676, 2677], 'mand_subj_list': [], 
+            'combi_list': [2647, 2667], 'mvt_list': [], 'wisk_list': [2630], 
+            'core_list': [2630, 2676, 2677], 'sufficient_list': [], 'notatevlex_list': [], 
+
+            'total_studyloadhours': 1450}
+    """
+
     return studsubj_dict
 # - end of get_studsubj_dict_from_modal
 
 
-def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-07-10 PR2021-12-30
+def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-07-10 PR2021-12-30 PR2022-08-20
     # - get info from student subjects
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1309,6 +1379,9 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-
     sufficient_list = []  # PR2021-11-23
     notatevlex_list = []
 
+    # PR2022-08-21 put total slu in a list, so it will be passed to get_schemitem_info as a 'by reference' parameter
+    total_studyloadhour_list = [0]  # PR2022-08-21
+
 # - create dict with studentsubject values that are used in validator
     # PR2021-12-27 debug: also skip subjects with 'is_extra_nocount'
     rows = stud_mod.Studentsubject.objects.filter(
@@ -1321,7 +1394,7 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-
     else:
         for studsubj in rows:
             get_schemitem_info(stud_scheme, studsubj.schemeitem,
-                                   studsubj.is_extra_nocount, studsubj.is_extra_counts,
+                                   studsubj.is_extra_nocount, studsubj.is_extra_counts, total_studyloadhour_list,
                                    subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
                                    mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list)
 
@@ -1336,21 +1409,22 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-
         'wisk_list': wisk_list,
         'core_list': core_list,
         'sufficient_list': sufficient_list,
-        'notatevlex_list': notatevlex_list
+        'notatevlex_list': notatevlex_list,
+        'total_studyloadhours': total_studyloadhour_list[0]
     }
 
     if logging_on:
-        logger.debug('studsubj_dict: ' + str(studsubj_dict))
+        logger.debug('    studsubj_dict: ' + str(studsubj_dict))
     return studsubj_dict
 # - end of get_studsubj_dict
 
 
 def get_schemitem_info(stud_scheme, schemeitem,
-                       studsubj_is_extra_nocount, studsubj_is_extra_counts,
+                       studsubj_is_extra_nocount, studsubj_is_extra_counts, total_studyloadhour_list,
                        subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
                        mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list):
     # - get info from schemitem PR2021-08-17
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if schemeitem.scheme_id != stud_scheme.pk:
         value = schemeitem.subject.base.code
         msg_str = '<li>' + str(_("Subject '%(val)s' does not occur in this subject scheme.") % {'val': value}) + '</li>'
@@ -1368,6 +1442,12 @@ def get_schemitem_info(stud_scheme, schemeitem,
         else:
             subject_list.append(subj_pk)
 
+# add studyloadhours to total_studyloadhours list
+            studyloadhours = 0 if schemeitem.studyloadhours is None else schemeitem.studyloadhours
+
+            # total_studyloadhour_list is a list, so it will be passed to this function as a 'by reference' parameter
+            total_studyloadhour_list[0] += studyloadhours
+
 # add subject to subjecttype list
             subjecttype = schemeitem.subjecttype
             sjtp_pk = subjecttype.pk
@@ -1378,12 +1458,16 @@ def get_schemitem_info(stud_scheme, schemeitem,
                     'name': subjecttype.name,
                     'subj_list': [],
                     'nocount_list': [],
-                    'counts_list': []
+                    'counts_list': [],
+                    'studyloadhours': 0
                 }
             item_dict = sjtp_dict.get(sjtp_pk)
 
             subj_list = item_dict.get('subj_list')
             subj_list.append(subj_pk)
+
+            old_studyloadhours = item_dict.get('studyloadhours') or 0
+            item_dict['studyloadhours'] = old_studyloadhours + studyloadhours
 
             if studsubj_is_extra_nocount:
                 nocount_list = item_dict.get('nocount_list')

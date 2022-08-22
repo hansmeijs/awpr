@@ -5054,9 +5054,10 @@ class SchemeDownloadXlsxView(View):  # PR2021-07-13
                         scheme_pk=sel_scheme_pk,
                         orderby_sequence=True)
                     schemeitem_rows = subj_view.create_schemeitem_rows(
-                        examyear=sel_examyear_instance,
+                        sel_examyear=sel_examyear_instance,
                         append_dict={},
                         scheme_pk=sel_scheme_pk,
+                        skip_notatdayschool=True, # subjects with notatdayschool must be included in excel sheet PR2022-08-21
                         orderby_name=True)
                     if schemeitem_rows:
                         response = create_scheme_xlsx(sel_examyear_instance, scheme_rows, subjecttype_rows, schemeitem_rows, user_lang)

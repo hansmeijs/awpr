@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_enveloplabel_upload = get_attr_from_el(el_data, "data-url_enveloplabel_upload");
     urls.url_envelopbundle_upload = get_attr_from_el(el_data, "data-url_envelopbundle_upload");
     urls.url_envelop_print = get_attr_from_el(el_data, "data-url_envelop_print");
+    urls.url_envelop_print_check = get_attr_from_el(el_data, "data-url_envelop_print_check");
     urls.url_exam_upload = get_attr_from_el(el_data, "data-url_exam_upload");
 
     mod_MCOL_dict.columns.btn_orderlist = {
@@ -68,7 +69,14 @@ document.addEventListener('DOMContentLoaded', function() {
         secret_exam : "Designated_exam",
         datum : "Date",
         begintijd : "Start_time",
-        eindtijd : "End_time"
+        eindtijd : "End_time",
+        has_errata: "Has_errata"
+    };
+    mod_MCOL_dict.columns.btn_enveloplabel = {
+        is_variablenumber: "Variable_number_envelops",
+        numberinenvelop: "Number_of_envelops",
+        numberofenvelops: "Items_per_envelop",
+        is_errata: "Is_errata_label"
     };
 
 // --- get field_settings
@@ -86,15 +94,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l", "l",
                                     "r", "r", "r", "l", "c"]
                      },
-
         ete_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Department", "Learning_path", "Version",
-                                "Exam_period", "Designated_exam_2lines", "Date", "Start_time", "End_time",  "Label_bundle", ""],
+                                "Exam_period", "Designated_exam_2lines", "Date", "Start_time", "End_time", "Has_errata",   "Label_bundle", ""],
                 field_names: ["select", "subjbase_code", "subj_name_nl", "depbase_code", "lvl_abbrev", "version",
-                                "examperiod", "secret_exam", "datum", "begintijd", "eindtijd", "bundle_name", "download"],
+                                "examperiod", "secret_exam", "datum", "begintijd", "eindtijd", "has_errata",  "bundle_name", "download"],
                 field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "input", "input", "input", "div", "div", "div"],
-                filter_tags: ["text",  "text", "text", "text", "text", "text", "text", "toggle", "text", "text", "text", "text", ""],
-                field_width: ["020", "075", "240", "120", "120", "120", "150", "090", "120", "120", "120", "240", "060"],
-                field_align: ["c", "c", "l", "c", "c", "l", "c", "c", "c", "c", "c", "l", "c"]
+                filter_tags: ["text",  "text", "text", "text", "text", "text", "text", "toggle", "text", "text", "text", "toggle",   "text", ""],
+                field_width: ["020", "075", "240", "120", "120", "120", "150", "090", "120", "120", "120", "090", "240", "060"],
+                field_align: ["c", "c", "l", "c", "c", "l", "c", "c", "c", "c", "c", "c", "l", "c"]
                 },
 
         envelopbundle: {field_caption: ["", "Bundle_name"],
@@ -104,12 +111,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["020", "240"],
                     field_align: ["c", "l"]
                     },
-        enveloplabel: {field_caption: ["", "Label_name", "Number_of_envelops", "Exams_per_envelop"],
-                    field_names: ["select", "name", "numberfixed", "numberperexam"],
-                    field_tags: ["div", "div", "div", "div"],
-                    filter_tags: ["", "text", "text","text"],
-                    field_width:  ["020", "240", "120", "120"],
-                    field_align: ["c", "l", "c",  "c"]
+        enveloplabel: {field_caption: ["", "Label_name", "Variable_number_envelops_2lines", "Number_of_envelops", "Items_per_envelop", "Is_errata_label",],
+                    field_names: ["select", "name", "is_variablenumber", "numberofenvelops", "numberinenvelop", "is_errata"],
+                    field_tags: ["div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["", "text", "text","text", "text","text"],
+                    field_width:  ["020", "240", "090", "120", "120", "090"],
+                    field_align: ["c", "l", "c",  "c", "c",  "c"]
                      },
         envelopitem: {field_caption: ["", "Content", "Instruction"],
                     field_names: ["select", "content_nl", "instruction_nl"],
@@ -188,20 +195,32 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MODAL ENVELOP LABELS
         const el_MENVLAB_header = document.getElementById("id_MENVLAB_header");
 
+
         const el_MENVLAB_label_available = document.getElementById("id_MENVLAB_label_available");
         const el_MENVLAB_label_selected = document.getElementById("id_MENVLAB_label_selected");
         const el_MENVLAB_label_name = document.getElementById("id_MENVLAB_label_name");
+        const el_MENVLAB_name_err = document.getElementById("id_MENVLAB_name_err");
+
         const el_MENVLAB_number_container = document.getElementById("id_MENVLAB_number_container");
+        const el_MENVLAB_number_err = document.getElementById("id_MENVLAB_number_err");
 
         const el_MENVLAB_tblBody_available = document.getElementById("id_MENVLAB_tblBody_available");
         const el_MENVLAB_tblBody_selected = document.getElementById("id_MENVLAB_tblBody_selected");
 
         const el_MENVLAB_name = document.getElementById("id_MENVLAB_name");
-        if(el_MENVLAB_name){el_MENVLAB_name.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_name)}, false)}
-        const el_MENVLAB_numberfixed = document.getElementById("id_MENVLAB_numberfixed");
-        if(el_MENVLAB_numberfixed){el_MENVLAB_numberfixed.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_numberfixed)}, false)}
-        const el_MENVLAB_numberperexam = document.getElementById("id_MENVLAB_numberperexam");
-        if(el_MENVLAB_numberperexam){el_MENVLAB_numberperexam.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_numberperexam)}, false)}
+        el_MENVLAB_name.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_name)}, false);
+
+        const el_MENVLAB_variable_number = document.getElementById("id_MENVLAB_variable_number");
+        el_MENVLAB_variable_number.addEventListener("click", function() {MENVLAB_InputToggle(el_MENVLAB_variable_number)}, false);
+        const el_MENVLAB_errata = document.getElementById("id_MENVLAB_errata");
+        el_MENVLAB_errata.addEventListener("click", function() {MENVLAB_InputToggle(el_MENVLAB_errata)}, false);
+
+        const el_MENVLAB_numberinenvelop_label = document.getElementById("id_MENVLAB_numberinenvelop_label");
+
+        const el_MENVLAB_numberinenvelop = document.getElementById("id_MENVLAB_numberinenvelop");
+        el_MENVLAB_numberinenvelop.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_numberinenvelop)}, false);
+        const el_MENVLAB_numberofenvelops = document.getElementById("id_MENVLAB_numberofenvelops");
+        el_MENVLAB_numberofenvelops.addEventListener("keyup", function() {MENVLAB_InputKeyup(el_MENVLAB_numberofenvelops)}, false);
 
         const el_MENVLAB_btn_delete = document.getElementById("id_MENVLAB_btn_delete");
         if(el_MENVLAB_btn_delete){el_MENVLAB_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete_bundle_or_label")}, false)}
@@ -229,18 +248,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_MENVIT_btn_save){ el_MENVIT_btn_save.addEventListener("click", function() {MENVIT_Save("save")}, false)}
 
 
-// ---  MOD EX3 FORM ------------------------------------
-    const el_MENVPR_hdr = document.getElementById("id_MENVPR_hdr");
+// ---  MOD PRINT ENVELOP LABELS ------------------------------------
     const el_MENVPR_loader = document.getElementById("id_MENVPR_loader");
-    const el_MENVPR_select_layout = document.getElementById("id_MENVPR_select_layout");
+    const el_MENVPR_select_errata = document.getElementById("id_MENVPR_select_errata");
     const el_MENVPR_layout_option_level = document.getElementById("id_MENVPR_layout_option_level");
 
-    const el_MENVPR_select_level = document.getElementById("id_MENVPR_select_level");
-    if (el_MENVPR_select_level){
-        el_MENVPR_select_level.addEventListener("change", function() {MENVPR_SelectLevelHasChanged()}, false )
-    }
-    const el_MENVPR_tblBody_available = document.getElementById("id_MENVPR_tblBody_available");
-    const el_MENVPR_tblBody_selected = document.getElementById("id_MENVPR_tblBody_selected");
+    const el_MENVPR_tblBody_school = document.getElementById("id_MENVPR_tblBody_school");
+    const el_MENVPR_tblBody_exam = document.getElementById("id_MENVPR_tblBody_exam");
     const el_MENVPR_btn_save = document.getElementById("id_MENVPR_btn_save");
     if (el_MENVPR_btn_save){
         el_MENVPR_btn_save.addEventListener("click", function() {MENVPR_Save()}, false )
@@ -421,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.New_label_item, function() {MENVIT_Open()}, ["tab_show", "tab_btn_item"]);
                 AddSubmenuButton(el_submenu, loc.Delete_label_item, function() {ModConfirmOpen("delete_envelopitem")}, ["tab_show", "tab_btn_item"]);
 
-                //AddSubmenuButton(el_submenu, loc.Print_labels, function() {MENVPR_Open()}, ["tab_show", "tab_btn_ete_exam", "tab_btn_bundle"]);
+                AddSubmenuButton(el_submenu, loc.Print_labels, function() {MENVPR_Open()}, ["tab_show", "tab_btn_ete_exam", "tab_btn_bundle"]);
             };
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_orderlist")}, [], "id_submenu_columns")
 
@@ -523,8 +537,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // reset sbr department when tblName is blank, otherwise: update
         if (is_dep || tblName == null ) {
             selected.department_pk = null;
+            selected.depbase_pk = null;
             if (!isEmpty(data_dict)) {
                 selected.department_pk = data_dict.id;
+                selected.depbase_pk = data_dict.base_id;
                 if(data_dict.lvl_req) { selected.level_req = true };
             };
         };
@@ -532,6 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // show leerweg only when dep is set to vsbo
         if (!selected.level_req){
             selected.level_pk =  null;
+            selected.lvlbase_pk =  null;
             if (el_SBR_select_level){ el_SBR_select_level.value = null};
         };
         add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !selected.level_req );
@@ -539,8 +556,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // reset sbr level when tblName is blank, otherwise: update
         if (is_lvl || tblName == null ){
             selected.level_pk = null;
+            selected.lvlbase_pk =  null;
             if (!isEmpty(data_dict)) {
                 selected.level_pk = data_dict.id;
+                selected.lvlbase_pk = data_dict.base_id;
             };
         };
         FillTblRows();
@@ -895,7 +914,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_align = field_setting.field_align;
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
-    //console.log("field_names", field_names);
 
 // ---  lookup index where this row must be inserted
         const ob1 = (tblName === "orderlist") ? (data_dict.schbase_code) ? data_dict.schbase_code : "" :
@@ -966,14 +984,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.addEventListener("change", function() {UploadInputChange(tblName, el)}, false);
                     //el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
 
+                } else if (field_name === "has_errata"){
+                    el.addEventListener("click", function() {UploadInputToggle(el)}, false);
+                                        td.classList.add("pointer_show");
+                    add_hover(td);
+
                 } else if (["content_nl", "instruction_nl"].includes(field_name)){
                     td.addEventListener("click", function() {MENVIT_Open(el)}, false)
                     td.classList.add("pointer_show");
                     add_hover(td);
-                } else if (["name", "numberperexam", "numberfixed"].includes(field_name)){
+
+                } else if (["name", "is_variablenumber", "numberofenvelops", "numberinenvelop", "is_errata"].includes(field_name)){
                     td.addEventListener("click", function() {MENVLAB_Open(tblName, el)}, false)
                     td.classList.add("pointer_show");
                     add_hover(td);
+
                 } else if (field_name === "bundle_name"){
                     td.addEventListener("click", function() {MSSSS_Open(td)}, false)
                     td.classList.add("pointer_show");
@@ -1018,9 +1043,11 @@ document.addEventListener('DOMContentLoaded', function() {
     //console.log("fld_value", fld_value);
             if(field_name){
                 let filter_value = null;
-                if (field_name === "secret_exam"){
+
+                if (["secret_exam", "has_errata", "is_variablenumber", "is_errata"].includes(field_name)){
                     filter_value = (fld_value) ? "1" : "0";
                     el_div.className = (fld_value) ? "tickmark_1_2" : "tickmark_0_0";
+
                 } else  if (["datum", "begintijd", "eindtijd"].includes(field_name)){
                     el_div.value = fld_value;
 
@@ -1098,6 +1125,42 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }  // UploadInputChange
 
+//========= UploadInputToggle  ============= PR2022-05-16 PR2022-08-20
+    function UploadInputToggle(el_input) {
+        console.log( " ==== UploadInputToggle ====");
+        console.log( "el_input", el_input);
+
+        // only called in secret_exam, can be duo and ete exam
+        if (permit_dict.permit_crud){
+            const tblRow = t_get_tablerow_selected(el_input);
+            const exam_pk = get_attr_from_el_int(tblRow, "data-pk");
+            const fldName = get_attr_from_el(el_input, "data-field");
+
+            const data_rows = ete_exam_rows;
+            const data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", exam_pk);
+            if(!isEmpty(data_dict)){
+                const old_value = data_dict[fldName];
+                const subject_pk = data_dict.subj_id;
+                const examyear_pk = data_dict.ey_id;
+                console.log( "data_dict", data_dict);
+
+                const new_value = (!old_value);
+
+                // ---  change icon, before uploading
+                add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+
+                // ---  upload changes
+                const upload_dict = {
+                    table: "ete_exam",
+                    examyear_pk: examyear_pk,
+                    exam_pk: exam_pk,
+                    subject_pk: subject_pk
+                };
+                upload_dict[fldName] = new_value;
+                UploadChanges(upload_dict, urls.url_exam_upload);
+            };
+        };
+    }  // UploadInputToggle
 
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
@@ -1157,6 +1220,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("publish_orderlist_msg_html" in response) {
                         MPUBORD_UpdateFromResponse(response);
                     };
+                    if ("updated_envelop_exam_rows" in response) {
+                        MENVPR_UpdateFromResponse(response);
+                    };
+
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -1725,7 +1792,15 @@ document.addEventListener('DOMContentLoaded', function() {
             mod_MENV_dict.is_bundle = (tblName === "envelopbundle")
         console.log("mod_MENV_dict", mod_MENV_dict)
 // --- get existing data_dict from enveloplabel_rows
-            if(!mod_MENV_dict.is_addnew){
+            if(mod_MENV_dict.is_addnew){
+                if (!mod_MENV_dict.is_bundle){
+                    mod_MENV_dict.is_errata = false;
+                    mod_MENV_dict.is_variablenumber = false;
+                    mod_MENV_dict.numberinenvelop = 1;
+                    mod_MENV_dict.numberofenvelops = 1;
+                    mod_MENV_dict.max_sequence = 0;
+                };
+            } else {
                 const tblRow = t_get_tablerow_selected(el_input);
                 const pk_int = get_attr_from_el_int(tblRow, "data-pk");
 
@@ -1736,8 +1811,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!isEmpty(data_dict)) {
                     mod_MENV_dict.parent_pk = data_dict.id;
                     mod_MENV_dict.parent_name = data_dict.name;
-                    mod_MENV_dict.numberfixed = data_dict.numberfixed;
-                    mod_MENV_dict.numberperexam = data_dict.numberperexam;
+                    mod_MENV_dict.is_errata = !!data_dict.is_errata;
+                    mod_MENV_dict.is_variablenumber = !!data_dict.is_variablenumber;
+                    mod_MENV_dict.numberinenvelop = data_dict.numberinenvelop;
+                    mod_MENV_dict.numberofenvelops = data_dict.numberofenvelops;
+                    mod_MENV_dict.max_sequence = 0;
                     mod_MENV_dict.modby_username = data_dict.modby_username;
                     mod_MENV_dict.modifiedat = data_dict.modifiedat;
                 }
@@ -1773,7 +1851,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MENVLAB_btn_delete.innerText = (mod_MENV_dict.is_bundle) ?loc.Delete_bundle : loc.Delete_label;
             add_or_remove_class(el_MENVLAB_btn_delete, cls_hide, mod_MENV_dict.is_addnew );
 
-            MENVLAB_validate_and_disable();
+            MENVLAB_validate_and_disable(!!mod_MENV_dict.is_addnew);
 
             set_focus_on_el_with_timeout(el_MENVLAB_name, 50);
 // show modal
@@ -1791,16 +1869,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const is_delete = (crud_mode === "delete");
             const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
 
-    // ---  put changed values of input elements in upload_dict
-            const parent_name = el_MENVLAB_name.value;
-            const numberfixed = (el_MENVLAB_numberfixed.value && Number(el_MENVLAB_numberfixed.value)) ? Number(el_MENVLAB_numberfixed.value) : null;
-            const numberperexam = (el_MENVLAB_numberperexam.value && Number(el_MENVLAB_numberperexam.value)) ? Number(el_MENVLAB_numberperexam.value) : null;
-
+    // ---  put values of input elements in upload_dict
             let upload_dict = {
                 table: (mod_MENV_dict.is_bundle) ? "envelopbundle" : "enveloplabel",
                 mode: upload_mode,
                 parent_pk: mod_MENV_dict.parent_pk,
-                name: parent_name
+                name: mod_MENV_dict.parent_name
             };
 
             const uniontable_list = [];
@@ -1831,29 +1905,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
             if (!mod_MENV_dict.is_bundle) {
-                upload_dict.numberfixed = numberfixed;
-                upload_dict.numberperexam = numberperexam;
-                if (uniontable_list && uniontable_list.length){
-                    upload_dict.uniontable = uniontable_list;
-                };
-            } else {
+                upload_dict.is_errata = mod_MENV_dict.is_errata;
+                upload_dict.is_variablenumber = mod_MENV_dict.is_variablenumber;
+                upload_dict.numberinenvelop = mod_MENV_dict.numberinenvelop;
+                upload_dict.numberofenvelops = mod_MENV_dict.numberofenvelops;
                 if (uniontable_list && uniontable_list.length){
                     upload_dict.uniontable = uniontable_list;
                 };
             };
+            if (uniontable_list && uniontable_list.length){
+                upload_dict.uniontable = uniontable_list;
+            };
 
             const url_str = (mod_MENV_dict.is_bundle) ? urls.url_envelopbundle_upload : urls.url_enveloplabel_upload;
+    console.log( "url_str: ", url_str);
+    console.log( "upload_dict: ", upload_dict);
             UploadChanges(upload_dict, url_str);
         };
     // ---  hide modal
             $("#id_mod_enveloplabel").modal("hide");
     } ; // MENVLAB_Save
 
+//========= MENVLAB_FillDictlist  ============= PR2022-08-18
     function MENVLAB_FillDictlist(){
        //console.log(" -----  MENVLAB_FillDictlist   ----")
 
 // - reset picklist
         mod_MENV_dict.picklist = [];
+        mod_MENV_dict.max_sequence = 0;
 
 // - get parent_pk, this is the pk of the current bundle or current label
         const parent_pk = mod_MENV_dict.parent_pk;
@@ -1869,8 +1948,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const picklist_pk = picklist_dict.id;
             const picklist_name = (picklist_dict.name) ? picklist_dict.name : "";
             const picklist_sortby = (mod_MENV_dict.is_bundle) ? picklist_dict.name : picklist_dict.content_nl;
-    //console.log("    picklist_pk", picklist_pk)
-    //console.log("    picklist_sortby", picklist_sortby)
 
             let is_selected = false, uniontable_pk = null, uniontable_sequence = null;
             if (picklist_pk){
@@ -1889,6 +1966,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 break;
                 }}}};
             };
+            if (uniontable_sequence) {
+                if (uniontable_sequence > mod_MENV_dict.max_sequence) {
+                    mod_MENV_dict.max_sequence = uniontable_sequence;
+                };
+            } else {
+                mod_MENV_dict.max_sequence += 1;
+                uniontable_sequence = mod_MENV_dict.max_sequence;
+            };
             mod_MENV_dict.picklist.push({
                 picklist_pk: picklist_pk,
                 uniontable_pk: uniontable_pk,
@@ -1904,7 +1989,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVLAB_FillTable  ============= PR2022-08-06
     function MENVLAB_FillTable(just_linked_unlinked_pk) {
-        console.log("===== MENVLAB_FillTable ===== ");
+        //console.log("===== MENVLAB_FillTable ===== ");
 
         el_MENVLAB_tblBody_available.innerText = null;
         el_MENVLAB_tblBody_selected.innerText = null;
@@ -1912,8 +1997,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_rows = mod_MENV_dict.picklist;
         if (data_rows && data_rows.length) {
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-            console.log("data_dict", data_dict);
-            console.log("data_dict.selected", data_dict.selected);
                 const tblBody = (data_dict.selected) ? el_MENVLAB_tblBody_selected : el_MENVLAB_tblBody_available;
                 MENVLAB_CreateTblRow(tblBody, data_dict, data_dict.selected,  just_linked_unlinked_pk);
             };
@@ -1925,20 +2008,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVLAB_CreateTblRow  ============= PR2022-08-06
     function MENVLAB_CreateTblRow(tblBody, data_dict, is_table_selected, just_linked_unlinked_pk) {
-        //console.log("===== MENVLAB_CreateTblRow ===== ");
-        //console.log("   data_dict", data_dict);
+        console.log("===== MENVLAB_CreateTblRow ===== ");
+        console.log("   data_dict", data_dict);
+        console.log("   just_linked_unlinked_pk", just_linked_unlinked_pk);
 
 //--- get info from data_dict
         const pk_int = (data_dict.picklist_pk) ? data_dict.picklist_pk : null;
         const caption = (data_dict.sortby) ? data_dict.sortby : "---";
 
-    //console.log("   pk_int", pk_int);
-    //console.log("   caption", caption);
         const is_just_linked = (pk_int === just_linked_unlinked_pk);
 
 // ---  lookup index where this row must be inserted
         // available items are sorted by name (sortby), selected items are sorted by sequence
-        const ob1 = (data_dict.selected && data_dict.sequence) ? ("0000" + data_dict.sequence).slice(-4) : "0000";
+        const ob1 = (data_dict.selected && data_dict.uniontable_sequence) ? ("0000" + data_dict.uniontable_sequence).slice(-4) : "0000";
         const ob2 = (caption) ? caption.toLowerCase() : "";
         const row_index = b_recursive_tblRow_lookup(tblBody, loc.user_lang, ob1, ob2);
 
@@ -1978,13 +2060,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.innerHTML = "&#9651;"
                 el_div.title = loc.Click_to_move_item_up;
             td.appendChild(el_div);
+            td.addEventListener("click", function() {MENVLAB_UpDown("up", tblRow)}, false);
             td = tblRow.insertCell(-1);
             el_div = document.createElement("div");
                 el_div.classList.add("tw_020")
                 el_div.innerHTML = "&#9661;"
                 el_div.title = loc.Click_to_move_item_down;
             td.appendChild(el_div);
+            td.addEventListener("click", function() {MENVLAB_UpDown("down", tblRow)}, false);
         };
+
+    // --- if new appended row or position has changed: highlight row for 1 second
+        if (is_just_linked) {
+            let cell = tblRow.cells[0];
+            tblRow.classList.add("tsa_td_unlinked_selected");
+            setTimeout(function (){  tblRow.classList.remove("tsa_td_unlinked_selected")  }, 1000);
+        };
+
     }; // MENVLAB_CreateTblRow
 
 //=========  MENVLAB_SelectItem  ================ PR2022-08-07
@@ -2002,74 +2094,228 @@ document.addEventListener('DOMContentLoaded', function() {
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
                 if (data_dict.picklist_pk === pk_int){
                     data_dict.selected = !data_dict.selected;
+                    if (data_dict.selected){
+                        mod_MENV_dict.max_sequence += 1;
+                        data_dict.uniontable_sequence = mod_MENV_dict.max_sequence;
+                    } else {
+                        data_dict.uniontable_sequence = null;
+                    }
                     just_linked_unlinked_pk = data_dict.picklist_pk;
                     break;
                 };
             };
-    //console.log( "just_linked_unlinked_pk", just_linked_unlinked_pk);
+    console.log( "just_linked_unlinked_pk", just_linked_unlinked_pk);
 
         MENVLAB_FillTable(just_linked_unlinked_pk);
+                MENVLAB_validate_and_disable();
 
-        console.log( "mod_MENV_dict.items", mod_MENV_dict.items);
 // ---  save and close
             //MENVLAB_Save();
         }
     }  // MENVLAB_SelectItem
 
-//=========  MENVLAB_InputKeyup  ================ PR2022-08-08
+//=========  MENVLAB_InputKeyup  ================ PR2022-08-18
     function MENVLAB_InputKeyup(el_input) {
         //console.log( "===== MENVLAB_InputKeyup  ========= ");
         const fldName = get_attr_from_el(el_input, "data-field");
-// ---  get value of new_filter
+
+        const err_fields = MENVLAB_validate_and_disable();
+
         let new_value = el_input.value;
-        console.log( "new_value", new_value);
-        if(!new_value) {
-
-        } else {
-
-            if (["numberperexam", "numberfixed"].includes(fldName)) {
-                if(!Number(new_value)){
-                    el_input.value = null;
-        //console.log( "not Number");
-                } else {
-                    const value_number = Number(new_value);
-        //console.log( "value_number", value_number);
-                    if(!Number.isInteger(value_number)){
-                        el_input.value = null;
-        //console.log( "not Number.isInteger");
-                    } else {
-                        if (!value_number){
-                            el_input.value = null;
-                        } else {
-                            if (fldName === "numberperexam") {
-                                mod_MENV_dict.numberperexam = value_number;
-                                mod_MENV_dict.numberfixed = null;
-                                el_MENVLAB_numberfixed.value = null;
-                            } else if (fldName === "numberfixed") {
-                                mod_MENV_dict.numberfixed = value_number;
-                                mod_MENV_dict.el_MENVLAB_numberperexam = null;
-                                el_MENVLAB_numberperexam.value = null;
-                            };
-                        };
-                    };
-                };
-            } else {
-            //el_MENVLAB_name
-            };
+        if (fldName === "name" && !err_fields.includes(fldName)) {
+            mod_MENV_dict.parent_name = (new_value) ? new_value : null;
+        } else if (fldName === "numberofenvelops" && !err_fields.includes(fldName)) {
+            mod_MENV_dict.numberofenvelops = (Number(new_value)) ? Number(new_value) : null;
+        } else if (fldName === "numberinenvelop" && !err_fields.includes(fldName)) {
+            mod_MENV_dict.numberinenvelop = (Number(new_value)) ? Number(new_value) : null;
         };
     }; // MENVLAB_InputKeyup
 
-//=========  MENVLAB_validate_and_disable  ================  PR2022-08-06
-    function MENVLAB_validate_and_disable(crud_mode) {
-        console.log(" -----  MENVLAB_validate_and_disable  ----", crud_mode);
+//========= MENVLAB_InputToggle  ============= PR2022-08-18
+    function MENVLAB_InputToggle(el_input){
+        console.log( "===== MENVLAB_InputToggle  ========= ");
+        const data_field = get_attr_from_el(el_input, "data-field")
+    // toggle value
+        if (data_field === "is_variablenumber"){
+            mod_MENV_dict.is_variablenumber = !mod_MENV_dict.is_variablenumber;
+
+            if (mod_MENV_dict.is_variablenumber){
+                mod_MENV_dict.numberinenvelop = 15;
+                mod_MENV_dict.numberofenvelops = null;
+            } else {
+                mod_MENV_dict.numberinenvelop = 1;
+                mod_MENV_dict.numberofenvelops = 1;
+            };
+            el_MENVLAB_numberinenvelop.value = mod_MENV_dict.numberinenvelop;
+            el_MENVLAB_numberofenvelops.value = mod_MENV_dict.numberofenvelops;
+
+        } else {
+            mod_MENV_dict.is_errata = !mod_MENV_dict.is_errata;
+        };
+        MENVLAB_validate_and_disable();
+        MENVLAB_SetInputElements();
+    }; // MENVLAB_InputToggle
+
+//========= MENVLAB_UpDown  ============= PR2022-08-18
+    function MENVLAB_UpDown(mode, tblRow){
+        console.log( "===== MENVLAB_UpDown  ========= ");
+
+        const this_picklist_dict = MENVLAB_get_picklist_dict(tblRow);
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        const row_index = (tblRow) ? tblRow.rowIndex : 0
+
+        const tblBody = el_MENVLAB_tblBody_selected;
+
+        const rows_length = tblBody.rows.length;
+
+        console.log( "this_picklist_dict", this_picklist_dict);
+        let target_picklist_dict = null;
+        let this_sequence = (this_picklist_dict) ? this_picklist_dict.uniontable_sequence : null;
+
+        let target_index = null;
+        if (mode === "up"){
+            if (row_index > 0){target_index = row_index - 1};
+        } else if (row_index < rows_length -1){
+            target_index = row_index + 1;
+        };
+
+        if  (target_index != null){
+            target_picklist_dict = MENVLAB_get_picklist_dict(tblBody.rows[target_index]);
+        console.log( "target_picklist_dict", target_picklist_dict);
+            if (target_picklist_dict){
+                const target_sequence = target_picklist_dict.uniontable_sequence;
+        console.log( "target_sequence", target_sequence);
+                target_picklist_dict.uniontable_sequence = this_sequence;
+                this_picklist_dict.uniontable_sequence = target_sequence;
+
+        console.log( "mod_MENV_dict.picklist", mod_MENV_dict.picklist);
+                mod_MENV_dict.sequence_has_changed = true;
+                MENVLAB_FillTable(pk_int);
+                MENVLAB_validate_and_disable();
+            };
+        };
+
+    }; // MENVLAB_UpDown
+
+//========= MENVLAB_UpDown  ============= PR2022-08-18
+    function MENVLAB_get_picklist_dict(tblRow){
+    // ---  get clicked tablerow
+        let picklist_dict = null;
+        if(tblRow) {
+            let just_linked_unlinked_pk = null;
+            const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+
+            const data_rows = mod_MENV_dict.picklist;
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                if (data_dict.picklist_pk === pk_int){
+                    picklist_dict = data_dict;
+                    break;
+                };
+            };
+        };
+        return picklist_dict;
+    };
+
+//=========  MENVLAB_validate_and_disable  ================  PR2022-08-18
+    function MENVLAB_validate_and_disable(is_addnew) {
+        console.log(" -----  MENVLAB_validate_and_disable  ----", is_addnew);
         console.log( "mod_MENV_dict: ", mod_MENV_dict);
+        // is_addnew = true only on opening new bundle / babel; is_addnew is always false after MENVLAB_InputKeyup
+        let err_fields = [];
+
+// ---  bundle name or label name
+        let value = el_MENVLAB_name.value;
+        let caption = (mod_MENV_dict.is_bundle) ? loc.Bundle_name : loc.Label_name;
+        let msg_err_name = null;
+        if (!value) {
+            if (!is_addnew) {msg_err_name = caption + loc.cannot_be_blank};
+        } else if (value.length > 50) {
+            msg_err_name = caption + loc.is_too_long_MAX50;
+        };
+        if (msg_err_name){
+            err_fields.push("name");
+        };
+
+        add_or_remove_class(el_MENVLAB_name, "border_bg_invalid", msg_err_name);
+        add_or_remove_class(el_MENVLAB_name_err.parentNode, cls_hide, !msg_err_name);
+        el_MENVLAB_name_err.innerText = msg_err_name;
+
+        if (!mod_MENV_dict.is_bundle){
+        console.log( "mod_MENV_dict.is_variablenumber: ", mod_MENV_dict.is_variablenumber);
+// ---  number of envelops
+            value = el_MENVLAB_numberofenvelops.value;
+            let msg_err_numberof = null;
+            if (!mod_MENV_dict.is_variablenumber){
+                caption = loc.Number_of_envelops;
+                if(!value){
+                    if (!is_addnew) {msg_err_numberof = loc.Number_of_envelops + loc.cannot_be_blank};
+                } else {
+                    const value_number = Number(value);
+                    if(!value_number || !Number.isInteger(value_number)){
+                        msg_err_numberof = [caption, " '", value, "' ", loc.err_msg_is_invalid_number].join("");
+                    };
+                };
+            };
+        console.log( "msg_err_numberof: ", msg_err_numberof);
+            if (msg_err_numberof){
+                err_fields.push("numberofenvelops");
+            };
+            add_or_remove_class(el_MENVLAB_numberofenvelops, "border_bg_invalid", msg_err_numberof);
+
+// ---  number in envelops
+            value = el_MENVLAB_numberinenvelop.value;
+            let msg_err_numberin = null;
+            caption = (mod_MENV_dict.is_variablenumber) ?  loc.Max_number_in_envelop : loc.Number_in_envelop;
+            if(!value){
+                if (!is_addnew) {msg_err_numberin = caption + loc.cannot_be_blank};
+            } else {
+                const value_number = Number(value);
+                if(!value_number || !Number.isInteger(value_number)){
+                    msg_err_numberin = [caption, " '", value, "' ", loc.err_msg_is_invalid_number].join("");
+                };
+            };
+            if (msg_err_numberin){
+                err_fields.push("numberinenvelop");
+            };
+            add_or_remove_class(el_MENVLAB_numberinenvelop, "border_bg_invalid", msg_err_numberin);
+
+            add_or_remove_class(el_MENVLAB_number_err.parentNode, cls_hide, (!msg_err_numberof && !msg_err_numberin))
+            let msg_html = null;
+            if (msg_err_numberof){
+                if (msg_err_numberin) {
+                    msg_html = [msg_err_numberof, msg_err_numberin].join("<br>");
+                } else {
+                    msg_html =  msg_err_numberof;
+                };
+            } else {
+                if (msg_err_numberin) {
+                    msg_html = msg_err_numberin;
+                };
+            }
+            el_MENVLAB_number_err.innerHTML = msg_html;
+
+        };
+
+        el_MENVLAB_btn_save.disabled = (err_fields.length || is_addnew);
+
+        return err_fields;
     };  // MENVLAB_validate_and_disable
 
-//=========  MENVLAB_SetInputElements  ================  PR2022-08-08
+//=========  MENVLAB_SetInputElements  ================  PR2022-08-18
     function MENVLAB_SetInputElements() {
-        el_MENVLAB_name.value = (mod_MENV_dict.name) ? mod_MENV_dict.name : null;
-        el_MENVLAB_numberfixed.value = (mod_MENV_dict.numberfixed) ? mod_MENV_dict.numberfixed : null;
-        el_MENVLAB_numberperexam.value = (mod_MENV_dict.numberperexam) ? mod_MENV_dict.numberperexam : null;
+        console.log(" -----  MENVLAB_SetInputElements  ----");
+        console.log("mod_MENV_dict.parent_name", mod_MENV_dict.parent_name);
+        console.log("mod_MENV_dict", mod_MENV_dict);
+        el_MENVLAB_name.value = (mod_MENV_dict.parent_name) ? mod_MENV_dict.parent_name : null;
+        el_MENVLAB_numberinenvelop.value = (mod_MENV_dict.numberinenvelop) ? mod_MENV_dict.numberinenvelop : null;
+        el_MENVLAB_numberofenvelops.value = (mod_MENV_dict.numberofenvelops) ? mod_MENV_dict.numberofenvelops : null;
+
+        add_or_remove_class(el_MENVLAB_variable_number.children[0], "tickmark_2_2", (mod_MENV_dict.is_variablenumber), "tickmark_1_1");
+        add_or_remove_class(el_MENVLAB_errata.children[0], "tickmark_2_2", (mod_MENV_dict.is_errata), "tickmark_1_1");
+        el_MENVLAB_numberinenvelop_label.innerText = ((mod_MENV_dict.is_variablenumber) ? loc.Max_number_in_envelop : loc.Number_in_envelop) + ":";
+        el_MENVLAB_numberofenvelops.readOnly = (mod_MENV_dict.is_variablenumber);
+
+
     };  // MENVLAB_SetInputElements
 
 
@@ -2239,52 +2485,34 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };  // MENVIT_SetElements
 
-// +++++++++ MOD EX3 FORM++++++++++++++++ PR2021-10-06
+// +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20
     function MENVPR_Open(){
         console.log(" -----  MENVPR_Open   ----")
             console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
-        mod_MENV_dict = {};
-        //PR2022-03-15 debug tel Richard Westerink: gives 'Ex3 Exemption'
-    setting_dict.sel_examperiod = 1;
-        if (![1,2,3].includes(setting_dict.sel_examperiod)){
+
+        b_clear_dict(mod_MENV_dict);
+        mod_MENV_dict.ete_exam_rows = ete_exam_rows;
+        mod_MENV_dict.examperiod = setting_dict.sel_examperiod;
+
+        if (![1,2,3].includes(mod_MENV_dict.examperiod)){
             b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_examperiod + "</div>");
 
         } else {
-            console.log("level_map", level_map)
-    // ---  fill select level or hide
-            if (setting_dict.sel_dep_level_req){
-                // HTML code "&#60" = "<" HTML code "&#62" = ">";
-                const first_item = ["&#60", loc.All_levels, "&#62"].join("");
-                el_MENVPR_select_level.innerHTML = t_FillOptionLevelSectorFromMap("level", "base_id", level_map,
-                    setting_dict.sel_depbase_pk, null, first_item);
-            }
-    // hide option 'level' when havo/vwo
-            if(el_MENVPR_layout_option_level){
-                add_or_remove_class(el_MENVPR_layout_option_level, cls_hide, !setting_dict.sel_dep_level_req);
-            }
-            if(el_MENVPR_select_layout){
-                const select_size = (setting_dict.sel_dep_level_req) ? "4" : "3";
-                el_MENVPR_select_layout.setAttribute("size", select_size);
-            }
-    // hide element 'select_level' when havo/vwo
-            add_or_remove_class(el_MENVPR_select_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
-
-    // - set header text
-            el_MENVPR_hdr.innerText = [loc.Ex3, loc.Proces_verbaal_van_Toezicht].join("  -  ");
 
     // ---  reset layout options
-            MENVPR_reset_layout_options();
+            el_MENVPR_select_errata.value = "no_errata";
 
     // ---  reset tblBody available and selected
-            el_MENVPR_tblBody_available.innerText = null;
-            el_MENVPR_tblBody_selected.innerText = null;
+            el_MENVPR_tblBody_school.innerText = null;
+            el_MENVPR_tblBody_exam.innerText = null;
 
     // ---  disable save btn
             el_MENVPR_btn_save.disabled = true;
 
     // ---  get info from server
-            MENVPR_getinfo_from_server()
+            MENVPR_getinfo_from_server();
 
+            MENVPR_FillTblExams();
     // ---  show modal
             $("#id_mod_envelop_print").modal({backdrop: true});
         };
@@ -2293,45 +2521,49 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MENVPR_Save  ============= PR2021-10-07
     function MENVPR_Save(){
         console.log(" -----  MENVPR_Save   ----")
-        const subject_list = [];
-
-// ---  loop through id_MENVPR_select_level and collect selected lvlbase_pk's
-        const sel_lvlbase_pk_list = MENVPR_get_sel_lvlbase_pk_list();
-        console.log("mod_MENV_dict.sel_lvlbase_pk_list", mod_MENV_dict.sel_lvlbase_pk_list)
+        const schoolbase_list = [];
+        const exam_pk_list = [];
 
 // ---  get de selected value of
-        const selected_layout_value = (el_MENVPR_select_layout.value) ? el_MENVPR_select_layout.value : "none";
+        const selected_layout_value = (el_MENVPR_select_errata.value) ? el_MENVPR_select_errata.value : null;
 
-// ---  loop through mod_MENV_dict.subject_rows and collect selected subject_pk's
+// ---  loop through mod_MENV_dict.school_rows and collect selected subject_pk's
         // PR2021-10-09 debug: also filter lvlbase_pk, because they stay selected when unselecting level
-        if (mod_MENV_dict.subject_rows && mod_MENV_dict.subject_rows.length){
-            for (let i = 0, subj_row; subj_row = mod_MENV_dict.subject_rows[i]; i++) {
-                if(subj_row.selected){
-                    let add_row = false;
-                    if (mod_MENV_dict.lvlbase_pk_list && mod_MENV_dict.lvlbase_pk_list.length){
-                        if (subj_row.lvlbase_id_arr && subj_row.lvlbase_id_arr.length){
-                             for (let x = 0, lvlbase_id; lvlbase_id = subj_row.lvlbase_id_arr[x]; x++) {
-                                if (mod_MENV_dict.lvlbase_pk_list.includes(lvlbase_id)){
-                                    add_row = true;
-                                    break
-                        }}};
-                    } else {
-                        add_row = true;
-                    }
-                    if (add_row){
-                        subject_list.push(subj_row.subj_id);
+        if (mod_MENV_dict.school_rows && mod_MENV_dict.school_rows.length){
+            if (mod_MENV_dict.all_schools_selected) {
+                schoolbase_list.push(-1);
+            } else {
+                for (let i = 0, school_row; school_row = mod_MENV_dict.school_rows[i]; i++) {
+                    if(school_row.selected){
+                        schoolbase_list.push(school_row.sbase_id);
                     };
-                }  ;
+                };
             };
         };
-        // just for testing
-        subject_list.push(12);
 
-        if(subject_list.length){
+// ---  loop through mod_MENV_dict.ete_exam_rows and collect selected subject_pk's
+        // PR2021-10-09 debug: also filter lvlbase_pk, because they stay selected when unselecting level
+        if (mod_MENV_dict.ete_exam_rows && mod_MENV_dict.ete_exam_rows.length){
+
+            if (mod_MENV_dict.all_exams_selected) {
+                exam_pk_list.push(-1);
+            } else {
+                for (let i = 0, exam_row; exam_row = mod_MENV_dict.ete_exam_rows[i]; i++) {
+                    if(exam_row.selected){
+                        exam_pk_list.push(exam_row.id);
+                    };
+                };
+            };
+        };
+
+        if(schoolbase_list.length && exam_pk_list.length){
+            if (exam_pk_list.includes(-1)){
+                b_clear_array(exam_pk_list);
+            };
             const upload_dict = {
-                subject_list: subject_list,
-                sel_layout: selected_layout_value,
-                lvlbase_pk_list: sel_lvlbase_pk_list
+                exam_pk_list: exam_pk_list,
+                schoolbase_list: schoolbase_list,
+                sel_layout: selected_layout_value
             };
 
         console.log("upload_dict", upload_dict)
@@ -2356,137 +2588,150 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MENVPR_getinfo_from_server  ============= PR2021-10-06
     function MENVPR_getinfo_from_server() {
         console.log("  =====  MENVPR_getinfo_from_server  =====");
-        //el_MENVPR_loader.classList.remove(cls_hide);
-            el_MENVPR_btn_save.disabled = false;
+        el_MENVPR_loader.classList.remove(cls_hide);
+        el_MENVPR_btn_save.disabled = true;
 
-        //UploadChanges({check: true}, urls.url_envelop_print);
+        UploadChanges({check: true}, urls.url_envelop_print_check);
     }  // MENVPR_getinfo_from_server
 
-//========= MENVPR_UpdateFromResponse  ============= PR2021-10-08
+//========= MENVPR_UpdateFromResponse  ============= PR2022-08-19
     function MENVPR_UpdateFromResponse(response) {
         console.log("  =====  MENVPR_UpdateFromResponse  =====");
         console.log("response", response)
 
         el_MENVPR_loader.classList.add(cls_hide);
-        mod_MENV_dict.subject_rows = (response.ex3_subject_rows) ? response.ex3_subject_rows : [];
+
+        //mod_MENV_dict.exam_rows = (response.updated_envelop_exam_rows) ? response.updated_envelop_exam_rows : [];
+        mod_MENV_dict.school_rows = (response.updated_envelop_school_rows) ? response.updated_envelop_school_rows : [];
+        mod_MENV_dict.count_rows = (response.updated_envelop_count_rows) ? response.updated_envelop_count_rows : [];
+
         mod_MENV_dict.sel_examperiod = (response.sel_examperiod) ? response.sel_examperiod : null;
         mod_MENV_dict.examperiod_caption = (response.examperiod_caption) ? response.examperiod_caption : "---";
-        mod_MENV_dict.sel_layout = (response.sel_layout) ? response.sel_layout : "none";
+
         mod_MENV_dict.lvlbase_pk_list = (response.lvlbase_pk_list) ? response.lvlbase_pk_list : [];
 
-        el_MENVPR_select_layout.value = mod_MENV_dict.sel_layout;
-        // el_MENVPR_select_level is already reset in MEX#_Open with MENVPR_reset_layout_options
-        console.log("mod_MENV_dict.lvlbase_pk_list", mod_MENV_dict.lvlbase_pk_list)
-        if (mod_MENV_dict.lvlbase_pk_list && mod_MENV_dict.lvlbase_pk_list.length){
-            for (let i = 0, option; option = el_MENVPR_select_level.options[i]; i++) {
-                const lvlbase_pk_int = (Number(option.value)) ? Number(option.value) : null;
-                option.selected = (lvlbase_pk_int && mod_MENV_dict.lvlbase_pk_list && mod_MENV_dict.lvlbase_pk_list.includes(lvlbase_pk_int));
-            };
-        } else {
-            el_MENVPR_select_level.value = "0";
-        };
+        // TODO save sel_layout in usersettings
+       // el_MENVPR_select_errata.value = (response.sel_layout) ? response.sel_layout : null;
 
-// - set header text
-        el_MENVPR_hdr.innerText = [loc.Ex3, loc.Proces_verbaal_van_Toezicht, mod_MENV_dict.examperiod_caption].join("  -  ");
+        MENVPR_FillTblSchool();
 
-        MENVPR_FillTbls()
+// ---  enable save btn TODO: when there are schools or subejcts selected
+       el_MENVPR_btn_save.disabled = false;
 
-    }  // MENVPR_getinfo_from_server
+    }  // MENVPR_UpdateFromResponse
 
 //========= MENVPR_SelectLevelHasChanged  ============= PR2021-10-09
     function MENVPR_SelectLevelHasChanged() {
         mod_MENV_dict.lvlbase_pk_list = MENVPR_get_sel_lvlbase_pk_list();
-        MENVPR_FillTbls();
+        MENVPR_FillTblSubjects();
     }  // MENVPR_SelectLevelHasChanged
 
-//========= MENVPR_FillTbls  ============= PR2021-10-06
-    function MENVPR_FillTbls() {
-        console.log("===== MENVPR_FillTbls ===== ");
-        console.log("setting_dict", setting_dict);
-        console.log("permit_dict", permit_dict);
-        console.log("mod_MENV_dict.subject_rows", mod_MENV_dict.subject_rows);
-        console.log("mod_MENV_dict.lvlbase_pk_list", mod_MENV_dict.lvlbase_pk_list, typeof mod_MENV_dict.lvlbase_pk_list);
+//========= MENVPR_FillTblSchool  ============= PR2022-08-19
+    function MENVPR_FillTblSchool() {
+        console.log("===== MENVPR_FillTblSchool ===== ");
+        //console.log("mod_MENV_dict.school_rows", mod_MENV_dict.school_rows)
 
+        const tblBody = el_MENVPR_tblBody_school
 // ---  reset tblBody available and selected
-        el_MENVPR_tblBody_available.innerText = null;
-        el_MENVPR_tblBody_selected.innerText = null;
+        tblBody.innerText = null;
 
-        let has_subject_rows = false;
-        let has_selected_subject_rows = false;
+// ---  loop through mod_MENV_dict.school_rows
+        let has_selected_school_rows = false;
 
-// ---  loop through mod_MENV_dict.subject_rows, show only subjects with lvlbase_pk in lvlbase_pk_list
-        if (mod_MENV_dict.subject_rows && mod_MENV_dict.subject_rows.length){
-            for (let i = 0, subj_row; subj_row = mod_MENV_dict.subject_rows[i]; i++) {
-            // PR2022-06-13 tel Richard Westerink, Havo Vwo shows no subject.
-            // setting_dict.sel_dep_level_req added to filter
-                // subj_row.lvlbase_id_arr: [4]
-                let show_row = false;
-                if(!setting_dict.sel_dep_level_req){
-                    // skip when dep has no level (Havo, Vwo)
-                    show_row = true;
-                } else if (!mod_MENV_dict.lvlbase_pk_list || !mod_MENV_dict.lvlbase_pk_list.length){
-                    // skip when lvlbase_pk_list is empty ('all' levels selected)
-                    show_row = true;
-                } else {
-                    // loop through subj_row.lvlbase_id_arr and check if subject.levelbase is in lvlbase_pk_list
-                     for (let x = 0, lvlbase_id; lvlbase_id = subj_row.lvlbase_id_arr[x]; x++) {
-                        if (mod_MENV_dict.lvlbase_pk_list.includes(lvlbase_id)){
-                            show_row = true;
-                            break;
-                        };
-                     };
+        if (mod_MENV_dict.school_rows && mod_MENV_dict.school_rows.length){
+            if (mod_MENV_dict.school_rows.length > 1){
+                const all_row = {
+                    sbase_id: -1,
+                    sbase_code: " ",
+                    sch_name: "<" + loc.All_ + loc.Schools.toLowerCase() + ">"
                 };
+                MENVPR_CreateSelectRow("schools", tblBody, all_row);
+            }
+            for (let i = 0, school_row; school_row = mod_MENV_dict.school_rows[i]; i++) {
+                const depbases_list = (school_row.depbases) ? school_row.depbases.split(";") : []
+                const show_row = (!selected.depbase_pk || depbases_list.includes(selected.depbase_pk.toString()));
                 if (show_row){
-                    has_subject_rows = true;
-                    const has_selected_subjects = MENVPR_CreateSelectRow(subj_row);
-                    if(has_selected_subjects) {has_selected_subject_rows = true };
+                    const has_selected_schools = MENVPR_CreateSelectRow("schools", tblBody, school_row);
+                    if(has_selected_schools) {has_selected_school_rows = true };
                 };
             };
         };
+    }; // MENVPR_FillTblSchool
 
-        if (!has_subject_rows){
-            const no_students_txt = (mod_MENV_dict.sel_examperiod === 3) ? loc.No_studenst_examperiod_03 :
-                                    (mod_MENV_dict.sel_examperiod === 2) ? loc.No_studenst_examperiod_02 :
-                                    loc.No_studenst_with_subjects;
-            el_MENVPR_tblBody_available.innerHTML = [
-                "<p class='text-muted px-2 pt-2'>", no_students_txt, "</p>"
-            ].join("");
+//========= MENVPR_FillTblExams  ============= PR2022-08-19
+    function MENVPR_FillTblExams() {
+        //console.log("===== MENVPR_FillTblExams ===== ");
+        //console.log("mod_MENV_dict.ete_exam_rows", mod_MENV_dict.ete_exam_rows);
 
-// --- addrow 'Please_select_one_or_more_subjects' if no subjects selected
-        } else if(!has_selected_subject_rows){
-            el_MENVPR_tblBody_selected.innerHTML = [
-                "<p class='text-muted px-2 pt-2'>", loc.Please_select_one_or_more_subjects,
-                "</p><p class='text-muted px-2'>", loc.from_available_list, "</p>"
-            ].join("");
+        const tblBody = el_MENVPR_tblBody_exam
+// ---  reset tblBody available and selected
+        tblBody.innerText = null;
 
+// ---  loop through mod_MENV_dict.ete_exam_rows
+        let has_selected_ete_exam_rows = false;
+
+        if (mod_MENV_dict.ete_exam_rows && mod_MENV_dict.ete_exam_rows.length){
+            if (mod_MENV_dict.ete_exam_rows.length > 1){
+                const all_row = {
+                    id: -1,
+                    depbase_code: " ",
+                    subj_name_nl: "<" + loc.All_ + loc.Exams.toLowerCase() + ">",
+                    version: "",
+                    examperiod: ""
+                };
+                MENVPR_CreateSelectRow("exams", tblBody, all_row);
+            }
+            for (let i = 0, exam_row; exam_row = mod_MENV_dict.ete_exam_rows[i]; i++) {
+                const show_row = (exam_row.examperiod === mod_MENV_dict.examperiod) &&
+                                (!selected.depbase_pk || exam_row.depbase_id === selected.depbase_pk) &&
+                                (!selected.lvlbase_pk || exam_row.lvlbase_id === selected.lvlbase_pk);
+                if (show_row){
+                    const has_selected_exams = MENVPR_CreateSelectRow("exams", tblBody, exam_row);
+                    if(has_selected_exams) {has_selected_ete_exam_rows = true };
+                };
+            };
         };
+    }; // MENVPR_FillTblExams
 
-// ---  enable save btn
-        el_MENVPR_btn_save.disabled = !has_selected_subject_rows;
-
-    }; // MENVPR_FillTbls
-
-//========= MENVPR_CreateSelectRow  ============= PR2021-10-07
-    function MENVPR_CreateSelectRow(row_dict) {
+//========= MENVPR_CreateSelectRow  ============= PR2022-08-19
+    function MENVPR_CreateSelectRow(tblName, tblBody, row_dict) {
         //console.log("===== MENVPR_CreateSelectRow ===== ");
+        //console.log("row_dict", row_dict);
 
-        let has_selected_subjects = false;
-
+        const is_schools = (tblName === "schools");
 // - get ifo from dict
-        const subj_id = (row_dict.subj_id) ? row_dict.subj_id : null;
-        const subj_code = (row_dict.subj_code) ? row_dict.subj_code : "---";
-        const subj_name_nl = (row_dict.subj_name_nl) ? row_dict.subj_name_nl : "---";
+        const pk_int = (is_schools) ? row_dict.sbase_id : row_dict.id;
+
+        let code = (is_schools) ?  (row_dict.sbase_code) ? row_dict.sbase_code : "---" :
+                                   (row_dict.depbase_code) ? row_dict.depbase_code : "---";
+        if (!is_schools && row_dict.lvl_abbrev) { code += " " + row_dict.lvl_abbrev }
+
+        const name = (is_schools) ? (row_dict.sch_name) ? row_dict.sch_name : "---" :
+                                   (row_dict.subj_name_nl) ? row_dict.subj_name_nl : "---";
+        const version = (!is_schools && row_dict.version) ? row_dict.version : "";
         const is_selected = (row_dict.selected) ? row_dict.selected : false;
-        const just_selected = (row_dict.just_selected) ? row_dict.just_selected : false;
 
-        if(is_selected) { has_selected_subjects = true};
+// ---  lookup index where this row must be inserted
+        const dep_sequence = (row_dict.dep_sequence) ? row_dict.dep_sequence : 0;
+        const lvl_sequence = (row_dict.lvl_sequence) ? row_dict.lvl_sequence : 0;
+        const ob1 = (is_schools) ? code : dep_sequence.toString();
+        const ob2 = name;
+        const ob3 = (is_schools) ? "" : lvl_sequence.toString();
+        const row_index = b_recursive_tblRow_lookup(tblBody, setting_dict.user_lang, ob1, ob2, ob3);
 
-        const tblBody = (is_selected) ? el_MENVPR_tblBody_selected : el_MENVPR_tblBody_available;
+// --- insert tblRow into tblBody at row_index
+        const tblRow = tblBody.insertRow(row_index);
 
-        const tblRow = tblBody.insertRow(-1);
-        // bg_transparent added for transition - not working
-        //tblRow.classList.add("bg_transparent");
-        tblRow.id = subj_id;
+// --- add data attributes to tblRow
+        tblRow.setAttribute("data-table", tblName);
+        tblRow.setAttribute("data-pk", pk_int);
+
+// ---  add data-sortby attribute to tblRow, for ordering new rows
+        tblRow.setAttribute("data-ob1", ob1);
+        tblRow.setAttribute("data-ob2", ob2);
+        tblRow.setAttribute("data-ob3", ob3);
+
+        add_or_remove_class(tblRow, cls_selected, is_selected)
 
 //- add hover to select row
         add_hover(tblRow)
@@ -2494,98 +2739,103 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- add first td to tblRow.
         let td = tblRow.insertCell(-1);
         let el_div = document.createElement("div");
-            el_div.classList.add("tw_060")
-            el_div.innerText = subj_code;
+            el_div.classList.add("tw_090")
+            el_div.innerText = code;
             td.appendChild(el_div);
 
 // --- add second td to tblRow.
+        const tw = (is_schools) ? "tw_360" : "tw_240";
         td = tblRow.insertCell(-1);
         el_div = document.createElement("div");
-            el_div.classList.add("tw_240")
-            el_div.innerText = subj_name_nl;
+            el_div.classList.add(tw)
+            el_div.innerText = name;
             td.appendChild(el_div);
 
-        //td.classList.add("tw_200X", "px-2", "pointer_show") // , cls_bc_transparent)
+        if (!is_schools){
+
+// --- add version td to tblRow.
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.classList.add("tw_100")
+                el_div.innerText = row_dict.version;
+                td.appendChild(el_div);
+// --- add version td to tblRow.
+            td = tblRow.insertCell(-1);
+            el_div = document.createElement("div");
+                el_div.classList.add("tw_060", "ta_c")
+                el_div.innerText = (row_dict.examperiod) ? "tv " + row_dict.examperiod : null;
+                td.appendChild(el_div);
+        }
 
 //----- add addEventListener
-        tblRow.addEventListener("click", function() {MENVPR_AddRemoveSubject(tblRow)}, false);
+        tblRow.addEventListener("click", function() {MENVPR_SelectDeselectRow(is_schools, tblRow)}, false);
 
-// --- if added / removed row highlight row for 1 second
-        if (just_selected) {
-        row_dict.just_selected = false;
-            ShowClassWithTimeout(tblRow, "bg_selected_blue", 1000) ;
-        }
-        return has_selected_subjects;
     } // MENVPR_CreateSelectRow
 
-//========= MENVPR_AddRemoveSubject  ============= PR2020-11-18 PR2021-08-31
-    function MENVPR_AddRemoveSubject(tblRow) {
-        console.log("  =====  MENVPR_AddRemoveSubject  =====");
-        console.log("tblRow", tblRow);
+//========= MENVPR_SelectDeselectRow  ============= PR2022-08-19
+    function MENVPR_SelectDeselectRow(is_schools, tblRow) {
+        //console.log("  =====  MENVPR_SelectDeselectRow  =====");
+        //console.log("tblRow", tblRow);
 
-        const sel_subject_pk = (Number(tblRow.id)) ? Number(tblRow.id) : null;
+        const tblBody = tblRow.parentNode;
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+
         let has_changed = false;
-    // lookup subject in mod_MENV_dict.subject_rows
-        for (let i = 0, row_dict; row_dict = mod_MENV_dict.subject_rows[i]; i++) {
-            if (row_dict.subj_id === sel_subject_pk){
-                // set selected = true when clicked in list 'available', set false when clicked in list 'selected'
-                const new_selected = (row_dict.selected) ? false : true;
+        const data_rows = (is_schools) ? mod_MENV_dict.school_rows : mod_MENV_dict.ete_exam_rows;
+        const set_all_rows = (pk_int === -1);
+
+        if (set_all_rows) {
+            const new_selected = !tblRow.classList.contains("bg_selected_blue");
+
+            if (is_schools) {
+                mod_MENV_dict.all_schools_selected = new_selected;
+            } else {
+                mod_MENV_dict.all_exams_selected = new_selected;
+            };
+
+            for (let i = 0, row_dict; row_dict = data_rows[i]; i++) {
                 row_dict.selected = new_selected
-                row_dict.just_selected = true;
-                has_changed = true;
-        console.log("new_selected", new_selected);
-        console.log("row_dict", row_dict);
-                break;
-            }
-        };
+            };
+            //add_or_remove_class(tblRow, "bg_selected_blue", new_selected)
 
-// ---  enable btn submit
-        if(has_changed){
-            el_MENVPR_btn_save.disabled = false;
-            MENVPR_FillTbls();
-        }
+            for (let j = 0, row; row = tblBody.rows[j]; j++) {
+                add_or_remove_class(row, "bg_selected_blue", new_selected);
+            };
 
-    }  // MENVPR_AddRemoveSubject
+        } else {
+            for (let i = 0, row_dict; row_dict = data_rows[i]; i++) {
+                const row_pk_int = (is_schools) ? row_dict.sbase_id : row_dict.id;
+                if (row_pk_int === pk_int){
+                    // set selected = true when clicked in list 'available', set false when clicked in list 'selected'
+                    const new_selected = (row_dict.selected) ? false : true;
+                    row_dict.selected = new_selected
+                    row_dict.just_selected = true;
+                    has_changed = true;
 
-    function MENVPR_get_sel_lvlbase_pk_list(){  // PR2021-10-09
-    // ---  loop through id_MENVPR_select_level and collect selected lvlbase_pk's
-        //console.log("  =====  MENVPR_get_sel_lvlbase_pk_list  =====");
-        let sel_lvlbase_pk_list = [];
-        if(el_MENVPR_select_level){
-            const level_options = Array.from(el_MENVPR_select_level.options);
-            console.log("level_options", level_options);
-            if(level_options && level_options.length){
-                for (let i = 0, level_option; level_option = level_options[i]; i++) {
-                    if (level_option.selected){
-            console.log("level_option.selected", level_option);
-                        if (level_option.value === "0"){
-                            sel_lvlbase_pk_list = [];
-                            break;
+                    add_or_remove_class(tblRow, "bg_selected_blue", new_selected)
+                    // when deselect and all-schools is selected: als deselct all_schools
+                    if (!new_selected){
+                        if (is_schools) {
+                            mod_MENV_dict.all_schools_selected = false;
                         } else {
-                            const lvlbase_pk = Number(level_option.value);
-                            if (lvlbase_pk){
-                                sel_lvlbase_pk_list.push(lvlbase_pk);
-        }}}}}};
-        //console.log("sel_lvlbase_pk_list", sel_lvlbase_pk_list);
-        return sel_lvlbase_pk_list;
-    }
-
-    function MENVPR_reset_layout_options(){  // PR2021-10-10
-    // ---  remove 'se';lected' from layout options
-        //console.log("  =====  MENVPR_reset_layout_options  =====");
-        if(el_MENVPR_select_layout){
-            const layout_options = Array.from(el_MENVPR_select_layout.options);
-            if(layout_options && layout_options.length){
-                for (let i = 0, option; option = layout_options[i]; i++) {
-                    option.selected = false;
+                            mod_MENV_dict.all_exams_selected = false;
+                        };
+                        const first_row = tblBody.rows[0];
+                        if (first_row){
+                            const first_row_pk_int = get_attr_from_el_int(first_row, "data-pk")
+                            if (first_row_pk_int === -1){
+                                add_or_remove_class(first_row, "bg_selected_blue", false);
+                            };
+                        };
+                    };
+                    break;
                 };
             };
         };
-    };  // MENVPR_reset_layout_options
+    };  // MENVPR_SelectDeselectRow
+
 
 ///////////////////////////////////////
-
-
 
 
 // +++++++++++++++++ MODAL ORDERLIST EXTRA EXAMS +++++++++++++++++++++++++++++++++++++++++++

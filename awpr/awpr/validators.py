@@ -161,49 +161,47 @@ def validate_notblank_maxlength(value, max_length, caption, blank_allowed=False)
 # - end of validate_notblank_maxlength
 
 
-# === validate_level_sector_in_student ========= PR2022-08-05
-def validate_level_sector_in_student(examyear, school, department, upload_dict):
-    msg_err = None
-    if upload_dict:
-        msg_list = []
-        if school is None:
-            msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': _('School')}))
-        elif department is None:
-            msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': _('Department')}))
-        else:
-            if department.level_req:
-                caption = _('The learning path')
-                levelbase_pk = upload_dict.get('level')
+# === validate_level_sector_in_student ========= PR2022-08-20
+def validate_level_sector_in_student(examyear, school, department, lvlbase_pk, sctbase_pk):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ----- validate_level_sector_in_student ----- ')
+        logger.debug('    lvlbase_pk: ' + str(lvlbase_pk))
+        logger.debug('    sctbase_pk: ' + str(sctbase_pk))
 
-                if levelbase_pk is None:
-                    msg_list.append(str(get_err_html_cannot_be_blank(caption)))
+    msg_list = []
+    if school is None:
+        msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': _('School')}))
+    elif department is None:
+        msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': _('Department')}))
+    else:
+        if department.level_req:
+            caption = _('The learning path')
+            if lvlbase_pk is None:
+                msg_list.append(str(get_err_html_cannot_be_blank(caption)))
 
-                else:
-                    level = subj_mod.Level.objects.get_or_none(
-                        base_id=levelbase_pk,
-                        examyear=examyear
-                    )
-                    if level is None:
-                        msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': caption}))
+            else:
+                level = subj_mod.Level.objects.get_or_none(
+                    base_id=lvlbase_pk,
+                    examyear=examyear
+                )
+                if level is None:
+                    msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': caption}))
 
-            if department.sector_req:
-                caption = _('The profile') if department.has_profiel else _('The sector')
-                sectorbase_pk = upload_dict.get('sector')
-
-                if sectorbase_pk is None:
-                    msg_list.append(str(get_err_html_cannot_be_blank(caption)))
-
-                else:
-                    sector = subj_mod.Sector.objects.get_or_none(
-                        base_id=sectorbase_pk,
-                        examyear=examyear
-                    )
-                    if sector is None:
-                        msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': caption}))
+        if department.sector_req:
+            caption = _('The profile') if department.has_profiel else _('The sector')
+            if sctbase_pk is None:
+                msg_list.append(str(get_err_html_cannot_be_blank(caption)))
+            else:
+                sector = subj_mod.Sector.objects.get_or_none(
+                    base_id=sctbase_pk,
+                    examyear=examyear
+                )
+                if sector is None:
+                    msg_list.append(str(_('%(cpt)s is not found.') % {'cpt': caption}))
     # use msglist, so it can show multiple messages (happens when both level and sector are missing)
-        if msg_list:
-            msg_err = '<br>'.join(msg_list)
-    return msg_err
+    return msg_list
 # - end of validate_level_sector_in_student
 
 
@@ -735,7 +733,7 @@ def validate_bundle_label_name_blank_length_exists(table, examyear, name, cur_in
             exists = subj_mod.Enveloplabel.objects.filter(crit).exists()
 
         if exists:
-            msg_html = _("%(cpt)s '%(val)s' already exists.") % {'val': name}
+            msg_html = _("%(cpt)s '%(val)s' already exists.") % {'cpt': caption, 'val': name}
 
     return msg_html
 # - end of validate_bundle_label_name_blank_length_exists

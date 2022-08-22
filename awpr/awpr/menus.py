@@ -228,7 +228,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         # hide school in page_examyear
         display_school = param.get('display_school', True)
         sel_school = None
-        sel_school_activated = False
         school_name = ''
 
         # used in page exams template to show school or admin mod exam form PR2021-05-22
@@ -246,7 +245,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
             if sel_school:
                 school_name += ' ' + sel_school.name
-                sel_school_activated = sel_school.activated
                 is_requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and
                                          req_user.schoolbase.pk == sel_schoolbase.pk)
             else:
@@ -258,7 +256,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         if logging_on:
             logger.debug('sel_school: ' + str(sel_school))
-            logger.debug('sel_school_activated: ' + str(sel_school_activated))
 
 # +++ display department -------- PR2029-10-27 PR2020-11-17
 
@@ -324,15 +321,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             no_access_message = _("%(admin)s has not yet published examyear %(exyr)s. You cannot enter data yet.") % \
                                                  {'admin': admin_name, 'exyr': str(sel_examyear_code)}
             messages.append(no_access_message)
-
-
-        # sel_school_activated is not in use
-        #elif not sel_school_activated:
-            # block certain pages when not sel_school_activated
-            # diable for now PR2022-05-13
-            #if sel_page in ('page_studentXXX', 'page_studsubjXXX', 'page_gradeXXX'):
-            #    no_access_message = _("The school has not activated this examyear yet.")
-            #    messages.append(no_access_message)
 
 # - sentr_src contains link for Sentry awp_js PR2021-09-19
         sentry_src = s.SENTRY_SRC

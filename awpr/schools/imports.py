@@ -323,7 +323,7 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                         # mapped_subjectbase_pk_dict = map_subjectbase_pk_to_schemeitem_pk(sel_school, sel_department)
 
 # - get a dict with schemes and schemitems of this this department
-                        scheme_si_dict = get_stud_subj_schemeitem_dict(sel_examyear, sel_department)
+                        scheme_si_dict = get_stud_subj_schemeitem_dict(sel_examyear, sel_school, sel_department)
 
 # - get a dict with key idnumber and as value a dict with key: subjbase_pk and grade values
                         # function creates a dict with as key idnumber and as value a dict with key: subjbase_pk and value: subject_code
@@ -701,7 +701,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
 
 @method_decorator([login_required], name='dispatch')
 class UploadImportStudentView(View):
-    # PR2020-12-05 PR2021-02-23  PR2021-07-17
+    # PR2020-12-05 PR2021-02-23  PR2021-07-17 PR2022-08-21
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -763,6 +763,8 @@ class UploadImportStudentView(View):
                         logger.debug('    len(data_list): ' + str(len(data_list)))
                         logger.debug('    sel_school:     ' + str(sel_school))
                         logger.debug('    sel_department: ' + str(sel_department))
+                        for row in data_list:
+                            logger.debug('    row: ' + str(row))
 
                     updated_rows, log_list = [], []
                     count_total, count_existing, count_new, count_diff_dep, count_error, count_bisexam = 0, 0, 0, 0, 0, 0
@@ -829,6 +831,21 @@ class UploadImportStudentView(View):
                             # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
                             # for key, val in student.items():
                             # #logger.debug( str(key) +': ' + val + '" found in "' + str(student) + '"')
+
+                            """
+                            data_dict = {
+                                'rowindex': 10, 
+                                'department': 2, 'profiel': 10, 
+                                'examnumber': '101', 
+                                'lastname': 'Apostel', 'firstname': 'Deshawn Devanté Stan-Lee', 'prefix': None, 
+                                'gender': 'M', 'idnumber': '2004042808', 'birthdate': None, 'birthcountry': 'Nederland', 
+                                'birthcity': 'Dordrecht', 'classname': '5'
+                                }
+                            
+                            awpColdef_list: [
+                                'department', 'level', 'sector', 'examnumber', 'lastname', 'firstname', 'prefix',
+                                 'gender', 'idnumber', 'birthdate', 'birthcountry', 'birthcity', 'classname']
+                            """
 
     # skip empty rows
                             has_values = False
@@ -902,21 +919,26 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
                                  double_idnumber_list, double_diplomanumber_list, double_gradelistnumber_list,
                                  idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
                                  log_list, request):
-    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-05
+    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-21
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_student_from_datalist  --------------------')
         logger.debug('data_dict: ' + str(data_dict))
         logger.debug('is_test: ' + str(is_test))
-    """
-    awpColdef_list: [ idnumber,  lastname, firstname, prefix, gender, examnumber, birthdate, birthcountry, birthcity
-                       classname, (iseveningstudent), bis_exam, department, level, sector, profiel]
-    awpColdef_list: ['department', 'level', 'sector', 'examnumber', 'lastname', 'firstname', 'prefix', 'gender', 
-                     'idnumber', 'birthdate', 'birthcountry', 'birthcity', 'classname', 'diplomanumber', 'gradelistnumber']
-
-    data_dict: {'rowindex': 0, 'department': 1, 'level': 4, 'sector': 13, 'examnumber': '001', 'lastname': 'Boekhoudt', 'firstname': 'Jeziël S', 'prefix': None, 'gender': 'M', 'idnumber': '2007012999', 'birthdate': None, 'birthcountry': 'Nederlandse Antillen', 'birthcity': 'Curaçao', 'classname': '4', 'diplomanumber': '001', 'gradelistnumber': '001'}
-    data_dict: {'rowindex': 11, 'department': 2, 'level': None, 'sector': None, 'examnumber': '102', 'lastname': 'Araujo', 'firstname': 'Stephanie Alyssa', 'prefix': 'de', 'gender': 'V', 'idnumber': '2003020905', 'birthdate': None, 'birthcountry': 'Aruba', 'birthcity': 'Oranjestad', 'classname': '5', 'diplomanumber': '102', 'gradelistnumber': '102'}
-    """
+        """
+        data_dict = {
+            'rowindex': 10, 
+            'department': 2, 'profiel': 10, 
+            'examnumber': '101', 
+            'lastname': 'Apostel', 'firstname': 'Deshawn Devanté Stan-Lee', 'prefix': None, 
+            'gender': 'M', 'idnumber': '2004042808', 'birthdate': None, 'birthcountry': 'Nederland', 
+            'birthcity': 'Dordrecht', 'classname': '5'
+            }
+    
+        awpColdef_list: [
+            'department', 'level', 'sector', 'examnumber', 'lastname', 'firstname', 'prefix',
+             'gender', 'idnumber', 'birthdate', 'birthcountry', 'birthcity', 'classname']
+        """
 
     # - required fields are: base, school, department, lastname, firstname
     # the lookup field 'idnumber' is not required in model, but is required for upload
@@ -928,7 +950,6 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
     error_list = []
     update_list = []
     is_existing_student, is_new_student, is_diff_dep_student, has_error, might_be_bisexam = False, False, False, False, False
-    error_create = False
 
 # - get variables from data_dict
     id_number = data_dict.get('idnumber', '')
@@ -936,6 +957,15 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
     first_name = data_dict.get('firstname', '')
     prefix = data_dict.get('prefix', '')
     student_depbase_pk = data_dict.get('department')
+    student_lvlbase_pk = data_dict.get('level')
+    student_sctbase_pk = data_dict.get('sector')
+    if student_sctbase_pk is None:
+        student_sctbase_pk = data_dict.get('profiel')
+
+    if logging_on:
+        logger.debug('student_depbase_pk: ' + str(student_depbase_pk))
+        logger.debug('student_lvlbase_pk: ' + str(student_lvlbase_pk))
+        logger.debug('student_sctbase_pk: ' + str(student_sctbase_pk))
 
 # - base_pk only has value when user has ticked off 'same_student' after test_upload
     # TODO change to linked fields ( ';'-delimited string of linked student_id
@@ -944,7 +974,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
 # - skip when student is from different department
     # PR2022-06-26 debug: Havo student was added to Vsbo in ATC. Must filter out students from different departments
-    # not when student_depbase_pk has no value
+    # only student_depbase_pk has value
     if student_depbase_pk and student_depbase_pk != department.base_id:
         is_diff_dep_student = True
         error_list.append(str(_("This candidate belongs to a different department.")))
@@ -1016,20 +1046,20 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
 # - lookup student in database
        # either student, not_found or has_error is trueish
-        student, not_found, has_error = \
+        student, not_found, err_str = \
             stud_val.lookup_student_by_idnumber_nodots(
                 school=school,
                 department=department,
                 idnumber_nodots=idnumber_nodots,
                 upload_fullname=full_name,
-                error_list=error_list,
                 found_is_error=False
             )
         if logging_on:
             student_pk = student.pk if student else 'None'
-            logger.debug('..........student.pk: ' + str(student_pk))
-            logger.debug('    student: ' + str(student))
-            logger.debug('    has_error: ' + str(has_error))
+            logger.debug(' >>>student.pk: ' + str(student_pk))
+            logger.debug('    student:    ' + str(student))
+            logger.debug('    not_found:  ' + str(not_found))
+            logger.debug('    err_str:    ' + str(err_str))
 
     if not has_error and not is_diff_dep_student:
         messagesNIU = []
@@ -1077,16 +1107,28 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
             # skip_save = is_test
             # note: error_list is list of strings,
             #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
-
-            upload_dict = {'idnumber': idnumber_nodots, 'lastname': lastname_stripped, 'firstname': firstname_stripped}
-
+            """
+            create_student(examyear, school, department, idnumber_nodots, 
+                               lastname_stripped, firstname_stripped, prefix_stripped, full_name,
+                                lvlbase_pk, sctbase_pk, request, skip_save)
+            """
+            # TODO replacing values with import when student already exists is not working properly.
+            #  Turned off for now (found_is_error=True) PR2022-08-21
+            # TODO also: return message on import modal not giving indo '22 candidates are skipped' etc
     # - create student record
             student_instance, error_list = stud_view.create_student(
                 examyear=examyear,
                 school=school,
                 department=department,
-                upload_dict=upload_dict,
+                idnumber_nodots=idnumber_nodots,
+                lastname_stripped=lastname_stripped,
+                firstname_stripped=firstname_stripped,
+                prefix_stripped=prefix_stripped,
+                full_name=full_name,
+                lvlbase_pk=student_lvlbase_pk,
+                sctbase_pk=student_sctbase_pk,
                 request=request,
+                found_is_error=True, # was: False
                 skip_save=is_test
             )
             #student = stud_view.create_student(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
@@ -2664,13 +2706,19 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_idnumberl
 
 ############################
 
-def get_stud_subj_schemeitem_dict(sel_examyear, sel_department): # PR2021-12-12
+def get_stud_subj_schemeitem_dict(sel_examyear, sel_school, sel_department): # PR2021-12-12 PR2022-08-21
+
+    # PR2022-08-21 notatdayschool added: show this subject only when school is evening school or lex school
+    # attention: day/evening school shows notatdayschool subjects. Must be filtered out when adding subjects to day student
+    skip_notatdayschool = sel_school and (sel_school.islexschool or sel_school.iseveningschool)
+
     scheme_si_dict = {}
     schemeitem_rows = subj_view.create_schemeitem_rows(
-        examyear=sel_examyear,
+        sel_examyear=sel_examyear,
         append_dict={},
+        depbase=sel_department.base,
         cur_dep_only=True,
-        depbase=sel_department.base
+        skip_notatdayschool=skip_notatdayschool
     )
     if schemeitem_rows:
         for si_row in schemeitem_rows:
@@ -2689,29 +2737,34 @@ def get_stud_subj_schemeitem_dict(sel_examyear, sel_department): # PR2021-12-12
 ############################
 
 
-def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21 PR2022-03-17
+def map_subjectbase_pk_to_schemeitem_pk(sel_school, sel_department):  # PR2021-07-21 PR2022-03-17
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- map_subjectbase_pk_to_schemeitem_pk  --------------------')
-        logger.debug('school.examyear' + str(school.examyear))
-        logger.debug('department.base' + str(department.base))
+        logger.debug('sel_school.examyear' + str(sel_school.examyear))
+        logger.debug('sel_department.base' + str(sel_department.base))
     # function creates a dict per scheme of subjects with the lowest sequence
     # All subjects appear once, the one with the lowest sequence is added
     # output:       schemeitem_dict: { scheme_id: { subjectbase_pk: [schemeitem_id, subject_code, has_pws] }, ... }
 
+    # PR2022-08-21 notatdayschool added: show this subject only when school is evening school or lex school
+    # attention: day/evening school shows notatdayschool subjects. Must be filtered out when adding subjects to day student
+    skip_notatdayschool = sel_school and (sel_school.islexschool or sel_school.iseveningschool)
+
     schemeitem_dict = {}
 
-    rows = subj_view.create_schemeitem_rows(
-        examyear=school.examyear,
+    schemeitem_rows = subj_view.create_schemeitem_rows(
+        sel_examyear=sel_school.examyear,
         append_dict={},
+        depbase=sel_department.base,
         cur_dep_only=True,
-        depbase=department.base,
-        orderby_sjtpbase_sequence=True
+        skip_notatdayschool=skip_notatdayschool
     )
+
     if logging_on:
-        logger.debug('rows' + str(rows))
-    if rows:
-        for row in rows:
+        logger.debug('schemeitem_rows' + str(schemeitem_rows))
+    if schemeitem_rows:
+        for row in schemeitem_rows:
             schemeitem_id = row.get('id')
 
 # - get scheme_id, add as key to schemeitems_dict if it does not exists yet
@@ -2755,8 +2808,6 @@ def map_subjectbase_pk_to_schemeitem_pk(school, department):  # PR2021-07-21 PR2
             464: [10112, 'ec', False], 431: [10105, 'nask1', False], 443: [10110, 'nask2', False], 439: [10108, 'uv', False], 
             440: [10109, 'zwi', False], 444: [10111, 'sws', False]}}
     """
-
-
     return schemeitem_dict
 # - end of map_subjectbase_pk_to_schemeitem_pk
 

@@ -836,13 +836,18 @@
         // excel_columns[0]:    {excCol: "ANAAM", awpCol: "lastname", awpCaption: "Achternaam"}
         // PR2020-12-27 do not use Object.entries because it does not allow break
 
-        //console.log("----- get_arrayRow_by_keyValue -----")
-        //console.log("    dict_list", dict_list)
-        //console.log("    keyValue", keyValue)
+    //console.log("----- get_arrayRow_by_keyValue -----")
+    //console.log("    dict_list", dict_list)
+    //console.log("    keyValue", keyValue, typeof keyValue)
 
         let row = null;
         if (dict_list && arrKey && keyValue != null){
-            for (let i = 0, dict; dict = dict_list[i]; i++) {
+
+            //PR2022-08-20 debug: dont use this one, it will skip the first column with index 0:
+                // was: for (let i = 0, dict; dict = dict_list[i]; i++) {
+
+            for (let i = 0, dict, len = dict_list.length; i < len; i++) {
+                const dict = dict_list[i];
                 // dict =  {awpKey: "examnumber", caption: "Examennummer", linkfield: true, excKey: "exnr"}
                 const value = dict[arrKey];
 
@@ -856,8 +861,9 @@
                     } else {
                         isEqual = (keyValue === value);
                     };
-
                     if (isEqual){
+    //console.log("        value", value, typeof value)
+    //console.log("  >>> isEqual", isEqual)
                         row = dict;
                         break;
         }}}};
