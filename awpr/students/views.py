@@ -2858,7 +2858,8 @@ def create_published_Ex1_Ex4_instance(sel_school, sel_department, examperiod, no
             #examtype=sel_examtype,
             examperiod=examperiod,
             name=file_name,
-            datepublished=today_date)
+            datepublished=today_date
+        )
 
         published_instance.filename = file_name + '.xlsx'
 
@@ -3382,8 +3383,8 @@ def delete_studentsubject(student_instance, studsubj_instance, updated_rows, req
     this_txt = None
     if studsubj_instance.schemeitem:
         subject = studsubj_instance.schemeitem.subject
-        if subject and subject.name:
-            this_txt = _("Subject '%(tbl)s' ") % {'tbl': subject.name}
+        if subject and subject.name_nl:
+            this_txt = _("Subject '%(tbl)s' ") % {'tbl': subject.name_nl}
 
 # - check if studentsubject has submitted grades or school is locked or examyear is locked PR2021-08-21
     # PR2022-02-15 studentsubject can always be deleted
@@ -3619,7 +3620,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             # only allowed when subjecttype has_pws = True
             if not studsubj_instance.schemeitem.subjecttype.has_pws:
                 if new_value:
-                    subj_name = studsubj_instance.schemeitem.subject.name
+                    subj_name = studsubj_instance.schemeitem.subject.name_nl
                     msg_list.append(str(_("Title and subjects are not allowed in subject %(cpt)s.") % {'cpt': subj_name}))
             else:
                 err_list = []

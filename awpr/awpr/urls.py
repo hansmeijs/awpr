@@ -214,10 +214,6 @@ urlpatterns = [
     path('subjects/', include([
         path('subject', subject_views.SubjectListView.as_view(), name='subjects_url'),
         path('subject_upload', subject_views.SubjectUploadView.as_view(), name='url_subject_upload'),
-        path('subject_import', subject_views.SubjectImportView.as_view(), name='subject_import_url'),
-
-        path('uploadsetting', subject_views.SubjectImportUploadSetting.as_view(), name='subject_uploadsetting_url'),
-        path('uploaddata', subject_views.SubjectImportUploadData.as_view(), name='subject_uploaddata_url'),
 
         path('scheme_upload', subject_views.SchemeUploadView.as_view(), name='scheme_upload_url'),
         path('subjecttype_upload', subject_views.SubjecttypeUploadView.as_view(), name='subjecttype_upload_url'),

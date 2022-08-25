@@ -1461,7 +1461,7 @@ def draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel
     examyear_code = str(sel_examyear.code)
     school_name = sel_school.name
     dep_abbrev = sel_department.abbrev
-    subject_name = sel_subject.name
+    subject_name = sel_subject.name_nl
     examperiod_caption = c.get_examperiod_caption(sel_examperiod)
     examtype_caption = c.get_examtype_caption(sel_examtype)
 

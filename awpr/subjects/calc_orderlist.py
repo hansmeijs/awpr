@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 # /////////////////////////////////////////////////////////////////
 
 
-def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk=None):
+def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, prm_schoolbase_pk=None):
     # PR2021-08-19 PR2021-09-24 PR2022-08-13
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -27,14 +27,14 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 # - get schoolbase_id of ETE and DOE - necessary to calculate extra exams for ETE and DOE
 
 # - create mapped_admin_dict with key = country_id and value = row_dict
-    # mapped_admin_dict: {39: {'c': 'SXMDOE'}, 23: {'c': 'CURETE'}} <class 'dict'>
+    # mapped_admin_dict: key = country_id, value = {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', ...
     mapped_admin_dict = create_mapped_admin_dict(sel_examyear_instance)
     """
      mapped_admin_dict: {
         1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', 'order_extra_fixed': 8, 'order_extra_perc': 8, 'order_round_to': 8, 'order_tv2_divisor': 88, 'order_tv2_multiplier': 8, 'order_tv2_max': 88, 'order_admin_divisor': 88, 'order_admin_multiplier': 8, 'order_admin_max': 88}, 
         2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}} 
     """
-    rows = create_studsubj_count_rows(sel_examyear_instance, request, prm_schoolbase_pk)
+    rows = create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, prm_schoolbase_pk)
 
     # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
 
@@ -52,7 +52,7 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
             admin_code = mapped_country_dict.get('c')
 
 # +++ count extra exams and examns tv2 per school / subject
-        subj_count = row.get('subj_count', 0)
+        subj_count = row.get('subj_count') or 0
         extra_count = row.get('extra_count') or 0
         tv2_count = row.get('tv2_count') or 0
 
@@ -262,7 +262,7 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 
                                                             admin_extra_count = calc_exams_tv02(sj_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
                                                             # TODO tv2 calc for extra ETE / DEZ
-                                                            # TODO separate varables for extra tv2 ETE/DEX
+                                                            # TODO separate variables for extra tv2 ETE/DOE
                                                             admin_tv2_count = calc_exams_tv02(tv2_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
                                                             if logging_on:
                                                                 logger.debug('admin_extra_count: ' + str(admin_extra_count) + ' ' + str(type(admin_extra_count)))
@@ -343,6 +343,105 @@ def create_studsubj_count_dict(sel_examyear_instance, request, prm_schoolbase_pk
 # --- end of create_studsubj_count_dict
 
 
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def create_envelop_studsubj_dict(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
+    # PPR2022-08-23
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_studsubj_count_dict ----- ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear_instance))
+        logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
+
+    # this one is for printing labels: dict order: dep - lvl - subj - exam - lang - school
+    # no count needed, happens when creating labels
+    # ete/DUO not necessary, but let it stay if they want to include them in letter to cinfirm received exams
+
+    #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
+    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
+    #  add extra for ETE and DOE PR2021-09-25
+    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
+
+    rows = create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list)
+
+    # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
+
+    school_envelop_studsubj_dict = {}
+
+    for row in rows:
+        if logging_on and False:
+            logger.debug('row: ' + str(row))
+        """
+        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133_1', 'lang': 'nl', 'country_id': 1, 
+        'sb_code': 'CUR01', 'lvl_abbrev': 'PBL', 'dep_abbrev': 'V.S.B.O.', 'subj_name': 'Administratie en commercie', 
+        'subjbase_code': 'ac', 'schoolbase_id': 2, 'school_name': 'Ancilla Domini Vsbo',  'depbase_id': 1, 'lvlbase_id': 6, 
+        'subj_count': 13, 'extra_count': 7, 'tv2_count': 5}
+        """
+
+# - get or create eteduo_dict
+        ete_duo = 'ETE' if row.get('ete_exam', False) else 'DUO'
+        if ete_duo not in school_envelop_studsubj_dict:
+            school_envelop_studsubj_dict[ete_duo] = {}
+        eteduo_dict = school_envelop_studsubj_dict[ete_duo]
+
+# - get or create depbase_dict
+        depbase_pk = row.get('depbase_id')
+
+        if depbase_pk not in eteduo_dict:
+            dep_abbrev = row.get('dep_abbrev')
+            eteduo_dict[depbase_pk] = {'c': dep_abbrev}
+        depbase_dict = eteduo_dict[depbase_pk]
+
+# - get or create lvlbase_dict
+        # value is '0' when lvlbase_id = None (Havo/Vwo)
+        lvlbase_pk = row.get('lvlbase_id', 0)
+        if lvlbase_pk is None:
+            lvlbase_pk = 0
+        if lvlbase_pk not in depbase_dict:
+            lvl_abbrev = row.get('lvl_abbrev') or '-'
+            depbase_dict[lvlbase_pk] = {'c': lvl_abbrev}
+        lvlbase_dict = depbase_dict[lvlbase_pk]
+
+# - get or create subjbase_dict
+        subjbase_pk = row.get('subjbase_id')
+        if subjbase_pk not in depbase_dict:
+            subjbase_code = row.get('subjbase_code', '-')
+            lvlbase_dict[subjbase_pk] = {'c': subjbase_code}
+        subjbase_dict = lvlbase_dict[subjbase_pk]
+
+# - get or create schoolbase_dict
+        row_sb_pk = row.get('schoolbase_id')
+        if row_sb_pk not in subjbase_dict:
+            row_sb_code = row.get('sb_code', '-')  # for testing only
+            subjbase_dict[row_sb_pk] = {'c': row_sb_code, 'count': 0, 'extra': 0, 'tv2': 0}
+        schoolbase_dict = subjbase_dict[row_sb_pk]
+
+        subj_count = row.get('subj_count')
+        if subj_count:
+            schoolbase_dict['count'] += subj_count
+        extra_count = row.get('extra_count')
+        if extra_count:
+            schoolbase_dict['extra'] += extra_count
+        tv2_count = row.get('tv2_count')
+        if tv2_count:
+            schoolbase_dict['tv2'] += tv2_count
+
+    if logging_on:
+        datalists_json = json.dumps(school_envelop_studsubj_dict, cls=af.LazyEncoder)
+        logger.debug('_envelop_studsubj_dict: ' + str(datalists_json))
+
+
+    """
+    school_envelop_studsubj_dict: {'ETE': {1: {'c': 'V.S.B.O.', 6: {'c': 'PBL', 'total': {}, 'country': {}, 133: {'c': 'PBL'}, 2: {'c': 'CUR01'}, 155: {'c': 'PBL'}, 124: {'c': 'PBL'}, 113: {'c': 'PBL'}, 121: {'c': 'PBL'}, 131: {'c': 'PBL'}, 118: {'c': 'PBL'}, 123: {'c': 'PBL'}, 114: {'c': 'PBL'}}, 5: {'c': 'PKL', 'total': {}, 'country': {}, 113: {'c': 'PKL'}, 2: {'c': 'CUR01'}, 114: {'c': 'PKL'}, 133: {'c': 'PKL'}, 123: {'c': 'PKL'}, 118: {'c': 'PKL'}, 121: {'c': 'PKL'}, 155: {'c': 'PKL'}, 131: {'c': 'PKL'}, 124: {'c': 'PKL'}}, 4: {'c': 'TKL', 'total': {}, 'country': {}, 114: {'c': 'TKL'}, 2: {'c': 'CUR01'}, 118: {'c': 'TKL'}, 113: {'c': 'TKL'}, 124: {'c': 'TKL'}, 131: {'c': 'TKL'}, 120: {'c': 'TKL'}, 133: {'c': 'TKL'}}}, 'nl': {'total': {}}}, 'DUO': {1: {'c': 'V.S.B.O.', 4: {'c': 'TKL', 'total': {}, 'country': {}, 155: {'c': 'TKL'}, 2: {'c': 'CUR01'}, 121: {'c': 'TKL'}, 123: {'c': 'TKL'}}}, 'nl': {'total': {}}}}
+[2022-08-23 19:43:24] DEBUG [subjects.orderlists.create_env
+    """
+
+
+    return school_envelop_studsubj_dict
+# --- end of create_studsubj_count_dict
+
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def create_mapped_admin_dict(sel_examyear_instance):
     # PR2022-08-13
     logging_on = False  # s.LOGGING_ON
@@ -466,9 +565,7 @@ def calc_exams_tv02(subj_count, divisor, multiplier, max_exams):  # PR2021-09-25
 # - end of calc_exams_tv02
 
 
-
-
-def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_list=None):
+def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list=None, subjbase_pk_list=None):
     # PR2021-08-19 PR2021-09-24 PR2022-08-13
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -482,7 +579,7 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
 # - get schoolbase_id of ETE and DOE - necessary to calculate extra exams for ETE and DOE
 
 # - create mapped_admin_dict with key = country_id and value = row_dict
-    # mapped_admin_dict: {39: {'c': 'SXMDOE'}, 23: {'c': 'CURETE'}} <class 'dict'>
+    # mapped_admin_dict: key = country_id, value = {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', ...
     mapped_admin_dict = create_mapped_admin_dict(sel_examyear_instance)
     """
      mapped_admin_dict: {
@@ -490,13 +587,14 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
         2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}} 
     """
 
+    requsr_country_pk = request.user.country.pk
+    sql_keys = {'ey_code_int': sel_examyear_instance.code, 'ep': sel_examperiod, 'requsr_country_id': requsr_country_pk}
+
 # - set filter on ETE / DUO exams when country is CUR and when country = SXM
     # - when request.user = ETE: add all ETE-exams of CUR and SXM, and DUO-exams of CUR schools, but skip DUO-exams of SXM schools
     # - when request.user = SXM: show only SXM schools, show ETE exams and DUO exams
     #  when print per school: show all
     skip_ete_or_duo = ''
-    requsr_country_pk = request.user.country.pk
-
     if request.user.country.abbrev.lower() == 'cur':
     # when print orderlist ETE
         # - when request,user = ETE: add all ETE-exams of CUR and SXM, and DUO-exams of CUR schools, but skip DUO-exams of SXM schools
@@ -509,15 +607,21 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
         # -  WHERE country = requsr_country
         skip_ete_or_duo = "AND (ey.country_id = %(requsr_country_id)s::INT )"
 
+    filter_subjbase = ''
+    if subjbase_pk_list:
+        sql_keys['subjbase_arr'] = subjbase_pk_list
+        filter_subjbase = "AND subjbase.id IN (SELECT UNNEST(%(subjbase_arr)s::INT[]))"
+
 # - create subquery with count of subjects
-    sql_keys = {'ey_code_int': sel_examyear_instance.code, 'requsr_country_id': requsr_country_pk}
     sql_studsubj_agg_list = [
         "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id,",
         "sch.otherlang AS sch_otherlang,",
 
-        "CONCAT_WS ('_', dep.base_id, COALESCE(lvl.base_id, 0), subj.base_id, CASE WHEN si.ete_exam THEN 1 ELSE 0 END) AS id_key,",
-
-        "dep.abbrev AS dep_abbrev,",  # for testing only, must also delete from group_by
+        "CONCAT_WS ('_', dep.base_id, COALESCE(lvl.base_id, 0), subj.base_id, ",
+        "%(ep)s::INT",
+        ", CASE WHEN si.ete_exam THEN 1 ELSE 0 END) AS id_key,",
+        "dep.sequence AS dep_sequence, lvl.sequence AS lvl_sequence, subjbase.code AS subjbase_code, ",  # for order by
+        "depbase.code AS depbase_code,",  # for testing only, must also delete from group_by
         "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
         "subj.name_nl AS subj_name,",  # for testing only, must also delete from group_by
 
@@ -528,11 +632,13 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
         "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
         "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
         "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
         "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)", # for testing only, depbase can be deleted
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
 
 # - show only exams that are not deleted
@@ -543,21 +649,23 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
         "AND NOT si.weight_ce = 0",
 # - skip DUO exams for SXM schools when CUR
         skip_ete_or_duo,
+# - filter subjects if subjbase_pk_list has value
+        filter_subjbase,
 
         # PR2021-10-12 subj.otherlang replaced by si.otherlang
         #  was: "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
         "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id,",
-        "dep.abbrev, lvl.abbrev, subj.name_nl,", # for testing only, must also delete from group_by
+        "dep.sequence, lvl.sequence, subjbase.code,"
+        "depbase.code, lvl.abbrev, subj.name_nl, subjbase.code,", # for testing only, must also delete from group_by
         "sch.otherlang, subj.base_id, si.ete_exam, si.otherlang"
     ]
-
 
     # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
     sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
 
 # - create query with row per school and inner join with subquery count_studsubj
     sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
-                "SELECT studsubj.subjbase_id, studsubj.ete_exam, studsubj.id_key,",
+                "SELECT studsubj.subjbase_id, studsubj.ete_exam, studsubj.id_key, studsubj.subjbase_id,",
 
                 # PR2021-10-12 subj.otherlang replaced by si.otherlang
                 "CASE WHEN studsubj.si_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'nl' ELSE",
@@ -565,15 +673,17 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
                 "THEN studsubj.sch_otherlang ELSE 'nl' END END AS lang,",
 
                 "cntr.id AS country_id,",  # PR2021-09-24 added, for extra exams ETE and DoE
-                "sb.code AS sb_code, studsubj.lvl_abbrev, studsubj.dep_abbrev, studsubj.subj_name,",  # for testing only
+                "sb.code AS sb_code, studsubj.lvl_abbrev, studsubj.depbase_code,",  # for testing only
+                "studsubj.subj_name,",  # for testing only
                 "sch.base_id AS schoolbase_id, sch.name AS school_name,",
-                "studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count",
+                "studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count,",
+                "studsubj.dep_sequence, studsubj.lvl_sequence, studsubj.subjbase_code",
 
                 "FROM schools_school AS sch",
                 "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
                 "INNER JOIN schools_country AS cntr ON (cntr.id = sb.country_id)",
                 "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-                "INNER JOIN studsubj ON (studsubj.school_id = sch.id)",
+                "LEFT JOIN studsubj ON (studsubj.school_id = sch.id)",
 # - show only exams of this exam year
                 "WHERE ey.code = %(ey_code_int)s::INT"
                 ]
@@ -583,6 +693,8 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
     if schoolbase_pk_list:
         sql_keys['sb_arr'] = schoolbase_pk_list
         sql_list.append("AND sb.id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
+
+    sql_list.append("ORDER BY studsubj.dep_sequence, LOWER(studsubj.subjbase_code), studsubj.lvl_sequence, LOWER(sb.code)")
 
     sql = ' '.join(sql_list)
 
@@ -598,15 +710,15 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
     for row in rows:
 
         # admin_id is schoolbase_id of school of ETE / DOE
-        admin_id, admin_code = None, None
+        #admin_id, admin_code = None, None
         order_extra_fixed, order_extra_perc, order_round_to = None, None, None
         order_tv2_divisor, order_tv2_multiplier, order_tv2_max = None, None, None
 
         country_id = row.get('country_id')
         if country_id in mapped_admin_dict:
             mapped_country_dict = mapped_admin_dict[country_id]
-            admin_id = mapped_country_dict.get('sb_id')
-            admin_code = mapped_country_dict.get('c')
+            #admin_id = mapped_country_dict.get('sb_id')
+            #admin_code = mapped_country_dict.get('c')
 
             order_extra_fixed = mapped_country_dict.get('order_extra_fixed')
             order_extra_perc = mapped_country_dict.get('order_extra_perc')
@@ -618,7 +730,7 @@ def create_studsubj_count_rows(sel_examyear_instance, request, schoolbase_pk_lis
 
             if logging_on and False:
                 logger.debug('mapped_country_dict: ' + str(mapped_country_dict))
-                logger.debug('admin_code: ' + str(admin_code))
+                #logger.debug('admin_code: ' + str(admin_code))
                 logger.debug('order_extra_fixed: ' + str(order_extra_fixed))
                 logger.debug('order_extra_perc: ' + str(order_extra_perc))
                 logger.debug('order_round_to: ' + str(order_round_to))

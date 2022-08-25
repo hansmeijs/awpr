@@ -160,6 +160,8 @@ def copy_deps_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
                 sector_req=prev_dep.sector_req,
                 has_profiel=prev_dep.has_profiel,
 
+                color=prev_dep.color,
+
                 modifiedby_id=prev_dep.modifiedby_id,
                 modifiedat=prev_dep.modifiedat
             )
@@ -207,6 +209,8 @@ def copy_levels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
                 abbrev=prev_lvl.abbrev,
                 sequence=prev_lvl.sequence,
                 depbases=prev_lvl.depbases,
+
+                color=prev_lvl.color,
 
                 modifiedby_id=prev_lvl.modifiedby_id,
                 modifiedat=prev_lvl.modifiedat
@@ -313,8 +317,8 @@ def copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
                 islexschool=prev_school.islexschool,
 
                 #These fields get default value:
-                #    activated=False,
-                #    activatedat=None,
+                #    activated=False,  is deprecated
+                #    activatedat=None,  is deprecated
                 #    locked=False,
                 #    lockedat=None,
 
@@ -401,7 +405,7 @@ def copy_subjecttypes_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_l
 # - end of copy_subjecttypes_from_prev_examyear
 
 
-def copy_subjects_from_prev_examyear( prev_examyear_pk, new_examyear_pk, log_list):
+def copy_subjects_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
     # copy subjects from previous examyear PR2021-04-25 PR2021-08-06 PR2022-08-01
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -423,19 +427,24 @@ def copy_subjects_from_prev_examyear( prev_examyear_pk, new_examyear_pk, log_lis
                 base=prev_subject.base,
                 examyear_id=new_examyear_pk,
 
-                name=prev_subject.name,
+                name_nl=prev_subject.name_nl,
+                name_en=prev_subject.name_en,
+                name_pa=prev_subject.name_pa,
+
                 sequence=prev_subject.sequence,
                 depbases=prev_subject.depbases,
 
                 # PR201-10-11 moved from Subject to Schemitem
                 #otherlang=prev_subject.otherlang,
 
+                notatdayschool=prev_subject.notatdayschool,
+
                 modifiedby_id=prev_subject.modifiedby_id,
                 modifiedat=prev_subject.modifiedat
             )
             new_subject.save()
 
-            log_list.append(get_iscopied_logtext(caption, new_subject.name))
+            log_list.append(get_iscopied_logtext(caption, new_subject.name_nl))
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -484,6 +493,8 @@ def copy_schemes_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels
                 name=prev_scheme.name,
                 fields=prev_scheme.fields,
 
+                min_studyloadhours=prev_scheme.min_studyloadhours,
+
                 min_subjects=prev_scheme.min_subjects,
                 max_subjects=prev_scheme.max_subjects,
 
@@ -496,8 +507,6 @@ def copy_schemes_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels
                 min_combi=prev_scheme.min_combi,
                 max_combi=prev_scheme.max_combi,
                 max_reex=prev_scheme.max_reex,
-
-                min_studyloadhours=prev_scheme.min_studyloadhours,
 
                 rule_avg_pece_sufficient=prev_scheme.rule_avg_pece_sufficient,
                 rule_avg_pece_notatevlex=prev_scheme.rule_avg_pece_notatevlex,
@@ -619,9 +628,267 @@ def copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped
     return mapped_schemeitems
 # - end of copy_schemeitems_from_prev_examyear
 
+##############################
+
+def copy_envelopbundles_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
+    # copy envelopbundles from previous examyear PR2022-08-23
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_envelopbundles_from_prev_examyear -------')
+
+    mapped_envelopbundles = {}
+
+    caption = _('Label bundle')
+
+    prev_envelopbundles = subj_mod.Envelopbundle.objects.filter(
+        examyear_id=prev_examyear_pk
+    )
+    for prev_bndl in prev_envelopbundles:
+        if logging_on:
+            logger.debug('prev_bndl: ' + str(prev_bndl))
+
+        try:
+            new_bndl = subj_mod.Envelopbundle(
+                base=prev_bndl.base,
+                examyear_id=new_examyear_pk,
+
+                name=prev_bndl.name,
+
+                modifiedby_id=prev_bndl.modifiedby_id,
+                modifiedat=prev_bndl.modifiedat
+            )
+            new_bndl.save()
+
+            log_list.append(get_iscopied_logtext(caption, new_bndl.name))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            log_list.append(get_error_logtext(caption, e))
+        else:
+            if new_bndl:
+                mapped_envelopbundles[prev_bndl.pk] = new_bndl.pk
+
+    if logging_on:
+        logger.debug('mapped_envelopbundles: ' + str(mapped_envelopbundles))
+    return mapped_envelopbundles
+# - end of copy_envelopbundles_from_prev_examyear
 
 
-def copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_subjects, log_list):
+def copy_enveloplabels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
+    # copy enveloplabels from previous examyear PR2022-08-23
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_enveloplabels_from_prev_examyear -------')
+
+    mapped_enveloplabels = {}
+
+    caption = _('Label')
+
+# - loop through enveloplabels of prev examyear
+    prev_enveloplabels = subj_mod.Enveloplabel.objects.filter(
+        examyear_id=prev_examyear_pk
+    )
+    for prev_lbl in prev_enveloplabels:
+        if logging_on:
+            logger.debug('prev_lbl: ' + str(prev_lbl))
+
+        try:
+            new_lbl = subj_mod.Enveloplabel(
+                base=prev_lbl.base,
+                examyear_id=new_examyear_pk,
+
+                name=prev_lbl.name,
+
+                is_errata=prev_lbl.is_errata,
+                is_variablenumber=prev_lbl.is_variablenumber,
+                numberinenvelop=prev_lbl.numberinenvelop,
+                numberofenvelops=prev_lbl.numberofenvelops,
+
+                modifiedby_id=prev_lbl.modifiedby_id,
+                modifiedat=prev_lbl.modifiedat
+            )
+            new_lbl.save()
+
+            log_list.append(get_iscopied_logtext(caption, new_lbl.name))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            log_list.append(get_error_logtext(caption, e))
+        else:
+            if new_lbl:
+                mapped_enveloplabels[prev_lbl.pk] = new_lbl.pk
+
+    if logging_on:
+        logger.debug('mapped_enveloplabels: ' + str(mapped_enveloplabels))
+
+    return mapped_enveloplabels
+# - end of copy_enveloplabels_from_prev_examyear
+
+
+def copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
+    # copy envelopitems from previous examyear PR2022-08-23
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_envelopitems_from_prev_examyear -------')
+
+    mapped_envelopitems = {}
+
+    caption = _('Labwl text')
+
+    prev_envelopitems = subj_mod.Envelopitem.objects.filter(
+        examyear_id=prev_examyear_pk
+    )
+    for prev_itm in prev_envelopitems:
+        if logging_on:
+            logger.debug('prev_itm: ' + str(prev_itm))
+
+        try:
+            new_itm = subj_mod.Envelopitem(
+                base=prev_itm.base,
+                examyear_id=new_examyear_pk,
+
+                content_nl=prev_itm.content_nl,
+                content_en=prev_itm.content_en,
+                content_pa=prev_itm.content_pa,
+
+                instruction_nl=prev_itm.instruction_nl,
+                instruction_en=prev_itm.instruction_en,
+                instruction_pa=prev_itm.instruction_pa,
+
+                content_color=prev_itm.content_color,
+                instruction_color=prev_itm.instruction_color,
+
+                modifiedby_id=prev_itm.modifiedby_id,
+                modifiedat=prev_itm.modifiedat
+            )
+            new_itm.save()
+
+            log_list.append(get_iscopied_logtext(caption, new_itm.content_nl))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            log_list.append(get_error_logtext(caption, e))
+        else:
+            if new_itm:
+                mapped_envelopitems[prev_itm.pk] = new_itm.pk
+
+    if logging_on:
+        logger.debug('mapped_envelopitems: ' + str(mapped_envelopitems))
+
+    return mapped_envelopitems
+# - end of copy_envelopitems_from_prev_examyear
+
+
+
+def copy_envelopbundlelabels_from_prev_examyear(prev_examyear_pk, mapped_envelopbundles, mapped_enveloplabels, log_list):
+    # copy schemeitems from previous examyear PR2021-04-25 PR2021-08-06 PR2022-03-11 PR2022-08-01
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_schemeitems_from_prev_examyear -------')
+
+    mapped_schemeitems = {}
+
+# - loop through schemeitems of prev examyear
+    prev_envelopbundlelabels = subj_mod.Envelopbundlelabel.objects.filter(
+        envelopbundle_id__examyear_id=prev_examyear_pk
+    )
+    count_copied, count_exists, count_error = 0, 0, 0
+    for prev_bndlbl in prev_envelopbundlelabels:
+
+        try:
+# get mapped values of scheme, subject and subjecttype
+            prev_bndlbl_pk = prev_bndlbl.pk
+            new_envelopbundle_pk = mapped_envelopbundles.get(prev_bndlbl.envelopbundle_id)
+            new_enveloplabel_pk = mapped_enveloplabels.get(prev_bndlbl.enveloplabel_id)
+
+            new_bndlbl = subj_mod.Envelopbundlelabel(
+                envelopbundle_id=new_envelopbundle_pk,
+                enveloplabel_id=new_enveloplabel_pk,
+
+                modifiedby_id=prev_bndlbl.modifiedby_id,
+                modifiedat=prev_bndlbl.modifiedat
+            )
+            new_bndlbl.save()
+
+            if logging_on and False:
+                logger.debug('prev_bndlbl: ' + str(prev_bndlbl) + ' new_bndlbl: ' + str(new_bndlbl))
+            count_copied += 1
+
+            if new_bndlbl:
+                mapped_schemeitems[prev_bndlbl_pk] = new_bndlbl.pk
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            log_list.append(get_error_logtext(_('envelopbundle label'), e))
+            count_error += 1
+
+    caption = _('envelopbundle labels')
+    log_list.append(c.STRING_SPACE_05 + str(_("%(count)s %(cpt)s are copied.") % {'count': str(count_copied), 'cpt': str(caption)}))
+
+    if count_error:
+        log_list.append(c.STRING_SPACE_05 + str(_("%(count)s %(cpt)s have errors.") % {'count': str(count_error)}))
+
+    if logging_on:
+        logger.debug('    log_list: ' + str(log_list))
+# - end of copy_envelopbundlelabels_from_prev_examyear
+
+
+def copy_enveloplabelitems_from_prev_examyear(prev_examyear_pk, mapped_enveloplabels, mapped_envelopitems, log_list):
+    # copy schemeitems from previous examyear PR2021-04-25 PR2021-08-06 PR2022-03-11 PR2022-08-01
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_enveloplabelitems_from_prev_examyear -------')
+
+    mapped_schemeitems = {}
+
+# - loop through schemeitems of prev examyear
+    prev_enveloplabelitems = subj_mod.Enveloplabelitem.objects.filter(
+        enveloplabel__examyear_id=prev_examyear_pk
+    )
+    count_copied, count_error = 0, 0
+
+    for prev_lblitm in prev_enveloplabelitems:
+        try:
+# get mapped values of scheme, subject and subjecttype
+            prev_lblitm_pk = prev_lblitm.pk
+            new_enveloplabel_pk = mapped_enveloplabels.get(prev_lblitm.enveloplabel_id)
+            new_envelopitem_pk = mapped_envelopitems.get(prev_lblitm.envelopitem_id)
+
+            new_lblitm = subj_mod.Enveloplabelitem(
+                enveloplabel_id=new_enveloplabel_pk,
+                envelopitem_id=new_envelopitem_pk,
+
+                sequence=prev_lblitm.sequence,
+
+                modifiedby_id=prev_lblitm.modifiedby_id,
+                modifiedat=prev_lblitm.modifiedat
+            )
+            new_lblitm.save()
+
+            if logging_on and False:
+                logger.debug('prev_lblitm: ' + str(prev_lblitm) + ' new_lblitm: ' + str(new_lblitm))
+            count_copied += 1
+
+            if new_lblitm:
+                mapped_schemeitems[prev_lblitm_pk] = new_lblitm.pk
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            log_list.append(get_error_logtext(_('label text'), e))
+            count_error += 1
+
+    caption = _('label text')
+    log_list.append(c.STRING_SPACE_05 + str(_("%(count)s %(cpt)s are copied.") % {'count': str(count_copied), 'cpt': str(caption)}))
+
+    if count_error:
+        log_list.append(c.STRING_SPACE_05 + str(_("%(count)s %(cpt)s have errors.") % {'count': str(count_error)}))
+
+    if logging_on:
+        logger.debug('    log_list: ' + str(log_list))
+# - end of copy_enveloplabelitems_from_prev_examyear
+
+
+def copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list):
     # copy exams from previous examyear PR2022-08-07
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -639,15 +906,24 @@ def copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, 
             new_dep_pk = mapped_deps.get(prev_exam.department_id)
             new_lvl_pk = mapped_levels.get(prev_exam.level_id)
             new_subject_pk = mapped_subjects.get(prev_exam.subject_id)
+            new_envelopbundle_pk = mapped_envelopbundles.get(prev_exam.envelopbundle_id)
 
             new_exam = subj_mod.Exam(
                 subject_id=new_subject_pk,
                 department_id=new_dep_pk,
                 level_id=new_lvl_pk,
 
+                # ntermentable is not copied
+
                 ete_exam=prev_exam.ete_exam,
                 examperiod=prev_exam.examperiod,
                 version=prev_exam.version,
+
+                envelopbundle=new_envelopbundle_pk,
+                has_errata=False,
+                subject_color=prev_exam.subject_color,
+                evl_modifiedby=prev_exam.evl_modifiedby,
+                evl_modifiedat=prev_exam.evl_modifiedat,
 
                 modifiedby_id=prev_exam.modifiedby_id,
                 modifiedat=prev_exam.modifiedat

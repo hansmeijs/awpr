@@ -2081,7 +2081,7 @@ def show_deleted_grades(request):
                     str(row.studentsubject.student.school.name), '-',
                     str(row.studentsubject.student.pk), '-',
                     str(row.studentsubject.student.lastname), str(row.studentsubject.student.firstname),
-                    str(row.studentsubject.schemeitem.subject.name),
+                    str(row.studentsubject.schemeitem.subject.name_nl),
                     'studsubj.del', str(row.studentsubject.tobedeleted),
                     ' stud.del', str(row.studentsubject.student.tobedeleted)))
                 logger.debug(msg_txt)

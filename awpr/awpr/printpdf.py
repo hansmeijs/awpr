@@ -152,7 +152,7 @@ def draw_exam(canvas, sel_exam_instance, sel_examyear, user_lang):  # PR2021-05-
         (title, None, version_cpt, version),
         (educationtype, dep_abbrev, number_questions, amount_str),
         (examtype, examperiod_cpt, max_score, scalelength_str),
-        (subject_cpt, subject.name, blanks_or_cesuur_cpt, blanks_or_cesuur_str)
+        (subject_cpt, subject.name_nl, blanks_or_cesuur_cpt, blanks_or_cesuur_str)
     ]
 
     draw_exam_page(canvas, form_text, header_list, last_modified_text, published_at_text, exam_partex_assignment_keys_dict)
@@ -817,7 +817,7 @@ def draw_grade_exam(canvas, sel_grade_instance, sel_exam_instance, sel_examyear,
         (school_cpt, school, educationtype_cpt, dep_abbrev),
         (candidate_cpt, full_name, total_amount_cpt, total_amount_str),
         (exam_number_cpt, exam_number, max_score_cpt, max_score_str, has_error),
-        (subject_cpt, subject.name, score_blanks_error_cpt, score_blanks_error_str, has_error)
+        (subject_cpt, subject.name_nl, score_blanks_error_cpt, score_blanks_error_str, has_error)
     ]
 
     filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
@@ -1193,7 +1193,7 @@ def draw_conversion_table(canvas, sel_exam_instance, sel_examyear, user_lang):  
             (title, None, None, None),
             (educationtype, dep_abbrev, version_lbl, version_txt),
             (examtype, examperiod_cpt, max_score, scalelength_str),
-            (subject_cpt, subject.name, cesuur_nterm_lbl, cesuur_nterm_str)
+            (subject_cpt, subject.name_nl, cesuur_nterm_lbl, cesuur_nterm_str)
         ]
         if not is_ete_exam:
             omschrijving_txt = '---'

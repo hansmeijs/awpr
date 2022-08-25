@@ -844,7 +844,7 @@ class Schemeitem(sch_mod.AwpBaseModel):
 
             if item.subject:
                 item_dict['subj_id'] = item.subject.id
-                item_dict['subj_name'] = item.subject.name
+                item_dict['subj_name'] = item.subject.name_nl
                 item_dict['subj_sequ'] = item.subject.sequence
 
             if item.subjecttype:

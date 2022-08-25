@@ -2888,9 +2888,7 @@ def create_published_instance_orderlist(now_arr, examyear, school, request, user
         examperiod=c.EXAMPERIOD_FIRST,
         name=file_name,
         filename=filename_ext,
-        datepublished=today_date,
-        modifiedat=timezone.now,
-        modifiedby=request.user
+        datepublished=today_date
     )
     # Note: filefield 'file' gets value after creating orderlist
 
@@ -3464,7 +3462,7 @@ def update_examyear(instance, upload_dict, msg_list, request):
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, new_examyear_code_int, also_copy_schools ):
-    # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06
+    # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06 PR2022-08-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_tables_from_last_year -------')
@@ -3472,10 +3470,10 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, new_examyear_c
     log_list = []
     if new_examyear_pk and prev_examyear_pk:
 
-        new_examyear_code = str(new_examyear_code_int) if new_examyear_code_int else '---'
+        # all fields are copied while creating newexamyear, no need to use
+        #   sf.copy_examyear_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        # NIU all fields are copiedwhile creating newexamyear
-        #sf.copy_examyear_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        # schoolsetting and mailinglist don't have to be copied, because they are  not examyear dependent
 
         sf.copy_exfilestext_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
@@ -3483,7 +3481,7 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, new_examyear_c
 
         if also_copy_schools:
             sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
-        # TODO mailinglist Schoolsetting
+
         mapped_levels = sf.copy_levels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
         mapped_sectors = sf.copy_sectors_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
@@ -3491,9 +3489,18 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, new_examyear_c
 
         mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
         mapped_subjects = sf.copy_subjects_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+
         mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
 
-        sf.copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_subjects, log_list)
+        mapped_envelopbundles = sf.copy_envelopbundles_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        mapped_enveloplabels = sf.copy_enveloplabels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        mapped_envelopitems = sf.copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+
+        sf.copy_envelopbundlelabels_from_prev_examyear(prev_examyear_pk, mapped_envelopbundles, mapped_enveloplabels, log_list)
+        sf.copy_enveloplabelitems_from_prev_examyear(prev_examyear_pk, mapped_enveloplabels, mapped_envelopitems, log_list)
+
+        sf.copy_exams_from_prev_examyear(prev_examyear_pk,
+                                         mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
 
 
         if logging_on:

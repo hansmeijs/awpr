@@ -582,11 +582,17 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('    multiple_examyears: ' + str(multiple_examyears))
         logger.debug('    permit_dict: ' + str(permit_dict))
 
+    reset_examperiod = False
+
 # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_examyear_save:
         # sel_examyear_instance has always value when selected_pk_dict_has_changed
         selected_pk_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
         selected_pk_dict_has_changed = True
+
+        # PR2022-08-23 Roland Guribadi Lauffer: cannot find upload subject btn. Reason: tab was not set to first exam period
+        # to prevent this: reset examperiod to 1st when changing examyear
+        reset_examperiod = True
 
 # - add info to setting_dict, will be sent back to client
     if sel_examyear_instance:
@@ -757,6 +763,18 @@ def download_setting(request_item_setting, user_lang, request):
 # - get selected examperiod from request_item_setting, from Usersetting if request_item is None
     request_item_examperiod = request_item_setting.get(c.KEY_SEL_EXAMPERIOD)
     sel_examperiod, sel_examperiod_save = af.get_sel_examperiod(selected_pk_dict, request_item_examperiod)
+
+    # PR2022-08-23 Roland Guribadi Lauffer: cannot find upload subject btn. Reason: tab was not set to first exam period
+    # to prevent this: reset examperiod to 1st when changing examyear
+    if reset_examperiod:
+        if sel_examperiod != c.EXAMPERIOD_FIRST:
+            sel_examperiod = c.EXAMPERIOD_FIRST
+            sel_examperiod_save = True
+            # not working, must set sel_btn in page_studsubj and page_grade
+
+            acc_view.set_usersetting_from_uploaddict({'page_studsubj': {'sel_btn': 'btn_ep_01'}}, request)
+            acc_view.set_usersetting_from_uploaddict({'page_grade': {'sel_btn': 'btn_ep_01'}}, request)
+            # this works
 
     if logging_on:
         logger.debug('..... EXAM PERIOD .....')

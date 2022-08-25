@@ -3664,9 +3664,10 @@ class OrderlistPerSchoolDownloadView(View):  # PR2021-09-01
             # orderlist is only created in first exam period
             sel_examyear_instance, sel_examperiodNIU = \
                 dl.get_selected_examyear_examperiod_from_usersetting(request)
-
+            # in orderlist sel_examperiod is always first period
+            sel_examperiod = c.EXAMPERIOD_FIRST
             if sel_examyear_instance:
-                response = create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, request)
+                response = create_orderlist_per_school_xlsx(sel_examyear_instance, sel_examperiod, list, user_lang, request)
 
         if response is None:
             response = HttpResponseRedirect(request.META.get('HTTP_REFERER'))
@@ -3770,7 +3771,7 @@ def create_orderlist_rowsNIU(examyear, examperiod_int, is_ete_exam, otherlang):
 
 ##################################################
 
-def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, request):  # PR2021-07-07 PR2021-08-20
+def create_orderlist_per_school_xlsx(sel_examyear_instance, sel_examperiod, list, user_lang, request):  # PR2021-07-07 PR2021-08-20
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_orderlist_per_school_xlsx -----')
@@ -3820,7 +3821,12 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, list, user_lang, req
         school_name = schoolbase_dict.get('sch_name')
 
 # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
-        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(sel_examyear_instance, request, schoolbase_pk)
+        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+            sel_examyear_instance=sel_examyear_instance,
+            sel_examperiod=sel_examperiod,
+            request=request,
+            prm_schoolbase_pk=schoolbase_pk
+        )
 
         total_dict = count_dict.get('total')
 
@@ -3887,7 +3893,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 # get text from examyearsetting
     settings = awpr_lib.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
-# --- get department dictlist
+# --- get department dictlist, ordered by sequence
     # fields are: depbase_id, depbase_code, dep_name, dep_level_req
     department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
     """
@@ -3897,7 +3903,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
         {'depbase_id': 3, 'depbase_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'dep_level_req': False}]
     """
 
-# --- get lvlbase dictlist
+# --- get lvlbase dictlist, ordered by sequence
     lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
     """
     lvlbase_dictlist: [
@@ -3908,7 +3914,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
     """
 
 # +++ get subjectbase dictlist
-    # functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
+    # functions creates a dictlist of all subjectbase pk and code of this exam year of all countries, ordered by code
     subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
     """
     subjectbase_dictlist: [
@@ -3918,7 +3924,8 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
     """
 
 # +++ get schoolbase dictlist
-    # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name of this exam year of all countries
+    # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
+    #  of this exam year of all countries (only SXM when requsr=sxm), ordered by code
     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
     """
     schoolbase_dictlist:  [
@@ -3931,7 +3938,13 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
     """
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
-    count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(sel_examyear_instance, request)
+    sel_examperiod = c.EXAMPERIOD_FIRST
+    count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+        sel_examyear_instance=sel_examyear_instance,
+        sel_examperiod=sel_examperiod,
+        request=request,
+        prm_schoolbase_pk=None
+    )
 
     if logging_on and False:
         logger.debug('count_dict: ' + str(count_dict))

@@ -66,7 +66,6 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_subject_upload = get_attr_from_el(el_data, "data-url_subject_upload");
-    urls.url_subject_import = get_attr_from_el(el_data, "data-subject_import_url");
     urls.url_subjecttype_upload = get_attr_from_el(el_data, "data-subjecttype_upload_url");
     urls.url_subjecttypebase_upload = get_attr_from_el(el_data, "data-subjecttypebase_upload_url");
     urls.url_scheme_upload = get_attr_from_el(el_data, "data-scheme_upload_url");
@@ -561,7 +560,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 AddSubmenuButton(el_submenu, loc.Add_subject, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_subject"]);
                 AddSubmenuButton(el_submenu, loc.Delete_subject, function() {ModConfirmOpen("subject", "delete")}, ["tab_show", "tab_btn_subject"]);
                 //AddSubmenuButton(el_submenu, loc.Copy_from_previous_year, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_subject"]);
-                //AddSubmenuButton(el_submenu, loc.Upload_subjects, null, ["tab_show", "tab_btn_subject"], "id_submenu_subjectimport", urls.url_subject_import);
 
                 AddSubmenuButton(el_submenu, loc.Change_subjects_of_subject_scheme, function() {MSI_Open()}, ["tab_show", "tab_btn_scheme", "tab_btn_schemeitem"]);
                 //AddSubmenuButton(el_submenu, loc.Copy_subject_scheme, function() {MSUBJ_Open()}, ["tab_show", "tab_btn_schemeitem"]);

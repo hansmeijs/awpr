@@ -1851,9 +1851,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     };
                 },  // success: function (response) {
                 error: function (xhr, msg) {
-                    // ---  hide loader
-                    el_loader.classList.add(cls_visible_hide)
+                    el_loader.classList.add(cls_visible_hide);
                     console.log(msg + '\n' + xhr.responseText);
+                     b_show_mod_message_html(["<p class='border_bg_invalid p-2'>",
+                                 loc.An_error_occurred, "<br><i>", msg, "<br><i>", xhr.responseText, '</i><br>',
+                                "</p>"].join(""));
+                    $("#id_mod_approve_exam").modal("hide");
                 }  // error: function (xhr, msg) {
             });  // $.ajax({
         }  //  if(!!row_upload)

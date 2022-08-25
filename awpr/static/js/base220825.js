@@ -1752,12 +1752,12 @@
             } catch (error) {
             }
         });
-    };  // show_mod_message
+    };  // b_show_mod_message_html
 
-//=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01
+//=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01 PR2022-08-23
     function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
-        //console.log("==== b_show_mod_message_dictlist  ======")
-        //console.log("msg_dictlist", msg_dictlist)
+        console.log("==== b_show_mod_message_dictlist  ======")
+        console.log("msg_dictlist", msg_dictlist, typeof msg_dictlist)
         //console.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
@@ -1765,8 +1765,10 @@
         //  {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
 
         const el_container = document.getElementById("id_mod_message_container");
+        console.log("el_container", el_container)
         if(el_container){
             if(msg_dictlist && msg_dictlist.length){
+        console.log("msg_dictlist.length", msg_dictlist.length)
 
                 // when skip_warning_messages = true:
                 // skip showing warning messages,
@@ -1776,12 +1778,15 @@
 
                 let header_text = null, max_size = "md";
                 let show_btn_dontshowagain = false;
-                //console.log("el_container", el_container)
                 el_container.innerHTML = null;
                 for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
+
+        console.log("msg_dict", msg_dict, typeof msg_dict)
+                console.log("is object", (typeof msg_dict === "object"))
         // skip if msg_dict is not a dictionary
                     if (typeof msg_dict  === "object") {
 
+                console.log("msg_dict", msg_dict)
             //console.log("msg_dict", msg_dict)
                         let class_str = null;
                         if ("header" in msg_dict && msg_dict.header ) {
@@ -1795,6 +1800,7 @@
                             if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
                         };
 
+                console.log("msg_dict.msg_html", msg_dict.msg_html)
                         if ("msg_html" in msg_dict && msg_dict.msg_html ) {
                 // --- create div element with alert border for each message in messages
                             const el_border = document.createElement("div");

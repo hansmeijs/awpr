@@ -13,7 +13,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from django.db import connection
 from django.db.models import Q
-from django.db.models.functions import Lower
 from django.http import HttpResponse, HttpResponseRedirect
 
 from django.shortcuts import render
@@ -160,7 +159,7 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
                         for subject in subjects:
                             subject_list.append({
                                 'subj_id': str(subject.id),
-                                'subj_name': subject.name,
+                                'subj_name': subject.name_nl,
                                 'subj_abbr': subject.abbrev,
                                 'subj_sequ': subject.sequence
                             })
@@ -338,7 +337,7 @@ def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase,
             "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
             "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
             user_join,
-            "INNER JOIN (", sub_sql ,  ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
+            "INNER JOIN (", sub_sql, ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
             #"WHERE subj.id IN (", sub_sql ,  ")",
             ]
 
@@ -1374,8 +1373,7 @@ class ExamUploadView(View):
 
         req_usr = request.user
         update_wrap = {}
-        err_html = ''
-
+        msg_html = []
 # - reset language
         user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
         activate(user_lang)
@@ -1408,10 +1406,8 @@ class ExamUploadView(View):
 
             if not has_permit:
                 err_txt = _("You don't have permission to perform this action.")
-                err_html= ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
+                msg_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
             else:
-
-                error_list = []
                 append_dict = {}
                 deleted_row = None
 
@@ -1420,9 +1416,11 @@ class ExamUploadView(View):
                 upload_dict{'table': 'ete_exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
                 upload_dict{'table': 'duo_exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'lvlbase_pk': 4, 'exam_pk': 112, 'auth_index': 1, 'auth_bool_at_index': True}
                 upload_dict{'table': 'duo_exam', 'mode': 'update', 'examyear_pk': 1, 'depbase_pk': 1, 'lvlbase_pk': 4, 'exam_pk': 112, 'subject_pk': 122, 'auth_index': 1, 'auth_bool_at_index': True}
+                
                 when sxm tries to update ete exam: gives exam does not exist error
                 upload_dict{'table': 'ete_exam', 'mode': 'update', 'exam_pk': 187, 'examyear_pk': 1, 'subject_pk': 118, 'cesuur': '44'}
-upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk': 21, 'subject_pk': 126, 'envelopbundle_pk': 2}
+   
+                upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk': 21, 'subject_pk': 126, 'envelopbundle_pk': 2}
      
                 """
                 # don't get it from usersettings, get it from upload_dict instead
@@ -1452,8 +1450,9 @@ upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk'
 
                         if subj_examyear:
                             err_txt += str(_("This exam is created by %(country)s.") % {'country': subj_examyear.country.name}) + '<br>'
-                        err_txt +=  str(_("You cannot make changes in this exam."))
-                        err_html = ''.join(("<p class='border_bg_invalid p-2'>", err_txt, "</p>"))
+                        err_txt += str(_("You cannot make changes in this exam."))
+                        msg_html = ''.join(("<p class='border_bg_invalid p-2'>", err_txt, "</p>"))
+
                     else:
     # - get subject
                         subject = subj_mod.Subject.objects.get_or_none(
@@ -1502,37 +1501,41 @@ upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk'
 
                         if not exam:
                             err_txt = _("AWP could not find this exam.")
-                            err_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
+                            msg_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
                         else:
 
 # +++++ Delete instance if is_delete
                             if mode == 'delete':
-                                deleted_row = delete_exam_instance(exam, error_list, request)
+                                deleted_row, err_txt = delete_exam_instance(exam, request)
+                                if err_txt:
+                                    msg_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
                             else:
 
 # +++++ Update instance, also when it is created, not when is_delete
+                                err_list = []
                                 updated_cegrade_count = update_exam_instance(
                                     request=request,
                                     sel_examyear=sel_examyear,
                                     sel_department=sel_department,
                                     exam_instance=exam,
                                     upload_dict=upload_dict,
-                                    error_list=error_list
+                                    error_list=err_list
                                 )
                                 if logging_on:
                                     logger.debug('---- updated_cegrade_count: ' + str(updated_cegrade_count))
 
+                                if err_list:
+                                    err_txt = '<br>'.join(err_list)
+                                    msg_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
+
             # - return message when CE-grades are calculated after entering cesuur or scalelength
-                                if updated_cegrade_count:
+                                elif updated_cegrade_count:
                                     if updated_cegrade_count == 1:
                                         msg_html = str(_('1 CE grade has been calculated from the score.'))
                                     else:
                                         msg_html = str(_('%(count)s CE grades have been calculated from the scores.') \
                                                        % {'count': str(updated_cegrade_count)})
-                                    update_wrap['messages'] = [{
-                                        'class': 'border_bg_valid',
-                                        'msg_html': msg_html
-                                    }]
+                                    msg_html = ''.join(("<p class='border_bg_valid p-2'>", str(msg_html), "</p>"))
 
                         if logging_on:
                             logger.debug('---- exam: ' + str(exam))
@@ -1565,8 +1568,11 @@ upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk'
                                 if updated_duo_exam_rows:
                                     update_wrap['updated_duo_exam_rows'] = updated_duo_exam_rows
 
-        if err_html:
-            update_wrap['err_html'] = err_html
+        if logging_on:
+            logger.debug('    msg_html: ' + str(msg_html))
+
+        if msg_html:
+            update_wrap['msg_html'] = msg_html
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamUploadView
@@ -1786,7 +1792,7 @@ class ExamCopyNtermenView(View):
                                     if logging_on:
                                         logger.debug('exam' + str(exam))
 
-                                    subject = exam.subject.name if exam.subject.name else '---'
+                                    subject = exam.subject.name_nl if exam.subject.name_nl else '---'
                                     dep_code = exam.department.base.code if exam.department.base.code else '---'
                                     exam_name = dep_code + ' ' + subject
                                     if exam.level:
@@ -1977,7 +1983,7 @@ class ExamLinkExamToGradesView(View):
                                     exam_name = get_exam_name(
                                         ce_exam_id=sel_exam.pk,
                                         ete_exam=sel_exam.ete_exam,
-                                        subj_name=sel_exam.subject.name,
+                                        subj_name=sel_exam.subject.name_nl,
                                         depbase_code=sel_exam.department.base.code,
                                         lvl_abbrev=sel_exam.level.abbrev if sel_exam.level else '-',
                                         examperiod=sel_exam.examperiod,
@@ -3848,16 +3854,16 @@ def create_exam_published_instance(exam, now_arr, request):  # PR2022-02-23
     # if total file_name is still too long: cut off
     if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
         file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
-
-    published_instance = sch_mod.Published.objects.create(
+    # PR2022-08-24 Pien van Dijk: cannot publish. Error: 'expected string or bytes-like object'
+    # Is caused by 'modifiedat=timezone.now', must be 'modifiedat=timezone.now()'
+    # changed from sch_mod.Published.objects.create() to sch_mod.Published() plus save(request=request)
+    published_instance = sch_mod.Published(
         school=None,
         department=exam.department,
         examtype=examtype_caption,
         examperiod=exam.examperiod,
         name=file_name,
-        datepublished=today_date,
-        modifiedat=timezone.now,
-        modifiedby=request.user
+        datepublished=today_date
     )
     # Note: filefield 'file' gets value on creating Ex form
 
@@ -3918,15 +3924,13 @@ def create_grade_exam_submitted_instance(sel_school, department, examperiod, now
         if len(file_name) > c.MAX_LENGTH_FIRSTLASTNAME:
             file_name = file_name[0:c.MAX_LENGTH_FIRSTLASTNAME]
 
-        published_instance = sch_mod.Published.objects.create(
+        published_instance = sch_mod.Published(
             school=None,
             department=department,
             examtype=examtype_caption,
             examperiod=examperiod,
             name=file_name,
-            datepublished=today_date,
-            modifiedat=timezone.now,
-            modifiedby=request.user
+            datepublished=today_date
         )
         # Note: filefield 'file' gets value on creating Ex form
 
@@ -4209,11 +4213,13 @@ def create_exam_instance(subject, department, level, examperiod_int, ete_exam, r
 # - end of create_exam_instance
 
 
-def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05 PR2022-01-22
+def delete_exam_instance(instance, request):  #  PR2021-04-05 PR2022-01-22 PR2022-08-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' --- delete_exam_instance --- ')
         logger.debug('instance: ' + str(instance))
+
+    err_txt = None
 
 # - create deleted_row
     deleted_row = {'id': instance.pk,
@@ -4228,12 +4234,13 @@ def delete_exam_instance(instance, error_list, request):  #  PR2021-04-05 PR2022
     except Exception as e:
         deleted_row = None
         logger.error(getattr(e, 'message', str(e)))
-        error_list.append(_('This exam could not be deleted.'))
+        err_txt = str(_('This exam could not be deleted.'))
 
     if logging_on:
         logger.debug('deleted_row: ' + str(deleted_row))
-        logger.debug('error_list: ' + str(error_list))
-    return deleted_row
+        logger.debug('err_txt: ' + str(err_txt))
+
+    return deleted_row, err_txt
 # - end of delete_exam_instance
 
 
@@ -4490,6 +4497,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 # - end of update_exam_instance
 #####################
 
+
 def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-06-23
     logging_on = False  # s.LOGGING_ON
@@ -4582,7 +4590,6 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
         "AND exam.examperiod = %(ep)s::INT",
         # dont show ETE exam when there is also a DUO exam
         "AND (exam.ete_exam AND ey.code = %(ey_code)s::INT AND subj.base_id NOT IN (", duo_exams_sql, ")) OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT)"
-
     ]
 
 # when school: only ETE published exams (DUO exams are not published)
@@ -5087,515 +5094,6 @@ def calc_recursive(maxscore_list, total_score_dict, used_score_str, total_score,
             logger.debug('-----  end of calc_recursive')
 # - end of calc_recursive
 
-@method_decorator([login_required], name='dispatch')
-class SubjectImportView(View):  # PR2020-10-01
-
-    def get(self, request):
-        param = {}
-        has_permit = False
-        if request.user is not None and request.user.country is not None and request.user.schoolbase is not None:
-            has_permit = True # (request.user.is_perm_planner or request.user.is_perm_hrman)
-        if has_permit:
-            # coldef_list = [{'tsaKey': 'employee', 'caption': _('Company name')},
-            #                      {'tsaKey': 'ordername', 'caption': _('Order name')},
-            #                      {'tsaKey': 'orderdatefirst', 'caption': _('First date order')},
-            #                      {'tsaKey': 'orderdatelast', 'caption': _('Last date order')} ]
-
-    # get coldef_list  and caption
-            coldef_list = c.COLDEF_SUBJECT
-            captions_dict = c.CAPTION_IMPORT
-
-            # get mapped coldefs from table Companysetting
-            # get stored setting from Companysetting
-
-            settings_json = request.user.schoolbase.get_schoolsetting_dict(c.KEY_IMPORT_SUBJECT)
-            stored_setting = json.loads(settings_json) if settings_json else {}
-
-            # don't replace keyvalue when new_setting[key] = ''
-            self.has_header = True
-            self.worksheetname = ''
-            self.codecalc = 'linked'
-            if 'has_header' in stored_setting:
-                self.has_header = False if Lower(stored_setting['has_header']) == 'false' else True
-            if 'worksheetname' in stored_setting:
-                self.worksheetname = stored_setting['worksheetname']
-            if 'codecalc' in stored_setting:
-                self.codecalc = stored_setting['codecalc']
-
-            if 'coldefs' in stored_setting:
-                stored_coldefs = stored_setting['coldefs']
-                # skip if stored_coldefs does not exist
-                if stored_coldefs:
-                    # loop through coldef_list
-                    for coldef in coldef_list:
-                        # coldef = {'tsaKey': 'employee', 'caption': 'Cliënt'}
-                        # get fieldname from coldef
-                        fieldname = coldef.get('tsaKey')
-                        #logger.debug('fieldname: ' + str(fieldname))
-
-                        if fieldname:  # fieldname should always be present
-                            # check if fieldname exists in stored_coldefs
-                            if fieldname in stored_coldefs:
-                                # if so, add Excel name with key 'excKey' to coldef
-                                coldef['excKey'] = stored_coldefs[fieldname]
-                                #logger.debug('stored_coldefs[fieldname]: ' + str(stored_coldefs[fieldname]))
-
-            coldefs_dict = {
-                'worksheetname': self.worksheetname,
-                'has_header': self.has_header,
-                'codecalc': self.codecalc,
-                'coldefs': coldef_list
-            }
-            coldefs_json = json.dumps(coldefs_dict, cls=LazyEncoder)
-
-            captions = json.dumps(captions_dict, cls=LazyEncoder)
-
-            param = awpr_menu.get_headerbar_param(request,'subject_import', {'captions': captions, 'setting': coldefs_json})
-
-        # render(request object, template name, [dictionary optional]) returns an HttpResponse of the template rendered with the given context.
-        return render(request, 'subjectimport.html', param)
-
-
-@method_decorator([login_required], name='dispatch')
-class SubjectImportUploadSetting(View):   # PR2019-03-10
-    # function updates mapped fields, no_header and worksheetname in table Companysetting
-    def post(self, request, *args, **kwargs):
-        #logger.debug(' ============= SubjectImportUploadSetting ============= ')
-        #logger.debug('request.POST' + str(request.POST) )
-        schoolsetting_dict = {}
-        has_permit = False
-        if request.user is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
-        if has_permit:
-            if request.POST['upload']:
-                new_setting_json = request.POST['upload']
-                # new_setting is in json format, no need for json.loads and json.dumps
-                #logger.debug('new_setting_json' + str(new_setting_json))
-
-                new_setting_dict = json.loads(request.POST['upload'])
-                settings_key = c.KEY_IMPORT_SUBJECT
-
-                new_worksheetname = ''
-                new_has_header = True
-                new_code_calc = ''
-                new_coldefs = {}
-    #TODO get_jsonsetting returns dict
-                stored_json = request.user.schoolbase.get_schoolsetting_dict(settings_key)
-                if stored_json:
-                    stored_setting = json.loads(stored_json)
-                    #logger.debug('stored_setting: ' + str(stored_setting))
-                    if stored_setting:
-                        new_has_header = stored_setting.get('has_header', True)
-                        new_worksheetname = stored_setting.get('worksheetname', '')
-                        new_code_calc = stored_setting.get('codecalc', '')
-                        new_coldefs = stored_setting.get('coldefs', {})
-
-                if new_setting_json:
-                    new_setting = json.loads(new_setting_json)
-                    #logger.debug('new_setting' + str(new_setting))
-                    if new_setting:
-                        if 'worksheetname' in new_setting:
-                            new_worksheetname = new_setting.get('worksheetname', '')
-                        if 'has_header' in new_setting:
-                            new_has_header = new_setting.get('has_header', True)
-                        if 'coldefs' in new_setting:
-                            new_coldefs = new_setting.get('coldefs', {})
-                    #logger.debug('new_code_calc' + str(new_code_calc))
-                new_setting = {'worksheetname': new_worksheetname,
-                               'has_header': new_has_header,
-                               'codecalc': new_code_calc,
-                               'coldefs': new_coldefs}
-                new_setting_json = json.dumps(new_setting)
-                request.user.schoolbase.set_schoolsetting_dict(settings_key, new_setting_json)
-
-    # only for testing
-                # ----- get user_lang
-                #user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                #tblName = 'employee'
-                #coldefs_dict = compdicts.get_stored_coldefs_dict(tblName, user_lang, request)
-                #if coldefs_dict:
-                #    schoolsetting_dict['coldefs'] = coldefs_dict
-                #logger.debug('new_setting from saved ' + str(coldefs_dict))
-
-                #m.Companysetting.set_setting(c.settings_key, new_setting_json, request.user.schoolbase)
-
-        return HttpResponse(json.dumps(schoolsetting_dict, cls=LazyEncoder))
-# --- end of SubjectImportUploadSetting
-
-@method_decorator([login_required], name='dispatch')
-class SubjectImportUploadData(View):  # PR2018-12-04 PR2019-08-05 PR2020-06-04
-
-    def post(self, request):
-        logger.debug(' ========================== SubjectImportUploadData ========================== ')
-        params = {}
-        has_permit = False
-        is_not_locked = False
-        if request.user is not None and request.user.schoolbase is not None:
-            has_permit = (request.user.is_role_adm_or_sys_and_group_system)
-            # TODO change request.user.examyear to sel_examyear
-            is_not_locked = not request.user.examyear.locked
-
-        if is_not_locked and has_permit:
-            # - Reset language
-            # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                params = import_subjects(upload_dict, user_lang, request)
-
-        return HttpResponse(json.dumps(params, cls=LazyEncoder))
-
-# --- end of SubjectImportUploadData
-
-def import_subjects(upload_dict, user_lang, request):
-
-    logger.debug(' -----  import_subjects ----- ')
-    logger.debug('upload_dict: ' + str(upload_dict))
-# - get is_test, codecalc, dateformat, awpKey_list
-    is_test = upload_dict.get('test', False)
-    awpKey_list = upload_dict.get('awpKey_list')
-    dateformat = upload_dict.get('dateformat', '')
-
-    params = {}
-    if awpKey_list:
-# - get lookup_field
-        # lookup_field is field that determines if employee alreay exist.
-        # check if one of the fields 'payrollcode', 'identifier' or 'code' exists
-        # first in the list is lookup_field
-        lookup_field = 'code'
-
-# - get upload_dict from request.POST
-        subject_list = upload_dict.get('subjects')
-        if subject_list:
-
-            today_dte = af.get_today_dateobj()
-            today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-            double_line_str = '=' * 80
-            indent_str = ' ' * 5
-            space_str = ' ' * 30
-            logfile = []
-            logfile.append(double_line_str)
-            logfile.append( '  ' + str(request.user.schoolbase.code) + '  -  ' +
-                            str(_('Import subjects')) + ' ' + str(_('date')) + ': ' + str(today_formatted))
-            logfile.append(double_line_str)
-
-            if lookup_field is None:
-                info_txt = str(_('There is no field given to lookup subjects. Subjects cannot be uploaded.'))
-                logfile.append(indent_str + info_txt)
-            else:
-                if is_test:
-                    info_txt = str(_("This is a test. The subject data are not saved."))
-                else:
-                    info_txt = str(_("The subject data are saved."))
-                logfile.append(indent_str + info_txt)
-                lookup_caption = str(get_field_caption('subject', lookup_field))
-                info_txt = str(_("Subjects are looked up by the field: '%(fld)s'.") % {'fld': lookup_caption})
-                logfile.append(indent_str + info_txt)
-                #if dateformat:
-                #    info_txt = str(_("The date format is: '%(fld)s'.") % {'fld': dateformat})
-                #    logfile.append(indent_str + info_txt)
-                update_list = []
-                for subject_dict in subject_list:
-                    # from https://docs.quantifiedcode.com/python-anti-patterns/readability/not_using_items_to_iterate_over_a_dictionary.html
-
-                    update_dict = upload_subject(subject_list, subject_dict, lookup_field,
-                                                 awpKey_list, is_test, dateformat, indent_str, space_str, logfile, request)
-                    # json_dumps_err_list = json.dumps(msg_list, cls=f.LazyEncoder)
-                    if update_dict:  # 'Any' returns True if any element of the iterable is true.
-                        update_list.append(update_dict)
-
-                if update_list:  # 'Any' returns True if any element of the iterable is true.
-                    params['subject_list'] = update_list
-            if logfile:  # 'Any' returns True if any element of the iterable is true.
-                params['logfile'] = logfile
-                        # params.append(new_employee)
-    return params
-
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def upload_subject(subject_list, subject_dict, lookup_field, awpKey_list,
-                   is_test, dateformat, indent_str, space_str, logfile, request):  # PR2019-12-17 PR2020-10-21
-    logger.debug('----------------- import subject  --------------------')
-    logger.debug(str(subject_dict))
-    # awpKeys are: 'code', 'name', 'sequence', 'depbases'
-
-# - get index and lookup info from subject_dict
-    row_index = subject_dict.get('rowindex', -1)
-    new_code = subject_dict.get('code')
-    new_name = subject_dict.get('name')
-    new_sequence = subject_dict.get('sequence')
-    new_depbases = subject_dict.get('depbases')
-
-# - create update_dict
-    update_dict = {'id': {'table': 'subject', 'rowindex': row_index}}
-
-# - give row_error when lookup went wrong
-    # multiple_found and value_too_long return the lookup_value of the error field
-
-    lookup_field_caption = str(get_field_caption('subject', lookup_field))
-    lookup_field_capitalized = '-'
-    if lookup_field_caption:
-        lookup_field_capitalized = lookup_field_caption.capitalize()
-    is_skipped_str = str(_("is skipped."))
-    skipped_str = str(_("Skipped."))
-    logfile.append(indent_str)
-    msg_err = None
-    log_str = ''
-
-    subjectbase = None
-    subject = None
-
-# check if lookup_value has value ( lookup_field = 'code')
-    lookup_value = subject_dict.get(lookup_field)
-    if not lookup_value:
-        log_str = str(_("No value for lookup field: '%(fld)s'.") % {'fld': lookup_field_caption})
-        msg_err = ' '.join((skipped_str, log_str))
-
-# check if lookup_value is not too long
-    elif len(lookup_value) > c.MAX_LENGTH_SCHOOLCODE:
-        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': lookup_value})
-        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_SCHOOLCODE})
-        log_str = value_too_long_str + ' ' + max_str
-        msg_err = ' '.join((skipped_str, value_too_long_str, max_str))
-
-# check if new_name has value
-    elif new_name is None:
-        field_caption = str(get_field_caption('subject', 'name'))
-        log_str = str(_("No value for required field: '%(fld)s'.") % {'fld': field_caption})
-        msg_err = ' '.join((skipped_str, log_str))
-
-# check if subject name  is not too long
-    elif len(new_name) > c.MAX_LENGTH_NAME:
-        value_too_long_str = str(_("Value '%(val)s' is too long.") % {'val': lookup_value})
-        max_str = str(_("Max %(fld)s characters.") % {'fld': c.MAX_LENGTH_NAME})
-        log_str = value_too_long_str + ' ' + max_str
-        msg_err = ' '.join((skipped_str, value_too_long_str, max_str))
-    else:
-
-# - check if lookup_value occurs mutiple times in Excel file
-        excel_list_multiple_found = False
-        excel_list_count = 0
-        for dict in subject_list:
-            value = dict.get(lookup_field)
-            if value and value == lookup_value:
-                excel_list_count += 1
-            if excel_list_count > 1:
-                excel_list_multiple_found = True
-                break
-        if excel_list_multiple_found:
-            log_str = str(_("%(fld)s '%(val)s' is not unique in Excel file.") % {'fld': lookup_field_capitalized, 'val': lookup_value})
-            msg_err = ' '.join((skipped_str, log_str))
-
-    if msg_err is None:
-
-# - check if subjectbase with this code exists in request.user.country. subjectbase has value when only one found
-        # lookup_value = subject_dict.get(lookup_field)
-        subjectbase, multiple_found = lookup_subjectbase(lookup_value, request)
-        if multiple_found:
-            log_str = str(_("Value '%(fld)s' is found multiple times.") % {'fld': lookup_value})
-            msg_err = ' '.join((skipped_str, log_str))
-
-# - check if subject with this subjectbase exists in request.user.examyear. subject has value when only one found
-        multiple_subjects_found = False
-        if subjectbase:
-            subject, multiple_subjects_found = lookup_subject(subjectbase, request)
-        if multiple_subjects_found:
-            log_str = str(_("Value '%(fld)s' is found multiple times in this exam year.") % {'fld': lookup_value})
-            msg_err = ' '.join((skipped_str, log_str))
-
-    code_text = (new_code + space_str)[:30]
-
-# - if error: put msg_err in update_dict and logfile
-    if msg_err:
-        update_dict['row_error'] = msg_err
-        update_dict[lookup_field] = {'error': msg_err}
-        logfile.append(code_text + is_skipped_str)
-        logfile.append(' ' * 30 + log_str)
-    else:
-
-# - create new subjectbase when subjectbase not found in database
-        if subjectbase is None:
-            try:
-                subjectbase = subj_mod.Subjectbase(
-                    code=new_code
-                )
-                if subjectbase:
-                    subjectbase.save()
-            except:
-# - give error msg when creating subjectbase failed
-                error_str = str(_("An error occurred. The subject is not added."))
-                logfile.append(" ".join((code_text, error_str )))
-                update_dict['row_error'] = error_str
-
-        if subjectbase :
-
-# - create new subject when subject not found in database
-            is_existing_subject = False
-            save_instance = False
-
-            if subject is None:
-                try: # TODO change request.user.examyear to sel_examyear
-                    subject = subj_mod.Subject(
-                        base=subjectbase,
-                        examyear=request.user.examyear,
-                        name=new_name
-                    )
-                    if subject:
-                        subject.save(request=request)
-                        update_dict['id']['created'] = True
-                        logfile.append(code_text + str(_('is added.')))
-                except:
-    # - give error msg when creating subject failed
-                    error_str = str(_("An error occurred. The subject is not added."))
-                    logfile.append(" ".join((code_text, error_str )))
-                    update_dict['row_error'] = error_str
-            else:
-                is_existing_subject = True
-                logfile.append(code_text + str(_('already exists.')))
-
-            if subject:
-                # add 'id' at the end, after saving the subject. Pk doent have value until instance is saved
-                #update_dict['id']['pk'] = subject.pk
-                #update_dict['id']['ppk'] = subject.company.pk
-                #if subject:
-                #    update_dict['id']['created'] = True
-
-                # PR2020-06-03 debug: ... + (list_item) gives error: must be str, not __proxy__
-                # solved bij wrapping with str()
-
-                blank_str = '<' + str(_('blank')) + '>'
-                was_str = str(_('was') + ': ')
-                # FIELDS_SUBJECT = ('base', 'examyear', 'name', 'abbrev', 'sequence', 'depbases', 'modifiedby', 'modifiedat')
-                for field in ('name', 'abbrev', 'sequence', 'depbases'):
-                    # --- get field_dict from  upload_dict  if it exists
-                    if field in awpKey_list:
-                        #('field: ' + str(field))
-                        field_dict = {}
-                        field_caption = str(get_field_caption('subject', field))
-                        caption_txt = (indent_str + field_caption + space_str)[:30]
-
-                        if field in ('code', 'name', 'namefirst', 'email', 'address', 'city', 'country'):
-                            if field == 'code':
-                                # new_code is created in this function and already checked for max_len
-                                new_value = new_code
-                            else:
-                                new_value = subject_dict.get(field)
-                # check length of new_value
-                            max_len = c.MAX_LENGTH_NAME \
-                                if field in ('namelast', 'namefirst', 'email', 'address', 'city', 'country') \
-                                else c.MAX_LENGTH_SCHOOLCODE
-
-                            if max_len and new_value and len(new_value) > max_len:
-                                msg_err = str(_("'%(val)s' is too long. Maximum is %(max)s characters'.") % {
-                                    'val': new_value, 'max': max_len})
-                                field_dict['error'] = msg_err
-                            else:
-                    # - replace '' by None
-                                if not new_value:
-                                    new_value = None
-                                field_dict['value'] = new_value
-                                if not is_existing_subject:
-                                    logfile.append(caption_txt + (new_value or blank_str))
-                    # - get saved_value
-                                saved_value = getattr(subject, field)
-                                if new_value != saved_value:
-                    # put new value in subject instance
-                                    setattr(subject, field, new_value)
-                                    field_dict['updated'] = True
-                                    save_instance = True
-                    # create field_dict and log
-                                    if is_existing_subject:
-                                        old_value_str = was_str + (saved_value or blank_str)
-                                        field_dict['info'] = field_caption + ' ' + old_value_str
-                                        update_str = ((new_value or blank_str) + space_str)[:25] + old_value_str
-                                        logfile.append(caption_txt + update_str)
-
-                # add field_dict to update_dict
-                        update_dict[field] = field_dict
-
-               # dont save data when it is a test run
-               # if not is_test and save_instance:
-                    #employee.save(request=request)
-                    #update_dict['id']['pk'] = employee.pk
-                    #update_dict['id']['ppk'] = employee.company.pk
-                    # wagerate wagecode
-                    # priceratejson additionjson
-                   # try:
-                        #employee.save(request=request)
-
-
-                        #update_dict['id']['pk'] = employee.pk
-                        #update_dict['id']['ppk'] = employee.company.pk
-                   # except:
-        # - give error msg when creating employee failed
-                   #     error_str = str(_("An error occurred. The subject data is not saved."))
-                   #     logfile.append(" ".join((code_text, error_str)))
-                  #      update_dict['row_error'] = error_str
-
-    return update_dict
-# --- end of upload_subject
-
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def lookup_subjectbase(lookup_value, request):  # PR2020-10-20
-    logger.debug('----------- lookup_subjectbase ----------- ')
-    # function searches for existing subjectbase
-    logger.debug('lookup_value: ' + str(lookup_value) + ' ' + str(type(lookup_value)))
-
-    subjectbase = None
-    multiple_found = False
-
-# check if 'code' exists multiple times in Subjectbase
-    row_count = subj_mod.Subjectbase.objects.filter(
-        code__iexact=lookup_value
-    ).count()
-
-    if row_count > 1:
-        multiple_found = True
-    elif row_count == 1:
-# get subjectbase when only one found # TODO change request.user.examyear to sel_examyear
-        subjectbase = subj_mod.Subject.objects.get_or_none(code__iexact=lookup_value, examyear=request.user.examyear)
-    # TODO skip for now, remove this line
-    multiple_found = False
-    return subjectbase, multiple_found
-
-
-def lookup_subject(subjectbase, request):  # PR2019-12-17 PR2020-10-20
-    #logger.debug('----------- lookup_subject ----------- ')
-
-    subject = None
-    multiple_subjects_found = False
-
-# - search subject by subjectbase and request.user.examyear
-    if subjectbase:
-        # check if subject exists multiple times # TODO change request.user.examyear to sel_examyear
-        row_count = subj_mod.Subject.objects.filter(base=subjectbase, examyear=request.user.examyear).count()
-        if row_count > 1:
-            multiple_subjects_found = True
-        elif row_count == 1:
-            # get subject when only one found # TODO change request.user.examyear to sel_examyear
-            subject = subj_mod.Subject.objects.get_or_none(base=subjectbase, examyear=request.user.examyear)
-
-    return subject, multiple_subjects_found
-
-
-
-def get_field_caption(table, field):
-    caption = ''
-    if table == 'subject':
-        if field == 'code':
-            caption = _('Abbreviation')
-        elif field == 'name':
-            caption = _('Subject name')
-        elif field == 'sequence':
-            caption = _('Sequence')
-        elif field == 'depbases':
-            caption = _('Departments')
-    return caption
-
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -5612,7 +5110,7 @@ def delete_subject_instance(subject_instance, request):
 
     base_pk = subject_instance.base.pk
 
-    this_txt = _("Subject '%(tbl)s'") % {'tbl': subject_instance.name}
+    this_txt = _("Subject '%(tbl)s'") % {'tbl': subject_instance.name_nl}
 
 # - check if there are students with this subject
     students_with_this_subject_exist = stud_mod.Studentsubject.objects.filter(
@@ -5909,7 +5407,7 @@ def create_schemeitem(examyear, scheme, subj_pk, sjtp_pk, messages, request):
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
             msg_html = [': '.join((str(_('An error occurred')),str(e))),
-                        str(_("Subject scheme subject '%(val)s' could not be created.") % {'val': subject.name})]
+                        str(_("Subject scheme subject '%(val)s' could not be created.") % {'val': subject.name_nl})]
 
             messages.append(
                 {'class': "border_bg_invalid", 'header': message_header, 'msg_html': msg_html})
@@ -5933,7 +5431,7 @@ def delete_schemeitem(schemeitem_instance, request):
     deleted_row = None
     msg_html = None
 
-    this_txt = _("Subject '%(tbl)s' of subject scheme '%(tbl)s'") % {'tbl': schemeitem_instance.subject.name}
+    this_txt = _("Subject '%(tbl)s' of subject scheme '%(tbl)s'") % {'tbl': schemeitem_instance.subject.name_nl}
 
 # check if there are students with subjects with this schemeitem
     students_with_this_schemeitem_exist = stud_mod.Studentsubject.objects.filter(
@@ -7011,7 +6509,7 @@ class ExamDownloadExamView(View):  # PR2021-05-06
 
                     file_name = ' '.join(( str(_('Exam')),
                         c.EXAMPERIOD_CAPTION.get(sel_exam_instance.examperiod, ''),
-                        sel_exam_instance.subject.name,
+                        sel_exam_instance.subject.name_nl,
                         sel_exam_instance.department.base.code
                     ))
                     if sel_exam_instance.level:
@@ -7130,7 +6628,7 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
 
                     file_name = ' '.join(( str(_('Exam')),
                         c.EXAMPERIOD_CAPTION.get(sel_ce_exam_instance.examperiod, ''),
-                        sel_ce_exam_instance.subject.name,
+                        sel_ce_exam_instance.subject.name_nl,
                         sel_ce_exam_instance.department.base.code
                     ))
                     if sel_ce_exam_instance.level:
@@ -8365,8 +7863,9 @@ def create_schoolbase_dictlist(examyear, request):  # PR2021-08-20 PR2021-10-14
 
     # PR2021-08-20 functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
     # - of this exam year, of all countries
+
     # - country: when req_usr country = curacao: include all schools (inluding SXM schools)
-    #           when req_usr country = sxm: include only SXM schools
+    #            when req_usr country = sxm: show only SXM schools
 
     # - skip schools of other organizations than schools
     # - also add admin organization (ETE, DOE), for extra for ETE, DOE
