@@ -46,7 +46,7 @@ def update_library(examyear, request):
         ('exam', 'title_ep1', 'Antwoorden van het centraal examen '),
         ('exam', 'title_ep2', 'Antwoorden van het herexamen '),
         ('exam', 'title_scoretable_ete', 'Omzettingstabel ETE-examen voor het examenjaar '),
-        ('exam', 'title_scoretable_duo', 'Omzettingstabel DUO-examen voor het examenjaar '),
+        ('exam', 'title_scoretable_duo', 'Omzettingstabel CVTE-examen voor het examenjaar '),
         ('exam', 'educationtype', 'Onderwijssoort'),
         ('exam', 'examtype', 'Soort examen'),
         ('exam', 'Central_exam', 'Centraal examen'),
@@ -68,7 +68,7 @@ def update_library(examyear, request):
         ('exam', 'cesuur', 'Cesuur'),
         ('exam', 'n_term', 'N-term'),
         ('exam', 'nex_id', 'nex_ID'),
-        ('exam', 'duo_exam', 'DUO examen'),
+        ('exam', 'duo_exam', 'CVTE examen'),
 
         ('ex1', 'title', 'Genummerde alfabetische naamlijst van de kandidaten'),
         ('ex1', 'submit_before', 'Inzenden vóór 1 november *'),

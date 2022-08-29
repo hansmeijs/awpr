@@ -29,6 +29,7 @@ from awpr import settings as s
 from awpr import excel as awpr_excel
 from awpr import functions as af
 from awpr import constants as c
+from awpr import library as awpr_lib
 from awpr import validators as av
 from awpr import menus as awpr_menu
 from awpr import downloads as dl
@@ -2322,7 +2323,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                         log_list.append(c.STRING_SPACE_05)
 
 # get text from examyearsetting
-                        settings = af.get_library(sel_examyear_instance, ['exform', 'ex1'])
+                        settings = awpr_lib.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
 # - get department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist
                         department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)

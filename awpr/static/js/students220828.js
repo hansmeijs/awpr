@@ -1579,7 +1579,7 @@ function RefreshDataRowsAfterUpload(response) {
             } else {
                 const full_name = (has_data_dict && data_dict.fullname) ? data_dict.fullname  : "---";
                 if (mode === "bis_exam") {
-                    msg01_txt = loc.The_bis_exam + loc._of_ + " '" + full_name + "'" + loc.will_be_removed
+                    msg01_txt = loc.The_bis_exam + loc._of_ + " '" + full_name + "' " + loc.will_be_removed
                     // PR2022-04-11 Richard westerink ATC: not when also evening / lex student
 
                     if (has_data_dict && data_dict.bis_exam && !data_dict.iseveningstudent && !data_dict.islexstudent){

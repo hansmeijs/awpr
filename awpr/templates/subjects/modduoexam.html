@@ -9,7 +9,7 @@
                 <div class="modal-header tsa_bc_lightlightgrey">
                     <a href="{% url 'manual_url' 'studsubj' 'id_clusters' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
 
-                    <h4 class="modal-title mx-2" >{% trans 'Link DUO exams' %}</h4>
+                    <h4 class="modal-title mx-2" >{% trans 'Link CVTE exams' %}</h4>
                     <button class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -28,7 +28,7 @@
                     </div>
 
                     <div class="mx-4">
-                        <small class="text-muted">{% trans 'Select a subject and a DUO exam.' %}</small>
+                        <small class="text-muted">{% trans 'Select a subject and a CVTE exam.' %}</small>
                         <small class="text-muted">{% trans "Then click 'Link exam to subject' to link them." %}</small>
                     </div>
                     <div class="content_header ml-2 mr-0">
@@ -61,13 +61,13 @@
                          </div>
 
                         <div class="flex_1 p-2">
-                            <h6 class="px-2">{% trans 'DUO exams that are not linked' %}:</h6>
+                            <h6 class="px-2">{% trans 'CVTE exams that are not linked' %}:</h6>
                             <table class="tableX tsa_tbl border_bg_lightblue tbl_h320 tbl_w320">
                                 <tbody id="id_MDUO_tblBody_duo_exams"></tbody>
                             </table>
 
                             <div class="display_hide">
-                                <label class="label_margin_top_m2">{% trans 'Filter DUO exams' %}:</label>
+                                <label class="label_margin_top_m2">{% trans 'Filter CVTE exams' %}:</label>
                                 <div class="flex_container px-2">
                                     <div class="flex_1">
                                         <input id="id_MDUO_filter_exams" type="text" data-field="schoolname" class="form-control"
@@ -79,7 +79,7 @@
                                                 <input id="id_MDUO_show_linked_exams" type="checkbox" class="awp_input_checkbox tw_032 mx-2">
                                             </div>
                                             <div class="flex_4">
-                                                <label for="id_MDUO_show_linked_exams">{% trans 'Show linked DUO exams' %}</label>
+                                                <label for="id_MDUO_show_linked_exams">{% trans 'Show linked CVTE exams' %}</label>
                                             </div>
                                         </div>
                                     </div>

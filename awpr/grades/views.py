@@ -3198,7 +3198,7 @@ def XXXXXXXXXXcreate_grade_rowsNIU(sel_examyear_pk, sel_schoolbase_pk, sel_depba
                     ce_exam_name = subj_vw.get_exam_name(
                         ce_exam_id=ce_exam_id,
                         ete_exam=row.get('ete_exam') or False,
-                        subj_name=row.get('subj_name'),
+                        subj_name_nl=row.get('subj_name_nl'),
                         depbase_code=row.get('depbase_code'),
                         lvl_abbrev=row.get('lvl_abbrev'),
                         examperiod=row.get('exam_examperiod'),
@@ -3338,7 +3338,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     "si.is_core_subject, si.is_mvt, si.sr_allowed, si.no_ce_years, si.thumb_rule,",
                     "si.rule_grade_sufficient, si.rule_gradesuff_notatevlex,",
 
-                    "subj.name_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+                    "subj.name_nl AS subj_name_nl, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
 
                     "NULL AS note_status", # will be filled in after downloading note_status
 
@@ -3481,7 +3481,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_ex
                     ce_exam_name = subj_vw.get_exam_name(
                         ce_exam_id=ce_exam_id,
                         ete_exam=row.get('ete_exam'),
-                        subj_name=row.get('subj_name'),
+                        subj_name_nl=row.get('subj_name_nl'),
                         depbase_code=row.get('depbase_code'),
                         lvl_abbrev=row.get('lvl_abbrev'),
                         examperiod=row.get('examperiod'),
@@ -3719,7 +3719,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                     exam_name = subj_vw.get_exam_name(
                         ce_exam_id=ceex_exam_id,
                         ete_exam=row.get('ceex_ete_exam'),
-                        subj_name=row.get('subj_name'),
+                        subj_name_nl=row.get('subj_name_nl'),
                         depbase_code=row.get('depbase_code'),
                         lvl_abbrev=row.get('lvl_abbrev') or '-',
                         examperiod=row.get('examperiod'),

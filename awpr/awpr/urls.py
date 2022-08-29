@@ -257,7 +257,8 @@ urlpatterns = [
         path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download'),
         path('ex3_backpage', grade_exfiles.DownloadEx3BackpageView.as_view(), name='url_ex3_backpage'),
 
-        path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload')
+        path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload'),
+        path('validate_composition', student_views.ValidateCompositionView.as_view(), name='url_validate_subj_composition')
 
     ])),
 

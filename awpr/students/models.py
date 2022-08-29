@@ -1,8 +1,9 @@
 # PR2018-07-20
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, \
-    BooleanField, DateField, FileField
+    BooleanField, DateField, DateTimeField, FileField
 
+from django.utils import timezone
 from django.db.models.functions import Lower
 
 # PR2018-05-05 use AUTH_USER_MODEL
@@ -128,8 +129,11 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     partial_exam = BooleanField(default=False)  # get certificate, only when evening- or lexstudent
 
     # PR2022-08-22 - is ok when subjects composition is correct. Inspection can give dispensation
+    subj_composition_checked = BooleanField(default=False)
     subj_composition_ok = BooleanField(default=False)
     subj_dispensation = BooleanField(default=False)
+    subj_disp_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    subj_disp_modifiedat = DateTimeField(default=timezone.now, null=True)
 
     # additional_exam is deprecated, field partial_exam is used (additional_exam is partial_exam on a day school
     # additional_exam =  when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
@@ -276,8 +280,11 @@ class Student_log(sch_mod.AwpBaseModel):
     # additional_exam = when student does extra subject at a different school, possible in day/evening/lex school, only valid in the same examyear
 
     # PR2022-08-22 - is ok when subjects composition is correct. Inspection can give dispensation
+    subj_composition_checked = BooleanField(default=False)
     subj_composition_ok = BooleanField(default=False)
     subj_dispensation = BooleanField(default=False)
+    subj_disp_modifiedby = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    subj_disp_modifiedat = DateTimeField(default=timezone.now, null=True)
 
     # islinked = BooleanField(default=False)
     linked = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)

@@ -497,9 +497,9 @@
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
-        console.log("===== t_MSSSS_Create_SelectRow ===== ");
-        console.log("..........tblName", tblName);
-        console.log("map_dict", map_dict);
+        //console.log("===== t_MSSSS_Create_SelectRow ===== ");
+        //console.log("..........tblName", tblName);
+        //console.log("map_dict", map_dict);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk

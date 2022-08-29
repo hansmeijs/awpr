@@ -733,7 +733,7 @@ def copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_
 
     mapped_envelopitems = {}
 
-    caption = _('Labwl text')
+    caption = _('Label text')
 
     prev_envelopitems = subj_mod.Envelopitem.objects.filter(
         examyear_id=prev_examyear_pk

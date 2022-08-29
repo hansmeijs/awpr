@@ -159,7 +159,7 @@ class SchemeitemsDownloadView(View):  # PR2019-01-13
                         for subject in subjects:
                             subject_list.append({
                                 'subj_id': str(subject.id),
-                                'subj_name': subject.name_nl,
+                                'subj_name_nl': subject.name_nl,
                                 'subj_abbr': subject.abbrev,
                                 'subj_sequ': subject.sequence
                             })
@@ -435,7 +435,7 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
             sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
             sql_list = ["SELECT cl.id, cl.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
                         "dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
-                        "subjbase.code AS subj_code, subj.name_nl AS subj_name",
+                        "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl",
                         add_field_created_str,
                         "FROM subjects_cluster AS cl",
                         "INNER JOIN subjects_subject AS subj ON (subj.id = cl.subject_id)",
@@ -1374,6 +1374,7 @@ class ExamUploadView(View):
         req_usr = request.user
         update_wrap = {}
         msg_html = []
+
 # - reset language
         user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
         activate(user_lang)
@@ -1423,6 +1424,7 @@ class ExamUploadView(View):
                 upload_dict: {'table': 'ete_exam', 'mode': 'update', 'examyear_pk': 1, 'exam_pk': 21, 'subject_pk': 126, 'envelopbundle_pk': 2}
      
                 """
+                table = upload_dict.get('table')
                 # don't get it from usersettings, get it from upload_dict instead
                 subj_examyear_pk = upload_dict.get('examyear_pk')
                 depbase_pk = upload_dict.get('depbase_pk')
@@ -1477,36 +1479,36 @@ class ExamUploadView(View):
                                 logger.debug('    level: ' + str(level))
 
                             examperiod_int = upload_dict.get('examperiod')
-                            ete_exam = True
-                            exam, msg_err = create_exam_instance(subject, department, level, examperiod_int, ete_exam, request)
+                            ete_exam = (table == 'ete_exam')
+                            exam_instance, msg_err = create_exam_instance(subject, department, level, examperiod_int, ete_exam, request)
 
-                            if exam:
+                            if exam_instance:
                                 append_dict['created'] = True
                             elif msg_err:
                                 append_dict['err_create'] = msg_err
 
                             if logging_on:
-                                logger.debug('created exam: ' + str(exam))
+                                logger.debug('created exam_instance: ' + str(exam_instance))
                                 logger.debug('append_dict: ' + str(append_dict))
 
                         else:
 
     # - else: get existing exam instance
-                            exam = subj_mod.Exam.objects.get_or_none(
+                            exam_instance = subj_mod.Exam.objects.get_or_none(
                                 id=exam_pk,
                                 subject=subject
                             )
                         if logging_on:
-                            logger.debug('exam: ' + str(exam))
+                            logger.debug('exam_instance: ' + str(exam_instance))
 
-                        if not exam:
+                        if not exam_instance:
                             err_txt = _("AWP could not find this exam.")
                             msg_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
                         else:
 
 # +++++ Delete instance if is_delete
                             if mode == 'delete':
-                                deleted_row, err_txt = delete_exam_instance(exam, request)
+                                deleted_row, err_txt = delete_exam_instance(exam_instance, request)
                                 if err_txt:
                                     msg_html = ''.join(("<p class='border_bg_invalid p-2'>", str(err_txt), "</p>"))
                             else:
@@ -1517,7 +1519,7 @@ class ExamUploadView(View):
                                     request=request,
                                     sel_examyear=sel_examyear,
                                     sel_department=sel_department,
-                                    exam_instance=exam,
+                                    exam_instance=exam_instance,
                                     upload_dict=upload_dict,
                                     error_list=err_list
                                 )
@@ -1538,7 +1540,7 @@ class ExamUploadView(View):
                                     msg_html = ''.join(("<p class='border_bg_valid p-2'>", str(msg_html), "</p>"))
 
                         if logging_on:
-                            logger.debug('---- exam: ' + str(exam))
+                            logger.debug('---- exam_instance: ' + str(exam_instance))
                             logger.debug('---- table: ' + str(table))
 
         # 6. create list of deleted exam
@@ -1546,13 +1548,14 @@ class ExamUploadView(View):
                             update_wrap['updated_ete_exam_rows'] = [deleted_row]
 
                         else:
+                            exam_pk_list = [exam_instance.pk] if exam_instance else None
                             if table == 'ete_exam':
                                 updated_ete_exam_rows = create_ete_exam_rows(
                                     req_usr=req_usr,
                                     sel_examyear=sel_examyear,
                                     sel_depbase=sel_department.base,
                                     append_dict=append_dict,
-                                    exam_pk_list=[exam.pk]
+                                    exam_pk_list=exam_pk_list
                                 )
                                 if updated_ete_exam_rows:
                                     update_wrap['updated_ete_exam_rows'] = updated_ete_exam_rows
@@ -1563,7 +1566,7 @@ class ExamUploadView(View):
                                     sel_examyear=sel_examyear,
                                     sel_depbase=sel_department.base,
                                     append_dict=append_dict,
-                                    exam_pk_list=[exam.pk]
+                                    exam_pk_list=exam_pk_list
                                 )
                                 if updated_duo_exam_rows:
                                     update_wrap['updated_duo_exam_rows'] = updated_duo_exam_rows
@@ -1573,6 +1576,7 @@ class ExamUploadView(View):
 
         if msg_html:
             update_wrap['msg_html'] = msg_html
+
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamUploadView
@@ -1805,10 +1809,10 @@ class ExamCopyNtermenView(View):
 
                                     ntermentable = exam.ntermentable
                                     if not ntermentable:
-                                        log_list.append('    This exam is nit linked to a DUO exam')
+                                        log_list.append('    This exam is nit linked to a CVTE exam')
                                         log_list.append(' ')
                                     else:
-                                        log_list.append('    DUO exam: ' + ntermentable.omschrijving)
+                                        log_list.append('    CVTE exam: ' + ntermentable.omschrijving)
 
                                     if logging_on:
                                         logger.debug('exam: ' + str(exam))
@@ -1878,17 +1882,17 @@ class ExamLinkExamToGradesView(View):
                     logger.debug('    upload_dict' + str(upload_dict))
                 """
                 upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 190, 'examyear_pk': 2, 
-                        'subject_pk': 159, 'subj_name': 'Spaanse taal en literatuur', 
+                        'subject_pk': 159, 'subj_name_nl': 'Spaanse taal en literatuur', 
                         'is_test': True}
                 SXM links DUO exam:
                 upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 190, 'examyear_pk': 2, 
                         'subject_pk': 159, 'is_test': False} 
                 SXM links DUO exam:
                 upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 258, 'examyear_pk': 2,
-                        'subject_pk': 172, 'subj_name': 'Franse taal', 'is_test': True}
+                        'subject_pk': 172, 'subj_name_nl': 'Franse taal', 'is_test': True}
                 SXM links ETE exam:
                 upload_dict{'mode': 'link_exam_to_grades', 'exam_pk': 30, 'examyear_pk': 1, 
-                'subject_pk': 133, 'subj_name': 'Administratie en commercie', 'is_test': True}
+                'subject_pk': 133, 'subj_name_nl': 'Administratie en commercie', 'is_test': True}
                 requsr_examyear_pk2
                         
                 """
@@ -1978,12 +1982,12 @@ class ExamLinkExamToGradesView(View):
                                         logger.debug('this_country_subject:     ' + str(this_country_subject))
                                         logger.debug('this_country_subject.examyear.pk:     ' + str(this_country_subject.examyear.pk))
 
-                                    ete_duo_exam = str(_('The ETE exam') if sel_exam.ete_exam else _('The DUO exam'))
-                                    # def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
+                                    ete_duo_exam = str(_('The ETE exam') if sel_exam.ete_exam else _('The CVTE exam'))
+                                    # def get_exam_name(ce_exam_id, ete_exam, subj_name_nl, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
                                     exam_name = get_exam_name(
                                         ce_exam_id=sel_exam.pk,
                                         ete_exam=sel_exam.ete_exam,
-                                        subj_name=sel_exam.subject.name_nl,
+                                        subj_name_nl=sel_exam.subject.name_nl,
                                         depbase_code=sel_exam.department.base.code,
                                         lvl_abbrev=sel_exam.level.abbrev if sel_exam.level else '-',
                                         examperiod=sel_exam.examperiod,
@@ -2050,7 +2054,7 @@ class ExamLinkExamToGradesView(View):
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-# ============= ExamUploadDuoExamView ============= PR2021-04-07
+# ============= ExamUploadDuoExamView ============= PR2021-04-07 PR2022-08-28
 @method_decorator([login_required], name='dispatch')
 class ExamUploadDuoExamView(View):
 
@@ -2089,9 +2093,7 @@ class ExamUploadDuoExamView(View):
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
 
-                error_list = []
                 append_dict = {}
-                deleted_row = None
 
 # - get variables from upload_dict
                 # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
@@ -2116,7 +2118,9 @@ class ExamUploadDuoExamView(View):
                         logger.debug('exam_instance: ' + str(exam_instance))
 
                     if exam_instance:
-                        deleted_row = delete_duo_exam_instance(exam_instance, error_list, request)
+                        deleted_row, err_list = delete_duo_exam_instance(exam_instance, request)
+                        if err_list:
+                            err_html = '<br>'.join(err_list)
                         if deleted_row:
                             update_wrap['updated_duo_exam_rows'] = [deleted_row]
 
@@ -2211,48 +2215,63 @@ class ExamUploadDuoExamView(View):
                             if updated_duo_exam_rows:
                                 update_wrap['updated_duo_exam_rows'] = updated_duo_exam_rows
         if err_html:
-            update_wrap['err_html'] = err_html
+            msg_dict = {'header': str(_('Delete CVTE exam')), 'class': 'border_bg_invalid', 'msg_html': err_html}
+            update_wrap['msg_dictlist_from_duo_exam'] = msg_dict
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of ExamUploadDuoExamView
 
 
-def delete_duo_exam_instance(exam_instance, error_list, request):  # PR2022-04-09
+def delete_duo_exam_instance(exam_instance, request):  # PR2022-04-09 PR2022-08-28
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --- delete_duo_exam_instance --- ')
         logger.debug('exam_instance: ' + str(exam_instance))
+
+    error_list = []
 
 # - create deleted_row
     deleted_row = {'id': exam_instance.pk,
                     'mapid': 'exam_' + str(exam_instance.pk),
                     'deleted': True}
     if logging_on:
-        logger.debug('deleted_row: ' + str(deleted_row))
+        logger.debug('    deleted_row: ' + str(deleted_row))
 
 # - check if grades connected to this exam
     count_grades = validate_exam_has_grades(exam_instance)
+    if logging_on:
+        logger.debug('    count_grades: ' + str(count_grades))
 
     if count_grades:
         deleted_row = None
         if count_grades == 1:
-            error_list.append(_('There is 1 candidate with this exam.'))
+            error_list.append(str(_('There is 1 candidate with this exam.')))
         else:
-            error_list.append(_('There are %(count)s candidates with this exam.'))
-        error_list.append(_('This DUO-exam could not be unlinked.'))
+            error_list.append(str(_('There are %(count)s candidates with this exam.') % {'count': str(count_grades)}))
+
     else:
 # - delete instance
         try:
             exam_instance.delete(request=request)
+
+            if logging_on:
+                logger.debug('  deleted  exam_instance: ' + str(exam_instance))
         except Exception as e:
             deleted_row = None
             logger.error(getattr(e, 'message', str(e)))
-            error_list.append(_('This DUO-exam could not be unlinked.'))
 
+            error_list.append = ''.join(( str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>'))
         if logging_on:
             logger.debug('deleted_row: ' + str(deleted_row))
             logger.debug('error_list: ' + str(error_list))
-    return deleted_row
+
+    if error_list:
+        if logging_on:
+            logger.debug('error_list: ' + str(error_list) + ' ' + str(type(error_list)))
+
+        error_list.append(str(_('This CVTE exam can not be deleted.')))
+
+    return deleted_row, error_list
 # - end of delete_duo_exam_instance
 
 
@@ -2703,7 +2722,7 @@ class ExamApproveOrSubmitGradeExamView(View):
                     """
                     count_dict: {
                         49: {'exam_id': 49,
-                            'subj_name': 'Engelse taal', 
+                            'subj_name_nl': 'Engelse taal', 
                             'subj_code': 'en', 
                             'dep_code': 'Vsbo', 
                             'lvl_code': 'PBL', 
@@ -3472,7 +3491,7 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_ex
                 "depbase.code AS dep_code, lvlbase.code AS lvl_code,",
                 "ce_exam.id AS ceex_exam_id, ce_exam.version AS ceex_exam_version,",
                 "ce_exam.amount AS ceex_amount, ce_exam.blanks AS ceex_blanks,",
-                "subj.name_nl AS ceex_subj_name, subjbase.code AS ceex_subj_code,",
+                "subj.name_nl AS ceex_subj_name_nl, subjbase.code AS ceex_subj_code,",
 
                 "CONCAT(subj.name_nl,",
                 "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
@@ -3552,7 +3571,7 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_test, is_submit
         'ce_exam_published_id': None, 'ce_exam_blocked': False, 
         'dep_code': 'Vsbo', 'lvl_code': 'PBL', 'ceex_exam_id': 49, 'ceex_exam_version': 'Versie BLAUW',
         'ceex_amount': 26, 'ceex_blanks': None, 
-        'ceex_subj_name': 'Engelse taal', 
+        'ceex_subj_name_nl': 'Engelse taal', 
         'ceex_subj_code': 'en'}
     """
     if grade_exam_dict:
@@ -3948,24 +3967,31 @@ def create_grade_exam_submitted_instance(sel_school, department, examperiod, now
 # - end of create_grade_exam_submitted_instance
 
 
-def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
-    # PR2022-06-22
+def get_exam_name(ce_exam_id, ete_exam, subj_name_nl, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
+    # PR2022-06-22 PR2022-08-28
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_exam_name -----')
+        logger.debug('    ete_exam: ' + str(ete_exam))
+        logger.debug('    subj_name_nl: ' + str(subj_name_nl))
+        logger.debug('    depbase_code: ' + str(depbase_code))
+        logger.debug('    lvl_abbrev: ' + str(lvl_abbrev))
+        logger.debug('    examperiod: ' + str(examperiod))
+        logger.debug('    version: ' + str(version))
+        logger.debug('    ntb_omschrijving: ' + str(ntb_omschrijving))
 
     exam_name = None
     if ce_exam_id:
-        exam_name = 'ETE' if ete_exam else 'DUO'
+        exam_name = 'ETE' if ete_exam else 'CVTE'
 
         if ete_exam:
             if depbase_code:
                 exam_name += ' ' + depbase_code
             if lvl_abbrev:
                 exam_name += ' ' + lvl_abbrev
-            if subj_name:
-                exam_name += ' ' + subj_name
+            if subj_name_nl:
+                exam_name += ' ' + subj_name_nl
             if examperiod:
                 exam_name += ' tijdvak ' + str(examperiod)
             if version:
@@ -3976,9 +4002,18 @@ def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, exa
                 exam_name += ' ' + depbase_code
             if ntb_omschrijving:
                 exam_name += ' ' + ntb_omschrijving
-
+            else:
+                # used for extra duo exams without link to ntermen table
+                if lvl_abbrev:
+                    exam_name += ' ' + lvl_abbrev
+                if subj_name_nl:
+                    exam_name += ' ' + subj_name_nl
+                if examperiod:
+                    exam_name += ' tijdvak ' + str(examperiod)
+                if version:
+                    exam_name += ' ' + version
     if logging_on:
-        logger.debug('exam_name: ' + str(exam_name))
+        logger.debug('    exam_name: ' + str(exam_name))
 
     return exam_name
 # - end of get_exam_name
@@ -4093,7 +4128,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
 
                         if rows:
                             updated_grd_count = len(rows)
-                            ete_duo_cpt = _('ETE exam') if exam_instance.ete_exam else _('DUO exam')
+                            ete_duo_cpt = _('ETE exam') if exam_instance.ete_exam else _('CVTE exam')
                             willbe_hasbeen = pgettext_lazy('singular', 'has been') if is_saved else pgettext_lazy('singular', 'will be')
                             log_list.append(str(_('This %(cpt)s %(wbhb)s linked to the following %(cnt)s subjects of candidates:') \
                                                 %{'cpt': ete_duo_cpt, 'wbhb': willbe_hasbeen, 'cnt': updated_grd_count}))
@@ -4109,7 +4144,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                                 exam_name = ''
                                 if row[2]:  # row[2] = grd.ce_exam_id
                                     #if row[3]:  # ete_exam
-                                    #    exam_name = ' '.join(('ETE', row[4], row[5]))  # subj_name, depbase_code
+                                    #    exam_name = ' '.join(('ETE', row[4], row[5]))  # subj_name_nl, depbase_code
                                     #    if row[6]:  # level_req
                                     #        exam_name += (row[7] if row[7] else '-') # lvlbase_code'
                                     #    if row[8]:
@@ -4120,7 +4155,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                                     exam_name = get_exam_name(
                                         ce_exam_id=row[2], # row[2] = grd.ce_exam_id - only used to return blank when no ce_exam_id
                                         ete_exam=row[3], # row[3] = ete_exam
-                                        subj_name=row[4], # row[4] = subj.name_nl
+                                        subj_name_nl=row[4], # row[4] = subj.name_nl
                                         depbase_code=row[5], # row[5] = depbase.code,
                                         lvl_abbrev=(row[7] if row[7] else '-'), # row[7] = lvlbase.code
                                         examperiod=examperiod,
@@ -4500,9 +4535,15 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-06-23
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_all_exam_rows ============= ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+        logger.debug('    sel_examyear.code: ' + str(sel_examyear.code))
+        logger.debug('    sel_examyear.pk: ' + str(sel_examyear.pk))
+        logger.debug('    sel_depbase: ' + str(sel_depbase))
+        logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+        logger.debug('    exam_pk_list: ' + str(exam_pk_list))
 
     # PR2022-05-13 debug: Raymond Romney MPC: cannot open exam.
     # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
@@ -4513,132 +4554,152 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
     # PR2022-06-23 only used in page Grades
     # --- creates rows with exams that:
-    #       - show all exam.ete_exams (filter on sel_examyear.code) (only cur can create ete-exams
+    #       - show all exam.ete_exams (filter on sel_examyear.code) (only cur can create ete-exams)
     #       - show only DUO exams of this country (filter on sel_examyear.pk)
     # - this depbase.id
     # - this exam_period
-    # show ETE exams only when this subject has no DUO-exam
+    # dont show ETE exam when this subject has also a DUO exam of this country
+
+    try:
+        # when school: only ETE published exams (DUO exams are not published)
+        sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+        sql_keys = {'depbase_id': sel_depbase_pk, 'ep': sel_examperiod, 'ey_code': sel_examyear.code, 'ey_pk': sel_examyear.pk}
+
+        duo_exams_sql_list = [
+            "SELECT sb.id",
+            "FROM subjects_exam AS exam",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+
+            # only show linked exams (all should be linked)
+            # PR2022-08-28 not any more. exams wiithout ntb.id can be added, for secret DUO exams (they are not in ntb list
+            # was:  "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
+            "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
+
+            "WHERE NOT exam.ete_exam AND depbase.id = %(depbase_id)s::INT",
+            "AND ey.id = %(ey_pk)s::INT",
+            "AND exam.examperiod = %(ep)s::INT"
+            # was not correct:
+            #   all ETE exams are shown, only DUO exams of this country
+            # was (not correct): "AND (exam.ete_exam AND ey.code = %(ey_code)s::INT) OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT) "
+        ]
+
+        duo_exams_sql = ' '.join(duo_exams_sql_list)
+
+        sql_list = [
+            "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
+            "CONCAT('exam_', exam.id::TEXT) AS mapid,",
+
+            #"CONCAT(subj.name_nl,",
+            #"CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
+            #"CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+
+            "CONCAT('n', ntb.id, 'd', dep.id, 's', subj.id, 'l', lvl.id) AS ndsl_pk,",
+            "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
+            "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev, lvl.sequence AS lvl_sequence,",
+            "exam.ete_exam, exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.secret_exam,",
+
+            "sb.code AS subjbase_code, subj.name_nl AS subj_name_nl, subj.name_en AS subj_name_en, subj.name_pa AS subj_name_pa,",
+
+            "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
+
+            "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
+            "ntb.tijdvak AS ntb_tijdvak, ntb.omschrijving AS ntb_omschrijving, ntb.schaallengte AS ntb_schaallengte, ntb.n_term AS ntb_nterm,",
+            "ntb.datum AS ntb_datum,"
+    
+            "exam.status, exam.auth1by_id, exam.auth2by_id, exam.published_id, exam.locked, exam.modifiedat,",
+            "au.last_name AS modby_username,",
+
+            "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, publ.modifiedat AS publ_modat",
+
+            "FROM subjects_exam AS exam",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+
+            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+
+            "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
+
+            "LEFT JOIN accounts_user AS auth1 ON (auth1.id = exam.auth1by_id)",
+            "LEFT JOIN accounts_user AS auth2 ON (auth2.id = exam.auth2by_id)",
+            "LEFT JOIN schools_published AS publ ON (publ.id = exam.published_id)",
+
+            "LEFT JOIN accounts_user AS au ON (au.id = exam.modifiedby_id)",
+
+            "WHERE depbase.id = %(depbase_id)s::INT",
+            "AND exam.examperiod = %(ep)s::INT",
+            # dont show ETE exam when there is also a DUO exam of this country
+            "AND ((exam.ete_exam AND ey.code = %(ey_code)s::INT AND subj.base_id NOT IN (", duo_exams_sql, "))",
+                    "OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT))"
+        ]
 
     # when school: only ETE published exams (DUO exams are not published)
-    sel_depbase_pk = sel_depbase.pk if sel_depbase else None
-    sql_keys = {'depbase_id': sel_depbase_pk, 'ep': sel_examperiod, 'ey_code': sel_examyear.code, 'ey_pk': sel_examyear.pk}
+        if req_usr.role == c.ROLE_008_SCHOOL:
+            sql_list.append("AND (exam.published_id IS NOT NULL OR NOT exam.ete_exam)")
 
-    duo_exams_sql_list = [
-        "SELECT sb.id",
-        "FROM subjects_exam AS exam",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-        "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+        if exam_pk_list:
+            sql_keys['pk_arr'] = exam_pk_list
+            sql_list.append("AND exam.id IN ( SELECT UNNEST( %(pk_arr)s::INT[]))")
 
-        "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
-        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+        elif setting_dict:
+            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+            if sel_lvlbase_pk:
+                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
-        # only show linked exams (all should be linked)
-        "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
+            if logging_on:
+                logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
 
-        "WHERE NOT exam.ete_exam AND depbase.id = %(depbase_id)s::INT",
+        sql_list.append("ORDER BY exam.id")
 
-        "AND exam.examperiod = %(ep)s::INT",
-        "AND (exam.ete_exam AND ey.code = %(ey_code)s::INT) OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT) "
-    ]
+        sql = ' '.join(sql_list)
+        if logging_on:
+            logger.debug('    sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
 
-    duo_exams_sql = ' '.join(duo_exams_sql_list)
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            all_exam_rows = af.dictfetchall(cursor)
 
-    sql_list = [
-        "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
-        "CONCAT('exam_', exam.id::TEXT) AS mapid,",
+            if logging_on:
+                for conn_query in connection.queries:
+                    sql_str = conn_query.get('sql')
+                    if sql_str and "SELECT exam.id, exam.subject_id" in sql_str:
+                        logger.debug('conn_query: ' + str(conn_query))
 
-        #"CONCAT(subj.name_nl,",
-        #"CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-        #"CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+            if all_exam_rows:
+                for row in all_exam_rows:
+                    row['exam_name'] = get_exam_name(
+                        ce_exam_id=row.get('id'),
+                        ete_exam=row.get('ete_exam'),
+                        subj_name_nl=row.get('subj_name_nl'),
+                        depbase_code=row.get('depbase_code'),
+                        lvl_abbrev=row.get('lvl_abbrev'),
+                        examperiod=row.get('examperiod'),
+                        version=row.get('version'),
+                        ntb_omschrijving=row.get('ntb_omschrijving')
+                    )
 
-        "CONCAT('n', ntb.id, 'd', dep.id, 's', subj.id, 'l', lvl.id) AS ndsl_pk,",
-        "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
-        "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev, lvl.sequence AS lvl_sequence,",
-        "exam.ete_exam, exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.secret_exam,",
-        "sb.code AS subjbase_code, subj.name_nl AS subj_name,",
-        "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
+    # - add messages to first exam_row, only when exam_pk exists
+            if exam_pk_list and len(exam_pk_list) == 1 and all_exam_rows:
+                # when exam_pk has value there is only 1 row
+                row = all_exam_rows[0]
+                if row:
+                    for key, value in append_dict.items():
+                        row[key] = value
 
-        "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
-        "ntb.tijdvak AS ntb_tijdvak, ntb.omschrijving AS ntb_omschrijving, ntb.schaallengte AS ntb_schaallengte, ntb.n_term AS ntb_nterm,",
-        "ntb.datum AS ntb_datum,"
+        if logging_on and False:
+            logger.debug('all_exam_rows: ' + str(all_exam_rows))
 
-        "exam.status, exam.auth1by_id, exam.auth2by_id, exam.published_id, exam.locked, exam.modifiedat,",
-        "au.last_name AS modby_username,",
-
-        "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, publ.modifiedat AS publ_modat",
-
-        "FROM subjects_exam AS exam",
-        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-        "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
-
-        "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
-        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-        "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
-
-        "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
-
-        "LEFT JOIN accounts_user AS auth1 ON (auth1.id = exam.auth1by_id)",
-        "LEFT JOIN accounts_user AS auth2 ON (auth2.id = exam.auth2by_id)",
-        "LEFT JOIN schools_published AS publ ON (publ.id = exam.published_id)",
-
-        "LEFT JOIN accounts_user AS au ON (au.id = exam.modifiedby_id)",
-
-        #"WHERE NOT exam.ete_exam AND depbase.id = %(depbase_id)s::INT"
-        "WHERE depbase.id = %(depbase_id)s::INT",
-        "AND exam.examperiod = %(ep)s::INT",
-        # dont show ETE exam when there is also a DUO exam
-        "AND (exam.ete_exam AND ey.code = %(ey_code)s::INT AND subj.base_id NOT IN (", duo_exams_sql, ")) OR (NOT exam.ete_exam AND ey.id = %(ey_pk)s::INT)"
-    ]
-
-# when school: only ETE published exams (DUO exams are not published)
-    if req_usr.role == c.ROLE_008_SCHOOL:
-        sql_list.append("AND (exam.published_id IS NOT NULL OR NOT exam.ete_exam)")
-
-    if exam_pk_list:
-        sql_keys['pk_arr'] = exam_pk_list
-        sql_list.append("AND exam.id IN ( SELECT UNNEST( %(pk_arr)s::INT[]))")
-
-    elif setting_dict:
-        sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-        if sel_lvlbase_pk:
-            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
-
-    sql_list.append("ORDER BY exam.id")
-
-    sql = ' '.join(sql_list)
-    if logging_on:
-        logger.debug('sql_keys: ' + str(sql_keys))
-
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        all_exam_rows = af.dictfetchall(cursor)
-        if all_exam_rows:
-            for row in all_exam_rows:
-                row['exam_name'] = get_exam_name(
-                    ce_exam_id=row.get('id'),
-                    ete_exam=row.get('ete_exam'),
-                    subj_name=row.get('subj_name'),
-                    depbase_code=row.get('depbase_code'),
-                    lvl_abbrev=row.get('lvl_abbrev'),
-                    examperiod=row.get('examperiod'),
-                    version=row.get('version'),
-                    ntb_omschrijving=row.get('ntb_omschrijving')
-                )
-
-# - add messages to first exam_row, only when exam_pk exists
-        if exam_pk_list and len(exam_pk_list) == 1 and all_exam_rows:
-            # when exam_pk has value there is only 1 row
-            row = all_exam_rows[0]
-            if row:
-                for key, value in append_dict.items():
-                    row[key] = value
-
-    if logging_on:
-        logger.debug('all_exam_rows: ' + str(all_exam_rows))
-
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
     return all_exam_rows
 # --- end of create_all_exam_rows
 
@@ -4768,9 +4829,13 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
 def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-04-06 PR2022-06-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+        logger.debug('    sel_depbase: ' + str(sel_depbase))
+        logger.debug('    exam_pk_list: ' + str(exam_pk_list))
+        logger.debug('    setting_dict: ' + str(setting_dict))
 
     # PR2022-05-13 debug: Raymond Romney MPC: cannot open exam.
     # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
@@ -4802,7 +4867,9 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "exam.examperiod, exam.department_id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code,",
         "exam.level_id AS lvl_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
         "exam.version, exam.nex_id, exam.scalelength, exam.nterm, exam.ete_exam, exam.secret_exam,",
-        "sb.code AS subjbase_code, subj.name_nl AS subj_name,",
+
+        "sb.code AS subjbase_code, subj.name_nl AS subj_name_nl, subj.name_en AS subj_name_en, subj.name_pa AS subj_name_pa,",
+
         "ey.id AS ey_id, ey.code AS ey_code, ey.locked AS ey_locked,",
 
         "ntb.id AS ntb_id, ntb.nex_id AS ntb_nex_id, ntb.leerweg AS ntb_leerweg,",
@@ -4823,7 +4890,7 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
 
-        "INNER JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
+        "LEFT JOIN subjects_ntermentable AS ntb ON (ntb.id = exam.ntermentable_id)",
 
         "LEFT JOIN accounts_user AS auth1 ON (auth1.id = exam.auth1by_id)",
         "LEFT JOIN accounts_user AS auth2 ON (auth2.id = exam.auth2by_id)",
@@ -4871,7 +4938,7 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
                 row['exam_name'] = get_exam_name(
                     ce_exam_id=row.get('id'),
                     ete_exam=row.get('ete_exam'),
-                    subj_name=row.get('subj_name'),
+                    subj_name_nl=row.get('subj_name_nl'),
                     depbase_code=row.get('depbase_code'),
                     lvl_abbrev=row.get('lvl_abbrev'),
                     examperiod=row.get('examperiod'),
@@ -4912,7 +4979,7 @@ def create_duo_subject_rows(sel_examyear, sel_depbase, append_dict, setting_dict
         sql_keys = {'ey_id': sel_examyear.pk, 'depbase_id': sel_depbase.pk}
         sql_list = [
             "SELECT subj.id, subj.base_id AS subjbase_id,",
-            "sb.code AS subjbase_code, subj.name_nl AS subj_name,",
+            "sb.code AS subjbase_code, subj.name_nl AS subj_name_nl,",
             "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id, ",
             "dep.id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code",
 
@@ -6262,7 +6329,7 @@ def create_schemeitem_rows(sel_examyear, append_dict, schemeitem_pk=None, scheme
             sql_keys = {'ey_id': sel_examyear.pk}
             sql_list = ["SELECT si.id, si.scheme_id, scheme.department_id, scheme.level_id, scheme.sector_id,",
                 "CONCAT('schemeitem_', si.id::TEXT) AS mapid,",
-                "si.subject_id AS subj_id, subj.name_nl AS subj_name, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
+                "si.subject_id AS subj_id, subj.name_nl AS subj_name_nl, subjbase.id AS subjbase_id, subjbase.code AS subj_code,",
                 "sjtpbase.code AS sjtpbase_code, sjtpbase.sequence AS sjtpbase_sequence,",
                 "sjtp.id AS sjtp_id, sjtp.name AS sjtp_name, sjtp.abbrev AS sjtp_abbrev,",
                 "sjtp.has_prac AS sjtp_has_prac, sjtp.has_pws AS sjtp_has_pws,",
@@ -6378,7 +6445,7 @@ def get_scheme_si_dict(examyear_pk, depbase_pk, scheme_pk=None, schemeitem_pk=No
     try:
         if examyear_pk and depbase_pk:
             sql_keys = {'ey_id': examyear_pk, 'depbase_pk': depbase_pk}
-            sql_list = ["SELECT si.id, subj.name_nl AS subj_name, subjbase.code AS subj_code,",
+            sql_list = ["SELECT si.id, subj.name_nl AS subj_name_nl, subjbase.code AS subj_code,",
                 "sjtpbase.code AS sjtpbase_code,",
 
                 "scheme.name AS scheme_name, scheme.max_reex AS scheme_max_reex,",
@@ -6849,7 +6916,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                 sql_list = ["WITH grade_exams AS (" + sub_sql + ")",
                             "SELECT exam.id AS exam_id,",
                             "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
-                            "subjbase.code AS subj_code, subj.name_nl AS subj_name,",
+                            "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl,",
 
                             "exam.examperiod, exam.version, exam.amount, exam.scalelength,",
                             "exam.partex, exam.assignment, exam.keys",
@@ -6900,7 +6967,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                 """
 
                 row: {'exam_id': 117, 'depbase_code': 'Vsbo', 'lvl_abbrev': 'PBL', 
-                    'subj_code': 'bw', 'subj_name': 'Bouw', 
+                    'subj_code': 'bw', 'subj_name_nl': 'Bouw', 
                     'examperiod': 1, 'version': 'Versie BLAUW', 
                     'amount': 39, 'scalelength': 96, 
                     'partex': '1;1;4;20;Praktijkexamen onderdeel A#3;1;8;12;Minitoets 1 BLAUW onderdeel A#4;1;3;22;Praktijkexamen onderdeel B#6;1;7;7;Minitoets 2 BLAUW onderdeel B#7;1;1;9;Praktijkexamen onderdeel C#9;1;7;8;Minitoets 3 BLAUW onderdeel C#10;1;1;10;Praktijkexamen onderdeel D#12;1;8;8;Minitoets 4 BLAUW onderdeel D', 
@@ -7400,7 +7467,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                     elif ' ' + subj_code not in subj_txt:
                         subj_txt += ' ' + subj_code
 
-                    exam_dict['vak'] = exam_row.get('subj_name') or '-'
+                    exam_dict['vak'] = exam_row.get('subj_name_nl') or '-'
 
             # - create string with department abbrev
                     depbase_code = exam_row.get('depbase_code') or '-'
@@ -7624,7 +7691,7 @@ def get_ce_examresult_rows():
     sql_keys = {'ey_id': examyear_pk, 'sch_id': school_pk, 'dep_id': department_pk, 'experiod': examperiod}
     sql_list = ["SELECT stud.lastname, stud.firstname, stud.prefix, stud.examnumber,",
                 "lvl.id AS level_id, lvl.base_id AS levelbase_id, lvl.abbrev AS lvl_abbrev,",
-                "subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name",
+                "subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name_nl",
 
                 "FROM students_grade AS grd",
                 "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",

@@ -650,7 +650,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Other_language'] = _('Other language')
         dict['Papiamentu'] = _('Papiamentu')
         dict['English'] = _('English')
-        dict['Not_on_DUOorderlist_2lines'] = _('Not on \nDUO-orderlist')
+        dict['Not_on_CVTEorderlist_2lines'] = _('Not on \nCVTE-orderlist')
 
         #dict['Departments_of_this_school'] = _('Departments of this school')
         dict['All_departments'] = _('All departments')
@@ -671,11 +671,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Download_candidate_data'] = _('Download candidate data')
 
         dict['_of_'] = TXT__of_
-        dict['will_be_removed'] = pgettext_lazy('singular', ' will be removed.')
+        dict['will_be_removed'] = TXT_will_be_removed
         dict['Yes_remove'] = _('Yes, remove')
         dict['Possible_exemptions_willbe_deleted'] = _('Existing exemptions will be deleted.')
 
-        dict['Please_select_candidate_first'] = _('Please select a candidate first.')
+        dict['Please_select_candidate_first'] = _('Please, select a candidate first.')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
 
         dict['Examnumber'] = TXT_Examnumber
@@ -748,6 +748,20 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_cluster'] = _('Select cluster')
 
         dict['No_clusters_for_this_subject'] = _("There are no clusters for this subject.")
+
+        dict['Validate_subject_composition'] = _('Validate subject composition')
+        dict['Remove_subject_validation'] = _('Remove subject validation')
+
+        dict['The_composition_ofthe_subjects_of'] = _('The composition of the subjects of')
+        dict['will_be_validated'] = _('will be validated.')
+
+        dict['The_composition_is_validated'] = _('The composition of the subjects is validated by the Inspectorate.')
+
+        dict['The_validation_ofthe_subjects_of'] = _('The validation of the subjects of')
+        dict['will_be_removed'] = TXT_will_be_removed
+        dict['Yes_validate'] = _('Yes, validate')
+
+        dict['Select_candidate_first'] = _('Please, select a candidate first.')
 
         dict['Click_here_to_select_subject'] = TXT_Click_to_select_subject
         dict['You_must_select_subject_first'] = _('You must select a subject first, before you can add a cluster.')
@@ -903,8 +917,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_examperiods_found'] = TXT_No_examperiods_found
 
         dict['ETE_exams'] = _("ETE exams")
-        dict['DUO_exams'] = _("DUO exams")
-        dict['DUO_description'] = _("DUO description")
+        dict['CVTE_exams'] = _("CVTE exams")
+        dict['CVTE_description'] = _("CVTE description")
 
         dict['Exam_type'] = TXT_Exam_type
         dict['Exam_types'] = _('Exam types')
@@ -943,8 +957,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Add_exam'] = _("Add exam")
         dict['Delete_exam'] = _("Delete exam")
         dict['Copy_exam'] = _("Copy exam")
-        dict['Link_DUO_exams'] = _("Link DUO exams")
-        dict['Unlink_DUO_exam'] = _("Unlink DUO exam")
+
+        dict['Add_CVTE_exam'] = _("Add CVTE exam")
+        dict['Link_CVTE_exams'] = _("Link CVTE exams")
+        dict['Delete_CVTE_exam'] = _("Delete CVTE exam")
 
         dict['Publish_exams'] = _("Publish exams")
         dict['Submit_exams'] = _("Submit exams")
@@ -952,7 +968,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['_by_'] = TXT__by_
         dict['Upload_ntermen'] = _("Upload N-termen tabel")
         dict['Copy_ntermen_to_exams'] = _("Copy N-termen to exams")
-        dict['Ntermen_will_be_copied'] = _("The scalelengths and n-termen will be copied to the DUO exams.")
+        dict['Ntermen_will_be_copied'] = _("The scalelengths and n-termen will be copied to the CVTE exams.")
 
         dict['Undo_published'] = _("Undo 'Published'")
         dict['Remove_published_from_exam'] = _("Remove 'Published' from exam")
@@ -1144,6 +1160,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['from_available_list'] = _('from the list of available subjects.')
 
         dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
+        dict['Please_select_examperiod_first'] = _('Please select an exam period in the vertical grey bar at the left first.')
         dict['Please_select_examtype'] = _('Please select one exam type in the vertical grey bar at the left.')
 
         dict['reex_msg_01'] = _("Only the re-examination subjects will be shown.")
@@ -1701,6 +1718,7 @@ TXT_This_candidate_has_no_subjects = _('This candidate has no subjects.')
 TXT_Click_to_select_subject = _('Click here to select a subject ...')
 TXT_No_subject_selected = _('No subject selected.')
 
+TXT_will_be_removed= pgettext_lazy('singular', 'will be removed.')
 
 TXT_Function = _('Function')
 TXT_Chairperson = _('Chairperson')

@@ -767,41 +767,23 @@
         return status_array_reversed;
     };  // b_get_status_array
 
-    function b_get_status_auth1_auth2_iconclass(publ, blocked, auth1, auth2) {
-    // PR2022-04-17
-        const prefix = (blocked) ? "blocked_" : "diamond_";
-        let img_class = prefix + "0_0"; // empty diamond
-        if(publ){
-            if (blocked){
-                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
-            } else {
-                img_class = prefix + "0_4";  // blue diamond: published
-            };
-        } else {
-            if (blocked){
-                img_class = prefix + "1_4";  // red diamond: blocked by Inspectorate, published is removed to enable correction
-            } else {
-                if (auth1){
-                    if (auth2){
-                        img_class = prefix + "3_3"; // auth 1+2+3+4
-                    } else {
-                        img_class = prefix + "2_1"; // auth 1+4
-                    };
-                } else {
-                    if (auth2){
-                        img_class = prefix + "1_2"; // auth 2+3
-                    } else {
-                        img_class = prefix + "0_0"; // auth -
-        }}}};
-        return img_class;
-    };
+
+    function b_get_status_auth_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
+        // PR2022-08-28
+        // when auth4_must_sign : use function b_get_status_auth1234_iconclass
+        // when auth3_must_sign : use function b_get_status_auth123_iconclass
+        // orhetrwise: use function b_get_status_auth12_iconclass
+        return (auth4_must_sign) ? b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) :
+                            (auth3_must_sign) ? b_get_status_auth123_iconclass(publ, blocked, auth1, auth2, auth3) :
+                                                b_get_status_auth12_iconclass(publ, blocked, auth1, auth2);
+    };  //
 
     function b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
     // PR2021-05-07 PR2021-12-18 PR2022-04-17 PR2022-06-13
-        //console.log( " ==== b_get_status_auth1234_iconclass ====");
-        //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2)
-        //console.log("auth3_must_sign", auth3_must_sign, "auth3", auth3)
-        //console.log("auth4_must_sign", auth4_must_sign, "auth4", auth4)
+        console.log( " ==== b_get_status_auth1234_iconclass ====");
+        console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2)
+        console.log("auth3_must_sign", auth3_must_sign, "auth3", auth3)
+        console.log("auth4_must_sign", auth4_must_sign, "auth4", auth4)
 
         // PR 2022-06-13 shen secret exam (aangewezen examen) auth3 and auth4 dont have to approve
         // - solved as follows:
@@ -869,6 +851,68 @@
             };
         };
     //console.log( "img_class", img_class);
+        return img_class;
+    };
+
+    function b_get_status_auth123_iconclass(publ, blocked, auth1, auth2, auth3) {
+    // PR2022-08-28
+        console.log( " ==== b_get_status_auth123_iconclass ====");
+        console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2)
+        console.log("auth3_must_sign", auth3_must_sign, "auth3", auth3)
+        console.log("auth4_must_sign", auth4_must_sign, "auth4", auth4)
+
+        // auth1, auth2, auth3 must approve school exam
+
+        const prefix = (blocked) ? "blocked_" : "diamond_";
+        let img_class = prefix + "0_0"; // empty diamond
+
+    //console.log( "img_class", img_class);
+        if(publ){
+            if (blocked){
+                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
+            } else {
+                img_class = prefix + "0_4";  // blue diamond: published
+            };
+        } else {
+            if (auth1){
+                if (auth2){
+                    img_class = (auth3) ? prefix + "3_3" : prefix + "0_3"; //  auth 1+2+3+4 / auth 1+2
+                } else {
+                    img_class = (auth3) ? prefix + "1_1" : prefix + "0_1"; //  auth 1+3 / auth 1
+                };
+            } else {
+                if (auth2){
+                    img_class = (auth3) ? prefix + "1_2" : prefix + "0_2"; //  auth 2+3 / auth 2
+                } else {
+                    img_class = (auth3) ? prefix + "1_0" : prefix + "0_0"; //  auth 3 /  auth -
+                };
+            };
+        };
+    //console.log( "img_class", img_class);
+        return img_class;
+    };  // b_get_status_auth123_iconclass
+
+    function b_get_status_auth12_iconclass(publ, blocked, auth1, auth2) {
+    // PR2022-04-17
+        const prefix = (blocked) ? "blocked_" : "diamond_";
+        let img_class = prefix + "0_0"; // empty diamond
+        if(publ){
+            if (blocked){
+                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
+            } else {
+                img_class = prefix + "0_4";  // blue diamond: published
+            };
+        } else {
+            if (blocked){
+                img_class = prefix + "1_4";  // red diamond: blocked by Inspectorate, published is removed to enable correction
+            } else {
+                if (auth1){
+                    img_class = (auth2) ? prefix + "3_3" : prefix + "2_1"; // auth 1+2+3+4 / auth 1+4
+
+                } else {
+                    img_class = (auth2) ? prefix + "1_2" : prefix + "0_0"; //  auth 2+3 / auth -
+
+        }}};
         return img_class;
     };
 
@@ -1754,10 +1798,10 @@
         });
     };  // b_show_mod_message_html
 
-//=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01 PR2022-08-23
+//=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01 PR2022-08-28
     function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
-        console.log("==== b_show_mod_message_dictlist  ======")
-        console.log("msg_dictlist", msg_dictlist, typeof msg_dictlist)
+        //console.log("==== b_show_mod_message_dictlist  ======")
+        //console.log("msg_dictlist", msg_dictlist, typeof msg_dictlist)
         //console.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
@@ -1765,82 +1809,83 @@
         //  {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
 
         const el_container = document.getElementById("id_mod_message_container");
-        console.log("el_container", el_container)
         if(el_container){
-            if(msg_dictlist && msg_dictlist.length){
-        console.log("msg_dictlist.length", msg_dictlist.length)
+            if(msg_dictlist){
+                // convert to list when msg_dictlist is not a list
+                if (!Array.isArray(msg_dictlist)){
+                    msg_dictlist = [msg_dictlist];
+                };
 
-                // when skip_warning_messages = true:
-                // skip showing warning messages,
-                // in page grade msg 'Not current examyear' kept showing) PR2021-12-01
-                // used in page grade (for now)
-                let has_non_warning_msg = false;
+                if(msg_dictlist.length){
+                    // when skip_warning_messages = true:
+                    // skip showing warning messages,
+                    // in page grade msg 'Not current examyear' kept showing) PR2021-12-01
+                    // used in page grade (for now)
+                    let has_non_warning_msg = false;
 
-                let header_text = null, max_size = "md";
-                let show_btn_dontshowagain = false;
-                el_container.innerHTML = null;
-                for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
+                    let header_text = null, max_size = "md";
+                    let show_btn_dontshowagain = false;
+                    el_container.innerHTML = null;
+                    for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
 
-        console.log("msg_dict", msg_dict, typeof msg_dict)
-                console.log("is object", (typeof msg_dict === "object"))
-        // skip if msg_dict is not a dictionary
-                    if (typeof msg_dict  === "object") {
+                    console.log("is object", (typeof msg_dict === "object"))
+            // skip if msg_dict is not a dictionary
+                        if (typeof msg_dict  === "object") {
 
-                console.log("msg_dict", msg_dict)
-            //console.log("msg_dict", msg_dict)
-                        let class_str = null;
-                        if ("header" in msg_dict && msg_dict.header ) {
-                            // msgbox only has 1 header. Use first occurring header
-                            if (!header_text){ header_text = msg_dict.header};
-                        };
+                //console.log("msg_dict", msg_dict)
+                            let class_str = null;
+                            if ("header" in msg_dict && msg_dict.header ) {
+                                // msgbox only has 1 header. Use first occurring header
+                                if (!header_text){ header_text = msg_dict.header};
+                            };
 
-                        if ("class" in msg_dict && msg_dict.class ) {
-                            // each msg_html has a border
-                            class_str = msg_dict.class;
-                            if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
-                        };
+                            if ("class" in msg_dict && msg_dict.class ) {
+                                // each msg_html has a border
+                                class_str = msg_dict.class;
+                                if (class_str !== "border_bg_warning") { has_non_warning_msg = true };
+                            };
 
-                console.log("msg_dict.msg_html", msg_dict.msg_html)
-                        if ("msg_html" in msg_dict && msg_dict.msg_html ) {
-                // --- create div element with alert border for each message in messages
-                            const el_border = document.createElement("div");
-                            if (!class_str) { class_str = "border_bg_transparent"};
-                            el_border.classList.add(class_str, "p-2", "my-2");
-                            const el_div = document.createElement("div");
-                            el_div.innerHTML = msg_dict.msg_html;
-                            el_border.appendChild(el_div);
-                            el_container.appendChild(el_border);
-                        };
+                            if ("msg_html" in msg_dict && msg_dict.msg_html ) {
+                    // --- create div element with alert border for each message in messages
+                                const el_border = document.createElement("div");
+                                if (!class_str) { class_str = "border_bg_transparent"};
+                                el_border.classList.add(class_str, "p-2", "my-2");
+                                const el_div = document.createElement("div");
+                                el_div.innerHTML = msg_dict.msg_html;
+                                el_border.appendChild(el_div);
+                                el_container.appendChild(el_border);
+                            };
 
-            // set size of modal - used in anouncements
-                        // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-                        if (msg_dict.size === "lg") {
-                            max_size = "lg";
-                        };
+                // set size of modal - used in anouncements
+                            // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+                            if (msg_dict.size === "lg") {
+                                max_size = "lg";
+                            };
 
-                        if (msg_dict.btn_hide){
-                            show_btn_dontshowagain = true;
+                            if (msg_dict.btn_hide){
+                                show_btn_dontshowagain = true;
+                            };
                         };
                     };
-                };
-    // set size of modal - used in anouncements
-                // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-                const el_mod_message_size = document.getElementById("id_mod_message_size")
-                add_or_remove_class(el_mod_message_size, "modal-lg", (max_size === "lg"), "modal-md");
+        // set size of modal - used in anouncements
+                    // {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+                    const el_mod_message_size = document.getElementById("id_mod_message_size")
+                    add_or_remove_class(el_mod_message_size, "modal-lg", (max_size === "lg"), "modal-md");
 
-    // show btn 'Dont show again - used in anouncements
-                const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
-                add_or_remove_class(el_mod_message_btn_hide, cls_hide, !show_btn_dontshowagain);
+        // show btn 'Dont show again - used in anouncements
+                    const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
+                    add_or_remove_class(el_mod_message_btn_hide, cls_hide, !show_btn_dontshowagain);
 
-        //console.log("!skip_warning_messages || has_non_warning_msg", !skip_warning_messages || has_non_warning_msg)
-                if (!skip_warning_messages || has_non_warning_msg ){
-                    const el_header = document.getElementById("id_mod_message_header");
-                    if(el_header) {el_header.innerText = header_text};
-        // ---  set focus to close button - not working
-                    const el_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
-                    set_focus_on_el_with_timeout(el_btn_cancel, 150);
+            //console.log("!skip_warning_messages || has_non_warning_msg", !skip_warning_messages || has_non_warning_msg)
+                    if (!skip_warning_messages || has_non_warning_msg ){
+                        const el_header = document.getElementById("id_mod_message_header");
+                        if(el_header) {el_header.innerText = header_text};
+            // ---  set focus to close button - not working
+                        const el_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
+                        set_focus_on_el_with_timeout(el_btn_cancel, 150);
 
-                    $("#id_mod_message").modal({backdrop: true});
+                        $("#id_mod_message").modal({backdrop: true});
+                    };
                 };
             };
         }; // if(el_container)

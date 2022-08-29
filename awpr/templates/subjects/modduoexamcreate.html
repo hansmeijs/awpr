@@ -1,0 +1,76 @@
+ {% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL CREATE DUO EXAM =================== -->
+    <div class="modal" id="id_mod_duo_exam_create" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-md" role="document">
+            <div class="modal-content">
+                <div class="mex_header1">
+                    <h4 id="id_MDEC_header1" class="modal-title mx-2" ></h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="mex_header2">
+                    <h4 id="id_MDEC_header2" class="modal-title mx-2" ></h4>
+                </div>
+
+                <div class="modal-body py-0">
+                    {% if is_requsr_admin %}
+                        <div class="flex_container">
+                            <div id="id_MDEC_form_controls" class="flex_1">
+                                <div class="m-2">
+                                    <label class="mx-2 my-1">{% trans 'Subject' %}:</label>
+
+                                        <div id="id_MDEC_select_subject" class="form-control pt-2 pointer_show"></div>
+
+                                    <div class="mx-2 display_hide">
+                                        <small id="id_MDEC_err_subject" class="text-muted">{% trans 'The subject cannot be blank.' %}</small>
+                                    </div>
+                                </div>
+
+                                <div class="m-2">
+                                    <label class="mx-2 my-1">{% trans 'Learning path' %}:</label>
+                                    <select id="id_MDEC_select_level" class="form-control"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    </select>
+                                     <div class="mx-2 display_hide">
+                                        <small id="id_MDEC_err_level" class="text-muted">{% trans 'The learning path cannot be blank.' %}</small>
+                                    </div>
+                                </div>
+                                <div class="m-2">
+                                    <label class="mx-2 my-1">{% trans 'Version of the exam' %}:</label>
+                                    <input id="id_MDEC_input_version" type="text" class="form-control"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    <div class="mx-2">
+                                        <small id="id_MDEC_err_version" class="text-muted">{% trans 'Only required when a subject has multiple exams.' %}</small>
+                                    </div>
+                                </div>
+                                <div class="m-2">
+
+                                    <span>
+                                        <input id="id_MEXQ_checkbox_secret_exam" type="checkbox" value="true" class="tw_032 mx-2">
+                                        <label for="id_MEXQ_checkbox_secret_exam" class="mx-2 my-1">{% trans 'This is a designated exam.' %}</label>
+                                    </span>
+                                </div>
+
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mx-2 mt-2">
+                        <small id="id_MDEC_msg_modified"></small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="content_subheader_left mx-1">
+                        <button id="id_MDEC_btn_delete" class="btn btn-outline-danger" data-dismiss="modal">{% trans 'Delete exam' %}</button>
+                    </div>
+                    <div class="content_subheader_right_flex2">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MDEC_btn_save"  class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

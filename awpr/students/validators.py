@@ -408,14 +408,14 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                 else:
                     if level_missing and sector_missing:
                         if has_profiel:
-                            not_entered_str = _("The 'leerweg' and 'profiel' are not entered.")
+                            not_entered_str = _("The leaarning path and profile are not entered.")
                         else:
-                            not_entered_str = _("The 'leerweg' and 'sector' are not entered.")
+                            not_entered_str = _("The learning path and sector are not entered.")
                     elif level_missing:
-                        not_entered_str = _("The 'leerweg' is not entered.")
+                        not_entered_str = _("The leaarning path is not entered.")
                     elif sector_missing:
                         if has_profiel:
-                            not_entered_str = _("The 'profiel' is not entered.")
+                            not_entered_str = _("The profile is not entered.")
                         else:
                             not_entered_str = _("The sector is not entered.")
                 msg_list.append(str(not_entered_str) + '<br>' + str(_("Go to the page <i>Candidates</i> and enter the missing information of the candidate.")))
@@ -500,7 +500,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
     # - check total number of subjects
                 validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-    # - check number of mvt and combi subjects
+    # - check number of mvt, wisk and combi subjects
                 validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
                 validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
                 validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
@@ -512,8 +512,16 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                 validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang)
 
     # wrap messages in a bullet list
-                if len(msg_list):
-                    msg_str = ''.join(("<div class='p-2 border_bg_warning'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
+                if student.subj_dispensation:
+                    msg_list = ["<div class='p-2 border_bg_valid'><p>",
+                    str(_('The Inspectorate has validated the composition of the subjects of this candidate.')),
+                    "</p><p>",
+                    str(_('You cannot make changes.')),
+                    "</p><p>",
+                    str(_('Please contact the Inspectorate if you need to make any changes.')), "</p></div>"]
+
+                elif len(msg_list):
+                    msg_str = ''.join(("<div class='p-2 border_bg_invalidg'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
                     msg_list.insert(0, msg_str)
                     msg_list.append("</ul></div>")
                 else:
@@ -731,9 +739,9 @@ def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperi
 # - end of validate_submitted_locked_grades
 
 
-# ========  validate_studentsubjects  ======= PR2021-07-24
+# ========  validate_studentsubjects  ======= PR2021-07-24 PR2022-08-25
 
-def validate_studentsubjects_no_msg(student):
+def validate_studentsubjects_no_msg(student, user_lang):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects  -----')
@@ -772,12 +780,13 @@ def validate_studentsubjects_no_msg(student):
             validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
+
 # - check total number of subjects
             validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
 
-# - check number of mvt and combi subjects
+# - check number of mvt, wisk and combi subjects
             validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
@@ -792,6 +801,12 @@ def validate_studentsubjects_no_msg(student):
             validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
             if msg_list:
                 return True
+
+# - check total_studyloadhours
+            validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang)
+            # in 2023 studyloadhours is not required yet
+            # if msg_list:
+            #    return True
 
     return False
 # --- end of validate_studentsubjects

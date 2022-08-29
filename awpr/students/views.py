@@ -590,6 +590,113 @@ def create_result_dict_per_school(request, sel_examyear, sel_schoolbase):
 
 
 @method_decorator([login_required], name='dispatch')
+class ValidateCompositionView(View):  # PR2022-08-25
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ValidateCompositionView ============= ')
+
+        update_wrap = {}
+
+# - get permit, only inspectorate kan set validation
+        has_permit = request.user.role == c.ROLE_032_INSP and af.get_permit_crud_of_this_page('page_studsubj', request)
+        has_permit = True
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                """
+                upload_dict: {
+                    'student_pk': 2132,
+                    'subj_dispensation': True
+                }    
+                """
+# - get variables
+                student_pk = upload_dict.get('student_pk')
+                subj_dispensation = upload_dict.get('subj_dispensation') or False
+
+                if logging_on:
+                    logger.debug('upload_dict: ' + str(upload_dict))
+
+                updated_rows = []
+                error_list = []
+                messages = []
+                append_dict = {}
+
+# ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                #  - country is locked,
+                #  - examyear is not found, not published or locked
+                #  - school is not found, not same_school, or locked
+                #  - department is not found, not in user allowed depbase or not in school_depbase
+                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(
+                        request=request,
+                        skip_same_school_clause=True
+                    )
+
+                if sel_msg_list:
+                    msg_html = '<br>'.join(sel_msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                    if logging_on:
+                        logger.debug('messages:   ' + str(messages))
+                else:
+
+# +++  get existing student
+                    student_instance = stud_mod.Student.objects.get_or_none(
+                        id=student_pk,
+                        school__examyear=sel_examyear
+                        )
+                    if logging_on:
+                        logger.debug('..... student_instance: ' + str(student_instance))
+
+                    if student_instance:
+                        setattr(student_instance, 'subj_dispensation', subj_dispensation)
+                        setattr(student_instance, 'subj_disp_modifiedby', request.user)
+                        setattr(student_instance, 'subj_disp_modifiedat', timezone.now())
+
+                        # dont update student modifiedby
+                        student_instance.save()
+
+                        studsubj_rows = stud_mod.Studentsubject.objects.filter(
+                            student=student_instance,
+                            tobedeleted=False
+                        )
+                        if studsubj_rows:
+                            studsubj_pk_list = []
+                            for row in studsubj_rows:
+                                studsubj_pk_list.append(row.pk)
+
+                            updated_studsubj_rows = create_studentsubject_rows(
+                                examyear=sel_examyear,
+                                schoolbase=sel_school.base,
+                                depbase=sel_department.base,
+                                requsr_same_school=False,
+                                setting_dict={},
+                                append_dict={},
+                                request=request,
+                                studsubj_pk_list=studsubj_pk_list
+                            )
+                            update_wrap['updated_studsubj_rows'] = updated_studsubj_rows
+
+# - addd messages to update_wrap
+                if messages:
+                    update_wrap['messages'] = messages
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+# - end of ValidateCompositionView
+
+
+@method_decorator([login_required], name='dispatch')
 class ClusterUploadView(View):  # PR2022-01-06
 
     def post(self, request):
@@ -1003,7 +1110,6 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                #  - Note: skip check not activated, it will be set True in create_student
                 sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
 
@@ -1609,12 +1715,16 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
             if students:
                 validate_studsubj_list = []
                 for student in students:
-                    has_error = stud_val.validate_studentsubjects_no_msg(student)
-                    if logging_on:
-                        logger.debug('student: ' + str(student))
-                        logger.debug('has_error: ' + str(has_error))
+                    # validate_studentsubjects_no_msg returns True when there is an error PR2022-08-25
+                    no_error = not stud_val.validate_studentsubjects_no_msg(student, 'nl')
+                    if (not student.subj_composition_checked) or \
+                            (student.subj_composition_checked and student.subj_composition_ok != no_error):
+                        setattr(student, 'subj_composition_checked', True)
+                        setattr(student, 'subj_composition_ok', no_error)
+                        # dont update modified by
+                        student.save()
 
-                    if has_error:
+                    if not no_error:
                         if student.pk not in validate_studsubj_list:
                             validate_studsubj_list.append(student.pk)
                 if validate_studsubj_list:
@@ -2031,6 +2141,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
 # +++ get selected studsubj_rows
                         # TODO exclude published rows?? Yes, but count them when checking. You cannot approve or undo approve or submit when submitted
+                        # PR2022-08-25 TODO must also include previously submitted rows in Ex1
                         # when a subject is set 'tobedeleted', the published info is removed, to show up when submitted
                         crit = Q(student__school=sel_school) & \
                                Q(student__department=sel_department) & \
@@ -2103,6 +2214,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                             row_count = 0
                             student_pk_list, student_committed_list, student_saved_list, student_saved_error_list = \
                                 [],[], [], []
+                            student_composition_error_list = []
 
                             if studsubjects:
                                 for studsubj in studsubjects:
@@ -2120,6 +2232,12 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         # - add student_pk to student_pk_list, student_committed_list or student_saved_list
                                     # this is used to count the students in msg: '4 students with 39 subjects are added'
                                     # after the loop the totals are added to count_dict['student_count'] etc
+                                    # PR2022-08-25 submit not allowed when subject composition not coorect and no dispensation
+                                    if studsubj.student_id not in student_composition_error_list:
+                                        if not studsubj.student.subj_dispensation:
+                                            if not studsubj.student.subj_composition_ok:
+                                                student_composition_error_list.append(studsubj.student_id)
+
                                     if studsubj.student_id not in student_pk_list:
                                         student_pk_list.append(studsubj.student_id)
                                     if is_committed:
@@ -2150,6 +2268,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
                             count_dict['count'] = row_count
                             count_dict['student_count'] = len(student_pk_list)
+                            count_dict['student_composition_error_count'] = len(student_composition_error_list)
                             count_dict['student_committed_count'] = len(student_committed_list)
                             count_dict['student_saved_count'] = len(student_saved_list)
                             count_dict['student_saved_error_count'] = len(student_saved_error_list)
@@ -2229,6 +2348,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
 
     def create_ex1_ex4_msg_list(self, count_dict, requsr_auth, is_approve, is_test, examperiod, published_instance_filename):
+        # PR2022-08-25
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ----- create_ex1_ex4_msg_list -----')
@@ -2247,6 +2367,8 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         auth_missing = count_dict.get('auth_missing', 0)
         already_approved = count_dict.get('already_approved', 0)
         double_approved = count_dict.get('double_approved', 0)
+
+        student_composition_error_count = count_dict.get('student_composition_error_count', 0)
 
         if logging_on:
             logger.debug('.....count: ' + str(count))
@@ -2288,114 +2410,126 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                         str(_("The selection contains %(stud)s with %(subj)s.") %
                             {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(examperiod, count)}),
                         '</p>')))
+# if students with errors in compositiosn: skip other msg
+        if student_composition_error_count:
+            is_are_str = str(_('is') if student_composition_error_count == 1 else _('are'))
+            msg_list.append(''.join(( "<p class='pb-2'>",
+                            str(_("The Ex1 form cannot be submitted because there %(is_are)s %(count)s candidates, ")
+                                  % {'count': student_composition_error_count, 'is_are': is_are_str}),
+                            str(_(" whose subject composition is not correct.")),
+                            "</p><p class='pb-2'>",
+                            str(_("Make the necessary corrections in the subject composition or contact the Inspectorate.")),
+                            "</p>"
+                            )))
 
-# - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
-        if is_test and committed < count:
-            willbe_or_are_txt = pgettext_lazy('plural', 'will be') if is_test else _('are')
-            msg_list.append("<p class='pb-0'>" + str(_("The following %(cpt)s %(willbe)s skipped")
-                                                     % {'cpt': subjects_txt, 'willbe': willbe_or_are_txt}) + ':</p><ul>')
-            if already_published:
-                msg_list.append('<li>' + str(_("%(val)s already submitted") %
-                                             {'val': get_subjects_are_text(examperiod, already_published)}) + ';</li>')
-            if auth_missing:
-                msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
-                                             {'subj': get_subjects_are_text(examperiod, auth_missing)}) + ';</li>')
-                show_msg_first_approve_by_pres_secr = True
-            if already_approved:
-                msg_list.append('<li>' + get_subjects_are_text(examperiod, already_approved) + str(_(' already approved')) + ';</li>')
-            if double_approved:
-                other_function =  str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
-                caption = _('subject') if examperiod == 1 else _('re-examination')
-                msg_list.append(''.join(('<li>', get_subjects_are_text(examperiod, double_approved),
-                                         str(_(' already approved by you as ')), other_function, '.<br>',
-                                str(_("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {'cpt': caption} ), '</li>')))
-            msg_list.append('</ul>')
-
-# - line with text how many subjects will be approved / submitted
-        msg_list.append('<p>')
-        if is_test:
-            if is_approve:
-                if not committed:
-                    msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
-
-                else:
-                    student_count_txt = get_student_count_text(student_committed_count)
-                    subject_count_txt = get_subject_count_text(examperiod, committed)
-                    will_be_text = get_will_be_text(committed)
-                    approve_txt = _('approved.')
-                    msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
-                                        str(will_be_text), str(approve_txt)))
-            else:
-                if not committed:
-                    if is_approve:
-                        msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
-                    else:
-                        msg_str = _("The %(frm)s form can not be submitted.") % {'frm': form_txt}
-                else:
-                    student_count_txt = get_student_count_text(student_committed_count)
-                    subject_count_txt = get_subject_count_text(examperiod, committed)
-                    will_be_text = get_will_be_text(committed)
-                    approve_txt = _('approved.') if is_approve else _('added to the %(frm)s form.') % {'frm': form_txt}
-                    msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
-                                        str(will_be_text), str(approve_txt)))
         else:
-            student_count_txt = get_student_count_text(student_saved_count)
-            subject_count_txt = get_subject_count_text(examperiod, saved)
-            student_saved_error_count_txt = get_student_count_text(student_saved_error_count)
-            subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
+# - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
+            if is_test and committed < count:
+                willbe_or_are_txt = pgettext_lazy('plural', 'will be') if is_test else _('are')
+                msg_list.append("<p class='pb-0'>" + str(_("The following %(cpt)s %(willbe)s skipped")
+                                                         % {'cpt': subjects_txt, 'willbe': willbe_or_are_txt}) + ':</p><ul>')
+                if already_published:
+                    msg_list.append('<li>' + str(_("%(val)s already submitted") %
+                                                 {'val': get_subjects_are_text(examperiod, already_published)}) + ';</li>')
+                if auth_missing:
+                    msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
+                                                 {'subj': get_subjects_are_text(examperiod, auth_missing)}) + ';</li>')
+                    show_msg_first_approve_by_pres_secr = True
+                if already_approved:
+                    msg_list.append('<li>' + get_subjects_are_text(examperiod, already_approved) + str(_(' already approved')) + ';</li>')
+                if double_approved:
+                    other_function =  str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
+                    caption = _('subject') if examperiod == 1 else _('re-examination')
+                    msg_list.append(''.join(('<li>', get_subjects_are_text(examperiod, double_approved),
+                                             str(_(' already approved by you as ')), other_function, '.<br>',
+                                    str(_("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {'cpt': caption} ), '</li>')))
+                msg_list.append('</ul>')
 
-# - line with text how many subjects have been approved / submitted
-            if is_approve:
-                not_str = '' if saved else str(_('not')) + ' '
-                msg_str = ''
-                if not saved and not saved_error:
-                    msg_str = str(_("No subjects have been approved."))
-                else:
-                    if saved:
-                        have_has_been_txt = _('has been') if saved == 1 else _('have been')
-                        msg_str = str(_("%(subj)s of %(stud)s %(havehasbeen)s approved.")
-                                                % {'subj': subject_count_txt, 'stud': student_count_txt, 'havehasbeen': have_has_been_txt})
+    # - line with text how many subjects will be approved / submitted
+            msg_list.append('<p>')
+            if is_test:
+                if is_approve:
+                    if not committed:
+                        msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
+
                     else:
-                        msg_str = str(_("No subjects have been approved."))
-                    if saved_error:
-                        if msg_str:
-                            msg_str += '<br>'
-                        could_txt = pgettext_lazy('singular', 'could') if saved_error == 1 else pgettext_lazy('plural', 'could')
-                        msg_str += str(_("%(subj)s of %(stud)s %(could)s not be approved because an error occurred.")
-                                                % {'subj': subject_error_count_txt, 'stud': student_saved_error_count_txt, 'could': could_txt})
-
+                        student_count_txt = get_student_count_text(student_committed_count)
+                        subject_count_txt = get_subject_count_text(examperiod, committed)
+                        will_be_text = get_will_be_text(committed)
+                        approve_txt = _('approved.')
+                        msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
+                                            str(will_be_text), str(approve_txt)))
+                else:
+                    if not committed:
+                        if is_approve:
+                            msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
+                        else:
+                            msg_str = _("The %(frm)s form can not be submitted.") % {'frm': form_txt}
+                    else:
+                        student_count_txt = get_student_count_text(student_committed_count)
+                        subject_count_txt = get_subject_count_text(examperiod, committed)
+                        will_be_text = get_will_be_text(committed)
+                        approve_txt = _('approved.') if is_approve else _('added to the %(frm)s form.') % {'frm': form_txt}
+                        msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
+                                            str(will_be_text), str(approve_txt)))
             else:
-                not_str = '' if saved else str(_('not')) + ' '
-                msg_str = str(_("The %(frm)s form has %(not)s been submitted.") % {'frm': form_txt, 'not': not_str})
-                if saved:
-                    student_count_txt = get_student_count_text(student_saved_count)
-                    subject_count_txt = get_subject_count_text(examperiod, saved)
-                    file_name = published_instance_filename if published_instance_filename else '---'
-                    msg_str += ''.join(('<br>',
-                        str(_("It contains %(subj)s of %(stud)s.") % {'stud': student_count_txt, 'subj': subject_count_txt}),
-                        '<br>', str(_("The %(frm)s form has been saved as '%(val)s'.") % {'frm': form_txt, 'val': file_name}),
-                        '<br>', str(_("Go to the page 'Archive' to download the file."))
-                    ))
+                student_count_txt = get_student_count_text(student_saved_count)
+                subject_count_txt = get_subject_count_text(examperiod, saved)
+                student_saved_error_count_txt = get_student_count_text(student_saved_error_count)
+                subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
 
-        msg_list.append(str(msg_str))
-        msg_list.append('</p>')
+    # - line with text how many subjects have been approved / submitted
+                if is_approve:
+                    not_str = '' if saved else str(_('not')) + ' '
+                    msg_str = ''
+                    if not saved and not saved_error:
+                        msg_str = str(_("No subjects have been approved."))
+                    else:
+                        if saved:
+                            have_has_been_txt = _('has been') if saved == 1 else _('have been')
+                            msg_str = str(_("%(subj)s of %(stud)s %(havehasbeen)s approved.")
+                                                    % {'subj': subject_count_txt, 'stud': student_count_txt, 'havehasbeen': have_has_been_txt})
+                        else:
+                            msg_str = str(_("No subjects have been approved."))
+                        if saved_error:
+                            if msg_str:
+                                msg_str += '<br>'
+                            could_txt = pgettext_lazy('singular', 'could') if saved_error == 1 else pgettext_lazy('plural', 'could')
+                            msg_str += str(_("%(subj)s of %(stud)s %(could)s not be approved because an error occurred.")
+                                                    % {'subj': subject_error_count_txt, 'stud': student_saved_error_count_txt, 'could': could_txt})
 
-# - warning if any subjects are not fully approved
-        if show_warning_msg and not is_approve:
-            msg_list.append("<div class='pt-2'><b>")
-            msg_list.append(str(_('WARNING')))
-            msg_list.append(':</b><br>')
-            msg_list.append(str(_('There are subjects that are not fully approved.')))
-            msg_list.append(' ')
-            msg_list.append(str(_('They will not be included in the %(frm)s form.') % {'frm': form_txt}))
-            msg_list.append(' ')
-            msg_list.append(str(_('Are you sure you want to submit the %(frm)s form?') % {'frm': form_txt}))
-            msg_list.append('</div>')
+                else:
+                    not_str = '' if saved else str(_('not')) + ' '
+                    msg_str = str(_("The %(frm)s form has %(not)s been submitted.") % {'frm': form_txt, 'not': not_str})
+                    if saved:
+                        student_count_txt = get_student_count_text(student_saved_count)
+                        subject_count_txt = get_subject_count_text(examperiod, saved)
+                        file_name = published_instance_filename if published_instance_filename else '---'
+                        msg_str += ''.join(('<br>',
+                            str(_("It contains %(subj)s of %(stud)s.") % {'stud': student_count_txt, 'subj': subject_count_txt}),
+                            '<br>', str(_("The %(frm)s form has been saved as '%(val)s'.") % {'frm': form_txt, 'val': file_name}),
+                            '<br>', str(_("Go to the page 'Archive' to download the file."))
+                        ))
 
-# - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
-        if show_msg_first_approve_by_pres_secr:
-            msg_txt = ''.join(('<div>', str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') % {'cpt': subjects_txt, 'frm': form_txt}   ), '</div>'))
-            msg_list.append(msg_txt)
+            msg_list.append(str(msg_str))
+            msg_list.append('</p>')
+
+    # - warning if any subjects are not fully approved
+            if show_warning_msg and not is_approve:
+                msg_list.append("<div class='pt-2'><b>")
+                msg_list.append(str(_('WARNING')))
+                msg_list.append(':</b><br>')
+                msg_list.append(str(_('There are subjects that are not fully approved.')))
+                msg_list.append(' ')
+                msg_list.append(str(_('They will not be included in the %(frm)s form.') % {'frm': form_txt}))
+                msg_list.append(' ')
+                msg_list.append(str(_('Are you sure you want to submit the %(frm)s form?') % {'frm': form_txt}))
+                msg_list.append('</div>')
+
+    # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
+            if show_msg_first_approve_by_pres_secr:
+                msg_txt = ''.join(('<div>', str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') % {'cpt': subjects_txt, 'frm': form_txt}   ), '</div>'))
+                msg_list.append(msg_txt)
 
         msg_list.append('</div>')
 
@@ -3286,7 +3420,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                             if studsubj:
                                 append_dict['created'] = True
                             elif error_list:
-                                # TODO check if error is dispalyed correctly PR2021-07-21
+                                # TODO check if error is displayed correctly PR2021-07-21
                                 # yes, but messages html is displayed in msg_box. This one not in use??
                                 append_dict['err_create'] = ' '.join(error_list)
 
@@ -3341,7 +3475,8 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                         #if logging_on:
                         #    logger.debug('msg_html: ' + str(msg_html))
 
-                    has_error = stud_val.validate_studentsubjects_no_msg(student)
+                    has_error = stud_val.validate_studentsubjects_no_msg(student, user_lang)
+
                     update_wrap['subj_error'] = has_error
                     update_wrap['stud_pk'] = student.pk
 
@@ -3573,7 +3708,8 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
 
 #######################################################
 def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_school, sel_department,
-                    msg_list, err_fields, request):  # PR2019-06-06 PR2021-12-25 PR2022-04-15 PR2022-06-25
+                    msg_list, err_fields, request):
+    # PR2019-06-06 PR2021-12-25 PR2022-04-15 PR2022-06-25 PR2022-08-25
     # --- update existing and new studsubj_instance PR2019-06-06
     # called by StudentsubjectUploadView, StudentsubjectSingleUpdateView, StudentsubjectApproveSingleView
 
@@ -3587,6 +3723,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
     save_changes = False
     recalc_finalgrade = False
+    recalc_subj_composition = False
+
     studsubj_pk_list = []
     for field, new_value in upload_dict.items():
 
@@ -3612,6 +3750,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
                     save_changes = True
                     recalc_finalgrade = True
+                    recalc_subj_composition = True
 
                     if logging_on:
                         logger.debug('>>>>> new_schemeitem save')
@@ -3945,6 +4084,17 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             logger.error(getattr(e, 'message', str(e)))
             msg_list.append(str(_('An error occurred. The changes have not been saved.')))
         else:
+            if recalc_subj_composition:
+                student = studsubj_instance.student
+                # validate_studentsubjects_no_msg returns True when there is an error
+                no_error = not stud_val.validate_studentsubjects_no_msg(student, 'nl')
+                if (not student.subj_composition_checked) or \
+                    (student.subj_composition_checked and student.subj_composition_ok != no_error):
+                    setattr(student, 'subj_composition_checked', True)
+                    setattr(student, 'subj_composition_ok', no_error)
+                    # dont update modified by
+                    student.save()
+
             if recalc_finalgrade:
                 grades = stud_mod.Grade.objects.filter(
                     studentsubject=studsubj_instance,
@@ -5849,6 +5999,9 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "st.lastname, st.firstname, st.prefix, st.examnumber,",
             "st.scheme_id, st.iseveningstudent, st.islexstudent, st.classname, ",
             "st.tobedeleted AS st_tobedeleted, st.reex_count, st.reex03_count, st.bis_exam, st.withdrawn,",
+
+            "st.subj_composition_checked, st.subj_composition_ok, st.subj_dispensation,",
+
             "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name,",
             "dep.base_id AS depbase_id, dep.abbrev AS dep_abbrev,",
             "lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",

@@ -133,7 +133,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "090", "020", "090", "020",
                                 "090", "020", "090",
                                 "090", "020", "090", "090",
-                                 "032", "180", "032"],
+                                 "032", "240", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c","l",
                                 "c", "c", "c", "c",
                                 "c", "c", "c",
@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "input", "div",  "input", "div", "div", "a"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
                                 "text", "status", "text", "text", "toggle", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "180", "032"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]},
 
         btn_reex03:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "input", "div",  "input", "div", "div", "a"],
                     filter_tags: ["text", "text", "text", "text", "text", "text", "text", "text",
                                 "text", "status", "text", "text", "toggle", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "180", "032"],
+                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]},
         };
 
@@ -1442,12 +1442,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateField  ================ PR2020-12-18 PR2021-05-30
     function UpdateField(el_div, data_dict) {
-        //console.log("=========  UpdateField =========");
+        console.log("=========  UpdateField =========");
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = data_dict[field_name];
-    //console.log("     field_name", field_name);
-    //console.log("     fld_value", fld_value);
+    console.log("     field_name", field_name);
+    console.log("     fld_value", fld_value);
 
             if(field_name){
                 let title_text = null, filter_value = null;
@@ -1536,12 +1536,12 @@ document.addEventListener("DOMContentLoaded", function() {
         };
     };  // UpdateField
 
-//=========  UpdateFieldStatus  ================ PR2021-12-19
+//=========  UpdateFieldStatus  ================ PR2021-12-19 PR2022-08-28
     function UpdateFieldStatus(field_name, fld_value, data_dict) {
-        //console.log("=========  UpdateFieldStatus =========");
+        console.log("=========  UpdateFieldStatus =========");
         //console.log("field_name", field_name);
-        //console.log("fld_value", fld_value);
-        //console.log("data_dict", data_dict);
+        console.log("    fld_value", fld_value);
+        console.log("    data_dict", data_dict);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
@@ -1586,7 +1586,7 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("field_blocked", field_blocked);
         //console.log("is_blocked", is_blocked);
 
-                className = b_get_status_auth1234_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
+                className = b_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
 
         //console.log("className", className);
                 // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
@@ -1628,7 +1628,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     title_text = loc.Submitted_at + ":\n" + formatted_publ_modat;
 
                 } else if(auth1by_id || auth2by_id || auth3by_id || auth4by_id){
-                    title_text = loc.Approved_by + ": ";
+                    title_text = (data_dict.secret_exam) ? loc.Designated_exam + "\n" : "";
+                    title_text += loc.Approved_by + ": ";
                     for (let i = 1; i < 5; i++) {
                         const auth_id = (i === 1) ? auth1by_id :
                                         (i === 2) ? auth2by_id :
@@ -2266,7 +2267,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const auth3_must_sign = (!data_dict.secret_exam);
             const auth4_must_sign = (!data_dict.secret_exam && ["pe_status", "ce_status"].includes(fldName));
 
-            const new_class_str = b_get_status_auth1234_iconclass(is_published, is_blocked,
+            const new_class_str = b_get_status_auth_iconclass(is_published, is_blocked,
                                     auth_dict[1], auth_dict[2],
                                     auth3_must_sign, auth_dict[3],
                                     auth4_must_sign, auth_dict[4]);
@@ -3631,9 +3632,9 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  RefreshDataRows  ================ PR2020-08-16 PR2020-09-30, PR2021-05-01 PR2021-09-20 PR2022-03-03
     function RefreshDataRows(tblName, update_rows, data_rows, is_update, skip_show_ok) {
-        console.log(" --- RefreshDataRows  ---");
-        console.log("is_update", is_update);
-        console.log("update_rows", update_rows);
+        //console.log(" --- RefreshDataRows  ---");
+        //console.log("is_update", is_update);
+        //console.log("update_rows", update_rows);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
@@ -3650,10 +3651,10 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-09-20 PR2022-03-03
     function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict, skip_show_ok) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-    console.log("update_dict", update_dict);
+    //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -3696,8 +3697,8 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
                         };
                     };
                 };
-    console.log("updated_columns", updated_columns);
-    console.log("data_dict", data_dict);
+    //console.log("updated_columns", updated_columns);
+    //console.log("data_dict", data_dict);
 
         // ---  make update in tblRow
                 const tblRow = document.getElementById(data_dict.mapid);
@@ -5190,7 +5191,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
 //========= get_column_is_hidden  ====== PR2022-04-17 PR2022-06-22
     function get_column_is_hidden() {
-        console.log(" --- get_column_is_hidden ---")
+        //console.log(" --- get_column_is_hidden ---")
 
 // ---  get list of hidden columns
 

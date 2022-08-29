@@ -657,7 +657,7 @@ LABEL_TEXT = {
         'time': 'Afnametijd',
         'school': 'Schoolnaam',
         'numex': 'Aantal exemplaren',
-        'numenv': 'Aantal enveloppen',
+        'numenv': 'Envelop',
         'content': 'INHOUD',
         'oclock': 'uur',
         'of': 'van'
@@ -671,7 +671,7 @@ LABEL_TEXT = {
         'time': 'Time exam',
         'school': 'School name',
         'numex': 'Number of copys',
-        'numenv': 'Number of envelope',
+        'numenv': 'Envelope',
         'content': 'CONTENT',
         'oclock':  "o'clock",
         'of':  "of"
@@ -685,7 +685,7 @@ LABEL_TEXT = {
         'time': 'Orario di èksamen',
         'school': 'Nòmber di Skol',
         'numex':'Kantidat di eksemplar',
-        'numenv':'Kantidat di ènvelòp',
+        'numenv':'Ènvelòp',
         'content':'KONTENIDO',
         'oclock': 'or',
         'of': 'di'}

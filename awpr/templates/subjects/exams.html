@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams220825.js' %}"></script>
+    <script src="{% static 'js/exams220828.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import220822.js' %}"></script>
 {% endblock %}
@@ -18,7 +18,7 @@
         </div>
         {% if not no_access %}
             <div class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam period' %}:</h6>
                 <select id="id_SBR_select_period" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
@@ -69,6 +69,8 @@
         {% else %}
             {% include 'subjects/modexamquestions.html' %}
             {% include 'subjects/modduoexam.html' %}
+            {% include 'subjects/modduoexamcreate.html' %}
+
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
@@ -114,7 +116,7 @@
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                 {% if is_requsr_admin %}
                     <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
-                    <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'DUO exams' %}</button>
+                    <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'CVTE exams' %}</button>
                     <button data-btn="btn_ntermen" class="btn btn-secondary ">{% trans 'N-termen tabel' %}</button>
                 {% else %}
                     <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>

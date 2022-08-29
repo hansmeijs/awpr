@@ -95,13 +95,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "r", "r", "r", "l", "c"]
                      },
         ete_exam: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Department", "Learning_path", "Version",
-                                "Exam_period", "Designated_exam_2lines", "Date", "Start_time", "End_time", "Has_errata",   "Label_bundle", ""],
+                                "Exam_period", "Designated_exam_2lines", "Date", "Start_time", "End_time", "Has_errata",   "Label_bundle"],  //, ""],
                 field_names: ["select", "subjbase_code", "subj_name_nl", "depbase_code", "lvl_abbrev", "version",
-                                "examperiod", "secret_exam", "datum", "begintijd", "eindtijd", "has_errata",  "bundle_name", "download"],
-                field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "input", "input", "input", "div", "div", "div"],
-                filter_tags: ["text",  "text", "text", "text", "text", "text", "text", "toggle", "text", "text", "text", "toggle",   "text", ""],
-                field_width: ["020", "075", "240", "120", "120", "120", "150", "090", "120", "120", "120", "090", "240", "060"],
-                field_align: ["c", "c", "l", "c", "c", "l", "c", "c", "c", "c", "c", "c", "l", "c"]
+                                "examperiod", "secret_exam", "datum", "begintijd", "eindtijd", "has_errata",  "bundle_name"],  //, "download"],
+                field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "input", "input", "input", "div", "div"],  //, "div"],
+                filter_tags: ["text",  "text", "text", "text", "text", "text", "text", "toggle", "text", "text", "text", "toggle",   "text"],  //, ""],
+                field_width: ["020", "075", "240", "120", "120", "120", "150", "090", "120", "120", "120", "090", "240"],  //, "060"],
+                field_align: ["c", "c", "l", "c", "c", "l", "c", "c", "c", "c", "c", "c", "l"],  //, "c"]
                 },
 
         envelopbundle: {field_caption: ["", "Bundle_name"],
@@ -249,16 +249,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ---  MOD PRINT ENVELOP LABELS ------------------------------------
-    const el_MENVPR_loader = document.getElementById("id_MENVPR_loader");
-    const el_MENVPR_select_errata = document.getElementById("id_MENVPR_select_errata");
-    const el_MENVPR_layout_option_level = document.getElementById("id_MENVPR_layout_option_level");
+        const el_MENVPR_loader = document.getElementById("id_MENVPR_loader");
+        const el_MENVPR_select_errata = document.getElementById("id_MENVPR_select_errata");
+        const el_MENVPR_layout_option_level = document.getElementById("id_MENVPR_layout_option_level");
 
-    const el_MENVPR_tblBody_school = document.getElementById("id_MENVPR_tblBody_school");
-    const el_MENVPR_tblBody_exam = document.getElementById("id_MENVPR_tblBody_exam");
-    const el_MENVPR_btn_save = document.getElementById("id_MENVPR_btn_save");
-    if (el_MENVPR_btn_save){
-        el_MENVPR_btn_save.addEventListener("click", function() {MENVPR_Save()}, false )
-    }
+        const el_MENVPR_tblBody_school = document.getElementById("id_MENVPR_tblBody_school");
+        const el_MENVPR_tblBody_exam = document.getElementById("id_MENVPR_tblBody_exam");
+        const el_MENVPR_btn_save = document.getElementById("id_MENVPR_btn_save");
+        if (el_MENVPR_btn_save){
+            el_MENVPR_btn_save.addEventListener("click", function() {MENVPR_Save()}, false )
+        }
 
 // ---  MOD SELECT COLUMNS  ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -1878,8 +1878,12 @@ document.addEventListener('DOMContentLoaded', function() {
             let upload_dict = {
                 table: (mod_MENV_dict.is_bundle) ? "envelopbundle" : "enveloplabel",
                 mode: upload_mode,
-                parent_pk: mod_MENV_dict.parent_pk,
                 name: mod_MENV_dict.parent_name
+            };
+            if (mod_MENV_dict.is_bundle){
+                upload_dict.envelopbundle_pk = mod_MENV_dict.parent_pk;
+            } else {
+                upload_dict.enveloplabel_pk = mod_MENV_dict.parent_pk;
             };
 
             const uniontable_list = [];
@@ -2342,7 +2346,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("permit_dict.permit_crud", permit_dict.permit_crud)
         console.log("el_input", el_input)
 
-        mod_MENV_dict = {};
+        b_clear_dict(mod_MENV_dict);
 
         if (permit_dict.permit_crud){
 
@@ -2496,20 +2500,22 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
 
         b_clear_dict(mod_MENV_dict);
-        mod_MENV_dict.ete_exam_rows = ete_exam_rows;
-        mod_MENV_dict.examperiod = setting_dict.sel_examperiod;
 
-        if (![1,2,3].includes(mod_MENV_dict.examperiod)){
+// ---  reset tblBody available and selected
+        el_MENVPR_tblBody_school.innerHTML = null;
+        el_MENVPR_tblBody_exam.innerHTML = null;
+
+        mod_MENV_dict.ete_exam_rows = ete_exam_rows;
+
+
+        if (![1,2,3].includes(setting_dict.sel_examperiod)){
             b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_examperiod + "</div>");
 
         } else {
+            mod_MENV_dict.sel_examperiod = setting_dict.sel_examperiod;
 
     // ---  reset layout options
             el_MENVPR_select_errata.value = "no_errata";
-
-    // ---  reset tblBody available and selected
-            el_MENVPR_tblBody_school.innerText = null;
-            el_MENVPR_tblBody_exam.innerText = null;
 
     // ---  disable save btn
             el_MENVPR_btn_save.disabled = true;
@@ -2526,6 +2532,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function MENVPR_Save(){
         console.log(" -----  MENVPR_Save   ----")
         const schoolbase_pk_list = [];
+        const subjbase_pk_list = [];
         const exam_pk_list = [];
 
 // ---  get de selected value of
@@ -2555,6 +2562,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 for (let i = 0, exam_row; exam_row = mod_MENV_dict.ete_exam_rows[i]; i++) {
                     if(exam_row.selected){
                         exam_pk_list.push(exam_row.id);
+                        if(!subjbase_pk_list.includes(exam_row.subjbase_id)){
+                            subjbase_pk_list.push(exam_row.subjbase_id);
+                        };
                     };
                 };
             };
@@ -2567,6 +2577,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const upload_dict = {
                 exam_pk_list: exam_pk_list,
                 schoolbase_pk_list: schoolbase_pk_list,
+                subjbase_pk_list: subjbase_pk_list,
                 sel_layout: selected_layout_value
             };
 
@@ -2605,13 +2616,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         el_MENVPR_loader.classList.add(cls_hide);
 
-        mod_MENV_dict.exam_rows = (response.updated_envelop_exam_rows) ? response.updated_envelop_exam_rows : [];
+        //mod_MENV_dict.exam_rows = (response.updated_envelop_exam_rows) ? response.updated_envelop_exam_rows : [];
         mod_MENV_dict.school_rows = (response.updated_envelop_school_rows) ? response.updated_envelop_school_rows : [];
 
-        mod_MENV_dict.sel_examperiod = (response.sel_examperiod) ? response.sel_examperiod : null;
-        mod_MENV_dict.examperiod_caption = (response.examperiod_caption) ? response.examperiod_caption : "---";
+        // = (response.sel_examperiod) ? response.sel_examperiod : null;
+        //mod_MENV_dict.emod_MENV_dict.sel_examperiodxamperiod_caption = (response.examperiod_caption) ? response.examperiod_caption : "---";
 
-        mod_MENV_dict.lvlbase_pk_list = (response.lvlbase_pk_list) ? response.lvlbase_pk_list : [];
+        //mod_MENV_dict.lvlbase_pk_list = (response.lvlbase_pk_list) ? response.lvlbase_pk_list : [];
 
         // TODO save sel_layout in usersettings
        // el_MENVPR_select_errata.value = (response.sel_layout) ? response.sel_layout : null;
@@ -2667,9 +2678,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("===== MENVPR_FillTblExams ===== ");
         console.log("mod_MENV_dict.ete_exam_rows", mod_MENV_dict.ete_exam_rows);
 
-        const tblBody = el_MENVPR_tblBody_exam
+        const tblBody = el_MENVPR_tblBody_exam;
+
 // ---  reset tblBody available and selected
-        tblBody.innerText = null;
+        tblBody.innerHTML = null;
 
 // ---  loop through mod_MENV_dict.ete_exam_rows
         if (mod_MENV_dict.ete_exam_rows && mod_MENV_dict.ete_exam_rows.length){
@@ -2683,10 +2695,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 MENVPR_CreateSelectRow("exams", tblBody, all_row);
             }
+        console.log("mod_MENV_dict.sel_examperiod", mod_MENV_dict.sel_examperiod);
             for (let i = 0, row; row = mod_MENV_dict.ete_exam_rows[i]; i++) {
-                const show_row = (row.examperiod === mod_MENV_dict.examperiod) &&
+                const show_row = (row.examperiod === mod_MENV_dict.sel_examperiod) &&
                                 (!selected.depbase_pk || row.depbase_id === selected.depbase_pk) &&
                                 (!selected.lvlbase_pk || row.lvlbase_id === selected.lvlbase_pk);
+
+        console.log("row", row);
                 if (show_row){
                     const has_selected_exams = MENVPR_CreateSelectRow("exams", tblBody, row);
                     if(has_selected_exams) {exam_rows = true };
@@ -2697,8 +2712,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVPR_CreateSelectRow  ============= PR2022-08-19
     function MENVPR_CreateSelectRow(tblName, tblBody, row_dict) {
-        //console.log("===== MENVPR_CreateSelectRow ===== ");
-        //console.log("row_dict", row_dict);
+        console.log("===== MENVPR_CreateSelectRow ===== ");
+        console.log("row_dict", row_dict);
 
         const is_schools = (tblName === "schools");
 // - get ifo from dict
@@ -2733,7 +2748,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.setAttribute("data-ob2", ob2);
         tblRow.setAttribute("data-ob3", ob3);
 
-        add_or_remove_class(tblRow, cls_selected, is_selected)
+        //add_or_remove_class(tblRow, cls_selected, is_selected)
+        add_or_remove_class(tblRow, "bg_selected_blue", is_selected)
 
 //- add hover to select row
         add_hover(tblRow)

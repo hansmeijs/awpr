@@ -524,6 +524,7 @@ class Envelopbundlelabel(sch_mod.AwpBaseModel):  # PR2022-08-03
     envelopbundle = ForeignKey(Envelopbundle, related_name='+', on_delete=CASCADE)
     enveloplabel = ForeignKey(Enveloplabel, related_name='+', on_delete=CASCADE)
 
+    sequence = PositiveSmallIntegerField(default=1)
 
 class Envelopitembase(Model):  # PR2022-08-03
     objects = AwpModelManager()

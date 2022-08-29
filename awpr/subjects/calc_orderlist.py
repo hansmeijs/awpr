@@ -22,7 +22,11 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
     #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
     #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
     #  add extra for ETE and DOE PR2021-09-25
-    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
+
+    # called by:
+    #   create_orderlist_per_school_xlsx
+    #   create_orderlist_xlsx
+    #   OrderlistsPublishView
 
 # - get schoolbase_id of ETE and DOE - necessary to calculate extra exams for ETE and DOE
 
@@ -344,7 +348,89 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def create_envelop_studsubj_dict(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
+def create_envelop_print_per_school_dict(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
+    # PPR2022-08-26
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_studsubj_count_dict ----- ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear_instance))
+        logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
+        logger.debug('    subjbase_pk_list: ' + str(subjbase_pk_list))
+
+    # this one is for printing labels per school: dict order: school - dep - lvl - subj - exam - lang -
+    # no count needed, happens when creating labels
+    # ete/DUO not necessary, but let it stay if they want to include them in letter to cinfirm received exams
+
+    #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
+    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
+    #  add extra for ETE and DOE PR2021-09-25
+    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
+
+    print_without_schools = False
+    if schoolbase_pk_list is None:
+        print_without_schools = True
+    elif not len(schoolbase_pk_list):
+        print_without_schools = True
+    elif schoolbase_pk_list[0] == -1:
+        schoolbase_pk_list = None
+    if print_without_schools:
+        rows = create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list)
+    else:
+        rows = create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list)
+
+    # to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
+
+    print_per_school_dict = {}
+
+    for row in rows:
+        if logging_on:
+            logger.debug('row: ' + str(row))
+        """
+        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133_1_1', 'lang': 'nl', 'country_id': 1, 'sb_code': 'CUR01', 
+           'lvlbase_id': 6, 'lvl_sequence': 1, 'lvl_abbrev': 'PBL', 
+           'depbase_id': 1, 'dep_sequence': 1, 'depbase_code': 'Vsbo', 
+           'subjbase_code': 'ac', 'subj_name': 'Administratie en commercie', 
+           'schoolbase_id': 2, 'school_name': 'Ancilla Domini Vsbo', 
+           'subj_count': 13, 'exam_count': 2, 'extra_count': 7, 'tv2_count': 5}
+        """
+
+# - get or create schoolbase_dict
+        row_sb_pk = row.get('schoolbase_id')
+        if row_sb_pk not in print_per_school_dict:
+            row_sb_code = row.get('sb_code', '-')  # for testing only
+            print_per_school_dict[row_sb_pk] = {'sb_code': row_sb_code}
+        schoolbase_dict = print_per_school_dict[row_sb_pk]
+
+# - get or create depbase_list
+        depbase_pk = row.get('depbase_id')
+
+        if depbase_pk not in schoolbase_dict:
+            schoolbase_dict[depbase_pk] = []
+        depbase_list = schoolbase_dict[depbase_pk]
+
+        depbase_list.append(row)
+
+    if logging_on:
+        datalists_json = json.dumps(print_per_school_dict, cls=af.LazyEncoder)
+        logger.debug('print_per_school_dict: ' + str(datalists_json))
+
+    """
+    print_per_school_dict: 
+        {"2": {"sb_code": "CUR01", 
+            "1": [
+                {"subjbase_id": 133, "ete_exam": true, "id_key": "1_6_133_1_1", "lang": "nl", 
+                    "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", 
+                    "subjbase_code": "ac", subjbase_code": "ac", subj_name": "Administratie en commercie", "schoolbase_id": 2, 
+                    "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, 
+                    "subj_count": 13, "exam_count": 2, "dep_sequence": 1, "lvl_sequence": 1, 
+                    "subj_count": 13, "exam_count": 2, "extra_count": 7, "tv2_count": 5}, 
+    """
+    return print_per_school_dict
+# --- end of create_studsubj_count_dict
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def create_envelop_print_per_subject_dict(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
     # PPR2022-08-23
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -434,10 +520,9 @@ def create_envelop_studsubj_dict(sel_examyear_instance, sel_examperiod, request,
     school_envelop_studsubj_dict: {'ETE': {1: {'c': 'V.S.B.O.', 6: {'c': 'PBL', 'total': {}, 'country': {}, 133: {'c': 'PBL'}, 2: {'c': 'CUR01'}, 155: {'c': 'PBL'}, 124: {'c': 'PBL'}, 113: {'c': 'PBL'}, 121: {'c': 'PBL'}, 131: {'c': 'PBL'}, 118: {'c': 'PBL'}, 123: {'c': 'PBL'}, 114: {'c': 'PBL'}}, 5: {'c': 'PKL', 'total': {}, 'country': {}, 113: {'c': 'PKL'}, 2: {'c': 'CUR01'}, 114: {'c': 'PKL'}, 133: {'c': 'PKL'}, 123: {'c': 'PKL'}, 118: {'c': 'PKL'}, 121: {'c': 'PKL'}, 155: {'c': 'PKL'}, 131: {'c': 'PKL'}, 124: {'c': 'PKL'}}, 4: {'c': 'TKL', 'total': {}, 'country': {}, 114: {'c': 'TKL'}, 2: {'c': 'CUR01'}, 118: {'c': 'TKL'}, 113: {'c': 'TKL'}, 124: {'c': 'TKL'}, 131: {'c': 'TKL'}, 120: {'c': 'TKL'}, 133: {'c': 'TKL'}}}, 'nl': {'total': {}}}, 'DUO': {1: {'c': 'V.S.B.O.', 4: {'c': 'TKL', 'total': {}, 'country': {}, 155: {'c': 'TKL'}, 2: {'c': 'CUR01'}, 121: {'c': 'TKL'}, 123: {'c': 'TKL'}}}, 'nl': {'total': {}}}}
 [2022-08-23 19:43:24] DEBUG [subjects.orderlists.create_env
     """
-
-
     return school_envelop_studsubj_dict
 # --- end of create_studsubj_count_dict
+
 
 
 
@@ -482,43 +567,51 @@ def create_mapped_admin_dict(sel_examyear_instance):
 
 # /////////////////////////////////////////////////////////////////
 
-
-def calc_extra_exams(subj_count, extra_fixed, extra_perc, round_to):  # PR2021-09-25
-    # - function counts extra exams and examns tv2 per school / subject
-    # - Note: values of extra_fixed, extra_perc, round_to are from table examyear,
-    #         thus can be different for CUR and SXM schools
+def calc_extra_examsNEW(subj_count, exam_count, extra_fixed, extra_perc, round_to):
 
     logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ------- calc_extra_exams -------')
-        logger.debug('subj_count:  ' + str(subj_count))
-        logger.debug('extra_fixed: ' + str(extra_fixed))
-        logger.debug('extra_perc:  ' + str(extra_perc))
-        logger.debug('round_to:  ' + str(round_to))
+
+    # - PR2022-08-26 this function takes in account that there can be multiple exams for a subject (blue and red)
+    # for example:
+    #   - with 1 exam: 43 students > 45 exams (rounded up to 5)
+    #   - with 2 exams: 43 student / 2 = 21,5 > 25 per exam * 2 = 50 exams
 
     extra_count = 0
     if subj_count:
-        total_not_rounded = subj_count + extra_fixed + (subj_count * extra_perc / 100)
+
+# exam_count is number of exams of this subject / dep / level / exammperiod, default = 1
+        if not exam_count:
+            exam_count = 1
+
+# divide items over the exams, calculate extra per exam
+        item_count_per_exam = subj_count / exam_count
+        extra_not_rounded = (item_count_per_exam * extra_perc / 100)
+        total_not_rounded = item_count_per_exam + extra_fixed + extra_not_rounded
         total_divided = total_not_rounded / round_to
         total_integer = int(total_divided)
         # total_frac = (total_divided - total_integer)
         total_roundup = total_integer + 1 if (total_divided - total_integer) else total_integer
         # total_roundup = total_frac_roundup * order_round_to
-        extra_count = total_roundup * round_to - subj_count
+        total_count_per_exam = total_roundup * round_to
+        extra_count_per_exam = total_count_per_exam - item_count_per_exam
+        extra_count = int(extra_count_per_exam * exam_count)
 
         if logging_on:
-            logger.debug('subj_count:  ' + str(subj_count))
-            logger.debug('total_not_rounded: ' + str(total_not_rounded))
-            logger.debug('total_divided:  ' + str(total_divided))
-            logger.debug('total_integer:  ' + str(total_integer))
-            logger.debug('total_frac: ' + str(total_divided - total_integer))
-            logger.debug('total_roundup: ' + str(total_roundup))
-            logger.debug('total_roundup:   ' + str(total_roundup))
-            logger.debug('extra_count:   ' + str(extra_count))
-            logger.debug('..........: ')
+            logger.debug(' ------- calc_extra_exams -------')
+            logger.debug('    exam_count:   ' + str(exam_count))
+            logger.debug('    subj_count:   ' + str(subj_count))
+            logger.debug('    item_count_p_exam: ' + str(item_count_per_exam))
+            logger.debug('    extra_not_rounded: ' + str(extra_not_rounded))
+            logger.debug('    total_not_rounded: ' + str(total_not_rounded))
+            logger.debug('    total_divided: ' + str(total_divided))
+            logger.debug('    total_roundup:  ' + str(total_roundup))
+            logger.debug('    total_p_exam:  ' + str(total_count_per_exam))
+            logger.debug('    extra_p_exam: ' + str(extra_count_per_exam))
+            logger.debug('    extra_count:  ' + str(extra_count))
+            logger.debug(' --------------')
 
     return extra_count
-# - end of calc_extra_exams
+# - end of calc_extra_examsNEW
 
 
 def calc_exams_tv02(subj_count, divisor, multiplier, max_exams):  # PR2021-09-25
@@ -569,12 +662,18 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
     # PR2021-08-19 PR2021-09-24 PR2022-08-13
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_studsubj_count_dict ----- ')
+        logger.debug(' ----- create_studsubj_count_rows ----- ')
 
     #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
     #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
     #  add extra for ETE and DOE PR2021-09-25
-    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
+
+    # called by:
+    #   create_studsubj_count_dict
+    #   create_envelop_print_per_school_dict
+    #   create_envelop_print_per_subject_dict
+    #   create_studsubj_count_rows
+    #   EnvelopPrintView
 
 # - get schoolbase_id of ETE and DOE - necessary to calculate extra exams for ETE and DOE
 
@@ -612,8 +711,11 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         sql_keys['subjbase_arr'] = subjbase_pk_list
         filter_subjbase = "AND subjbase.id IN (SELECT UNNEST(%(subjbase_arr)s::INT[]))"
 
+# - this subquery counts number of exams of this subject / dep / level / examperiod
+    count_sql = create_sql_count_exams_per_subject()
+
 # - create subquery with count of subjects
-    sql_studsubj_agg_list = [
+    sql_studsubj_agg_list = ["WITH counts AS (" + count_sql + ")",
         "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id,",
         "sch.otherlang AS sch_otherlang,",
 
@@ -625,10 +727,12 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
         "subj.name_nl AS subj_name,",  # for testing only, must also delete from group_by
 
+
         #PR2021-10-12 subj.otherlang replaced by si.otherlang
         # was: "subj.base_id AS subjbase_id, si.ete_exam, subj.otherlang AS subj_otherlang, count(*) AS subj_count",
-        "subj.base_id AS subjbase_id, si.ete_exam, si.otherlang AS si_otherlang, count(*) AS subj_count",
-
+        "subj.base_id AS subjbase_id, si.ete_exam, si.otherlang AS si_otherlang, count(*) AS subj_count,",
+        "counts.exam_count",
+        
         "FROM students_studentsubject AS studsubj",
         "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
         "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
@@ -641,6 +745,9 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)", # for testing only, depbase can be deleted
         "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
 
+        "LEFT JOIN counts ON (counts.dep_id = dep.id AND counts.lvl_id = COALESCE(lvl.id, 0) AND",
+        "counts.subj_id = subj.id AND counts.examperiod = %(ep)s::INT)",
+
 # - show only exams that are not deleted
         "WHERE NOT studsubj.tobedeleted",
 # - show only published exams
@@ -652,22 +759,19 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 # - filter subjects if subjbase_pk_list has value
         filter_subjbase,
 
-        # PR2021-10-12 subj.otherlang replaced by si.otherlang
-        #  was: "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id, lvl.abbrev, sch.otherlang, subj.base_id, si.ete_exam, subj.otherlang"
         "GROUP BY st.school_id, ey.country_id, dep.base_id, lvl.base_id,",
-        "dep.sequence, lvl.sequence, subjbase.code,"
+        "dep.sequence, lvl.sequence, counts.exam_count,"
         "depbase.code, lvl.abbrev, subj.name_nl, subjbase.code,", # for testing only, must also delete from group_by
         "sch.otherlang, subj.base_id, si.ete_exam, si.otherlang"
     ]
 
-    # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
+    # to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
     sql_studsubj_agg = ' '.join(sql_studsubj_agg_list)
 
 # - create query with row per school and inner join with subquery count_studsubj
     sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
                 "SELECT studsubj.subjbase_id, studsubj.ete_exam, studsubj.id_key, studsubj.subjbase_id,",
 
-                # PR2021-10-12 subj.otherlang replaced by si.otherlang
                 "CASE WHEN studsubj.si_otherlang IS NULL OR studsubj.sch_otherlang IS NULL THEN 'nl' ELSE",
                 "CASE WHEN POSITION(studsubj.sch_otherlang IN studsubj.si_otherlang) > 0 ",
                 "THEN studsubj.sch_otherlang ELSE 'nl' END END AS lang,",
@@ -676,7 +780,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
                 "sb.code AS sb_code, studsubj.lvl_abbrev, studsubj.depbase_code,",  # for testing only
                 "studsubj.subj_name,",  # for testing only
                 "sch.base_id AS schoolbase_id, sch.name AS school_name,",
-                "studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count,",
+                "studsubj.depbase_id, studsubj.lvlbase_id, studsubj.subj_count, studsubj.exam_count,",
                 "studsubj.dep_sequence, studsubj.lvl_sequence, studsubj.subjbase_code",
 
                 "FROM schools_school AS sch",
@@ -684,12 +788,12 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
                 "INNER JOIN schools_country AS cntr ON (cntr.id = sb.country_id)",
                 "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
                 "LEFT JOIN studsubj ON (studsubj.school_id = sch.id)",
+
 # - show only exams of this exam year
                 "WHERE ey.code = %(ey_code_int)s::INT"
                 ]
 
 # - filter on parameter schoolbase_pk_list when it has value
-
     if schoolbase_pk_list:
         sql_keys['sb_arr'] = schoolbase_pk_list
         sql_list.append("AND sb.id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
@@ -737,11 +841,14 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 
 # +++ count extra exams and examns tv2 per school / subject
         subj_count = row.get('subj_count', 0)
+        # practical exams have multiple exams for the same subject (Blue, Red). Count number of exams,
+        # default is 1 if no value given or value = 0
+        exam_count = row.get('exam_count') or 1
 
         extra_count = 0
         tv2_count = 0
         if subj_count:
-            extra_count = calc_extra_exams(subj_count, order_extra_fixed, order_extra_perc, order_round_to)
+            extra_count = calc_extra_examsNEW(subj_count, exam_count, order_extra_fixed, order_extra_perc, order_round_to)
             tv2_count = calc_exams_tv02(subj_count, order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
 
     # - add extra_count and tv2_count to row, for enveloplabel print
@@ -750,10 +857,14 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 
         if logging_on :
             logger.debug('row: ' + str(row))
+
         """
-        row: {'subjbase_id': 121, 'ete_exam': True, 'lang': 'nl', 'country_id': 1, 'sb_code': 'CUR05', 
-        'lvl_abbrev': 'PKL', 'subj_name': 'Wiskunde', 'schoolbase_id': 6, 'depbase_id': 1, 'lvlbase_id': 5, 
-        'subj_count': 32, 'extra_count': 8, 'tv2_count': 10}
+       row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133_1_1', 'lang': 'nl', 'country_id': 1, 'sb_code': 'CUR01', 
+           'lvlbase_id': 6, 'lvl_sequence': 1, 'lvl_abbrev': 'PBL', 
+           'depbase_id': 1, 'dep_sequence': 1, 'depbase_code': 'Vsbo', 
+           'subjbase_code': 'ac', 'subj_name': 'Administratie en commercie', 
+           'schoolbase_id': 2, 'school_name': 'Ancilla Domini Vsbo', 
+           'subj_count': 13, 'exam_count': 2, 'extra_count': 7, 'tv2_count': 5}
         """
 
         if logging_on and False:
@@ -763,3 +874,170 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 
     return rows
 # - end of create_studsubj_count_rows
+
+##############################
+
+def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, exam_pk_list=None):
+    # PR2022-08-12
+
+    # function includes subquery that counts number of exams of this subject / dep / level / examperiod
+
+    # values of sel_layout are: "no_errata", "errata_only", "all , None
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_printlabel_rows ============= ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug('    exam_pk_list: ' + str(exam_pk_list) + ' ' + str(type(exam_pk_list)))
+        logger.debug('    ey_code_int: ' + str(sel_examyear.code) + ' ' + str(type(sel_examyear.code)))
+        logger.debug('    sel_examperiod: ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
+
+    printlabel_rows = []
+    if sel_examyear :
+        try:
+            sql_keys = {'ey_code_int': sel_examyear.code, 'ep': sel_examperiod}
+
+            sub_list = [
+                "SELECT lblitm.enveloplabel_id,",
+                "ARRAY_AGG(itm.content_nl ORDER BY lblitm.sequence, lblitm.id) AS content_nl_arr,",
+                "ARRAY_AGG(itm.content_en ORDER BY lblitm.sequence, lblitm.id) AS content_en_arr,",
+                "ARRAY_AGG(itm.content_pa ORDER BY lblitm.sequence, lblitm.id) AS content_pa_arr,",
+                "ARRAY_AGG(itm.instruction_nl ORDER BY lblitm.sequence, lblitm.id) AS instruction_nl_arr,",
+                "ARRAY_AGG(itm.instruction_en ORDER BY lblitm.sequence, lblitm.id) AS instruction_en_arr,",
+                "ARRAY_AGG(itm.instruction_pa ORDER BY lblitm.sequence, lblitm.id) AS instruction_pa_arr,",
+                "ARRAY_AGG(itm.content_color ORDER BY lblitm.sequence, lblitm.id) AS content_color_arr,",
+                "ARRAY_AGG(itm.instruction_color ORDER BY lblitm.sequence, lblitm.id) AS instruction_color_arr,",
+                "ARRAY_AGG(lblitm.sequence ORDER BY lblitm.sequence, lblitm.id) AS sequence_arr",
+
+                "FROM subjects_enveloplabelitem AS lblitm",
+                "INNER JOIN subjects_envelopitem AS itm ON (itm.id = lblitm.envelopitem_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = itm.examyear_id)",
+
+                "WHERE ey.code = %(ey_code_int)s::INT",
+                "GROUP BY lblitm.enveloplabel_id"
+            ]
+            sub_sql = ' '.join(sub_list)
+
+    # - this subquery counts number of exams of this subject / dep / level / examperiod
+            count_sql = create_sql_count_exams_per_subject()
+
+            sql_list = ["WITH items AS (" + sub_sql + "),  counts AS (" + count_sql + ")",
+                "SELECT exam.id as exam_id,",
+                "exam.department_id AS dep_id,"
+                "exam.level_id AS lvl_id,"
+                "exam.subject_id AS subj_id,"
+                "exam.examperiod, exam.ete_exam, exam.version,"
+                "exam.datum, exam.begintijd, exam.eindtijd,"
+                "exam.has_errata, exam.subject_color,"
+                "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, subj.base_id AS subjbase_id,"
+
+                "bnd.name AS bnd_name,",
+                "lbl.name AS lbl_name, lbl.is_errata, lbl.is_variablenumber, lbl.numberofenvelops, lbl.numberinenvelop,",
+
+                "items.content_nl_arr, items.content_en_arr, items.content_pa_arr,",
+                "items.instruction_nl_arr, items.instruction_en_arr, items.instruction_pa_arr,",
+                "items.content_color_arr, items.instruction_color_arr, items.sequence_arr,",
+                "counts.exam_count",
+
+                "FROM subjects_exam AS exam",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+
+                "INNER JOIN subjects_envelopbundle AS bnd ON (bnd.id = exam.envelopbundle_id)",
+                "INNER JOIN subjects_envelopbundlelabel AS bndlbl ON (bndlbl.envelopbundle_id = bnd.id)",
+                "INNER JOIN subjects_enveloplabel AS lbl ON (lbl.id = bndlbl.enveloplabel_id)",
+                "INNER JOIN items ON (items.enveloplabel_id = lbl.id)",
+
+                "LEFT JOIN counts ON (counts.dep_id = dep.id AND counts.lvl_id = COALESCE(lvl.id, 0) AND",
+                        "counts.subj_id = subj.id AND counts.examperiod = exam.examperiod)",
+
+                "WHERE ey.code = %(ey_code_int)s::INT",
+                "AND exam.examperiod = %(ep)s::INT"
+            ]
+    # values of sel_layout are: "no_errata", "errata_only", "all" , None
+            if sel_layout == 'no_errata':
+                sql_list.append('AND NOT lbl.is_errata')
+            elif sel_layout == 'errata_only':
+                sql_list.append('AND exam.has_errata AND lbl.is_errata')
+            else:
+                # skip iserrata when not exam.has_errata
+                sql_list.append('AND ( (lbl.is_errata AND exam.has_errata) OR (NOT lbl.is_errata)  )')
+
+            if exam_pk_list:
+                sql_keys['exam_pk_lst'] = exam_pk_list
+                sql_list.append('AND exam.id IN ( SELECT UNNEST( %(exam_pk_lst)s::INT[]))')
+
+            sql_list.append('ORDER BY lbl.id')
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                printlabel_rows = af.dictfetchall(cursor)
+
+            if logging_on:
+                if printlabel_rows:
+                    for row in printlabel_rows:
+                        logger.debug('    row: ' + str(row) )
+
+            """
+            printlabel_rows = [
+                {'exam_id': 195, 'dep_id': 5, 'lvl_id': None, 'subj_id': 140, 'examperiod': 2,  'ete_exam': True, 
+                'datum': None, 'begintijd': None, 'eindtijd': None, 'has_errata': False, 'subject_color': None, 
+                'depbase_id': 2, 'lvlbase_id': None, 'subjbase_id': 140, 
+                'bnd_name': 'Bundel 2234', 'lbl_name': 'naam5', 'numberofenvelops': None, 'numberinenvelop': None, 
+                'content_nl_arr': [None, 'GROEN', 'PAARS'], 'content_en_arr': [None, None, None], 
+                'content_pa_arr': [None, 'aa', None], 
+                'instruction_nl_arr': ['EERST DE NAAM, DATUM EN TIJDSDUUR VOORLEZEN, DAARNA OPENEN!', 'GEEL', 'PAARS'], 
+                'instruction_en_arr': ['READ THE NAME, DATE AND TIME FIRST, THEN OPEN!', 'ff', None], 
+                'instruction_pa_arr': ['LESA PROMÉ NA BOS HALTU ÈKSAMEN, FECHA I DURASHON PROMÉ KU HABRI!', 'vv', None], 
+                'content_color_arr': ['black', 'green', 'purple'], 'instruction_color_arr': ['red', 'green', 'purple'], 
+                'sequence_arr': [0, 0, 0]
+                }]
+
+                 row: {'exam_id': 105, 'dep_id': 4, 'lvl_id': 6, 'subj_id': 133, 'examperiod': 1, 'ete_exam': True, 
+                    'version': 'Versie ROOD', 'datum': None, 'begintijd': None, 'eindtijd': None, 'has_errata': False, 
+                    'subject_color': None, 'depbase_id': 1, 'lvlbase_id': 6, 'subjbase_id': 133, 'bnd_name': 'bb', 
+                    'lbl_name': 'Nieuw etiket', 
+                    'numberofenvelops': None, 'numberinenvelop': None, 
+                    'content_nl_arr': ['ORANJE ZZZ oooo kkkkkk ooo'], 
+                    'content_en_arr': [None], 'content_pa_arr': [None], 
+                    'instruction_nl_arr': ['GEEL xxx'], 'instruction_en_arr': [None], 
+                    'instruction_pa_arr': [None], 'content_color_arr': ['orange'], 
+                    'instruction_color_arr': ['blue'], 'sequence_arr': [0], 
+                    'exam_count': 2}
+            """
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+    return printlabel_rows
+# --- end of create_enveloplabel_rows
+
+
+def create_sql_count_exams_per_subject():
+    # PR2022-08-26
+    # this subquery counts number of exams of this subject / dep / level / examperiod
+    #  "WITH items AS (" + sub_sql + "),  counts AS (" + count_sql + ")",
+    # join with:
+    #   "LEFT JOIN counts ON (counts.dep_id = dep.id AND counts.lvl_id = COALESCE(lvl.id, 0) AND",
+    #        "counts.subj_id = subj.id AND counts.examperiod = exam.examperiod)",
+
+    count_list = [
+        "SELECT dep.id AS dep_id, COALESCE(lvl.id, 0) AS lvl_id, subj.id AS subj_id, exam.examperiod, count(*) AS exam_count",
+
+        "FROM subjects_exam AS exam",
+        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+        "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = dep.examyear_id)",
+        "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+
+        "WHERE ey.code = %(ey_code_int)s::INT",
+        "AND exam.examperiod = %(ep)s::INT",
+        "GROUP BY dep.id, lvl.id, subj.id, exam.examperiod"
+    ]
+    count_sql = ' '.join(count_list)
+
+    return count_sql
+# --- end of create_enveloplabel_rows
+
