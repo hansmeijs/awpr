@@ -1588,7 +1588,6 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
         has_permit = 'permit_write_message' in request.user.permit_list('page_mailbox') if request.user.permit_list else False
         if has_permit:
 
-
 # - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
             activate(user_lang)
@@ -1602,8 +1601,6 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
 
                 # upload_dict: {'mode': 'attachment', 'mailbox_pk': None, 'mailmessage_pk': None,
                 #   'tempid': '1_996637', 'file_name': 'a3.png', 'file_type': 'image/png', 'file_size': 23770}
-
-
 
 # - get selected examyear and school from usersettings
                 sel_examyear, may_edit, msg_list = \

@@ -1346,8 +1346,9 @@ class ExamListView(View):  # PR2021-04-04
         requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase.pk)
 
 # - set headerbar parameters
+        # PR2022-08-29 don't show school when user is not same school
         page = 'page_exams'
-        param = {'display_school': True, 'display_department': True}
+        param = {'display_school': requsr_same_school, 'display_department': True}
         params = awpr_menu.get_headerbar_param(request, page, param)
 
         if logging_on:

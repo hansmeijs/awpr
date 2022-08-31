@@ -682,6 +682,7 @@ def delete_instance(table, instance, request, this_txt=None):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_instance  -----')
+        logger.debug('    table: ' + str(table))
         logger.debug('    instance: ' + str(instance))
         logger.debug('    this_txt: ' + str(this_txt))
 
@@ -709,6 +710,9 @@ def delete_instance(table, instance, request, this_txt=None):
                        'deleted': True}
 
         try:
+            if logging_on:
+                 logger.debug('    this instance will be deleted:: ' + str(instance) + ' ' + str(type(instance)))
+
             #PR2022-08-06 debug: error when deleting subjecttypebase: Model.delete() got an unexpected keyword argument 'request'
             if 'base' in table:
                 instance.delete()

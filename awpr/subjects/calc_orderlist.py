@@ -20,7 +20,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
         logger.debug(' ----- create_studsubj_count_dict ----- ')
 
     #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
-    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
+    #  all schools of CUR and SXM, only submitted subjects, not deleted # PR2021-08-19
     #  add extra for ETE and DOE PR2021-09-25
 
     # called by:
@@ -38,6 +38,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
         1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', 'order_extra_fixed': 8, 'order_extra_perc': 8, 'order_round_to': 8, 'order_tv2_divisor': 88, 'order_tv2_multiplier': 8, 'order_tv2_max': 88, 'order_admin_divisor': 88, 'order_admin_multiplier': 8, 'order_admin_max': 88}, 
         2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}} 
     """
+# - calulate nuber of sudsubj. i.e. number of students with that subject
     rows = create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, prm_schoolbase_pk)
 
     # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
@@ -665,7 +666,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         logger.debug(' ----- create_studsubj_count_rows ----- ')
 
     #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
-    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
+    #  all schools of CUR and SXM, only submitted subjects, not deleted # PR2021-08-19
     #  add extra for ETE and DOE PR2021-09-25
 
     # called by:
@@ -711,10 +712,11 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         sql_keys['subjbase_arr'] = subjbase_pk_list
         filter_subjbase = "AND subjbase.id IN (SELECT UNNEST(%(subjbase_arr)s::INT[]))"
 
-# - this subquery counts number of exams of this subject / dep / level / examperiod
+# - this subquery counts number of exams of this school / dep / level / subject / examperiod
+    # used for envelops, when practical exam: the number of exams must be divided by the number of exams of that subject
     count_sql = create_sql_count_exams_per_subject()
 
-# - create subquery with count of subjects
+# - create subquery with count of subjects per school / dep / lvl / subject, add number of exams
     sql_studsubj_agg_list = ["WITH counts AS (" + count_sql + ")",
         "SELECT st.school_id, ey.country_id as ey_country_id, dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id,",
         "sch.otherlang AS sch_otherlang,",
@@ -722,6 +724,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         "CONCAT_WS ('_', dep.base_id, COALESCE(lvl.base_id, 0), subj.base_id, ",
         "%(ep)s::INT",
         ", CASE WHEN si.ete_exam THEN 1 ELSE 0 END) AS id_key,",
+
         "dep.sequence AS dep_sequence, lvl.sequence AS lvl_sequence, subjbase.code AS subjbase_code, ",  # for order by
         "depbase.code AS depbase_code,",  # for testing only, must also delete from group_by
         "lvl.abbrev AS lvl_abbrev,",  # for testing only, must also delete from group_by
@@ -750,9 +753,9 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 
 # - show only exams that are not deleted
         "WHERE NOT studsubj.tobedeleted",
-# - show only published exams
+# - show only submitted studsubjects
         "AND studsubj.subj_published_id IS NOT NULL",
-# - show only exams that have a central exam
+# - show only subjects that have a central exam
         "AND NOT si.weight_ce = 0",
 # - skip DUO exams for SXM schools when CUR
         skip_ete_or_duo,
@@ -790,6 +793,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
                 "LEFT JOIN studsubj ON (studsubj.school_id = sch.id)",
 
 # - show only exams of this exam year
+                # filter by ey.code, beacuse sxm school must also be included
                 "WHERE ey.code = %(ey_code_int)s::INT"
                 ]
 
@@ -919,6 +923,7 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, exam_pk_lis
             sub_sql = ' '.join(sub_list)
 
     # - this subquery counts number of exams of this subject / dep / level / examperiod
+            # used for envelops, when practical exam: the number of exams must be divided by the number of exams of that subject
             count_sql = create_sql_count_exams_per_subject()
 
             sql_list = ["WITH items AS (" + sub_sql + "),  counts AS (" + count_sql + ")",
@@ -1018,6 +1023,7 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, exam_pk_lis
 def create_sql_count_exams_per_subject():
     # PR2022-08-26
     # this subquery counts number of exams of this subject / dep / level / examperiod
+    # used for envelops: when practical exam the number of exams must be divided by the number of exams of that subject
     #  "WITH items AS (" + sub_sql + "),  counts AS (" + count_sql + ")",
     # join with:
     #   "LEFT JOIN counts ON (counts.dep_id = dep.id AND counts.lvl_id = COALESCE(lvl.id, 0) AND",

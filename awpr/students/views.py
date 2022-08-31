@@ -1217,7 +1217,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 # +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
                             err_fields = []
-                            idnumber_list = [],
+                            idnumber_list = []
                             examnumber_list = []
                             update_student_instance(
                                 instance=student_instance,
@@ -2142,6 +2142,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 # +++ get selected studsubj_rows
                         # TODO exclude published rows?? Yes, but count them when checking. You cannot approve or undo approve or submit when submitted
                         # PR2022-08-25 TODO must also include previously submitted rows in Ex1
+
                         # when a subject is set 'tobedeleted', the published info is removed, to show up when submitted
                         crit = Q(student__school=sel_school) & \
                                Q(student__department=sel_department) & \
@@ -3290,7 +3291,7 @@ def validate_studsubj_scheme(sel_examyear, correct_errors, request):
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
+class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 PR2022-08-30
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -3345,31 +3346,33 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                     logger.debug('sel_department: ' + str(sel_department))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
-                student = None
+                student_instance = None
 
                 if len(err_list):
                     msg_html = '<br>'.join(err_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
                 elif may_edit:
                     student_pk = upload_dict.get('student_pk')
-                    student = stud_mod.Student.objects.get_or_none(
+                    student_instance = stud_mod.Student.objects.get_or_none(
                         id=student_pk,
                         school=sel_school,
                         department=sel_department
                     )
                 if logging_on:
-                    logger.debug('student: ' + str(student))
+                    logger.debug('student_instance: ' + str(student_instance))
 
 # - get list of studentsubjects from upload_dict
                 studsubj_list = None
-                if student:
+                if student_instance:
                     studsubj_list = upload_dict.get('studsubj_list')
+
                 if studsubj_list:
 
 # - get schemitem_info of the scheme of this student, separately, instead of getting t for each subject, should be faster
-                    schemeitems_dict = subj_vw.get_scheme_si_dict(sel_examyear.pk, sel_department.base_id, student.scheme_id)
+                    schemeitems_dict = subj_vw.get_scheme_si_dict(sel_examyear.pk, sel_department.base_id, student_instance.scheme_id)
 
                     updated_rows = []
+                    recalc_subj_composition = False
 
 # -------------------------------------------------
 # - loop through list of uploaded studentsubjects
@@ -3390,7 +3393,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
 # - get current studsubj - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
                         studsubj = stud_mod.Studentsubject.objects.get_or_none(
                             id=studsubj_pk,
-                            student=student
+                            student=student_instance
                         )
                         if logging_on:
                             logger.debug('studsubj: ' + str(studsubj))
@@ -3398,7 +3401,12 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
 # +++ delete studsubj ++++++++++++
                         if mode == 'delete':
                             if studsubj:
-                                deleted_row, err_html = delete_studentsubject(student, studsubj, updated_rows,  request)
+                                deleted_row, err_html = delete_studentsubject(
+                                    student_instance=student_instance,
+                                    studsubj_instance=studsubj,
+                                    updated_rows=updated_rows,
+                                    request=request
+                                )
                                 if err_html:
                                     messages.append(
                                         {'header': str(_('Delete subject')),
@@ -3408,17 +3416,19 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                                 elif deleted_row:
                                     studsubj = None
                                     updated_rows.append(deleted_row)
+                                    recalc_subj_composition = True
 
-
-# +++ create new studentsubject, also create grade of first examperiod
+                        # +++ create new studentsubject, also create grade of first examperiod
                         elif mode == 'create':
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
                             error_list = []
 
-                            studsubj = create_studsubj(student, schemeitem, messages, error_list, request, False)  # False = don't skip_save
+                            studsubj = create_studsubj(student_instance, schemeitem, messages, error_list, request, False)  # False = don't skip_save
 
                             if studsubj:
                                 append_dict['created'] = True
+                                recalc_subj_composition = True
+
                             elif error_list:
                                 # TODO check if error is displayed correctly PR2021-07-21
                                 # yes, but messages html is displayed in msg_box. This one not in use??
@@ -3434,36 +3444,32 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                             si_pk = studsubj.schemeitem_id
                             si_dict = schemeitems_dict.get(si_pk)
                             err_fields = []
-                            update_studsubj(studsubj, studsubj_dict, si_dict, sel_examyear, sel_school, sel_department, err_list, err_fields, request)
 
-# - add update_dict to update_wrap
-                        if studsubj:
+                            studsubj_pk_list, recalc_subj_comp = update_studsubj(studsubj, studsubj_dict, si_dict, sel_examyear, sel_school, sel_department, err_list, err_fields, request)
+                            if recalc_subj_comp:
+                                recalc_subj_composition = True
 
-                            studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
-                            rows = create_studentsubject_rows(
-                                examyear=sel_examyear,
-                                schoolbase=sel_school.base,
-                                depbase=sel_department.base,
-                                requsr_same_school=True,  # check for same_school is included in may_edit
-                                setting_dict={},
-                                append_dict=append_dict,
-                                request=request,
-                                student_pk=student.pk,
-                                studsubj_pk_list=studsubj_pk_list
-                            )
-                            if logging_on:
-                                logger.debug('rows: ' + str(rows))
 
-                            if rows:
-                                studsubj_row = rows[0]
-                                if studsubj_row:
-                                    updated_rows.append(studsubj_row)
 # - end of loop
 # -------------------------------------------------
+                    if recalc_subj_composition:
+                        update_student_subj_composition(student_instance)
+
                     if len(err_list):
                         msg_html = '<br>'.join(err_list)
                         messages.append({'class': "border_bg_invalid", 'msg_html': msg_html})
 
+# - add update_dict to update_wrap
+                    updated_rows = create_studentsubject_rows(
+                        examyear=sel_examyear,
+                        schoolbase=sel_school.base,
+                        depbase=sel_department.base,
+                        requsr_same_school=True,  # check for same_school is included in may_edit
+                        setting_dict={},
+                        append_dict={},
+                        request=request,
+                        student_pk=student_instance.pk
+                    )
                     if updated_rows:
                         update_wrap['updated_studsubj_rows'] = updated_rows
 
@@ -3475,10 +3481,10 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28
                         #if logging_on:
                         #    logger.debug('msg_html: ' + str(msg_html))
 
-                    has_error = stud_val.validate_studentsubjects_no_msg(student, user_lang)
+                   # has_error = stud_val.validate_studentsubjects_no_msg(student_instance, user_lang)
 
-                    update_wrap['subj_error'] = has_error
-                    update_wrap['stud_pk'] = student.pk
+                    #update_wrap['subj_error'] = has_error
+                    #update_wrap['stud_pk'] = student_instance.pk
 
         if len(messages):
             update_wrap['messages'] = messages
@@ -3524,10 +3530,13 @@ def delete_studentsubject(student_instance, studsubj_instance, updated_rows, req
 # - check if studentsubject has submitted grades or school is locked or examyear is locked PR2021-08-21
     # PR2022-02-15 studentsubject can always be deleted
 
+    # PR2022-08-30 MAJOR BUG: student was deleted instead of studsubj,
+    # because 'instance=student_instance' instead of 'instance=studsubj_instance'
+
     # delete student will also cascade delete Grades
     deleted_rowNIU, err_html = sch_mod.delete_instance(
         table='studsubj', # used to create mapid in deleted_row
-        instance=student_instance,
+        instance=studsubj_instance, # MAJOR BUG was: instance=student_instance
         request=request,
         this_txt=this_txt
     )
@@ -3612,21 +3621,21 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                     student_pk = upload_dict.get('student_pk')
-                    student = stud_mod.Student.objects.get_or_none(
+                    student_instance = stud_mod.Student.objects.get_or_none(
                         id=student_pk,
                         school=sel_school,
                         department=sel_department
                     )
                     if logging_on:
-                        logger.debug('msg_list: ' + str(msg_list))
-                        logger.debug('may_edit: ' + str(may_edit))
-                        logger.debug('student: ' + str(student))
+                        logger.debug('    msg_list: ' + str(msg_list))
+                        logger.debug('    may_edit: ' + str(may_edit))
+                        logger.debug('    student_instance: ' + str(student_instance))
 
 # - get studentsubject from upload_dict
                     studsubj_pk = upload_dict.get('studsubj_pk')
                     studsubj = stud_mod.Studentsubject.objects.get_or_none(
                         id=studsubj_pk,
-                        student=student
+                        student=student_instance
                     )
                     if studsubj:
                         if logging_on:
@@ -3647,7 +3656,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         si_dict = schemeitems_dict.get(si_pk)
 
 # +++++  update studentsubject
-                        updated_pk_list = update_studsubj(
+                        updated_pk_list, recalc_subj_comp = update_studsubj(
                             studsubj_instance=studsubj,
                             upload_dict=upload_dict,
                             si_dict=si_dict,
@@ -3658,12 +3667,14 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                             err_fields=err_fields,
                             request=request
                         )
+                        if updated_pk_list:
+                            studsubj_pk_list.extend(updated_pk_list)
 
                         if logging_on:
                             logger.debug('updated_pk_list: ' + str(updated_pk_list))
 
-                        if updated_pk_list:
-                            studsubj_pk_list.extend(updated_pk_list)
+                        if recalc_subj_comp:
+                            update_student_subj_composition(student_instance)
 
                         if msg_list:
                             update_wrap['msg_list'] = msg_list
@@ -3689,7 +3700,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                             setting_dict={},
                             append_dict=append_dict,
                             request=request,
-                            student_pk=student.pk,
+                            student_pk=student_instance.pk,
                             studsubj_pk_list=studsubj_pk_list
                         )
                         if studsubj_rows:
@@ -4081,19 +4092,10 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             if logging_on:
                 logger.debug('The changes have been saved: ' + str(studsubj_instance))
         except Exception as e:
+            recalc_subj_composition = False
             logger.error(getattr(e, 'message', str(e)))
             msg_list.append(str(_('An error occurred. The changes have not been saved.')))
         else:
-            if recalc_subj_composition:
-                student = studsubj_instance.student
-                # validate_studentsubjects_no_msg returns True when there is an error
-                no_error = not stud_val.validate_studentsubjects_no_msg(student, 'nl')
-                if (not student.subj_composition_checked) or \
-                    (student.subj_composition_checked and student.subj_composition_ok != no_error):
-                    setattr(student, 'subj_composition_checked', True)
-                    setattr(student, 'subj_composition_ok', no_error)
-                    # dont update modified by
-                    student.save()
 
             if recalc_finalgrade:
                 grades = stud_mod.Grade.objects.filter(
@@ -4119,8 +4121,25 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
     if logging_on:
         logger.debug('msg_list: ' + str(msg_list))
         logger.debug('  ..... end of update_studsubj .....')
-    return studsubj_pk_list
+    return studsubj_pk_list, recalc_subj_composition
 # --- end of update_studsubj
+
+def update_student_subj_composition(student_instance):
+    # PR2022-08-30
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- update_student_subj_composition -------')
+        logger.debug('     student_instance: ' + str(student_instance))
+
+    # validate_studentsubjects_no_msg returns True when there is an error
+    no_error = not stud_val.validate_studentsubjects_no_msg(student_instance, 'nl')
+    if (not student_instance.subj_composition_checked) or \
+            (student_instance.subj_composition_checked and student_instance.subj_composition_ok != no_error):
+        setattr(student_instance, 'subj_composition_checked', True)
+        setattr(student_instance, 'subj_composition_ok', no_error)
+        # dont update modified by
+        student_instance.save()
+# --- end of update_student_subj_composition
 
 
 def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, request):  # PR2021-12-15
@@ -4686,7 +4705,7 @@ def create_student(examyear, school, department, idnumber_nodots,
                    lastname_stripped, firstname_stripped, prefix_stripped, full_name,
                     lvlbase_pk, sctbase_pk, request, found_is_error, skip_save):
     # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15 PR2022-08-20
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++++++++++++++ create_student +++++++++++++++++ ')
@@ -4848,6 +4867,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
         recalc_regnumber = False
         remove_exemptions = False
         recalc_passed_failed = False
+        recalc_subj_composition = False
 
         for field, new_value in upload_dict.items():
             #try:
@@ -5214,6 +5234,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         setattr(instance, field, new_lvl_or_sct)
                         save_changes = True
                         update_scheme = True
+                        recalc_subj_composition = True
 
                         if field == 'level':
                             recalc_regnumber = True
@@ -5318,6 +5339,8 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         if not has_published_exemptions:
                             setattr(instance, field, new_value)
                             save_changes = True
+                            if field in ('iseveningstudent', 'islexstudent', 'partial_exam'):
+                                recalc_subj_composition = True
 
             #except Exception as e:
             #    logger.error(getattr(e, 'message', str(e)))
@@ -5424,6 +5447,16 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
 # 5. save changes
         if save_changes:
+
+    # update subj_composition_checked and subj_composition_ok when recalc_subj_composition PR2022-08-30
+            if recalc_subj_composition:
+                # validate_studentsubjects_no_msg returns True when there is an error
+                no_error = not stud_val.validate_studentsubjects_no_msg(instance, 'nl')
+                if (not instance.subj_composition_checked) or \
+                    (instance.subj_composition_checked and instance.subj_composition_ok != no_error):
+                    setattr(instance, 'subj_composition_checked', True)
+                    setattr(instance, 'subj_composition_ok', no_error)
+
             try:
                 if not skip_save:
                     instance.save(request=request)
@@ -5484,6 +5517,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     sel_lvlbase_pk=sel_lvlbase_pk,
                     user_lang=user_lang
                 )
+
 
     if logging_on:
         logger.debug('changes_are_saved: ' + str(changes_are_saved))

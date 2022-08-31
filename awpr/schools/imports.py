@@ -2836,7 +2836,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                                         double_idnumberlist, mapped_subjectbase_pk_dict, students_dict_with_subjbase_pk_list,
                                         log_list, request):
     # PR2021-07-21 PR2021-08-12 PR2022-03-17
-
+    # TODO add recalc_subj_composition PR2022-08-30
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')

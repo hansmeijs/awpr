@@ -359,11 +359,11 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
 def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, user_lang):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
-        logger.debug('student: ' + str(student))
-        logger.debug('studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
+        logger.debug('    student: ' + str(student))
+        logger.debug('    studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
     """
     studsubj_dictlist_with_tobedeleted: [
         {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20635, 'studsubj_id': None, 'subj_id': 2641, 'subj_code': 'ak', 'is_extra_counts': False, 'is_extra_nocount': False}, 
@@ -491,43 +491,61 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
 
     # ++++++++++++++++++++++++++++++++
     # - get eveninstudent or lex student
+                # TODO also skip validation when student does partial_exam PR2022-08-30
+                # TODO give return message that validation is skipped PR2022-08-30
                 is_evening_or_lex_student = get_evening_or_lex_student(student)
+                if logging_on:
+                    logger.debug('    is_evening_or_lex_student: ' + str(is_evening_or_lex_student))
+        # - skip validation when is_evening_or_lex_student
+                if not is_evening_or_lex_student:
+        # - check required subjects
+                    validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+        # - check total number of subjects
+                    validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+        # - check number of mvt, wisk and combi subjects
+                    validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                    validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                    validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+        # - check number of subjects per subjecttype
+                    validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-    # -------------------------------
-    # - check required subjects
-                validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-
-    # - check total number of subjects
-                validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-
-    # - check number of mvt, wisk and combi subjects
-                validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-                validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-                validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-
-    # - check number of subjects per subjecttype
-                validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-
-    # - check total_studyloadhours
-                validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang)
+        # - check total_studyloadhours
+                    msg_slh_list = []
+                    validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_slh_list, user_lang)
 
     # wrap messages in a bullet list
-                if student.subj_dispensation:
-                    msg_list = ["<div class='p-2 border_bg_valid'><p>",
-                    str(_('The Inspectorate has validated the composition of the subjects of this candidate.')),
-                    "</p><p>",
-                    str(_('You cannot make changes.')),
-                    "</p><p>",
-                    str(_('Please contact the Inspectorate if you need to make any changes.')), "</p></div>"]
+                    if student.subj_dispensation:
+                        msg_list = ["<div class='p-2 border_bg_valid'><p>",
+                        str(_('The Inspectorate has validated the composition of the subjects of this candidate.')),
+                        "</p><p>",
+                        str(_('You cannot make changes.')),
+                        "</p><p>",
+                        str(_('Please contact the Inspectorate if you need to make any changes.')), "</p></div>"]
+                    else:
+                        if msg_list:
+                            msg_str = ''.join(("<div class='p-2 border_bg_invalid'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
+                            msg_list.insert(0, msg_str)
+                            msg_list.append("</ul>")
 
-                elif len(msg_list):
-                    msg_str = ''.join(("<div class='p-2 border_bg_invalidg'><h6>", str(_('The composition of the subjects is not correct')), ':</h6>', "<ul class='msg_bullet'>"))
-                    msg_list.insert(0, msg_str)
-                    msg_list.append("</ul></div>")
-                else:
-                    msg_list = ["<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>"]
-                if logging_on:
-                    logger.debug('msg_list: ' + str(msg_list))
+                            msg_list.append(''.join(("<h6 class='mt-2 mb-0'>", str(_('ATTENTION')), ":</h6><div class='px-4'>",
+                                    str(_("The Ex1 form cannot be submitted when the composition of the subjects is not correct.")),
+                                        '<br>',
+                                    str(_("Make the necessary corrections or contact the Inspectorate.")),
+                                                     "</div>"
+                            )))
+                            msg_list.append("</div>")
+
+                        else:
+                            msg_list = ["<div class='p-2 border_bg_valid'><p>", str(_('AWP has not found any errors in the composition of the subjects.')), "</p></div>"]
+                            if logging_on:
+                                logger.debug('msg_list: ' + str(msg_list))
+
+                        if msg_slh_list:
+                            msg_slh_list.insert(0, ''.join((
+                                "<div class='px-2 mt-2 border_bg_message'><h6 class='mb-0'>", str(_('For information')), ':</h6>',
+                                "<ul class='msg_bullet'>")))
+                            msg_slh_list.append("</ul>")
+                            msg_list.extend(msg_slh_list)
 
                 """
                 studsubj_dictlist_with_tobedeleted: [
@@ -680,7 +698,7 @@ def get_evening_or_lex_student(student):  # PR 2021-09-08
 def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperiod=None):
     # PR2022-02-15 don't check on submitted studsubj, only on submitted grades
     # PR2022-03-05 used in remove bis_exam in student page
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- validate_submitted_locked_grades ----- ')
@@ -773,8 +791,10 @@ def validate_studentsubjects_no_msg(student, user_lang):
 
 # ++++++++++++++++++++++++++++++++
 # - get eveninstudent or lex student
+            # skip validaate when is_evening_or_lex_student
             is_evening_or_lex_student = get_evening_or_lex_student(student)
-
+            if is_evening_or_lex_student:
+                return False
 # -------------------------------
 # - check required subjects - not when is_evening_or_lex_student
             validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
@@ -1166,7 +1186,7 @@ def validate_minmax_count(field, is_evening_or_lex_student, scheme_dict, subject
 def validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang):
     # - validate number studyloadhours PR2022-08-21
     # - skip when is_evening_or_lex_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_min_studyloadhours  -----')
 
@@ -1291,7 +1311,7 @@ def get_scheme_si_sjtp_dict(scheme):
 def get_studsubj_dict_from_modal(stud_scheme, student, si_dictlist, doubles_list, msg_list):
     # - get info from student subjects PR2021-08-17
     # si_dictlist contains studentsubject values from studsubj modal, not from the database
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_studsubj_dict_from_modal  -----')
         logger.debug('scheme: ' + str(student))
@@ -1439,7 +1459,7 @@ def get_schemitem_info(stud_scheme, schemeitem,
                        subject_list, doubles_list, sjtp_dict, mand_list, mand_subj_list, combi_list,
                        mvt_list, wisk_list, core_list, sufficient_list, notatevlex_list, msg_list):
     # - get info from schemitem PR2021-08-17
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if schemeitem.scheme_id != stud_scheme.pk:
         value = schemeitem.subject.base.code
         msg_str = '<li>' + str(_("Subject '%(val)s' does not occur in this subject scheme.") % {'val': value}) + '</li>'
@@ -1920,9 +1940,9 @@ def get_double_idnumberlist_from_uploadfile(data_list):
 
 
 def get_idnumber_nodots_stripped_lower(id_number):
-    # PR2021-07-20  PR2021-09-10
-    logger_on = False  # s.LOGGING_ON
-    if logger_on:
+    # PR2021-07-20  PR2021-09-10  PR2022-08-30
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
         logger.debug('  -----  get_idnumber_nodots_stripped_lower  -----')
         logger.debug('id_number: ' + str(id_number) + ' ' + str(type(id_number)))
 
@@ -1933,20 +1953,28 @@ def get_idnumber_nodots_stripped_lower(id_number):
         try:
             if isinstance(id_number, int):
                 id_number = str(id_number)
-
+    # remove dots
             id_number_str = id_number.replace('.', '')
             if id_number_str:
+    # remove spaces at the beginning and end
                 id_number_str = id_number_str.strip()
-                if logger_on:
+                if logging_on:
                     logger.debug('id_number_str: <' + str(id_number_str) + '> ' + str(type(id_number_str)))
+
                 if id_number_str:
                     id_number_str = id_number_str.lower()
 
+    # make lower case
                     is_ok = False
                     if id_number_str:
                         if len(id_number_str) == 10: # PR2019-02-18 debug: object of type 'NoneType' has no len(), added: if id_str
                             date_str = id_number_str[:8]
+
+                            if logging_on:
+                                logger.debug('    date_str: ' + str(date_str))
                             if date_str.isnumeric():
+                                if logging_on:
+                                    logger.debug('    date_str.isnumeric(): ' + str(date_str.isnumeric()))
 
                         # ---   convert to date
                                 date_iso = date_str[:4] + "-" + date_str[4:6] + "-" + date_str[6:8]
@@ -1955,7 +1983,7 @@ def get_idnumber_nodots_stripped_lower(id_number):
                                 if birthdate_dteobj :
                                     is_ok = True
 
-                    if logger_on:
+                    if logging_on:
                         logger.debug('is_ok: ' + str(is_ok) )
                     if is_ok:
                         idnumber_nodots_stripped_lower = id_number_str
@@ -1967,7 +1995,7 @@ def get_idnumber_nodots_stripped_lower(id_number):
     else:
         msg_err = _("The ID number cannot be blank.")
 
-    if logger_on:
+    if logging_on:
         logger.debug('    msg_err: ' + str(msg_err))
         logger.debug('    idnumber_nodots_stripped_lower: ' + str(idnumber_nodots_stripped_lower) + ' ' + str(type(idnumber_nodots_stripped_lower)))
         logger.debug('    birthdate_dteobj: ' + str(birthdate_dteobj)+ ' ' + str(type(birthdate_dteobj)))
@@ -2138,7 +2166,7 @@ def validate_reex_count(studsubj_instance, si_dict):  # PR2021-12-19
 
 
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_reex_count -------')
         logger.debug('max_reex: ' + str(max_reex))
@@ -2245,7 +2273,7 @@ def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
     # WARNING : calc_result uses schemeitem.thumb_rule + studsubj.is_thumbrule
     # must also set thumb_rule in schemeitem
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_thumbrule_allowed -------')
         logger.debug('studsubj_instance: ' + str(studsubj_instance))
@@ -2314,7 +2342,7 @@ def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
 
 def validate_extra_nocount_allowed(studsubj_instance):  # PR2022-06-08
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_thumbrule_allowed -------')
         logger.debug('studsubj_instance: ' + str(studsubj_instance))

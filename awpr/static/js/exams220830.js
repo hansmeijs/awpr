@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 filter_tags: ["text", "text", "text", "text", "text",
                              "text", "toggle", "text", "text", "text"],
                 field_width: ["020", "075", "240", "120",  "300",
-                                "150", "075", "075", "120"],
+                                "150", "090", "075", "075", "100"],
                 field_align: ["c",  "c", "l", "l", "l", "l", "c", "c", "c", "c"]},
 
         grades: {field_caption: ["", "Examnumber_twolines", "Candidate",  "Learning_path", "Cluster", "Abbrev_subject_2lines",
@@ -6066,7 +6066,7 @@ document.addEventListener("DOMContentLoaded", function() {
             b_UploadSettings (upload_dict, urls.url_usersetting_upload);
         };
         if (![1, 2, 3].includes(setting_dict.sel_examperiod) ){
-            b_show_mod_message_html(loc.Please_select_examtype);
+            b_show_mod_message_html(loc.Please_select_examperiod);
 
         } else {
 

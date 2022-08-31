@@ -36,7 +36,8 @@ MAX_LEN_DICT_STUDENT = {
     'gradelistnumber': MAX_LENGTH_10
 }
 #PR2022-05-08 Omega College could not upload Ex3, was 1,2 Mb. Max size set to 2 Mb
-MAX_ATTACHMENT_SIZE_Mb = 2  # was: 1
+#PR2022-08-30 was: 2
+MAX_ATTACHMENT_SIZE_Mb = 5
 
 GENDER_NONE = '-'  # PR2018-09-05
 GENDER_MALE = 'M'
