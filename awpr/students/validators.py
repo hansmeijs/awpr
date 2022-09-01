@@ -363,7 +363,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('    student: ' + str(student))
-        logger.debug('    studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
+        # logger.debug('    studsubj_dictlist_with_tobedeleted: ' + str(studsubj_dictlist_with_tobedeleted))
     """
     studsubj_dictlist_with_tobedeleted: [
         {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20635, 'studsubj_id': None, 'subj_id': 2641, 'subj_code': 'ak', 'is_extra_counts': False, 'is_extra_nocount': False}, 
@@ -458,9 +458,9 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
 
                 if logging_on:
                     logger.debug('............................... ')
-                    logger.debug('scheme_dict: ' + str(scheme_dict))
-                    logger.debug('studsubj_dict: ' + str(studsubj_dict))
-                    logger.debug('msg_list: ' + str(msg_list))
+                    #logger.debug('    scheme_dict: ' + str(scheme_dict))
+                    logger.debug('    studsubj_dict: ' + str(studsubj_dict))
+                    logger.debug('    msg_list: ' + str(msg_list))
 
                 """
                 studsubj_dict: {
@@ -492,14 +492,16 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
     # ++++++++++++++++++++++++++++++++
     # - get eveninstudent or lex student
                 # TODO also skip validation when student does partial_exam PR2022-08-30
+                # TODO add separate rules for evening_or_lex_student  PR2022-08-30
                 # TODO give return message that validation is skipped PR2022-08-30
                 is_evening_or_lex_student = get_evening_or_lex_student(student)
 
     # - get sxm_student - also skip validation when sxm_student
-                is_sxm_student = student.school.examyear.country.abbrev = 'Sxm'
+                is_sxm_student = get_is_sxm_student(student)
 
                 if logging_on:
                     logger.debug('    is_evening_or_lex_student: ' + str(is_evening_or_lex_student))
+                    logger.debug('    is_sxm_student: ' + str(is_sxm_student))
 
         # - skip validation when is_evening_or_lex_student
                 if not is_evening_or_lex_student and not is_sxm_student:
@@ -696,6 +698,14 @@ def get_evening_or_lex_student(student):  # PR 2021-09-08
         is_evening_or_lex_student = student.school.iseveningschool or student.school.islexschool
     return is_evening_or_lex_student
 
+
+def get_is_sxm_student(student_instance):  # PR 2022-09-01
+    is_sxm_student = False
+    if student_instance:
+        is_sxm_student = (student_instance.school.examyear.country.abbrev == 'Sxm')
+    return is_sxm_student
+
+
 ##########################
 
 
@@ -774,7 +784,7 @@ def validate_studentsubjects_no_msg(student_instance, user_lang):
         logger.debug('    student_instance: ' + str(student_instance))
 
     # - when sxm_student: skip validate_studentsubjects PR2022-08-31
-    is_sxm_student = student_instance.school.examyear.country.abbrev = 'Sxm'  # sxm has different rules
+    is_sxm_student = get_is_sxm_student(student_instance)  # sxm has different rules
     if is_sxm_student:
         return False
 
@@ -1951,8 +1961,8 @@ def get_double_idnumberlist_from_uploadfile(data_list):
 
 
 def get_idnumber_nodots_stripped_lower(id_number):
-    # PR2021-07-20  PR2021-09-10  PR2022-08-30
-    logging_on = False  # s.LOGGING_ON
+    # PR2021-07-20 PR2021-09-10 PR2022-08-30
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_idnumber_nodots_stripped_lower  -----')
         logger.debug('id_number: ' + str(id_number) + ' ' + str(type(id_number)))
@@ -1960,9 +1970,10 @@ def get_idnumber_nodots_stripped_lower(id_number):
     idnumber_nodots_stripped_lower = ''
     birthdate_dteobj = None
     msg_err = None
+
     if id_number:
         try:
-            if isinstance(id_number, int):
+            if not isinstance(id_number, str):
                 id_number = str(id_number)
     # remove dots
             id_number_str = id_number.replace('.', '')
@@ -1977,6 +1988,7 @@ def get_idnumber_nodots_stripped_lower(id_number):
 
     # make lower case
                     is_ok = False
+                    incorrect_date_format = None
                     if id_number_str:
                         if len(id_number_str) == 10: # PR2019-02-18 debug: object of type 'NoneType' has no len(), added: if id_str
                             date_str = id_number_str[:8]
@@ -1989,20 +2001,53 @@ def get_idnumber_nodots_stripped_lower(id_number):
 
                         # ---   convert to date
                                 date_iso = date_str[:4] + "-" + date_str[4:6] + "-" + date_str[6:8]
+                                logger.debug('    date_iso: ' + str(date_iso) )
                                 birthdate_dteobj = af.get_date_from_ISO(date_iso)
-
                                 if birthdate_dteobj :
                                     is_ok = True
+                                else:
+                                    incorrect_date_format = date_str
+                            else:
+                                incorrect_date_format = date_str
 
                     if logging_on:
-                        logger.debug('is_ok: ' + str(is_ok) )
+                        logger.debug('    is_ok: ' + str(is_ok) )
+                        logger.debug('    incorrect_date_format: ' + str(incorrect_date_format) )
+
                     if is_ok:
                         idnumber_nodots_stripped_lower = id_number_str
+                    elif incorrect_date_format:
+                        msg_err = ''.join((
+                            '<p p-2>',
+                            str(_("ID number '%(val)s' is not valid.") % {'val': id_number}),
+                            '</p><p px-2 pt-2>',
+                            str(_("'%(val)s' is not a valid date.") % {'val': incorrect_date_format}),
+                            '<br>',
+                            str(_("The date format is: ‘yyyy.mm.dd’ or ‘yyyymmdd’.")),
+                            '</p>',
+                        ))
                     else:
-                        msg_err = _("ID number '%(val)s' is not valid.") % {'val': id_number}
+                        msg_err = ''.join((
+                            '<p p-2>',
+                            str(_("ID number '%(val)s' is not valid.") % {'val': id_number}),
+                            '</p><p px-2 pt-2>',
+                            str(_("The format is: ‘yyyy.mm.dd.xx’ or ‘yyyymmddxx’,")),
+                            '<br>',
+                            str(_("in which ‘xx’ can be a two digit number, ‘00’ or two letters.")),
+                            '</p>',
+                        ))
+
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            msg_err = _("ID number '%(val)s' is not valid.") % {'val': id_number}
+            msg_err = ''.join((
+                '<p p-2>',
+                str(_("ID number '%(val)s' is not valid.") % {'val': id_number}),
+                '</p><p px-2 pt-2>',
+                str(_("The format is: ‘yyyy.mm.dd.xx’ or ‘yyyymmddxx’,")),
+                '<br>',
+                str(_("in which ‘xx’ can be a two digit number, ‘00’ or two letters.")),
+                '</p>',
+            ))
     else:
         msg_err = _("The ID number cannot be blank.")
 
@@ -2290,7 +2335,7 @@ def validate_thumbrule_allowed(studsubj_instance):  # PR2022-06-07
         logger.debug('studsubj_instance: ' + str(studsubj_instance))
     err_list = []
 # sxm has different rules
-    is_sxm_student = studsubj_instance.student.school.examyear.country.abbrev = 'Sxm'
+    is_sxm_student = get_is_sxm_student(studsubj_instance.student)
     if is_sxm_student:
 # check if there is already a subject with thumbrule
         has_thumbrule_nocombi = stud_mod.Studentsubject.objects.filter(

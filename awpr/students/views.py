@@ -1768,23 +1768,24 @@ class StudentsubjectValidateTestView(View):
             studsubj_dictlist = upload_dict.get('studsubj_dictlist')
 
             if logging_on:
-                logger.debug('sel_examyear: ' + str(sel_examyear))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('student_pk: ' + str(student_pk) + ' ' + str(type(student_pk)))
-                logger.debug('studsubj_dictlist: ' + str(studsubj_dictlist))
+                logger.debug('    sel_examyear: ' + str(sel_examyear))
+                logger.debug('    sel_school: ' + str(sel_school))
+                logger.debug('    sel_department: ' + str(sel_department))
+                logger.debug('    student_pk: ' + str(student_pk) + ' ' + str(type(student_pk)))
+                logger.debug('    studsubj_dictlist: ' + str(studsubj_dictlist))
             """
             studsubj_dictlist: [
                 {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20635, 'studsubj_id': None, 'subj_id': 2641, 'subj_code': 'ak', 'is_extra_counts': False, 'is_extra_nocount': False}, 
                 {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20231, 'studsubj_id': None, 'subj_id': 2637, 'subj_code': 'sk', 'is_extra_counts': False, 'is_extra_nocount': False}, 
                 {'tobecreated': True, 'tobedeleted': False, 'tobechanged': False, 'schemeitem_id': 20420, 'studsubj_id': None, 'subj_id': 2647, 'subj_code': 'asw', 'is_extra_counts': False, 'is_extra_nocount': False}, 
+           
             """
             if student_pk:
                 student = stud_mod.Student.objects.get_or_none(id=student_pk)
                 if logging_on:
-                    logger.debug('sel_school.pk: ' + str(sel_school.pk))
-                    logger.debug('sel_department.pk: ' + str(sel_department.pk))
-                    logger.debug('student: ' + str(student))
+                    logger.debug('    sel_school.pk: ' + str(sel_school.pk))
+                    logger.debug('    sel_department.pk: ' + str(sel_department.pk))
+                    logger.debug('    student: ' + str(student))
 
                 if student:
                     msg_html = stud_val.validate_studentsubjects_TEST(student, studsubj_dictlist, user_lang)
@@ -4823,7 +4824,7 @@ def create_student(examyear, school, department, idnumber_nodots,
 def update_student_instance(instance, sel_examyear, sel_school, sel_department, upload_dict,
                             idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
                             msg_list, error_list, err_fields, log_list, request, skip_save):
-    # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04
+    # --- update existing and new instance PR2019-06-06 PR2021-07-19 PR2022-04-11 PR2022-06-04 PR2022-09-01
     # log_list is only used when uploading students, is None otherwise
     instance_pk = instance.pk if instance else None
 
@@ -4954,14 +4955,15 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if new_value is not None:
                         if not isinstance(new_value, str):
                             new_value = str(new_value)
-
-                    if new_value:
+                    # PR2022-09-01 debug: blank ID number was not giving error, because of 'if new_value'
+                    # was:
+                    #    if new_value:
 
             # - remove dots, check if idnumber is correct
-                        idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
-                        if msg_err:
-                            err_txt = msg_err
-                            class_txt = "border_bg_invalid"
+                    idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
+                    if msg_err:
+                        err_txt = msg_err
+                        class_txt = "border_bg_invalid"
 
                     if err_txt is None:
             # check idnumber_already_exists
@@ -5035,18 +5037,30 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
             # check examnumber_already_exists
                         examnumber_already_exists = False
 
-                        # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
-                        if not examnumber_list:
-                            stud_val.get_examnumberlist_from_database(instance.school, instance.department, examnumber_list)
+                        # PR2022-09-01 Angela Richardson Maris Stella: cannot upload students
+                        # error: new_value.lower(): 'NoneType' object has no attribute 'lower'
+                        # solved by adding if new_value. new_value is converted sto string above
 
-                        if examnumber_list:
-                            # examnumber_list:  list of tuples (student_pk, LOWER(examnumber)) [(4445, '201'), (4545, '202'), (4546, '203'), (4547, '204'), (5888, '205'), (4549, '206'), (6016, '207')]
-                             for row in examnumber_list:
-                                # skip exam number of this student
-                                if instance_pk is None or row[0] != instance_pk:
-                                    if row[1] and row[1] == new_value.lower():
-                                        examnumber_already_exists = True
-                                        break
+                        if new_value:
+                            # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
+                            if not examnumber_list:
+                                stud_val.get_examnumberlist_from_database(instance.school, instance.department, examnumber_list)
+
+                            if examnumber_list:
+                                # examnumber_list:  list of tuples (student_pk, LOWER(examnumber)) [(4445, '201'), (4545, '202'), (4546, '203'), (4547, '204'), (5888, '205'), (4549, '206'), (6016, '207')]
+                                 for row in examnumber_list:
+                                    # skip exam number of this student
+                                    if logging_on:
+                                        logger.debug('examnumber_list: ' + str(examnumber_list) + ' ' + str(type(examnumber_list)))
+                                        logger.debug('row: ' + str(row) + ' ' + str(type(row)))
+                                        logger.debug('row[0]: ' + str(row[0]) + ' ' + str(type(row[0])))
+                                        logger.debug('row[1]: ' + str(row[1]) + ' ' + str(type(row[1])))
+                                        logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+
+                                    if instance_pk is None or row[0] != instance_pk:
+                                        if row[1] and row[1] == new_value.lower():
+                                            examnumber_already_exists = True
+                                            break
 
                         if examnumber_already_exists:
                             err_txt = _("%(cpt)s '%(val)s' already exists.")  % {'cpt': str(caption), 'val': new_value}
