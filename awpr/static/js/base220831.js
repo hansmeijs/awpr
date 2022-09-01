@@ -576,8 +576,8 @@
                 if(default_class) {el.classList.add(default_class)};
                 el.classList.remove(hover_class);
             });
+            el.classList.add("pointer_show");
         };
-        el.classList.add("pointer_show");
     };  // add_hover
 
 //=========  append_background_class ================ PR2020-09-10
@@ -856,10 +856,8 @@
 
     function b_get_status_auth123_iconclass(publ, blocked, auth1, auth2, auth3) {
     // PR2022-08-28
-        console.log( " ==== b_get_status_auth123_iconclass ====");
-        console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2)
-        console.log("auth3_must_sign", auth3_must_sign, "auth3", auth3)
-        console.log("auth4_must_sign", auth4_must_sign, "auth4", auth4)
+        //console.log( " ==== b_get_status_auth123_iconclass ====");
+        //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2, "auth3", auth3);
 
         // auth1, auth2, auth3 must approve school exam
 

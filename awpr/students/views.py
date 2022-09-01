@@ -3418,7 +3418,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                                     updated_rows.append(deleted_row)
                                     recalc_subj_composition = True
 
-                        # +++ create new studentsubject, also create grade of first examperiod
+# +++ create new studentsubject, also create grade of first examperiod
                         elif mode == 'create':
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
                             error_list = []
@@ -3448,8 +3448,6 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                             studsubj_pk_list, recalc_subj_comp = update_studsubj(studsubj, studsubj_dict, si_dict, sel_examyear, sel_school, sel_department, err_list, err_fields, request)
                             if recalc_subj_comp:
                                 recalc_subj_composition = True
-
-
 # - end of loop
 # -------------------------------------------------
                     if recalc_subj_composition:
@@ -4131,7 +4129,7 @@ def update_student_subj_composition(student_instance):
         logger.debug(' ------- update_student_subj_composition -------')
         logger.debug('     student_instance: ' + str(student_instance))
 
-    # validate_studentsubjects_no_msg returns True when there is an error
+
     no_error = not stud_val.validate_studentsubjects_no_msg(student_instance, 'nl')
     if (not student_instance.subj_composition_checked) or \
             (student_instance.subj_composition_checked and student_instance.subj_composition_ok != no_error):

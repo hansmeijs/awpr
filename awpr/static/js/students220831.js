@@ -1191,12 +1191,13 @@ function RefreshDataRowsAfterUpload(response) {
                     const data_value = get_attr_from_el(el_input, "data-value")
                     new_value = (data_value === "1");
                     old_value = !!mod_MSTUD_dict[fldName];
-
+/*
     console.log( ".....fldName: ", fldName);
     console.log( ".... mod_MSTUD_dict[fldName]", mod_MSTUD_dict[fldName]);
     console.log( ".....old_value: ", old_value, typeof old_value);
     console.log( ".....data_value: ", data_value);
     console.log( ".....new_value: ", new_value, typeof new_value);
+*/
                 } else {
                     new_value = (el_input.value) ? el_input.value : null;
                     old_value = (mod_MSTUD_dict[fldName]) ? mod_MSTUD_dict[fldName] : null;
@@ -1205,7 +1206,7 @@ function RefreshDataRowsAfterUpload(response) {
                     const field = (fldName === "lvlbase_id") ? "level" :
                                   (fldName === "sctbase_id") ? "sector" : fldName;
                     upload_dict[field] = new_value;
-    console.log( ".....upload_dict[field]: ", upload_dict[field], typeof upload_dict[field]);
+    //console.log( ".....upload_dict[field]: ", upload_dict[field], typeof upload_dict[field]);
                     if(fldName === "lvlbase_id"){
                         new_level_pk = new_value;
                         level_or_sector_has_changed = true;

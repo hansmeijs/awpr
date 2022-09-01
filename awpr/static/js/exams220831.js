@@ -483,7 +483,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MDEC_header1 = document.getElementById("id_MDEC_header1");
         const el_MDEC_header2 = document.getElementById("id_MDEC_header2");
         const el_MDEC_select_subject = document.getElementById("id_MDEC_select_subject");
-        el_MDEC_select_subject.addEventListener("click", function() {MDEC_BtnSelectSubjectClick()}, false);
+        if (el_MDEC_select_subject) {el_MDEC_select_subject.addEventListener("click", function() {MDEC_BtnSelectSubjectClick()}, false)};
         add_hover(el_MDEC_select_subject);
         const el_MDEC_err_subject = document.getElementById("id_MDEC_err_subject");
         const el_MDEC_select_level = document.getElementById("id_MDEC_select_level");
@@ -493,9 +493,9 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MDEC_checkbox_secret_exam = document.getElementById("id_MEXQ_checkbox_secret_exam");
 
         const el_MDEC_btn_save = document.getElementById("id_MDEC_btn_save");
-        el_MDEC_btn_save.addEventListener("click", function() {MDEC_Save()})
+        if (el_MDEC_btn_save) {el_MDEC_btn_save.addEventListener("click", function() {MDEC_Save()})};
         const el_MDEC_btn_delete = document.getElementById("id_MDEC_btn_delete");
-        el_MDEC_btn_delete.addEventListener("click", function() {ModConfirmOpen("duo_exam", "delete")})
+        if (el_MDEC_btn_delete) {el_MDEC_btn_delete.addEventListener("click", function() {ModConfirmOpen("duo_exam", "delete")})};
 
         const el_MDEC_msg_modified = document.getElementById("id_MDEC_msg_modified");
 

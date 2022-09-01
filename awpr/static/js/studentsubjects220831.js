@@ -764,8 +764,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "data_dict", data_dict);
 
 // ---  update selected studsubj_dict / student_pk / subject pk
-        selected.studsubj_dict = data_dict;
-        selected.studsubj_pk = (data_dict.studsubj_id) ? data_dict.studsubj_id : null;
+        selected.studsubj_dict =(data_dict) ? data_dict : null;
+        selected.studsubj_pk = (data_dict && data_dict.studsubj_id) ? data_dict.studsubj_id : null;
 
         selected.student_pk = (data_dict && data_dict.stud_id) ? data_dict.stud_id : null;
         selected.subject_pk = (data_dict && data_dict.subj_id) ? data_dict.subj_id : null;
@@ -5471,7 +5471,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= DownloadGradeStatusAndIcons ============= PR2021-07-24
     function DownloadValidationStatusNotes() {
-        console.log( " ==== DownloadGradeStatusAndIcons ====");
+        //console.log( " ==== DownloadGradeStatusAndIcons ====");
         const url_str = urls.url_studsubj_validate_all;
         const upload_dict = {studsubj_validate: {get: true}};
         // TODO enable this
@@ -5501,8 +5501,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             } else {
                 row.subj_error = (validate_studsubj_list && row.stud_id && validate_studsubj_list.includes(row.stud_id))
-            }
-        }
+            };
+        };
 
        // update first column "subj_error"
        if (oneonly_student_pk) {
@@ -5527,29 +5527,33 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModMessageClose() {
         //console.log(" --- ModMessageClose --- ");
         //console.log("mod_dict.el_focus: ", mod_dict.el_focus);
-        if (mod_dict.el_focus) { set_focus_on_el_with_timeout(mod_dict.el_focus, 150)}
+        if (mod_dict.el_focus) { set_focus_on_el_with_timeout(mod_dict.el_focus, 150)};
 
-    }  // ModMessageClose
+    };  // ModMessageClose
 
 //========= get_datadict_from_tblRow ============= PR2021-07-25 PR2021-08-08
     function get_datadict_from_tblRow(tblRow) {
-        //console.log( " ==== get_datadict_from_tblRow ====");
-        //console.log( "tblRow", tblRow);
+        console.log( " ==== get_datadict_from_tblRow ====");
+        console.log( "tblRow", tblRow);
 // get student_pk and studsubj_pk from tr_clicked.id
         let student_pk = null, studsubj_pk = null;
-        if (tblRow){
+        if (tblRow && tblRow.id){
             const arr = tblRow.id.split("_");
+        console.log( "arr", arr);
 
             student_pk = (arr[1] && Number(arr[1])) ? Number(arr[1]) : 0;
             studsubj_pk = (arr[2] && Number(arr[2])) ? Number(arr[2]) : 0;
 
         };
 
+        console.log( "student_pk", student_pk);
+        console.log( "studsubj_pk", studsubj_pk);
     //console.log( "student_pk", student_pk);
     //console.log( "studsubj_pk", studsubj_pk);
         const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
         let data_dict = (!isEmpty(found_dict)) ? found_dict : null;
 
+        console.log( "data_dict", data_dict);
         // PR2022-03-02 debug: in RefreshDataRows when new  studsubj_pk is added the recursive lookup is not working.
         // lookup the oldfashioned way when student_pk and studsubj_pk have value and found_dict is null
         if (data_dict == null && student_pk && studsubj_pk){

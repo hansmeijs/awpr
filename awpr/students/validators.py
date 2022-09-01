@@ -494,10 +494,15 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
                 # TODO also skip validation when student does partial_exam PR2022-08-30
                 # TODO give return message that validation is skipped PR2022-08-30
                 is_evening_or_lex_student = get_evening_or_lex_student(student)
+
+    # - get sxm_student - also skip validation when sxm_student
+                is_sxm_student = student.school.examyear.country.abbrev = 'Sxm'
+
                 if logging_on:
                     logger.debug('    is_evening_or_lex_student: ' + str(is_evening_or_lex_student))
+
         # - skip validation when is_evening_or_lex_student
-                if not is_evening_or_lex_student:
+                if not is_evening_or_lex_student and not is_sxm_student:
         # - check required subjects
                     validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
         # - check total number of subjects
@@ -759,16 +764,22 @@ def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperi
 
 # ========  validate_studentsubjects  ======= PR2021-07-24 PR2022-08-25
 
-def validate_studentsubjects_no_msg(student, user_lang):
+def validate_studentsubjects_no_msg(student_instance, user_lang):
+    # PR2021-07-24 PR2022-08-25 PR2022-08-31
+    # function returns True when error or when one of the requirements is not met.
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects  -----')
-        logger.debug('student: ' + str(student))
+        logger.debug('    student_instance: ' + str(student_instance))
 
-# - store info of schemeitem in si_dict
+    # - when sxm_student: skip validate_studentsubjects PR2022-08-31
+    is_sxm_student = student_instance.school.examyear.country.abbrev = 'Sxm'  # sxm has different rules
+    if is_sxm_student:
+        return False
 
-    if student:
-        stud_scheme = student.scheme
+    if student_instance:
+        stud_scheme = student_instance.scheme
         if logging_on:
             logger.debug('stud_scheme: ' + str(stud_scheme))
 
@@ -783,7 +794,7 @@ def validate_studentsubjects_no_msg(student, user_lang):
 # - get info from studsubjects
             doubles_pk_list = []
             msg_list = []
-            studsubj_dict = get_studsubj_dict(stud_scheme, student, doubles_pk_list, msg_list)
+            studsubj_dict = get_studsubj_dict(stud_scheme, student_instance, doubles_pk_list, msg_list)
             if msg_list:
                 return True
             if doubles_pk_list:
@@ -792,7 +803,7 @@ def validate_studentsubjects_no_msg(student, user_lang):
 # ++++++++++++++++++++++++++++++++
 # - get eveninstudent or lex student
             # skip validaate when is_evening_or_lex_student
-            is_evening_or_lex_student = get_evening_or_lex_student(student)
+            is_evening_or_lex_student = get_evening_or_lex_student(student_instance)
             if is_evening_or_lex_student:
                 return False
 # -------------------------------
