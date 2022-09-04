@@ -2014,7 +2014,11 @@ def create_examyear_instance(upload_dict, request):
         elif new_examyear_pk:
             examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=new_examyear_pk)
 # - copy all tables from last examyear
-            log_lst = copy_tables_from_last_year(last_examyear_pk, new_examyear_pk, new_examyear_code_int, True)  # also_copy_schools = True
+            log_lst = copy_tables_from_last_year(
+                prev_examyear_pk=last_examyear_pk,
+                new_examyear_pk=new_examyear_pk,
+                also_copy_schools=True
+            )
             if log_lst:
                 log_list.extend(log_lst)
 
@@ -2236,15 +2240,18 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
 
 
 @method_decorator([login_required], name='dispatch')
-class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
+class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug('  ===== OrderlistsPublishView =====')
+            logger.debug('===== OrderlistsPublishView =====')
 
         # function publishes orderlist and sends email to schools
+
+# - for testing: set skip_send_email = True PR2022-09-04
+        skip_send_email = False
 
         update_wrap = {}
         has_error = False
@@ -2329,7 +2336,13 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                         schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
-                        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(sel_examyear_instance, request)
+                        sel_examperiod = c.EXAMPERIOD_FIRST
+                        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+                            sel_examyear_instance=sel_examyear_instance,
+                            sel_examperiod=sel_examperiod,
+                            request=request
+                        )
+
                         total_dict = count_dict.get('total')
                         if logging_on:
                             logger.debug('total_dict: ' + str(total_dict))
@@ -2402,7 +2415,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                                     log_list.append(''.join((c.STRING_SPACE_15, filename_ext)))
                                     log_list.append(c.STRING_SPACE_05)
 
-        # get list of 'auth1' and 'auth2' users of requsr_school (ETE or DOE), for sending email with total_orderlist
+# - get list of 'auth1' and 'auth2' users of requsr_school (ETE or DOE), for sending email with total_orderlist
                                     # they will get cc of email to each school
                                     allowed_usergroups = ('auth1', 'auth2')
                                     cc_pk_str_list, cc_name_list, cc_email_list = get_school_emailto_list(requsr_school, allowed_usergroups)
@@ -2414,27 +2427,32 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                                     sendto_pk_str_list = cc_pk_str_list
                                     sendto_name_list = cc_name_list
                                     sendto_email_list = cc_email_list
-                                    mail_sent = send_email_orderlist(
-                                        examyear=sel_examyear_instance,
-                                        school=requsr_school,
-                                        is_total_orderlist=True,
-                                        sendto_pk_str_list=sendto_pk_str_list,
-                                        sendto_name_list=sendto_name_list,
-                                        sendto_email_list=sendto_email_list,
-                                        cc_pk_str_list=None,
-                                        cc_email_list=None,
-                                        published_instance=published_instance,
-                                        request=request
-                                    )
-                                    if not mail_sent:
-                                        log_list.append(''.join((c.STRING_SPACE_10, str(_('An error occurred while sending the email.')), ' ', str(_('The email is not sent.')))))
-                                    else:
-                                        log_list.append(''.join((c.STRING_SPACE_10, str(_('An email with the orderlist is sent to')), ':')))
-                                        log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)) )))
-                                    log_list.append(c.STRING_SPACE_05)
 
-                                    if logging_on:
-                                        logger.debug('mail_sent: ' + str(mail_sent))
+                                    if skip_send_email:
+                                        log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ', str(_('The email is not sent.')))))
+                                    else:
+                                        mail_sent = send_email_orderlist(
+                                            examyear=sel_examyear_instance,
+                                            school=requsr_school,
+                                            is_total_orderlist=True,
+                                            sendto_pk_str_list=sendto_pk_str_list,
+                                            sendto_name_list=sendto_name_list,
+                                            sendto_email_list=sendto_email_list,
+                                            cc_pk_str_list=None,
+                                            cc_email_list=None,
+                                            published_instance=published_instance,
+                                            request=request
+                                        )
+
+                                        if not mail_sent:
+                                            log_list.append(''.join((c.STRING_SPACE_10, str(_('An error occurred while sending the email.')), ' ', str(_('The email is not sent.')))))
+                                        else:
+                                            log_list.append(''.join((c.STRING_SPACE_10, str(_('An email with the orderlist is sent to')), ':')))
+                                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)) )))
+                                        log_list.append(c.STRING_SPACE_05)
+
+                                        if logging_on:
+                                            logger.debug('mail_sent: ' + str(mail_sent))
 
 #######################################
 # create separate orderlist for each school, also when no exams found
@@ -2442,17 +2460,32 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
                                     count_school_orderlists = 0
                                     for schoolbase_dict in schoolbase_dictlist:
 
-                            # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
+    # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
                                         schoolbase_pk = schoolbase_dict.get('sbase_id')
-                                        count_dict, count_rowsNIU = subj_view.create_studsubj_count_dict(sel_examyear_instance,
-                                                                                          request, schoolbase_pk)
+                                        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+                                            sel_examyear_instance=sel_examyear_instance,
+                                            sel_examperiod=sel_examperiod,
+                                            request=request,
+                                            prm_schoolbase_pk=schoolbase_pk
+                                        )
 
                                         is_created = create_orderlist_per_school(
-                                            sel_examyear_instance, schoolbase_dict,
-                                            department_dictlist, lvlbase_dictlist, subjectbase_dictlist,
-                                            count_dict, now_arr, min_ond, requsr_school_name, log_list,
-                                            cc_pk_str_list, cc_email_list, cc_name_list,
-                                            user_lang, request)
+                                            sel_examyear_instance=sel_examyear_instance,
+                                            schoolbase_dict=schoolbase_dict,
+                                            department_dictlist=department_dictlist,
+                                            lvlbase_dictlist=lvlbase_dictlist,
+                                            subjectbase_dictlist=subjectbase_dictlist,
+                                            count_dict=count_dict,
+                                            now_arr=now_arr,
+                                            min_ond=min_ond,
+                                            requsr_school_name=requsr_school_name,
+                                            log_list=log_list,
+                                            cc_pk_str_list=cc_pk_str_list,
+                                            cc_email_list=cc_email_list,
+                                            cc_name_list=cc_name_list,
+                                            skip_send_email=skip_send_email,
+                                            user_lang=user_lang,
+                                            request=request)
                                         if is_created:
                                             count_school_orderlists += 1
 
@@ -2492,10 +2525,11 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # --- end of OrderlistsPublishView
 
+
 def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                                 department_dictlist, lvlbase_dictlist, subjectbase_dictlist,
                                 count_dict, now_arr, min_ond, requsr_school_name, log_list,
-                                cc_pk_str_list, cc_email_list, cc_name_list,
+                                cc_pk_str_list, cc_email_list, cc_name_list, skip_send_email,
                                 user_lang, request):
     # function creates orderlist of one school # PR2021-10-12
     logging_on = s.LOGGING_ON
@@ -2589,32 +2623,36 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                     log_list.append(c.STRING_SPACE_05)
 
                     # get list of users of this school, for sending email
-                    mail_sent = send_email_orderlist(
-                        examyear=sel_examyear_instance,
-                        school=school,
-                        is_total_orderlist=False,
-                        sendto_pk_str_list=sendto_pk_str_list,
-                        sendto_name_list=sendto_name_list,
-                        sendto_email_list=sendto_email_list,
-                        cc_pk_str_list=cc_pk_str_list,
-                        cc_email_list=cc_email_list,
-                        published_instance=published_instance,
-                        request=request
-                    )
-                    if not mail_sent:
-                        log_list.append(''.join((c.STRING_SPACE_10, str(_(
-                            'An error occurred while sending the email.')), ' ',
-                                                 str(_('The email is not sent.')))))
+                    if skip_send_email:
+                        log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ',
+                                                 str(_('The email to %(cpt)s is not sent.') % {'cpt': school.name}))))
                     else:
-                        log_list.append(''.join((c.STRING_SPACE_10, str(_(
-                            'An email with the orderlist is sent to')), ':')))
-                        log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)))))
-                        log_list.append(''.join((c.STRING_SPACE_10, str(_(
-                            'c.c.')), ':')))
-                        log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)))))
-                    log_list.append(c.STRING_SPACE_05)
-                    if logging_on:
-                        logger.debug('mail_sent: ' + str(mail_sent))
+                        mail_sent = send_email_orderlist(
+                            examyear=sel_examyear_instance,
+                            school=school,
+                            is_total_orderlist=False,
+                            sendto_pk_str_list=sendto_pk_str_list,
+                            sendto_name_list=sendto_name_list,
+                            sendto_email_list=sendto_email_list,
+                            cc_pk_str_list=cc_pk_str_list,
+                            cc_email_list=cc_email_list,
+                            published_instance=published_instance,
+                            request=request
+                        )
+                        if not mail_sent:
+                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                                'An error occurred while sending the email.')), ' ',
+                                                     str(_('The email is not sent.')))))
+                        else:
+                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                                'An email with the orderlist is sent to')), ':')))
+                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)))))
+                            log_list.append(''.join((c.STRING_SPACE_10, str(_(
+                                'c.c.')), ':')))
+                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)))))
+                        log_list.append(c.STRING_SPACE_05)
+                        if logging_on:
+                            logger.debug('mail_sent: ' + str(mail_sent))
 
     return orderlist_is_created
 # - end of create_orderlist_per_school
@@ -3199,8 +3237,11 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
                     if logging_on:
                         logger.debug('curacao_examyear_instance and sxm_examyear_instance')
 
-                    also_copy_schools = False
-                    copy_tables_from_last_year(curacao_examyear_instance, sxm_examyear_instance, also_copy_schools, log_list, request)
+                    log_list = copy_tables_from_last_year(
+                        prev_examyear_pk=curacao_examyear_instance,
+                        new_examyear_pk=sxm_examyear_instance,
+                        also_copy_schools=False
+                    )
 
         update_wrap['error_list'] = error_list
         update_wrap['SXM_added_list'] = SXM_added_list
@@ -3278,9 +3319,11 @@ class CopySchemesFromExamyearView(View):  # PR2021-09-24
                     log_list.append(c.STRING_SPACE_05 + from_examyear)
                     log_list.append(c.STRING_SPACE_05 + to_examyear)
 
-                    also_copy_schools = False
-                    copy_tables_from_last_year(copyfrom_examyear_instance, copyto_examyear_instance, also_copy_schools, log_list, request)
-
+                    log_list = copy_tables_from_last_year(
+                        prev_examyear_pk=copyfrom_examyear_instance,
+                        new_examyear_pk=copyto_examyear_instance,
+                        also_copy_schools=False
+                    )
         if logging_on:
             logger.debug('log_list: ' + str(log_list) )
         update_wrap['log_list'] = log_list
@@ -3459,7 +3502,7 @@ def update_examyear(instance, upload_dict, msg_list, request):
 # - end of update_examyear
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, new_examyear_code_int, also_copy_schools ):
+def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_schools):
     # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06 PR2022-08-23
     logging_on = False  # s.LOGGING_ON
     if logging_on:

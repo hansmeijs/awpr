@@ -1435,6 +1435,8 @@ class ExamUploadView(View):
                 # PR2022-02-20 debug: exam uses subject_pk, not subjbase_pk
                 subject_pk = upload_dict.get('subject_pk')
 
+                show_all = upload_dict.get('show_all') or False
+
 # - get selected examyear and from Usersetting
                 sel_examyear, sel_schoolNIU, sel_department, may_editNIU, msg_listNIU = \
                     dl.get_selected_ey_school_dep_from_usersetting(request)
@@ -1556,6 +1558,7 @@ class ExamUploadView(View):
                                     sel_examyear=sel_examyear,
                                     sel_depbase=sel_department.base,
                                     append_dict=append_dict,
+                                    show_all=show_all,
                                     exam_pk_list=exam_pk_list
                                 )
                                 if updated_ete_exam_rows:
@@ -4536,7 +4539,7 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
 
 def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, append_dict, setting_dict=None, exam_pk_list=None):
     # PR2022-06-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_all_exam_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear))
@@ -4707,12 +4710,13 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
 def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, show_all=False, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13  PR2022-06-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
-        logger.debug('sel_examyear: ' + str(sel_examyear))
-        logger.debug('sel_depbase: ' + str(sel_depbase))
-        logger.debug('show_all: ' + str(show_all))
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+        logger.debug('    sel_depbase: ' + str(sel_depbase))
+        logger.debug('    show_all: ' + str(show_all))
+        logger.debug('    exam_pk_list: ' + str(exam_pk_list))
 
     # PR2022-05-13 debug: Raymond Romney MPC: cannot open exam.
     # cause: exams were filtered by examyear.pk, SXM has different examyear.pk from CUR
@@ -4777,30 +4781,33 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
         "WHERE ex.ete_exam",
         "AND ey.code = %(ey_code)s::INT",
     ]
-    if sel_depbase_pk and not show_all:
-        # PR2022-08-11 show ete_exams of all deps in page orderlist
-        sql_list.append("AND depbase.id = %(depbase_id)s::INT")
+
 
 # - only show exams that are published when user is not role_admin
     if not req_usr.is_role_admin:
         sql_list.append("AND ex.published_id IS NOT NULL")
 
 # skip other filters when exam_pk_list has value
-    if not show_all:
-        if exam_pk_list:
-            sql_keys['pk_arr'] = exam_pk_list
-            sql_list.append("AND ex.id IN (SELECT UNNEST( %(pk_arr)s::INT[]))")
-        else:
-            if setting_dict:
-                sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
-                if sel_examperiod in (1, 2, 3):
-                    sql_keys['ep'] = sel_examperiod
-                    sql_list.append("AND (ex.examperiod = %(ep)s::INT)")
 
-                sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-                if sel_lvlbase_pk:
-                    sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-                    sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+    if exam_pk_list:
+        sql_keys['pk_arr'] = exam_pk_list
+        sql_list.append("AND ex.id IN (SELECT UNNEST( %(pk_arr)s::INT[]))")
+
+    elif not show_all:
+        if sel_depbase_pk:
+            # PR2022-08-11 show ete_exams of all deps in page orderlist
+            sql_list.append("AND depbase.id = %(depbase_id)s::INT")
+
+        if setting_dict:
+            sel_examperiod = setting_dict.get(c.KEY_SEL_EXAMPERIOD)
+            if sel_examperiod in (1, 2, 3):
+                sql_keys['ep'] = sel_examperiod
+                sql_list.append("AND (ex.examperiod = %(ep)s::INT)")
+
+            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
+            if sel_lvlbase_pk:
+                sql_keys['lvlbase_pk'] = sel_lvlbase_pk
+                sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
 
     sql_list.append("ORDER BY ex.id")
 

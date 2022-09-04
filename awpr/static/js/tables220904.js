@@ -1312,14 +1312,14 @@
 //========= t_FillOptionsFromList  =======  PR2020-12-17
     function t_FillOptionsFromList(el_select, data_list, value_field, caption_field,
                                     select_text, select_text_none, selected_value, filter_field, filter_value) {
-/*
+
         console.log( "=== t_FillOptionsFromList ");
         console.log( "data_list", data_list);
         console.log( "value_field", value_field);
         console.log( "selected_value", selected_value);
         console.log( "filter_field", filter_field);
         console.log( "filter_value", filter_value, typeof filter_value);
-*/
+
 // ---  fill options of select box
         let option_text = "";
         let row_count = 0;

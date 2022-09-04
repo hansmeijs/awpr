@@ -884,7 +884,7 @@ def download_setting(request_item_setting, user_lang, request):
     # PR2021-01-23 PR2021-03-14 PR2021-08-13 PR2022-03-06
 
     if logging_on:
-        logger.debug('++++++++++++  DEPBASE, LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, CLUSTER ++++++++++++++++++++++++')
+        logger.debug('++++++++++++  LEVELBASE, SECTORBASE, SCHEME, SUBJECT, STUDENT, CLUSTER ++++++++++++++++++++++++')
         logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
     # PR2022-05-29 dont save sel_student_pk, but only filter locally. Was: , c.KEY_SEL_STUDENT_PK):
     for key_str in (c.KEY_SEL_LVLBASE_PK, c.KEY_SEL_SCTBASE_PK, c.KEY_SEL_SCHEME_PK,

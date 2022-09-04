@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     mod_MCOL_dict.columns.btn_schemeitem = {
-        subj_name: "Subject", sjtp_abbrev: "Character", ete_exam: "ETE_exam", otherlang: "Other_languages",
+        subj_name_nl: "Subject", sjtp_abbrev: "Character", ete_exam: "ETE_exam", otherlang: "Other_languages",
         gradetype: "Grade_type", weight_se: "SE_weighing", weight_ce: "CE_weighing",
         multiplier: "Counts_double", is_mandatory: "Mandatory", is_mand_subj: "Mandatory_if_subject",
         is_combi: "Combination_subject", is_core_subject: "Is_core_subject", is_mvt: "Is_MVT_subject", is_wisk: "Is_wiskunde_subject",
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             "Final_grade_rule", "Final_grade_rule_notatevelex",
                             "Thumbrule_applies", "Examyears_without_CE"
                             ],
-                    field_names: ["select", "scheme_name", "subj_code", "subj_name", "sjtp_abbrev", "ete_exam", "otherlang",
+                    field_names: ["select", "scheme_name", "subj_code", "subj_name_nl", "sjtp_abbrev", "ete_exam", "otherlang",
                             "gradetype", "weight_se", "weight_ce", "multiplier",
                             "is_mandatory", "is_mand_subj", "is_combi",
                             "is_core_subject", "is_mvt", "is_wisk",
@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         const el_MSUBJ_code = document.getElementById("id_MSUBJ_code");
-        const el_MSUBJ_name_nl = document.getElementById("id_MSUBJ_name");
+        const el_MSUBJ_name_nl = document.getElementById("id_MSUBJ_name_nl");
         const el_MSUBJ_name_en = document.getElementById("id_MSUBJ_name_en");
         const el_MSUBJ_name_pa = document.getElementById("id_MSUBJ_name_pa");
         const el_MSUBJ_sequence = document.getElementById("id_MSUBJ_sequence");
@@ -823,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (map_dict.name) { ob1 = map_dict.name.toLowerCase() };
         } else if (tblName === "schemeitem") {
             if (map_dict.scheme_name) { ob1 = map_dict.scheme_name.toLowerCase() };
-            if (map_dict.subj_name) { ob2 = map_dict.subj_name.toLowerCase() };
+            if (map_dict.subj_name_nl) { ob2 = map_dict.subj_name_nl.toLowerCase() };
             if (map_dict.sjtp_name) { ob3 = (map_dict.sjtp_name) };
         } else if (tblName === "subjecttype") {
             if (map_dict.scheme_name) { ob1 = map_dict.scheme_name.toLowerCase() };
@@ -958,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let inner_text = null, title_text = null, filter_value = null;
                 if (field_name === "select") {
                     // TODO add select multiple users option PR2020-08-18
-                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "name_nl", "name_en", "name_pa", "subj_code", "subj_name", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev", "no_ce_years"].includes(field_name)){
+                } else if (["scheme_name", "abbrev", "sjtpbase_name", "code", "name", "name_nl", "name_en", "name_pa", "subj_code", "subj_name_nl", "sjtp_abbrev", "depbase_code", "lvl_abbrev", "sct_abbrev", "no_ce_years"].includes(field_name)){
                     inner_text = fld_value;
                     filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                 } else if (["min_studyloadhours", "min_subjects", "max_subjects", "min_mvt", "max_mvt", "min_wisk", "max_wisk", "min_combi", "max_combi", "max_reex",
@@ -3512,7 +3512,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     si_pk: si_dict.id,
                     sjtp_pk: si_dict.sjtp_id,
                     subj_pk: si_dict.subj_id,
-                    name: si_dict.subj_name,
+                    name: si_dict.subj_name_nl,
                     sjtp_name: si_dict.sjtp_name,
                     sjtpbase_sequence: si_dict.sjtpbase_sequence
                     });
@@ -3908,14 +3908,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (el_input){
                 const tblRow = t_get_tablerow_selected(el_input);
-                const data_dict = get_recursive_integer_lookup(tblRow);
+
+// ---  lookup data_dict in data_rows, search by id
+                const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+                const [index, data_dict, compare] = b_recursive_integer_lookup(schemeitem_rows, "id", pk_int);
+
+        console.log("data_dict", data_dict)
                 if(!isEmpty(data_dict)) {
                     mod_MSI_dict.schemeitem_pk = data_dict.id;
                     mod_MSI_dict.mapid = data_dict.mapid;
                     mod_MSI_dict.scheme_name = data_dict.scheme_name;
                     mod_MSI_dict.scheme_pk = data_dict.scheme_id;
-                    mod_MSI_dict.subj_pk = data_dict.subj_id;
-                    mod_MSI_dict.subj_name = data_dict.subj_name;
+                    mod_MSI_dict.subject_pk = data_dict.subj_id;
                     mod_MSI_dict.otherlang = (data_dict.otherlang) ? data_dict.otherlang : "none";
                 }  // if(!isEmpty(map_dict)) {
 
@@ -3952,7 +3956,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 table: "schemeitem",
                 mapid:  (mod_MSI_dict.mapid) ? mod_MSI_dict.mapid : null,
                 si_pk: (mod_MSI_dict.schemeitem_pk) ? mod_MSI_dict.schemeitem_pk : null,
-                subject_pk: (mod_MSI_dict.subj_pk) ? mod_MSI_dict.subj_pk : null,
+                subject_pk: (mod_MSI_dict.subject_pk) ? mod_MSI_dict.subject_pk : null,
                 scheme_pk: (mod_MSI_dict.scheme_pk) ? mod_MSI_dict.scheme_pk : null,
                 otherlang: new_value
             };

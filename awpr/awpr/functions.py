@@ -11,6 +11,9 @@ from django.template.loader import render_to_string
 from django.utils.translation import activate, gettext_lazy as _
 from django.utils import timezone
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
 from awpr import constants as c
 from awpr import settings as s
 from awpr import library as awpr_lib
@@ -2516,3 +2519,50 @@ def dictfetchrows(cursor):
     #elapsed_seconds = (timer() - starttime)
     #return_dict['elapsed_milliseconds'] = elapsed_seconds * 1000
     return return_dict
+
+
+def register_font_arial():  # PR2022-09-02
+    try:
+        filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
+        ttfFile = TTFont('Arial', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'arialblack220815.ttf'
+        ttfFile = TTFont('Arial_Black', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+
+def register_font_calibri():  # PR2022-09-02
+    try:
+        filepath = s.STATICFILES_FONTS_DIR + 'Calibri.ttf'
+        ttfFile = TTFont('Calibri', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'Calibri_Bold.ttf'
+        ttfFile = TTFont('Calibri_Bold', filepath)
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+
+def get_exam_extended_key(exam_instance):  # PR2022-09-02
+    extended_key = None
+
+    if exam_instance:
+        depbase_pk = exam_instance.department.base_id or 0
+        lvlbase_pk = exam_instance.level.base_id if exam_instance.level else 0
+        subjbase_pk = exam_instance.subject.base_id or 0
+        examperiod = exam_instance.examperiod or 0
+        ete_exam = 1 if exam_instance.ete_exam else 0
+
+        extended_key = '_'.join((
+            str(depbase_pk),
+            str(lvlbase_pk),
+            str(subjbase_pk),
+            str(examperiod),
+            str(ete_exam)
+        ))
+    return extended_key

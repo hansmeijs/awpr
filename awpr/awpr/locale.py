@@ -1631,6 +1631,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_label_bundle'] = _('Please select a label bundle first.')
         dict['Please_select_label'] = _('Please select a label first.')
         dict['Please_select_label_item'] = _('Please select a label text first.')
+        dict['Download_envelop_labels'] = _('Download envelop labels')
 
         dict['Click_to_move_item_up'] = _('Click to move this item up.')
         dict['Click_to_move_item_down'] = _('Click to move this item down.')
@@ -1666,7 +1667,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Is_errata_label'] = _('Is errata label')
         dict['Variable_number_envelops'] = _('Has variable number of envelops')
         dict['Variable_number_envelops_2lines'] = _('Has variable number\nof envelops')
-
 
         dict['MPUBORD_info'] = {
             'request_verifcode_01': _("When you publish the orderlist, AWP will create an Excel file with the total exams, plus an Excel file for each school."),

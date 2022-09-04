@@ -1116,11 +1116,11 @@ document.addEventListener("DOMContentLoaded", function() {
     function get_dep_lvl_examperiod_txt(){
         // PR2022-08-28
 
-        const examperiod_caption = ([1, 2, 3].includes(setting_dict.sel_examperiod) && loc.examperiod_caption[setting_dict.sel_examperiod]) ?
+        const examperiod_caption = (setting_dict && [1, 2, 3].includes(setting_dict.sel_examperiod) && loc.examperiod_caption[setting_dict.sel_examperiod]) ?
             "- " + loc.examperiod_caption[setting_dict.sel_examperiod] : null;
 
-        const depbase_code = (setting_dict.sel_depbase_code) ? " " + setting_dict.sel_depbase_code : "";
-        const level_abbrev = (setting_dict.sel_lvlbase_pk && setting_dict.sel_level_abbrev) ? " " + setting_dict.sel_level_abbrev : "";
+        const depbase_code = (setting_dict && setting_dict.sel_depbase_code) ? " " + setting_dict.sel_depbase_code : "";
+        const level_abbrev = (setting_dict && setting_dict.sel_lvlbase_pk && setting_dict.sel_level_abbrev) ? " " + setting_dict.sel_level_abbrev : "";
 
         return [depbase_code, level_abbrev, examperiod_caption].join(" ");
     };

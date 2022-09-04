@@ -435,9 +435,6 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     sequence = PositiveSmallIntegerField(default=9999, db_index=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
-    # TODO remove otherlang from Subject
-    #otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
     # pr2021-05-04 temporary, used when importing from AWP to determine if subject is uploaded from school
     addedbyschool = BooleanField(default=False)
 
@@ -467,9 +464,6 @@ class Subject_log(sch_mod.AwpBaseModel):
     code = CharField(max_length=c.MAX_LENGTH_10, null=True)  # stored in subjectbase PR2020-12-11
     sequence = PositiveSmallIntegerField(null=True)
     depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
-
-    # TODO remove otherlang from Subject
-    # otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     addedbyschool = BooleanField(default=False)
 
@@ -737,8 +731,8 @@ class Schemeitem(sch_mod.AwpBaseModel):
     ete_exam = BooleanField(default=False)
 
     # PR2021-10-11 request ETS Esther: subject may have different language per level,
-    # teherfore otherlang is moved from subject to schemeitem
-    # TODO remove from subject after transferring data
+    # therefore otherlang is moved from subject to schemeitem
+    # TODO move otherlang to Exam instead of Schemeitem PR2022-09-04
     otherlang = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
 
     no_order = BooleanField(default=False)

@@ -430,12 +430,12 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                     logger.error(getattr(e, 'message', str(e)))
 
         # - get Garamond font
-                try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Garamond.ttf'
-                    ttfFile = TTFont('Garamond', filepath)
-                    #pdfmetrics.registerFont(ttfFile)
-                except Exception as e:
-                    logger.error(getattr(e, 'message', str(e)))
+                #try:
+                #    filepath = s.STATICFILES_FONTS_DIR + 'Garamond.ttf'
+                #    ttfFile = TTFont('Garamond', filepath)
+                #    pdfmetrics.registerFont(ttfFile)
+                #except Exception as e:
+                #    logger.error(getattr(e, 'message', str(e)))
 
        # - get Garamond font
                 try:
@@ -453,8 +453,11 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                     logger.error(getattr(e, 'message', str(e)))
 
         # - get Palace_Script_MT font - for testing - it works 2021-10-14
+                # PR2022-09-04 Sentry error: Can't open file "/home/uaw/awpr/awpr/static/fonts/Palace_Script_MT.ttf"
+                # because extension in filename is TTF instead of ttf > change filename to Palace_Script_MT.TTF
+                # but loading ttfFile went ok, is apparently not case-sensitive
                 try:
-                    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.ttf'
+                    filepath = s.STATICFILES_FONTS_DIR + 'Palace_Script_MT.TTF' # was: 'Palace_Script_MT.ttf'
                     ttfFile = TTFont('Palace_Script_MT', filepath)
                     pdfmetrics.registerFont(ttfFile)
                 except Exception as e:

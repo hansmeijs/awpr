@@ -753,18 +753,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleTblRowClicked  ================ PR2020-08-03
     function HandleTblRowClicked(tblRow) {
-        console.log("=== HandleTblRowClicked");
-        console.log( "tblRow: ", tblRow, typeof tblRow);
+        //console.log("=== HandleTblRowClicked");
+        //console.log( "tblRow: ", tblRow, typeof tblRow);
 
 // ---  deselect all highlighted rows, select clicked row
         t_td_selected_toggle(tblRow, true);  // select_single = True
 
 // get data_dict from data_rows
         const data_dict = get_datadict_from_tblRow(tblRow);
-        console.log( "data_dict", data_dict);
+        //console.log( "data_dict", data_dict);
 
 // ---  update selected studsubj_dict / student_pk / subject pk
-        selected.studsubj_dict =(data_dict) ? data_dict : null;
+        selected.studsubj_dict = (data_dict) ? data_dict : null;
         selected.studsubj_pk = (data_dict && data_dict.studsubj_id) ? data_dict.studsubj_id : null;
 
         selected.student_pk = (data_dict && data_dict.stud_id) ? data_dict.stud_id : null;
