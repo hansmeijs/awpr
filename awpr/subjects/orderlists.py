@@ -253,7 +253,7 @@ def create_envelopitem(sel_examyear, request):
 
 
 def update_envelopitem_instance(instance, upload_dict, error_dict, request):
-    # --- update existing and new instance PR2022-08-04
+    # --- update existing and new instance PR2022-08-04 PR2022-09-04
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -261,25 +261,40 @@ def update_envelopitem_instance(instance, upload_dict, error_dict, request):
         logger.debug('    upload_dict: ' + str(upload_dict))
         logger.debug('    instance:    ' + str(instance))
 
-
-    fields = ('content_nl', 'content_en', 'content_pa', 'content_color', 'instruction_nl',
-              'instruction_en', 'instruction_pa', 'instruction_color')
-
     has_error = False
     if instance:
         save_changes = False
 
         for field, new_value in upload_dict.items():
-            if field in fields:
 
+            if field in ( 'content_color', 'instruction_color'):
+                # set default to black
+                if not new_value:
+                    new_value = 'black'
+                saved_value = getattr(instance, field)
+
+                # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                #if new_value is not None:
+                #    if not isinstance(new_value, str):
+                #        new_value = str(new_value)
+
+                if new_value != saved_value:
+                    if logging_on:
+                        logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                        logger.debug('new_value:   ' + str(new_value)+ ' ' + str(type(new_value)))
+
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+            elif field in ('content_nl', 'content_en', 'content_pa',
+                           'instruction_nl', 'instruction_en', 'instruction_pa'):
                 if new_value:
-                    if 'color' not in field:
-                        max_len = c.MAX_LENGTH_FIRSTLASTNAME if 'instr' in field else c.MAX_LENGTH_NAME
-                        # - validate length of new_value
-                        msg_err = stud_val.validate_length(_('The text'), new_value, max_len, True)  # blank_allowed = True
-                        if msg_err:
-                            has_error = True
-                            error_dict[field] = msg_err
+                    max_len = c.MAX_LENGTH_FIRSTLASTNAME if 'instr' in field else c.MAX_LENGTH_NAME
+                    # - validate length of new_value
+                    msg_err = stud_val.validate_length(_('The text'), new_value, max_len, True)  # blank_allowed = True
+                    if msg_err:
+                        has_error = True
+                        error_dict[field] = msg_err
 
                 if not has_error:
                     saved_value = getattr(instance, field)
@@ -2916,6 +2931,9 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
             if content:
                 conten_color = content_color_arr[i]
                 hex_color = c.LABEL_COLOR.get(conten_color)
+                if not hex_color:
+                    hex_color = '#000000'  # 'black': rgb 0 0 0  #000000
+
                 canvas.setFillColor(colors.HexColor(hex_color))
                 canvas.drawString(pos_x3, pos_y - line_height * row_count, content or '')
                 row_count += 1
