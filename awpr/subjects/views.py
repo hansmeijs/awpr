@@ -5377,12 +5377,16 @@ def update_subject_instance(subject_instance, examyear, upload_dict, request):
 
                         if new_value != saved_value:
             # - validate exists
-                            msg_html = av.validate_subject_name_exists(
-                                field=field,
-                                new_value=new_value,
-                                examyear=examyear,
-                                cur_subject=subject_instance
-                            )
+                            # PR2022-09-06 Pien v Dijk: cannot delete subj name, error: Naam van het vak in het Papiaments 'None' komt al voor.
+                            # solved by adding: if new_value is not None:
+                            msg_html = None
+                            if new_value is not None:
+                                msg_html = av.validate_subject_name_exists(
+                                    field=field,
+                                    new_value=new_value,
+                                    examyear=examyear,
+                                    cur_subject=subject_instance
+                                )
                             if msg_html:
                                 error_list.append(msg_html)
                             else:
