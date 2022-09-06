@@ -6032,7 +6032,11 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "WHERE NOT studsubj.tobedeleted"]
 
         # studsubj are only visible for other users than sameschool when they are published
-        if not requsr_same_school:
+
+        # PR0222-09-06 mail Nancy Josephina Insp: cannot validate.
+        # must show alls subjects to Insp, also when they are not published
+        # added: 'and not request.user.role == c.ROLE_032_INSP:'
+        if not requsr_same_school and not request.user.role == c.ROLE_032_INSP:
             # PR2021-09-04 debug: examyears before 2022 have no subj_published_id. Show them to others anyway
             if examyear is None or examyear.code >= 2022:
                 sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
