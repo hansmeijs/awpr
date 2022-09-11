@@ -811,7 +811,7 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
 
     msg = ''.join((
-        '<p><b>', str(_("Examyear 2023 has been created in AWP-online")), '</b><br>',
+        '<p><b>', str(_("Examyear 2023 has been created in AWP-online.")), '</b><br>',
         str(_("You can start entering data now.")), '<br>',
         str(_("Selecting the new examyear goes as follows:")), '<br>',
         str(_("Click on <i>Examyear 2022</i> beside the AWP-logo in the left upper corner of the page.")), '<br>',
