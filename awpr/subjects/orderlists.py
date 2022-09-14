@@ -1196,11 +1196,12 @@ def create_enveloplabel_rows(sel_examyear, append_dict, enveloplabel_pk=None):
 
 def create_envelopitem_rows(sel_examyear, append_dict, envelopitem_pk=None):
     # PR2022-08-03
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_envelopitem_rows ============= ')
-        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
-
+        logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug('    envelopitem_pk: ' + str(envelopitem_pk) + ' ' + str(type(envelopitem_pk)))
+        logger.debug('    append_dict: ' + str(append_dict) + ' ' + str(type(append_dict)))
 
     envelopitem_rows = []
     try:

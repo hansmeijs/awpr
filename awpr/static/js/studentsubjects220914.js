@@ -5,7 +5,6 @@
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_ep_01";
 
-
 let school_rows = [];
 let student_rows = [];
 let subject_rows = [];
@@ -4379,13 +4378,12 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_header.innerText = loc.Delete_cluster;
             el_confirm_msg_container.className = "p-3";
 
-            const msg_html = [
+            msg_html = [
                     "<p>", loc.Cluster, " '", cluster_name, "' " + loc.has_candidates + "</p><p>" +
                      loc.cluster_willbe_removed  + "</p><p>" + loc.Do_you_want_to_continue + "</p>"].join("")
-            el_confirm_msg_container.innerHTML = msg_html;
 
             btn_save_txt = loc.OK;
-            el_confirm_btn_cancel.innerText = loc.Cancel;
+            btn_cancel_txt = loc.Cancel;
 
             show_outline_danger = true;
             show_modal = true;
@@ -4395,15 +4393,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             el_confirm_msg_container.className = "p-3";
             const caption = (mode === "prelim_ex4") ? loc.The_preliminary_Ex4_form : loc.The_preliminary_Ex1_form
-            const msg_html = "<p>" + caption + loc.will_be_downloaded_sing + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
-            el_confirm_msg_container.innerHTML = msg_html;
+            msg_html = "<p>" + caption + loc.will_be_downloaded_sing + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
 
+console.log ("loc.Cancel", loc.Cancel)
+console.log ("msg_html", msg_html)
 
             btn_save_txt = loc.OK;
-            el_confirm_btn_cancel.innerText = loc.Cancel;
+            btn_cancel_txt = loc.Cancel;
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
 
-                show_modal = true;
+            show_modal = true;
 
         } else if (["has_exemption", "has_sr", "has_reex", "has_reex03"].includes(mode)){
             if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
@@ -4431,12 +4430,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 (mode === "has_sr") ? loc.This_reex_schoolexam :
                                 (mode === "has_reex") ? loc.This_reexamination :
                                 (mode === "has_reex03") ? loc.This_reexamination_3rd_period : "";
-                const msg_html = ["<p>", caption, loc._of_, data_dict.fullname, loc.will_be_deleted,
+                msg_html = ["<p>", caption, loc._of_, data_dict.fullname, loc.will_be_deleted,
                                     "<ul><li>", data_dict.subj_name, "</li></ul></p><p>",
                                 loc.Do_you_want_to_continue, "</p>"].join("")
-                el_confirm_msg_container.innerHTML = msg_html;
-                el_confirm_msg_container.className = "p-3";
 
+                el_confirm_msg_container.className = "p-3";
 
                 btn_save_txt = loc.Yes_delete;
                 btn_cancel_txt = loc.No_cancel;

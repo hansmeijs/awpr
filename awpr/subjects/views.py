@@ -5649,6 +5649,12 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, re
                 if new_value != saved_value:
                     setattr(instance, field, new_value)
                     save_changes = True
+                    # TODO 2022-09-13
+                    # PR2022-09-13 mail Nancy Josephina ATC doesn't get final grade in MVT combination suject
+                    # caused by CE=1 and is_combi.
+                    # set CE=0 when is_combi is set to True
+                    #if field == 'is_combi' and new_value:
+                    #    setattr(instance,  'weight_ce', 0)
 
                     if logging_on:
                         logger.debug('save_changes: ' + str(save_changes))

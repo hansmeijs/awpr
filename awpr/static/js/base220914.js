@@ -1272,7 +1272,7 @@
                     } else {
                         compare = compare_1;
                     }
-    //console.log( "compare : ", compare);
+    //console.log( "    compare : ", compare);
                     if (!compare) {
                         found_dict = middle_dict;
                         break;
@@ -1301,8 +1301,9 @@
             };  // for (let i = 0,
         };  //  if (data_rows && data_rows.length){
 
-    //console.log( "found_dict: ", found_dict);
-    //console.log( "compare: ", compare);
+    //console.log( "    middle_index: ", middle_index);
+    //console.log( "    found_dict: ", found_dict);
+    //console.log( "    compare: ", compare);
 
         return [middle_index, found_dict, compare];
     };  // b_recursive_integer_lookup

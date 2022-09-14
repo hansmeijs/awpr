@@ -488,8 +488,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleTblRowClicked  ================ PR2020-08-03 PR2022-08-04
     function HandleTblRowClicked(tr_clicked) {
-        console.log("=== HandleTblRowClicked");
-        console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+        //console.log("=== HandleTblRowClicked");
+        //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
 // ---  deselect all highlighted rows, select clicked row
         t_td_selected_toggle(tr_clicked, true);  // select_single = true
@@ -502,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //console.log( "data_rows: ", data_rows, typeof data_rows);
 
         const [index, data_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-    console.log( "data_dict: ", data_dict, typeof data_dict);
+    //console.log( "data_dict: ", data_dict, typeof data_dict);
 
         if (selected_btn === "btn_orderlist") {
             selected.envelopitem_pk = (!isEmpty(data_dict)) ? data_dict.id : null;
@@ -512,13 +512,13 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if(!["envelopbundle", "enveloplabel", "envelopitem"].includes(tblName)){
             selected.envelop_bundle_label_item_pk = (!isEmpty(data_dict)) ? data_dict.id : null;
         };
-    console.log( "selected: ", selected);
+    //console.log( "selected: ", selected);
     };  // HandleTblRowClicked
 
 //=========  HandleSBRselect  ================ PR2022-08-16
     function HandleSBRselect(tblName, el_select) {
-        console.log("===== HandleSBRselect =====");
-    console.log( "tblName: ", tblName);
+        //console.log("===== HandleSBRselect =====");
+    //console.log( "tblName: ", tblName);
 
         const selected_pk_int = (el_select && Number(el_select.value)) ? Number(el_select.value) : null;
 
@@ -683,13 +683,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  SBR_FillSelectOptions  ================ PR2021-03-06  PR2021-05-21 PR2022-08-16
     function SBR_FillSelectOptions(tblName) {
-        console.log("=== SBR_FillSelectOptions");
-        console.log("tblName", tblName);
+        //console.log("=== SBR_FillSelectOptions");
+    //console.log("tblName", tblName);
         if(["department", "level"].includes(tblName)){
             const is_dep = (tblName === "department");
             const data_rows = (is_dep) ? department_rows : level_rows;
 
-        console.log("data_rows", data_rows);
+    //console.log("data_rows", data_rows);
             const caption_all = "&#60" + ((is_dep) ? loc.All_departments : loc.All_levels) + "&#62";
 
             let found_in_new_list = false;
@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
             const selected_pk = (is_dep) ? selected.depbase_pk : selected.lvlbase_pk;
-        console.log("selected_pk", selected_pk);
+    //console.log("selected_pk", selected_pk);
             const el_SBR_select = (is_dep) ? el_SBR_select_department : el_SBR_select_level;
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk)
 
@@ -737,7 +737,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleShowAll  ================ PR2020-12-17
     function HandleShowAll() {
-        console.log("=== HandleShowAll");
+        //console.log("=== HandleShowAll");
 
         setting_dict.sel_level_pk = null;
         setting_dict.sel_department_pk = null;
@@ -1277,12 +1277,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // values of mode are : "prelim_orderlist", "orderlist_per_school",
         // "download", "delete_envelopbundle", "delete_enveloplabel", "delete_envelopitem"
         // "delete_bundle_or_label"
-        console.log("mod_MENV_dict", mod_MENV_dict)
+    console.log("mod_MENV_dict", mod_MENV_dict)
+
     // when modal is called by MENVLAB delete btnm it can be bundle or label
         if (mode === "delete_bundle_or_label"){
             mode = (mod_MENV_dict.is_bundle) ? "delete_envelopbundle" : "delete_enveloplabel";
         };
-
 
         if (["prelim_orderlist", "orderlist_per_school"].includes(mode)){
             mod_dict = {mode: mode}
@@ -2369,16 +2369,21 @@ document.addEventListener('DOMContentLoaded', function() {
     function MENVIT_Open(el_input) {
         //console.log(" -----  MENVIT_Open   ----")
 
-        console.log("permit_dict.permit_crud", permit_dict.permit_crud)
-        console.log("el_input", el_input)
+        //console.log("permit_dict.permit_crud", permit_dict.permit_crud)
+        //console.log("el_input", el_input)
 
-        b_clear_dict(mod_MENV_dict);
-
+        // PR2022-09-13 debug. row in envelopitem_rows got empty because of b_clear_dict(mod_MENV_dict),
+        // since mod_MENV_dict is referenced to row in envelopitem_rows.
+        // using  b_clear_dict(mod_MENV_dict) clesrs row row in envelopitem_rows
+        // setting mod_MENV_dict = {} breaks the reference
+        // was: b_clear_dict(mod_MENV_dict);
+        mod_MENV_dict = {} ;
         if (permit_dict.permit_crud){
 
             // el_input is undefined when called by submenu btn 'Add new'
             const is_addnew = (!el_input);
 
+    //console.log("is_addnew", is_addnew)
             const tblName = "envelopitem";
             if(is_addnew){
                 mod_MENV_dict = {is_addnew: is_addnew}
@@ -2387,14 +2392,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get existing data_dict from data_rows
                 const pk_int = get_attr_from_el_int(tblRow, "data-pk");
                 const [index, found_dict, compare] = b_recursive_integer_lookup(envelopitem_rows, "id", pk_int);
-                mod_MENV_dict = (!isEmpty(found_dict)) ? found_dict : null;
+                mod_MENV_dict = (!isEmpty(found_dict)) ? found_dict : {};
             };
             // used in ModConfirm to delete, contains bundle, label or item pk
             selected.envelop_bundle_label_item_pk = (mod_MENV_dict && mod_MENV_dict.id) ? mod_MENV_dict.id : null;
 
-        console.log("mod_MENV_dict", mod_MENV_dict)
+    //console.log("mod_MENV_dict", mod_MENV_dict)
 
-            el_MENVIT_hdr.innerText = (mod_MENV_dict.content_nl) ? loc.Edit_label_item : loc.New_label_item;
+            el_MENVIT_hdr.innerText = (mod_MENV_dict && mod_MENV_dict.content_nl) ? loc.Edit_label_item : loc.New_label_item;
 
             MENVIT_SetElements();
 
@@ -2424,8 +2429,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MENVIT_Save  ================  PR2020-10-01
     function MENVIT_Save(crud_mode) {
-        console.log(" -----  MENVIT_save  ----", crud_mode);
-        console.log( "mod_MENV_dict: ", mod_MENV_dict);
+        //console.log(" -----  MENVIT_save  ----", crud_mode);
+        //console.log( "mod_MENV_dict: ", mod_MENV_dict);
 
         if (permit_dict.permit_crud){
             const is_create = (mod_MENV_dict.is_addnew);
@@ -2461,10 +2466,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  hide modal
             $("#id_mod_envelopitem").modal("hide");
     } ; // MENVIT_Save
-
-
-
-
 
 //========= MENVIT_InputKeyup  ============= PR2020-10-01
     function MENVIT_InputKeyup(el_input){
@@ -2958,9 +2959,9 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  RefreshDataRows  ================  PR2021-06-21 PR2022-08-04
     function RefreshDataRows(tblName, data_rows, update_rows, is_update) {
         console.log(" --- RefreshDataRows  ---");
-        console.log("tblName", tblName);
-        console.log("data_rows", data_rows);
-        console.log("update_rows", update_rows);
+        //console.log("    tblName", tblName);
+        //console.log("    data_rows", data_rows);
+        //console.log("    update_rows", update_rows);
 
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
         if (update_rows && update_rows.length ) {
@@ -2979,10 +2980,10 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  RefreshDatarowItem  ================
     //PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-08-14
     function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
-        console.log(" --- RefreshDatarowItem  ---");
-        console.log("tblName", tblName);
-        console.log("update_dict", update_dict);
-        console.log("field_setting.field_names", field_setting.field_names);
+        //console.log(" --- RefreshDatarowItem  ---");
+    //console.log("    data_rows", data_rows);
+    //console.log("    update_dict", update_dict);
+    //console.log("    field_setting.field_names", field_setting.field_names);
 
         if(!isEmpty(update_dict)){
             // add color fields to fieldnames when tblName = "envelopitem"
@@ -3061,6 +3062,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 const datarow_index = index;
 
+    //console.log("    data_dict", data_dict);
 // ++++ deleted ++++
                 if(is_deleted){
     // --- delete row from data_rows. Splice returns array of deleted rows
@@ -3076,11 +3078,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 } else {
 
+    //console.log("    // +++++++++++ updated row +++++++++++");
+        console.log("    data_dict", data_dict);
 // +++++++++++ updated row +++++++++++
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
 
                         copy_updatedict_to_datadict(data_dict, update_dict, field_names, updated_columns);
+    //console.log("    updated_columns", updated_columns);
+    //console.log("    data_dict", data_dict);
 
     // -- when color fiels has changed: also add textfield to update_dict, to show green
                         if (updated_columns.includes("content_hexcolor")){
