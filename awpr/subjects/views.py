@@ -4710,7 +4710,7 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
 def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, setting_dict=None, show_all=False, exam_pk_list=None):
     # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-05-13  PR2022-06-02
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ete_exam_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear))

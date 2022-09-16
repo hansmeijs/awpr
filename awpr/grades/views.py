@@ -3886,7 +3886,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
 
 
 def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, published_pk=None):
-    # --- create rows of published records PR2021-01-21
+    # --- create rows of published records PR2021-01-21 PR2022-09-16
     #logger.debug(' ----- create_grade_rows -----')
 
     """
@@ -3941,7 +3941,7 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depba
 
             #PR2022-06-12 There a a lot of published_instances saved without file_url
             # that should not happen, but it does. I don't know why.Check out TODO
-            # fro know: filter on file_url
+            # for now: filter on file_url
             if file_url:
                 dict = {
                     'id': row.pk,
@@ -3957,7 +3957,9 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depba
                     #'db_code': row.department.base.code,
                     'ey_code': row.school.examyear.code,
                     'file_name': file_name,
-                    'url': file_url}
+                    'url': file_url,
+                    'modifiedby': row.modifiedby.last_name if row.modifiedby else None
+                }
                 if published_pk:
                     dict['created'] = True
                 published_rows.append(dict)

@@ -780,10 +780,10 @@
 
     function b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
     // PR2021-05-07 PR2021-12-18 PR2022-04-17 PR2022-06-13
-        console.log( " ==== b_get_status_auth1234_iconclass ====");
-        console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2)
-        console.log("auth3_must_sign", auth3_must_sign, "auth3", auth3)
-        console.log("auth4_must_sign", auth4_must_sign, "auth4", auth4)
+        //console.log( " ==== b_get_status_auth1234_iconclass ====");
+        //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2)
+        //console.log("auth3_must_sign", auth3_must_sign, "auth3", auth3)
+        //console.log("auth4_must_sign", auth4_must_sign, "auth4", auth4)
 
         // PR 2022-06-13 shen secret exam (aangewezen examen) auth3 and auth4 dont have to approve
         // - solved as follows:

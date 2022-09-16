@@ -51,12 +51,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        published: {field_caption: ["", "Name_ex_form", "Date_submitted", "Download_Exform"],
-                    field_names: ["select", "name", "datepublished", "url"],
-                    field_tags: ["div", "div", "div", "a"],
-                    filter_tags: ["text", "text","text", "toggle"],
-                    field_width: ["020", "480",  "150", "120"],
-                    field_align: ["c", "l", "c", "c"]}
+        published: {field_caption: ["", "Name_ex_form", "Date_submitted", "Submitted_by", "Download_Exform"],
+                    field_names: ["select", "name", "datepublished", "modifiedby", "url"],
+                    field_tags: ["div", "div", "div", "div", "a"],
+                    filter_tags: ["text", "text", "text",  "text", "toggle"],
+                    field_width: ["020", "480",  "150", "180", "120"],
+                    field_align: ["c", "l", "c", "l", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_value = date_formatted;
 
 
-                } else if (field_name === "name"){
+                } else if (["name", "modifiedby"].includes(field_name)){
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     inner_text = (fld_value) ? fld_value : "\n";
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;

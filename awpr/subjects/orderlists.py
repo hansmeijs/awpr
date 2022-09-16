@@ -50,10 +50,10 @@ class LazyEncoder(DjangoJSONEncoder):
 
 
 @method_decorator([login_required], name='dispatch')
-class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18
+class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18  PR2022-09-16
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopItemUploadView ============= ')
@@ -92,7 +92,7 @@ class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18
                 activate(user_lang)
 
 # - get variables
-                envelopitem_pk = upload_dict.get('envelopitem_pk')
+                envelopitem_pk = upload_dict.get('pk_int')
                 is_create = mode == 'create'
                 is_delete = mode == 'delete'
 
@@ -334,7 +334,7 @@ def update_envelopitem_instance(instance, upload_dict, error_dict, request):
 
 
 @method_decorator([login_required], name='dispatch')
-class EnvelopLabelUploadView(View):  # PR2022-08-08
+class EnvelopLabelUploadView(View):  # PR2022-08-08 PR2022-09-16
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -370,7 +370,7 @@ class EnvelopLabelUploadView(View):  # PR2022-08-08
                 activate(user_lang)
 
 # - get variables
-                enveloplabel_pk = upload_dict.get('enveloplabel_pk')
+                enveloplabel_pk = upload_dict.get('pk_int')
                 name = upload_dict.get('name')
 
                 is_create = mode == 'create'
@@ -652,7 +652,7 @@ def update_enveloplabel_instance(examyear, enveloplabel_instance, upload_dict, r
 
 
 @method_decorator([login_required], name='dispatch')
-class EnvelopBundleUploadView(View):  # PR2022-08-11
+class EnvelopBundleUploadView(View):  # PR2022-08-11 PR2022-09-16
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -699,7 +699,7 @@ class EnvelopBundleUploadView(View):  # PR2022-08-11
                 activate(user_lang)
 
 # - get variables
-                envelopbundle_pk = upload_dict.get('envelopbundle_pk')
+                envelopbundle_pk = upload_dict.get('pk_int')
                 name = upload_dict.get('name')
 
                 is_create = mode == 'create'
@@ -1196,7 +1196,7 @@ def create_enveloplabel_rows(sel_examyear, append_dict, enveloplabel_pk=None):
 
 def create_envelopitem_rows(sel_examyear, append_dict, envelopitem_pk=None):
     # PR2022-08-03
-    logging_on = s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_envelopitem_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))

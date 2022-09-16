@@ -1336,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // show modal
             $("#id_mod_confirm").modal({backdrop: true});
 
-// +++ delete_envelopitem +++
+// +++ delete envelopbundle, enveloplabel, envelopitem +++
         } else if (["delete_envelopbundle", "delete_enveloplabel", "delete_envelopitem"].includes(mode)) {
             const is_bundle = (mode === "delete_envelopbundle");
             const is_label = (mode === "delete_enveloplabel");
@@ -1364,7 +1364,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 mod_dict = {
                     mode: mode,
                     table: tblName,
-                    parent_pk: data_dict.id,
+                    pk_int: data_dict.id,
                     map_id: data_dict.mapid
                 };
 
@@ -1391,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 $("#id_mod_confirm").modal({backdrop: true});
             };
 
-// +++ delete_envelopitem +++
+// +++ download +++
         } else if (mode === "download") {
             const is_bundle = (mode === "delete_envelopbundle");
             const is_label = (mode === "delete_enveloplabel");
@@ -1465,7 +1465,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let upload_dict = {
                     table: mod_dict.table,
                     mode: "delete",
-                    parent_pk: mod_dict.parent_pk
+                    pk_int: mod_dict.pk_int
                 };
 
                 const url_str = (is_bundle) ? urls.url_envelopbundle_upload :

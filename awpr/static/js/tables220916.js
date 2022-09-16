@@ -704,17 +704,15 @@
 
     function t_MSSSS_get_display_text(tblName, data_dict) {
         // PR2022-05-01 PR2022-08-29
-
-        console.log( "===== t_MSSSS_get_display_text  ========= ");
-        console.log( "    tblName", tblName);
-        console.log( "    data_dict", data_dict);
+        //console.log( "===== t_MSSSS_get_display_text  ========= ");
+        //console.log( "    tblName", tblName);
+        //console.log( "    data_dict", data_dict);
         const name_field = (tblName === "student") ? "name_first_init" : (tblName === "subject") ? "name_nl" : "name";
         const code_field = (tblName === "student") ? "name_first_init" : "code";
         const display_txt = (data_dict && name_field in data_dict && data_dict[name_field].length < 25) ? data_dict[name_field] :
                             (data_dict && code_field in data_dict) ? data_dict[code_field] : "---";
-        return display_txt
-    }
-
+        return display_txt;
+    };
 
 // +++++++++++++++++ END OF MODAL SELECT SUBJECT STUDENT ++++++++++++++++++++++++++++++++
 

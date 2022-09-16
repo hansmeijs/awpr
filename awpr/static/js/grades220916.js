@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // variable 'mod_MCOL_dict.columns' is initialized in tables.js
     mod_MCOL_dict.columns.all = {
-        examnumber: "Examnumber", lvl_abbrev: "Learning_path", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
+        examnumber: "Examnumber", lvl_abbrev: "Learning_path", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name_nl: "Subject"
     };
     mod_MCOL_dict.columns.btn_exem = {exemption_year: "Exemption_year"};
     mod_MCOL_dict.columns.btn_ep_01 = {ce_exam_name: "Exam"};
@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- get field_settings
     const field_settings = {
-        btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
+        btn_exem: {field_names: ["select", "examnumber", "fullname",  "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name_nl",
                                   "exemption_year",  "segrade", "cegrade", "finalgrade", "note_status"], //  "ce_status" not in use yet PR2022-03-03
                     field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                   "Exemption_year_twolines", "Exem_SE_twolines", "Exem_CE_twolines", "Exem_FINAL_twolines", ""],
@@ -109,7 +109,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l",
                                  "c", "c", "c", "c", "c"]},
 
-        btn_ep_01: {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
+        btn_ep_01: {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name_nl",
                                    "segrade", "se_status", "srgrade", "sr_status",
                                    "pescore", "pe_status", "pegrade",
                                     "cescore", "ce_status", "cegrade", "finalgrade",
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function() {
                                 "c", "c", "c", "c",
                                 "c", "l", "c"]},
 
-        btn_reex:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
+        btn_reex:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name_nl",
                                   "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
                     field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                   "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Exam", ""],
@@ -151,7 +151,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032"],
                     field_align: ["c", "r", "l", "c", "c", "l", "c", "l", "c", "c", "c", "c"]},
 
-        btn_reex03:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name",
+        btn_reex03:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name", "subj_code", "subj_name_nl",
                                   "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
                     field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Cluster", "Abbrev_subject_2lines", "Subject",
                                   "Third_period_score_2lines", "", "Third_period_grade_2lines", "", "Exam", ""],
@@ -1006,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= UpdateHeader  ================== PR2021-03-14
     function UpdateHeader(){
-        console.log(" --- UpdateHeader ---" )
+        //console.log(" --- UpdateHeader ---" )
         //console.log("setting_dict", setting_dict)
         // sel_subject_txt gets value in MSSSS_display_in_sbr, therefore UpdateHeader comes after MSSSS_display_in_sbr
 
@@ -1043,7 +1043,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //========= FillTblRows  ====================================
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
         //console.log( "field_settings", field_settings);
         //console.log( "selected_btn", selected_btn);
 
@@ -1327,7 +1327,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- add width, text_align, right padding in examnumber
                 // >>> td.classList.add(class_width, class_align);
-                if(["fullname", "subj_name"].includes(field_name)){
+                if(["fullname", "subj_name_nl"].includes(field_name)){
                     // dont set width in field student and subject, to adjust width to length of name
                     // >>> el.classList.add(class_align);
                     el.classList.add(class_width, class_align);
@@ -1431,8 +1431,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateTblRow  ================ PR2020-08-01
     function UpdateTblRow(tblRow, tblName, data_dict) {
-        //console.log("=========  UpdateTblRow =========");
-        //console.log("data_dict", data_dict);
+        console.log("=========  UpdateTblRow =========");
+        console.log("    data_dict", data_dict);
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
                 UpdateField(td.children[0], data_dict);
@@ -1442,12 +1442,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateField  ================ PR2020-12-18 PR2021-05-30
     function UpdateField(el_div, data_dict) {
-        console.log("=========  UpdateField =========");
+        //console.log("=========  UpdateField =========");
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = data_dict[field_name];
-    console.log("     field_name", field_name);
-    console.log("     fld_value", fld_value);
+    //console.log("     field_name", field_name);
+    //console.log("     fld_value", fld_value);
 
             if(field_name){
                 let title_text = null, filter_value = null;
@@ -1538,10 +1538,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateFieldStatus  ================ PR2021-12-19 PR2022-08-28
     function UpdateFieldStatus(field_name, fld_value, data_dict) {
-        console.log("=========  UpdateFieldStatus =========");
+        //console.log("=========  UpdateFieldStatus =========");
         //console.log("field_name", field_name);
-        console.log("    fld_value", fld_value);
-        console.log("    data_dict", data_dict);
+        //console.log("    fld_value", fld_value);
+        //console.log("    data_dict", data_dict);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
@@ -1682,7 +1682,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const columns_shown = {select: true, examnumber: true, fullname: true,
                             lvl_abbrev: true,
                             sct_abbrev: true,
-                            subj_code: true, subj_name: true,
+                            subj_code: true, subj_name_nl: true,
                             pescore: true, cescore: true,
                             segrade: true, se_status: true,
                             pegrade: true, pe_status: true,
@@ -1728,19 +1728,19 @@ document.addEventListener("DOMContentLoaded", function() {
             columns_shown.examnumber = true;
             columns_shown.fullname = true;
             columns_shown.subj_code = false;
-            columns_shown.subj_name = false;
+            columns_shown.subj_name_nl = false;
         } else if (setting_dict.sel_student_pk){
             // if sel_student_pk has value: show student in header, hide student columns
             columns_shown.examnumber = false;
             columns_shown.fullname = false;
             columns_shown.subj_code = true;
-            columns_shown.subj_name = true;
+            columns_shown.subj_name_nl = true;
         } else {
             // if no subject or student selected: show subject and studentcolumns
             columns_shown.examnumber = true;
             columns_shown.fullname = true;
             columns_shown.subj_code = true;
-            columns_shown.subj_name = true;
+            columns_shown.subj_name_nl = true;
         };
     };  // set_columns_shown
 
@@ -3268,7 +3268,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if(!isEmpty(grade_dict)){
 
                 let headertext = (grade_dict.fullname) ? grade_dict.fullname + "\n" : "";
-                if(grade_dict.subj_code) { headertext += grade_dict.subj_name};
+                if(grade_dict.subj_code) { headertext += grade_dict.subj_name_nl};
                 el_ModNote_header.innerText = headertext;
 
         //console.log("grade_dict", grade_dict) ;
@@ -4000,7 +4000,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 
             // when selecting cluster: also set subject to the subject of this cluster
             setting_dict.sel_subject_pk =  (selected_dict && selected_dict.subject_id) ? selected_dict.subject_id : null;
-            setting_dict.sel_subject_name = (selected_dict && selected_dict.subj_name) ? selected_dict.subj_name : null;
+            setting_dict.sel_subject_name = (selected_dict && selected_dict.subj_name_nl) ? selected_dict.subj_name_nl : null;
             setting_dict.sel_student_pk = null;
             setting_dict.sel_student_name = null;
 
@@ -4345,7 +4345,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
 // - get ifo from dict
         const subj_id = (row_dict.subj_id) ? row_dict.subj_id : null;
         const subj_code = (row_dict.subj_code) ? row_dict.subj_code : "---";
-        const subj_name = (row_dict.subj_name) ? row_dict.subj_name : "---";
+        const subj_name_nl = (row_dict.subj_name_nl) ? row_dict.subj_name_nl : "---";
         const is_selected = (row_dict.selected) ? row_dict.selected : false;
         const just_selected = (row_dict.just_selected) ? row_dict.just_selected : false;
 
@@ -4372,7 +4372,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         td = tblRow.insertCell(-1);
         el_div = document.createElement("div");
             el_div.classList.add("tw_240")
-            el_div.innerText = subj_name;
+            el_div.innerText = subj_name_nl;
             td.appendChild(el_div);
 
         //td.classList.add("tw_200X", "px-2", "pointer_show") // , cls_bc_transparent)

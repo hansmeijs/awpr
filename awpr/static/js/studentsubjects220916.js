@@ -693,9 +693,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
             };
-            if(permit_dict.requsr_role === 32 || true){ // Inspectorate
+            if(permit_dict.requsr_role === 32){ // Inspectorate
                 AddSubmenuButton(el_submenu, loc.Validate_subject_composition, function() {ModConfirmOpen("validate_subj_composition")}, ["tab_show", "tab_btn_ep_01"]);
-
             };
 
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_studsubj")}, [], "id_submenu_columns")
@@ -4365,7 +4364,6 @@ document.addEventListener('DOMContentLoaded', function() {
             show_outline_danger = !mod_dict.new_subj_dispensation;
             show_modal = true;
 
-            console.log("mod_dict", mod_dict)
         } else if (mode === "delete_cluster"){
 
             header_txt = loc.Delete_cluster;
@@ -4387,6 +4385,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             show_outline_danger = true;
             show_modal = true;
+
         } else if (["prelim_ex1", "prelim_ex4"].includes(mode)){
 
             header_txt = (mode === "prelim_ex4") ? loc.Download_Ex4_form : loc.Download_Ex1_form
@@ -4394,9 +4393,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_msg_container.className = "p-3";
             const caption = (mode === "prelim_ex4") ? loc.The_preliminary_Ex4_form : loc.The_preliminary_Ex1_form
             msg_html = "<p>" + caption + loc.will_be_downloaded_sing + "</p><p>" + loc.Do_you_want_to_continue + "</p>"
-
-console.log ("loc.Cancel", loc.Cancel)
-console.log ("msg_html", msg_html)
 
             btn_save_txt = loc.OK;
             btn_cancel_txt = loc.Cancel;
@@ -4411,12 +4407,10 @@ console.log ("msg_html", msg_html)
                 mod_dict.stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
                 mod_dict.studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
                 mod_dict.fldName = get_attr_from_el(el_input, "data-field");
-        console.log("mod_dict", mod_dict)
 
                 const [index, found_dict] = get_datadict_by_studpk_studsubjpk(mod_dict.stud_pk, mod_dict.studsubj_pk)
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 const subj_name = data_dict.subj_name;
-        console.log("data_dict", data_dict)
 
         // ---  put text in modal form
                 let dont_show_modal = false;

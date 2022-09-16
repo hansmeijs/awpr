@@ -1567,6 +1567,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Exam_period'] = TXT_Exam_period
         dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         dict['Date_submitted'] = TXT_Date_submitted
+        dict['Submitted_by'] = TXT_Submitted_by
         dict['Download_Exform'] = TXT_Download_Exform
 
         dict['File_not_found'] = _('This file has not been found.')
@@ -1749,6 +1750,7 @@ TXT_Ex3_backpage = _('Ex3 back page')
 
 TXT_Name_ex_form = _('Name Ex form')
 TXT_Date_submitted = _('Date submitted')
+TXT_Submitted_by = _('Submitted by')
 TXT_Download_Exform = _('Download Ex form')
 
 TXT_Sequence = _('Sequence')
