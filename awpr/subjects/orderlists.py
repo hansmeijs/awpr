@@ -360,7 +360,28 @@ class EnvelopLabelUploadView(View):  # PR2022-08-08 PR2022-09-16
                 logger.debug('has_permit: ' + str(has_permit))
                 logger.debug('upload_dict: ' + str(upload_dict))
             """
+            upload_dict: {'table': 'enveloplabel', 'mode': 'create', 'name': 'dd', 'is_errata': True, 
+                'is_variablenumber': False, 'numberinenvelop': 2, 'numberofenvelops': 2, '
+                uniontable': [{'picklist_pk': 6, 'uniontable_pk': None, 'sequence': 20, 'selected': True}, 
+                              {'picklist_pk': 14, 'uniontable_pk': None, 'sequence': 21, 'selected': True}]}
+                              
+            upload_dict: {'table': 'enveloplabel', 'mode': 'update', 'name': 'dd', 
+                        'enveloplabel_pk': 5, 'is_errata': True, 
+                        'is_variablenumber': False, 'numberinenvelop': 2, 'numberofenvelops': 2, 
+                        'uniontable': [{'picklist_pk': 6, 'uniontable_pk': 7, 'sequence': 20, 'selected': True}, 
+                                        {'picklist_pk': 1, 'uniontable_pk': None, 'sequence': 33, 'selected': True}, 
+                                        {'picklist_pk': 14, 'uniontable_pk': 8, 'sequence': None, 'selected': False}]}
+
             upload_dict: {'table': 'enveloplabel', 'mode': 'delete', 'enveloplabel_pk': 7}
+            
+            upload_dict: {'table': 'enveloplabel', 'mode': 'update', 'name': 'errata', 
+                'enveloplabel_pk': 4, 'is_errata': True, 
+                'is_variablenumber': False, 'numberinenvelop': 1, 'numberofenvelops': 1, 
+                'uniontable': [
+                    {'picklist_pk': 1, 'uniontable_pk': 6, 'sequence': 20, 'selected': True}, 
+                    {'picklist_pk': 12, 'uniontable_pk': None, 'sequence': 39, 'selected': True},
+                    {'picklist_pk': 19, 'uniontable_pk': None, 'sequence': 40, 'selected': True}]}
+            
             """
 
             if has_permit:
@@ -689,7 +710,6 @@ class EnvelopBundleUploadView(View):  # PR2022-08-11 PR2022-09-16
                 'uniontable': [{'picklist_pk': 6, 'uniontable_pk': None, 'selected': True}, 
                                 {'picklist_pk': 4, 'uniontable_pk': None, 'selected': True}, 
                                 {'picklist_pk': 5, 'uniontable_pk': None, 'selected': True}]}
-
             """
 
             if has_permit:

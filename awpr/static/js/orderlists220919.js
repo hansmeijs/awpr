@@ -1134,10 +1134,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data_dict){
 
                 const data_field = get_attr_from_el(el_input, "data-field");
-        console.log("data_field: ", data_field, typeof data_field);
+        //console.log("data_field: ", data_field, typeof data_field);
     // --- get new_value
                     const new_value = el_input.value
-        console.log("new_value: ", new_value, typeof new_value);
+        //console.log("new_value: ", new_value, typeof new_value);
 
                     let upload_dict = {
                         table: "ete_exam",
@@ -1272,12 +1272,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2021-08-22 PR2022-08-04
     function ModConfirmOpen(mode, tblRow) {
-        console.log(" -----  ModConfirmOpen   ----")
-        console.log("mode", mode)
+        //console.log(" -----  ModConfirmOpen   ----")
+        //console.log("mode", mode)
         // values of mode are : "prelim_orderlist", "orderlist_per_school",
         // "download", "delete_envelopbundle", "delete_enveloplabel", "delete_envelopitem"
         // "delete_bundle_or_label"
-    console.log("mod_MENV_dict", mod_MENV_dict)
+    //console.log("mod_MENV_dict", mod_MENV_dict)
 
     // when modal is called by MENVLAB delete btnm it can be bundle or label
         if (mode === "delete_bundle_or_label"){
@@ -1340,20 +1340,20 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (["delete_envelopbundle", "delete_enveloplabel", "delete_envelopitem"].includes(mode)) {
             const is_bundle = (mode === "delete_envelopbundle");
             const is_label = (mode === "delete_enveloplabel");
-            console.log( "is_bundle: ", is_bundle);
-            console.log( "is_label: ", is_label);
+            //console.log( "is_bundle: ", is_bundle);
+            //console.log( "is_label: ", is_label);
 
             const header_txt = (is_bundle) ? loc.Delete_bundle : (is_label) ? loc.Delete_label : loc.Delete_label_item;
 
 // --- get existing data_dict from data_rows
 
-        console.log("selected", selected)
+        //console.log("selected", selected)
             // envelop_bundle_label_item_pk, contains bundle, label or item pk;
             const pk_int = selected.envelop_bundle_label_item_pk;
             const data_rows = (is_bundle) ? envelopbundle_rows : (is_label) ? enveloplabel_rows : envelopitem_rows;
 
             const [index, data_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-            console.log( "data_dict: ", data_dict);
+            //console.log( "data_dict: ", data_dict);
 
             if (isEmpty(data_dict)){
                 const msg_txt = (is_bundle) ? loc.Please_select_bundle : (is_label) ? loc.Please_select_label : loc.Please_select_label_item;
@@ -1395,15 +1395,15 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (mode === "download") {
             const is_bundle = (mode === "delete_envelopbundle");
             const is_label = (mode === "delete_enveloplabel");
-            console.log( "is_bundle: ", is_bundle);
-            console.log( "is_label: ", is_label);
+            //console.log( "is_bundle: ", is_bundle);
+            //console.log( "is_label: ", is_label);
 
             const header_txt = loc.Print_labels;
 
 // --- get existing data_dict from data_rows
             const pk_int = get_attr_from_el_int(tblRow, "data-pk");
             const [index, data_dict, compare] = b_recursive_integer_lookup(ete_exam_rows, "id", pk_int);
-            console.log( "data_dict: ", data_dict);
+            //console.log( "data_dict: ", data_dict);
 
 // skip if no tblRow selected or if exam has no envelopbundle
             if (!isEmpty(data_dict) || !data_dict.bundle_id){
@@ -1439,8 +1439,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  ModConfirmSave  ================ PR2021-08-22
     function ModConfirmSave() {
-        console.log(" --- ModConfirmSave --- ");
-        console.log("mod_dict: ", mod_dict);
+        //console.log(" --- ModConfirmSave --- ");
+        //console.log("mod_dict: ", mod_dict);
         let close_modal_with_timout = false;
         if (["prelim_orderlist", "orderlist_per_school"].includes(mod_dict.mode)){
             let href = null;
@@ -1484,15 +1484,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 sel_layout: "all"
             };
 
-        console.log("upload_dict", upload_dict)
+        //console.log("upload_dict", upload_dict)
         // convert dict to json and add as parameter in link
             const upload_str = JSON.stringify(upload_dict);
             const href_str = urls.url_envelop_print.replace("-", upload_str);
-        console.log("href_str", href_str)
+        //console.log("href_str", href_str)
 
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             el_modconfirm_link.href = href_str;
-        console.log("el_modconfirm_link", el_modconfirm_link)
+        //console.log("el_modconfirm_link", el_modconfirm_link)
 
             el_modconfirm_link.click();
 
@@ -1502,7 +1502,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function (){ $("#id_mod_confirm").modal("hide") }, 5000);
             } else {
                 $("#id_mod_confirm").modal("hide");
-        console.log("close_modal_with_timout", close_modal_with_timout)
+        //console.log("close_modal_with_timout", close_modal_with_timout)
             };
         };
     };  // ModConfirmSave
@@ -1557,8 +1557,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MODAL PUBLISH ORDERLIST ================ PR2021-09-08
     function MPUBORD_Open (open_mode ) {
-        console.log("===  MPUBORD_Open  =====") ;
-        console.log("setting_dict", setting_dict) ;
+        //console.log("===  MPUBORD_Open  =====") ;
+        //console.log("setting_dict", setting_dict) ;
         mod_MPUBORD_dict = {}
 
         if (permit_dict.permit_submit_orderlist) {
@@ -1603,8 +1603,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MPUBORD_UpdateFromResponse ================ PR2021-09-08
     function MPUBORD_UpdateFromResponse(response) {
-        console.log( " ==== MPUBORD_UpdateFromResponse ====");
-        console.log( "response", response);
+        //console.log( " ==== MPUBORD_UpdateFromResponse ====");
+        //console.log( "response", response);
         //console.log("mod_MPUBORD_dict", mod_MPUBORD_dict);
         mod_MPUBORD_dict.step += 1;
 
@@ -1632,13 +1632,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MPUBORD_SetInfoboxesAndBtns  ================ PR2021-09-08
      function MPUBORD_SetInfoboxesAndBtns(response) {
-        console.log("===  MPUBORD_SetInfoboxesAndBtns  =====") ;
+        //console.log("===  MPUBORD_SetInfoboxesAndBtns  =====") ;
         const step = mod_MPUBORD_dict.step;
         const is_response = (!!response);
         const has_error = (is_response && response.error);
 
-        console.log("step", step) ;
-        console.log("response", response) ;
+        //console.log("step", step) ;
+        //console.log("response", response) ;
 
 // ---  info_container, loader, info_verifcode and input_verifcode
         let msg_html = null, msg_info_txt = null, show_loader = false;
@@ -1648,7 +1648,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (response && response.publish_orderlist_msg_html) {
             msg_html = response.publish_orderlist_msg_html;
         };
-        console.log("msg_html", msg_html);
+        //console.log("msg_html", msg_html);
 
         if (step === 0) {
             // step 0: when form opens
@@ -1688,8 +1688,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         }
 
-        console.log("save_btn_txt", save_btn_txt) ;
-        console.log("msg_info_txt", msg_info_txt) ;
+        //console.log("save_btn_txt", save_btn_txt) ;
+        //console.log("msg_info_txt", msg_info_txt) ;
         if (msg_info_txt){
             msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + "</p></div>";
         }
@@ -1736,13 +1736,13 @@ document.addEventListener('DOMContentLoaded', function() {
 /////////////////////////////////////////////
 //=========  MSSSS_Open  ================  PR2022-08-12
     function MSSSS_Open(td) {
-        console.log(" ----- MSSSS_Open ----")
-        console.log("td", td)
+        //console.log(" ----- MSSSS_Open ----")
+        //console.log("td", td)
         const tblRow = t_get_tablerow_selected(td);
 
 // --- get existing data_dict from data_rows
         const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-        console.log("pk_int", pk_int)
+        //console.log("pk_int", pk_int)
         selected.ete_exam_pk = pk_int
 
         const [index, data_dict, compare] = b_recursive_integer_lookup(ete_exam_rows, "id", pk_int);
@@ -1754,18 +1754,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSSSS_Response  ================  PR2022-08-12
     function MSSSS_Response(tblName, selected_dict, selected_pk_int) {
+/*
         console.log(" ----- MSSSS_Response ----")
         console.log("tblName", tblName)
         console.log("selected_dict", selected_dict)
         console.log("selected_pk_int", selected_pk_int)
         console.log("selected", selected)
-
+*/
         if (permit_dict.permit_crud){
     // --- get selected ete_exam
             const pk_int = selected.ete_exam_pk;
             const [index, data_dict, compare] = b_recursive_integer_lookup(ete_exam_rows, "id", pk_int);
-            console.log( "data_dict: ", data_dict);
-            console.log( "selected: ", selected);
+            //console.log( "data_dict: ", data_dict);
+            //console.log( "selected: ", selected);
             if (data_dict){
                 let upload_dict = {
                     table: "ete_exam",
@@ -1776,7 +1777,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     envelopbundle_pk: selected_pk_int,
                     show_all: true  // show_all = true means that dep filter is skipped
                 };
-                console.log( "upload_dict: ", upload_dict);
+                //console.log( "upload_dict: ", upload_dict);
                 const url_str = urls.url_exam_upload ;
                 UploadChanges(upload_dict, url_str);
             };
@@ -1785,8 +1786,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MSSSS_remove_bundle  ================  PR2022-08-13
     function MSSSS_remove_bundle() {
-        console.log(" ----- MSSSS_remove_bundle ----")
-        console.log("selected", selected)
+        //console.log(" ----- MSSSS_remove_bundle ----")
+        //console.log("selected", selected)
 
         if (permit_dict.permit_crud){
 // --- get selected ete_exam
@@ -1803,7 +1804,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     subject_pk: data_dict.subj_id,
                     envelopbundle_pk: null
                 };
-                console.log( "upload_dict: ", upload_dict);
+                //console.log( "upload_dict: ", upload_dict);
                 const url_str = urls.url_exam_upload ;
                 UploadChanges(upload_dict, url_str);
             };
@@ -1814,10 +1815,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MENVLAB_Open  ================  PR2022-08-06
     function MENVLAB_Open(tblName, el_input) {
-        console.log(" -----  MENVLAB_Open   ----")
+        //console.log(" -----  MENVLAB_Open   ----")
 
-        console.log("permit_dict.permit_crud", permit_dict.permit_crud)
-        console.log("el_input", el_input)
+        //console.log("permit_dict.permit_crud", permit_dict.permit_crud)
+        //console.log("el_input", el_input)
 
         mod_MENV_dict = {};
 
@@ -1825,7 +1826,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // el_input is undefined when called by submenu btn 'Add new'
             mod_MENV_dict.is_addnew = (!el_input);
             mod_MENV_dict.is_bundle = (tblName === "envelopbundle")
-        console.log("mod_MENV_dict", mod_MENV_dict)
+        //console.log("mod_MENV_dict", mod_MENV_dict)
 // --- get existing data_dict from enveloplabel_rows
             if(mod_MENV_dict.is_addnew){
                 if (!mod_MENV_dict.is_bundle){
@@ -1841,7 +1842,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const data_rows = (mod_MENV_dict.is_bundle) ? envelopbundle_rows : enveloplabel_rows;
                 const [index, data_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-        console.log("data_dict", data_dict)
+        //console.log("data_dict", data_dict)
 
                 if (!isEmpty(data_dict)) {
                     mod_MENV_dict.parent_pk = data_dict.id;
@@ -1858,7 +1859,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // used in ModConfirm to delete, contains bundle, label or item pk
             selected.envelop_bundle_label_item_pk = (mod_MENV_dict.parent_pk) ? mod_MENV_dict.parent_pk : null;
 
-        console.log("mod_MENV_dict", mod_MENV_dict)
+        //console.log("mod_MENV_dict", mod_MENV_dict)
             MENVLAB_FillDictlist();
             MENVLAB_FillTable();
             MENVLAB_SetInputElements();
@@ -1896,24 +1897,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MENVLAB_Save  ================   PR2022-08-06
     function MENVLAB_Save(crud_mode) {
-        console.log(" -----  MENVLAB_save  ----", crud_mode);
-        console.log( "mod_MENV_dict: ", mod_MENV_dict);
+        //console.log(" -----  MENVLAB_save  ----", crud_mode);
+        //console.log( "mod_MENV_dict: ", mod_MENV_dict);
 
         if (permit_dict.permit_crud){
             const is_create = (mod_MENV_dict.is_addnew);
             const is_delete = (crud_mode === "delete");
-            const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
+            const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update";
 
     // ---  put values of input elements in upload_dict
             let upload_dict = {
                 table: (mod_MENV_dict.is_bundle) ? "envelopbundle" : "enveloplabel",
                 mode: upload_mode,
-                name: mod_MENV_dict.parent_name
-            };
-            if (mod_MENV_dict.is_bundle){
-                upload_dict.envelopbundle_pk = mod_MENV_dict.parent_pk;
-            } else {
-                upload_dict.enveloplabel_pk = mod_MENV_dict.parent_pk;
+                name: mod_MENV_dict.parent_name,
+                pk_int: mod_MENV_dict.parent_pk
             };
 
             const uniontable_list = [];
@@ -1952,8 +1949,8 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             const url_str = (mod_MENV_dict.is_bundle) ? urls.url_envelopbundle_upload : urls.url_enveloplabel_upload;
-    console.log( "url_str: ", url_str);
-    console.log( "upload_dict: ", upload_dict);
+    //console.log( "url_str: ", url_str);
+    //console.log( "upload_dict: ", upload_dict);
             UploadChanges(upload_dict, url_str);
         };
     // ---  hide modal
@@ -2042,9 +2039,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVLAB_CreateTblRow  ============= PR2022-08-06
     function MENVLAB_CreateTblRow(tblBody, data_dict, is_table_selected, just_linked_unlinked_pk) {
-        console.log("===== MENVLAB_CreateTblRow ===== ");
-        console.log("   data_dict", data_dict);
-        console.log("   just_linked_unlinked_pk", just_linked_unlinked_pk);
+        //console.log("===== MENVLAB_CreateTblRow ===== ");
+        //console.log("   data_dict", data_dict);
+        //console.log("   just_linked_unlinked_pk", just_linked_unlinked_pk);
 
 //--- get info from data_dict
         const pk_int = (data_dict.picklist_pk) ? data_dict.picklist_pk : null;
@@ -2110,7 +2107,6 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow.classList.add("tsa_td_unlinked_selected");
             setTimeout(function (){  tblRow.classList.remove("tsa_td_unlinked_selected")  }, 1000);
         };
-
     }; // MENVLAB_CreateTblRow
 
 //=========  MENVLAB_SelectItem  ================ PR2022-08-07
@@ -2138,15 +2134,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 };
             };
-    console.log( "just_linked_unlinked_pk", just_linked_unlinked_pk);
+    //console.log( "just_linked_unlinked_pk", just_linked_unlinked_pk);
 
         MENVLAB_FillTable(just_linked_unlinked_pk);
                 MENVLAB_validate_and_disable();
 
 // ---  save and close
             //MENVLAB_Save();
-        }
-    }  // MENVLAB_SelectItem
+        };
+    };  // MENVLAB_SelectItem
 
 //=========  MENVLAB_InputKeyup  ================ PR2022-08-18
     function MENVLAB_InputKeyup(el_input) {
@@ -2167,7 +2163,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVLAB_InputToggle  ============= PR2022-08-18
     function MENVLAB_InputToggle(el_input){
-        console.log( "===== MENVLAB_InputToggle  ========= ");
+        //console.log( "===== MENVLAB_InputToggle  ========= ");
         const data_field = get_attr_from_el(el_input, "data-field")
     // toggle value
         if (data_field === "is_variablenumber"){
@@ -2192,7 +2188,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVLAB_UpDown  ============= PR2022-08-18
     function MENVLAB_UpDown(mode, tblRow){
-        console.log( "===== MENVLAB_UpDown  ========= ");
+        //console.log( "===== MENVLAB_UpDown  ========= ");
 
         const this_picklist_dict = MENVLAB_get_picklist_dict(tblRow);
         const pk_int = get_attr_from_el_int(tblRow, "data-pk");
@@ -2202,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const rows_length = tblBody.rows.length;
 
-        console.log( "this_picklist_dict", this_picklist_dict);
+    //console.log( "this_picklist_dict", this_picklist_dict);
         let target_picklist_dict = null;
         let this_sequence = (this_picklist_dict) ? this_picklist_dict.uniontable_sequence : null;
 
@@ -2215,20 +2211,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if  (target_index != null){
             target_picklist_dict = MENVLAB_get_picklist_dict(tblBody.rows[target_index]);
-        console.log( "target_picklist_dict", target_picklist_dict);
+    //console.log( "target_picklist_dict", target_picklist_dict);
             if (target_picklist_dict){
                 const target_sequence = target_picklist_dict.uniontable_sequence;
-        console.log( "target_sequence", target_sequence);
+    //console.log( "target_sequence", target_sequence);
                 target_picklist_dict.uniontable_sequence = this_sequence;
                 this_picklist_dict.uniontable_sequence = target_sequence;
 
-        console.log( "mod_MENV_dict.picklist", mod_MENV_dict.picklist);
+    //console.log( "mod_MENV_dict.picklist", mod_MENV_dict.picklist);
                 mod_MENV_dict.sequence_has_changed = true;
                 MENVLAB_FillTable(pk_int);
                 MENVLAB_validate_and_disable();
             };
         };
-
     }; // MENVLAB_UpDown
 
 //========= MENVLAB_UpDown  ============= PR2022-08-18
@@ -2252,8 +2247,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MENVLAB_validate_and_disable  ================  PR2022-08-18
     function MENVLAB_validate_and_disable(is_addnew) {
-        console.log(" -----  MENVLAB_validate_and_disable  ----", is_addnew);
-        console.log( "mod_MENV_dict: ", mod_MENV_dict);
+        //console.log(" -----  MENVLAB_validate_and_disable  ----", is_addnew);
+        //console.log( "mod_MENV_dict: ", mod_MENV_dict);
         // is_addnew = true only on opening new bundle / babel; is_addnew is always false after MENVLAB_InputKeyup
         let err_fields = [];
 
@@ -2275,7 +2270,7 @@ document.addEventListener('DOMContentLoaded', function() {
         el_MENVLAB_name_err.innerText = msg_err_name;
 
         if (!mod_MENV_dict.is_bundle){
-        console.log( "mod_MENV_dict.is_variablenumber: ", mod_MENV_dict.is_variablenumber);
+        //console.log( "mod_MENV_dict.is_variablenumber: ", mod_MENV_dict.is_variablenumber);
 // ---  number of envelops
             value = el_MENVLAB_numberofenvelops.value;
             let msg_err_numberof = null;
@@ -2290,7 +2285,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 };
             };
-        console.log( "msg_err_numberof: ", msg_err_numberof);
+        //console.log( "msg_err_numberof: ", msg_err_numberof);
             if (msg_err_numberof){
                 err_fields.push("numberofenvelops");
             };
@@ -2338,9 +2333,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MENVLAB_SetInputElements  ================  PR2022-08-18
     function MENVLAB_SetInputElements() {
-        console.log(" -----  MENVLAB_SetInputElements  ----");
-        console.log("mod_MENV_dict.parent_name", mod_MENV_dict.parent_name);
-        console.log("mod_MENV_dict", mod_MENV_dict);
+        //console.log(" -----  MENVLAB_SetInputElements  ----");
+        //console.log("mod_MENV_dict.parent_name", mod_MENV_dict.parent_name);
+        //console.log("mod_MENV_dict", mod_MENV_dict);
         el_MENVLAB_name.value = (mod_MENV_dict.parent_name) ? mod_MENV_dict.parent_name : null;
         el_MENVLAB_numberinenvelop.value = (mod_MENV_dict.numberinenvelop) ? mod_MENV_dict.numberinenvelop : null;
         el_MENVLAB_numberofenvelops.value = (mod_MENV_dict.numberofenvelops) ? mod_MENV_dict.numberofenvelops : null;
@@ -2397,14 +2392,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // used in ModConfirm to delete, contains bundle, label or item pk
             selected.envelop_bundle_label_item_pk = (mod_MENV_dict && mod_MENV_dict.id) ? mod_MENV_dict.id : null;
 
-    //console.log("mod_MENV_dict", mod_MENV_dict)
-
             el_MENVIT_hdr.innerText = (mod_MENV_dict && mod_MENV_dict.content_nl) ? loc.Edit_label_item : loc.New_label_item;
 
             MENVIT_SetElements();
 
             if (!is_addnew){
-
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
@@ -2523,8 +2515,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20
     function MENVPR_Open(){
-        console.log(" -----  MENVPR_Open   ----")
-        console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
+        //console.log(" -----  MENVPR_Open   ----")
+        //console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
 
         b_clear_dict(mod_MENV_dict);
 
@@ -2704,8 +2696,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVPR_FillTblExams  ============= PR2022-08-23
     function MENVPR_FillTblExams() {
-        console.log("===== MENVPR_FillTblExams ===== ");
-        console.log("mod_MENV_dict.ete_exam_rows", mod_MENV_dict.ete_exam_rows);
+        //console.log("===== MENVPR_FillTblExams ===== ");
+        //console.log("mod_MENV_dict.ete_exam_rows", mod_MENV_dict.ete_exam_rows);
 
         const tblBody = el_MENVPR_tblBody_exam;
 
@@ -2724,13 +2716,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 MENVPR_CreateSelectRow("exams", tblBody, all_row);
             }
-        console.log("mod_MENV_dict.sel_examperiod", mod_MENV_dict.sel_examperiod);
+        //console.log("mod_MENV_dict.sel_examperiod", mod_MENV_dict.sel_examperiod);
             for (let i = 0, row; row = mod_MENV_dict.ete_exam_rows[i]; i++) {
                 const show_row = (row.examperiod === mod_MENV_dict.sel_examperiod) &&
                                 (!selected.depbase_pk || row.depbase_id === selected.depbase_pk) &&
                                 (!selected.lvlbase_pk || row.lvlbase_id === selected.lvlbase_pk);
 
-        console.log("row", row);
+        //console.log("row", row);
                 if (show_row){
                     const has_selected_exams = MENVPR_CreateSelectRow("exams", tblBody, row);
                     if(has_selected_exams) {exam_rows = true };
@@ -2916,8 +2908,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if(!admin_name) {admin_name = loc.the_exam_bureau}
 
             const el_MOLEX_admin_label = document.getElementById("id_MOLEX_admin_label")
-        console.log("el_MOLEX_admin_label", el_MOLEX_admin_label)
-        console.log("loc.Extra_exams + loc._for_ + admin_name", loc.Extra_exams + loc._for_ + admin_name)
+        //console.log("el_MOLEX_admin_label", el_MOLEX_admin_label)
+        //console.log("loc.Extra_exams + loc._for_ + admin_name", loc.Extra_exams + loc._for_ + admin_name)
             el_MOLEX_admin_label.innerText = loc.Extra_exams + loc._for_ + admin_name;
         };
 
@@ -2928,7 +2920,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MOLEX_Save  ================  PR2021-08-31
     function MOLEX_Save() {
-        console.log(" -----  MOLEX_Save   ----")
+        //console.log(" -----  MOLEX_Save   ----")
 
         if(permit_dict.permit_crud && setting_dict.sel_examyear_pk){
             const upload_dict = {};
@@ -2958,7 +2950,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDataRows  ================  PR2021-06-21 PR2022-08-04
     function RefreshDataRows(tblName, data_rows, update_rows, is_update) {
-        console.log(" --- RefreshDataRows  ---");
+        //console.log(" --- RefreshDataRows  ---");
         //console.log("    tblName", tblName);
         //console.log("    data_rows", data_rows);
         //console.log("    update_rows", update_rows);
@@ -3079,7 +3071,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
 
     //console.log("    // +++++++++++ updated row +++++++++++");
-        console.log("    data_dict", data_dict);
+        //console.log("    data_dict", data_dict);
 // +++++++++++ updated row +++++++++++
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
@@ -3139,8 +3131,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  RefreshDataMap  ================ PR2020-08-16 PR2020-09-30 PR2021-08-31
     function RefreshDataMap(tblName, field_names, data_rows, data_map) {
-        console.log(" --- RefreshDataMap  ---");
-        console.log("data_rows", data_rows);
+        //console.log(" --- RefreshDataMap  ---");
+        //console.log("data_rows", data_rows);
         if (data_rows) {
             const field_names = (field_settings[tblName]) ? field_settings[tblName].field_names : null;
             for (let i = 0, update_dict; update_dict = data_rows[i]; i++) {
@@ -3173,7 +3165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // because data-colindex goes wrong with hidden columns
         // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
         const col_index = el.parentNode.cellIndex;
-        console.log( "col_index", col_index, "event.key", event.key);
+        //console.log( "col_index", col_index, "event.key", event.key);
 
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
         //console.log( "filter_dict", filter_dict);
@@ -3185,18 +3177,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= HandleFilterField  ====================================
     function HandleFilterField(el_filter, col_index, event) {
-        console.log( "===== HandleFilterField  ========= ");
+        //console.log( "===== HandleFilterField  ========= ");
         // skip filter if filter value has not changed, update variable filter_text
 
         //console.log( "el_filter", el_filter);
         //console.log( "col_index", col_index);
         const filter_tag = get_attr_from_el(el_filter, "data-filtertag")
-        console.log( "filter_tag", filter_tag);
+        //console.log( "filter_tag", filter_tag);
 
 // --- get filter tblRow and tblBody
         const tblRow = t_get_tablerow_selected(el_filter);
         const tblName = "orderlist"  // tblName = get_attr_from_el(tblRow, "data-table")
-        console.log( "tblName", tblName);
+        //console.log( "tblName", tblName);
 
 // --- reset filter row when clicked on 'Escape'
         const skip_filter = t_SetExtendedFilterDict(el_filter, col_index, filter_dict, event.key);
@@ -3239,7 +3231,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= Filter_TableRows  ==================================== PR2021-07-08
     function Filter_TableRows() {
-        console.log( "===== Filter_TableRows  ========= ");
+        //console.log( "===== Filter_TableRows  ========= ");
 
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
             tblRow = tblBody_datatable.rows[i]
@@ -3251,7 +3243,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= ResetFilterRows  ====================================
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20 PR2022-08-04
-        console.log( "===== ResetFilterRows  ========= ");
+        //console.log( "===== ResetFilterRows  ========= ");
 
         b_clear_dict(selected);
         b_clear_dict(filter_dict);
@@ -3296,7 +3288,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========   MPUBORD_OpenLogfile   ====================== PR2021-07-17
     function MPUBORD_OpenLogfile() {
-        console.log(" ========== MPUBORD_OpenLogfile ===========");
+        //console.log(" ========== MPUBORD_OpenLogfile ===========");
 
         if (!!mod_MPUBORD_dict.log_list && mod_MPUBORD_dict.log_list) {
             const today = new Date();
