@@ -242,6 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
         };
+        const el_MENVIT_msg_modified = document.getElementById("id_MENVIT_msg_modified")
         const el_MENVIT_btn_delete = document.getElementById("id_MENVIT_btn_delete");
         if(el_MENVIT_btn_delete){el_MENVIT_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete_envelopitem")}, false)}
         const el_MENVIT_btn_save = document.getElementById("id_MENVIT_btn_save");
@@ -1875,13 +1876,14 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MENVLAB_name.value = (mod_MENV_dict.parent_name) ? mod_MENV_dict.parent_name : null;
             add_or_remove_class(el_MENVLAB_number_container, cls_hide, mod_MENV_dict.is_bundle);
 
+            let modified_txt = null;
             if (!mod_MENV_dict.is_addnew){
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
-                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
-                document.getElementById("id_MENVIT_msg_modified").innerText = display_txt;
+                modified_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
             };
+            el_MENVIT_msg_modified.innerText = modified_txt;
 
     // ---  disable btn submit, hide delete btn when is_addnew
             el_MENVLAB_btn_delete.innerText = (mod_MENV_dict.is_bundle) ?loc.Delete_bundle : loc.Delete_label;
@@ -2360,9 +2362,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ++++++++++++  END OF MODAL ENVELOP LABEL  +++++++++++++++++++++++++++++++++++++++
 
-//=========  MENVIT_Open  ================ PR2022-08-04
+//=========  MENVIT_Open  ================ PR2022-08-04 PR2022-09-21
     function MENVIT_Open(el_input) {
-        //console.log(" -----  MENVIT_Open   ----")
+        console.log(" -----  MENVIT_Open   ----")
 
         //console.log("permit_dict.permit_crud", permit_dict.permit_crud)
         //console.log("el_input", el_input)
@@ -2372,6 +2374,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // using  b_clear_dict(mod_MENV_dict) clesrs row row in envelopitem_rows
         // setting mod_MENV_dict = {} breaks the reference
         // was: b_clear_dict(mod_MENV_dict);
+
         mod_MENV_dict = {} ;
         if (permit_dict.permit_crud){
 
@@ -2395,14 +2398,15 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MENVIT_hdr.innerText = (mod_MENV_dict && mod_MENV_dict.content_nl) ? loc.Edit_label_item : loc.New_label_item;
 
             MENVIT_SetElements();
-
+            let modified_txt = null;
             if (!is_addnew){
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
-                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
-                document.getElementById("id_MENVIT_msg_modified").innerText = display_txt;
+                modified_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
             };
+        console.log("modified_txt", modified_txt)
+            el_MENVIT_msg_modified.innerText = modified_txt;
 
     // ---  disable btn submit, hide delete btn when is_addnew
         //console.log( "el_MENVIT_btn_delete: ", el_MENVIT_btn_delete);
@@ -2419,7 +2423,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MENVIT_Open
 
 
-//=========  MENVIT_Save  ================  PR2020-10-01
+//=========  MENVIT_Save  ================  PR2020-10-01 PR2022-09-21
     function MENVIT_Save(crud_mode) {
         //console.log(" -----  MENVIT_save  ----", crud_mode);
         //console.log( "mod_MENV_dict: ", mod_MENV_dict);
@@ -2430,8 +2434,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const upload_mode = (is_create) ? "create" : (is_delete) ? "delete" : "update"
 
             let upload_dict = {table: 'envelopitem', mode: upload_mode}
-            if(mod_MENV_dict.id){upload_dict.envelopitem_pk = mod_MENV_dict.id};
-            if(mod_MENV_dict.mapid){upload_dict.mapid = mod_MENV_dict.mapid};
+            if(mod_MENV_dict.id){upload_dict.pk_int = mod_MENV_dict.id};
+            //if(mod_MENV_dict.mapid){upload_dict.mapid = mod_MENV_dict.mapid};
 
     // ---  put changed values of input elements in upload_dict
             let new_level_pk = null, new_sector_pk = null, level_or_sector_has_changed = false;

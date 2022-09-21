@@ -53,7 +53,7 @@ class LazyEncoder(DjangoJSONEncoder):
 class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18  PR2022-09-16
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopItemUploadView ============= ')
