@@ -2857,6 +2857,7 @@ def get_ex3_grade_rows (self, examyear, school, department, upload_dict, examper
 def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj_name, version_hex_color, school_name, has_practexam,
                examdate, starttime, endtime, numberofenvelops_str, itemsinenvelop_str, lang, bnd_lbl_name,
                 content_arr, instruction_arr, content_color_arr, instruction_color_arr):
+    # PR2022-09-29
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_label -----')
@@ -3013,6 +3014,9 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
             if instruction:
                 instruction_color = instruction_color_arr_with_split_lines[i]
                 hex_color = c.LABEL_COLOR.get(instruction_color)
+                if not hex_color:
+                    hex_color = '#000000'  # 'black': rgb 0 0 0  #000000
+
                 canvas.setFillColor(colors.HexColor(hex_color))
                 canvas.drawCentredString(4.25 * inch, pos_y - line_height * .75 * row_count, instruction or '')
                 row_count += 1
