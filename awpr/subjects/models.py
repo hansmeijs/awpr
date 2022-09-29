@@ -524,7 +524,7 @@ class Envelopitembase(Model):  # PR2022-08-03
     objects = AwpModelManager()
 
 
-class Envelopitem(sch_mod.AwpBaseModel):  # PR2022-08-03
+class Envelopitem(sch_mod.AwpBaseModel):  # PR2022-08-03 PR2022-09-27
     # contains available envelop content items
     objects = AwpModelManager()
 
@@ -535,9 +535,9 @@ class Envelopitem(sch_mod.AwpBaseModel):  # PR2022-08-03
     content_en = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
     content_pa = CharField(max_length=c.MAX_LENGTH_NAME, null=True)
 
-    instruction_nl = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-    instruction_en = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
-    instruction_pa = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    instruction_nl = CharField(max_length=c.MAX_LENGTH_EMAIL_ADDRESS, null=True)
+    instruction_en = CharField(max_length=c.MAX_LENGTH_EMAIL_ADDRESS, null=True)
+    instruction_pa = CharField(max_length=c.MAX_LENGTH_EMAIL_ADDRESS, null=True)
 
     # color is used in envelop module PR2022-08-03
     content_color = CharField(max_length=c.MAX_LENGTH_10, null=True)

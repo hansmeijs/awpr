@@ -206,7 +206,6 @@ urlpatterns = [
         path('school_upload', school_views.SchoolUploadView.as_view(), name='url_school_upload'),
         path('school_import', school_views.SchoolImportView.as_view(), name='school_import_url'),
 
-
         path('uploadsetting', school_views.SchoolImportUploadSetting.as_view(), name='school_uploadsetting_url')
     ])),
 

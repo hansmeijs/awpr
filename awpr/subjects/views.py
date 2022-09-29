@@ -5656,6 +5656,10 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, re
                     #if field == 'is_combi' and new_value:
                     #    setattr(instance,  'weight_ce', 0)
 
+                    # PR 2022-09-25 TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
+                    # when changing otherlang in schemeitem, also change otherlang in other sectors
+                    if field == 'otherlang':
+                        update_otherlang_in_other_sectors(instance)
                     if logging_on:
                         logger.debug('save_changes: ' + str(save_changes))
 # --- end of for loop ---

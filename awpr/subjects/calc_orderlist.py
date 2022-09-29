@@ -10,11 +10,9 @@ from awpr import functions as af
 import logging
 logger = logging.getLogger(__name__)
 
-# /////////////////////////////////////////////////////////////////
-
 
 def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, prm_schoolbase_pk=None):
-    # PR2021-08-19 PR2021-09-24 PR2022-08-13
+    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj_count_dict ----- ')
@@ -38,6 +36,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
         1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', 'order_extra_fixed': 8, 'order_extra_perc': 8, 'order_round_to': 8, 'order_tv2_divisor': 88, 'order_tv2_multiplier': 8, 'order_tv2_max': 88, 'order_admin_divisor': 88, 'order_admin_multiplier': 8, 'order_admin_max': 88}, 
         2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}} 
     """
+
 # - calulate nuber of sudsubj. i.e. number of students with that subject
     schoolbase_pk_list = [prm_schoolbase_pk] if prm_schoolbase_pk else None
     rows = create_studsubj_count_rows(
@@ -51,9 +50,24 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
 
     # TODO create dict with studsubj_count + extra for receipt. Group by school/dep/levl and agg by exam, count = studsubj_count + extra PR2022-09-04
     count_dict = {'total': {}}
-
+    receipt_dict = {}
+    """
+    row contains subj_count (= number of studsubj) and exam_count(= number of exams of this 
+    row is grouped by school_id, country_id, depbase_id, lvlbase_id,",
+        subjbase_id, ete_exam, sch.otherlang, si.otherlang"
+    """
     for row in rows:
-
+        if logging_on:
+            logger.debug('row: ' + str(row))
+        """
+        row: {'subjbase_id': 131, 'ete_exam': True, 'id_key': '1_5_131_1_1', 'lang': 'nl',
+         'country_id': 1, 'sb_code': 'CUR02', 'lvl_abbrev': 'PKL', 'depbase_code': 'Vsbo', 
+         'subjbase_code': 'zwi', 'subj_name': 'Zorg & Welzijn intrasectoraal', 
+         'schoolbase_id': 3, 'school_name': 'Skol Avansá Amador Nita', 'depbase_id': 1, 'lvlbase_id': 5, 
+         'dep_sequence': 1, 'lvl_sequence': 2,
+         
+         'subj_count': 4, 'exam_count': 2,  'extra_count': 6, 'tv2_count': 5}
+        """
         # admin_id is schoolbase_id of school of ETE / DOE
         admin_id, admin_code = None, None
 
@@ -63,15 +77,15 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
             admin_id = mapped_country_dict.get('sb_id')
             admin_code = mapped_country_dict.get('c')
 
-# +++ count extra exams and examns tv2 per school / subject
+# +++ get number of exams, extra exams and exams tv2 per school / subject
         subj_count = row.get('subj_count') or 0
         extra_count = row.get('extra_count') or 0
         tv2_count = row.get('tv2_count') or 0
 
         """
         row: {'subjbase_id': 121, 'ete_exam': True, 'lang': 'nl', 'country_id': 1, 'sb_code': 'CUR05', 
-        'lvl_abbrev': 'PKL', 'subj_name': 'Wiskunde', 'schoolbase_id': 6, 'depbase_id': 1, 'lvlbase_id': 5, 
-        'subj_count': 32, 'extra_count': 8, 'tv2_count': 10}
+                'lvl_abbrev': 'PKL', 'subj_name': 'Wiskunde', 'schoolbase_id': 6, 'depbase_id': 1, 'lvlbase_id': 5, 
+                'subj_count': 32, 'extra_count': 8, 'tv2_count': 10}
         """
 
     # - get eteduo_dict
@@ -92,10 +106,9 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
         depbase_pk = row.get('depbase_id')
 
         if depbase_pk not in lang_dict:
-            dep_abbrev = row.get('dep_abbrev')
+            depbase_code = row.get('depbase_code')
             # depbase_dict has no key 'total'
-            #lang_dict[depbase_pk] = {}
-            lang_dict[depbase_pk] = {'c': dep_abbrev, 'total': {}}
+            lang_dict[depbase_pk] = {'c': depbase_code}
         depbase_dict = lang_dict[depbase_pk]
 
     # - get lvlbase_dict
@@ -115,7 +128,13 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
             lvlbase_dict[row_sb_pk] = {'c': row_sb_code}
         schoolbase_dict = lvlbase_dict[row_sb_pk]
 
-# +++ calculate  schoolbase_dict total
+        # - also add schoolbase_dict to receipt_dict
+        if row_sb_pk not in receipt_dict:
+            row_sb_code = row.get('sb_code', '-')  # for testing only
+            receipt_dict[row_sb_pk] = {'c': row_sb_code}
+        receipt_schoolbase_dict = receipt_dict[row_sb_pk]
+
+# +++ calculate schoolbase_dict total
         subjbase_pk = row.get('subjbase_id')
         if subjbase_pk not in schoolbase_dict:
             schoolbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
@@ -123,6 +142,14 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
             schoolbase_dict[subjbase_pk][0] += subj_count
             schoolbase_dict[subjbase_pk][1] += extra_count
             schoolbase_dict[subjbase_pk][2] += tv2_count
+
+    # + also calculate receipt_schoolbase_dict total
+        if subjbase_pk not in receipt_schoolbase_dict:
+            receipt_schoolbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
+        else:
+            receipt_schoolbase_dict[subjbase_pk][0] += subj_count
+            receipt_schoolbase_dict[subjbase_pk][1] += extra_count
+            receipt_schoolbase_dict[subjbase_pk][2] += tv2_count
 
         if logging_on and False:
             logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
@@ -255,15 +282,15 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
                                                         lvlbase_dict[admin_pk] = {'c': admin_code}
                                                     lvlbase_admin_dict = lvlbase_dict[admin_pk]
 
-                                                    if logging_on:
-                                                        logger.debug('lvlbase_admin_dict: ' + str(lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
-                                                        """
-                                                        lvlbase_admin_dict = {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
-                                                        """
+                                                    #if logging_on:
+                                                    #    logger.debug('lvlbase_admin_dict: ' + str(lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
+                                                    """
+                                                    lvlbase_admin_dict = {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
+                                                    """
                             # - loop through subjects in country_admin_dict
                                                     for subjbase_pk, count_list in country_admin_dict.items():
-                                                        if logging_on:
-                                                            logger.debug(' >>> subjbase_pk: ' + str(subjbase_pk) + ' count_list: ' + str(count_list))
+                                                        #if logging_on:
+                                                        #    logger.debug(' >>> subjbase_pk: ' + str(subjbase_pk) + ' count_list: ' + str(count_list))
                                                         """
                                                         subjbase_pk: 133 count_list: [127, 43, 50]
                                                         """
@@ -300,8 +327,8 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
                                                                 examyear_total_dict[subjbase_pk][1] += admin_extra_count
                                                                 examyear_total_dict[subjbase_pk][2] += admin_tv2_count
 
-                                                    if logging_on and False:
-                                                        logger.debug('lvlbase_admin_dict: ' + str( lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
+                                                    #if logging_on:
+                                                    #    logger.debug('lvlbase_admin_dict: ' + str( lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
 
     if logging_on:
         logger.debug('schoolbase_pk is NOT None')
@@ -822,7 +849,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
                 "LEFT JOIN studsubj ON (studsubj.school_id = sch.id)",
 
 # - show only exams of this exam year
-                # filter by ey.code, beacuse sxm school must also be included
+                # filter by ey.code, because sxm school must also be included
                 "WHERE ey.code = %(ey_code_int)s::INT"
                 ]
 

@@ -195,7 +195,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MODAL ENVELOP LABELS
         const el_MENVLAB_header = document.getElementById("id_MENVLAB_header");
 
-
         const el_MENVLAB_label_available = document.getElementById("id_MENVLAB_label_available");
         const el_MENVLAB_label_selected = document.getElementById("id_MENVLAB_label_selected");
         const el_MENVLAB_label_name = document.getElementById("id_MENVLAB_label_name");
@@ -243,11 +242,11 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         };
         const el_MENVIT_msg_modified = document.getElementById("id_MENVIT_msg_modified")
+        const el_MENVIT_loader = document.getElementById("id_MENVIT_loader")
         const el_MENVIT_btn_delete = document.getElementById("id_MENVIT_btn_delete");
         if(el_MENVIT_btn_delete){el_MENVIT_btn_delete.addEventListener("click", function() {ModConfirmOpen("delete_envelopitem")}, false)}
         const el_MENVIT_btn_save = document.getElementById("id_MENVIT_btn_save");
         if(el_MENVIT_btn_save){ el_MENVIT_btn_save.addEventListener("click", function() {MENVIT_Save("save")}, false)}
-
 
 // ---  MOD PRINT ENVELOP LABELS ------------------------------------
         const el_MENVPR_header = document.getElementById("id_MENVPR_header");
@@ -777,7 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //const page_grade_dict = {sel_btn: "grade_by_all"}
        //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
         const upload_dict = {selected_pk: selected_pk_dict};
-        console.log("upload_dict", upload_dict);
+        //console.log("upload_dict", upload_dict);
 
         b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
@@ -1959,7 +1958,7 @@ document.addEventListener('DOMContentLoaded', function() {
             $("#id_mod_enveloplabel").modal("hide");
     } ; // MENVLAB_Save
 
-//========= MENVLAB_FillDictlist  ============= PR2022-08-18
+//========= MENVLAB_FillDictlist  ============= PR2022-08-18 PR2022-09-29
     function MENVLAB_FillDictlist(){
        //console.log(" -----  MENVLAB_FillDictlist   ----")
 
@@ -2012,12 +2011,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 uniontable_pk: uniontable_pk,
                 uniontable_sequence: uniontable_sequence,
                 sortby: (picklist_sortby) ? picklist_sortby : "",
+
+                content_nl: (picklist_dict.content_nl) ? picklist_dict.content_nl : "---",
+                content_en: (picklist_dict.content_en) ? picklist_dict.content_en : "---",
+                content_pa: (picklist_dict.content_pa) ? picklist_dict.content_pa : "---",
+
+                instruction_nl: (picklist_dict.instruction_nl) ? picklist_dict.instruction_nl : "---",
+                instruction_en: (picklist_dict.instruction_en) ? picklist_dict.instruction_en : "---",
+                instruction_pa: (picklist_dict.instruction_pa) ? picklist_dict.instruction_pa : "---",
+
                 selected: is_selected
             });
         };
         mod_MENV_dict.picklist.sort(b_comparator_sortby);
-
-    //console.log("mod_MENV_dict", mod_MENV_dict)
     };  // MENVLAB_FillDictlist
 
 //========= MENVLAB_FillTable  ============= PR2022-08-06
@@ -2074,9 +2080,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const tw = (data_dict.selected) ? "tw_240" : "tw_360";
         td = tblRow.insertCell(-1);
         el_div = document.createElement("div");
-            el_div.classList.add("pointer_show")
+            el_div.classList.add("pointer_show");
             el_div.innerText = caption;
-            el_div.classList.add("tw_240", "px-1")
+            el_div.classList.add("tw_240", "px-1");
+            if (!mod_MENV_dict.is_bundle){
+                el_div.title = [
+                    data_dict.content_nl, "     " + data_dict.instruction_nl,
+                    data_dict.content_en, "     " + data_dict.instruction_en,
+                    data_dict.content_pa, "     " + data_dict.instruction_pa
+                ].join("\n");
+            };
+
             td.appendChild(el_div);
             td.addEventListener("click", function() {MENVLAB_SelectItem(tblRow)}, false);
 
@@ -2364,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MENVIT_Open  ================ PR2022-08-04 PR2022-09-21
     function MENVIT_Open(el_input) {
-        console.log(" -----  MENVIT_Open   ----")
+        //console.log(" -----  MENVIT_Open   ----")
 
         //console.log("permit_dict.permit_crud", permit_dict.permit_crud)
         //console.log("el_input", el_input)
@@ -2397,7 +2411,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             el_MENVIT_hdr.innerText = (mod_MENV_dict && mod_MENV_dict.content_nl) ? loc.Edit_label_item : loc.New_label_item;
 
-            MENVIT_SetElements();
+            MENVIT_SetInputElements();
+            MENVIT_SetMsgElements();
+
             let modified_txt = null;
             if (!is_addnew){
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
@@ -2405,17 +2421,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
                 modified_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
             };
-        console.log("modified_txt", modified_txt)
             el_MENVIT_msg_modified.innerText = modified_txt;
 
     // ---  disable btn submit, hide delete btn when is_addnew
-        //console.log( "el_MENVIT_btn_delete: ", el_MENVIT_btn_delete);
-        //console.log( "is_addnew: ", is_addnew);
+            el_MENVIT_btn_save.disabled = true;
             add_or_remove_class(el_MENVIT_btn_delete, cls_hide, is_addnew );
-            //const disable_btn_save = (!el_MENVIT_abbrev.value || !el_MENVIT_name.value  )
-            //el_MENVIT_btn_save.disabled = disable_btn_save;
 
-            MENVIT_validate_and_disable();
+            MENVIT_disable_save_btn(true);
 
 // show modal
             $("#id_mod_envelopitem").modal({backdrop: true});
@@ -2456,54 +2468,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
 
+            add_or_remove_class(el_MENVIT_loader, cls_hide, false);
             UploadChanges(upload_dict, urls.url_envelopitem_upload);
         };
 
     // ---  hide modal
-            $("#id_mod_envelopitem").modal("hide");
+            //$("#id_mod_envelopitem").modal("hide");
     } ; // MENVIT_Save
 
 //========= MENVIT_InputKeyup  ============= PR2020-10-01
     function MENVIT_InputKeyup(el_input){
         //console.log( "===== MENVIT_InputKeyup  ========= ");
-        MENVIT_validate_and_disable();
+        MENVIT_disable_save_btn(false);
     }; // MENVIT_InputKeyup
 
 //========= MENVIT_InputSelect  ============= PR2020-12-11
     function MENVIT_InputSelect(el_input){
         //console.log( "===== MENVIT_InputSelect  ========= ");
-        MENVIT_validate_and_disable();
+        MENVIT_disable_save_btn(false);
     }; // MENVIT_InputSelect
 
-//=========  MENVIT_validate_and_disable  ================  PR2020-10-01
-    function MENVIT_validate_and_disable() {
-        //console.log(" -----  MENVIT_validate_and_disable   ----")
-        let disable_save_btn = false;
-// ---  loop through input fields on MENVIT_Open
-        let form_elements = el_MENVIT_form_controls.querySelectorAll(".awp_input_text")
-        for (let i = 0, el_input; el_input = form_elements[i]; i++) {
-            const fldName = get_attr_from_el(el_input, "data-field");
-            const msg_err = MENVIT_validate_field(el_input, fldName);
-// ---  show / hide error message NOT IN USE
-            const el_msg = document.getElementById("id_MENVIT_msg_" + fldName);
-            if(el_msg){
-                el_msg.innerText = msg_err;
-                disable_save_btn = true;
-                add_or_remove_class(el_msg, cls_hide, !msg_err)
-            };
-        };
-// ---  disable save button on error
+//=========  MENVIT_disable_save_btn  ================  PR2022-09-28
+    function MENVIT_disable_save_btn(disable_save_btn) {
+        //console.log(" -----  MENVIT_disable_save_btn   ----")
+// ---  disable save button on opening modal or on error
         el_MENVIT_btn_save.disabled = disable_save_btn;
-    };  // MENVIT_validate_and_disable
+    };  // MENVIT_disable_save_btn
 
-//========= MENVIT_SetElements  ============= PR2022-08-04
-    function MENVIT_SetElements(focus_field){
-        //console.log( "===== MENVIT_SetElements  ========= ");
+//========= MENVIT_SetInputElements  ============= PR2022-08-04
+    function MENVIT_SetInputElements(error_dict){
+        //console.log( "===== MENVIT_SetInputElements  ========= ");
         //console.log( "mod_MENV_dict", mod_MENV_dict);
-        //console.log( "focus_field", focus_field);
+
 // --- loop through input elements
         let form_elements = el_MENVIT_form_controls.querySelectorAll(".form-control")
         for (let i = 0, el, fldName, fldValue; el = form_elements[i]; i++) {
+
             fldName = get_attr_from_el(el, "data-field");
             fldValue = (mod_MENV_dict[fldName]) ? mod_MENV_dict[fldName] : null;
 
@@ -2515,7 +2515,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.value = fldValue;
             };
         };
-    };  // MENVIT_SetElements
+    };  // MENVIT_SetInputElements
+
+//========= MENVIT_SetMsgElements  ============= PR2022-09-27
+    function MENVIT_SetMsgElements(update_dict){
+        //console.log( "===== MENVIT_SetMsgElements  ========= ");
+        //console.log( "update_dict", update_dict);
+        const error_dict = get_dict_value(update_dict, ["error"], []);
+        const errordict_not_empty = !isEmpty(error_dict);
+
+// --- loop through msg_err elements
+        let els_msg = el_MENVIT_form_controls.querySelectorAll(".awp_msg_err")
+        for (let i = 0, el, fldName; el = els_msg[i]; i++) {
+            fldName = get_attr_from_el(el, "data-field");
+            let err_txt = null;
+            if(errordict_not_empty && fldName && fldName in error_dict){
+                err_txt = error_dict[fldName];
+            };
+            el.innerHTML = err_txt;
+        };
+
+// --- loop through input elements
+        const els_input = el_MENVIT_form_controls.querySelectorAll(".form-control")
+        for (let i = 0, el, fldName; el = els_input[i]; i++) {
+            fldName = get_attr_from_el(el, "data-field");
+            const field_has_error = (errordict_not_empty && fldName && fldName in error_dict);
+            add_or_remove_class(el, "border_bg_invalid", field_has_error)
+        };
+
+// ---  hide loader
+        add_or_remove_class(el_MENVIT_loader, cls_hide, true);
+// ---  disable save button on error
+        MENVIT_disable_save_btn(!isEmpty(error_dict));
+
+    };  // MENVIT_SetMsgElements
 
 // +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20
     function MENVPR_Open(){
@@ -2952,8 +2985,10 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA ROWS +++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataRows  ================  PR2021-06-21 PR2022-08-04
+//=========  RefreshDataRows  ================  PR2021-06-21 PR2022-08-04 PR2022-09-28
     function RefreshDataRows(tblName, data_rows, update_rows, is_update) {
+        // called by  UploadChanges response  "updated_envelopbundle_rows",  "updated_enveloplabel_rows",  "updated_envelopitem_rows", updated_ete_exam_rows
+
         //console.log(" --- RefreshDataRows  ---");
         //console.log("    tblName", tblName);
         //console.log("    data_rows", data_rows);
@@ -2974,7 +3009,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 //=========  RefreshDatarowItem  ================
-    //PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-08-14
+    //PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-08-14 PR2022-09-27
     function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
         //console.log(" --- RefreshDatarowItem  ---");
     //console.log("    data_rows", data_rows);
@@ -3002,20 +3037,12 @@ document.addEventListener('DOMContentLoaded', function() {
             let updated_columns = [];
             let field_error_list = []
 
-            const error_list = get_dict_value(update_dict, ["error"], []);
-
-            if(error_list && error_list.length){
-
-    // - show modal messages
-                // TODO cannot show error_list in b_show_mod_message_dictlist. Already shown by response.messages
-                b_show_mod_message_dictlist(error_list);
-
-    // - add fields with error in field_error_list, to put old value back in field
-                // TODO error_list is list of strings, not a dict with 'field
-                for (let i = 0, msg_dict ; msg_dict = error_list[i]; i++) {
-                    if ("field" in msg_dict){field_error_list.push(msg_dict.field)};
-                };
-    // - close modal MSJ when no error --- already done in modal
+            const error_dict = get_dict_value(update_dict, ["error"], []);
+            if(!isEmpty(error_dict)){
+                MENVIT_SetMsgElements(update_dict);
+            } else {
+// hide modal when no error
+                $("#id_mod_envelopitem").modal("hide");
             };
 
 // ---  get list of hidden columns

@@ -2169,11 +2169,13 @@ def validate_student_name_length(lastname_stripped, firstname_stripped, prefix_s
 
 # ========  validate_length  ======= PR2021-08-05
 
-def validate_length(caption, input_value, max_length, blank_allowed):
-    #  PR2021-08-05 PR2022-06-29
-    logging_on = False  # s.LOGGING_ON
+def validate_length(caption, input_value, max_length, blank_allowed, hide_value_in_msg=False):
+    #  PR2021-08-05 PR2022-06-29 PR2022-09-28
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------- validate_length ----------- ')
+        logger.debug('    input_value: ' + str(input_value))
+        logger.debug('    max_length: ' + str(max_length))
 
     msg_err = None
     if not input_value:
@@ -2181,8 +2183,12 @@ def validate_length(caption, input_value, max_length, blank_allowed):
             msg_err = _('%(cpt)s cannot be blank.') % {'cpt': caption}
 
     elif max_length and len(input_value) > max_length:
-        msg_err = _("%(cpt)s '%(val)s' is too long, maximum %(max)s characters.") \
-                    % {'cpt': caption, 'val': input_value, 'max': max_length}
+        if hide_value_in_msg:
+            msg_err = _("%(cpt)s is too long, maximum %(max)s characters.") \
+                        % {'cpt': caption, 'max': max_length}
+        else:
+            msg_err = _("%(cpt)s '%(val)s' is too long, maximum %(max)s characters.") \
+                        % {'cpt': caption, 'val': input_value, 'max': max_length}
 
     if logging_on:
         logger.debug('msg_err: ' + str(msg_err))

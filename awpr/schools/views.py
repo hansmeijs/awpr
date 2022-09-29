@@ -2251,7 +2251,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
         # function publishes orderlist and sends email to schools
 
 # - for testing: set skip_send_email = True PR2022-09-04
-        skip_send_email = False
+        skip_send_email = True  # must be set to False
 
         update_wrap = {}
         has_error = False

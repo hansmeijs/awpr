@@ -13,6 +13,7 @@
                     </button>
                 </div>
 
+
                 <div id="id_MENVIT_form_controls" class="modal-body pb-0">
 
                      <div class="content_header">
@@ -20,14 +21,13 @@
                      </div>
 
                      <div class="p-2 border_bg_transparent">
-
                          <div class="flex_container">
                              <div class="flex_1 m-1">{% trans 'Dutch' %}:</div>
                              <div class="flex_5 m-1 ">
                                 <input id="id_MENVIT_content_nl" type="text" data-field= "content_nl" class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                 <div class="content_subheader_left mx-2">
-                                    <small id="id_MENVIT_err_content_nl" class="text-danger"></small>
+                                    <small data-field= "content_nl" class="text-danger awp_msg_err"></small>
                                 </div>
                              </div>
                          </div>
@@ -37,7 +37,7 @@
                                 <input id="id_MENVIT_content_en" type="text" data-field= "content_en" class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                 <div class="content_subheader_left mx-2">
-                                    <small id="id_MENVIT_err_content_en" class="text-danger"></small>
+                                    <small data-field= "content_en" class="text-danger awp_msg_err"></small>
                                 </div>
                              </div>
                          </div>
@@ -47,7 +47,7 @@
                                 <input id="id_MENVIT_content_pa" type="text" data-field= "content_pa" class="form-control"
                                     autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                 <div class="content_subheader_left mx-2">
-                                    <small id="id_MENVIT_err_content_pa" class="text-danger"></small>
+                                    <small data-field= "content_pa" class="text-danger awp_msg_err"></small>
                                 </div>
                              </div>
                          </div>
@@ -66,67 +66,77 @@
                                     </select>
                                 </div>
                             </div>
-
                      </div>
 
-
-                     <div class="content_header">
-                         <h6 class="m-2">{% trans 'Instruction' %}:</h6>
-                     </div>
-
+                    <div class="content_header">
+                        <h6 class="mx-2 mt-2 mb-0">{% trans 'Instruction' %}:</h6>
+                    </div>
+                    <div class="mx-2">
+                        <small>{% trans 'Type the ~ sign to start a new line.' %}</small>
+                    </div>
                      <div class="p-2 border_bg_transparent">
+                         <div class="flex_container">
+                                 <div class="flex_1 m-1">{% trans 'Dutch' %}:</div>
+                                 <div class="flex_5 m-1 ">
+                                    <input id="id_MENVIT_instruction_nl" type="text" data-field= "instruction_nl" class="form-control"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    <div class="content_subheader_left mx-2">
+                                        <small data-field= "instruction_nl" class="text-danger awp_msg_err"></small>
+                                    </div>
+                                 </div>
+                             </div>
+                             <div class="flex_container">
+                                 <div class="flex_1 m-1">{% trans 'English' %}:</div>
+                                 <div class="flex_5 m-1 ">
+                                    <input id="id_MENVIT_instruction_en" type="text" data-field= "instruction_en" class="form-control"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    <div class="content_subheader_left mx-2">
+                                        <small data-field= "instruction_en" class="text-danger awp_msg_err"></small>
+                                    </div>
+                                 </div>
+                             </div>
+                             <div class="flex_container">
+                                 <div class="flex_1 m-1">{% trans 'Papiamentu' %}:</div>
+                                 <div class="flex_5 m-1 ">
+                                    <input id="id_MENVIT_instruction_pa" type="text" data-field= "instruction_pa" class="form-control"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                    <div class="content_subheader_left mx-2">
+                                        <small data-field= "instruction_pa"  class="text-danger awp_msg_err"></small>
+                                    </div>
+                                 </div>
+                             </div>
 
-                     <div class="flex_container">
-                             <div class="flex_1 m-1">{% trans 'Dutch' %}:</div>
-                             <div class="flex_5 m-1 ">
-                                <input id="id_MENVIT_instruction_nl" type="text" data-field= "instruction_nl" class="form-control"
-                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                <div class="content_subheader_left mx-2">
-                                    <small id="id_MENVIT_err_instruction_nl" class="text-danger"></small>
-                                </div>
+                             <div class="flex_container">
+                                 <div class="flex_1 m-1">{% trans 'Color' %}:</div>
+                                 <div class="flex_5 m-1 ">
+                                    <select id="id_MENVIT_instruction_color" data-field= "instruction_color" class="form-control"
+                                        autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                             <option value="black">{% trans 'black' %}</option>
+                                             <option value="red">{% trans 'red' %}</option>
+                                             <option value="blue">{% trans 'blue' %}</option>
+                                             <option value="green">{% trans 'green' %}</option>
+                                             <option value="purple">{% trans 'purple' %}</option>
+                                             <option value="orange">{% trans 'orange' %}</option>
+                                             <option value="yellow">{% trans 'yellow' %}</option>
+                                    </select>
+                                 </div>
                              </div>
                          </div>
-                         <div class="flex_container">
-                             <div class="flex_1 m-1">{% trans 'English' %}:</div>
-                             <div class="flex_5 m-1 ">
-                                <input id="id_MENVIT_instruction_en" type="text" data-field= "instruction_en" class="form-control"
-                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                <div class="content_subheader_left mx-2">
-                                    <small id="id_MENVIT_err_instruction_en" class="text-danger"></small>
-                                </div>
-                             </div>
-                         </div>
-                         <div class="flex_container">
-                             <div class="flex_1 m-1">{% trans 'Papiamentu' %}:</div>
-                             <div class="flex_5 m-1 ">
-                                <input id="id_MENVIT_instruction_pa" type="text" data-field= "instruction_pa" class="form-control"
-                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                <div class="content_subheader_left mx-2">
-                                    <small id="id_MENVIT_err_instruction_pa" class="text-danger"></small>
-                                </div>
-                             </div>
-                         </div>
-
-                         <div class="flex_container">
-                             <div class="flex_1 m-1">{% trans 'Color' %}:</div>
-                             <div class="flex_5 m-1 ">
-                                <select id="id_MENVIT_instruction_color" data-field= "instruction_color" class="form-control"
-                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                         <option value="black">{% trans 'black' %}</option>
-                                         <option value="red">{% trans 'red' %}</option>
-                                         <option value="blue">{% trans 'blue' %}</option>
-                                         <option value="green">{% trans 'green' %}</option>
-                                         <option value="purple">{% trans 'purple' %}</option>
-                                         <option value="orange">{% trans 'orange' %}</option>
-                                         <option value="yellow">{% trans 'yellow' %}</option>
-                                </select>
-                             </div>
-                         </div>
-                     </div>
 
                      <div class="mx-2 mt-2 mb-0">
+                         <small data-field= "nonfield"  class="text-danger awp_msg_err"></small>
+                     </div>
+
+                     <div class="mx-2 my-0">
                         <small id="id_MENVIT_msg_modified"></small>
                      </div>
+
+        <!-- loader -->
+                    <div id="id_MENVIT_loader" class="display_hide mx-4 my-0">
+                        <div class="image_container">
+                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="modal-footer">

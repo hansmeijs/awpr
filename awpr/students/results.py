@@ -2070,7 +2070,7 @@ def draw_gradelist_werkstuk_row(canvas, coord, col_tab_list, library, subj_dict,
     if pws_subjects:
         pws_subjects = pws_subjects.strip()
 
-    logger.debug('pws_title: >' + str(pws_title) + '< ' + str(len(pws_title)) )
+    #logger.debug('pws_title: >' + str(pws_title) + '< ' + str(len(pws_title)) )
 
     if len(pws_title) > 44:
         pos_x_title = x + (col_tab_list[1] - 20) * mm

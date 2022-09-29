@@ -1558,9 +1558,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Log_change_birth_country'] = _('Log change country of birth')
         dict['Log_change_birth_country'] = _('Log change country of birth')
 
-
-
-
 # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:
         dict['Name_ex_form'] = TXT_Name_ex_form

@@ -253,7 +253,7 @@ def create_envelopitem(sel_examyear, request):
 
 
 def update_envelopitem_instance(instance, upload_dict, error_dict, request):
-    # --- update existing and new instance PR2022-08-04 PR2022-09-04
+    # --- update existing and new instance PR2022-08-04 PR2022-09-04 PR2022-09-28
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -267,7 +267,7 @@ def update_envelopitem_instance(instance, upload_dict, error_dict, request):
 
         for field, new_value in upload_dict.items():
 
-            if field in ( 'content_color', 'instruction_color'):
+            if field in ('content_color', 'instruction_color'):
                 # set default to black
                 if not new_value:
                     new_value = 'black'
@@ -288,10 +288,21 @@ def update_envelopitem_instance(instance, upload_dict, error_dict, request):
 
             elif field in ('content_nl', 'content_en', 'content_pa',
                            'instruction_nl', 'instruction_en', 'instruction_pa'):
+
+                if logging_on:
+                    logger.debug('    field: ' + str(field))
+                    logger.debug('    new_value: ' + str(new_value))
+
                 if new_value:
-                    max_len = c.MAX_LENGTH_FIRSTLASTNAME if 'instr' in field else c.MAX_LENGTH_NAME
-                    # - validate length of new_value
-                    msg_err = stud_val.validate_length(_('The text'), new_value, max_len, True)  # blank_allowed = True
+                    max_len = c.MAX_LENGTH_EMAIL_ADDRESS if 'instr' in field else c.MAX_LENGTH_NAME
+                    # - validate length of new_value, don't show new_value in msg_err
+                    msg_err = stud_val.validate_length(
+                        caption=_('The text'),
+                        input_value=new_value,
+                        max_length=max_len,
+                        blank_allowed=True,
+                        hide_value_in_msg=True
+                    )
                     if msg_err:
                         has_error = True
                         error_dict[field] = msg_err
@@ -1548,15 +1559,12 @@ def create_exam_count_dict(sel_examyear, exam_pk_list=None):
     return exam_count_dict
 # - end of create_exam_count_dict
 
-# /////////////////////////////////////////////////////////////////
-
-
 
 @method_decorator([login_required], name='dispatch')
 class EnvelopPrintCheckView(View):  # PR2022-08-19
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopPrintCheckView ============= ')
@@ -1761,7 +1769,7 @@ class EnvelopPrintView(View):  # PR2022-08-19
                     'instruction_color_arr': ['red', 'green', 'purple'], 'sequence_arr': [0, 0, 0]}]
                 """
 
-# +++ get schoolbase dictlist
+# +++ create enveloplabel_pdf without school
                 if print_without_schools:
                     pdf = create_enveloplabel_pdf_without_school(
                         sel_examyear=sel_examyear,
@@ -1770,6 +1778,9 @@ class EnvelopPrintView(View):  # PR2022-08-19
                         exam_pk_list=exam_pk_list
                     )
                 else:
+# +++ create enveloplabel_pdf perschool
+
+    # - get schoolbase dictlist
                     # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
                     #  of this exam year of all countries (only SXM when requsr=sxm), ordered by code
                     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear, request)
@@ -2960,11 +2971,31 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
                 row_count += 1
 
     row_count = 0
+
+# - PR2022-09-29 request Rushaina Manuel drukteam: allow long lines.
+    # - split line when it ha a '~' (tilde '~' means hard return)
+
+    instruction_arr_with_split_lines = []
+    instruction_color_arr_with_split_lines = []
     if instruction_arr:
-        #count rows to be pronted
-        for instruction in instruction_arr:
+        for i, instruction in enumerate(instruction_arr):
             if instruction:
-                row_count += 1
+                if logging_on:
+                    logger.debug('i: ' + str(i) + ' instruction: ' + str(instruction))
+                if '~' in instruction:
+                    arr = instruction.split('~')
+                    for item in arr:
+                        instruction_arr_with_split_lines.append(item)
+                        instruction_color_arr_with_split_lines.append(instruction_color_arr[i])
+                        row_count += 1
+
+                        if logging_on:
+                            logger.debug('item: ' + str(item))
+
+                else:
+                    instruction_arr_with_split_lines.append(instruction)
+                    instruction_color_arr_with_split_lines.append(instruction_color_arr[i])
+                    row_count += 1
 
 # calculate heigth of bar
     canvas.setFillColor(colors.HexColor("#bfbfbf"))  # grey background in label  RGB 181, 181, 191
@@ -2974,13 +3005,13 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
     canvas.rect(0.5 * inch, bar_bottom, 7.5 * inch, bar_height, stroke=0, fill=1)  # canvas.rect(left, bottom, page_width, height)
     canvas.setFillColor(colors.HexColor("#000000"))
 
-    if instruction_arr:
+    if instruction_arr_with_split_lines:
         row_count = 0
         pos_y = bar_top - line_height
         canvas.setFont('Calibri', 12, leading=None)
-        for i, instruction in enumerate(instruction_arr):
+        for i, instruction in enumerate(instruction_arr_with_split_lines):
             if instruction:
-                instruction_color = instruction_color_arr[i]
+                instruction_color = instruction_color_arr_with_split_lines[i]
                 hex_color = c.LABEL_COLOR.get(instruction_color)
                 canvas.setFillColor(colors.HexColor(hex_color))
                 canvas.drawCentredString(4.25 * inch, pos_y - line_height * .75 * row_count, instruction or '')
