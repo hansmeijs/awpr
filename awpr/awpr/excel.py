@@ -3821,7 +3821,7 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, sel_examperiod, list
         school_name = schoolbase_dict.get('sch_name')
 
 # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
-        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+        count_dict, receipt_dict = subj_calc.create_studsubj_count_dict(
             sel_examyear_instance=sel_examyear_instance,
             sel_examperiod=sel_examperiod,
             request=request,
@@ -3939,7 +3939,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
     sel_examperiod = c.EXAMPERIOD_FIRST
-    count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+    count_dict, receipt_dict = subj_calc.create_studsubj_count_dict(
         sel_examyear_instance=sel_examyear_instance,
         sel_examperiod=sel_examperiod,
         request=request,
@@ -4061,7 +4061,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
                                  row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                                  formats, col_header_formats, detail_row_formats, totalrow_formats):
-    logging_on = s.LOGGING_ON
+    logging_on =  False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- write_orderlist_summary -----')
@@ -4125,6 +4125,7 @@ def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictl
                         lvlbase_code = lvlbase_dict.get('lvlbase_code')
                         if logging_on:
                             logger.debug('lvlbase_dict: ' + str(lvlbase_dict))
+
                         if lvlbase_code:
                             dep_lvl_name = ' '.join((dep_code, lvlbase_code))
                         else:
@@ -4153,7 +4154,7 @@ def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictl
 def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
                                  row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                                  formats, col_header_formats, detail_row_formats, totalrow_formats):
-    logging_on = s.LOGGING_ON
+    logging_on =  False  # s.LOGGING_ON
 
     has_separate_extra_row = False
     base_extra_tuple = ('',)
@@ -4514,7 +4515,7 @@ def write_summary_row(sheet, item_dict, is_herexamens, row_index, first_subject_
 
 def write_total_row(sheet, item_dict, row_index, field_names, first_subject_column, is_herexamens,
                     totalrow_merge, totalrow_formats):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on :
         logger.debug('item_dict: ' + str(item_dict))
     # PR2022-08-14 debug: error: 'NoneType' object has no attribute 'get', solved by adding if 'total' in item_dict
@@ -4552,7 +4553,7 @@ def write_total_row(sheet, item_dict, row_index, field_names, first_subject_colu
 
 def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subtotal_last_row_index,
                                  field_names, totalrow_formats):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  write_total_row_with_formula  -----')
 
@@ -4563,8 +4564,6 @@ def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subto
         border_bottom = formats['border_bottom']
 
         for i, field_name in enumerate(field_names):
-            if logging_on:
-                logger.debug('field_name: ' + str(field_name))
             if i == 0:
                 # PR2021-09-02 debug. Here merge_range doesn't work. Dont know why
                 #sheet.merge_range(subtotal_total_row_index, 0, subtotal_total_row_index, first_subject_column - 1, 'TOTAAL ', totalrow_merge)

@@ -147,7 +147,7 @@ def create_verificationcode(formname, request):  # PR2022-02-04
 
 
 def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- check_verificationcode -----')
 
@@ -1304,6 +1304,9 @@ def system_updates(examyear, request):
     #if request.user.role == c.ROLE_128_SYSTEM:
     awpr_lib.update_library(examyear, request)
 
+# PR 2022-10-09 one time function to fill table EnvelopSubject
+    fillEnvelopSubjectONCEONLY(request)
+
 # PR 2022-07-03 one time function to add secret exams to
     add_ntermONCEONLY(request)
 
@@ -1408,6 +1411,68 @@ def reset_show_msg(request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
+
+
+# fill table EnvelopSubjec with data from Exams PR2022-10-09
+def fillEnvelopSubjectONCEONLY(request):
+    # PR2022-10-09 one time function fills table EnvelopSubjec with data from Exams PR2022-10-09
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- fillEnvelopSubjectONCEONLY -------')
+    try:
+        name = 'fill_envelopsubject'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+
+        # - loop through exams of examyear 2023
+            exams = subj_mod.Exam.objects.filter(
+                ete_exam=True,
+                examperiod=c.EXAMPERIOD_FIRST,
+                envelopbundle__isnull=False
+            )
+            if exams:
+                for exam in exams:
+                    logger.debug('>>> exam: ' + str(exam))
+
+                    # check if EnvelopSubject alreay exists
+                    exists = subj_mod.Envelopsubject.objects.filter(
+                        subject=exam.subject,
+                        department=exam.department,
+                        level=exam.level
+                    ).exists()
+                    logger.debug('   exists: ' + str(exists))
+                    if not exists:
+                        envelopsubject = subj_mod.Envelopsubject(
+                            subject=exam.subject,
+                            department=exam.department,
+                            level=exam.level,
+                            envelopbundle=exam.envelopbundle,
+                            firstdate=exam.datum,
+                            starttime=exam.begintijd,
+                            endtime=exam.eindtijd,
+                            has_errata=exam.has_errata,
+                            modifiedby=exam.evl_modifiedby,
+                            modifiedat=exam.evl_modifiedat
+                        )
+                        envelopsubject.save()
+                        logger.debug('   >> envelopsubject: ' + str(envelopsubject))
+
+   # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -end of fillEnvelopSubjectONCEONLY
 
 
 # get long psw_title and pws_subjcts
@@ -2548,21 +2613,25 @@ def register_font_calibri():  # PR2022-09-02
         logger.error(getattr(e, 'message', str(e)))
 
 
-def get_exam_extended_key(exam_instance):  # PR2022-09-02
+def get_exam_extended_key(envelopsubject_instance):  # PR2022-09-02  PR2022-10-10
     extended_key = None
-
-    if exam_instance:
-        depbase_pk = exam_instance.department.base_id or 0
-        lvlbase_pk = exam_instance.level.base_id if exam_instance.level else 0
-        subjbase_pk = exam_instance.subject.base_id or 0
-        examperiod = exam_instance.examperiod or 0
-        ete_exam = 1 if exam_instance.ete_exam else 0
+    """
+    PR2022-10-10 was: extended_key = depbase_pk _ lvlbase_pk _ subjbase_pk _ examperiod _ ete_exam (1 if ete_exam else 0)
+    extended_key = depbase_pk _ lvlbase_pk _ subjbase_pk
+    printlabel_dict = { 1_5_126: [
+    """
+    if envelopsubject_instance:
+        depbase_pk = envelopsubject_instance.department.base_id or 0
+        lvlbase_pk = envelopsubject_instance.level.base_id if envelopsubject_instance.level else 0
+        subjbase_pk = envelopsubject_instance.subject.base_id or 0
+        #examperiod = envelopsubject_instance.examperiod or 0
+        #ete_exam = 1 if envelopsubject_instance.ete_exam else 0
 
         extended_key = '_'.join((
             str(depbase_pk),
             str(lvlbase_pk),
-            str(subjbase_pk),
-            str(examperiod),
-            str(ete_exam)
+            str(subjbase_pk)
+            #str(examperiod),
+            #str(ete_exam)
         ))
     return extended_key

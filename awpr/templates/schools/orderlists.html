@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Orderlists' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/orderlists220929.js' %}"></script>
+    <script src="{% static 'js/orderlists221011.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -90,7 +90,7 @@
     <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_orderlist" class="btn btn-secondary ">{% trans 'Orderlist' %}</button>
-                    <button data-btn="btn_ete_exam" class="btn btn-secondary ">{% trans 'Exams' %}</button>
+                    <button data-btn="btn_envelopsubject" class="btn btn-secondary ">{% trans 'Subjects with label bundle' %}</button>
                     <button data-btn="btn_bundle" class="btn btn-secondary ">{% trans 'Label bundles' %}</button>
                     <button data-btn="btn_label" class="btn btn-secondary ">{% trans 'Labels' %}</button>
                     <button data-btn="btn_item" class="btn btn-secondary ">{% trans 'Label text' %}</button>
@@ -118,9 +118,12 @@
                 data-url_orderlist_parameters="{% url 'url_orderlist_parameters' %}"
                 data-url_orderlist_request_verifcode="{% url 'url_orderlist_request_verifcode' %}"
                 data-url_orderlist_publish="{% url 'url_orderlist_publish' %}"
-                data-url_envelopitem_upload="{% url 'url_envelopitem_upload' %}"
-                data-url_enveloplabel_upload="{% url 'url_enveloplabel_upload' %}"
+
+                data-url_envelopsubject_upload="{% url 'url_envelopsubject_upload' %}"
                 data-url_envelopbundle_upload="{% url 'url_envelopbundle_upload' %}"
+                data-url_enveloplabel_upload="{% url 'url_enveloplabel_upload' %}"
+                data-url_envelopitem_upload="{% url 'url_envelopitem_upload' %}"
+
                 data-url_envelop_print="{% url 'url_envelop_print' '-' %}"
                 data-url_envelop_print_check="{% url 'url_envelop_print_check' %}"
 

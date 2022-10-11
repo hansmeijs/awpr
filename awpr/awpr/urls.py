@@ -313,6 +313,7 @@ urlpatterns = [
         path('orderlist_request_verifcode', school_views.OrderlistRequestVerifcodeView.as_view(), name='url_orderlist_request_verifcode'),
         path('orderlist_publish', school_views.OrderlistsPublishView.as_view(), name='url_orderlist_publish'),
 
+        path('envelopsubject_upload', subject_orderlists.EnvelopSubjectUploadView.as_view(), name='url_envelopsubject_upload'),
         path('envelopbundle_upload', subject_orderlists.EnvelopBundleUploadView.as_view(), name='url_envelopbundle_upload'),
         path('enveloplabel_upload', subject_orderlists.EnvelopLabelUploadView.as_view(), name='url_enveloplabel_upload'),
         path('envelopitem_upload', subject_orderlists.EnvelopItemUploadView.as_view(), name='url_envelopitem_upload'),
@@ -340,6 +341,7 @@ urlpatterns = [
         path('download_conversion_pdf/<list>/', subject_views.ExamDownloadConversionView.as_view(), name='url_exam_download_conversion_pdf'),
         path('download_exam_json', subject_views.ExamDownloadExamJsonView.as_view(), name='url_exam_download_exam_json'),
     ])),
+
 
 # ===== IMPORT ==========================
     path('import/', include([

@@ -473,7 +473,7 @@ class Subject_log(sch_mod.AwpBaseModel):
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
 ######################################
-# Module exam envelops PR2022-08-03
+# Module exam envelops PR2022-08-03 PR2022-10-09
 
 class Envelopbundlebase(Model):  # PR2022-08-03
     objects = AwpModelManager()
@@ -487,6 +487,27 @@ class Envelopbundle(sch_mod.AwpBaseModel):  # PR2022-08-03
     examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
 
     name = CharField(max_length=c.MAX_LENGTH_NAME)
+
+
+class Envelopsubject(sch_mod.AwpBaseModel):  # PR2022-10-09
+    # contains Envelopbundle of each subject / dep / level combination
+    objects = AwpModelManager()
+
+    subject = ForeignKey(Subject, related_name='+', on_delete=CASCADE)
+    department = ForeignKey(sch_mod.Department, related_name='+', on_delete=CASCADE)
+    level = ForeignKey(Level, related_name='+', null=True, on_delete=SET_NULL)
+
+    examperiod = PositiveSmallIntegerField(db_index=True, default=1)
+
+    envelopbundle = ForeignKey(Envelopbundle, related_name='+', null=True, on_delete=SET_NULL)
+
+    firstdate = DateField(null=True)
+    lastdate = DateField(null=True)
+    starttime = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+    endtime = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
+
+    # labels can be printed with errata labels, without errata labels of errata labels only
+    has_errata = BooleanField(default=False)
 
 
 class Enveloplabelbase(Model):  # PR2022-08-03
@@ -519,6 +540,7 @@ class Envelopbundlelabel(sch_mod.AwpBaseModel):  # PR2022-08-03
     enveloplabel = ForeignKey(Enveloplabel, related_name='+', on_delete=CASCADE)
 
     sequence = PositiveSmallIntegerField(default=1)
+
 
 class Envelopitembase(Model):  # PR2022-08-03
     objects = AwpModelManager()

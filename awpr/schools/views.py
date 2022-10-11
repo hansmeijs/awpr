@@ -2309,7 +2309,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                         update_wrap['verification_is_ok'] = True
 
 # - get selected examyear,from usersettings
-                        # exames are only ordered in first exam period
+                        # exams are only ordered in first exam period
                         sel_examyear_instance, sel_examperiodNIU = \
                             dl.get_selected_examyear_examperiod_from_usersetting(request)
                         if logging_on:
@@ -2337,11 +2337,14 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
                         sel_examperiod = c.EXAMPERIOD_FIRST
-                        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+                        count_dict, receipt_dict = subj_calc.create_studsubj_count_dict(
                             sel_examyear_instance=sel_examyear_instance,
                             sel_examperiod=sel_examperiod,
                             request=request
                         )
+                        if logging_on:
+                            logger.debug('count_dict: ' + str(json.dumps(count_dict, cls=af.LazyEncoder)))
+                            #logger.debug('receipt_dict: ' + str(json.dumps(receipt_dict, cls=af.LazyEncoder)))
 
                         total_dict = count_dict.get('total')
                         if logging_on:
@@ -2424,10 +2427,6 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                         logger.debug('cc_name_list: ' + str(cc_name_list))
                                         logger.debug('cc_email_list: ' + str(cc_email_list))
 # - send email
-                                    sendto_pk_str_list = cc_pk_str_list
-                                    sendto_name_list = cc_name_list
-                                    sendto_email_list = cc_email_list
-
                                     if skip_send_email:
                                         log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ', str(_('The email is not sent.')))))
                                     else:
@@ -2435,9 +2434,9 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                             examyear=sel_examyear_instance,
                                             school=requsr_school,
                                             is_total_orderlist=True,
-                                            sendto_pk_str_list=sendto_pk_str_list,
-                                            sendto_name_list=sendto_name_list,
-                                            sendto_email_list=sendto_email_list,
+                                            sendto_pk_str_list=cc_pk_str_list,
+                                            sendto_name_list=cc_name_list,
+                                            sendto_email_list=cc_email_list,
                                             cc_pk_str_list=None,
                                             cc_email_list=None,
                                             published_instance=published_instance,
@@ -2448,7 +2447,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                             log_list.append(''.join((c.STRING_SPACE_10, str(_('An error occurred while sending the email.')), ' ', str(_('The email is not sent.')))))
                                         else:
                                             log_list.append(''.join((c.STRING_SPACE_10, str(_('An email with the orderlist is sent to')), ':')))
-                                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((sendto_name_list)) )))
+                                            log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)) )))
                                         log_list.append(c.STRING_SPACE_05)
 
                                         if logging_on:
@@ -2462,7 +2461,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
     # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
                                         schoolbase_pk = schoolbase_dict.get('sbase_id')
-                                        count_dict, count_rowsNIU = subj_calc.create_studsubj_count_dict(
+                                        count_dict, receipt_dict = subj_calc.create_studsubj_count_dict(
                                             sel_examyear_instance=sel_examyear_instance,
                                             sel_examperiod=sel_examperiod,
                                             request=request,

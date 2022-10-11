@@ -884,7 +884,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'line_05': _('You can leave the examyear blank, when the exemption has a CE-grade or when the CE-weighing of the subject is zero.')
         }
 
-        # Ex3 modal
+    # Ex3 modal
 
         dict['Ex3'] = _('Ex3')
         dict['Ex3_form'] = TXT_Ex3_form
@@ -1605,6 +1605,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Extra_exams'] = _('Extra exams')
         dict['the_exam_bureau'] = _('the exam bureau')
         dict['Date'] = _('Date')
+        dict['Thru_date'] = _('Thru date')
         dict['Start_time'] = _('Start time')
         dict['End_time'] = _('End time')
 
