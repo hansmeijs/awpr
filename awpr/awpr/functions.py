@@ -1427,40 +1427,83 @@ def fillEnvelopSubjectONCEONLY(request):
         ).exists()
         if logging_on:
             logger.debug('exists: ' + str(exists))
+
         if not exists:
 
-        # - loop through exams of examyear 2023
-            exams = subj_mod.Exam.objects.filter(
-                ete_exam=True,
-                examperiod=c.EXAMPERIOD_FIRST,
-                envelopbundle__isnull=False
-            )
-            if exams:
-                for exam in exams:
-                    logger.debug('>>> exam: ' + str(exam))
+# - loop through schemitems, grouped by subj / dep / lvl
+            sql = ' '.join(["SELECT si.subject_id, scheme.department_id, scheme.level_id",
+                                    "FROM subjects_schemeitem AS si",
+                                    "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+                                    "GROUP BY si.subject_id, scheme.department_id, scheme.level_id"
+                                    ])
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = dictfetchall(cursor)
 
-                    # check if EnvelopSubject alreay exists
-                    exists = subj_mod.Envelopsubject.objects.filter(
-                        subject=exam.subject,
-                        department=exam.department,
-                        level=exam.level
-                    ).exists()
-                    logger.debug('   exists: ' + str(exists))
-                    if not exists:
-                        envelopsubject = subj_mod.Envelopsubject(
-                            subject=exam.subject,
-                            department=exam.department,
-                            level=exam.level,
-                            envelopbundle=exam.envelopbundle,
-                            firstdate=exam.datum,
-                            starttime=exam.begintijd,
-                            endtime=exam.eindtijd,
-                            has_errata=exam.has_errata,
-                            modifiedby=exam.evl_modifiedby,
-                            modifiedat=exam.evl_modifiedat
-                        )
+            for row in rows:
+                if logging_on:
+                    logger.debug('si row: ' + str(row))
+                subject_id = row.get('subject_id')
+                department_id = row.get('department_id')
+                level_id = row.get('level_id')
+
+        # create envelopsubject for each dep / lvl / subj if it does not exist
+
+# get EnvelopSubject if it already exists
+                envelopsubject = subj_mod.Envelopsubject.objects.filter(
+                    subject_id=subject_id,
+                    department_id=department_id,
+                    level_id=level_id
+                ).first()
+
+                if logging_on:
+                    logger.debug('   envelopsubject exists: ' + str(envelopsubject))
+
+                if envelopsubject is None:
+                    envelopsubject = subj_mod.Envelopsubject(
+                        subject_id=subject_id,
+                        department_id=department_id,
+                        level_id=level_id
+                    )
+                    envelopsubject.save(request=request)
+
+                    if logging_on:
+                        logger.debug('   envelopsubject created: ' + str(envelopsubject))
+
+                if envelopsubject is not None:
+                    # get exam with data of this envelopsubject
+                    crit = Q(ete_exam=True) & \
+                           Q(subject=envelopsubject.subject) & \
+                           Q(department=envelopsubject.department) & \
+                           Q(level=envelopsubject.level) & \
+                           Q(examperiod=envelopsubject.examperiod) & \
+                           (Q(envelopbundle__isnull=False) |
+                            Q(datum__isnull=False) |
+                            Q(begintijd__isnull=False) |
+                            Q(eindtijd__isnull=False) |
+                            Q(has_errata=True) )
+
+                    exam = subj_mod.Exam.objects.filter(crit).first()
+
+                    if logging_on:
+                        logger.debug('   exam exists: ' + str(exam))
+
+                    # if exam with data exists: copy to envelopsubject
+                    if exam is not None:
+
+                        setattr(envelopsubject, 'envelopbundle', exam.envelopbundle)
+                        setattr(envelopsubject, 'firstdate', exam.datum)
+                        setattr(envelopsubject, 'starttime', exam.begintijd)
+                        setattr(envelopsubject, 'endtime', exam.eindtijd)
+                        setattr(envelopsubject, 'has_errata', exam.has_errata)
+                        setattr(envelopsubject, 'modifiedby', exam.evl_modifiedby)
+                        setattr(envelopsubject, 'modifiedat', exam.evl_modifiedat)
                         envelopsubject.save()
-                        logger.debug('   >> envelopsubject: ' + str(envelopsubject))
+
+                        if logging_on:
+                            logger.debug('   >> exam copied to envelopsubject: ' + str(exam))
+
+    # - end of  for row in rows
 
    # - add function to systemupdate, so it won't run again
             systemupdate = sch_mod.Systemupdate(

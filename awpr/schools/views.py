@@ -3531,7 +3531,7 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
         mapped_subjects = sf.copy_subjects_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
         mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
-
+        # TODO add copy_envelopsubject_from_prev_examyear
         mapped_envelopbundles = sf.copy_envelopbundles_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
         mapped_enveloplabels = sf.copy_enveloplabels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
         mapped_envelopitems = sf.copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
@@ -3541,7 +3541,6 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
 
         sf.copy_exams_from_prev_examyear(prev_examyear_pk,
                                          mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
-
 
         if logging_on:
             logger.debug('    mapped_schemeitems: ' + str(mapped_schemeitems))

@@ -1192,6 +1192,7 @@
                     setting_dict.sel_sector_abbrev = sel_abbrev;
                 };
             };
+
         };
         // show select level and sector
         if (tblName === "lvlbase"){

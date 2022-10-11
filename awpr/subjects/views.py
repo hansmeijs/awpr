@@ -1182,6 +1182,8 @@ class SchemeitemUploadView(View):  # PR2021-06-25
                     if scheme:
                         updated_rows = []
 
+        # TODO: when creating / deleting  schemeitem: also change envelopsubject record PR2022-10-11
+
 # +++ update subjects of scheme from si_list
                         si_list = upload_dict.get('si_list')
                         if si_list:
@@ -5659,7 +5661,8 @@ def update_schemeitem_instance(instance, examyear, upload_dict, updated_rows, re
                     # PR 2022-09-25 TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
                     # when changing otherlang in schemeitem, also change otherlang in other sectors
                     if field == 'otherlang':
-                        update_otherlang_in_other_sectors(instance)
+                        #update_otherlang_in_other_sectors(instance)
+                        pass
                     if logging_on:
                         logger.debug('save_changes: ' + str(save_changes))
 # --- end of for loop ---

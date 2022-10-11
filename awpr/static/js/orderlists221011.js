@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 field_tags: ["div", "div", "div", "div", "div",
                                 "input", "input", "input", "input", "div", "div", "div"],
                 filter_tags: ["text", "text", "text", "text", "text",
-                "text", "toggle", "text", "text", "text", "toggle", "text", ""],
+                                "text", "text", "text", "text", "toggle", "text", ""],
                 field_width: ["020", "075", "240", "120", "120",
                                 "150", "150",  "120", "120", "090", "240", "060"],
                 field_align: ["c", "c", "l", "c", "c",
@@ -601,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             };
         };
-        add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !selected.level_req );
+        // TODO: add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !selected.level_req );
 
         FillTblRows();
     } ; // HandleSBRselect
@@ -741,7 +741,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // show select level
             if (!is_dep){
-                add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !count);
+                // TODO: add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !count);
             };
         };
     };  // SBR_FillSelectOptions
@@ -774,7 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_level.value = "null";
         };
         if (el_SBR_select_subject){
-            el_SBR_select_level.value = "null";
+            el_SBR_select_subject.value = "null";
         };
 
 // ---  upload new setting
