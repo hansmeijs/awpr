@@ -3617,7 +3617,7 @@ def format_examdate_from_dte(firstdate, lastdate, label_txt, lang, has_practexam
             day_str = str(examdate.day)
             month_str = c.LABEL_MONTHS[lang][examdate.month]
 
-            weekday_int = int(firstdate.strftime("%w"))
+            weekday_int = int(examdate.strftime("%w"))
             if not weekday_int:
                 weekday_int = 7
             weekday_str = c.LABEL_WEEKDAYS[lang][weekday_int]
@@ -3638,7 +3638,7 @@ def format_examdate_from_dte(firstdate, lastdate, label_txt, lang, has_practexam
             day_str = str(examdate.day)
             month_str = c.LABEL_MONTHS[lang][examdate.month]
 
-            weekday_int = int(firstdate.strftime("%w"))
+            weekday_int = int(examdate.strftime("%w"))
             if not weekday_int:
                 weekday_int = 7
             weekday_str = c.LABEL_WEEKDAYS[lang][weekday_int]
