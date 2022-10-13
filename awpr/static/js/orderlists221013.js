@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "r", "r", "r", "l", "c"]
                      },
         envelopsubject: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Department", "Learning_path",
-                                "Date", "Thru_date", "Start_time", "End_time", "Has_errata", "Label_bundle", ""],
+                                "Date", "Thru_date", "Start_time_Duration", "End_time", "Has_errata", "Label_bundle", ""],
                 field_names: ["select", "subjbase_code", "subj_name_nl", "depbase_code", "lvl_abbrev",
                                 "firstdate", "lastdate", "starttime", "endtime", "has_errata", "bundle_name", "download"],
                 field_tags: ["div", "div", "div", "div", "div",
@@ -192,6 +192,9 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MPUBORD_input_verifcode.addEventListener("keyup", function() {MPUBORD_InputVerifcode(el_MPUBORD_input_verifcode, event.key)}, false);
             el_MPUBORD_input_verifcode.addEventListener("change", function() {MPUBORD_InputVerifcode(el_MPUBORD_input_verifcode)}, false);
         };
+
+        const el_MPUBORD_send_email = document.getElementById("id_MPUBORD_send_email");
+
         const el_MPUBORD_btn_save = document.getElementById("id_MPUBORD_btn_save");
         if (el_MPUBORD_btn_save){
             el_MPUBORD_btn_save.addEventListener("click", function() {MPUBORD_Save("save")}, false )
@@ -1568,7 +1571,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // ModConfirmResponse
 
 
-//========= MODAL PUBLISH ORDERLIST ================ PR2021-09-08
+//========= MODAL PUBLISH ORDERLIST ================ PR2021-09-08 PR2022-10-13
     function MPUBORD_Open (open_mode ) {
         //console.log("===  MPUBORD_Open  =====") ;
         //console.log("setting_dict", setting_dict) ;
@@ -1582,6 +1585,9 @@ document.addEventListener('DOMContentLoaded', function() {
             add_or_remove_class(el_MPUBORD_input_verifcode.parentNode, cls_hide, true);
             el_MPUBORD_input_verifcode.value = null;
 
+// ---  reset el_MPUBORD_send_email
+            el_MPUBORD_send_email.checked = false;
+
 // ---   hide loader
             // PR2021-01-21 debug 'display_hide' not working when class 'image_container' is in same div
             add_or_remove_class(el_MPUBORD_loader, cls_hide, true);
@@ -1594,21 +1600,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };  // MPUBORD_Open
 
-//=========  MPUBORD_Save  ================ PR2021-09-08
+//=========  MPUBORD_Save  ================ PR2021-09-08 PR2022-10-13
     function MPUBORD_Save () {
-        //console.log("===  MPUBORD_Save  =====") ;
+        console.log("===  MPUBORD_Save  =====") ;
 
         if (permit_dict.permit_submit_orderlist) {
             mod_MPUBORD_dict.step += 1;
-            const upload_dict = { table: "orderlist", now_arr: get_now_arr()};
+
+            const upload_dict = {
+                table: "orderlist",
+                now_arr: get_now_arr()
+                };
+
+
             if (mod_MPUBORD_dict.step === 1){
                 UploadChanges(upload_dict, urls.url_orderlist_request_verifcode);
             } else if (mod_MPUBORD_dict.step === 3){
+
                 upload_dict.mode = "submit_save";
                 upload_dict.verificationcode = el_MPUBORD_input_verifcode.value
                 upload_dict.verificationkey = mod_MPUBORD_dict.verificationkey;
+
+                upload_dict.mode = "submit_save";
+
+                upload_dict.send_email = !!el_MPUBORD_send_email.checked;
+
                 UploadChanges(upload_dict, urls.url_orderlist_publish);
-            }
+            };
             MPUBORD_SetInfoboxesAndBtns() ;
         } ;
     };  // MPUBORD_Save
@@ -1633,7 +1651,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //mod_MPUBORD_dict.has_already_published = (!!msg_dict.already_published)
         //mod_MPUBORD_dict.has_saved = !!msg_dict.saved;
 
-        MPUBORD_SetInfoboxesAndBtns (response);
+        MPUBORD_SetInfoboxesAndBtns(response);
 
         if ( (mod_MPUBORD_dict.is_approve && mod_MPUBORD_dict.step === 3) || (mod_MPUBORD_dict.is_submit && mod_MPUBORD_dict.step === 5)){
                 const datalist_request = { setting: {page: "page_studsubj"},
@@ -1655,7 +1673,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  info_container, loader, info_verifcode and input_verifcode
         let msg_html = null, msg_info_txt = null, show_loader = false;
-        let show_info_request_verifcode = false, show_input_verifcode = false;
+        let show_info_request_verifcode = false, show_input_verifcode = false, show_input_sendemail = false;
         let disable_save_btn = false, save_btn_txt = null;
 
         if (response && response.publish_orderlist_msg_html) {
@@ -1667,6 +1685,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // step 0: when form opens
             msg_info_txt = [loc.MPUBORD_info.request_verifcode_01,
                 loc.MPUBORD_info.request_verifcode_02,
+                " ",
                 loc.MPUBORD_info.request_verifcode_03,
                 " ",
                 loc.MPUBORD_info.request_verifcode_04,
@@ -1674,6 +1693,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 loc.MPUBORD_info.request_verifcode_06
             ].join("<br>");
             save_btn_txt = loc.Request_verifcode;
+            show_input_sendemail = true;
+
         } else if (step === 1) {
             // when clicked on 'Request_verificationcode'
             // tekst: 'AWP is sending an email with the verification code'
@@ -1681,6 +1702,7 @@ document.addEventListener('DOMContentLoaded', function() {
             msg_info_txt = loc.MPUBORD_info.requesting_verifcode + "...";
             disable_save_btn = true;
             save_btn_txt = loc.Request_verifcode;
+
         } else if (step === 2) {
             // when response 'email sent' is received
             // msg_html is in response
@@ -1688,6 +1710,9 @@ document.addEventListener('DOMContentLoaded', function() {
             show_input_verifcode = !has_error;
             disable_save_btn = !el_MPUBORD_input_verifcode.value;
             if (!has_error){save_btn_txt = loc.MPUBORD_info.Publish_orderlist};
+
+            show_input_sendemail = true;
+
         } else if (step === 3) {
             // when clicked on 'Publish orderlist'
             msg_info_txt = loc.MPUBORD_info.Publishing_orderlist + "...";
@@ -1695,17 +1720,15 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (step === 4) {
             // when response 'orderlist submitted' is received
             // msg_html is in response
-
             show_loader = false;
             show_input_verifcode = false;
-
-        }
+        };
 
         //console.log("save_btn_txt", save_btn_txt) ;
         //console.log("msg_info_txt", msg_info_txt) ;
         if (msg_info_txt){
             msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + "</p></div>";
-        }
+        };
         //console.log("msg_html", msg_html) ;
         el_MPUBORD_info_container.innerHTML = msg_html;
         add_or_remove_class(el_MPUBORD_info_container, cls_hide, !msg_html)
@@ -1714,6 +1737,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         add_or_remove_class(el_MPUBORD_input_verifcode.parentNode, cls_hide, !show_input_verifcode);
         if (show_input_verifcode){set_focus_on_el_with_timeout(el_MPUBORD_input_verifcode, 150); };
+
+// ---  show or hide  el_MPUBORD_send_email
+        add_or_remove_class(el_MPUBORD_send_email.parentNode, cls_hide, !show_input_sendemail);
 
 // - hide save button when there is no save_btn_txt
         add_or_remove_class(el_MPUBORD_btn_save, cls_hide, !save_btn_txt)

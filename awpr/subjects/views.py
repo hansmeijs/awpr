@@ -7885,8 +7885,8 @@ def create_departmentbase_dictlist(examyear_instance):  # PR2021-09-01
         logger.debug('----- create_departmentbase_dictlist -----')
 
     # PR2021-08-20 functions creates ordered dictlist of all departments of this exam year of all countries
-    # NOTE: use examyear.code (integer field) to filter on examyear. This way depbases from SXM and CUR are added to list
-    # PR2021-09-02 debug: filter on examyear.code returned each depbase twice. Select ey_pk, same depbase is uses in Cur and SXM
+    # PR2021-09-02 debug: filter on examyear.code returned each depbase twice. Select ey_pk, same depbase is used in Cur and SXM
+    # was: NOTE: use examyear.code (integer field) to filter on examyear. This way depbases from SXM and CUR are added to list
     sql_keys = {'ey_pk': examyear_instance.pk}
     sql_list = [
         "SELECT depbase.id AS depbase_id, depbase.code AS depbase_code, dep.name AS dep_name, dep.level_req AS dep_level_req ",
@@ -7916,10 +7916,10 @@ def create_levelbase_dictlist(examyear_instance):  # PR2021-09-01
         logger.debug('----- create_levelbase_dictlist -----')
 
     # PR2021-09-01 functions creates ordered dictlist of all levels of this exam year of all countries
-    # NOTE: use examyear.code (integer field) to filter on examyear. This way lvlbases from SXM and CUR are added to list
     # also add row with pk = 0 for Havo / Vwo
 
     # PR2021-09-02 debug: filter on examyear.code returned each depbase twice. Select ey_pk, same depbase is uses in Cur and SXM
+    # was: NOTE: use examyear.code (integer field) to filter on examyear. This way lvlbases from SXM and CUR are added to list
 
     # fields are lvlbase_id, lvlbase_code, lvl_name",
     sql_keys = {'ey_pk': examyear_instance.pk}
@@ -7972,7 +7972,7 @@ def create_schoolbase_dictlist(examyear, request):  # PR2021-08-20 PR2021-10-14
 
     sql_keys = {'ey_code_int': examyear.code, 'requsr_country_id': request.user.country.pk}
     sql_list = [
-        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.depbases,",
+        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.depbases, sch.otherlang AS sch_otherlang,",
         "sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev, sbase.defaultrole",
 
         "FROM schools_school AS sch",

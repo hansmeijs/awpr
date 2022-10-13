@@ -38,6 +38,7 @@ from schools import functions as sf
 from schools import dicts as sch_dicts
 from schools import models as sch_mod
 from students import models as stud_mod
+from subjects import models as subj_mod
 from subjects import views as subj_view
 from subjects import calc_orderlist as subj_calc
 
@@ -2248,10 +2249,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
             logger.debug(' ')
             logger.debug('===== OrderlistsPublishView =====')
 
-        # function publishes orderlist and sends email to schools
-
-# - for testing: set skip_send_email = True PR2022-09-04
-        skip_send_email = True  # must be set to False
+# function publishes orderlist and sends email to schools
 
         update_wrap = {}
         has_error = False
@@ -2308,6 +2306,11 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                     else:
                         update_wrap['verification_is_ok'] = True
 
+# - for testing: set skip_send_email = True PR2022-09-04
+                        skip_send_email = True  # must be set to False
+
+                        send_email = upload_dict.get('send_email') or False
+
 # - get selected examyear,from usersettings
                         # exams are only ordered in first exam period
                         sel_examyear_instance, sel_examperiodNIU = \
@@ -2330,12 +2333,25 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                         settings = awpr_lib.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
 # - get department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist
+                        # department_dictlist is ordered dictlist of all departments of this exam year of all countries
                         department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
+
+                        # lvlbase_dictlist is ordered dictlist of all levels of this exam year of all countries
                         lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
+
+                        # subjectbase_dictlist is ordered dictlist of all subjectbase pk and code of this exam year of all countries
+                        #   NOTE: it uses examyear.code (integer field) to filter on examyear.
+                        #           This way subjects from SXM and CUR are added to list
                         subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
+
+                        # schoolbase_dictlist is ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
+                        # - of this exam year, of all countries
+                        # - country: when req_usr country = curacao: include all schools (inluding SXM schools)
+                        #            when req_usr country = sxm: show only SXM schools
+                        # - also add admin organization (ETE, DOE), for extra for ETE, DOE
                         schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
 
-# +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
+# +++ get nested dicts of counted studsubj per school, dep, level, lang, ete_exam
                         sel_examperiod = c.EXAMPERIOD_FIRST
                         count_dict, receipt_dict = subj_calc.create_studsubj_count_dict(
                             sel_examyear_instance=sel_examyear_instance,
@@ -2410,6 +2426,29 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                     log_list.append(c.STRING_SPACE_05)
 
                                 else:
+                                    if logging_on:
+                                        logger.debug('count_dict: ' + str(count_dict))
+
+# +++ save count_dict in Enveloporderlist
+                                    count_str = json.dumps(count_dict)
+
+            # - get existing Enveloporderlist of this examyear
+                                    enveloporderlist = subj_mod.Enveloporderlist.objects.get_or_none(
+                                        examyear=sel_examyear_instance
+                                    )
+                                    if enveloporderlist is None:
+                                        enveloporderlist = subj_mod.Enveloporderlist(
+                                            examyear=sel_examyear_instance,
+                                            orderdict=count_str
+                                        )
+                                    else:
+                                        setattr(enveloporderlist, 'orderdict', count_str)
+                                    enveloporderlist.save(request=request)
+
+                                    if logging_on:
+                                        logger.debug('enveloporderlist: ' + str(enveloporderlist))
+
+
                                     class_str = 'border_bg_valid'
                                     msg_str = str(_("An orderlist is created with the filename:"))
                                     msg_list.append('<br>'.join((msg_str, filename_ext)))
@@ -2496,25 +2535,26 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
         update_wrap['log_list'] = log_list
 
-        if logging_on:
-            logger.debug('msg_list: ' + str(msg_list))
-
-        if has_error:
-            update_wrap['error'] = True
-
         msg_wrap_start = ["<div class='p-2 ", class_str, "'>"]
         msg_list_html = []
         for item in msg_list:
             msg_list_html.append(''.join(("<p>", item, "</p>")))
 
-        msg_openlogfile = ['<p>', str(_("Click")),
-                             " <a id='id_MPUBORD_OpenLogfile' href='#' class='awp_href'>",
-                                str(_("here")), "</a> ",
-                             str(_("to download the logfile with the details.")),
-                             "</p>"]
+        if has_error:
+            update_wrap['error'] = True
+
         msg_wrap_end = ['</p>']
 
-        msg_html = ''.join(msg_wrap_start + msg_list_html + msg_openlogfile + msg_wrap_end)
+        if has_error:
+            msg_html = ''.join(msg_wrap_start + msg_list_html + msg_wrap_end)
+            # don't add 'Click here to download the logfile' when there is an error
+        else:
+            msg_openlogfile = ['<p>', str(_("Click")),
+                                 " <a id='id_MPUBORD_OpenLogfile' href='#' class='awp_href'>",
+                                    str(_("here")), "</a> ",
+                                 str(_("to download the logfile with the details.")),
+                                 "</p>"]
+            msg_html = ''.join(msg_wrap_start + msg_list_html + msg_openlogfile + msg_wrap_end)
 
         if logging_on:
             logger.debug('msg_html: ' + str(msg_html))

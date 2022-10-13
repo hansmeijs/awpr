@@ -655,12 +655,15 @@ LABEL_TEXT = {
         'cse': 'CSE',
         'cspe': 'CSPE',
         'date': 'Afnamedatum',
+        'period': 'Afnameperiode',
         'time': 'Afnametijd',
+        'duration': 'Afnameduur',
         'school': 'Schoolnaam',
         'numex': 'Aantal exemplaren',
         'numenv': 'Envelop',
         'content': 'INHOUD',
         'oclock': 'uur',
+        'minutes': 'minuten',
         'of': 'van'
     },
     'en': {
@@ -669,12 +672,15 @@ LABEL_TEXT = {
         'cse': 'CSE',
         'cspe': 'CWPE',
         'date': 'Examination date',
+        'period': 'Examination period',
         'time': 'Time exam',
+        'duration': 'Examination duration',
         'school': 'School name',
         'numex': 'Number of copys',
         'numenv': 'Envelope',
         'content': 'CONTENT',
         'oclock':  "o'clock",
+        'minutes': 'minutes',
         'of':  "of"
     },
     'pa': {
@@ -683,16 +689,18 @@ LABEL_TEXT = {
         'cse': 'CSE',
         'cspe': 'ESPS',
         'date': 'Fecha di èksamen',
+        'period': 'Periodo di èksamen',
         'time': 'Orario di èksamen',
+        'duration': 'Durashon di èksamen',
         'school': 'Nòmber di Skol',
         'numex':'Kantidat di eksemplar',
         'numenv':'Ènvelòp',
         'content':'KONTENIDO',
         'oclock': 'or',
-        'of': 'di'}
+        'minutes': 'minuut',
+        'of': 'di'
     }
-
-
+}
 
 # XLSWRITER FORMATS
 

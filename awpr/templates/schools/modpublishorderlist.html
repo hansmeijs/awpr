@@ -13,7 +13,6 @@
                 </button>
             </div>
 
-
             <div class="modal-body p-4">
                 <div id="id_MPUBORD_info_container" class="mx-0 mt-2 display_hide">
                 </div>
@@ -22,6 +21,13 @@
                         <img src="{% static 'img/loader.gif' %}" class="icon_24">
                     </div>
                 </div>
+                <div class="mt-2">
+                    <span>
+                        <input id="id_MPUBORD_send_email" type="checkbox" value="true" class="tw_032 mx-2">
+                        <label for="id_MPUBORD_send_email">{% trans 'ALso send email with orderlist to each school.' %}</label>
+                    </span>
+                </div>
+
                 <div>
                     <label for="id_MPUBORD_input_verifcode" class="label_margin_top_m2">{% trans 'Verification code' %}:</label>
                     <input id="id_MPUBORD_input_verifcode" type="text" data-field="verificationcode" class="form-control"

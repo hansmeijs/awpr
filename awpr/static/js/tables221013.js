@@ -336,7 +336,7 @@
         console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
-        //console.log( "tblName", tblName );
+        console.log( "tblName", tblName );
         console.log( "data_rows", data_rows, typeof data_rows );
         console.log( "tblName", tblName );
         // tblNames are: "school", "subject", "student", "envelopbundle
@@ -490,16 +490,17 @@
     function t_MSSSS_AddAll_dict(tblName){
         const add_all_text = t_MSSSS_AddAll_txt(tblName);
         return (tblName === "student") ? {id: -1, examnumber: "", fullname: add_all_text} :
-               (tblName === "subject") ? {id: -1,  code: "", name: add_all_text} :
+               (tblName === "subject") ? {id: -1,  code: "", name_nl: add_all_text} :
                (tblName === "cluster") ? {id: -1,  subj_code: "", name: add_all_text} :
                (tblName === "school") ? {id: -1,  code: "", name: add_all_text} : {};
     };
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
-        //console.log("===== t_MSSSS_Create_SelectRow ===== ");
-        //console.log("..........tblName", tblName);
-        //console.log("map_dict", map_dict);
+        console.log("===== t_MSSSS_Create_SelectRow ===== ");
+        console.log("..........tblName", tblName);
+        console.log("map_dict", map_dict);
+        console.log("map_dict.name_nl", map_dict.name_nl);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk

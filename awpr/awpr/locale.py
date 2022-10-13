@@ -1606,7 +1606,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['the_exam_bureau'] = _('the exam bureau')
         dict['Date'] = _('Date')
         dict['Thru_date'] = _('Thru date')
-        dict['Start_time'] = _('Start time')
+        dict['Start_time_Duration'] = _('Start time /\nDuration')
         dict['End_time'] = _('End time')
 
         dict['Label_name'] = _('Label name')
@@ -1669,8 +1669,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['MPUBORD_info'] = {
             'request_verifcode_01': _("When you publish the orderlist, AWP will create an Excel file with the total exams, plus an Excel file for each school."),
-            'request_verifcode_02': _("AWP will send an email to each 'voorzitter' and 'secretaris' with the orderlist of their school attached."),
-            'request_verifcode_03': _("The orderlists will also be saved on the sever and can be found at the tab 'Published files'"),
+            'request_verifcode_02': _("The orderlists will be saved on the sever and can be found in the page 'Archive'."),
+            'request_verifcode_03': _("If you tick off the checkbox below, AWP will send an email to each chairperson and secretary with the orderlist of their school attached."),
             'request_verifcode_04': _("You need a 6 digit verification code to publish the orderlist."),
             'request_verifcode_05': _("Click 'Request verification code' and we will send you an email with the verification code."),
             'request_verifcode_06': _("The verification code expires in 30 minutes."),

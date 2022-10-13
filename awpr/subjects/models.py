@@ -1,7 +1,7 @@
 # PR2018-07-20
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField
+from django.db.models import CharField, TextField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField
 from django.utils import timezone
 
 from awpr.settings import AUTH_USER_MODEL
@@ -447,6 +447,7 @@ class Subject(sch_mod.AwpBaseModel):  # PR1018-11-08 PR2020-12-11
     def __str__(self):
         return self.name_nl
 
+
 # PR2018-06-05 Subject is the base Model of all subjects
 class Subject_log(sch_mod.AwpBaseModel):
     objects = AwpModelManager()
@@ -474,6 +475,16 @@ class Subject_log(sch_mod.AwpBaseModel):
 
 ######################################
 # Module exam envelops PR2022-08-03 PR2022-10-09
+
+
+class Enveloporderlist(sch_mod.AwpBaseModel):  # PR2022-10-12
+    # contains published envelop_count_per_school_dict
+    objects = AwpModelManager()
+
+    examyear = ForeignKey(sch_mod.Examyear, related_name='+', on_delete=CASCADE)
+
+    orderdict = TextField()
+
 
 class Envelopbundlebase(Model):  # PR2022-08-03
     objects = AwpModelManager()

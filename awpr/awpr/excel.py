@@ -3834,6 +3834,23 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, sel_examperiod, list
             logger.debug('...........school_name: ' + str(school_name))
             logger.debug('count_dict: ' + str(count_dict))
             logger.debug('total_dict: ' + str(total_dict))
+            """
+            count_dict: {
+                'total': {0: [0, 0, 0]}, 
+                'DUO': {
+                    'total': {0: [0, 0, 0]}, 
+                    'nl': {
+                        'total': {}, 
+                        None: {'c': None, 
+                                0: {'c': None, 
+                                    'total': {0: [0, 0, 0]}, 
+                                    'admin_total': {}, 
+                                    34: {'c': 'SXMDOE', 
+                                         0: [0, 0, 0]}}}}}
+                }
+
+                total_dict: {0: [0, 0, 0]}
+            """
 
 # - skip when school has no totals
         if total_dict:
@@ -4553,7 +4570,7 @@ def write_total_row(sheet, item_dict, row_index, field_names, first_subject_colu
 
 def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subtotal_last_row_index,
                                  field_names, totalrow_formats):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  write_total_row_with_formula  -----')
 
@@ -4562,6 +4579,10 @@ def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subto
         totalrow_merge = formats['totalrow_merge']
         border_left_bottom = formats['border_left_bottom']
         border_bottom = formats['border_bottom']
+
+        """
+        field_names: ['schoolbase_code', 'school_name', 123, 155, 114, 132, 124, 113, 121, 131, 'rowtotal']
+        """
 
         for i, field_name in enumerate(field_names):
             if i == 0:
@@ -4575,13 +4596,18 @@ def write_total_row_with_formula(sheet, formats, subtotal_total_row_index, subto
 
         # use 'sum' in total column, 'subtotal' in subject columns
                 if field_name == 'rowtotal':
-                    upper_cell_ref = subj_view.xl_rowcol_to_cell(subtotal_total_row_index, 2)
+                    # PR2022-10-12 debug: gave circular reference error when there are no subjects (then i = 2)
+                    # soled by adding if i > 2
+                    start_col_index = 1 if i == 2 else 2
+                    upper_cell_ref = subj_view.xl_rowcol_to_cell(subtotal_total_row_index, start_col_index)
                     lower_cell_ref = subj_view.xl_rowcol_to_cell(subtotal_total_row_index, i - 1)
                     sum = ''.join(['SUM(', upper_cell_ref, ':', lower_cell_ref, ')'])
+
                 else:
                     upper_cell_ref = subj_view.xl_rowcol_to_cell(subtotal_total_row_index + 1, i)
                     lower_cell_ref = subj_view.xl_rowcol_to_cell(subtotal_last_row_index, i)
                     sum = ''.join(('SUBTOTAL(9,', upper_cell_ref, ':', lower_cell_ref, ')'))
+
         # hide zero's in subtotal
                 formula = ''.join(['=IF(', sum, '=0, "", ', sum, ')'])
 
