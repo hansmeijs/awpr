@@ -3821,11 +3821,12 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, sel_examperiod, list
         school_name = schoolbase_dict.get('sch_name')
 
 # +++ get nested dicts of subjects of this  school, dep, level, lang, ete_exam
+        schoolbase_pk_list = [schoolbase_pk] if schoolbase_pk else None
         count_dict, receipt_dict = subj_calc.create_studsubj_count_dict(
             sel_examyear_instance=sel_examyear_instance,
             sel_examperiod=sel_examperiod,
             request=request,
-            prm_schoolbase_pk=schoolbase_pk
+            schoolbase_pk_list=schoolbase_pk_list
         )
 
         total_dict = count_dict.get('total')
@@ -3959,8 +3960,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
     count_dict, receipt_dict = subj_calc.create_studsubj_count_dict(
         sel_examyear_instance=sel_examyear_instance,
         sel_examperiod=sel_examperiod,
-        request=request,
-        prm_schoolbase_pk=None
+        request=request
     )
 
     if logging_on and False:

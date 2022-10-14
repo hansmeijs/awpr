@@ -11,8 +11,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, prm_schoolbase_pk=None):
-    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25
+def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
+                               schoolbase_pk_list=None, subjbase_pk_list=None):
+    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25 PR2022-10-14
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj_count_dict ----- ')
@@ -38,17 +39,17 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
     """
 
 # - count number of sudsubj. i.e. number of students with that subject
-    schoolbase_pk_list = [prm_schoolbase_pk] if prm_schoolbase_pk else None
     rows = create_studsubj_count_rows(
         sel_examyear_instance=sel_examyear_instance,
         sel_examperiod=sel_examperiod,
         request=request,
-        schoolbase_pk_list=schoolbase_pk_list
+        schoolbase_pk_list=schoolbase_pk_list,
+        subjbase_pk_list=subjbase_pk_list
     )
 
     # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
 
-    # TODO create dict with studsubj_count + extra for receipt. Group by school/dep/levl and agg by exam, count = studsubj_count + extra PR2022-09-04
+    # create dict with studsubj_count + extra for receipt. Group by school/dep/levl and agg by exam, count = studsubj_count + extra PR2022-09-04
     count_dict = {'total': {}}
     receipt_dict = {}
     """
@@ -76,7 +77,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
             admin_id = mapped_country_dict.get('sb_id')
             admin_code = mapped_country_dict.get('c')
 
-# +++ get number of exams, extra exams and exams tv2 per school / subject
+# +++ get number of studsubj, extra exams and exams tv2 per school / subject
         subj_count = row.get('subj_count') or 0
         extra_count = row.get('extra_count') or 0
         tv2_count = row.get('tv2_count') or 0
@@ -87,7 +88,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
                 'subj_count': 32, 'extra_count': 8, 'tv2_count': 10}
         """
 
-# +++ store info also in count_dict
+# +++ store info in count_dict
     # - get eteduo_dict
         ete_duo = 'ETE' if row.get('ete_exam', False) else 'DUO'
         if ete_duo not in count_dict:
@@ -103,7 +104,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
         lang_dict = eteduo_dict[lang]
 
     # - get depbase_dict
-        depbase_pk = row.get('depbase_id')
+        depbase_pk = row.get('depbase_id') or 0
         if depbase_pk not in lang_dict:
             # depbase_dict has no key 'total'
             lang_dict[depbase_pk] = {'c': row.get('depbase_code')}
@@ -133,36 +134,36 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
             schoolbase_dict[subjbase_pk][1] += extra_count
             schoolbase_dict[subjbase_pk][2] += tv2_count
 
-# +++ store info also in receipt_dict  PR2022-09-30
-    # - add eteduo_dict to receipt_dict ( DUO not in use, but let it stay )
-        if ete_duo not in receipt_dict:
-            receipt_dict[ete_duo] = {}
-        receipt_eteduo_dict = receipt_dict[ete_duo]
+# +++ store info also in receipt_dict PR2022-10-14
 
-    # - add schoolbase_dict to receipt_eteduo_dict
-        if row_sb_pk not in receipt_eteduo_dict:
-            receipt_eteduo_dict[row_sb_pk] = {'c': row.get('sb_code') or '-'}  # for testing only
-        receipt_schoolbase_dict = receipt_eteduo_dict[row_sb_pk]
+        # PR2022-10-14 debug: must convert keys to string, because receipt_dict is stored in enveloporderlist as json
+        # after rerieving it from json it will be string en is not converted to integer
 
-    # there is no separate lang_dict in receipt_dict
+    # - add schoolbase_dict to receipt_dict
+        row_sb_pk_str = str(row_sb_pk)
+        if row_sb_pk_str not in receipt_dict:
+            receipt_dict[row_sb_pk_str] = {
+                'c': row.get('sb_code') or '-'  # for testing only
+            }
+        receipt_schoolbase_dict = receipt_dict[row_sb_pk_str]
 
     # - add depbase_dict to receipt_schoolbase_dict
-        if depbase_pk not in receipt_schoolbase_dict:
-            receipt_schoolbase_dict[depbase_pk] = {'c': row.get('depbase_code') or '-'}
-        receipt_depbase_dict = receipt_schoolbase_dict[depbase_pk]
+        depbase_pk_str = str(depbase_pk)
+        if depbase_pk_str not in receipt_schoolbase_dict:
+            receipt_schoolbase_dict[depbase_pk_str] = {
+                'c': row.get('depbase_code') or '-'
+                #'depbase_code': row.get('depbase_code') or '-',
+                #'school_name': row.get('school_name') or '-'
+            }
+        receipt_depbase_dict = receipt_schoolbase_dict[depbase_pk_str]
 
     # - add lvlbase_dict to receipt_dict
-        if lvlbase_pk not in receipt_depbase_dict:
-            receipt_depbase_dict[lvlbase_pk] = {'c': row.get('lvl_abbrev') or '-'}
-        receipt_lvlbase_dict = receipt_depbase_dict[lvlbase_pk]
+        lvlbase_pk_str = str(lvlbase_pk)
+        if lvlbase_pk_str not in receipt_depbase_dict:
+            receipt_depbase_dict[lvlbase_pk_str] = []
+        receipt_lvlbase_list = receipt_depbase_dict[lvlbase_pk_str]
 
-    # - calculate receipt_lvlbase_dict total
-        if subjbase_pk not in receipt_lvlbase_dict:
-            receipt_lvlbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            receipt_lvlbase_dict[subjbase_pk][0] += subj_count
-            receipt_lvlbase_dict[subjbase_pk][1] += extra_count
-            receipt_lvlbase_dict[subjbase_pk][2] += tv2_count
+        receipt_lvlbase_list.append(row)
 
         if logging_on and False:
             logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
@@ -180,8 +181,8 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
             lvlbase_total[subjbase_pk][2] += tv2_count
 
 # +++ calculate admin_total
-     # skip admin_total when calculate per school > when schoolbase_pk has value
-        if prm_schoolbase_pk is None:
+     # skip admin_total when calculate per school > when schoolbase_pk_list has value
+        if schoolbase_pk_list is None:
             lvlbase_admin_total = lvlbase_dict.get('admin_total')
             if admin_id not in lvlbase_admin_total:
                 lvlbase_admin_total[admin_id] = {'c': admin_code}
@@ -222,7 +223,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
 
 # +++ after adding schools: calculate extra for ETE and DOE:
     # skip when calculate per school > when schoolbase_pk has value
-    if prm_schoolbase_pk is None:
+    if schoolbase_pk_list is None:
         for ete_duo, eteduo_dict in count_dict.items():
             if ete_duo != 'total':
                 if logging_on:
@@ -441,7 +442,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request, p
 
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def create_envelop_count_per_school_dict(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
+def create_envelop_count_per_school_dictNIU(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
     # PPR2022-08-26 PR2022-09-03 PR2022-10-13
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -475,7 +476,7 @@ def create_envelop_count_per_school_dict(sel_examyear_instance, sel_examperiod, 
         subjbase_pk_list=subjbase_pk_list
     )
 
-    # to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
+    # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
 
     count_per_school_dict = {}
 
@@ -492,21 +493,20 @@ def create_envelop_count_per_school_dict(sel_examyear_instance, sel_examperiod, 
         """
 
 # - get or create schoolbase_dict
-        row_sb_pk = row.get('schoolbase_id')
+        row_sb_pk = row.get('schoolbase_id') or 0
         if row_sb_pk not in count_per_school_dict:
             count_per_school_dict[row_sb_pk] = {
-                'sb_code': row.get('sb_code') or '-'
-               #'school_name': row.get('school_name') or '-'
+                'c': row.get('sb_code') or '-'
             }
         schoolbase_dict = count_per_school_dict[row_sb_pk]
 
-# - get or create depbase_list
+# - add depbase_dict to schoolbase_dict
         depbase_pk = row.get('depbase_id')
-
         if depbase_pk not in schoolbase_dict:
             schoolbase_dict[depbase_pk] = {
-                'depbase_code': row.get('depbase_code') or '-',
-                'school_name': row.get('school_name') or '-'
+                'c': row.get('depbase_code') or '-'
+                #'depbase_code': row.get('depbase_code') or '-',
+                #'school_name': row.get('school_name') or '-'
             }
         depbase_dict = schoolbase_dict[depbase_pk]
 

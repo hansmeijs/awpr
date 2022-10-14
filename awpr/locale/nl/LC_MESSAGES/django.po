@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-13 11:30+0200\n"
+"POT-Creation-Date: 2022-10-14 12:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -421,7 +421,7 @@ msgstr "Vul je wachtwoord in om de registratie te voltooien."
 #: .\accounts\views.py:222 .\grades\views.py:2116 .\schools\imports.py:160
 #: .\schools\imports.py:237 .\schools\imports.py:560 .\schools\imports.py:741
 #: .\schools\imports.py:1453 .\schools\imports.py:4030 .\schools\views.py:2193
-#: .\schools\views.py:2281 .\students\views.py:3591 .\subjects\views.py:1412
+#: .\schools\views.py:2277 .\students\views.py:3591 .\subjects\views.py:1412
 #: .\subjects\views.py:1620 .\subjects\views.py:1752 .\subjects\views.py:1880
 #: .\subjects\views.py:2092
 msgid "You don't have permission to perform this action."
@@ -434,10 +434,10 @@ msgstr "Systeembeheerders kunnen hun eigen account niet wissen."
 #: .\accounts\views.py:278 .\accounts\views.py:1861 .\schools\imports.py:1713
 #: .\schools\models.py:726 .\schools\views.py:641 .\schools\views.py:761
 #: .\schools\views.py:798 .\schools\views.py:1420 .\schools\views.py:1507
-#: .\schools\views.py:2222 .\schools\views.py:2224 .\schools\views.py:2403
-#: .\schools\views.py:2417 .\schools\views.py:2633 .\schools\views.py:2642
-#: .\schools\views.py:3442 .\schools\views.py:3528 .\schools\views.py:3995
-#: .\schools\views.py:4050 .\schools\views.py:4180 .\schools\views.py:4191
+#: .\schools\views.py:2222 .\schools\views.py:2224 .\schools\views.py:2402
+#: .\schools\views.py:2416 .\schools\views.py:2641 .\schools\views.py:2650
+#: .\schools\views.py:3450 .\schools\views.py:3536 .\schools\views.py:4003
+#: .\schools\views.py:4058 .\schools\views.py:4188 .\schools\views.py:4199
 #: .\students\validators.py:676 .\students\views.py:248 .\students\views.py:534
 #: .\students\views.py:1980 .\students\views.py:3888 .\students\views.py:4809
 #: .\students\views.py:5484 .\students\views.py:6436
@@ -567,8 +567,8 @@ msgstr "Systeembeheerders kunnen hun eigen account niet niet-actief maken."
 msgid "The changes have been saved successfully."
 msgstr "De wijzigingen zijn met succes opgeslagen."
 
-#: .\accounts\views.py:1862 .\schools\imports.py:1225 .\schools\views.py:3529
-#: .\schools\views.py:4181 .\schools\views.py:4192 .\students\views.py:5486
+#: .\accounts\views.py:1862 .\schools\imports.py:1225 .\schools\views.py:3537
+#: .\schools\views.py:4189 .\schools\views.py:4200 .\students\views.py:5486
 #: .\subjects\orderlists.py:339 .\subjects\orderlists.py:690
 #: .\subjects\orderlists.py:1001 .\subjects\orderlists.py:1202
 #: .\subjects\views.py:921 .\subjects\views.py:5441 .\subjects\views.py:5681
@@ -865,7 +865,7 @@ msgid "Subject name"
 msgstr "Naam van het vak"
 
 #: .\awpr\constants.py:325 .\awpr\constants.py:373 .\awpr\locale.py:1754
-#: .\schools\views.py:4209 .\templates\subjects\modsubject.html:31
+#: .\schools\views.py:4217 .\templates\subjects\modsubject.html:31
 #: .\templates\subjects\modsubjecttypebase.html:39
 msgid "Sequence"
 msgstr "Volgnummer"
@@ -1083,7 +1083,7 @@ msgstr "Dienst Examens"
 #: .\awpr\constants.py:494 .\awpr\excel.py:5022 .\awpr\excel.py:5574
 #: .\awpr\locale.py:113 .\awpr\menus.py:44 .\awpr\validators.py:29
 #: .\awpr\validators.py:66 .\awpr\validators.py:178 .\schools\functions.py:292
-#: .\schools\views.py:3996 .\templates\accounts\modpermit.html:24
+#: .\schools\views.py:4004 .\templates\accounts\modpermit.html:24
 #: .\templates\accounts\moduser.html:35
 #: .\templates\emails\publish_orderlist_email.html:9
 #: .\templates\emails\send_verifcode_exform_email.html:8
@@ -1309,7 +1309,7 @@ msgstr "School niet gevonden in dit examenjaar."
 msgid "Exam year %(ey_code)s of this school is locked."
 msgstr "Examenjaar %(ey_code)s of this school is vergrendeld."
 
-#: .\awpr\excel.py:251 .\schools\views.py:2996 .\students\views.py:2406
+#: .\awpr\excel.py:251 .\schools\views.py:3004 .\students\views.py:2406
 msgid "Ex1"
 msgstr ""
 
@@ -1381,7 +1381,7 @@ msgstr "Totaal"
 msgid "Candidates"
 msgstr "Kandidaten"
 
-#: .\awpr\excel.py:4982 .\awpr\locale.py:1579 .\schools\views.py:4207
+#: .\awpr\excel.py:4982 .\awpr\locale.py:1579 .\schools\views.py:4215
 msgid "School name"
 msgstr "Schoolnaam"
 
@@ -1429,7 +1429,7 @@ msgstr "Lijst van examenkandidaten"
 
 #: .\awpr\excel.py:5016 .\awpr\locale.py:111 .\awpr\menus.py:43
 #: .\awpr\menus.py:195 .\awpr\validators.py:217 .\schools\views.py:1995
-#: .\schools\views.py:3376 .\schools\views.py:3440
+#: .\schools\views.py:3384 .\schools\views.py:3448
 #: .\templates\emails\email_send_verifcode_orderlist.html:8
 #: .\templates\emails\publish_orderlist_email.html:10
 #: .\templates\emails\send_verifcode_exform_email.html:10
@@ -2051,7 +2051,7 @@ msgstr "Kandidaat"
 msgid "a candidate"
 msgstr "een kandidaat"
 
-#: .\awpr\locale.py:144 .\schools\views.py:4211
+#: .\awpr\locale.py:144 .\schools\views.py:4219
 msgid "Departments"
 msgstr "Afdelingen"
 
@@ -3302,16 +3302,16 @@ msgstr "Je hoeft geen examenjaren zonder CE te selecteren."
 msgid "Article"
 msgstr "Lidwoord"
 
-#: .\awpr\locale.py:630 .\schools\views.py:4205
+#: .\awpr\locale.py:630 .\schools\views.py:4213
 #: .\templates\schools\modschool.html:40
 msgid "Short name"
 msgstr "Korte naam"
 
-#: .\awpr\locale.py:633 .\schools\views.py:3669
+#: .\awpr\locale.py:633 .\schools\views.py:3677
 msgid "Add school"
 msgstr "School toevoegen"
 
-#: .\awpr\locale.py:634 .\schools\views.py:3669
+#: .\awpr\locale.py:634 .\schools\views.py:3677
 #: .\templates\schools\modschool.html:118
 msgid "Delete school"
 msgstr "School wissen"
@@ -3977,7 +3977,7 @@ msgid "Exam"
 msgstr "Examen"
 
 #: .\awpr\locale.py:955 .\awpr\locale.py:1602 .\awpr\menus.py:49
-#: .\schools\views.py:2770 .\schools\views.py:2943 .\schools\views.py:3151
+#: .\schools\views.py:2778 .\schools\views.py:2951 .\schools\views.py:3159
 #: .\templates\subjects\exams.html:5 .\templates\subjects\exams.html:17
 msgid "Exams"
 msgstr "Examens"
@@ -5798,7 +5798,7 @@ msgid ""
 "The orderlists will be saved on the sever and can be found in the page "
 "'Archive'."
 msgstr ""
-"De bestellijsten worden op de server opgeslagen en zijn te vinden in de "
+"De bestellijsten worden op de server opgeslagen en zijn te vinden op de "
 "pagina 'Archief'."
 
 #: .\awpr\locale.py:1673
@@ -5806,8 +5806,9 @@ msgid ""
 "If you tick off the checkbox below, AWP will send an email to each "
 "chairperson and secretary with the orderlist of their school attached."
 msgstr ""
-"Als je een vinkje zet bij 'Verzend een e-mail...', dan stuurt AWP een e-mail naar de voorzitter en secretaris van elke school met "
-"de bestellijst van hun school als bijlage."
+"Als je een vinkje zet bij 'Verzend een e-mail...', dan stuurt AWP een e-mail "
+"naar de voorzitter en secretaris van elke school met de bestellijst van hun "
+"school als bijlage."
 
 #: .\awpr\locale.py:1674
 msgid "You need a 6 digit verification code to publish the orderlist."
@@ -6116,8 +6117,8 @@ msgstr "November"
 msgid "December"
 msgstr "december"
 
-#: .\awpr\menus.py:48 .\schools\views.py:2770 .\schools\views.py:2949
-#: .\schools\views.py:2994 .\schools\views.py:3151
+#: .\awpr\menus.py:48 .\schools\views.py:2778 .\schools\views.py:2957
+#: .\schools\views.py:3002 .\schools\views.py:3159
 #: .\templates\schools\orderlists.html:92
 msgid "Orderlist"
 msgstr "Bestellijst"
@@ -6546,7 +6547,7 @@ msgstr "vijf"
 msgid "fives"
 msgstr "vijven"
 
-#: .\grades\calc_results.py:2325 .\schools\views.py:2526
+#: .\grades\calc_results.py:2325 .\schools\views.py:2533
 #: .\subjects\views.py:3247 .\subjects\views.py:8121
 msgctxt "geen"
 msgid "no"
@@ -6616,8 +6617,8 @@ msgstr "aanvullend examen"
 
 #: .\grades\calc_results.py:3645 .\schools\imports.py:299
 #: .\schools\imports.py:593 .\schools\imports.py:780 .\schools\imports.py:1486
-#: .\schools\imports.py:2548 .\schools\imports.py:3722 .\schools\views.py:2324
-#: .\schools\views.py:3345
+#: .\schools\imports.py:2548 .\schools\imports.py:3722 .\schools\views.py:2323
+#: .\schools\views.py:3353
 msgid "date"
 msgstr "datum"
 
@@ -6634,7 +6635,7 @@ msgid "Department: %(dep)s"
 msgstr "Afdeling    : %(dep)s"
 
 #: .\grades\calc_results.py:3649 .\schools\imports.py:304
-#: .\schools\imports.py:598 .\schools\imports.py:785 .\schools\views.py:2328
+#: .\schools\imports.py:598 .\schools\imports.py:785 .\schools\views.py:2327
 #, python-format
 msgid "Exam year : %(ey)s"
 msgstr "Examenjaar  : %(ey)s"
@@ -7355,7 +7356,7 @@ msgstr ""
 msgid "An error occurred. The student data is not saved."
 msgstr "Er is een fout opgetreden. De kandidaat gegevens zijn niet opgeslagen."
 
-#: .\schools\imports.py:1491 .\schools\views.py:2463 .\schools\views.py:2658
+#: .\schools\imports.py:1491 .\schools\views.py:2469 .\schools\views.py:2666
 msgid "This is a test."
 msgstr "Dit is een test."
 
@@ -7544,15 +7545,15 @@ msgstr "is"
 msgid "%(have)s assignment info that %(willbe)s changed"
 msgstr "%(have)s werkstuk info die %(willbe)s gewijzigd"
 
-#: .\schools\imports.py:2103 .\schools\imports.py:2214 .\schools\views.py:2542
+#: .\schools\imports.py:2103 .\schools\imports.py:2214 .\schools\views.py:2552
 msgid "Click"
 msgstr "Klik"
 
-#: .\schools\imports.py:2105 .\schools\imports.py:2216 .\schools\views.py:2544
+#: .\schools\imports.py:2105 .\schools\imports.py:2216 .\schools\views.py:2554
 msgid "here"
 msgstr "hier"
 
-#: .\schools\imports.py:2107 .\schools\imports.py:2218 .\schools\views.py:2545
+#: .\schools\imports.py:2107 .\schools\imports.py:2218 .\schools\views.py:2555
 msgid "to download the logfile with the details."
 msgstr "om het logbestand met details te downloaden."
 
@@ -7889,7 +7890,7 @@ msgstr "is bijgewerkt."
 msgid "Error in row"
 msgstr "Fout in regel"
 
-#: .\schools\models.py:727 .\schools\views.py:4030 .\schools\views.py:4051
+#: .\schools\models.py:727 .\schools\views.py:4038 .\schools\views.py:4059
 #: .\subjects\views.py:834 .\subjects\views.py:5202 .\subjects\views.py:5527
 #: .\subjects\views.py:5976
 #, python-format
@@ -7946,7 +7947,7 @@ msgstr "%(cpt)s '%(val)s' kon niet worden gewijzigd."
 msgid "This item could not be updated."
 msgstr "Dit item kon niet worden bijgewerkt."
 
-#: .\schools\views.py:1250 .\schools\views.py:2772
+#: .\schools\views.py:1250 .\schools\views.py:2780
 msgid "To"
 msgstr "Aan"
 
@@ -8026,7 +8027,7 @@ msgstr "De afsluiting van examenjaar %(exyr)s wordt ongedaan gemaakt."
 msgid "There is no previous exam year."
 msgstr "Er is geen vorig examenjaar."
 
-#: .\schools\views.py:1999 .\schools\views.py:3443
+#: .\schools\views.py:1999 .\schools\views.py:3451
 #, python-format
 msgid "%(caption)s '%(val)s' could not be created."
 msgstr "%(caption)s '%(val)s' kon niet worden aangemaakt."
@@ -8060,114 +8061,114 @@ msgstr ""
 msgid "The email with the verification code has not been sent."
 msgstr "De e-mail met de verificatiecode is niet verstuurd."
 
-#: .\schools\views.py:2324
+#: .\schools\views.py:2323
 msgid "Publish orderlist exams"
 msgstr "Bestellijst examens publiceren"
 
-#: .\schools\views.py:2371
+#: .\schools\views.py:2370
 msgid "There are no submitted subjects."
 msgstr "Er zijn geen ingediende vakken"
 
-#: .\schools\views.py:2404
+#: .\schools\views.py:2403
 msgid "The orderlist is not created."
 msgstr "De bestellijst is niet aangemaakt."
 
-#: .\schools\views.py:2418
+#: .\schools\views.py:2417
 msgid "The orderlist is not saved."
 msgstr "De bestellijst is niet opgeslagen."
 
-#: .\schools\views.py:2446
+#: .\schools\views.py:2452
 msgid "An orderlist is created with the filename:"
 msgstr "Een bestellijst is aangemaakt met de bestandsnaam:"
 
-#: .\schools\views.py:2463 .\schools\views.py:2479 .\schools\views.py:2676
+#: .\schools\views.py:2469 .\schools\views.py:2485 .\schools\views.py:2684
 msgid "The email is not sent."
 msgstr "De e-mail is niet verstuurd."
 
-#: .\schools\views.py:2479 .\schools\views.py:2675
+#: .\schools\views.py:2485 .\schools\views.py:2683
 msgid "An error occurred while sending the email."
 msgstr "Er is een fout opgetreden bij het verzenden van de e-mail."
 
-#: .\schools\views.py:2481 .\schools\views.py:2679
+#: .\schools\views.py:2487 .\schools\views.py:2687
 msgid "An email with the orderlist is sent to"
 msgstr "Een e-mail met de bestellijst is verzonden naar"
 
-#: .\schools\views.py:2524
+#: .\schools\views.py:2531
 msgid "The orderlist of one school is created."
 msgstr "De bestellijst van één school aangemaakt."
 
-#: .\schools\views.py:2527
+#: .\schools\views.py:2534
 #, python-format
 msgid "The orderlists of %(count)s schools are created."
 msgstr "De bestellijsten van %(count)s scholen zijn aangemaakt."
 
-#: .\schools\views.py:2595
+#: .\schools\views.py:2603
 msgid "This school has no submitted subjects."
 msgstr "Deze school heeft geen ingediende vakken."
 
-#: .\schools\views.py:2634
+#: .\schools\views.py:2642
 msgid "The orderlist of this school is not created."
 msgstr "De bestellijst van deze school is niet aangemaakt."
 
-#: .\schools\views.py:2644
+#: .\schools\views.py:2652
 msgid "The orderlist of this school is not saved."
 msgstr "De bestellijst van deze school is niet opgeslagen."
 
-#: .\schools\views.py:2652
+#: .\schools\views.py:2660
 msgid "An orderlist of this school is created with the filename:"
 msgstr "Een bestellijst van deze school is aangemaakt met de bestandsnaam:"
 
-#: .\schools\views.py:2659
+#: .\schools\views.py:2667
 #, python-format
 msgid "The email to %(cpt)s is not sent."
 msgstr "De e-mail naar %(cpt)s is niet verstuurd."
 
-#: .\schools\views.py:2682
+#: .\schools\views.py:2690
 msgid "c.c."
 msgstr ""
 
-#: .\schools\views.py:3345
+#: .\schools\views.py:3353
 msgid "Copy subject schemes "
 msgstr "Vakschema's kopiëren "
 
-#: .\schools\views.py:3348
+#: .\schools\views.py:3356
 msgid "From exam year:"
 msgstr "Van examenjaar:"
 
-#: .\schools\views.py:3349
+#: .\schools\views.py:3357
 msgid "To exam year:  "
 msgstr "Naar examenjaar: "
 
-#: .\schools\views.py:3433
+#: .\schools\views.py:3441
 #, python-format
 msgid "%(caption)s '%(val)s' has been created."
 msgstr "%(caption)s '%(val)s' is aangemaakt."
 
-#: .\schools\views.py:3530
+#: .\schools\views.py:3538
 msgid "Update exam year"
 msgstr "Examenjaar bijwerken"
 
-#: .\schools\views.py:3669
+#: .\schools\views.py:3677
 msgid "Edit school"
 msgstr "School wijzigen"
 
-#: .\schools\views.py:3996 .\students\views.py:4689 .\students\views.py:4810
+#: .\schools\views.py:4004 .\students\views.py:4689 .\students\views.py:4810
 #: .\students\views.py:5873 .\students\views.py:5904 .\students\views.py:6358
 #: .\subjects\views.py:5308
 #, python-format
 msgid "%(cpt)s '%(val)s' could not be added."
 msgstr "%(cpt)s '%(val)s' kon niet worden toegevoegd."
 
-#: .\schools\views.py:4019
+#: .\schools\views.py:4027
 #, python-format
 msgid "School '%(tbl)s'"
 msgstr "School '%(tbl)s'"
 
-#: .\schools\views.py:4029
+#: .\schools\views.py:4037
 msgid "This school has candidates."
 msgstr "Deze school heeft kandidaten."
 
-#: .\schools\views.py:4050
+#: .\schools\views.py:4058
 msgid "Error deleting deleted candidate."
 msgstr "Fout bij het wissen van gewiste kandidaten."
 
@@ -10085,7 +10086,9 @@ msgstr "Bestel ... examens 2e tijdvak"
 
 #: .\templates\schools\modpublishorderlist.html:27
 msgid "ALso send email with orderlist to each school."
-msgstr "Verzend een e-mail naar elke school met de bestellijst van de betreffende school."
+msgstr ""
+"Verzend een e-mail naar elke school met de bestellijst van de betreffende "
+"school."
 
 #: .\templates\schools\modpublishorderlist.html:32
 #: .\templates\students\modapprovegrade.html:81
@@ -10731,4 +10734,3 @@ msgstr "Alle"
 #, python-format
 msgid "An error occurred. '%(fld)s' is not saved."
 msgstr "Er is een fout opgetreden. '%(fld)s' is niet opgeslagen."
-

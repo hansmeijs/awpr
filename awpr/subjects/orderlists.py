@@ -2104,13 +2104,66 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
                         {'sbase_id': 33, 'sbase_code': 'SXM04', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Landsexamens Sint Maarten', 'sch_abbrev': 'LEX St. Maarten', 'defaultrole': 8}, 
                         {'sbase_id': 34, 'sbase_code': 'SXMDOE', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations', 'defaultrole': 64}]  
                     """
-                    envelop_count_per_school_dict = subj_calc.create_envelop_count_per_school_dict(
-                        sel_examyear_instance=sel_examyear,
-                        sel_examperiod=sel_examperiod,
-                        request=request,
-                        schoolbase_pk_list=schoolbase_pk_list,
-                        subjbase_pk_list=subjbase_pk_list
+                    # was: envelop_count_per_school_dictOLD = subj_calc.create_envelop_count_per_school_dict(
+                    #    sel_examyear_instance=sel_examyear,
+                    #    sel_examperiod=sel_examperiod,
+                    #    request=request,
+                    #    schoolbase_pk_list=schoolbase_pk_list,
+                    #    subjbase_pk_list=subjbase_pk_list
+                    #)
+
+# +++ get dict with number of studsubj. PR2022-10-14
+                    # if orderlist is published: Enveloporderlist exists and orderdict has value
+                    #   get envelop_count_per_school_dict from enveloporderlist
+                    # if orderlist is not published: create envelop_count_per_school_dict
+
+    # - get existing Enveloporderlist of this examyear
+                    enveloporderlist = subj_mod.Enveloporderlist.objects.get_or_none(
+                        examyear=sel_examyear
                     )
+    # add new  enveloporderlist if not exists
+                    envelop_count_per_school_dict = None
+                    if enveloporderlist and enveloporderlist.orderdict:
+                        envelop_count_per_school_dict = json.loads(enveloporderlist.orderdict)
+                        #if logging_on:
+                        #    logger.debug(' >>>>>>>> enveloporderlist.orderdict: ' + str(enveloporderlist.orderdict))
+
+            # remove schools that are not in schoolbase_pk_list
+                        if schoolbase_pk_list:
+                            # becxause of erroe 'dictionary changed size during iteration':
+                            # fisrt store keys in list, then remove them
+                            keys_tobe_removed = []
+                            for envelop_sbase_pk_str in envelop_count_per_school_dict:
+                        # - check if schoolbase_pk exists in schoolbase_pk_list
+                                key_exists_in_list = False
+                                for schoolbase_pk in schoolbase_pk_list:
+                                    if envelop_sbase_pk_str == str(schoolbase_pk):
+                                        key_exists_in_list = True
+                                        break
+                        # - add key to keys_tobe_removed list if it does not exist in schoolbase_pk_list
+                                if not key_exists_in_list:
+                                    keys_tobe_removed.append(envelop_sbase_pk_str)
+
+                        # - remove key if it does not exists in schoolbase_pk_list
+                            if keys_tobe_removed:
+                                for sbase_pk_str in keys_tobe_removed:
+                                    popped = envelop_count_per_school_dict.pop(sbase_pk_str, None)
+                                    if logging_on:
+                                        logger.debug(' >>> popped sbase_pk_str: ' + str(sbase_pk_str))
+
+                    if envelop_count_per_school_dict:
+                        if logging_on:
+                            logger.debug(' >>>>>>>> published envelop_count_per_school_dict is used')
+                    else:
+                        count_dictNIU, envelop_count_per_school_dict = subj_calc.create_studsubj_count_dict(
+                            sel_examyear_instance=sel_examyear,
+                            sel_examperiod=sel_examperiod,
+                            request=request,
+                            schoolbase_pk_list=schoolbase_pk_list,
+                            subjbase_pk_list=subjbase_pk_list
+                        )
+                        if logging_on:
+                            logger.debug(' ---- calculated envelop_count_per_school_dict is used')
 
                     pdf = create_enveloplabel_pdf_with_school(
                         sel_examyear=sel_examyear,
@@ -2167,8 +2220,7 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' --- create_enveloplabel_pdf_with_school  -----')
-        #logger.debug('count_per_school_dict: ' + str(count_per_school_dict))
-        #logger.debug('print_without_schools: ' + str(print_without_schools))
+        #logger.debug('    count_per_school_dict: ' + str(count_per_school_dict))
 
     # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
 
@@ -2227,7 +2279,7 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
         schoolbase_dict: {'sbase_id': 2, 'sbase_code': 'CUR01', 'depbases': '1', 'sch_otherlang': None, 
             'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8}
         """
-        sbase_id = schoolbase_dict.get('sbase_id')
+        sbase_id = str(schoolbase_dict.get('sbase_id') or 0)
         school_name = schoolbase_dict.get('sch_name') or ''
         school_lang = schoolbase_dict.get('sch_otherlang') or 'nl'
         if logging_on:
@@ -2272,7 +2324,7 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
             """
             for department_dict in department_dictlist:
 
-                depbase_id = department_dict.get('depbase_id')
+                depbase_id = str(department_dict.get('depbase_id') or 0)
                 dep_name = department_dict.get('dep_name') or ''
 
 # - check if department exists in schoolbase_count_dict
@@ -2280,8 +2332,8 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
                 # with the number of exams-items , including extra exams. Blue/red version are taken in account
                 # and count of different examns for the subject (blue/ red)
                 depbase_count_dict = schoolbase_count_dict.get(depbase_id)
-                #if logging_on:
-                #    logger.debug('    depbase_count_dict: ' + str(depbase_count_dict))
+                if logging_on:
+                    logger.debug('    depbase_count_dict: ' + str(depbase_count_dict))
                 """
                 depbase_count_dict: {'depbase_code': '-', 'school_name': '-', 
                     6: [{'subjbase_id': 131, 'ete_exam': True, 'id_key': '1_6_131', 'lang': 'nl', 'country_id': 1, 'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 6, 'subj_count': 22, 'extra_count': 8, 'tv2_count': 5}, 
@@ -2298,7 +2350,7 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
                         {'lvlbase_id': 0, 'lvlbase_code': '', 'lvl_name': ''}]
                     """
                     for lvlbase_dict in lvlbase_dictlist:
-                        lvlbase_id = lvlbase_dict.get('lvlbase_id')
+                        lvlbase_id = str(lvlbase_dict.get('lvlbase_id') or 0)
                         lvl_name = lvlbase_dict.get('lvl_name') or ''
 
 # - check if level exists in schoolbase_count_dict
@@ -2352,7 +2404,6 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
                                 """
 
                                 receipt_count_dict = {'subj_name': '', 'total_items': 0, 'total_envelops': 0, 'has_errata': False}
-
 
         # +++ lookup labels with id_key and loop through labels of printlabel_list
                                 id_key = lvlbase_count_row.get('id_key')
@@ -2898,7 +2949,15 @@ def calc_acknowledgment_of_receipt_dictlist(sel_examyear, request):
     #  of this exam year of all countries (only SXM when requsr=sxm), ordered by code
     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear, request)
 
-    envelop_count_per_school_dict = subj_calc.create_envelop_count_per_school_dict(
+    # was: envelop_count_per_school_dict = subj_calc.create_envelop_count_per_school_dict(
+    #    sel_examyear_instance=sel_examyear,
+    #    sel_examperiod=sel_examperiod,
+    #    request=request,
+    #    schoolbase_pk_list=None,
+    #    subjbase_pk_list=None
+    #)
+
+    count_dictNIU, envelop_count_per_school_dict = subj_calc.create_studsubj_count_dict(
         sel_examyear_instance=sel_examyear,
         sel_examperiod=sel_examperiod,
         request=request,
