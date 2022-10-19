@@ -697,7 +697,7 @@ LABEL_TEXT = {
         'numenv':'Ènvelòp',
         'content':'KONTENIDO',
         'oclock': 'or',
-        'minutes': 'minuut',
+        'minutes': 'minüt',
         'of': 'di'
     }
 }

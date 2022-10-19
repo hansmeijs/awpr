@@ -472,11 +472,12 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
+        logger.debug('  ')
         logger.debug(' ----------------- download_setting ---------------------- ')
-        logger.debug('request_item_setting: ' + str(request_item_setting))
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
 
     # this function get settingss from request_item_setting.
     # if not in request_item_setting, it takes the saved settings.
@@ -581,13 +582,13 @@ def download_setting(request_item_setting, user_lang, request):
 
 # - get selected examyear from request_item_setting, Usersetting, this_examyear or latest
     request_item_examyear_pk = request_item_setting.get(c.KEY_SEL_EXAMYEAR_PK)
-    sel_examyear_instance, sel_examyear_save, multiple_examyears = af.get_sel_examyear_instance(request, request_item_examyear_pk)
+    sel_examyear_instance, sel_examyear_save, multiple_examyears_exist = af.get_sel_examyear_instance(request, request_item_examyear_pk)
 
-    permit_dict['may_select_examyear'] = multiple_examyears
+    permit_dict['may_select_examyear'] = multiple_examyears_exist
 
     if logging_on:
         logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
-        logger.debug('    multiple_examyears: ' + str(multiple_examyears))
+        logger.debug('    multiple_examyears_exist: ' + str(multiple_examyears_exist))
         logger.debug('    permit_dict: ' + str(permit_dict))
 
     reset_examperiod = False
@@ -703,13 +704,16 @@ def download_setting(request_item_setting, user_lang, request):
 # ===== DEPBASE =======================
     # every user can change depbase, if in .sel_school_depbases and in user allowed_depbases
 
-# - get sel_depbase_instance from saved_setting or request_item_setting or first allowed, check if allowed
-    request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_DEPBASE_PK)
-    sel_depbase_instance, sel_depbase_save, allowed_depbases = \
-        af.get_sel_depbase_instance(sel_school_instance, request, request_item_depbase_pk)
-
     if logging_on:
         logger.debug('===== DEPBASE ==========')
+
+# - get sel_depbase_instance from saved_setting or request_item_setting or first allowed, check if allowed
+    request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_DEPBASE_PK)
+    if logging_on:
+        logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
+    sel_depbase_instance, sel_depbase_save, allowed_depbases = \
+        af.get_sel_depbase_instance(sel_school_instance, page, request, request_item_depbase_pk)
+    if logging_on:
         logger.debug('    sel_depbase_instance: ' + str(sel_depbase_instance))
 
     permit_dict['allowed_depbases'] = allowed_depbases
@@ -786,9 +790,9 @@ def download_setting(request_item_setting, user_lang, request):
 
     if logging_on:
         logger.debug('..... EXAM PERIOD .....')
-        logger.debug('request_item_examperiod: ' + str(request_item_examperiod) )
-        logger.debug('sel_examperiod: ' + str(sel_examperiod) )
-        logger.debug('sel_examperiod_save: ' + str(sel_examperiod_save) )
+        logger.debug('    request_item_examperiod: ' + str(request_item_examperiod) )
+        logger.debug('    sel_examperiod: ' + str(sel_examperiod) )
+        logger.debug('    sel_examperiod_save: ' + str(sel_examperiod_save) )
 
 # - add info to setting_dict, will be sent back to client
     setting_dict[c.KEY_SEL_EXAMPERIOD] = sel_examperiod
@@ -812,9 +816,9 @@ def download_setting(request_item_setting, user_lang, request):
 
     if logging_on:
         logger.debug('..... EXAM TYPE .....')
-        logger.debug('request_item_examtype: ' + str(request_item_examtype) )
-        logger.debug('sel_examtype: ' + str(sel_examtype) )
-        logger.debug('sel_examtype_save: ' + str(sel_examtype_save) )
+        logger.debug('    request_item_examtype: ' + str(request_item_examtype) )
+        logger.debug('    sel_examtype: ' + str(sel_examtype) )
+        logger.debug('    sel_examtype_save: ' + str(sel_examtype_save) )
 
     # - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
     if sel_examtype_save:

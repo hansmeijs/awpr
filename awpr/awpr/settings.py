@@ -299,14 +299,14 @@ LOGGING = {
             'datefmt': '%Y-%m-%d %H:%M:%S'
         },
     },
-    # PR2022-06-27 write accounts_log also in production - to check password reset attempts, formatter: simple
+    # PR2022-06-27 write accounts_log also in production - to check password reset attempts, formatter: verbose (was:simple)
     'handlers': {
         'accounts_log': {
             'level': 'DEBUG',
             'filters': [], # was: 'filters': ['require_debug_true']
             'class': 'logging.FileHandler',
             'filename': config('LOGGER_BASEDIR') + 'accounts.log',
-            'formatter': 'simple'  # was: 'formatter': 'verbose'
+            'formatter': 'verbose'  # was: 'formatter': 'simple'
         },
         'awpr_log': {
             'level': 'DEBUG',

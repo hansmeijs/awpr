@@ -263,7 +263,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         department_name = ''
         display_department = param.get('display_department', True)
         if display_department:
-            sel_depbase, sel_depbase_save, allowed_depbases = af.get_sel_depbase_instance(sel_school, request)
+            sel_depbase, sel_depbase_save, allowed_depbases = af.get_sel_depbase_instance(sel_school, sel_page, request)
 
             sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
             if sel_department is None:

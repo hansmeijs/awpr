@@ -647,7 +647,7 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -658,7 +658,7 @@ class UserSettingsUploadView(UpdateView):  # PR2019-10-09
                 upload_dict = json.loads(upload_json)
                 if logging_on:
                     logger.debug(' ============= UserSettingsUploadView ============= ')
-                    logger.debug('upload_dict: ' + str(upload_dict))
+                    logger.debug('     upload_dict: ' + str(upload_dict))
 
                 set_usersetting_from_uploaddict(upload_dict, request)
 
@@ -2068,7 +2068,7 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
-        logger.debug('upload_dict: ' + str(upload_dict))
+        logger.debug('     upload_dict: ' + str(upload_dict))
         # upload_dict: {'selected_pk': {'sel_examtype': 'sr', 'sel_examperiod': 1}}
 
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
@@ -2078,18 +2078,21 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
     # PR2020-10-04 not any more, don't know why
     # - loop through keys of upload_dict
     for key, new_setting_dict in upload_dict.items():
+        if logging_on:
+            logger.debug('     key: ' + str(key))
+            logger.debug('     new_setting_dict: ' + str(new_setting_dict))
         set_usersetting_from_upload_subdict(key, new_setting_dict, request)
 # - end of set_usersetting_from_uploaddict
 
 
 def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19 PR2021-12-02
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
-        logger.debug('key_str: ' + str(key_str))
+        logger.debug('     key_str: ' + str(key_str))
         # key_str: page_grade
-        logger.debug('new_setting_dict: ' + str(new_setting_dict))
+        logger.debug('     new_setting_dict: ' + str(new_setting_dict))
         # new_setting_dict: {'cols_hidden': {'all': ['examnumber', 'subj_name']}}
         # new_setting_dict: {'sel_examtype': 'sr', 'sel_examperiod': 1}
 
@@ -2106,7 +2109,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
     saved_settings_dict = get_usersetting_dict(key_str, request)
 
     if logging_on:
-        logger.debug('saved_settings_dict: ' + str(saved_settings_dict))
+        logger.debug('     saved_settings_dict: ' + str(saved_settings_dict))
         # saved_settings_dict: {}
         # saved_settings_dict: {'all': ['examnumber', 'subj_name']}
         # saved_settings_dict: {'sel_examyear_pk': 58, 'sel_depbase_pk': 1, 'sel_examtype': None, 'sel_examperiod': 1, 'sel_lvlbase_pk': 12, 'sel_sctbase_pk': 12}
@@ -2282,7 +2285,7 @@ def get_userfilter_allowed_depbase(request, sql_keys, sql_list, depbase_pk=None,
     #       else:
     #           --> no filter
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_userfilter_allowed_depbase ----- ')
         logger.debug('depbase_pk: ' + str(depbase_pk) + ' ' + str(type(depbase_pk)))

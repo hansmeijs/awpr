@@ -839,7 +839,7 @@ def get_sel_examyear_instance(request, request_item_examyear_pk=None):
 
     sel_examyear_instance = None
     sel_examyear_save = False
-    multiple_examyears = False
+    multiple_examyears_exist = False
 
     if request.user and request.user.country:
         requsr_country = request.user.country
@@ -873,15 +873,15 @@ def get_sel_examyear_instance(request, request_item_examyear_pk=None):
                 sel_examyear_save = True
 
 # - check if there are multiple examyears, used to enable select examyear
-        multiple_examyears = (sch_mod.Examyear.objects.filter(country=requsr_country).count() > 1)
+        multiple_examyears_exist = (sch_mod.Examyear.objects.filter(country=requsr_country).count() > 1)
         if logging_on:
             logger.debug('    username: ' + str(request.user.username))
             logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
-            logger.debug('    multiple_examyears: ' + str(multiple_examyears))
+            logger.debug('    multiple_examyears_exist: ' + str(multiple_examyears_exist))
             logger.debug('    sel_examyear_save: ' + str(sel_examyear_save))
 # - also add sel_examperiod and sel_examtype, used in page grades
 
-    return sel_examyear_instance, sel_examyear_save, multiple_examyears
+    return sel_examyear_instance, sel_examyear_save, multiple_examyears_exist
 # --- end of get_sel_examyear_instance
 
 
@@ -931,86 +931,115 @@ def get_sel_schoolbase_instance(request, request_item_schoolbase_pk=None):  # PR
 # --- end of get_sel_schoolbase_instance
 
 
-def get_sel_depbase_instance(sel_school, request, request_item_depbase_pk=None):
-    # PR2020-12-26 PR2021-05-07 PR2021-08-13
+def get_sel_depbase_instance(sel_school, page, request, request_item_depbase_pk=None):
+    # PR2020-12-26 PR2021-05-07 PR2021-08-13 PR2022-10-19
     # PR2022-03-12 code works ok: it returns
     #  - combination of allowed_depbases from user and school and
     #  - request_item_depbase_pk or saved depbase_pk or first allowed depbase_pk
-    logging_on = False  # s.LOGGING_ON
+
+    # PR2022-10-19 TODO
+    # code to switch selected depbase is not perfect yet. To be improved, take in account:
+    # depbase can be changed in 2 ways:
+    # - in the menubar. Then there is no 'all deps' possible, use saved or default if necessary
+    # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
+    # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
+
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' -----  get_sel_depbase_instance  -----')
-        logger.debug('sel_school: ' + str(sel_school))
-        logger.debug('request_item_depbase_pk: ' + str(request_item_depbase_pk))
+        logger.debug(' @@@@@@@@@-----  get_sel_depbase_instance  -----')
 
     sel_depbase_instance = None
     save_sel_depbase = False
-    allowed_depbases = []
+    allowed_depbases_list = []
+
     # PR2021-07-11 depbase has not a field 'country' any more
     if request.user and request.user.country:
         req_user = request.user
 
-# - get allowed depbases from user
-        # if req_user.allowed_depbases is empty, all depbases of the school are allowed
-        if sel_school and sel_school.depbases:
-            allowed_depbases_arr = req_user.allowed_depbases.split(';') if req_user.allowed_depbases else []
-            # PR2021-05-04 warning. if depbases contains ';2;3;',
-            # it will give error:  invalid literal for int() with base 10: ''
-            allowed_depbases_list = list(map(int, allowed_depbases_arr))
-            if logging_on:
-                logger.debug('allowed_depbases_list: ' + str(allowed_depbases_list))
+        # PR2022-10-16 debug: when setting depbase_pk in orderlist, 'Havo' switched back to 'Vsbo when refreshing page.
+        # cause: ETE user had Vsbo school selected, since it doesnt have Havo, it changed dp to Vsbo
+        # solution: skip this check when page = orderlist
+        skip_school_allowed_depbases = page == 'page_orderlist'
 
-# - get allowed depbases from school -
-            school_depbase_list = list(map(int, sel_school.depbases.split(';')))
-            if logging_on:
-                logger.debug('school_depbase_list: ' + str(school_depbase_list))
-            for depbase_pk in school_depbase_list:
-                # skip if depbase not in list of req_user.allowed_depbases
-                # if req_user.allowed_depbases is empty, all depbases of the school are allowed
-                skip = allowed_depbases_list and depbase_pk not in allowed_depbases_list
-                if not skip:
-                    allowed_depbases.append(depbase_pk)
+        # PR2022-10-17 debug: in page_orderlist dep retruns Vsbo instead of 'All deps'
+        # also in page_exams when requsr = admin
+        select_all_allowed = page == 'page_orderlist' or (page == 'page_exams' and req_user.role == c.ROLE_064_ADMIN)
+
         if logging_on:
-            logger.debug('allowed_depbases: ' + str(allowed_depbases))
+            logger.debug('    sel_school: ' + str(sel_school))
+            logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
+            logger.debug('    select_all_allowed: ' + str(select_all_allowed))
 
-# - check if there is a new depbase_pk in request_setting,
-        if request_item_depbase_pk:
-    # check if it is in allowed_depbases,
-            if request_item_depbase_pk in allowed_depbases:
+# +++ get allowed_depbases - combination of user_allowed_depbases and school_allowed_depbases with skip_school_allowed_depbases
+        allowed_depbases_list = get_allowed_requser_school_depbases_list(req_user, sel_school, skip_school_allowed_depbases)
+        if logging_on:
+            logger.debug(' >> allowed_depbases_list: ' + str(allowed_depbases_list))
+
+# +++ get request_depbase_instance
+        # when request_item_depbase_pk = -1 (select all) the request_depbase_instance stays None
+        request_depbase_instance = None
+
+    # check if request_item_depbase_pk is in allowed_depbases_list
+        if (not allowed_depbases_list) or (request_item_depbase_pk and request_item_depbase_pk in allowed_depbases_list):
     # check if request_depbase exists
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(
-                    pk=request_item_depbase_pk
-                )
-                if sel_depbase_instance is not None:
-                    save_sel_depbase = True
+            request_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(
+                pk=request_item_depbase_pk
+            )
         if logging_on:
-            logger.debug('request_depbase instance: ' + str(sel_depbase_instance))
-            logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
+            logger.debug('    request_depbase_instance: ' + str(request_depbase_instance))
 
-# - get depbase_pk from Usersetting when there is no request_depbase_pk; check if request_depbase exists
-        if sel_depbase_instance is None:
-            selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-            s_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
-    # check if saved_depbase is in allowed_depbases,
-            if s_depbase_pk in allowed_depbases:
-    # check if saved_depbase exists
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=s_depbase_pk)
-        if logging_on:
-            logger.debug('saved_depbase instance: ' + str(sel_depbase_instance))
+# - make request_depbase_instance the selected instance if it exists, and save it in usersettings
+        if request_depbase_instance is not None:
+            sel_depbase_instance = request_depbase_instance
+            save_sel_depbase = True
+            if logging_on:
+                logger.debug('    sel_depbase_instance: ' + str(sel_depbase_instance))
+        else:
+            if request_item_depbase_pk == -1:
+                # don't get saved_depbase_pk when request_item_depbase_pk is 'select all'
+                pass
+            else:
+    # - if no request_depbase_instance: get saved_depbase_instance from Usersetting
+                saved_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                saved_depbase_pk = saved_dict.get(c.KEY_SEL_DEPBASE_PK)
+                if logging_on:
+                    logger.debug('    saved_depbase_pk: ' + str(saved_depbase_pk))
+                # when savening 'All departments' saved_depbase_pk = -1, change it to None
+                if saved_depbase_pk == -1:
+                    # don't get saved_depbase when saved_depbase_pk is 'select all'
+                    pass
+                else:
+    # - check if saved_depbase_instance is in allowed_depbases_list (permission might be changed after last saving depbase)
+                    if (not allowed_depbases_list) or (saved_depbase_pk and saved_depbase_pk in allowed_depbases_list):
+                        saved_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=saved_depbase_pk)
+                        if logging_on:
+                            logger.debug('    saved_depbase_instance: ' + str(saved_depbase_instance))
 
-# - if there is no saved nor request depbase: get first allowed depbase_pk
-        if sel_depbase_instance is None:
-            if allowed_depbases and len(allowed_depbases):
-                a_depbase_pk = allowed_depbases[0]
-                sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=a_depbase_pk)
-                if sel_depbase_instance is not None:
-                    save_sel_depbase = True
+        # - make saved_depbase_instance the selected instance if it exists, don't save it in usersettings
+                        if saved_depbase_instance is not None:
+                            sel_depbase_instance = saved_depbase_instance
+
+# +++ get first available depbase when sel_depbase_instance is None, except when
+        if sel_depbase_instance is None and not select_all_allowed:
+            # - if there is no saved nor request depbase: get first allowed depbase_pk
+            if allowed_depbases_list:
+                for depbase_pk in allowed_depbases_list:
+                    depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=depbase_pk)
+                    if depbase_instance is not None:
+                        sel_depbase_instance = depbase_instance
+                        save_sel_depbase = True
+                        break
+            else:
+        # - if all depbases allowed: get first depbase
+                sel_depbase_instance = sch_mod.Departmentbase.objects.first()
+                save_sel_depbase = True
 
     if logging_on:
-        logger.debug('sel_depbase_instance: ' + str(sel_depbase_instance))
-        logger.debug('save_sel_depbase: ' + str(save_sel_depbase))
-        logger.debug('allowed_depbases: ' + str(allowed_depbases))
+        logger.debug('....sel_depbase_instance: ' + str(sel_depbase_instance))
+        logger.debug('....save_sel_depbase: ' + str(save_sel_depbase))
+        logger.debug('....allowed_depbases_list: ' + str(allowed_depbases_list))
 
-    return sel_depbase_instance, save_sel_depbase, allowed_depbases
+    return sel_depbase_instance, save_sel_depbase, allowed_depbases_list
 # --- end of get_sel_depbase_instance
 
 
@@ -1032,6 +1061,43 @@ def is_allowed_depbase_requsr(depbase_pk, request):  # PR2021-06-14
                 is_allowed_depbase = True
 
     return is_allowed_depbase
+
+
+def get_allowed_requser_school_depbases_list(req_user, sel_school, skip_school_allowed_depbases):  # PR2022-0=10-18
+
+    # +++ get allowed_depbases - combination of user_allowed_depbases and school_allowed_depbases with skip_school_allowed_depbases
+
+    # - get user_allowed_depbases_list from user
+    user_allowed_depbases_arr = req_user.allowed_depbases.split(';') if req_user.allowed_depbases else []
+    # PR2021-05-04 warning. if depbases contains ';2;3;',
+    # it will give error:  invalid literal for int() with base 10: ''
+
+    allowed_depbases_list = []
+
+    user_allowed_depbases_list = []
+    if user_allowed_depbases_arr:
+        user_allowed_depbases_list = list(map(int, user_allowed_depbases_arr))
+
+    # - get school_allowed_depbases_list, not when skip_school_allowed_depbases
+    school_allowed_depbases_list = []
+    if not skip_school_allowed_depbases and sel_school and sel_school.depbases:
+        school_allowed_depbases_list = list(map(int, sel_school.depbases.split(';')))
+
+    # - combine allowed_depbases
+    # if allowed_depbases is empty, all depbases are allowed
+    if user_allowed_depbases_list:
+        if school_allowed_depbases_list:
+            for depbase_pk in user_allowed_depbases_list:
+                if depbase_pk in school_allowed_depbases_list:
+                    allowed_depbases_list.append(depbase_pk)
+        else:
+            allowed_depbases_list = user_allowed_depbases_list
+    else:
+        if school_allowed_depbases_list:
+            allowed_depbases_list = school_allowed_depbases_list
+
+    return allowed_depbases_list
+# end of get_allowed_requser_school_depbases_list
 
 
 def is_allowed_depbase_school(depbase_pk, school):  # PR2021-06-14
@@ -1305,10 +1371,10 @@ def system_updates(examyear, request):
     awpr_lib.update_library(examyear, request)
 
 # PR 2022-10-09 one time function to fill table EnvelopSubject
-    fillEnvelopSubjectONCEONLY(request)
+    # fillEnvelopSubjectONCEONLY(request)
 
 # PR 2022-07-03 one time function to add secret exams to
-    add_ntermONCEONLY(request)
+    # add_ntermONCEONLY(request)
 
     #get_long_pws_title_pws_subjectsONCEONLY(request)
 
@@ -1417,7 +1483,7 @@ def reset_show_msg(request):
 def fillEnvelopSubjectONCEONLY(request):
     # PR2022-10-09 one time function fills table EnvelopSubjec with data from Exams PR2022-10-09
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- fillEnvelopSubjectONCEONLY -------')
     try:
@@ -2630,6 +2696,10 @@ def dictfetchrows(cursor):
 
 
 def register_font_arial():  # PR2022-09-02
+    # from https://www.download-free-fonts.com/details/89466/arial-black
+    # PR2022-10-19 downloaded arial-corsivo-2.ttf (renamed to arialitalic221019) from  https://www.download-free-fonts.com/download/89015/bf6ffae4262cb2209cae8e98078c1dcc
+    # PR2022-10-19 downloaded arialbi.ttf (renamed to arialbolditalic221019) from  https://www.download-free-fonts.com/download/89015/bf6ffae4262cb2209cae8e98078c1dcc
+
     try:
         filepath = s.STATICFILES_FONTS_DIR + 'arial220815.ttf'
         ttfFile = TTFont('Arial', filepath)
@@ -2637,6 +2707,18 @@ def register_font_arial():  # PR2022-09-02
 
         filepath = s.STATICFILES_FONTS_DIR + 'arialblack220815.ttf'
         ttfFile = TTFont('Arial_Black', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'arialbd.ttf'
+        ttfFile = TTFont('Arial_Bold', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'ariali.ttf'
+        ttfFile = TTFont('Arial_Italic', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'arialbi.ttf'
+        ttfFile = TTFont('Arial_Bold_Italic', filepath)
         pdfmetrics.registerFont(ttfFile)
 
     except Exception as e:

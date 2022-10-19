@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     mod_MCOL_dict.columns.btn_envelopsubject = {
         subj_name_nl : "Subject",
+        examperiod : "Exam_period",
+        depbase_code: "Department",
+        lvl_abbrev: "Learning_path",
         firstdate : "Date",
         lastdate : "Thru_date",
         starttime : "Start_time",
@@ -96,17 +99,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l", "l",
                                     "r", "r", "r", "l", "c"]
                      },
-        envelopsubject: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Department", "Learning_path",
+        envelopsubject: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Department", "Learning_path", "Exam_period",
                                 "Date", "Thru_date", "Start_time_Duration", "End_time", "Has_errata", "Label_bundle", ""],
-                field_names: ["select", "subjbase_code", "subj_name_nl", "depbase_code", "lvl_abbrev",
+                field_names: ["select", "subjbase_code", "subj_name_nl", "depbase_code", "lvl_abbrev", "examperiod",
                                 "firstdate", "lastdate", "starttime", "endtime", "has_errata", "bundle_name", "download"],
-                field_tags: ["div", "div", "div", "div", "div",
+                field_tags: ["div", "div", "div", "div", "div", "div",
                                 "input", "input", "input", "input", "div", "div", "div"],
-                filter_tags: ["text", "text", "text", "text", "text",
+                filter_tags: ["text", "text", "text", "text", "text", "text",
                                 "text", "text", "text", "text", "toggle", "text", ""],
-                field_width: ["020", "075", "240", "120", "120",
+                field_width: ["020", "075", "240", "120", "120", "150",
                                 "150", "150",  "120", "120", "090", "240", "060"],
-                field_align: ["c", "c", "l", "c", "c",
+                field_align: ["c", "c", "l", "c", "c", "c",
                                 "l", "l", "l", "l", "c", "l", "c"]
                 },
 
@@ -177,6 +180,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
+
+        const el_SBR_item_count = document.getElementById("id_SBR_item_count")
 
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_btn_delete = document.getElementById("id_MSSSS_btn_delete");
@@ -530,13 +535,15 @@ document.addEventListener('DOMContentLoaded', function() {
     //console.log( "selected: ", selected);
     };  // HandleTblRowClicked
 
-//=========  HandleSBRselect  ================ PR2022-08-16
+//=========  HandleSBRselect  ================ PR2022-08-16 PR2022-10-18
     function HandleSBRselect(tblName, el_select) {
-        //console.log("===== HandleSBRselect =====");
-    //console.log( "tblName: ", tblName);
-
+        console.log("===== HandleSBRselect =====");
+    console.log( "    tblName: ", tblName);
+    if (el_select) { console.log( "    el_select.value: ", el_select.value); };
+        // values of tblName are: examperiod, department, level, undefined
         const selected_pk_int = (el_select && Number(el_select.value)) ? Number(el_select.value) : null;
 
+    console.log( "    selected_pk_int: ", selected_pk_int);
         // tblName is undefined when called by download, get info from setting_dict
         if (!tblName){
             if(!isEmpty(setting_dict)){
@@ -544,6 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selected.lvlbase_pk = setting_dict.sel_lvlbase_pk;
                 selected.level_req = setting_dict.sel_dep_level_req;
             };
+    console.log( "selected: ", selected);
         } else {
             const upload_selected_dict = {};
             if (tblName === "examperiod") {
@@ -561,17 +569,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 let data_dict = null;
                 if (selected_pk_int){
                     for (let i = 0, row; row = department_rows[i]; i++) {
+    console.log( "   row: ", row);
                         if(row.base_id === selected_pk_int){
                             data_dict = row;
+          console.log( "   data_dict: ", data_dict);
                             break;
-                }}};
-                if (!isEmpty(data_dict)){
+                        };
+                    };
+                };
+          console.log( "   data_dict: ", data_dict);
+                if (isEmpty(data_dict)){
+          console.log( "   isEmpty(data_dict");
+                // PR2022-10-18 use -1 for 'all', to distinguish from null
+                    upload_selected_dict.sel_depbase_pk = -1;
+                } else {
                     selected.depbase_pk = data_dict.base_id;
                     setting_dict.sel_depbase_pk = data_dict.base_id;
                     selected.level_req = (!!data_dict.lvl_req);
                     setting_dict.sel_dep_level_req = selected.level_req;
-                }
-                upload_selected_dict.sel_depbase_pk = setting_dict.sel_depbase_pk;
+                // PR2022-10-18 use -1 for 'all', to distinguish from null
+                    upload_selected_dict.sel_depbase_pk = setting_dict.sel_depbase_pk;
+                };
 
             } else if (tblName === "level") {
                 selected.lvlbase_pk = null;
@@ -598,9 +616,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (el_SBR_select_level){ el_SBR_select_level.value = null};
             };
 
+    console.log( "??? upload_selected_dict: ", upload_selected_dict);
     // ---  upload new setting
             if (!isEmpty(upload_selected_dict)){
                 const upload_dict = {selected_pk: upload_selected_dict};
+    console.log( "upload_dict: ", upload_dict);
                 b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             };
         };
@@ -696,7 +716,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // FillOptionsSelectLevelSector
 
 
-//=========  SBR_FillSelectOptions  ================ PR2021-03-06  PR2021-05-21 PR2022-08-16
+//=========  SBR_FillSelectOptions  ================ PR2021-03-06  PR2021-05-21 PR2022-08-16 PR2022-10-18
     function SBR_FillSelectOptions(tblName) {
         //console.log("=== SBR_FillSelectOptions");
     //console.log("tblName", tblName);
@@ -734,11 +754,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     // add row 'Alle leerwegen' / Alle profielen / Alle sectoren in first row
                     // HTML code "&#60" = "<" HTML code "&#62" = ">";
                     // The unshift() method adds new items to the beginning of an array, and returns the new length.
-                    display_rows.unshift({value: 0, caption: caption_all })
+                    display_rows.unshift({value: null, caption: caption_all})
                 };
             };
             const selected_pk = (is_dep) ? selected.depbase_pk : selected.lvlbase_pk;
-    //console.log("selected_pk", selected_pk);
             const el_SBR_select = (is_dep) ? el_SBR_select_department : el_SBR_select_level;
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk)
 
@@ -3295,9 +3314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
     //console.log( "hide_row", hide_row, typeof hide_row);
-    //TODO fix ShowTableRow
-       // return !hide_row
-       return true;
+       return !hide_row
     }; // ShowTableRow
 
 

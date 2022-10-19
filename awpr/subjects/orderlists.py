@@ -3426,7 +3426,6 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
         canvas.drawString(pos_x2, pos_y, ':')
         canvas.drawString(pos_x3, pos_y, examtime_formatted)
 
-
 # - draw school name
     pos_y -= line_height
 
@@ -3454,9 +3453,21 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
     canvas.drawString(pos_x2, pos_y, ':')
     canvas.drawString(pos_x3, pos_y, value)
 
-    pos_y -= line_height * 1.5
+# - draw content
+    # PR2022-10-17 email Rushaina:
+    #   - Dat er tussen envelop en inhoud een extra ruimte kan komen.
+    #   - Op het etiket bij inhoud het woord inhoud kan Bold worden? Dit telt voor CSPE en CSE.
+    #   - Bij (inhoud) Examen onderdeel A (60 min) moet ook bold worden (alleen deze row),
+
+    # was: pos_y -= line_height * 1.5
+    pos_y -= line_height * 2
     caption = label_txt.get('content') or '---'
+
+    # Arial_Black is heavier than Arial_Bold
+    canvas.setFont('Arial_Bold', 14)
     canvas.drawString(pos_x, pos_y, caption)
+    canvas.setFont('Arial', 14, leading=None)
+
     canvas.drawString(pos_x2, pos_y, ':')
 
     if content_arr:
@@ -3669,7 +3680,7 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
 def format_examdate_from_dte(firstdate, lastdate, label_txt, lang, has_practexam):  # PR2022-08-13 PR2022-10-13
 
-    def format_perioddate(examdate):
+    def format_perioddate(examdate, show_year):
         date_formatted = ''
         if examdate:
             year_str = str(examdate.year)
@@ -3682,12 +3693,20 @@ def format_examdate_from_dte(firstdate, lastdate, label_txt, lang, has_practexam
             weekday_str = c.LABEL_WEEKDAYS[lang][weekday_int]
 
             # Djaluna, 17 di sèptèmber,
-            if lang == 'pa':
-                date_formatted = ' '.join([weekday_str, day_str, label_txt['of'], month_str, year_str])
-            elif lang == 'en':
-                date_formatted = ''.join([weekday_str, ', ', month_str, ' ', day_str, ', ', year_str])
+            if show_year:
+                if lang == 'pa':
+                    date_formatted = ' '.join([weekday_str, day_str, label_txt['of'], month_str, year_str])
+                elif lang == 'en':
+                    date_formatted = ''.join([weekday_str, ', ', month_str, ' ', day_str, ', ', year_str])
+                else:
+                    date_formatted = ' '.join([weekday_str, day_str, month_str, year_str])
             else:
-                date_formatted = ' '.join([weekday_str, day_str, month_str, year_str])
+                if lang == 'pa':
+                    date_formatted = ' '.join([weekday_str, day_str, label_txt['of'], month_str])
+                elif lang == 'en':
+                    date_formatted = ''.join([weekday_str, ', ', month_str, ' ', day_str])
+                else:
+                    date_formatted = ' '.join([weekday_str, day_str, month_str])
         return date_formatted
 
     def format_examdate(examdate):
@@ -3714,12 +3733,10 @@ def format_examdate_from_dte(firstdate, lastdate, label_txt, lang, has_practexam
     examdate_formatted = ''
     if has_practexam:
         caption = label_txt.get('period') or '---'
-
-        examdate_formatted = ' - '.join([format_perioddate(firstdate), format_perioddate(lastdate)])
+        examdate_formatted = ' - '.join([format_perioddate(firstdate, False), format_perioddate(lastdate, True)])
 
     else:
         caption = label_txt.get('date') or '---'
-
         examdate_formatted = format_examdate(firstdate)
 
     return caption, examdate_formatted

@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Orderlists' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/orderlists221013.js' %}"></script>
+    <script src="{% static 'js/orderlists221019.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -15,33 +15,37 @@
             <h3>{% trans 'Orderlists' %}</h3>
         </div>
         {% if not no_access %}
-            <div class="tw_200 m-2 tab_show tab_btn_envelopsubjectXX display_hide">
+            <div class="tw_200 m-2 tab_show tab_btn_envelopsubject display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam period' %}:</h6>
                 <select id="id_SBR_select_period" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
             </div>
-            <div class="tw_200 m-2 tab_show tab_btn_envelopsubjectXX display_hide">
+            <div class="tw_200 m-2 tab_show tab_btn_envelopsubject display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Department' %}:</h6>
                 <select id="id_SBR_select_department" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
             </div>
-            <div id="id_SBR_container_level" class="tw_200 m-2 tab_show tab_btn_envelopsubjectXX display_hide">
+            <div id="id_SBR_container_level" class="tw_200 m-2 tab_showXX tab_btn_envelopsubject display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Learning path' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
                     autocomplete="off" ondragstart="return false;" ondrop="return false;"
                ></select>
             </div>
 
-            <div id="id_SBR_container_subject" class="tw_200 m-2 tab_showXX tab_btn_envelopsubjectXX display_hide">
+            <div id="id_SBR_container_subject" class="tw_200 m-2 tab_showXX tab_btn_envelopsubject display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
                 <input id="id_SBR_select_subject" type="text"
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
-            <div id="id_SBR_container_showall" class="tw_200 m-2 tab_show tab_btn_envelopsubjectXX display_hide">
+            <div id="id_SBR_container_showall" class="tw_200 m-2 tab_showXX tab_btn_envelopsubject display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
+            </div>
+
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
             </div>
         {% endif %}
     </nav>
