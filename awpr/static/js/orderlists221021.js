@@ -4,6 +4,7 @@ let envelopsubject_rows = []; // PR2022-10-09
 
 // envelopbundle_rows is made global to show in t_MSSSS_Save
 let envelopbundle_rows = [];
+let subject_rows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -27,9 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let school_map = new Map();
 
     let level_rows = [];
-
-    let subject_map = new Map();
-    let subject_rows = [];
 
     //let ete_exam_rows = [];
     let orderlist_rows = [];
@@ -176,17 +174,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if(el_SBR_select_subject){el_SBR_select_subject.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "subject", subject_map, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "subject", subject_rows, true, false, setting_dict, permit_dict, HandleSbrSubject_Response)}, false)};
 
-        const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
-        if(el_SBR_select_showall){el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
+        //const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
+        //if(el_SBR_select_showall){el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false)};
 
-        const el_SBR_item_count = document.getElementById("id_SBR_item_count")
+        //const el_SBR_item_count = document.getElementById("id_SBR_item_count")
 
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
+
+        const el_MSSSS_input = document.getElementById("id_MSSSS_input");
+        if (el_MSSSS_input){
+            el_MSSSS_input.addEventListener("keyup", function(event){
+                setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
+        };
         const el_MSSSS_btn_delete = document.getElementById("id_MSSSS_btn_delete");
         if (el_MSSSS_btn_delete){
-            el_MSSSS_btn_delete.addEventListener("click", function() {MSSSS_remove_bundle()}, false );
+            el_MSSSS_btn_delete.addEventListener("click", function() {ModSelEnvBundle_remove_bundle()}, false );
         }
 
 // ---  MOD PUBLISH ORDERLIST ------------------------------------
@@ -250,8 +254,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     el.addEventListener("keyup", function() {MENVIT_InputKeyup(el)}, false )
                 } else if(el.tagName === "SELECT"){
                     el.addEventListener("change", function() {MENVIT_InputSelect(el)}, false )
-                //} else if(el.tagName === "DIV"){
-                //    el.addEventListener("click", function() {MENVIT_InputToggle(el)}, false );
+                } else if(el.tagName === "DIV"){
+                    el.addEventListener("click", function() {MENVIT_InputToggle(el)}, false );
                 };
             };
         };
@@ -300,11 +304,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const datalist_request = {
                 setting: {page: "page_orderlist"},
                 schoolsetting: {setting_key: "import_studsubj"},
-                locale: {page: ["page_studsubj", "page_subject", "page_student", "upload", "page_orderlist"]},
+                //locale: {page: ["page_studsubj", "page_subject", "page_student", "upload", "page_orderlist"]},
+                locale: {page: ["page_orderlist"]},
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {show_all_deps: true},
                 level_rows: {get: true},
+                subject_rows: {get: true},
 
                 //ete_exam_rows: {show_all: true},
                 orderlist_rows: {get: true},
@@ -401,7 +407,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     level_rows = response.level_rows;
                     SBR_FillSelectOptions("level");
                 };
-
+                if ("subject_rows" in response)  {
+                    subject_rows = response.subject_rows;
+                };
                 //if ("ete_exam_rows" in response) {
                //     ete_exam_rows = response.ete_exam_rows
                 //};
@@ -428,6 +436,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     envelopbundlelabel_rows = response.envelopbundlelabel_rows;
                 };
 
+                SBR_display_subject();
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
             },
             error: function (xhr, msg) {
@@ -471,7 +480,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };//function CreateSubmenu
 
 //###########################################################################
-//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14 PR2022-08-12
+//=========  HandleBtnSelect  ================ PR2020-09-19 PR2020-11-14 PR2022-08-1
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
 
@@ -535,23 +544,24 @@ document.addEventListener('DOMContentLoaded', function() {
     //console.log( "selected: ", selected);
     };  // HandleTblRowClicked
 
-//=========  HandleSBRselect  ================ PR2022-08-16 PR2022-10-18
+//=========  HandleSBRselect  ================ PR2022-08-16 PR2022-10-21
     function HandleSBRselect(tblName, el_select) {
         console.log("===== HandleSBRselect =====");
-    console.log( "    tblName: ", tblName);
-    if (el_select) { console.log( "    el_select.value: ", el_select.value); };
+    //console.log( "    tblName: ", tblName);
+    //console.log( "    selected_btn: ", selected_btn);
+
         // values of tblName are: examperiod, department, level, undefined
         const selected_pk_int = (el_select && Number(el_select.value)) ? Number(el_select.value) : null;
 
-    console.log( "    selected_pk_int: ", selected_pk_int);
         // tblName is undefined when called by download, get info from setting_dict
         if (!tblName){
             if(!isEmpty(setting_dict)){
                 selected.depbase_pk = setting_dict.sel_depbase_pk;
                 selected.lvlbase_pk = setting_dict.sel_lvlbase_pk;
                 selected.level_req = setting_dict.sel_dep_level_req;
+                selected.subject_pk = setting_dict.sel_subject_pk;
             };
-    console.log( "selected: ", selected);
+
         } else {
             const upload_selected_dict = {};
             if (tblName === "examperiod") {
@@ -569,19 +579,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 let data_dict = null;
                 if (selected_pk_int){
                     for (let i = 0, row; row = department_rows[i]; i++) {
-    console.log( "   row: ", row);
                         if(row.base_id === selected_pk_int){
                             data_dict = row;
-          console.log( "   data_dict: ", data_dict);
                             break;
                         };
                     };
                 };
-          console.log( "   data_dict: ", data_dict);
                 if (isEmpty(data_dict)){
-          console.log( "   isEmpty(data_dict");
                 // PR2022-10-18 use -1 for 'all', to distinguish from null
                     upload_selected_dict.sel_depbase_pk = -1;
+
+                    selected.depbase_pk = null;
+                    selected.level_req = false;
+
+                    setting_dict.sel_depbase_pk = null;
+                    setting_dict.sel_dep_level_req = false;
+
                 } else {
                     selected.depbase_pk = data_dict.base_id;
                     setting_dict.sel_depbase_pk = data_dict.base_id;
@@ -590,7 +603,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // PR2022-10-18 use -1 for 'all', to distinguish from null
                     upload_selected_dict.sel_depbase_pk = setting_dict.sel_depbase_pk;
                 };
-
             } else if (tblName === "level") {
                 selected.lvlbase_pk = null;
                 setting_dict.sel_lvlbase_pk = null;
@@ -609,43 +621,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 upload_selected_dict.sel_lvlbase_pk = setting_dict.sel_lvlbase_pk;
             };
 
-            // show sbr level only when dep is set to vsbo
-            if (!selected.level_req){
-                selected.lvlbase_pk =  null;
-                setting_dict.sel_lvlbase_pk = null;
-                if (el_SBR_select_level){ el_SBR_select_level.value = null};
-            };
-
-    console.log( "??? upload_selected_dict: ", upload_selected_dict);
     // ---  upload new setting
             if (!isEmpty(upload_selected_dict)){
                 const upload_dict = {selected_pk: upload_selected_dict};
-    console.log( "upload_dict: ", upload_dict);
                 b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             };
         };
-        // TODO: add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !selected.level_req );
+
+    // show sbr level only when dep is set to vsbo
+        if (!selected.level_req){
+            selected.lvlbase_pk =  null;
+            setting_dict.sel_lvlbase_pk = null;
+            if (el_SBR_select_level){ el_SBR_select_level.value = null};
+        };
+
+        const show_sbr_level = selected_btn === "btn_envelopsubject" && selected.level_req;
+        add_or_remove_class(el_SBR_select_level.parentNode, cls_hide, !show_sbr_level );
 
         FillTblRows();
     } ; // HandleSBRselect
 
-//=========  HandleSbrLevel  ================ PR2021-03-06 PR2021-05-07
-    function HandleSbrLevel(el_select) {
-        //console.log("=== HandleSbrLevel");
+//=========  HandleSbrSubject_Response  ================  PR2022-08-12 PR2022-10-10
+    function HandleSbrSubject_Response(tblName, selected_dict, selected_pk_int) {
+        console.log(" ----- HandleSbrSubject_Response ----")
+    //console.log("tblName", tblName)
+    //console.log("selected_dict", selected_dict)
+    //console.log("selected_pk_int", selected_pk_int)
+    //console.log("subject_rows", subject_rows)
 
-        setting_dict.sel_lvlbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
-        setting_dict.sel_level_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
+        selected.subject_pk = null;
 
+// --- get selected subject
+        const [index, data_dict, compare] = b_recursive_integer_lookup(subject_rows, "id", selected_pk_int);
+    //console.log( "data_dict: ", data_dict);
+    //console.log( "selected: ", selected);
+        selected.subject_pk = null;
+        setting_dict.sel_subject_pk = null;
+        if (!isEmpty(data_dict)){
+            selected.subject_pk = data_dict.id;
+            setting_dict.sel_subject_pk = selected.subject_pk;
+        }
 // ---  upload new setting
-        let new_setting = {page: 'page_exams',
-                           sel_lvlbase_pk: setting_dict.sel_lvlbase_pk};
-// also retrieve the tables that have been changed because of the change in examperiod
-        const datalist_request = {setting: new_setting,
-                envelopsubject_rows: {get: true}
-        };
+        const upload_dict = {selected_pk: {sel_subject_pk: selected.subject_pk}};
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
-        DatalistDownload(datalist_request);
-    };  // HandleSbrLevel
+        FillTblRows();
+    };  // HandleSbrSubject_Response
+
 
 //=========  FillOptionsExamperiod  ================ PR2021-03-08 PR2022-08-16
     function FillOptionsExamperiod() {
@@ -725,7 +747,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const data_rows = (is_dep) ? department_rows : level_rows;
 
     //console.log("data_rows", data_rows);
-            const caption_all = "&#60" + ((is_dep) ? loc.All_departments : loc.All_levels) + "&#62";
+            //const caption_all = "&#60" + ((is_dep) ? loc.All_departments : loc.All_levels) + "&#62";
+            const caption_all = "&#60" + loc.All_ + ((is_dep) ? loc.Departments.toLowerCase() : loc.Levels.toLowerCase()) + "&#62";
 
             let found_in_new_list = false;
             const display_rows = [];
@@ -1065,7 +1088,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     add_hover(td);
 
                 } else if (field_name === "bundle_name"){
-                    td.addEventListener("click", function() {MSSSS_Open(td)}, false)
+                    td.addEventListener("click", function() {ModSelEnvBundle_Open(td)}, false)
                     td.classList.add("pointer_show");
                     add_hover(td);
 
@@ -1136,6 +1159,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 data_dict.instruction_hexcolor :
                                 "#000000";
                         el_div.style.color = hex_color;
+
+                        el_div.style.fontWeight = ((field_name === "content_nl" && data_dict.content_font && data_dict.content_font.includes("Bold")) ||
+                                             (field_name === "instruction_nl" && data_dict.instruction_font && data_dict.instruction_font.includes("Bold")))
+                                                ? "bold" : "normal";
+
+                        el_div.style.fontStyle = ((field_name === "content_nl" && data_dict.content_font && data_dict.content_font.includes("Italic")) ||
+                                             (field_name === "instruction_nl" && data_dict.instruction_font && data_dict.instruction_font.includes("Italic")))
+                                                ? "italic" : "normal";
                     };
             // ---  add attribute filter_value
                     filter_value = (fld_value) ? (typeof fld_value === 'string' || fld_value instanceof String) ?
@@ -1299,6 +1330,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });  // $.ajax({
         }  //  if(!!row_upload)
     };  // UploadChanges
+
+//=========  SBR_display_subject  ================ PR2022-10-20
+    function SBR_display_subject() {
+        console.log("===== SBR_display_subject =====");
+        t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
+    };  // SBR_display_subject
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2021-08-22 PR2022-08-04
@@ -1791,10 +1828,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
      };  // MPUBORD_InputVerifcode
 
+
+
 /////////////////////////////////////////////
-//=========  MSSSS_Open  ================  PR2022-08-12
-    function MSSSS_Open(td) {
-        console.log(" ----- MSSSS_Open ----")
+//=========  ModSelEnvBundle_Open  ================  PR2022-08-12
+    function ModSelEnvBundle_Open(td) {
+        console.log(" ----- ModSelEnvBundle_Open ----")
         console.log("td", td)
         const tblRow = t_get_tablerow_selected(td);
 
@@ -1806,18 +1845,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const [index, data_dict, compare] = b_recursive_integer_lookup(envelopsubject_rows, "id", pk_int);
         setting_dict.envelopbundle_pk = (data_dict.envelopbundle_id) ? data_dict.envelopbundle_id : null;
 
-        t_MSSSS_Open(loc, "envelopbundle", envelopbundle_rows, false, true, setting_dict, permit_dict, MSSSS_Response);
+        t_MSSSS_Open(loc, "envelopbundle", envelopbundle_rows, false, true, setting_dict, permit_dict, ModSelEnvBundle_Response);
 
-    };  // MSSSS_Open
+    };  // ModSelEnvBundle_Open
 
-//=========  MSSSS_Response  ================  PR2022-08-12 PR2022-10-10
-    function MSSSS_Response(tblName, selected_dict, selected_pk_int) {
+//=========  ModSelEnvBundle_Response  ================  PR2022-08-12 PR2022-10-10
+    function ModSelEnvBundle_Response(tblName, selected_dict, selected_pk_int) {
 
-        console.log(" ----- MSSSS_Response ----")
+        console.log(" ----- ModSelEnvBundle_Response ----")
         console.log("tblName", tblName)
         console.log("selected_dict", selected_dict)
         console.log("selected_pk_int", selected_pk_int)
-        console.log("selected", selected)
+        console.log("subject_rows", subject_rows)
 
         if (permit_dict.permit_crud){
     // --- get selected ete_exam
@@ -1837,11 +1876,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 UploadChanges(upload_dict, urls.url_envelopsubject_upload);
             };
         };
-    };
+    };  // ModSelEnvBundle_Response
 
-//=========  MSSSS_remove_bundle  ================  PR2022-08-13
-    function MSSSS_remove_bundle() {
-        //console.log(" ----- MSSSS_remove_bundle ----")
+//=========  ModSelEnvBundle_remove_bundle  ================  PR2022-08-13
+    function ModSelEnvBundle_remove_bundle() {
+        //console.log(" ----- ModSelEnvBundle_remove_bundle ----")
         //console.log("selected", selected)
 
         if (permit_dict.permit_crud){
@@ -1861,7 +1900,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 UploadChanges(upload_dict, urls.url_envelopsubject_upload);
             };
         };
-    };  // MSSSS_remove_bundle
+    };  // ModSelEnvBundle_remove_bundle
 
 // ++++++++++++  MODAL ENVELOP LABEL  +++++++++++++++++++++++++++++++++++++++
 
@@ -2078,12 +2117,15 @@ document.addEventListener('DOMContentLoaded', function() {
         mod_MENV_dict.picklist.sort(b_comparator_sortby);
     };  // MENVLAB_FillDictlist
 
-//========= MENVLAB_FillTable  ============= PR2022-08-06
+//========= MENVLAB_FillTable  ============= PR2022-08-06 PR2022-10-20
     function MENVLAB_FillTable(just_linked_unlinked_pk) {
         //console.log("===== MENVLAB_FillTable ===== ");
 
         el_MENVLAB_tblBody_available.innerText = null;
         el_MENVLAB_tblBody_selected.innerText = null;
+
+        // increase height of tblBody_selected when is_bundle PR2022-10-20
+        add_or_remove_class(el_MENVLAB_tblBody_selected.parentNode, "tbl_h320_w_auto",  mod_MENV_dict.is_bundle, "tbl_h180_w_auto" )
 
         const data_rows = mod_MENV_dict.picklist;
         if (data_rows && data_rows.length) {
@@ -2447,7 +2489,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MENVIT_Open  ================ PR2022-08-04 PR2022-09-21
     function MENVIT_Open(el_input) {
-        //console.log(" -----  MENVIT_Open   ----")
+        console.log(" -----  MENVIT_Open   ----")
 
         //console.log("permit_dict.permit_crud", permit_dict.permit_crud)
         //console.log("el_input", el_input)
@@ -2458,7 +2500,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // setting mod_MENV_dict = {} breaks the reference
         // was: b_clear_dict(mod_MENV_dict);
 
-        mod_MENV_dict = {} ;
+        mod_MENV_dict = {};
         if (permit_dict.permit_crud){
 
             // el_input is undefined when called by submenu btn 'Add new'
@@ -2473,8 +2515,17 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get existing data_dict from data_rows
                 const pk_int = get_attr_from_el_int(tblRow, "data-pk");
                 const [index, found_dict, compare] = b_recursive_integer_lookup(envelopitem_rows, "id", pk_int);
-                mod_MENV_dict = (!isEmpty(found_dict)) ? found_dict : {};
+                if(!isEmpty(found_dict)) {
+                    mod_MENV_dict = found_dict;
+                    mod_MENV_dict.content_bold = (mod_MENV_dict.content_font && mod_MENV_dict.content_font.includes("Bold"));
+                    mod_MENV_dict.content_italic = (mod_MENV_dict.content_font && mod_MENV_dict.content_font.includes("Italic"));
+                    mod_MENV_dict.instruction_bold = (mod_MENV_dict.instruction_font && mod_MENV_dict.instruction_font.includes("Bold"));
+                    mod_MENV_dict.instruction_italic = (mod_MENV_dict.instruction_font && mod_MENV_dict.instruction_font.includes("Italic"));
+                };
             };
+
+        console.log("mod_MENV_dict", mod_MENV_dict);
+
             // used in ModConfirm to delete, contains bundle, label or item pk
             selected.envelop_bundle_label_item_pk = (mod_MENV_dict && mod_MENV_dict.id) ? mod_MENV_dict.id : null;
 
@@ -2482,6 +2533,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             MENVIT_SetInputElements();
             MENVIT_SetMsgElements();
+            MENVIT_SetFontElements();
 
             let modified_txt = null;
             if (!is_addnew){
@@ -2504,10 +2556,10 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MENVIT_Open
 
 
-//=========  MENVIT_Save  ================  PR2020-10-01 PR2022-09-21
+//=========  MENVIT_Save  ================  PR2020-10-01 PR2022-09-21 PR2022-10-20
     function MENVIT_Save(crud_mode) {
-        //console.log(" -----  MENVIT_save  ----", crud_mode);
-        //console.log( "mod_MENV_dict: ", mod_MENV_dict);
+        console.log(" -----  MENVIT_save  ----", crud_mode);
+        console.log( "mod_MENV_dict: ", mod_MENV_dict);
 
         if (permit_dict.permit_crud){
             const is_create = (mod_MENV_dict.is_addnew);
@@ -2523,18 +2575,28 @@ document.addEventListener('DOMContentLoaded', function() {
             //let form_elements = document.getElementById("id_MSTUDSUBJ_div_form_controls").querySelectorAll(".awp_input_text, .awp_input_select")
             let form_elements = el_MENVIT_form_controls.getElementsByClassName("form-control")
             for (let i = 0, el_input; el_input = form_elements[i]; i++) {
-                const fldName = get_attr_from_el(el_input, "data-field");
-                let new_value = null, old_value = null;
-                //if(el_input.tagName === "INPUT"){
-                //} else if(el_input.tagName === "SELECT"){
-                //}
+                if (el_input.tagName !== "DIV"){
+                    const fldName = get_attr_from_el(el_input, "data-field");
+                    const new_value = (el_input.value) ? el_input.value : null;
+                    const old_value = (mod_MENV_dict[fldName]) ? mod_MENV_dict[fldName] : null;
 
-                new_value = (el_input.value) ? el_input.value : null;
-                old_value = (mod_MENV_dict[fldName]) ? mod_MENV_dict[fldName] : null;
-
-                if (new_value !== old_value) {
-                    upload_dict[fldName] = new_value;
+                    if (new_value !== old_value) {
+                        upload_dict[fldName] = new_value;
+                    };
                 };
+            };
+
+    // ---  put changed values of DIV elements in upload_dict
+            if (mod_MENV_dict.content_font_haschanged){
+                 upload_dict.content_font =  (mod_MENV_dict.content_bold)
+                                            ? (mod_MENV_dict.content_italic) ? "Arial_Bold_Italic" : "Arial_Bold"
+                                            : (mod_MENV_dict.content_italic) ? "Arial_Italic" : "Arial";
+            };
+
+            if (mod_MENV_dict.instruction_font_haschanged){
+                 upload_dict.instruction_font =  (mod_MENV_dict.instruction_bold)
+                                            ? (mod_MENV_dict.instruction_italic) ? "Arial_Bold_Italic" : "Arial_Bold"
+                                            : (mod_MENV_dict.instruction_italic) ? "Arial_Italic" : "Arial";
             };
 
             add_or_remove_class(el_MENVIT_loader, cls_hide, false);
@@ -2556,6 +2618,30 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "===== MENVIT_InputSelect  ========= ");
         MENVIT_disable_save_btn(false);
     }; // MENVIT_InputSelect
+
+
+//========= MENVIT_InputToggle  ============= PR2022-10-19
+    function MENVIT_InputToggle(el_input){
+        console.log( "===== MENVIT_InputToggle  ========= ");
+        console.log( "el_input", el_input);
+        // only called by el with data-field content_bold,content_italic, instruction_bold, instruction_italic
+        const fldName = get_attr_from_el(el_input, "data-field");
+        const fldValue = (mod_MENV_dict[fldName]) ? mod_MENV_dict[fldName] : false;
+
+        // toggle fldValue, put new value in mod_MENV_dict and el_input
+        mod_MENV_dict[fldName] = !fldValue;
+        add_or_remove_class(el_input.children[0], "tickmark_2_2", !fldValue, "tickmark_1_1")
+
+        // put 'haschanged' in mod_MENV_dict, used when saving font
+        if (fldName.includes("content")){
+            mod_MENV_dict.content_font_haschanged = true;
+        } else if (fldName.includes("instruction")){
+            mod_MENV_dict.instruction_font_haschanged = true;
+        };
+
+        MENVIT_disable_save_btn(false);
+    }; // MENVIT_InputToggle
+
 
 //=========  MENVIT_disable_save_btn  ================  PR2022-09-28
     function MENVIT_disable_save_btn(disable_save_btn) {
@@ -2585,6 +2671,24 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         };
     };  // MENVIT_SetInputElements
+
+
+//========= MENVIT_SetFontElements  ============= PR2022-10-20
+    function MENVIT_SetFontElements(){
+        console.log( "===== MENVIT_SetFontElements  ========= ");
+        console.log( "mod_MENV_dict", mod_MENV_dict);
+
+// --- loop through input elements
+        let form_elements = el_MENVIT_form_controls.querySelectorAll(".form-control")
+        for (let i = 0, el, fldName, fldValue; el = form_elements[i]; i++) {
+            fldName = get_attr_from_el(el, "data-field");
+            if (["content_bold", "content_italic", "instruction_bold", "instruction_italic"].includes(fldName)){
+                fldValue = !!mod_MENV_dict[fldName]
+                add_or_remove_class(el.children[0], "tickmark_2_2", fldValue, "tickmark_1_1")
+            };
+        };
+    };  // MENVIT_SetFontElements
+
 
 //========= MENVIT_SetMsgElements  ============= PR2022-09-27
     function MENVIT_SetMsgElements(update_dict){
@@ -2619,10 +2723,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // MENVIT_SetMsgElements
 
-// +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20
+// +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20 PR2022-10-22
     function MENVPR_Open(){
-        //console.log(" -----  MENVPR_Open   ----")
-        //console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
+        console.log(" -----  MENVPR_Open   ----")
+        console.log("setting_dict.sel_examperiod", setting_dict.sel_examperiod)
 
         b_clear_dict(mod_MENV_dict);
 
@@ -2633,11 +2737,11 @@ document.addEventListener('DOMContentLoaded', function() {
         mod_MENV_dict.envelopsubject_rows = envelopsubject_rows;
 
         if (![1,2,3].includes(setting_dict.sel_examperiod)){
-            b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_examperiod + "</div>");
+        // function b_show_mod_message_html(msg_html, header_text, ModMessageClose){
+            b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_examperiod_sbr + "</div>", loc.Download_envelop_labels);
 
         } else {
             mod_MENV_dict.sel_examperiod = setting_dict.sel_examperiod;
-
             el_MENVPR_header.innerText = loc.Download_envelop_labels + ( (mod_MENV_dict.sel_examperiod) ? " - " + loc.examperiod_caption[mod_MENV_dict.sel_examperiod] : "" ) ;
 
     // ---  reset layout options
@@ -3069,15 +3173,16 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  RefreshDatarowItem  ================
     //PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-08-14 PR2022-09-27
     function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
-        //console.log(" --- RefreshDatarowItem  ---");
+        console.log(" --- RefreshDatarowItem  ---");
     //console.log("    data_rows", data_rows);
-    //console.log("    update_dict", update_dict);
+    console.log("    update_dict", update_dict);
     //console.log("    field_setting.field_names", field_setting.field_names);
 
         if(!isEmpty(update_dict)){
             // add color fields to fieldnames when tblName = "envelopitem"
             // _color is used in modal from, _hexcol is used in tblRow
-            const field_names = (tblName === "envelopitem") ? ["content_color", "instruction_color", "content_hexcolor", "instruction_hexcolor"] : [];
+            const field_names = (tblName === "envelopitem") ?
+                ["content_color", "instruction_color", "content_hexcolor", "instruction_hexcolor", "content_font", "instruction_font"] : [];
             if(field_setting.field_names && field_setting.field_names.length){
                 // use i < len, otherwise loop stops at first blank item ""
                 for (let i = 0, len = field_setting.field_names.length; i < len; i++) {
@@ -3088,6 +3193,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
 
+    console.log("  >>>  field_names", field_names);
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
@@ -3143,7 +3249,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 const datarow_index = index;
 
-    //console.log("    data_dict", data_dict);
+    console.log("    data_dict", data_dict);
 // ++++ deleted ++++
                 if(is_deleted){
     // --- delete row from data_rows. Splice returns array of deleted rows
@@ -3159,17 +3265,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 } else {
 
-    //console.log("    // +++++++++++ updated row +++++++++++");
-        //console.log("    data_dict", data_dict);
+    console.log("    // +++++++++++ updated row +++++++++++");
+
 // +++++++++++ updated row +++++++++++
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
 
                         copy_updatedict_to_datadict(data_dict, update_dict, field_names, updated_columns);
-    //console.log("    updated_columns", updated_columns);
-    //console.log("    data_dict", data_dict);
+    console.log("    updated_columns", updated_columns);
+    console.log("    data_dict", data_dict);
 
-    // -- when color fiels has changed: also add textfield to update_dict, to show green
+
+    // -- when font field has changed: also add textfield to update_dict, to show green
+                        if (updated_columns.includes("content_font")){
+                            updated_columns.push("content_nl");
+                        };
+                        if (updated_columns.includes("instruction_font")){
+                            updated_columns.push("instruction_nl");
+                        };
+
+    // -- when color field has changed: also add textfield to update_dict, to show green
                         if (updated_columns.includes("content_hexcolor")){
                             updated_columns.push("content_nl");
                         };
@@ -3285,7 +3400,6 @@ document.addEventListener('DOMContentLoaded', function() {
         Filter_TableRows();
     }; // HandleFilterField
 
-
 //========= ShowTableRow  ==================================== PR2022-08-16
     function ShowTableRow(envelopsubject_dict) {
         // this function filters rows when they are created, called bij SBR examperiod, department level
@@ -3294,10 +3408,11 @@ document.addEventListener('DOMContentLoaded', function() {
 /*
         console.log( "===== ShowTableRow  ========= ");
         console.log( "selected", selected);
-        console.log( "selected.examperiod", selected.examperiod, typeof selected.examperiod);
-        console.log( "selected.department_pk", selected.department_pk, typeof selected.department_pk);
-        console.log( "selected.level_pk", selected.level_pk, typeof selected.level_pk);
-        console.log( "envelopsubject_dict", envelopsubject_dict);
+        console.log( "    selected.examperiod", selected.examperiod, typeof selected.examperiod);
+        console.log( "    selected.depbase_pk", selected.depbase_pk, typeof selected.depbase_pk);
+        console.log( "    selected.lvlbase_pk", selected.lvlbase_pk, typeof selected.lvlbase_pk);
+        console.log( "    selected.subject_pk", selected.subject_pk, typeof selected.subject_pk);
+        console.log( "    envelopsubject_dict", envelopsubject_dict);
 */
         let hide_row = false;
 
@@ -3312,7 +3427,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!hide_row && selected.lvlbase_pk){
             hide_row = (selected.lvlbase_pk !== envelopsubject_dict.lvlbase_id);
         };
-
+        if (!hide_row && selected.subject_pk){
+            hide_row = (selected.subject_pk !== envelopsubject_dict.subject_id);
+        };
     //console.log( "hide_row", hide_row, typeof hide_row);
        return !hide_row
     }; // ShowTableRow

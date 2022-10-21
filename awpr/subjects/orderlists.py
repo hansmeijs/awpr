@@ -253,7 +253,7 @@ def create_envelopitem(sel_examyear, request):
 
 
 def update_envelopitem_instance(instance, upload_dict, error_dict, request):
-    # --- update existing and new instance PR2022-08-04 PR2022-09-04 PR2022-09-28
+    # --- update existing and new instance PR2022-08-04 PR2022-09-04 PR2022-09-28 PR2022-10-20
 
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -282,6 +282,23 @@ def update_envelopitem_instance(instance, upload_dict, error_dict, request):
                     if logging_on:
                         logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
                         logger.debug('new_value:   ' + str(new_value)+ ' ' + str(type(new_value)))
+
+                    setattr(instance, field, new_value)
+                    save_changes = True
+
+            elif field in ('content_font', 'instruction_font'):  #PR2022-10-20
+                # default is None
+                saved_value = getattr(instance, field)
+
+                # PR2022-06-29 debug: when value is None it converts it to string 'None'
+                # if new_value is not None:
+                #    if not isinstance(new_value, str):
+                #        new_value = str(new_value)
+
+                if new_value != saved_value:
+                    if logging_on:
+                        logger.debug('saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                        logger.debug('new_value:   ' + str(new_value) + ' ' + str(type(new_value)))
 
                     setattr(instance, field, new_value)
                     save_changes = True
@@ -1539,8 +1556,8 @@ def create_enveloplabel_rows(sel_examyear, append_dict, enveloplabel_pk=None):
 
 
 def create_envelopitem_rows(sel_examyear, append_dict, envelopitem_pk=None):
-    # PR2022-08-03
-    logging_on = False  #s.LOGGING_ON
+    # PR2022-08-03 PR2022-10-20
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_envelopitem_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
@@ -1557,6 +1574,7 @@ def create_envelopitem_rows(sel_examyear, append_dict, envelopitem_pk=None):
                         "envit.content_nl, envit.content_en, envit.content_pa,",
                         "envit.instruction_nl, envit.instruction_en, envit.instruction_pa,",
                         "envit.content_color, envit.instruction_color,",
+                        "envit.content_font, envit.instruction_font,",
                         "envit.modifiedby_id, envit.modifiedat,",
                         "au.last_name AS modby_username",
 
@@ -1797,7 +1815,7 @@ def create_printlabel_dict(sel_examyear, sel_examperiod, sel_layout, envelopsubj
 
     for row in printlabel_rows:
         if logging_on:
-            logger.debug('    printlabel_row: ' + str(row))
+            logger.debug(' >>>   printlabel_row: ' + str(row))
         """
         school_subject_count_row:  {'subjbase_id': 149, 'ete_exam': False, 'id_key': '2_0_149_0', 'lang': 'nl', 
             'country_id': 1, 'sb_code': 'CUR13', 'lvl_abbrev': None, 'dep_abbrev': 'H.A.V.O.', 'subj_name': 'Wiskunde A', 
@@ -1819,6 +1837,8 @@ def create_printlabel_dict(sel_examyear, sel_examperiod, sel_layout, envelopsubj
             'instruction_pa_arr': ['NO HABRI PROMÉ KU E SESHON DI ÈKSAMEN FINALISÁ.', 'LESA PROMÉ NA BOS HALTU ÈKSAMEN, FECHA I DURASHON PROMÉ KU HABRI!', None, None, None, None, None], 
             'content_color_arr': ['red', 'black', 'black', 'black', 'black', 'black', 'black'], 
             'instruction_color_arr': ['red', 'red', 'red', 'red', 'red', 'red', None], 
+            'content_font_arr': [None, None, None, None, None, 'None, None], 
+            'instruction_font_arr': [None, None, None, None, None, 'None, None], 
             'sequence_arr': [1, 2, 61, 62, 63, 64, 65]}
         
         """
@@ -2539,6 +2559,8 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
                                             instruction_arr = lbl_dict.get(instruction_key) or []
                                             content_color_arr = lbl_dict.get('content_color_arr') or []
                                             instruction_color_arr = lbl_dict.get('instruction_color_arr') or []
+                                            content_font_arr = lbl_dict.get('content_font_arr') or []
+                                            instruction_font_arr = lbl_dict.get('instruction_font_arr') or []
 
                 # - calculate number of labels that must be printed
                                             total_envelops = calc_number_of_envelops(sel_examyear, is_variablenumber, numberinenvelop,
@@ -2616,7 +2638,9 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
                                                            subj_name, school_name,
                                                            has_practexam, firstdate, lastdate, starttime, endtime, numberofenvelops_str,
                                                            itemsinenvelop_str, lang, bnd_lbl_name,
-                                                           content_arr, instruction_arr, content_color_arr, instruction_color_arr
+                                                           content_arr, instruction_arr,
+                                                           content_color_arr, instruction_color_arr,
+                                                           content_font_arr, instruction_font_arr
                                                 )
 
                                                 canvas.showPage()
@@ -2838,6 +2862,8 @@ def create_enveloplabel_pdf_without_school(sel_examyear, schemeitem_dict, printl
                             instruction_arr = lbl_dict.get(instruction_key) or []
                             content_color_arr = lbl_dict.get('content_color_arr') or []
                             instruction_color_arr = lbl_dict.get('instruction_color_arr') or []
+                            content_font_arr = lbl_dict.get('content_font_arr') or []
+                            instruction_font_arr = lbl_dict.get('instruction_font_arr') or []
 
                 # - calculate number of labels that must be printed
                             school_name = None
@@ -2900,8 +2926,9 @@ def create_enveloplabel_pdf_without_school(sel_examyear, schemeitem_dict, printl
                                            subj_name, school_name,
                                            has_practexam, firstdate, lastdate, starttime, endtime, numberofenvelops_str,
                                            itemsinenvelop_str, lang, bnd_lbl_name,
-                                           content_arr, instruction_arr, content_color_arr,
-                                           instruction_color_arr
+                                           content_arr, instruction_arr,
+                                           content_color_arr, instruction_color_arr,
+                                           content_font_arr, instruction_font_arr
                                            )
 
                                 canvas.showPage()
@@ -3342,8 +3369,9 @@ def get_ex3_grade_rows (self, examyear, school, department, upload_dict, examper
 
 def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj_name, school_name, has_practexam,
                firstdate, lastdate, starttime, endtime, numberofenvelops_str, itemsinenvelop_str, lang, bnd_lbl_name,
-                content_arr, instruction_arr, content_color_arr, instruction_color_arr):
-    # PR2022-09-29 PR2022-10-08
+               content_arr, instruction_arr, content_color_arr, instruction_color_arr,
+               content_font_arr, instruction_font_arr):
+    # PR2022-09-29 PR2022-10-08 PR2022-10-20
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- draw_label -----')
@@ -3404,8 +3432,7 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
 
     canvas.drawRightString(pos_x4, pos_y, subj_name)
 
-# - draw examdate
-    # TODO add period
+# - draw examdate or examperiod
     caption, examdate_str = format_examdate_from_dte(firstdate, lastdate, label_txt, lang, has_practexam)
 
     pos_y -= 0.5 * inch
@@ -3466,30 +3493,35 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
     # Arial_Black is heavier than Arial_Bold
     canvas.setFont('Arial_Bold', 14)
     canvas.drawString(pos_x, pos_y, caption)
-    canvas.setFont('Arial', 14, leading=None)
 
+    canvas.setFont('Arial', 14, leading=None)
     canvas.drawString(pos_x2, pos_y, ':')
 
     if content_arr:
         row_count = 0
         for i, content in enumerate(content_arr):
             if content:
-                conten_color = content_color_arr[i]
-                hex_color = c.LABEL_COLOR.get(conten_color)
+                content_color = content_color_arr[i]
+                hex_color = c.LABEL_COLOR.get(content_color)
                 if not hex_color:
                     hex_color = '#000000'  # 'black': rgb 0 0 0  #000000
-
                 canvas.setFillColor(colors.HexColor(hex_color))
+
+                # PR2022-10-20 content_font_arr added
+                content_font_name = content_font_arr[i]
+                set_arial_font(canvas, content_font_name, 14)
+
                 canvas.drawString(pos_x3, pos_y - line_height * row_count, content or '')
                 row_count += 1
 
     row_count = 0
 
 # - PR2022-09-29 request Rushaina Manuel drukteam: allow long lines.
-    # - split line when it ha a '~' (tilde '~' means hard return)
+    # - split line when it has a '~' (tilde '~' means hard return)
 
     instruction_arr_with_split_lines = []
     instruction_color_arr_with_split_lines = []
+    instruction_font_arr_with_split_lines = []
     if instruction_arr:
         for i, instruction in enumerate(instruction_arr):
             if instruction:
@@ -3500,6 +3532,7 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
                     for item in arr:
                         instruction_arr_with_split_lines.append(item)
                         instruction_color_arr_with_split_lines.append(instruction_color_arr[i])
+                        instruction_font_arr_with_split_lines.append(instruction_font_arr[i])
                         row_count += 1
 
                         if logging_on:
@@ -3508,6 +3541,7 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
                 else:
                     instruction_arr_with_split_lines.append(instruction)
                     instruction_color_arr_with_split_lines.append(instruction_color_arr[i])
+                    instruction_font_arr_with_split_lines.append(instruction_font_arr[i])
                     row_count += 1
 
 # calculate heigth of bar
@@ -3529,8 +3563,12 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
                 hex_color = c.LABEL_COLOR.get(instruction_color)
                 if not hex_color:
                     hex_color = '#000000'  # 'black': rgb 0 0 0  #000000
-
                 canvas.setFillColor(colors.HexColor(hex_color))
+
+                # PR2022-10-20 content_font_arr added
+                instruction_font_name = instruction_font_arr_with_split_lines[i]
+                set_arial_font(canvas, instruction_font_name, 14)
+
                 canvas.drawCentredString(4.25 * inch, pos_y - line_height * .75 * row_count, instruction or '')
                 row_count += 1
 
@@ -3552,6 +3590,14 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
     canvas.setFont('Calibri', 12, leading=None)
 
 # - end of draw_label
+
+
+def set_arial_font(canvas, font_name, font_size):
+    # PR2022-10-20
+    if font_name not in ('Arial_Black', 'Arial_Bold', 'Arial_Italic', 'Arial_Bold_Italic'):
+        font_name = 'Arial'
+
+    canvas.setFont(font_name, font_size)
 
 
 def draw_red_cross(canvas, x, y):
@@ -3745,7 +3791,7 @@ def format_examdate_from_dte(firstdate, lastdate, label_txt, lang, has_practexam
 def format_examtime(starttime, endtime, label_txt, has_practexam):  # PR2022-08-13 PR2022-10-13
 
     examtime_formatted = ''
-    caption =  '---'
+
     if has_practexam:
         caption = label_txt.get('duration') or '---'
         if starttime:

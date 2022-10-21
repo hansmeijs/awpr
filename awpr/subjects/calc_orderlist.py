@@ -1072,6 +1072,8 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
                 "ARRAY_AGG(itm.instruction_pa ORDER BY lblitm.sequence, lblitm.id) AS instruction_pa_arr,",
                 "ARRAY_AGG(itm.content_color ORDER BY lblitm.sequence, lblitm.id) AS content_color_arr,",
                 "ARRAY_AGG(itm.instruction_color ORDER BY lblitm.sequence, lblitm.id) AS instruction_color_arr,",
+                "ARRAY_AGG(itm.content_font ORDER BY lblitm.sequence, lblitm.id) AS content_font_arr,",
+                "ARRAY_AGG(itm.instruction_font ORDER BY lblitm.sequence, lblitm.id) AS instruction_font_arr,",
                 "ARRAY_AGG(lblitm.sequence ORDER BY lblitm.sequence, lblitm.id) AS sequence_arr",
 
                 "FROM subjects_enveloplabelitem AS lblitm",
@@ -1108,7 +1110,9 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
 
                 "items.content_nl_arr, items.content_en_arr, items.content_pa_arr,",
                 "items.instruction_nl_arr, items.instruction_en_arr, items.instruction_pa_arr,",
-                "items.content_color_arr, items.instruction_color_arr, items.sequence_arr",
+                "items.content_color_arr, items.instruction_color_arr,",
+                "items.content_font_arr, items.instruction_font_arr,",
+                "items.sequence_arr",
                 #"counts.exam_count",
 
                 "FROM subjects_envelopsubject AS env_subj",
@@ -1178,6 +1182,8 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
                 'instruction_pa_arr': ['NO HABRI PROMÉ KU E SESHON DI ÈKSAMEN FINALISÁ.', 'LESA PROMÉ NA BOS HALTU ÈKSAMEN, FECHA I DURASHON PROMÉ KU HABRI!', None, None, None, None, None], 
                 'content_color_arr': ['red', 'black', 'black', 'black', 'black', 'black', 'black'], 
                 'instruction_color_arr': ['red', 'red', 'red', 'red', 'red', 'red', None], 
+                'content_font_arr': [None, None, None, None, None, 'None, None], 
+                'instruction_font_arr': [None, None, None, None, None, 'None, None], 
                 'sequence_arr': [1, 2, 61, 62, 63, 64, 65]}] 
             """
         except Exception as e:

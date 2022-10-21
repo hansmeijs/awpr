@@ -110,6 +110,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
     dict['Examyear'] = _('Exam year')
 
+    dict['Exam_period'] = _('Exam period')
+    dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+
     dict['School'] = _('School')
     dict['Schools'] = _('Schools')
 
@@ -828,8 +831,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Approved'] = _('Approved')
         dict['Name_ex_form'] = TXT_Name_ex_form
-        dict['Exam_period'] = TXT_Exam_period
-        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         dict['Date_submitted'] = TXT_Date_submitted
         dict['Download_Exform'] = TXT_Download_Exform
 
@@ -912,7 +913,6 @@ def get_locale_dict(table_dict, user_lang, request):
 # ====== PAGE EXAM ========================= PR2021-04-04
     if 'page_exams' in page_list:
 
-        dict['Exam_period'] = TXT_Exam_period
         dict['Select_examperiod'] = TXT_Select_examperiod
         dict['No_examperiods_found'] = TXT_No_examperiods_found
 
@@ -930,7 +930,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_exam_selected'] = _('No exam selected.')
 
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_123ONLY
-        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         # dict['options_examtype_exam'] = c.EXAMTYPE_OPTIONS_EXAM
         #dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
@@ -1159,7 +1158,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_one_or_more_subjects'] = _('Please select one or more subjects')
         dict['from_available_list'] = _('from the list of available subjects.')
 
-        dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
+        #dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
         dict['Please_select_examperiod_first'] = _('Please select an exam period in the vertical grey bar at the left first.')
         dict['Please_select_examperiod'] = _('Please select one exam period in the vertical grey bar at the left.')
 
@@ -1207,7 +1206,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Download_Exform'] = TXT_Download_Exform
 
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
-        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         dict['Exemption_year'] = _('Exemption year')
 
         dict['Submit_Ex2_form'] = _('Submit Ex2 form')
@@ -1320,7 +1318,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['No_subject_selected'] = TXT_No_subject_selected
 
-        dict['Exam_period'] = TXT_Exam_period
         dict['Select_examperiod'] = TXT_Select_examperiod
         dict['No_examperiods_found'] = TXT_No_examperiods_found
 
@@ -1467,7 +1464,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit_Ex5'] = _('Submit Ex5')
         dict['Submit_Ex5_form'] = _('Submit Ex5 form')
         dict['The_ex5_form'] = _('The %(form)s form') % {'form': 'Ex5'}
-        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
+
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
 
 
@@ -1561,18 +1558,17 @@ def get_locale_dict(table_dict, user_lang, request):
 # ====== PAGE ARCHIVE ========================= PR2022-03-09
     if 'page_archive' in page_list:
         dict['Name_ex_form'] = TXT_Name_ex_form
-        dict['Exam_period'] = TXT_Exam_period
-        dict['examperiod_caption'] = c.EXAMPERIOD_CAPTION
         dict['Date_submitted'] = TXT_Date_submitted
         dict['Submitted_by'] = TXT_Submitted_by
         dict['Download_Exform'] = TXT_Download_Exform
 
         dict['File_not_found'] = _('This file has not been found.')
 
-
 # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
 
+
+        dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical grey bar at the left.')
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_123ONLY
 
         dict['School_code'] = TXT_School_code
@@ -1696,7 +1692,6 @@ TXT_Regnumber_twolines = _('Registration\nnumber')
 TXT_Prefix = _('Prefix')
 TXT_Prefix_twolines = pgettext_lazy('two lines ', 'Prefix')
 
-TXT_Exam_period = _('Exam period')
 TXT_Select_examperiod = _('Select exam period')
 TXT_No_examperiods_found = _('No exam periods found')
 

@@ -336,9 +336,9 @@
         console.log(" ===  t_MSSSS_Open  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
-        console.log( "tblName", tblName );
-        console.log( "data_rows", data_rows, typeof data_rows );
-        console.log( "tblName", tblName );
+    //console.log( "tblName", tblName );
+    //console.log( "data_rows", data_rows, typeof data_rows );
+    //console.log( "tblName", tblName );
         // tblNames are: "school", "subject", "student", "envelopbundle
 
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
@@ -351,8 +351,8 @@
                                    (tblName === "subject") ? setting_dict.sel_subject_pk :
                                    (tblName === "student") ? setting_dict.sel_student_pk :
                                    (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
-        console.log( "setting_dict", setting_dict );
-        console.log( "selected_pk", selected_pk, typeof selected_pk );
+    //console.log( "setting_dict", setting_dict );
+    //console.log( "selected_pk", selected_pk, typeof selected_pk );
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
                 el_MSSSS_input.setAttribute("data-table", tblName);
     //console.log( "el_MSSSS_input", el_MSSSS_input);
@@ -497,10 +497,10 @@
 
 //========= t_MSSSS_Create_SelectRow  ============= PR2020-12-18 PR2020-07-14
     function t_MSSSS_Create_SelectRow(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
-        console.log("===== t_MSSSS_Create_SelectRow ===== ");
-        console.log("..........tblName", tblName);
-        console.log("map_dict", map_dict);
-        console.log("map_dict.name_nl", map_dict.name_nl);
+        //console.log("===== t_MSSSS_Create_SelectRow ===== ");
+        //console.log("..........tblName", tblName);
+        //console.log("map_dict", map_dict);
+        //console.log("map_dict.name_nl", map_dict.name_nl);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
@@ -626,7 +626,7 @@
 
 //=========  t_MSSSS_InputKeyup  ================ PR2020-09-19  PR2021-07-14
     function t_MSSSS_InputKeyup(el_input) {
-        //console.log( "===== t_MSSSS_InputKeyup  ========= ");
+        console.log( "===== t_MSSSS_InputKeyup  ========= ");
 
 // ---  get value of new_filter
         let new_filter = el_input.value
@@ -637,7 +637,7 @@
         if (len){
 // ---  filter rows in table select_employee
             const filter_dict = t_Filter_SelectRows(tblBody, new_filter);
-        //console.log( "filter_dict", filter_dict);
+        console.log( "filter_dict", filter_dict);
 
 // ---  if filter results have only one item: put selected item in el_input
             const selected_pk = (filter_dict.selected_pk) ? filter_dict.selected_pk : null;
@@ -1383,10 +1383,10 @@
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
 //========= t_Filter_SelectRows  ==================================== PR2020-01-17 PR2021-01-23
     function t_Filter_SelectRows(tblBody_select, filter_text, filter_show_inactive, has_ppk_filter, selected_ppk, col_index_list) {
-        //console.log( "===== t_Filter_SelectRows  ========= ");
-        //console.log( "filter_text: <" + filter_text + ">");
-        //console.log( "has_ppk_filter: " + has_ppk_filter);
-        //console.log( "selected_ppk: " + selected_ppk, typeof selected_ppk);
+        console.log( "===== t_Filter_SelectRows  ========= ");
+        console.log( "filter_text: <" + filter_text + ">");
+        console.log( "has_ppk_filter: " + has_ppk_filter);
+        console.log( "selected_ppk: " + selected_ppk, typeof selected_ppk);
 
         const filter_text_lower = (filter_text) ? filter_text.toLowerCase() : "";
         if(!col_index_list){col_index_list = []};
@@ -1474,6 +1474,7 @@
         if(sel_display != null) {filter_dict.selected_display = sel_display};
         if(sel_pk != null) {filter_dict.selected_rowid = sel_rowid};
         if(sel_innertext != null) {filter_dict.selected_innertext = sel_innertext};
+      console.log(">>> filter_dict", filter_dict);
         return filter_dict
     }; // t_Filter_SelectRows
 
