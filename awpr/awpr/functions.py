@@ -2734,6 +2734,15 @@ def register_font_calibri():  # PR2022-09-02
         filepath = s.STATICFILES_FONTS_DIR + 'Calibri_Bold.ttf'
         ttfFile = TTFont('Calibri_Bold', filepath)
         pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'Calibri_Italic.ttf'
+        ttfFile = TTFont('Calibri_Italic', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'Calibri_Bold_Italic.ttf'
+        ttfFile = TTFont('Calibri_Bold_Italic', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 

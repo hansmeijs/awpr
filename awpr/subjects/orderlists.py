@@ -3508,8 +3508,8 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
                 canvas.setFillColor(colors.HexColor(hex_color))
 
                 # PR2022-10-20 content_font_arr added
-                content_font_name = content_font_arr[i]
-                set_arial_font(canvas, content_font_name, 14)
+                font_style = content_font_arr[i]
+                set_font_style(canvas, 'Arial', font_style, 14)
 
                 canvas.drawString(pos_x3, pos_y - line_height * row_count, content or '')
                 row_count += 1
@@ -3566,8 +3566,8 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
                 canvas.setFillColor(colors.HexColor(hex_color))
 
                 # PR2022-10-20 content_font_arr added
-                instruction_font_name = instruction_font_arr_with_split_lines[i]
-                set_arial_font(canvas, instruction_font_name, 14)
+                font_style = instruction_font_arr_with_split_lines[i]
+                set_font_style(canvas, 'Calibri', font_style, 12)
 
                 canvas.drawCentredString(4.25 * inch, pos_y - line_height * .75 * row_count, instruction or '')
                 row_count += 1
@@ -3592,10 +3592,18 @@ def draw_label(canvas, examyear, examperiod, dep_lvl_abbrev, dep_lvl_color, subj
 # - end of draw_label
 
 
-def set_arial_font(canvas, font_name, font_size):
-    # PR2022-10-20
-    if font_name not in ('Arial_Black', 'Arial_Bold', 'Arial_Italic', 'Arial_Bold_Italic'):
-        font_name = 'Arial'
+def set_font_style(canvas, font, style, font_size):
+    # PR2022-10-21
+    font_name = font
+    if style:
+        if 'Bold' in style:
+            if 'Italic' in style:
+                font_name = font + '_Bold_Italic'
+            else:
+                font_name = font + '_Bold'
+        else:
+            if 'Italic' in style:
+                font_name = font + '_Italic'
 
     canvas.setFont(font_name, font_size)
 

@@ -2589,14 +2589,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  put changed values of DIV elements in upload_dict
             if (mod_MENV_dict.content_font_haschanged){
                  upload_dict.content_font =  (mod_MENV_dict.content_bold)
-                                            ? (mod_MENV_dict.content_italic) ? "Arial_Bold_Italic" : "Arial_Bold"
-                                            : (mod_MENV_dict.content_italic) ? "Arial_Italic" : "Arial";
+                                            ? (mod_MENV_dict.content_italic) ? "Bold_Italic" : "Bold"
+                                            : (mod_MENV_dict.content_italic) ? "Italic" : null;
             };
 
             if (mod_MENV_dict.instruction_font_haschanged){
                  upload_dict.instruction_font =  (mod_MENV_dict.instruction_bold)
-                                            ? (mod_MENV_dict.instruction_italic) ? "Arial_Bold_Italic" : "Arial_Bold"
-                                            : (mod_MENV_dict.instruction_italic) ? "Arial_Italic" : "Arial";
+                                            ? (mod_MENV_dict.instruction_italic) ? "Bold_Italic" : "Bold"
+                                            : (mod_MENV_dict.instruction_italic) ? "Italic" : null;
             };
 
             add_or_remove_class(el_MENVIT_loader, cls_hide, false);
