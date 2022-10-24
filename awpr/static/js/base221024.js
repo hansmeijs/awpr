@@ -544,8 +544,8 @@
     };  // add_or_remove_attr
 
 
-//========= function add_hover  =========== PR2021-10-28
-    function add_hover_delete_btn(el, hover_class, class_1, class_0) {
+//========= function b_add_hover_delete_btn  =========== PR2021-10-28
+    function b_add_hover_delete_btn(el, hover_class, class_1, class_0) {
 //- add hover to element, with img_class that contains deleted or not, must be no other classes in this div
         if(!hover_class) {hover_class = "delete_0_2"};
         if(!class_1) { class_1 = "delete_0_2"};
@@ -561,7 +561,7 @@
             });
         };
         el.classList.add("pointer_show");
-    };  // add_hover
+    };  // b_add_hover_delete_btn
 
 //========= function add_hover  =========== PR2020-05-20 PR2020-08-10
     function add_hover(el, hover_class, default_class) {

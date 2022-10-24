@@ -98,6 +98,7 @@ a:hover {
 }
 .awp_bg_blue {
     background-color: #2d4e77 !important; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #ffffff;
 }
 .awp_bg_green {
     background-color: #04928c !important; /* ETE groen #04928c RGB 4-146-140  PR2021-05-22 */

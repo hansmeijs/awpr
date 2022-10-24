@@ -1629,7 +1629,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MODAL PUBLISH ORDERLIST ================ PR2021-09-08 PR2022-10-13
     function MPUBORD_Open (open_mode ) {
-        //console.log("===  MPUBORD_Open  =====") ;
+        console.log("===  MPUBORD_Open  =====") ;
         //console.log("setting_dict", setting_dict) ;
         mod_MPUBORD_dict = {}
 
@@ -1719,13 +1719,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MPUBORD_SetInfoboxesAndBtns  ================ PR2021-09-08
      function MPUBORD_SetInfoboxesAndBtns(response) {
-        //console.log("===  MPUBORD_SetInfoboxesAndBtns  =====") ;
+        console.log("===  MPUBORD_SetInfoboxesAndBtns  =====") ;
+        console.log("response", response);
+
         const step = mod_MPUBORD_dict.step;
         const is_response = (!!response);
         const has_error = (is_response && response.error);
+        console.log("has_error", has_error) ;
 
-        //console.log("step", step) ;
-        //console.log("response", response) ;
+        console.log("step", step) ;
+        console.log("response", response) ;
 
 // ---  info_container, loader, info_verifcode and input_verifcode
         let msg_html = null, msg_info_txt = null, show_loader = false;
@@ -1750,6 +1753,8 @@ document.addEventListener('DOMContentLoaded', function() {
             ].join("<br>");
             save_btn_txt = loc.Request_verifcode;
             show_input_sendemail = true;
+        console.log(" step === 0 save_btn_txt", save_btn_txt) ;
+        console.log(" loc", loc) ;
 
         } else if (step === 1) {
             // when clicked on 'Request_verificationcode'
@@ -1780,7 +1785,6 @@ document.addEventListener('DOMContentLoaded', function() {
             show_input_verifcode = false;
         };
 
-        //console.log("save_btn_txt", save_btn_txt) ;
         //console.log("msg_info_txt", msg_info_txt) ;
         if (msg_info_txt){
             msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + "</p></div>";
@@ -1798,6 +1802,7 @@ document.addEventListener('DOMContentLoaded', function() {
         add_or_remove_class(el_MPUBORD_send_email.parentNode, cls_hide, !show_input_sendemail);
 
 // - hide save button when there is no save_btn_txt
+        console.log("save_btn_txt", save_btn_txt) ;
         add_or_remove_class(el_MPUBORD_btn_save, cls_hide, !save_btn_txt)
 // ---  disable save button till test is finished or input_verifcode has value
         el_MPUBORD_btn_save.disabled = disable_save_btn;;

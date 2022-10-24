@@ -421,7 +421,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         append_dict={}
                     )
 
-
 # ----- envelopbundle_rows
                 if datalist_request.get('envelopbundle_rows'):
                     datalists['envelopbundle_rows'] = sj_ol.create_envelopbundle_rows(
@@ -441,7 +440,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_examyear=sel_examyear,
                         append_dict={}
                     )
-# ----- enveloplabelitem_rows
+# ----- envelopbundlelabel_rows
                 if datalist_request.get('envelopbundlelabel_rows'):
                     datalists['envelopbundlelabel_rows'] = sj_ol.create_envelopbundlelabel_rows(
                         sel_examyear=sel_examyear

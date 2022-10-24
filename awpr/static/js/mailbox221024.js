@@ -646,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 td.addEventListener("click", function() {HandleBtnReadDelete(el)}, false)
                 td.classList.add("pointer_show");
                 if (field_name === "deleted"){
-                    add_hover_delete_btn(el,"delete_0_2", "delete_0_2", "delete_0_1");
+                    b_add_hover_delete_btn(el,"delete_0_2", "delete_0_2", "delete_0_1");
                 } else {
                     add_hover(el);
                 }

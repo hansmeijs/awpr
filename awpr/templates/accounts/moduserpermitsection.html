@@ -1,0 +1,61 @@
+{% load i18n %}
+{% load static %}
+
+ <!-- =================== MODAL SET PERMIT SECTION =================== -->
+    <div class="modal" id="id_mod_userpermitsection" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <h4 id="id_MUPS_header" class="modal-title mx-2" >{% trans 'Allowed schools and subjects' %}</h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body pb-0">
+                    <div class="modal_container">
+
+
+<!-- modal_body_left contains employee select table -->
+                        <div class="modal_body_left">
+                            <div class="content_subheader_left mx-1">
+                                <label for="id_MUPS_username" class="label_margin_top_m2">{% trans 'User' %}:</label>
+                                <input id="id_MUPS_username" type="text" data-field="username"
+                                autocomplete="off" ondragstart="return false;" ondrop="return false;" class="form-control">
+                            </div>
+
+                            <div class="content_subheader_left mx-1 my-2">
+
+                                 <div id="id_MUPS_footer_container" class="display_hidexxx">
+                                    <div class="content_header mx-2 mt-2">
+                                        <div class="content_subheader_left mx-1">
+                                            <small id="id_MUPS_footer01" >{% trans "Click the submit button to register the new user." %}</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h6 class="mx-2 my-1">{% trans 'Allowed schools and subjects' %}</h6>
+                                 <!-- this div is necessary to get standard structure for FilterTableRows -->
+                                <!-- <div style="overflow-x:hidden;overflow-y:auto;height:400px;width:220px"> -->
+                                <div class="tbl_studsubj_h390_w_auto">
+                                    <table class="table tsa_tbl mx-1 my-1">
+                                        <tbody id="id_MUPS_tbody_select">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+<!-- modal_body_right contains input elements -->
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="content_subheader_right">
+                        <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                        <button id="id_MUPS_btn_submit" class="btn btn-primary">{% trans 'Save' %}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

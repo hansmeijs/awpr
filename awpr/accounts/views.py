@@ -1536,8 +1536,6 @@ def get_userpermit_list(page, req_user):
 
 
 ########################################################################
-
-
 # === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
 
 def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups, is_validate_only, user_lang, request):

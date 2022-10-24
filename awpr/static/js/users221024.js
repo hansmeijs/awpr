@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_dict = {};
     let mod_MUA_dict = {};
     let mod_MUPM_dict = {};
+    let mod_MUPS_dict = {};  // PR2022-10-23
     const mod_MSM_dict = {};
     let time_stamp = null; // used in mod add user
 
@@ -44,11 +45,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let selected_userpermit_pk = null;
     let selected_period = {};
 
-
     let examyear_map = new Map();
-
     let department_map = new Map();
-
     let permit_map = new Map();
 
     //let filter_dict = {};
@@ -219,6 +217,12 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUPM_btn_submit.addEventListener("click", function() {MUPM_Save("save")}, false);
         };
 
+// ---  MODAL USER SET PERMIT SECTION
+        const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
+        const el_MUPS_btn_submit = document.getElementById("id_MUPS_btn_submit");        if (el_MUPM_btn_submit){
+            el_MUPS_btn_submit.addEventListener("click", function() {MUPS_Save("save")}, false);
+        };
+
 // ---  MOD SELECT MULTIPLE  ------------------------------
         const el_MSM_tblbody_select = document.getElementById("id_MSM_tbody_select");
         const el_MSM_input = document.getElementById("id_MSM_input")
@@ -379,6 +383,9 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, []);
             AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, null, "id_submenu_import");
         };
+
+        // AddSubmenuButton(el_submenu, "Test+commissioner", function() {MUPS_Open("addnew")}, []);
+
         // hardcode access of system admin
         if (permit_system_admin){
             AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_userpermit"]);
@@ -458,11 +465,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const field_setting = field_settings[selected_btn];
         const data_rows = get_datarows_from_selectedBtn();
-
+/*
         console.log( "selected_btn", selected_btn);
         console.log( "tblName", tblName);
         console.log( "data_rows", data_rows);
         console.log( "field_setting", field_setting);
+*/
 
 // --- show columns
         set_columns_hidden();
@@ -942,7 +950,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 
-// +++++++++ MOD ADD USER ++++++++++++++++ PR2020-09-18
+// +++++++++ MOD USER ADD ++++++++++++++++ PR2020-09-18
     function MUA_Open(mode, el_input){
         //console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
         //console.log("permit_dict: ", permit_dict)
@@ -1182,7 +1190,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });  // $.ajax({
         }
     };  // MUA_Save
-
 
 //========= MUA_CreateOrUpdate  ============= PR2021-07-05
    function MUA_CreateOrUpdate() {
@@ -1567,7 +1574,245 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById("id_MUA_header").innerText = header_text;
     }  // MUA_headertext
 
-// +++++++++ END MOD USER ++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++ END MOD USER ADD ++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+// +++++++++ MOD USER PERMIT SECTIONS ++++++++++++++++ PR20220-10-23
+    function MUPS_Open(mode, el_input){
+        console.log(" -----  MUPS_Open   ---- mode: ", mode)  // modes are: addnew, update
+        //console.log("permit_dict: ", permit_dict)
+        //console.log("permit_dict.permit_crud_sameschool: ", permit_dict.permit_crud_sameschool)
+        //console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
+        // mode = 'addnew' when called by SubmenuButton
+        // mode = 'update' when called by tblRow event
+
+        if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool){
+            let data_dict = {}, user_pk = null;
+            let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
+
+            let modifiedat = null, modby_username = null;
+            const fldName = get_attr_from_el(el_input, "data-field");
+            const is_addnew = (mode === "addnew");
+
+        //console.log("fldName: ", fldName)
+            if(el_input){
+                const tblRow = t_get_tablerow_selected(el_input);
+                user_mapid = tblRow.id;
+
+// --- get existing data_dict from data_rows
+                data_dict = get_datadict_from_mapid(tblRow.id);
+    //console.log("data_dict", data_dict)
+                if(!isEmpty(data_dict)){
+                    user_pk = data_dict.id;
+                    user_schoolbase_pk = data_dict.schoolbase_id;
+                    user_schoolbase_code = data_dict.sb_code;
+                    modifiedat= data_dict.modifiedat;
+                    modby_username = data_dict.modby_username;
+                };
+
+        // when el_input is not defined: function is mode 'addnew'
+            } else if (!permit_dict.permit_crud_otherschool){
+                // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
+                user_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
+                user_schoolbase_code = permit_dict.requsr_schoolbase_code;
+            }
+
+            selected_user_pk = user_pk
+
+            let user_schoolname = null;
+            if(user_schoolbase_pk){
+                user_schoolname = user_schoolbase_code
+                for(let i = 0, tblRow, dict; dict = school_rows[i]; i++){
+                    if (!isEmpty(dict)) {
+                        if(user_schoolbase_pk === dict.base_id ) {
+                            if (dict.abbrev) {user_schoolname += " - " + dict.abbrev};
+                            break;
+            }}}};
+
+            mod_MUPS_dict = {
+                mode: mode, // modes are: addnew, update
+                //skip_validate_username: is_addnew,
+                //skip_validate_last_name: is_addnew,
+                //skip_validate_email: is_addnew,
+                user_pk: user_pk,
+                user_schoolbase_pk: user_schoolbase_pk,
+                user_schoolbase_code: user_schoolbase_code,
+                user_schoolname: user_schoolname,
+                user_mapid: user_mapid,
+                username: (data_dict.username) ? data_dict.username : null,
+                last_name: (data_dict.last_name) ? data_dict.last_name : null,
+                email: (data_dict.email) ? data_dict.email : null
+                };
+            //console.log("mod_MUPS_dict: ", mod_MUPS_dict)
+
+    // ---  show only the elements that are used in this tab
+            const container_element = document.getElementById("id_mod_user");
+            let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
+            b_show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
+
+    // ---  set header text
+            //const header_text = (is_addnew) ? loc.Add_user : loc.User + ":  " + mod_MUPS_dict.username;
+            //const el_MUPS_header = document.getElementById("id_MUPS_header");
+            //el_MUPS_header.innerText = header_text;
+
+// ---  set text last modified
+            //el_MUPS_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc, modifiedat, modby_username) : null;
+
+    // ---  fill selecttable
+            MUPS_FillSelectTableSchool();
+
+    // ---  remove values from elements
+            //MUPS_ResetElements(true);  // true = also_remove_values
+
+    // ---  put values in input boxes
+            //el_MUPS_schoolname.value = user_schoolname;
+            if (mode === "update"){
+                el_MUPS_username.value = mod_MUPS_dict.username;
+                el_MUPS_last_name.value = mod_MUPS_dict.last_name;
+                el_MUPS_email.value = mod_MUPS_dict.email;
+            }
+    // ---  set focus to next el
+/*
+            const el_focus = (is_addnew && permit_dict.permit_crud_otherschool) ? el_MUPS_schoolname :
+                             ( (is_addnew && !permit_dict.permit_crud_otherschool) || (fldName === "username") ) ? el_MUPS_username :
+                             (fldName === "last_name") ? el_MUPS_last_name :
+                             (fldName === "email") ? el_MUPS_email : null;
+            if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
+*/
+    // ---  set text and hide info footer
+            //el_MUPS_footer01.innerText = loc.Click_to_register_new_user;
+            //el_MUPS_footer02.innerText = loc.We_will_send_an_email_to_the_new_user;
+            //el_MUPS_footer_container.classList.add(cls_hide);
+
+    // ---  hide loader
+            //el_MUPS_loader.classList.add(cls_hide);
+
+    // ---  hide btn delete when addnew mode
+            //add_or_remove_class(el_MUPS_btn_delete, cls_hide, is_addnew)
+
+    // ---  disable btn submit
+            //MUPS_DisableBtnSave()
+
+    // ---  show modal
+            $("#id_mod_userpermitsection").modal({backdrop: true});
+
+        }  //  if(permit_dict.permit_crud)
+    };  // MUPS_Open
+
+    function MUPS_Save(mode, el_input){
+        console.log(" -----  MUPS_Open   ---- mode: ", mode)  // modes are: addnew, update
+    };
+
+//========= MUPS_FillSelectTableSchool  ============= PR2022-10-24
+    function MUPS_FillSelectTableSchool() {
+        //console.log("===== MUPS_FillSelectTableSchool ===== ");
+
+        const data_rows = school_rows;
+
+        el_MUPS_tbody_select.innerText = null;
+
+// ---  loop through dictlist
+        let row_count = 0
+
+        if(data_rows && data_rows.length ){
+            const tblName = "school";
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                if (!isEmpty(data_dict)) {
+                    const defaultrole = (data_dict.defaultrole) ? data_dict.defaultrole : 0;
+    // only add schools to list whith sme or lower role
+                    if (defaultrole <= permit_dict.requsr_role){
+//--------- insert tblBody_select row at row_index -1
+                        MUPS_CreateTblrowSchool(data_dict);
+                    }; //  if (defaultrole < permit_dict.requsr_role)
+                };  //  if (!isEmpty(item_dict))
+            };  // for (const [map_id, data_dict] of data_map.entries())
+        const addnew_dict = {
+            base_id: -1,
+            sb_code: "",
+            name: "< " + loc.Add_school + " >"
+        };
+        MUPS_CreateTblrowSchool(addnew_dict);
+
+        };  // if(data_map)
+    }; // MUPS_FillSelectTableSchool
+
+
+    function MUPS_CreateTblrowSchool(data_dict ) {
+    // PR2022-10-24
+// ---  get info from data_dict
+        const base_id = data_dict.base_id;
+        const code = (data_dict.sb_code) ? data_dict.sb_code : "";
+        const name = (data_dict.name) ? data_dict.name : "";
+
+//--------- insert tblBody_select row at end
+        const tblRow = el_MUPS_tbody_select.insertRow(-1);
+
+        tblRow.setAttribute("data-pk", base_id);
+        tblRow.setAttribute("data-table", "school");
+
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+            td.classList.add("awp_bg_blue")
+
+        let el_div = document.createElement("div");
+            el_div.classList.add("tw_075")
+            el_div.innerText = code;
+            td.appendChild(el_div);
+
+// ---  add second td to tblRow.
+        td = tblRow.insertCell(-1);
+        td.classList.add("awp_bg_blue")
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_480")
+            el_div.innerText = name;
+            td.appendChild(el_div);
+            if (base_id === -1){
+
+            el_div.classList.add("awp_navbaritem_may_select")
+    // ---  add hover to el_div
+    // ---  add addEventListener
+                td.addEventListener("click", function() {MUPS_AddTblrowSchool(tblRow)}, false);
+                td.appendChild(el_div);
+            };
+
+// ---  add third td to tblRow.
+        td = tblRow.insertCell(-1);
+        td.classList.add("awp_bg_blue")
+        // skip when add_new
+        if (base_id !== -1){
+            el_div = document.createElement("div");
+            el_div.classList.add("tw_060")
+            el_div.classList.add("delete_0_0")
+            //b_add_hover_delete_btn(el_div,"delete_0_2", "delete_0_2", "delete_0_0");
+            add_hover(el_div, "delete_0_2", "delete_0_0")
+
+// ---  add addEventListener
+            td.addEventListener("click", function() {MUPS_DeleteTblrowSchool(tblRow)}, false);
+            td.appendChild(el_div);
+        };
+    };
+
+
+    function MUPS_AddTblrowSchool(tblRow ) {
+        console.log(" -----  MUPS_AddTblrowSchool   ----");
+        console.log("tblRow", tblRow);
+        const tblName = get_attr_from_el(tblRow, "data-table");
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        console.log("pk_int", pk_int);
+        console.log("tblName", tblName);
+    };
+
+    function MUPS_DeleteTblrowSchool(tblRow ) {
+        console.log(" -----  MUPS_DeleteTblrowSchool   ----");
+        console.log("tblRow", tblRow);
+        const tblName = get_attr_from_el(tblRow, "data-table");
+        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+        console.log("pk_int", pk_int);
+        console.log("tblName", tblName);
+    };
+
+// +++++++++ END OF MOD USER PERMIT SECTIONS ++++++++++++++++ PR20220-10-23
+
 
 // +++++++++ MOD UPLOAD PERMITS ++++++++++++++++ PR2021-04-20
     function MUP_Open(){
@@ -1710,9 +1955,6 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.id = map_id;
         tblRow.setAttribute("data-pk", pk_int);
         tblRow.setAttribute("data-selected", selected_int);
-
-//- add hover to select row
-        add_hover(tblRow)
 
 // --- add first td to tblRow.
         let td = tblRow.insertCell(-1);
@@ -2896,8 +3138,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= get_allowed_display_txt  ====== PR2022-01-26
     function get_allowed_display_txt(fldName, allowed_str) {
-        console.log( "===== get_allowed_display_txt  === ");
-        console.log( "allowed_str", allowed_str);
+        //console.log( "===== get_allowed_display_txt  === ");
+    //console.log( "allowed_str", allowed_str);
         let display_txt = null, title_txt = null;
 
         const data_rows = (fldName === "allowed_depbases") ? department_rows :
@@ -2905,7 +3147,7 @@ function RefreshDataRowsAfterUpload(response) {
                                 (fldName === "allowed_levelbases") ? level_rows :
                                 (fldName === "allowed_subjectbases") ? subject_rows :
                                 (fldName === "allowed_clusterbases") ? cluster_rows : null;
-        console.log( "data_rows", data_rows);
+    //console.log( "data_rows", data_rows);
         // leave field blank when table is empty (happens only in clusters)
         let show_all_txt = false;
 
@@ -2936,11 +3178,11 @@ function RefreshDataRowsAfterUpload(response) {
                     let code_array = [], name_array = [];
                     for (let i = 0, base_pk_str, data_dict; base_pk_str = allowed_arr[i]; i++) {
 
-            console.log( "base_pk_str", base_pk_str);
+    //console.log( "base_pk_str", base_pk_str);
 
     // --- get existing data_dict from data_rows
                         const base_pk_int = (Number(base_pk_str)) ?  Number(base_pk_str) : null;
-            console.log( "base_pk_int", base_pk_int);
+    //console.log( "base_pk_int", base_pk_int);
                         // cannot use b_recursive_integer_lookup, it can only be used to lookup by id, not by base_id
                         if (data_rows){
                             for (let j = 0, data_dict; data_dict = data_rows[j]; j++) {
@@ -2948,17 +3190,17 @@ function RefreshDataRowsAfterUpload(response) {
                                     if(data_dict[display_field]){ code_array.push(data_dict[display_field]) };
                                     if(data_dict[display_name_field]){ name_array.push(data_dict[display_name_field]) };
                                     break;
-                                }
+                                };
                             };
                         };
                     };
-            console.log("code_array", code_array)
-            console.log("name_array", name_array)
+    //console.log("code_array", code_array)
+    //console.log("name_array", name_array)
                     let value_str = "";
                     if(code_array){
                         code_array.sort();
                         code_array.forEach(function (code) {
-            console.log("code", code)
+    //console.log("code", code)
                             if (display_txt) {
                                 display_txt += ", " + code;
                             } else {
@@ -2969,25 +3211,21 @@ function RefreshDataRowsAfterUpload(response) {
                     if(name_array){
                         name_array.sort();
                         name_array.forEach(function (name) {
-            console.log("name", name)
+    //console.log("name", name)
                             if (title_txt) {
                                 title_txt += "\n" + name;
                             } else {
                                 title_txt = name;
-                            }
+                            };
                         });
-                    }
-
-
+                    };
                 };
-            console.log("display_txt", display_txt)
-            console.log("title_txt", title_txt)
+    //console.log("display_txt", display_txt)
+    //console.log("title_txt", title_txt)
             };
         };
         return [display_txt, title_txt];
     };  // get_allowed_display_txt
-
-
 
 
 //========= get_allowed_caption  ====== PR2022-01-26

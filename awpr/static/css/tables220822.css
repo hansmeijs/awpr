@@ -1439,7 +1439,7 @@ aXX:hover{
 .tickmark_2_2 { background-position: -40px -40px;}
 
 .delete_0_0, .delete_0_1, .delete_0_2 {
-    background-image: url('/static/img/btn_del.png');
+    background-image: url('/static/img/btn_del221024.png');
     background-size: 60px 20px;
 }
 .delete_0_0 { background-position: -0px -0px;}
@@ -1447,7 +1447,7 @@ aXX:hover{
 .delete_0_2 { background-position: -40px -0px;}
 
 .btn_del_0_1, .btn_del_0_2 {
-    background-image: url('/static/img/btn_del.png');
+    background-image: url('/static/img/btn_del221024.png');
     background-size: 84px 28px;
     background-repeat: no-repeat;
 

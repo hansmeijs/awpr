@@ -274,6 +274,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Allowed_subjects'] = _('Allowed subjects')
         dict['Allowed_clusters'] = _('Allowed clusters')
 
+        dict['Add_school'] = _('Add school')
+
         dict['Organization'] = TXT_Organization
         dict['Action'] = _('Action')
         dict['Page'] = _('Page')
@@ -1663,6 +1665,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Variable_number_envelops'] = _('Has variable number of envelops')
         dict['Variable_number_envelops_2lines'] = _('Has variable number\nof envelops')
 
+        dict['Request_verifcode'] = TXT_Request_verifcode
         dict['MPUBORD_info'] = {
             'request_verifcode_01': _("When you publish the orderlist, AWP will create an Excel file with the total exams, plus an Excel file for each school."),
             'request_verifcode_02': _("The orderlists will be saved on the sever and can be found in the page 'Archive'."),

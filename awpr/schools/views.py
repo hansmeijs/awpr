@@ -2665,6 +2665,7 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                     if not send_email:
                         log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ',
                                                  str(_('The email to %(cpt)s is not sent.') % {'cpt': school.name}))))
+                        log_list.append(c.STRING_SPACE_05)
                     else:
                         mail_sent = send_email_orderlist(
                             examyear=sel_examyear_instance,
