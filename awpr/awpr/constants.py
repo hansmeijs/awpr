@@ -679,7 +679,7 @@ LABEL_TEXT = {
         'numex': 'Number of copys',
         'numenv': 'Envelope',
         'content': 'CONTENT',
-        'oclock':  "o'clock",
+        'oclock':  "hour",
         'minutes': 'minutes',
         'of':  "of"
     },
