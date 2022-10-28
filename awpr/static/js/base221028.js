@@ -1791,6 +1791,7 @@
         $('#id_mod_message').on('hide.bs.modal', function (e) {
             try {
                 // ModMessageClose sets the focus to the element mod_dict.el_focus
+                // in userpage MUPS_Open it close modal PR2022-10-26
                 ModMessageClose();
             } catch (error) {
             }

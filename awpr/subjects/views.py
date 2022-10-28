@@ -7879,10 +7879,10 @@ def check_verifcode_local(upload_dict, request ):
 # - end of check_verifcode_local
 ##########################################################
 
-def create_departmentbase_dictlist(examyear_instance):  # PR2021-09-01
+def create_department_dictlist(examyear_instance):  # PR2021-09-01 PR2022-10-27
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('----- create_departmentbase_dictlist -----')
+        logger.debug('----- create_department_dictlist -----')
 
     # PR2021-08-20 functions creates ordered dictlist of all departments of this exam year of all countries
     # PR2021-09-02 debug: filter on examyear.code returned each depbase twice. Select ey_pk, same depbase is used in Cur and SXM
@@ -7907,13 +7907,13 @@ def create_departmentbase_dictlist(examyear_instance):  # PR2021-09-01
         logger.debug('dictlist: ' + str(dictlist))
 
     return dictlist
-# --- end of create_departmentbase_dictlist
+# --- end of create_department_dictlist
 
 
-def create_levelbase_dictlist(examyear_instance):  # PR2021-09-01
+def create_level_dictlist(examyear_instance):  # PR2021-09-01 PR2022-10-27
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('----- create_levelbase_dictlist -----')
+        logger.debug('----- create_level_dictlist -----')
 
     # PR2021-09-01 functions creates ordered dictlist of all levels of this exam year of all countries
     # also add row with pk = 0 for Havo / Vwo
@@ -7945,7 +7945,7 @@ def create_levelbase_dictlist(examyear_instance):  # PR2021-09-01
         logger.debug('dictlist: ' + str(dictlist))
 
     return dictlist
-# --- end of create_levelbase_dictlist
+# --- end of create_level_dictlist
 
 
 def create_schoolbase_dictlist(examyear, request):  # PR2021-08-20 PR2021-10-14

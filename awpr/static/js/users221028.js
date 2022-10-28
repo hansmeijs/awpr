@@ -57,6 +57,9 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
+
+    urls.url_user_allowedschools_upload = get_attr_from_el(el_data, "data-url_user_allowedschools_upload");
+
     urls.url_userpermit_upload = get_attr_from_el(el_data, "data-userpermit_upload_url");
     urls.url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
 
@@ -218,6 +221,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
 // ---  MODAL USER SET PERMIT SECTION
+        const el_MUPS_username = document.getElementById("id_MUPS_username");
+
         const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
         const el_MUPS_btn_submit = document.getElementById("id_MUPS_btn_submit");        if (el_MUPM_btn_submit){
             el_MUPS_btn_submit.addEventListener("click", function() {MUPS_Save("save")}, false);
@@ -383,8 +388,6 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, []);
             AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, null, "id_submenu_import");
         };
-
-        // AddSubmenuButton(el_submenu, "Test+commissioner", function() {MUPS_Open("addnew")}, []);
 
         // hardcode access of system admin
         if (permit_system_admin){
@@ -598,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01
     function CreateTblRow(tblName, field_setting, map_dict) {
-        //console.log("=========  CreateTblRow =========", tblName);
+        console.log("=========  CreateTblRow =========", tblName);
         //console.log("map_dict", map_dict);
 
         const field_names = field_setting.field_names;
@@ -674,10 +677,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- add EventListener to td
                     if (field_name === "select") {
                         // TODO add select multiple users option PR2020-08-18
+                    } else if (field_name === "username"){
+                        //if(tblName ==="tbl_allowed"){
+                        //    el.addEventListener("click", function() {MUPS_Open("update", el)}, false)
+                        //} else {
+                            el.addEventListener("click", function() {MUA_Open("update", el)}, false)
+                        //};
+                        el.classList.add("pointer_show");
+                        add_hover(el);
                     } else if (["sb_code", "school_abbrev", "username", "last_name", "email"].includes(field_name)){
                         el.addEventListener("click", function() {MUA_Open("update", el)}, false)
                         el.classList.add("pointer_show");
                         add_hover(el);
+
                     } else if (["role", "page"].includes(field_name)){
                         el.addEventListener("click", function() {MUPM_Open("update", el)}, false)
                         el.classList.add("pointer_show");
@@ -923,6 +935,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if("msg_dictlist" in response){
                         b_show_mod_message_dictlist(response.msg_dictlist);
                     }
+                   // only used in MUPS allowes schools
+                    if("msg_html" in response){
+                        b_show_mod_message_html(response.msg_html, null, MUPS_MessageClose);
+                    };
 
                     const mode = get_dict_value(response, ["mode"]);
                     if(["delete", "send_activation_email"].includes(mode)) {
@@ -937,6 +953,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("updated_permit_rows" in response){
                         RefreshDataRows("userpermit", response.updated_permit_rows, permit_rows, true)  // true = is_update
                     }
+                    // used in MUPS_Open PR2022-10-26
+                    if ("allowed_schoolbases" in response){
+                        mod_MUPS_dict.allowed_schoolbases = response.allowed_schoolbases;
+                    };
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -1573,9 +1593,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(mod_MUA_dict.user_schoolbase_pk){ header_text = loc.Add_user_to + mod_MUA_dict.user_schoolname;}
         document.getElementById("id_MUA_header").innerText = header_text;
     }  // MUA_headertext
-
 // +++++++++ END MOD USER ADD ++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 
 // +++++++++ MOD USER PERMIT SECTIONS ++++++++++++++++ PR20220-10-23
     function MUPS_Open(mode, el_input){
@@ -1643,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 last_name: (data_dict.last_name) ? data_dict.last_name : null,
                 email: (data_dict.email) ? data_dict.email : null
                 };
-            //console.log("mod_MUPS_dict: ", mod_MUPS_dict)
+    console.log("mod_MUPS_dict: ", mod_MUPS_dict)
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
@@ -1664,13 +1682,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  remove values from elements
             //MUPS_ResetElements(true);  // true = also_remove_values
 
-    // ---  put values in input boxes
-            //el_MUPS_schoolname.value = user_schoolname;
-            if (mode === "update"){
-                el_MUPS_username.value = mod_MUPS_dict.username;
-                el_MUPS_last_name.value = mod_MUPS_dict.last_name;
-                el_MUPS_email.value = mod_MUPS_dict.email;
+    // --- get urls.url_user_allowedschools_upload
+            const upload_dict = {
+                mode: "get_allowed_schoolbases",
+                user_pk: selected_user_pk
             }
+           UploadChanges(upload_dict, urls.url_user_allowedschools_upload);
+
+            el_MUPS_username.value = mod_MUPS_dict.last_name;
+
     // ---  set focus to next el
 /*
             const el_focus = (is_addnew && permit_dict.permit_crud_otherschool) ? el_MUPS_schoolname :
@@ -1711,6 +1731,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         el_MUPS_tbody_select.innerText = null;
 
+        const addnew_dict = {
+            base_id: -1,
+            sb_code: "",
+            name: "< " + loc.Add_school + " >"
+        };
+        MUPS_CreateTblrowSchool(addnew_dict);
+
 // ---  loop through dictlist
         let row_count = 0
 
@@ -1726,12 +1753,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }; //  if (defaultrole < permit_dict.requsr_role)
                 };  //  if (!isEmpty(item_dict))
             };  // for (const [map_id, data_dict] of data_map.entries())
-        const addnew_dict = {
-            base_id: -1,
-            sb_code: "",
-            name: "< " + loc.Add_school + " >"
-        };
-        MUPS_CreateTblrowSchool(addnew_dict);
 
         };  // if(data_map)
     }; // MUPS_FillSelectTableSchool
@@ -1768,7 +1789,7 @@ document.addEventListener('DOMContentLoaded', function() {
             td.appendChild(el_div);
             if (base_id === -1){
 
-            el_div.classList.add("awp_navbaritem_may_select")
+            el_div.classList.add("awp_modselect_item")
     // ---  add hover to el_div
     // ---  add addEventListener
                 td.addEventListener("click", function() {MUPS_AddTblrowSchool(tblRow)}, false);
@@ -1800,6 +1821,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const pk_int = get_attr_from_el_int(tblRow, "data-pk");
         console.log("pk_int", pk_int);
         console.log("tblName", tblName);
+
+        t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MUPS_MSSSS_Response);
     };
 
     function MUPS_DeleteTblrowSchool(tblRow ) {
@@ -1810,6 +1833,32 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("pk_int", pk_int);
         console.log("tblName", tblName);
     };
+
+//=========  MUPS_MSSSS_Response  ================ PR2022-10-26
+    function MUPS_MSSSS_Response(tblName, selected_dict, selected_pk) {
+        console.log( "===== MUPS_MSSSS_Response ========= ");
+        console.log( "selected_dict", selected_dict);
+        console.log( "selected_pk", selected_pk);
+
+        // Note: when tblName = school: pk_int = schoolbase_pk
+        if(selected_pk === -1) { selected_pk = null};
+
+// ---  put new selected_pk in setting_dict
+        //setting_dict.sel_schoolbase_pk = selected_pk;
+
+// ---  upload new setting and refresh page
+        //let datalist_request = {setting: {page: "page_user", sel_schoolbase_pk: selected_pk}};
+        //DatalistDownload(datalist_request);
+
+    }  // MUPS_MSSSS_Response
+
+//=========  MUPS_MessageClose  ================ PR2022-10-26
+    function MUPS_MessageClose() {
+        console.log(" --- MUPS_MessageClose --- ");
+
+        $("#id_mod_userpermitsection").modal("hide");
+    }  // MUPS_MessageClose
+
 
 // +++++++++ END OF MOD USER PERMIT SECTIONS ++++++++++++++++ PR20220-10-23
 
@@ -3273,7 +3322,7 @@ function RefreshDataRowsAfterUpload(response) {
         return  (selected_btn === "btn_user") ? "user" :
                 (selected_btn === "btn_usergroup") ? "usergroup" :
                 (selected_btn === "btn_userpermit") ? "userpermit" :
-                (selected_btn === "btn_allowed") ? "btn_allowed" : null;
+                (selected_btn === "btn_allowed") ? "tbl_allowed" : null;
     }
 
     function get_data_rows(tblName) {  //PR2021-08-01

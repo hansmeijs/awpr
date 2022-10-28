@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
                                schoolbase_pk_list=None, subjbase_pk_list=None):
     # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25 PR2022-10-14
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj_count_dict ----- ')
 
@@ -32,10 +32,13 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
 # - create mapped_admin_dict with key = country_id and value = row_dict
     # mapped_admin_dict: key = country_id, value = {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', ...
     mapped_admin_dict = create_mapped_admin_dict(sel_examyear_instance)
+    if logging_on :
+        logger.debug('mapped_admin_dict: ' + str(mapped_admin_dict))
     """
-     mapped_admin_dict: {
-        1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', 'order_extra_fixed': 8, 'order_extra_perc': 8, 'order_round_to': 8, 'order_tv2_divisor': 88, 'order_tv2_multiplier': 8, 'order_tv2_max': 88, 'order_admin_divisor': 88, 'order_admin_multiplier': 8, 'order_admin_max': 88}, 
-        2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}} 
+    mapped_admin_dict: {
+        1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 0, 'order_admin_max': 0}, 
+        2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}}
+
     """
 
 # - count number of sudsubj. i.e. number of students with that subject
@@ -58,14 +61,12 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
         subjbase_id, ete_exam, sch.otherlang, si.otherlang"
     """
     for row in rows:
+        if logging_on:
+            logger.debug('... row: ' + str(row))
         """
-        row: {'subjbase_id': 131, 'ete_exam': True, 'id_key': '1_5_131_1_1', 'lang': 'nl',
-         'country_id': 1, 'sb_code': 'CUR02', 'lvl_abbrev': 'PKL', 'depbase_code': 'Vsbo', 
-         'subjbase_code': 'zwi', 'subj_name': 'Zorg & Welzijn intrasectoraal', 
-         'schoolbase_id': 3, 'school_name': 'Skol Avansá Amador Nita', 'depbase_id': 1, 'lvlbase_id': 5, 
-         'dep_sequence': 1, 'lvl_sequence': 2,
-         
-         'subj_count': 4, 'exam_count': 2,  'extra_count': 6, 'tv2_count': 5}
+        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133', 'subjbase_code': 'ac', 'lang': 'pa', 
+            'country_id': 1, 'schoolbase_id': 20, 'depbase_id': 1, 'lvlbase_id': 6, 
+            'subj_count': 1, 'extra_count': 4, 'tv2_count': 5}
         """
 
         # admin_id is schoolbase_id of school of ETE / DOE
@@ -81,12 +82,6 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
         subj_count = row.get('subj_count') or 0
         extra_count = row.get('extra_count') or 0
         tv2_count = row.get('tv2_count') or 0
-
-        """
-        row: {'subjbase_id': 121, 'ete_exam': True, 'lang': 'nl', 'country_id': 1, 'sb_code': 'CUR05', 
-                'lvl_abbrev': 'PKL', 'subj_name': 'Wiskunde', 'schoolbase_id': 6, 'depbase_id': 1, 'lvlbase_id': 5, 
-                'subj_count': 32, 'extra_count': 8, 'tv2_count': 10}
-        """
 
 # +++ store info in count_dict
     # - get eteduo_dict
@@ -165,7 +160,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
 
         receipt_lvlbase_list.append(row)
 
-        if logging_on and False:
+        if logging_on:
             logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
         """
         schoolbase_dict: {'c': 'CUR05', 121: [32, 8, 10]}  [subj_count, extra_count, tv2_count]
@@ -195,8 +190,9 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
                 admin_total[subjbase_pk][1] += extra_count
                 admin_total[subjbase_pk][2] += tv2_count
 
-            if logging_on and False:
+            if logging_on:
                 logger.debug(' - - - - ')
+                logger.debug('........lvlbase_admin_total: ' + str(lvlbase_admin_total))
                 logger.debug('........admin_total: ' + str(admin_total))
                 """
                 admin_total: {'c': 'CURETE', 121: [32, 8, 10], 120: [1, 4, 5], 114: [76, 9, 20]}
@@ -219,7 +215,8 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
             examyear_total[subjbase_pk][0] += subj_count
             examyear_total[subjbase_pk][1] += extra_count
             examyear_total[subjbase_pk][2] += tv2_count
-# - end of for row in rows
+
+# +++ end of for row in rows
 
 # +++ after adding schools: calculate extra for ETE and DOE:
     # skip when calculate per school > when schoolbase_pk has value
@@ -310,17 +307,28 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
                                                         subjbase_pk: 133 count_list: [127, 43, 50]
                                                         """
                                                         if isinstance(subjbase_pk, int):
-                            # - caculate extra exams for ETE / DEX
+                            # - caculate extra exams for ETE / DES, based on total exams / total_tv2 and parameters: order_admin_divisor, order_admin_multiplier, order_admin_max
+                                                            # ETE has 0 extra exams per 100 with max 0
+                                                            # DES has 5 extra exams per 100 with max 25
+
+                                                            # calc_exams_tv02 formula: tv2_count = ROUND_UP( item_count / divisor ) x multiplier
+
                                                             sj_count = count_list[0]
                                                             tv2_count = count_list[2]
 
                                                             admin_extra_count = calc_exams_tv02(sj_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
-                                                            # TODO tv2 calc for extra ETE / DEZ
-                                                            # TODO separate variables for extra tv2 ETE/DOE
                                                             admin_tv2_count = calc_exams_tv02(tv2_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
+
                                                             if logging_on:
-                                                                logger.debug('admin_extra_count: ' + str(admin_extra_count) + ' ' + str(type(admin_extra_count)))
-                                                                logger.debug('admin_tv2_count: ' + str(admin_tv2_count) + ' ' + str(type(admin_tv2_count)))
+                                                                logger.debug('... order_admin_divisor: ' + str(order_admin_divisor) + ' ' + str(type(order_admin_divisor)))
+                                                                logger.debug('... order_admin_multiplier: ' + str(order_admin_multiplier) + ' ' + str(type(order_admin_multiplier)))
+                                                                logger.debug('... order_admin_max: ' + str(order_admin_max) + ' ' + str(type(order_admin_max)))
+
+                                                                logger.debug('>>> sj_count: ' + str(sj_count) + ' ' + str(type(sj_count)))
+                                                                logger.debug('    admin_extra_count: ' + str(admin_extra_count) + ' ' + str(type(admin_extra_count)))
+
+                                                                logger.debug('>>> tv2_count: ' + str(tv2_count) + ' ' + str(type(tv2_count)))
+                                                                logger.debug('    admin_tv2_count: ' + str(admin_tv2_count) + ' ' + str(type(admin_tv2_count)))
 
                             # - add extra exams to lvlbase_admin_dict
                                                             # index 0 contains sj_count, but admins don't have exams, omly extra and tv2 extra
@@ -764,6 +772,8 @@ def calc_exams_tv02(item_count, divisor, multiplier, max_exams):  # PR2021-09-25
     # - Note: values of divisor, multiplier, max_exams are from table examyear,
     #         thus can be different for CUR and SXM schools
 
+    # formula: tv2_count = ROUND_UP( item_count / divisor ) x multiplier
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- calc_exams_tv02 -------')
@@ -978,7 +988,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
     for row in rows:
 
         # admin_id is schoolbase_id of school of ETE / DOE
-        #admin_id, admin_code = None, None
+        # admin_id, admin_code = None, None
         order_extra_fixed, order_extra_perc, order_round_to = None, None, None
         order_tv2_divisor, order_tv2_multiplier, order_tv2_max = None, None, None
 
@@ -1005,7 +1015,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 
 # +++ count extra exams and examns tv2 per school / subject
         subj_count = row.get('subj_count', 0)
-        # TODO delete exam_count
+        # was exam_count:
         # practical exams have multiple exams for the same subject (Blue, Red). Count number of exams,
         # default is 1 if no value given or value = 0
         # exam_count = row.get('exam_count') or 1
@@ -1021,14 +1031,11 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         row['tv2_count'] = tv2_count
 
         if logging_on :
-            logger.debug('row: ' + str(row))
-        """          
-        row: { 'id_key': '1_6_133', 'ete_exam': True,'lang': 'nl', 'country_id': 1, 
-            'depbase_id': 1, 'dep_sequence': 1, 'depbase_code': 'Vsbo', 
-            'lvlbase_id': 6, lvl_abbrev': 'PBL', 'lvl_sequence': 1, 
-            'subjbase_id': 133, 'subjbase_code': 'ac', 'subj_name': 'Administratie & Commercie', 
-            'schoolbase_id': 2, 'sb_code': 'CUR01', 'school_name': 'Ancilla Domini Vsbo',            
-            'subj_count': 17,  'extra_count': 3, 'tv2_count': 5}
+            logger.debug('>>>>> row: ' + str(row))
+        """                     
+        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_5_133', 'subjbase_code': 'ac', 'lang': 'en',
+         'country_id': 2, 'schoolbase_id': 31, 'depbase_id': 1, 'lvlbase_id': 5, 
+         'subj_count': 17, 'extra_count': 3, 'tv2_count': 5}
         """
 
         if logging_on:

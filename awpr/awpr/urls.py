@@ -149,6 +149,9 @@ urlpatterns = [
     path('users/', include([
         path('user', account_views.UserListView.as_view(), name='users_url'),
         path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
+
+        path('allowedschools_download', account_views.UserAllowedschoolsUploadView.as_view(), name='url_user_allowedschools_upload'),
+
         path('userpermit_upload', account_views.UserpermitUploadView.as_view(), name='userpermit_upload_url'),
         path('usersetting_upload', account_views.UserSettingsUploadView.as_view(), name='url_usersetting_upload'),
         path('permits_download', account_views.UserDownloadPermitsView.as_view(), name='user_download_permits_url'),

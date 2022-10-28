@@ -2332,10 +2332,10 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
 # - get department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist
                         # department_dictlist is ordered dictlist of all departments of this exam year of all countries
-                        department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
+                        department_dictlist = subj_view.create_department_dictlist(sel_examyear_instance)
 
                         # lvlbase_dictlist is ordered dictlist of all levels of this exam year of all countries
-                        lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
+                        lvlbase_dictlist = subj_view.create_level_dictlist(sel_examyear_instance)
 
                         # subjectbase_dictlist is ordered dictlist of all subjectbase pk and code of this exam year of all countries
                         #   NOTE: it uses examyear.code (integer field) to filter on examyear.

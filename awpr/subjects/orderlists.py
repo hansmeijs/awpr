@@ -1717,6 +1717,7 @@ def create_enveloplabelitem_rows(sel_examyear):
 
 def get_schemeitem_info_per_dep_lvl(sel_examyear):
     # PR2022-08-12
+    # filtered by department.examyear_id
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== get_schemeitem_info_per_dep_lvl ============= ')
@@ -1840,7 +1841,6 @@ def create_printlabel_dict(sel_examyear, sel_examperiod, sel_layout, envelopsubj
             'content_font_arr': [None, None, None, None, None, 'None, None], 
             'instruction_font_arr': [None, None, None, None, None, 'None, None], 
             'sequence_arr': [1, 2, 61, 62, 63, 64, 65]}
-        
         """
         id_key = row.get('id_key')
 
@@ -2069,7 +2069,7 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
 
 # --- get department dictlist, ordered by sequence
                 # fields are: depbase_id, depbase_code, dep_name, dep_level_req
-                department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear)
+                department_dictlist = subj_view.create_department_dictlist(sel_examyear)
                 """
                 department_dictlist: [
                     {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}, 
@@ -2078,7 +2078,7 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
                 """
 
 # --- get lvlbase dictlist, ordered by sequence
-                lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear)
+                lvlbase_dictlist = subj_view.create_level_dictlist(sel_examyear)
                 """
                 lvlbase_dictlist: [
                     {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}, 
@@ -2088,6 +2088,7 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
                 """
 
 # - get dict with schemeitem info per dep and lvl
+                # schemeitem_dict is  filtered by department.examyear_id
                 schemeitem_dict = get_schemeitem_info_per_dep_lvl(sel_examyear)
 
 # - get envelop label info
@@ -2167,13 +2168,20 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
                         # - remove key if it does not exists in schoolbase_pk_list
                             if keys_tobe_removed:
                                 for sbase_pk_str in keys_tobe_removed:
-                                    popped = envelop_count_per_school_dict.pop(sbase_pk_str, None)
-                                    if logging_on:
-                                        logger.debug(' >>> popped sbase_pk_str: ' + str(sbase_pk_str))
+                                    envelop_count_per_school_dict.pop(sbase_pk_str, None)
 
                     if envelop_count_per_school_dict:
                         if logging_on:
                             logger.debug(' >>>>>>>> published envelop_count_per_school_dict is used')
+                            logger.debug('envelop_count_per_school_dict: ' + str(envelop_count_per_school_dict))
+                        """
+                        envelop_count_per_school_dict: {
+                            '34': {'c': '-', 
+                                '0': {'c': '-', 
+                                    '0': [{'subjbase_id': None, 'ete_exam': None, 'id_key': None, 'subjbase_code': None, 'lang': 'nl', 'country_id': 2, 'schoolbase_id': 34, 'depbase_id': None, 'lvlbase_id': None, 'subj_count': None, 'extra_count': 0, 'tv2_count': 0}]}}}
+[2022-10-26 21:18:14] DEBUG [subjects.orderlists.create_enveloplabel_pdf_with_school:2241]  --- create_enveloplabel_pdf_with_school  -----
+[2022-10-26 21:18:14] DEBUG [subjects.orderlists.create_env
+                        """
                     else:
                         count_dictNIU, envelop_count_per_school_dict = subj_calc.create_studsubj_count_dict(
                             sel_examyear_instance=sel_examyear,
@@ -2333,7 +2341,6 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
 
 # - check if school exists in print_dict
         if schoolbase_count_dict:
-
 
 # +++ loop through list of all departments
             """
@@ -2528,17 +2535,27 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
 
             # - get language of this school
                                         # when there is a school selected: school has only 1 lang per subject. Use that one
+                                        # PR2022-10-27 debug: added: use school_lang only when in otherlang_arr, else use 'nl'
                                         # when no school selected: print all languages
                                         lang_list = []
                                         if school_lang:
-                                            lang_list.append(school_lang)
+                                            if school_lang in lang_list:
+                                                lang_list.append(school_lang)
+                                            else:
+                                                lang_list.append('nl')
                                         else:
-                                            # otherwise: loop throudh all languages of this subject
+                                            # otherwise: loop through all languages of this subject
                                             lang_list.append('nl')
                                             if otherlang_arr:
                                                 for lang in otherlang_arr:
                                                     if lang not in lang_list:
                                                         lang_list.append(lang)
+
+                                        if logging_on:
+                                            logger.debug('+++  school_lang: ' + str(school_lang) + ' ' + str(type(school_lang)))
+                                            logger.debug('+++  otherlang_arr: ' + str(otherlang_arr) + ' ' + str(type(otherlang_arr)))
+                                            logger.debug('+++  lang_list: ' + str(lang_list) + ' ' + str(type(lang_list)))
+
 
         # +++ loop through languages of lang_list - when there is a school selected: there is only 1 lang - the lang of the school
                                         for lang in lang_list:
@@ -2955,10 +2972,10 @@ def calc_acknowledgment_of_receipt_dictlist(sel_examyear, request):
 
 # --- get department dictlist, ordered by sequence
     # fields are: depbase_id, depbase_code, dep_name, dep_level_req
-    department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear)
+    department_dictlist = subj_view.create_department_dictlist(sel_examyear)
 
 # --- get lvlbase dictlist, ordered by sequence
-    lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear)
+    lvlbase_dictlist = subj_view.create_level_dictlist(sel_examyear)
 
 # - get dict with schemeitem info per dep and lvl
     schemeitem_dict = get_schemeitem_info_per_dep_lvl(sel_examyear)

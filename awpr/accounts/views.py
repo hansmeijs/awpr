@@ -368,7 +368,75 @@ class UserUploadView(View):
 # === end of UserUploadView =====================================
 
 ########################################################################
+# === UserAllowedschoolsUploadView ===================================== PR2022-10-26
+
+@method_decorator([login_required], name='dispatch')
+class UserAllowedschoolsUploadView(View):
+    #  UserAllowedschoolsUploadView is called from Users form
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserAllowedschoolsUploadView ===============')
+
+        update_wrap = {}
+        msg_list = []
+
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get permit
+        has_permit = False
+        req_usr = request.user
+
+        permit_list = req_usr.permit_list('page_user')
+        has_permit = 'permit_crud' in permit_list
+
+        if logging_on:
+            logger.debug('permit_list: ' + str(permit_list))
+            logger.debug('has_permit: ' + str(has_permit))
+
+        if not has_permit:
+            msg_list.append(str(_("You don't have permission to perform this action.")))
+        else:
+
+            # - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+
+     # - get info from upload_dict
+                selected_user_pk = upload_dict.get('user_pk')
+                mode = upload_dict.get('mode')
+
+                update_wrap['mode'] = mode
+
+                selected_user_instance = acc_mod.User.objects.get_or_none(
+                    id=selected_user_pk
+                )
+                if logging_on:
+                    logger.debug('selected_user_instance: ' + str(selected_user_instance))
+
+                allowed_schoolbases = None
+                if selected_user_instance:
+                    allowed_schoolbases = getattr(selected_user_instance, 'allowed_schoolbases')
+                update_wrap['allowed_schoolbases'] = allowed_schoolbases
+
+        if msg_list:
+            msg_html = '<br>'.join(msg_list)
+            update_wrap['msg_html'] = msg_html
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of UserAllowedschoolsUploadView
+
+
+
+########################################################################
 # === UserDownloadPermitsView ===================================== PR2021-04-20
+
 @method_decorator([login_required], name='dispatch')
 class UserDownloadPermitsView(View):
     #  UserDownloadPermitsView is called from Users form
@@ -647,11 +715,11 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
-            req_user = request.user
+
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload')
             if upload_json:

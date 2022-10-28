@@ -1484,10 +1484,10 @@ class GradeDownloadResultOverviewView(View):  # PR2022-06-01
 
     # --- get department dictlist
                     # fields are: depbase_id, depbase_code, dep_name, dep_level_req
-                    department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear)
+                    department_dictlist = subj_view.create_department_dictlist(sel_examyear)
 
-                    # --- get lvlbase dictlist
-                    lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear)
+                    # --- get level_dictlist
+                    level_dictlist = subj_view.create_level_dictlist(sel_examyear)
 
                     # +++ get subjectbase dictlist
                     # functions creates ordered dictlist of all subjectbase pk and code of this exam year of all countries
@@ -1519,7 +1519,7 @@ class GradeDownloadResultOverviewView(View):  # PR2022-06-01
                         sel_examyear=sel_examyear,
                         sel_school=sel_school,
                         department_dictlist=department_dictlist,
-                        lvlbase_dictlist=lvlbase_dictlist,
+                        level_dictlist=level_dictlist,
                         schoolbase_dictlist=schoolbase_dictlist,
                         result_dict_per_school=result_dict_per_school,
                         user_lang=user_lang
@@ -3695,8 +3695,8 @@ class OrderlistDownloadView(View):  # PR2021-07-04
             user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
-# - get selected examyear,from usersettings
-            # exames are only ordered in first exam period
+# - get selected examyear from usersettings
+            # exams are only ordered (nl: besteld) in first exam period
             sel_examyear_instance, sel_examperiodNIU = \
                 dl.get_selected_examyear_examperiod_from_usersetting(request)
             if logging_on:
@@ -3783,10 +3783,10 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, sel_examperiod, list
     settings = awpr_lib.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
 # - get depbase dictlist
-    department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
+    department_dictlist = subj_view.create_department_dictlist(sel_examyear_instance)
 
 # - get lvlbase dictlist
-    lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
+    level_dictlist = subj_view.create_level_dictlist(sel_examyear_instance)
 
 # - get subjectbase dictlist
     subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
@@ -3877,7 +3877,7 @@ def create_orderlist_per_school_xlsx(sel_examyear_instance, sel_examperiod, list
             row_index = 7
 #########################################################################
             write_orderlist_per_school(
-                sheet, count_dict, department_dictlist, lvlbase_dictlist,
+                sheet, count_dict, department_dictlist, level_dictlist,
                 row_index, col_count, first_subject_column, title, field_names, field_captions,
                 formats, detail_row_formats, totalrow_formats)
 #########################################################################
@@ -3911,9 +3911,9 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 # get text from examyearsetting
     settings = awpr_lib.get_library(sel_examyear_instance, ['exform', 'ex1'])
 
-# --- get department dictlist, ordered by sequence
+# --- get department_dictlist, filtered by dep.examyear_id, ordered by sequence
     # fields are: depbase_id, depbase_code, dep_name, dep_level_req
-    department_dictlist = subj_view.create_departmentbase_dictlist(sel_examyear_instance)
+    department_dictlist = subj_view.create_department_dictlist(sel_examyear_instance)
     """
     department_dictlist: [
         {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}, 
@@ -3922,9 +3922,9 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
     """
 
 # --- get lvlbase dictlist, ordered by sequence
-    lvlbase_dictlist = subj_view.create_levelbase_dictlist(sel_examyear_instance)
+    level_dictlist = subj_view.create_level_dictlist(sel_examyear_instance)
     """
-    lvlbase_dictlist: [
+    level_dictlist: [
         {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}, 
         {'lvlbase_id': 5, 'lvlbase_code': 'PKL', 'lvl_name': 'Praktisch Kadergerichte Leerweg'}, 
         {'lvlbase_id': 4, 'lvlbase_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg'}, 
@@ -3933,6 +3933,8 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 
 # +++ get subjectbase dictlist
     # functions creates a dictlist of all subjectbase pk and code of this exam year of all countries, ordered by code
+    # NOTE: examyear are filtered by examyear.code (integer field). This way subjects from SXM and CUR are added to list
+
     subjectbase_dictlist = subj_view.create_subjectbase_dictlist(sel_examyear_instance)
     """
     subjectbase_dictlist: [
@@ -3944,6 +3946,10 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 # +++ get schoolbase dictlist
     # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
     #  of this exam year of all countries (only SXM when requsr=sxm), ordered by code
+
+    # NOTE: schools are filtered by examyear.code (integer field). This way schools from SXM and CUR are added to list
+    # when req_usr = cur: schools of cur and sxm are included
+    # when req_usr = sxm: only sxm schools are included
     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
     """
     schoolbase_dictlist:  [
@@ -4045,13 +4051,13 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
     #########################################################################
                     if summary_detail in ('details', 'herexamen details'):
                         write_orderlist_with_details(
-                            sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
+                            sheet, ete_duo_dict, is_herexamens, department_dictlist, level_dictlist, schoolbase_dictlist,
                             row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                             formats, col_header_formats, detail_row_formats,
                             totalrow_formats)
                     else:
                         write_orderlist_summary(
-                            sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
+                            sheet, ete_duo_dict, is_herexamens, department_dictlist, level_dictlist, schoolbase_dictlist,
                             row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                             formats, col_header_formats, detail_row_formats,
                             totalrow_formats)
@@ -4075,7 +4081,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 # - end of create_orderlist_xlsx
 
 
-def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
+def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictlist, level_dictlist, schoolbase_dictlist,
                                  row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                                  formats, col_header_formats, detail_row_formats, totalrow_formats):
     logging_on =  False  # s.LOGGING_ON
@@ -4135,7 +4141,7 @@ def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictl
                     dep_dict = lang_dict.get(depbase_pk)
 
         # ++++++++++++ loop through levels  ++++++++++++++++++++++++++++
-                    for lvlbase_dict in lvlbase_dictlist:
+                    for lvlbase_dict in level_dictlist:
                         # fields are lvlbase_id, lvlbase_code, lvl_name",
                         # lvlbase_dict: {'lvlbase_id': 12, 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'lvlbase_code': 'TKL'}
                         lvlbase_pk = lvlbase_dict.get('lvlbase_id')
@@ -4168,7 +4174,7 @@ def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictl
 # - end of write_orderlist_summary
 
 
-def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_dictlist, lvlbase_dictlist, schoolbase_dictlist,
+def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_dictlist, level_dictlist, schoolbase_dictlist,
                                  row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                                  formats, col_header_formats, detail_row_formats, totalrow_formats):
     logging_on =  False  # s.LOGGING_ON
@@ -4239,7 +4245,7 @@ def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_
                     depbase_total_row_index = row_index
 
 # ++++++++++++ loop through levels  ++++++++++++++++++++++++++++
-                    for lvlbase_dict in lvlbase_dictlist:
+                    for lvlbase_dict in level_dictlist:
                         # fields are lvlbase_id, lvlbase_code, lvl_name",
                         # lvlbase_dict: {'lvlbase_id': 12, 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'lvlbase_code': 'TKL'}
                         if logging_on:
@@ -4354,7 +4360,7 @@ def write_orderlist_with_details(sheet, ete_duo_dict, is_herexamens, department_
 # - end of write_orderlist_with_details
 
 
-def write_orderlist_per_school(sheet, count_dict, department_dictlist, lvlbase_dictlist,
+def write_orderlist_per_school(sheet, count_dict, department_dictlist, level_dictlist,
                                  row_index, col_count, first_subject_column, title, field_names, field_captions,
                                  formats, detail_row_formats, totalrow_formats):
     logging_on = s.LOGGING_ON
@@ -4421,7 +4427,7 @@ def write_orderlist_per_school(sheet, count_dict, department_dictlist, lvlbase_d
                             dep_dict = lang_dict.get(depbase_pk)
 
 # ++++++++++++ loop through levels  ++++++++++++++++++++++++++++
-                            for lvlbase_dict in lvlbase_dictlist:
+                            for lvlbase_dict in level_dictlist:
                                 # fields are lvlbase_id, lvlbase_code, lvl_name",
                                 # lvlbase_dict: {'lvlbase_id': 12, 'lvl_name': 'Theoretisch Kadergerichte Leerweg', 'lvlbase_code': 'TKL'}
                                 lvlbase_pk = lvlbase_dict.get('lvlbase_id')
@@ -5478,7 +5484,7 @@ def has_published_ex1_rows(examyear, school, department):  # PR2021-08-15
 
 ####################################################
 
-def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, lvlbase_dictlist, schoolbase_dictlist, result_dict_per_school, user_lang):
+def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, level_dictlist, schoolbase_dictlist, result_dict_per_school, user_lang):
     # PR2022-06-11
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -5596,7 +5602,7 @@ def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, l
                        4.6, 4.6, 4.6,
                        4.6, 4.6, 4.6]
 
-        write_resultlist_details(sheet, sel_examyear, department_dictlist, lvlbase_dictlist, schoolbase_dictlist, result_dict_per_school,
+        write_resultlist_details(sheet, sel_examyear, department_dictlist, level_dictlist, schoolbase_dictlist, result_dict_per_school,
                                 field_names, field_captions, field_width, subheader_captions, formats, user_lang)
 
         book.close()
@@ -5617,7 +5623,7 @@ def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, l
 # - end of write_resultlist
 
 
-def write_resultlist_details(sheet, sel_examyear, department_dictlist, lvlbase_dictlist, schoolbase_dictlist, result_dict_per_school,
+def write_resultlist_details(sheet, sel_examyear, department_dictlist, level_dictlist, schoolbase_dictlist, result_dict_per_school,
                              field_names, field_captions, field_width, subheader_captions, formats, user_lang):
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -5901,7 +5907,7 @@ def write_resultlist_details(sheet, sel_examyear, department_dictlist, lvlbase_d
             logger.debug('depbase_first_row_index: ' + str(row_index))
 
     # ++++++++++++ loop through levels  ++++++++++++++++++++++++++++
-            for lvlbase_dict in lvlbase_dictlist:
+            for lvlbase_dict in level_dictlist:
                 # fields are lvlbase_id, lvlbase_code, lvl_name",
                 """
                 lvlbase_dict: {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}

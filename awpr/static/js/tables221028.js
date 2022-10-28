@@ -380,7 +380,7 @@
          };
     }; // t_MSSSS_Open
 
-//=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26
+//=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26
     function t_MSSSS_Save(el_input, MSSSS_Response) {
         //console.log("===  t_MSSSS_Save =========");
         //console.log("el_input", el_input);
@@ -395,13 +395,23 @@
         const selected_name = get_attr_from_el(el_input, "data-name");
 
 // +++ get existing map_dict from data_rows
-        const data_rows = (tblName === "school") ? school_rows :
-                        (tblName === "subject") ? subject_rows :
-                        (tblName === "cluster") ? cluster_rows :
-                        (tblName === "student") ? student_rows :
-                        (tblName === "envelopbundle") ? envelopbundle_rows : null;
-        const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
-        const selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        // when tblName = school: pk_int = schoolbase_pk, there fore can't use b_recursive_integer_lookup PR2022-10-26
+        let selected_dict = {};
+        if (tblName === "school") {
+            for (let i = 0, data_dict; data_dict = school_rows[i]; i++) {
+                if(data_dict.base_id === selected_pk_int){
+                    selected_dict = data_dict;
+                    break;
+            }};
+        } else {
+            const data_rows = //(tblName === "school") ? school_rows :
+                            (tblName === "subject") ? subject_rows :
+                            (tblName === "cluster") ? cluster_rows :
+                            (tblName === "student") ? student_rows :
+                            (tblName === "envelopbundle") ? envelopbundle_rows : null;
+            const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
+            selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        };
 /*
     console.log("selected_pk_int", selected_pk_int);
     console.log("selected_code", selected_code);

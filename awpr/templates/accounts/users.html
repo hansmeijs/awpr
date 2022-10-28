@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import220822.js' %}"></script>
-    <script src="{% static 'js/users221024.js' %}"></script>
+    <script src="{% static 'js/users221028.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -27,15 +27,15 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
+            {% include 'accounts/moduserpermitsection.html' %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectmultiple.html' %}
-            {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'accounts/moduser.html' %}
-            {% include 'accounts/moduserpermitsection.html' %}
             {% include 'accounts/modpermit.html' %}
             {% include 'includes/modimport.html' %}
+            {% include 'includes/modmessage.html' %}
 
 <!-- CONTENT HEADER - LOADER -->
             <div class="margin_top80_left16_right32">
@@ -91,6 +91,7 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
+                data-url_user_allowedschools_upload="{% url 'url_user_allowedschools_upload' %}"
 
                 data-user_upload_url="{% url 'user_upload_url' %}"
                 data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"

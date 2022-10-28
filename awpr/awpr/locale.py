@@ -1589,6 +1589,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Variables_for_extra_exams'] = _('Variables for extra exams')
 
+        dict['_for_'] = TXT__for_
+
         dict['Abbrev_subject_2lines'] = '\n'.join((str(_('Abbreviation')), str(_('subject'))))
         dict['Designated_exam'] = _('Designated exam')
         dict['Designated_exam_2lines'] = _('Desig-\nnated exam')

@@ -377,6 +377,34 @@ select.form-control:not([size]):not([multiple]) {
  }
 
 
+/* used in userpage PR2022-10-26 */
+
+.awp_modselect_item { /* PR2022-10-26 */
+    background:  #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+   /* font-size: 1.1rem;*/
+    /*font-size: 18px;*/
+    /*padding: 0px 8px 0px 8px;*/  /* top, right, bottom, left: */
+    /*margin: 4px 8px 4px 8px;*/
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+.awp_modselect_item:hover {
+  color: #a8c1e0;
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+/* end of used in userpage */
 
 z_index_1070 {
     z-index: 1090;
