@@ -3931,7 +3931,8 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depba
     if published_pk:
         crit.add(Q(pk=published_pk), crit.connector)
 
-    rows = sch_mod.Published.objects.filter(crit).order_by('-datepublished')
+    #rows = sch_mod.Published.objects.filter(crit).order_by('-datepublished')
+    rows = sch_mod.Published.objects.filter(crit).order_by('pk')
 
     published_rows = []
     for row in rows:

@@ -3951,14 +3951,15 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
     # when req_usr = cur: schools of cur and sxm are included
     # when req_usr = sxm: only sxm schools are included
     schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear_instance, request)
+
+    #if logging_on:
+    #    logger.debug('schoolbase_dictlist: ' + str(schoolbase_dictlist))
     """
     schoolbase_dictlist:  [
-        {'sbase_id': 2, 'sbase_code': 'CUR01', 'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8}, 
-        {'sbase_id': 3, 'sbase_code': 'CUR02', 'sch_article': 'de', 'sch_name': 'Skol Avansá Amador Nita', 'sch_abbrev': 'SAAN', 'defaultrole': 
-        {'sbase_id': 23, 'sbase_code': 'CURETE', 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE', 'defaultrole': 64}, 
-        {'sbase_id': 30, 'sbase_code': 'SXM01', 'sch_article': 'het', 'sch_name': 'Milton Peters College', 'sch_abbrev': 'MPC', 'defaultrole': 8}, 
-        {'sbase_id': 33, 'sbase_code': 'SXM04', 'sch_article': 'de', 'sch_name': 'Landsexamens Sint Maarten', 'sch_abbrev': 'LEX St. Maarten', 'defaultrole': 8}, 
-        {'sbase_id': 34, 'sbase_code': 'SXMDOE', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations', 'defaultrole': 64}]
+        {'sbase_id': 2, 'sbase_code': 'CUR01', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8}, 
+        {'sbase_id': 23, 'sbase_code': 'CURETE', 'depbases': '1;2;3', 'sch_otherlang': None, 'sch_article': 'het', 'sch_name': 'Expertisecentrum voor Toetsen & Examens', 'sch_abbrev': 'ETE', 'defaultrole': 64}, 
+        {'sbase_id': 30, 'sbase_code': 'SXM01', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'het', 'sch_name': 'Milton Peters College', 'sch_abbrev': 'MPC', 'defaultrole': 8}, 
+        {'sbase_id': 34, 'sbase_code': 'SXMDOE', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations', 'defaultrole': 64}]
     """
 
 # +++ get nested dicts of subjects per school, dep, level, lang, ete_exam
@@ -4060,7 +4061,8 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
                             sheet, ete_duo_dict, is_herexamens, department_dictlist, level_dictlist, schoolbase_dictlist,
                             row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                             formats, col_header_formats, detail_row_formats,
-                            totalrow_formats)
+                            totalrow_formats
+                        )
 
 #########################################################################
         book.close()
@@ -4084,7 +4086,7 @@ def create_orderlist_xlsx(sel_examyear_instance, list, user_lang, request):
 def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictlist, level_dictlist, schoolbase_dictlist,
                                  row_index, col_count, first_subject_column, list, title, field_names, field_captions,
                                  formats, col_header_formats, detail_row_formats, totalrow_formats):
-    logging_on =  False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- write_orderlist_summary -----')
@@ -4156,6 +4158,8 @@ def write_orderlist_summary(sheet, ete_duo_dict, is_herexamens, department_dictl
 
                         if lvlbase_pk in dep_dict:
                             level_dict = dep_dict.get(lvlbase_pk)
+                            if logging_on:
+                                logger.debug('    level_dict: ' + str(level_dict))
 
                 # ---  dep / level row
                             last_row_index = write_summary_row(sheet, level_dict, is_herexamens, row_index, first_subject_column, list,
@@ -4440,6 +4444,8 @@ def write_orderlist_per_school(sheet, count_dict, department_dictlist, level_dic
 
                                 if lvlbase_pk in dep_dict:
                                     level_dict = dep_dict.get(lvlbase_pk)
+                                    if logging_on:
+                                        logger.debug('    level_dict: ' + str(level_dict))
 
         # ---  dep / level row
                                     last_rowindex = write_summary_row(sheet, level_dict, False, row_index, first_subject_column,
@@ -4473,11 +4479,12 @@ def write_subject_header_row(sheet, row_index, col_count, first_subject_column, 
 #$$$$$$$4$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 def write_summary_row(sheet, item_dict, is_herexamens, row_index, first_subject_column,
                       list, field_names, caption, detail_row_formats):
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- write_summary_row -----')
-        logger.debug('is_herexamens: ' + str(is_herexamens))
-        logger.debug('field_names: ' + str(field_names))
+        logger.debug('    is_herexamens: ' + str(is_herexamens))
+        logger.debug('    field_names: ' + str(field_names))
+        logger.debug('    item_dict: ' + str(item_dict))
 
     item_dict_total = item_dict.get('total')
     if logging_on:

@@ -66,7 +66,6 @@
         return format_datetime_from_datetimeJS(loc, datetimeJS, hide_weekday, hide_year, hide_time, hide_suffix);
     };
 
-
 //=========  format_date_from_dateISO ================ PR2022-03-09
     function format_date_from_dateISO(loc, date_iso) {
         //console.log( "===== format_date_from_dateISO  ========= ");
@@ -145,7 +144,6 @@
         }
         return time_formatted
     }  // format_datetime_from_datetimeJS
-
 
 //========= f_format_last_modified ======== PR2021-08-21
     function f_format_last_modified_txt(loc, modifiedat, modified_by) {

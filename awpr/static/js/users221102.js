@@ -1808,7 +1808,7 @@ document.addEventListener('DOMContentLoaded', function() {
             add_hover(el_div, "delete_0_2", "delete_0_0")
 
 // ---  add addEventListener
-            td.addEventListener("click", function() {MUPS_DeleteTblrowSchool(tblRow)}, false);
+
             td.appendChild(el_div);
         };
     };

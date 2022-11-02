@@ -301,10 +301,7 @@ urlpatterns = [
 # ===== ARCHIVES ========================== PR2022-03-09
     path('archives/', include([
         path('archive', student_results.ArchivesListView.as_view(), name='url_archive'),
-
-        #path('get_auth', student_results.GetPresSecrView.as_view(), name='url_get_auth'),
-        #path('download_gradelist/<list>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
-
+        path('archive_upload', student_results.ArchivesUploadView.as_view(), name='url_archive_upload'),
     ])),
 
 # ===== ORDERLISTS ========================== PR2021-04-04

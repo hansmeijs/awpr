@@ -8,7 +8,7 @@ from django.db import connection
 from django.db.models import Q
 from django.template.loader import render_to_string
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, gettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
 from reportlab.pdfbase import pdfmetrics
@@ -320,6 +320,16 @@ def get_today_dateobj():  # PR2020-10-20
 
     return today_dte
 
+
+def get_datetime_from_arr(arr_int):  # PR2022-11-01
+    datetime_obj = None
+    if arr_int:
+        try:
+            datetime_obj = datetime(arr_int[0], arr_int[1], arr_int[2], arr_int[3], arr_int[4])
+        except Exception as e:
+            logger.error(' '.join((getattr(e, 'message', str(e)), '- arr_int:', str(arr_int), str(type(arr_int)))))
+
+    return datetime_obj
 
 def get_date_from_arr(arr_int):  # PR2019-11-17  # PR2020-10-20 PR2021-08-12
     date_obj = None

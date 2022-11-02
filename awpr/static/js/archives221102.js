@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get data stored in page
     const el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+    urls.url_archive_upload = get_attr_from_el(el_data, "data-url_archive_upload");
 
     // columns_hidden and mod_MCOL_dict.columns are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
     // mod_MCOL_dict.columns contains the fields and captions that can be hidden
@@ -51,12 +52,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     const field_settings = {
-        published: {field_caption: ["", "Name_ex_form", "Date_submitted", "Submitted_by", "Download_Exform"],
-                    field_names: ["select", "name", "datepublished", "modifiedby", "url"],
-                    field_tags: ["div", "div", "div", "div", "a"],
-                    filter_tags: ["text", "text", "text",  "text", "toggle"],
-                    field_width: ["020", "480",  "150", "180", "120"],
-                    field_align: ["c", "l", "c", "l", "c"]}
+        published: {field_caption: ["", "Name_ex_form", "Date_submitted", "Submitted_by", "Download_Exform", ""],
+                    field_names: ["select", "name", "datepublished", "modifiedby", "url", "delete"],
+                    field_tags: ["div", "div", "div", "div", "a", "div"],
+                    filter_tags: ["text", "text", "text",  "text", "toggle", ""],
+                    field_width: ["020", "480",  "150", "180", "120", "032"],
+                    field_align: ["c", "l", "c", "l", "c", "c"]}
         };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
@@ -114,6 +115,15 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MCOL_btn_save.addEventListener("click", function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
+
+
+// ---  MOD CONFIRM ------------------------------------
+        let el_confirm_header = document.getElementById("id_modconfirm_header");
+        let el_confirm_loader = document.getElementById("id_modconfirm_loader");
+        let el_confirm_msg_container = document.getElementById("id_modconfirm_msg_container")
+        let el_confirm_btn_cancel = document.getElementById("id_modconfirm_btn_cancel");
+        let el_confirm_btn_save = document.getElementById("id_modconfirm_btn_save");
+        if (el_confirm_btn_save){ el_confirm_btn_save.addEventListener("click", function() {ModConfirmSave()}) };
 
 // ---  set selected menu button active
         const btn_clicked = document.getElementById("id_plg_page_archive")
@@ -238,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
-        console.log("===  CreateSubmenu == ");
+        //console.log("===  CreateSubmenu == ");
         //console.log("loc.Add_subject ", loc.Add_subject);
         //console.log("loc ", loc);
 
@@ -251,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //###########################################################################
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
 
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
         if (!data_btn) {data_btn = selected_btn};
@@ -307,13 +317,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  ============== PR2021-06-16  PR2021-12-14
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "setting_dict", setting_dict);
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "setting_dict", setting_dict);
 
         const tblName = "published";
         const field_setting = field_settings[tblName];
         const data_rows = published_rows;
-        console.log( "data_rows", data_rows);
+        //console.log( "data_rows", data_rows);
 
 // ---  get list of hidden columns
         // copy col_hidden from mod_MCOL_dict.cols_hidden
@@ -439,8 +449,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        console.log("=========  CreateTblRow =========", tblName);
-        console.log("data_dict", data_dict);
+        //console.log("=========  CreateTblRow =========", tblName);
+        //console.log("data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -484,7 +494,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (field_name === "url"){
                     //el.innerHTML = "download &#8681;";
                     el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
+
+                } else if (field_name === "delete"){
+                    el.classList.add("delete_0_1")
+                    add_hover(el, "delete_0_2", "delete_0_1")
                 };
+
         // --- add data-field attribute
                 el.setAttribute("data-field", field_name);
 
@@ -499,7 +514,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     //td.addEventListener("click", function() {MSTUD_Open(el)}, false)
                     //td.classList.add("pointer_show");
                     add_hover(td);
-                }
+                } else if (field_name === "delete"){
+                    //td.addEventListener("click", function() {ModConfirmOpen("delete", tblRow)}, false);
+                };
     // --- put value in field
                UpdateField(el, data_dict)
            }  // if (!columns_hidden[field_name])
@@ -520,14 +537,14 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  UpdateField  ================ PR2020-08-16 PR2021-06-16
     function UpdateField(el_div, data_dict) {
         //console.log("=========  UpdateField =========");
-        console.log("data_dict", data_dict);
+        //console.log("data_dict", data_dict);
 
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = (data_dict[field_name]) ? data_dict[field_name] : null;
 
-        console.log("field_name", field_name);
-        console.log("fld_value", fld_value);
+        //console.log("field_name", field_name);
+        //console.log("fld_value", fld_value);
 
             if(field_name){
                 let inner_text = null, h_ref = null, filter_value = null;
@@ -552,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     inner_text = (fld_value) ? fld_value : "\n";
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
-                }
+                };
 
 // ---  put value in innerText and title
                 if (el_div.tagName === "A"){
@@ -564,8 +581,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  add attribute filter_value
                 add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
 
-            }  // if(field_name)
-        }  // if(el_div)
+            };  // if(field_name)
+        };  // if(el_div)
     };  // UpdateField
 
 //========= UploadChanges  ============= PR2020-08-03
@@ -602,6 +619,81 @@ document.addEventListener('DOMContentLoaded', function() {
             });  // $.ajax({
         }  //  if(!!row_upload)
     };  // UploadChanges
+
+
+// +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
+//=========  ModConfirmOpen  ================ PR2022-11-02
+    function ModConfirmOpen(mode, tblRow) {
+        console.log(" -----  ModConfirmOpen   ----")
+        console.log("mode", mode)
+        console.log("tblRow", tblRow)
+            console.log( "published_rows: ", published_rows);
+
+        if (mode === "delete"){
+            mod_dict = {mode: mode}
+
+            const header_txt = loc.Delete_document;
+
+// --- get existing data_dict from data_rows
+            const pk_int = get_attr_from_el_int(tblRow, "data-pk");
+            const [index, data_dict, compare] = b_recursive_integer_lookup(published_rows, "id", pk_int);
+            console.log( "pk_int: ", pk_int, typeof pk_int);
+            console.log( "data_dict: ", data_dict);
+
+// skip if no tblRow selected or if exam has no envelopbundle
+            if (!isEmpty(data_dict)){
+                const tblName = "published";
+                mod_dict = {
+                    mode: mode,
+                    table: tblName,
+                    published_pk: data_dict.id,
+                };
+                const msg_html = ["<div class='mx-2'>",
+                                "<p>", loc.Document,  ":</p><p class='pl-3'>", data_dict.name, "</p><p>", loc.will_be_deleted, "</p>",
+                                "<p>", loc.Do_you_want_to_continue, "</p>",
+                             "</div>"].join("")
+
+                el_confirm_header.innerText = header_txt;
+                el_confirm_loader.classList.add(cls_visible_hide)
+                el_confirm_msg_container.className = "p-3";
+                el_confirm_msg_container.innerHTML = msg_html;
+
+                el_confirm_btn_save.innerText = loc.Yes_delete;
+                el_confirm_btn_cancel.innerText = loc.No_cancel;
+                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", true, "btn-primary");
+
+    // set focus to cancel button
+                setTimeout(function (){
+                    el_confirm_btn_cancel.focus();
+                }, 500);
+        // show modal
+                $("#id_mod_confirm").modal({backdrop: true});
+            };
+        };
+    };  // ModConfirmOpen
+
+//=========  ModConfirmSave  ================ PR2021-08-22 PR2022-10-10
+    function ModConfirmSave() {
+        console.log(" --- ModConfirmSave --- ");
+        console.log("mod_dict: ", mod_dict);
+        let close_modal_with_timout = false;
+
+        if (mod_dict.mode === "delete"){
+            let upload_dict = {
+                table: mod_dict.table,
+                mode: "delete",
+                published_pk: mod_dict.published_pk
+            };
+
+            UploadChanges(upload_dict, urls.url_archive_upload);
+
+            const tblRow = document.getElementById(mod_dict.map_id)
+            ShowClassWithTimeout(tblRow, "tsa_tr_error")
+        };
+        $("#id_mod_confirm").modal("hide");
+
+    };  // ModConfirmSave
+
 
 
 //###########################################################################
@@ -665,8 +757,6 @@ document.addEventListener('DOMContentLoaded', function() {
         Filter_TableRows();
 
     };  // HandleFilterToggle
-
-
 
 //========= HandleFilterSelect  =============== PR2021-06-16
     function HandleFilterSelect(el_input) {

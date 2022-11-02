@@ -2356,9 +2356,9 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                             sel_examperiod=sel_examperiod,
                             request=request
                         )
-                        if logging_on:
-                            logger.debug('count_dict: ' + str(json.dumps(count_dict, cls=af.LazyEncoder)))
-                            logger.debug('receipt_dict: ' + str(json.dumps(receipt_dict, cls=af.LazyEncoder)))
+                        #if logging_on:
+                        #    logger.debug('count_dict: ' + str(json.dumps(count_dict, cls=af.LazyEncoder)))
+                        #    logger.debug('receipt_dict: ' + str(json.dumps(receipt_dict, cls=af.LazyEncoder)))
 
                         total_dict = count_dict.get('total')
                         if logging_on:
@@ -2435,18 +2435,26 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                         examyear=sel_examyear_instance
                                     )
                     # add new  enveloporderlist if not exists
+                                    if logging_on:
+                                        logger.debug('    now_arr: ' + str(now_arr))
+                                    modified_at = af.get_datetime_from_arr(now_arr)
+                                    if logging_on:
+                                        logger.debug('    modified_at: ' + str(modified_at))
+
                                     if enveloporderlist is None:
                                         enveloporderlist = subj_mod.Enveloporderlist(
                                             examyear=sel_examyear_instance,
-                                            orderdict=receipt_json
+                                            orderdict=receipt_json,
+                                            modified_at=modified_at
                                         )
                                     else:
                     # or replace existing enveloporderlist
                                         setattr(enveloporderlist, 'orderdict', receipt_json)
-                                    enveloporderlist.save(request=request)
+                                        setattr(enveloporderlist, 'modifiedat', modified_at)
+                                    enveloporderlist.save()
 
                                     if logging_on:
-                                        logger.debug('enveloporderlist: ' + str(enveloporderlist))
+                                        logger.debug('    enveloporderlist: ' + str(enveloporderlist))
 
                                     class_str = 'border_bg_valid'
                                     msg_str = str(_("An orderlist is created with the filename:"))

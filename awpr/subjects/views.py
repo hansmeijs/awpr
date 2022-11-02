@@ -7948,7 +7948,7 @@ def create_level_dictlist(examyear_instance):  # PR2021-09-01 PR2022-10-27
 # --- end of create_level_dictlist
 
 
-def create_schoolbase_dictlist(examyear, request):  # PR2021-08-20 PR2021-10-14
+def create_schoolbase_dictlist(examyear, request, schoolbase_pk_list = None):  # PR2021-08-20 PR2021-10-14 PR2022-10-31
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- create_schoolbase_dictlist -----')
@@ -7981,8 +7981,15 @@ def create_schoolbase_dictlist(examyear, request):  # PR2021-08-20 PR2021-10-14
 
         "WHERE ey.code = %(ey_code_int)s::INT",
         "AND (sbase.defaultrole =", str(c.ROLE_008_SCHOOL), "OR sbase.defaultrole =", str(c.ROLE_064_ADMIN), ")",
-        show_sxm_schools_only,
-        "ORDER BY LOWER(sbase.code)"]
+        show_sxm_schools_only
+        ]
+
+    # - filter on parameter schoolbase_pk_list when it has value
+    if schoolbase_pk_list:
+        sql_keys['sb_arr'] = schoolbase_pk_list
+        sql_list.append("AND sbase.id IN (SELECT UNNEST(%(sb_arr)s::INT[]))")
+
+    sql_list.append("ORDER BY LOWER(sbase.code)")
     sql = ' '.join(sql_list)
 
     with connection.cursor() as cursor:

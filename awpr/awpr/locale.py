@@ -1563,6 +1563,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Date_submitted'] = TXT_Date_submitted
         dict['Submitted_by'] = TXT_Submitted_by
         dict['Download_Exform'] = TXT_Download_Exform
+        dict['Delete_document'] = _('Delete document')
+        dict['Document'] = _('Document')
 
         dict['File_not_found'] = _('This file has not been found.')
 
@@ -1584,6 +1586,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_preliminary_orderlist'] = _('The preliminary order list')
         dict['Downlaod_preliminary_orderlist'] = _('Download preliminary order list')
         dict['per_school'] = _(' per school')
+
+        dict['Download_Exform'] = TXT_Download_Exform
 
         dict['Publish_orderlist'] = _('Publish orderlist')
 
@@ -1618,6 +1622,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Edit_label'] = _('Edit label')
         dict['Delete_label'] = _('Delete label')
         dict['Print_labels'] = _('Print labels')
+
+        dict['The_orderlist_is_published_at'] = _('The orderlist is published at ')
+        dict['The_published_numbers_willbe_used'] = _('The number of exams from the published orderlist will be used.')
+
+        dict['The_orderlist_is_not_published'] = _('The orderlist is not published.')
+        dict['The_actual_numbers_willbe_used'] = _('The actual numbers will be used.')
 
         dict['Envelop_content'] = _('Envelop content')
         dict['Label_item'] = _('Label text')

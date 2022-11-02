@@ -93,7 +93,75 @@ class ArchivesListView(View):  # PR2022-03-09
         #         # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'archives.html', params)
-# - ens of ArchivesListView
+# - end of ArchivesListView
+
+
+@method_decorator([login_required], name='dispatch')
+class ArchivesUploadView(View):  # PR2022-11-02
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ArchivesUploadView ============= ')
+
+        update_wrap = {}
+
+        # - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+
+            # - get permit
+            page_name = 'page_archive'
+            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = True
+            if logging_on:
+                logger.debug('    has_permit:       ' + str(has_permit))
+            if has_permit:
+
+    # - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+                # - get variables
+                published_pk = upload_dict.get('published_pk')
+                is_create = mode == 'create'
+                is_delete = mode == 'delete'
+
+                updated_rows = []
+                error_list = []
+                messages = []
+                append_dict = {}
+
+                header_txt = _('Add document') if is_create else _('Delete document') if is_delete else _(
+                    'Edit document')
+
+                # ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                #  - country is locked,
+                #  - examyear is not found, not published or locked
+                #  - school is not found, not same_school, or locked
+                #  - department is not found, not in user allowed depbase or not in school_depbase
+                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
+                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                if is_delete:
+                    pass
+
+                if logging_on:
+                    logger.debug('    may_edit:       ' + str(may_edit))
+                    logger.debug('    sel_msg_list:       ' + str(sel_msg_list))
+                    logger.debug('    upload_dict:       ' + str(upload_dict))
+
+                # - addd messages to update_wrap
+                if messages:
+                    update_wrap['messages'] = messages
+
+        # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+# - end of ArchivesUploadView
 
 
 @method_decorator([login_required], name='dispatch')
@@ -133,7 +201,7 @@ class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of StudentUploadView
+# - end of GetGradelistDiplomaAuthView
 
 
 def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17

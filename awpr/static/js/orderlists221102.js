@@ -274,6 +274,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MENVPR_tblBody_school = document.getElementById("id_MENVPR_tblBody_school");
         const el_MENVPR_tblBody_exam = document.getElementById("id_MENVPR_tblBody_exam");
+
+        const el_MENVPR_msg_modified = document.getElementById("id_MENVPR_msg_modified");
+
         const el_MENVPR_btn_save = document.getElementById("id_MENVPR_btn_save");
         if (el_MENVPR_btn_save){
             el_MENVPR_btn_save.addEventListener("click", function() {MENVPR_Save()}, false )
@@ -285,6 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MCOL_btn_save.addEventListener("click", function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
+
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
         let el_confirm_loader = document.getElementById("id_modconfirm_loader");
@@ -1528,7 +1532,8 @@ document.addEventListener('DOMContentLoaded', function() {
             el_modconfirm_link.click();
     // show loader
             el_confirm_loader.classList.remove(cls_visible_hide)
-            close_modal_with_timout = true;
+            //close_modal_with_timout = true;
+            $("#id_mod_confirm").modal("hide");
 
         } else if (["delete_envelopbundle", "delete_enveloplabel", "delete_envelopitem"].includes(mod_dict.mode)) {
             if (permit_dict.permit_crud){
@@ -2751,6 +2756,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  reset layout options
             el_MENVPR_select_errata.value = "no_errata";
+            el_MENVPR_msg_modified.innerText = null;
 
     // ---  disable save btn
             el_MENVPR_btn_save.disabled = true;
@@ -2838,8 +2844,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVPR_UpdateFromResponse  ============= PR2022-08-19
     function MENVPR_UpdateFromResponse(response) {
-        //console.log("  =====  MENVPR_UpdateFromResponse  =====");
-        //console.log("response", response)
+        console.log("  =====  MENVPR_UpdateFromResponse  =====");
+        console.log("response", response)
 
         el_MENVPR_loader.classList.add(cls_hide);
 
@@ -2856,6 +2862,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         MENVPR_FillTblSchool();
         MENVPR_FillTblExams();
+
+// ---  set text on msg_modified
+        let modified_text = null;
+        if ("updated_enveloporderlist_modifiedat" in response){
+            const modified_dateJS = parse_dateJS_from_dateISO(response.updated_enveloporderlist_modifiedat);
+            const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS, true, false, true);
+            modified_text = loc.The_orderlist_is_published_at + modified_date_formatted + ". " + loc.The_published_numbers_willbe_used;
+        } else {
+            modified_text = loc.The_orderlist_is_not_published + " " + loc.The_actual_numbers_willbe_used;
+        };
+        el_MENVPR_msg_modified.innerText = modified_text;
+
 
 // ---  enable save btn TODO: when there are schools or subejcts selected
        el_MENVPR_btn_save.disabled = false;
@@ -3178,9 +3196,9 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  RefreshDatarowItem  ================
     //PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-08-14 PR2022-09-27
     function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
-        console.log(" --- RefreshDatarowItem  ---");
+        //console.log(" --- RefreshDatarowItem  ---");
     //console.log("    data_rows", data_rows);
-    console.log("    update_dict", update_dict);
+    //console.log("    update_dict", update_dict);
     //console.log("    field_setting.field_names", field_setting.field_names);
 
         if(!isEmpty(update_dict)){
@@ -3198,7 +3216,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
 
-    console.log("  >>>  field_names", field_names);
+    //console.log("  >>>  field_names", field_names);
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
@@ -3254,7 +3272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 const datarow_index = index;
 
-    console.log("    data_dict", data_dict);
+    //console.log("    data_dict", data_dict);
 // ++++ deleted ++++
                 if(is_deleted){
     // --- delete row from data_rows. Splice returns array of deleted rows
@@ -3270,15 +3288,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 } else {
 
-    console.log("    // +++++++++++ updated row +++++++++++");
+    //console.log("    +++++++++++ updated row +++++++++++");
 
 // +++++++++++ updated row +++++++++++
     // ---  check which fields are updated, add to list 'updated_columns'
                     if(!isEmpty(data_dict) && field_names){
 
                         copy_updatedict_to_datadict(data_dict, update_dict, field_names, updated_columns);
-    console.log("    updated_columns", updated_columns);
-    console.log("    data_dict", data_dict);
+    //console.log("    updated_columns", updated_columns);
+    //console.log("    data_dict", data_dict);
 
 
     // -- when font field has changed: also add textfield to update_dict, to show green

@@ -13,46 +13,42 @@ logger = logging.getLogger(__name__)
 
 def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
                                schoolbase_pk_list=None, subjbase_pk_list=None):
-    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25 PR2022-10-14
+    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-09-25 PR2022-10-14 PR2022-10-31
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj_count_dict ----- ')
 
-    #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
+    #  this function creates a nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
     #  all schools of CUR and SXM, only submitted subjects, not deleted # PR2021-08-19
-    #  add extra for ETE and DOE PR2021-09-25
+    #  with extra added for ETE and DOE PR2021-09-25
+    # it also creates a nested dict for printing envelops
 
     # called by:
     #   create_orderlist_per_school_xlsx
     #   create_orderlist_xlsx
     #   OrderlistsPublishView
 
-# - get schoolbase_id of ETE and DOE - necessary to calculate extra exams for ETE and DOE
-
-# - create mapped_admin_dict with key = country_id and value = row_dict
-    # mapped_admin_dict: key = country_id, value = {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', ...
-    mapped_admin_dict = create_mapped_admin_dict(sel_examyear_instance)
-    if logging_on :
-        logger.debug('mapped_admin_dict: ' + str(mapped_admin_dict))
-    """
-    mapped_admin_dict: {
-        1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 0, 'order_admin_max': 0}, 
-        2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}}
-
-    """
-
 # - count number of sudsubj. i.e. number of students with that subject
+    # PR2022-10-31 this function also adds rows for ETE/DOE with extra exams
+    # therefore dont filter on schoolbase_pk_list, otherwise ETE/DOE extra exams are not calculated properly
+    # intsead filter further
+
+    # PR2022-10-31 this function also adds rows for ETE/DOE with extra exams
+    # therefore don't filter on schoolbase_pk_list, otherwise ETE/DOE extra exams are not calculated properly
+    # instead filter rows in loop
+
     rows = create_studsubj_count_rows(
         sel_examyear_instance=sel_examyear_instance,
         sel_examperiod=sel_examperiod,
         request=request,
-        schoolbase_pk_list=schoolbase_pk_list,
         subjbase_pk_list=subjbase_pk_list
     )
 
     # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
+    # can be solved by also changing lang in other sectors
 
     # create dict with studsubj_count + extra for receipt. Group by school/dep/levl and agg by exam, count = studsubj_count + extra PR2022-09-04
+    # count_dict.total is necessary to calculate number of columns in excel sheet
     count_dict = {'total': {}}
     receipt_dict = {}
     """
@@ -61,300 +57,131 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
         subjbase_id, ete_exam, sch.otherlang, si.otherlang"
     """
     for row in rows:
-        if logging_on:
-            logger.debug('... row: ' + str(row))
-        """
-        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133', 'subjbase_code': 'ac', 'lang': 'pa', 
-            'country_id': 1, 'schoolbase_id': 20, 'depbase_id': 1, 'lvlbase_id': 6, 
-            'subj_count': 1, 'extra_count': 4, 'tv2_count': 5}
-        """
+        row_schoolbase_pk = row.get('schoolbase_id') or 0
 
-        # admin_id is schoolbase_id of school of ETE / DOE
-        admin_id, admin_code = None, None
+    # - filter on schoolbase_pk_list if existst
+        if not schoolbase_pk_list or row_schoolbase_pk in schoolbase_pk_list:
 
-        country_id = row.get('country_id')
-        if country_id in mapped_admin_dict:
-            mapped_country_dict = mapped_admin_dict[country_id]
-            admin_id = mapped_country_dict.get('sb_id')
-            admin_code = mapped_country_dict.get('c')
+            if logging_on :
+                logger.debug('    row: ' + str(row))
+            """
+            row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133', 'subjbase_code': 'ac', 'lang': 'pa', 
+                'country_id': 1, 'schoolbase_id': 20, 'depbase_id': 1, 'lvlbase_id': 6, 
+                'subj_count': 1, 'extra_count': 4, 'tv2_count': 5}
+            """
 
-# +++ get number of studsubj, extra exams and exams tv2 per school / subject
-        subj_count = row.get('subj_count') or 0
-        extra_count = row.get('extra_count') or 0
-        tv2_count = row.get('tv2_count') or 0
+    # +++ get number of studsubj, extra exams and exams tv2 per school / subject
+            subj_count = row.get('subj_count') or 0
+            extra_count = row.get('extra_count') or 0
+            tv2_count = row.get('tv2_count') or 0
 
-# +++ store info in count_dict
-    # - get eteduo_dict
-        ete_duo = 'ETE' if row.get('ete_exam', False) else 'DUO'
-        if ete_duo not in count_dict:
-            count_dict[ete_duo] = {'total': {}}
-        eteduo_dict = count_dict[ete_duo]
+    # +++++ store info in count_dict +++++
+        # - get eteduo_dict
+            ete_duo = 'ETE' if row.get('ete_exam', False) else 'DUO'
+            if ete_duo not in count_dict:
+                count_dict[ete_duo] = {'total': {}}
+            eteduo_dict = count_dict[ete_duo]
+        # - get lang_dict
+            lang = row.get('lang', 'nl')
+            if lang not in eteduo_dict:
+                # lang_dict has no key 'total'
+                # eteduo_dict[lang] = {}
+                 #was: eteduo_dict[lang] = {'total': {}}
+                eteduo_dict[lang] = {}
+            lang_dict = eteduo_dict[lang]
+        # - get depbase_dict
+            depbase_pk = row.get('depbase_id') or 0
+            if depbase_pk not in lang_dict:
+                # depbase_dict has no key 'total'
+                 #was: lang_dict[depbase_pk] = {'c': row.get('depbase_code')}
+                lang_dict[depbase_pk] = {}
+            depbase_dict = lang_dict[depbase_pk]
+        # - get lvlbase_dict
+            # value is '0' when lvlbase_id = None (Havo/Vwo)
+            lvlbase_pk = row.get('lvlbase_id') or 0
+            if lvlbase_pk not in depbase_dict:
+                lvl_abbrev = row.get('lvl_abbrev', '-')
+                # was depbase_dict[lvlbase_pk] = {'c': lvl_abbrev, 'total': {}, 'admin_total': {}}
+                depbase_dict[lvlbase_pk] = {'c': lvl_abbrev, 'total': {}}
+            lvlbase_dict = depbase_dict[lvlbase_pk]
+        # - get schoolbase_dict
+            if row_schoolbase_pk not in lvlbase_dict:
+                row_sb_code = row.get('sb_code', '-')  # for testing only
+                lvlbase_dict[row_schoolbase_pk] = {'c': row_sb_code}
+            schoolbase_dict = lvlbase_dict[row_schoolbase_pk]
 
-    # - get lang_dict
-        lang = row.get('lang', 'nl')
-        if lang not in eteduo_dict:
-            # lang_dict has no key 'total'
-            # eteduo_dict[lang] = {}
-            eteduo_dict[lang] = {'total': {}}
-        lang_dict = eteduo_dict[lang]
+        # - calculate schoolbase_dict total
+            subjbase_pk = row.get('subjbase_id')
+            if subjbase_pk:
+                if subjbase_pk not in schoolbase_dict:
+                    schoolbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
+                else:
+                    schoolbase_dict[subjbase_pk][0] += subj_count
+                    schoolbase_dict[subjbase_pk][1] += extra_count
+                    schoolbase_dict[subjbase_pk][2] += tv2_count
 
-    # - get depbase_dict
-        depbase_pk = row.get('depbase_id') or 0
-        if depbase_pk not in lang_dict:
-            # depbase_dict has no key 'total'
-            lang_dict[depbase_pk] = {'c': row.get('depbase_code')}
-        depbase_dict = lang_dict[depbase_pk]
+    # +++++ store info also in receipt_dict PR2022-10-14 +++++
 
-    # - get lvlbase_dict
-        # value is '0' when lvlbase_id = None (Havo/Vwo)
-        lvlbase_pk = row.get('lvlbase_id') or 0
-        if lvlbase_pk not in depbase_dict:
-            lvl_abbrev = row.get('lvl_abbrev', '-')
-            depbase_dict[lvlbase_pk] = {'c': lvl_abbrev, 'total': {}, 'admin_total': {}}
-        lvlbase_dict = depbase_dict[lvlbase_pk]
+            # PR2022-10-14 debug: must convert keys to string, because receipt_dict is stored in enveloporderlist as json
+            # after retrieving it from json it will be string en is not converted to integer
 
-    # - get schoolbase_dict
-        row_sb_pk = row.get('schoolbase_id') or 0
-        if row_sb_pk not in lvlbase_dict:
-            row_sb_code = row.get('sb_code', '-')  # for testing only
-            lvlbase_dict[row_sb_pk] = {'c': row_sb_code}
-        schoolbase_dict = lvlbase_dict[row_sb_pk]
+        # - add schoolbase_dict to receipt_dict
+            row_schoolbase_pk_str = str(row_schoolbase_pk)
+            if row_schoolbase_pk_str not in receipt_dict:
+                receipt_dict[row_schoolbase_pk_str] = {
+                    'c': row.get('sb_code') or '-'  # for testing only
+                }
+            receipt_schoolbase_dict = receipt_dict[row_schoolbase_pk_str]
 
-    # - calculate schoolbase_dict total
-        subjbase_pk = row.get('subjbase_id') or 0
-        if subjbase_pk not in schoolbase_dict:
-            schoolbase_dict[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            schoolbase_dict[subjbase_pk][0] += subj_count
-            schoolbase_dict[subjbase_pk][1] += extra_count
-            schoolbase_dict[subjbase_pk][2] += tv2_count
+        # - add depbase_dict to receipt_schoolbase_dict
+            depbase_pk_str = str(depbase_pk)
+            if depbase_pk_str not in receipt_schoolbase_dict:
+                receipt_schoolbase_dict[depbase_pk_str] = {
+                    'c': row.get('depbase_code') or '-'
+                }
+            receipt_depbase_dict = receipt_schoolbase_dict[depbase_pk_str]
 
-# +++ store info also in receipt_dict PR2022-10-14
+        # - add lvlbase_dict to receipt_dict
+            lvlbase_pk_str = str(lvlbase_pk)
+            if lvlbase_pk_str not in receipt_depbase_dict:
+                receipt_depbase_dict[lvlbase_pk_str] = []
+            receipt_lvlbase_list = receipt_depbase_dict[lvlbase_pk_str]
 
-        # PR2022-10-14 debug: must convert keys to string, because receipt_dict is stored in enveloporderlist as json
-        # after rerieving it from json it will be string en is not converted to integer
+        # - add  row to receipt_lvlbase_list
+            receipt_lvlbase_list.append(row)
+            """
+            schoolbase_dict: {'c': 'CUR05', 121: [32, 8, 10]}  [subj_count, extra_count, tv2_count]
+            """
 
-    # - add schoolbase_dict to receipt_dict
-        row_sb_pk_str = str(row_sb_pk)
-        if row_sb_pk_str not in receipt_dict:
-            receipt_dict[row_sb_pk_str] = {
-                'c': row.get('sb_code') or '-'  # for testing only
-            }
-        receipt_schoolbase_dict = receipt_dict[row_sb_pk_str]
-
-    # - add depbase_dict to receipt_schoolbase_dict
-        depbase_pk_str = str(depbase_pk)
-        if depbase_pk_str not in receipt_schoolbase_dict:
-            receipt_schoolbase_dict[depbase_pk_str] = {
-                'c': row.get('depbase_code') or '-'
-                #'depbase_code': row.get('depbase_code') or '-',
-                #'school_name': row.get('school_name') or '-'
-            }
-        receipt_depbase_dict = receipt_schoolbase_dict[depbase_pk_str]
-
-    # - add lvlbase_dict to receipt_dict
-        lvlbase_pk_str = str(lvlbase_pk)
-        if lvlbase_pk_str not in receipt_depbase_dict:
-            receipt_depbase_dict[lvlbase_pk_str] = []
-        receipt_lvlbase_list = receipt_depbase_dict[lvlbase_pk_str]
-
-        receipt_lvlbase_list.append(row)
-
-        if logging_on:
-            logger.debug('schoolbase_dict: ' + str(schoolbase_dict))
-        """
-        schoolbase_dict: {'c': 'CUR05', 121: [32, 8, 10]}  [subj_count, extra_count, tv2_count]
-        """
-
-# +++ calculate lvlbase_total
-        lvlbase_total = lvlbase_dict.get('total')
-        if subjbase_pk not in lvlbase_total:
-            lvlbase_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            lvlbase_total[subjbase_pk][0] += subj_count
-            lvlbase_total[subjbase_pk][1] += extra_count
-            lvlbase_total[subjbase_pk][2] += tv2_count
-
-# +++ calculate admin_total
-     # skip admin_total when calculate per school > when schoolbase_pk_list has value
-        if schoolbase_pk_list is None:
-            lvlbase_admin_total = lvlbase_dict.get('admin_total')
-            if admin_id not in lvlbase_admin_total:
-                lvlbase_admin_total[admin_id] = {'c': admin_code}
-            admin_total = lvlbase_admin_total[admin_id]
-
-            if subjbase_pk not in admin_total:
-                admin_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+    # +++++ add count to lvlbase_total
+            lvlbase_total = lvlbase_dict.get('total')
+            if subjbase_pk not in lvlbase_total:
+                lvlbase_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
             else:
-                admin_total[subjbase_pk][0] += subj_count
-                admin_total[subjbase_pk][1] += extra_count
-                admin_total[subjbase_pk][2] += tv2_count
+                lvlbase_total[subjbase_pk][0] += subj_count
+                lvlbase_total[subjbase_pk][1] += extra_count
+                lvlbase_total[subjbase_pk][2] += tv2_count
 
-            if logging_on:
-                logger.debug(' - - - - ')
-                logger.debug('........lvlbase_admin_total: ' + str(lvlbase_admin_total))
-                logger.debug('........admin_total: ' + str(admin_total))
-                """
-                admin_total: {'c': 'CURETE', 121: [32, 8, 10], 120: [1, 4, 5], 114: [76, 9, 20]}
-                """
+    # +++ add count to eteduo_total
+            eteduo_total = eteduo_dict.get('total')
+            if subjbase_pk not in eteduo_total:
+                eteduo_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+            else:
+                eteduo_total[subjbase_pk][0] += subj_count
+                eteduo_total[subjbase_pk][1] += extra_count
+                eteduo_total[subjbase_pk][2] += tv2_count
 
-# +++ calculate eteduo_total
-        eteduo_total = eteduo_dict.get('total')
-        if subjbase_pk not in eteduo_total:
-            eteduo_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            eteduo_total[subjbase_pk][0] += subj_count
-            eteduo_total[subjbase_pk][1] += extra_count
-            eteduo_total[subjbase_pk][2] += tv2_count
+    # +++ add count to examyear_total
+            examyear_total = count_dict.get('total')
+            if subjbase_pk not in examyear_total:
+                examyear_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
+            else:
+                examyear_total[subjbase_pk][0] += subj_count
+                examyear_total[subjbase_pk][1] += extra_count
+                examyear_total[subjbase_pk][2] += tv2_count
 
-# +++ calculate examyear_total
-        examyear_total = count_dict.get('total')
-        if subjbase_pk not in examyear_total:
-            examyear_total[subjbase_pk] = [subj_count, extra_count, tv2_count]
-        else:
-            examyear_total[subjbase_pk][0] += subj_count
-            examyear_total[subjbase_pk][1] += extra_count
-            examyear_total[subjbase_pk][2] += tv2_count
+# +++++ end of for row in rows +++++
 
-# +++ end of for row in rows
-
-# +++ after adding schools: calculate extra for ETE and DOE:
-    # skip when calculate per school > when schoolbase_pk has value
-    if schoolbase_pk_list is None:
-        for ete_duo, eteduo_dict in count_dict.items():
-            if ete_duo != 'total':
-                if logging_on:
-                    logger.debug('ete_duo: ' + str(ete_duo) + ' ' + str(type(ete_duo)))
-
-                for lang, lang_dict in eteduo_dict.items():
-                    if lang != 'total':
-                        if logging_on:
-                            logger.debug('lang: ' + str(lang) + ' ' + str(type(lang)))
-
-                        for depbase_pk, depbase_dict in lang_dict.items():
-                            if isinstance(depbase_pk, int):
-                                for lvlbase_pk, lvlbase_dict in depbase_dict.items():
-                                    if isinstance(lvlbase_pk, int):
-                                        if logging_on and False:
-                                            logger.debug('lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(type(lvlbase_pk)))
-                                            logger.debug('lvlbase_dict: ' + str(lvlbase_dict) + ' ' + str(type(lvlbase_dict)))
-                                        """
-                                        lvlbase_dict: {
-                                            'c': 'PKL', 
-                                            'total': {121: [192, 48, 60], 120: [81, 39, 55], 
-                                            'admin_total': {23: {'c': 'CURETE', 121: [192, 48, 60], 
-                                                        34: {'c': 'SXMDOE', 129: [8, 7, 5], 114: [70, 20, 20], 
-                                            6: {'c': 'CUR05', 121: [32, 8, 10], 133: [24, 6, 5],
-                                        """
-
-                                        lvlbase_admin_total_dict = lvlbase_dict.get('admin_total')
-                                        lvlbase_total_dict = lvlbase_dict.get('total')
-                                        eteduo_total_dict = eteduo_dict.get('total')
-                                        examyear_total_dict = count_dict.get('total')
-
-                                        if lvlbase_admin_total_dict:
-                                            if logging_on and False:
-                                                logger.debug('lvlbase_admin_total_dict: ' + str(lvlbase_admin_total_dict) + ' ' + str(type(lvlbase_admin_total_dict)))
-                                                """
-                                                lvlbase_admin_total_dict: {
-                                                23: {'c': 'CURETE', 121: [192, 48, 60], 120: [81, 39, 55], 114: [370, 70, 110], ]}, 
-                                                34: {'c': 'SXMDOE', 129: [8, 7, 5], 114: [70, 20, 20], 113: [70, 20, 20], 126: [4, 6, 5], 125: [2, 3, 5]}} 
-                                                """
-
-                                            #  country_id: 1
-                                            # mapped_country_dict: { 'country_id': 1, 'sb_id': 23, 'c': 'CURETE',
-                                            # 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5,
-                                            # 'order_tv2_divisor': 25, 'order_tv2_multiplier': 6, 'order_tv2_max': 25,
-                                            # 'order_admin_divisor': 30, 'order_admin_multiplier': 7, 'order_admin_max': 25}
-
-                            # - get admin_pk from mapped_country_dict with key: country_id
-                                            # admin_pk is schoolbase_id of school of ETE / DEX
-                                            for country_id, mapped_country_dict in mapped_admin_dict.items():
-                                                admin_pk = mapped_country_dict.get('sb_id')
-                                                admin_code = mapped_country_dict.get('c')
-                                                order_admin_divisor = mapped_country_dict.get('order_admin_divisor')
-                                                order_admin_multiplier = mapped_country_dict.get('order_admin_multiplier')
-                                                order_admin_max = mapped_country_dict.get('order_admin_max')
-
-                            # - lookup 'admin_total_dict' in lvlbase_admin_total_dict, with key: admin_pk
-                                                # admin_total_dict contains subject_count of all subjects of this admin, this level
-                                                if admin_pk in lvlbase_admin_total_dict:
-                                                    admin_total_dict = lvlbase_admin_total_dict.get(admin_pk)
-                                                    if logging_on and False:
-                                                        logger.debug(
-                                                            'mapped_country_dict: ' + str(mapped_country_dict) + ' ' + str( type(mapped_country_dict)))
-                                                        """
-                                                        mapped_country_dict: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 
-                                                        'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 
-                                                        'order_admin_multiplier': 5, 'order_admin_max': 25} 
-                                                        """
-
-                            # - add extra row 'lvlbase_admin_dict' for ETE / DOE in lvlbase_dict, if not exists yet
-                                                    if admin_pk not in lvlbase_dict:
-                                                        lvlbase_dict[admin_pk] = {'c': admin_code}
-                                                    lvlbase_admin_dict = lvlbase_dict[admin_pk]
-
-                                                    #if logging_on:
-                                                    #    logger.debug('lvlbase_admin_dict: ' + str(lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
-                                                    """
-                                                    lvlbase_admin_dict = {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
-                                                    """
-                            # - loop through subjects in admin_total_dict
-                                                    for subjbase_pk, count_list in admin_total_dict.items():
-                                                        #if logging_on:
-                                                        #    logger.debug(' >>> subjbase_pk: ' + str(subjbase_pk) + ' count_list: ' + str(count_list))
-                                                        """
-                                                        subjbase_pk: 133 count_list: [127, 43, 50]
-                                                        """
-                                                        if isinstance(subjbase_pk, int):
-                            # - caculate extra exams for ETE / DES, based on total exams / total_tv2 and parameters: order_admin_divisor, order_admin_multiplier, order_admin_max
-                                                            # ETE has 0 extra exams per 100 with max 0
-                                                            # DES has 5 extra exams per 100 with max 25
-
-                                                            # calc_exams_tv02 formula: tv2_count = ROUND_UP( item_count / divisor ) x multiplier
-
-                                                            sj_count = count_list[0]
-                                                            tv2_count = count_list[2]
-
-                                                            admin_extra_count = calc_exams_tv02(sj_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
-                                                            admin_tv2_count = calc_exams_tv02(tv2_count, order_admin_divisor, order_admin_multiplier, order_admin_max)
-
-                                                            if logging_on:
-                                                                logger.debug('... order_admin_divisor: ' + str(order_admin_divisor) + ' ' + str(type(order_admin_divisor)))
-                                                                logger.debug('... order_admin_multiplier: ' + str(order_admin_multiplier) + ' ' + str(type(order_admin_multiplier)))
-                                                                logger.debug('... order_admin_max: ' + str(order_admin_max) + ' ' + str(type(order_admin_max)))
-
-                                                                logger.debug('>>> sj_count: ' + str(sj_count) + ' ' + str(type(sj_count)))
-                                                                logger.debug('    admin_extra_count: ' + str(admin_extra_count) + ' ' + str(type(admin_extra_count)))
-
-                                                                logger.debug('>>> tv2_count: ' + str(tv2_count) + ' ' + str(type(tv2_count)))
-                                                                logger.debug('    admin_tv2_count: ' + str(admin_tv2_count) + ' ' + str(type(admin_tv2_count)))
-
-                            # - add extra exams to lvlbase_admin_dict
-                                                            # index 0 contains sj_count, but admins don't have exams, omly extra and tv2 extra
-                                                            lvlbase_admin_dict[subjbase_pk] = [0, admin_extra_count, admin_tv2_count ]
-
-                            # - also add admin_extra_count to total row of lvlbase_total_dict, eteduo_total_dict and examyear_total_dict
-                                                            if subjbase_pk in lvlbase_total_dict:
-                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
-                                                                lvlbase_total_dict[subjbase_pk][1] += admin_extra_count
-                                                                lvlbase_total_dict[subjbase_pk][2] += admin_tv2_count
-
-                                                            if subjbase_pk in eteduo_total_dict:
-                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
-                                                                eteduo_total_dict[subjbase_pk][1] += admin_extra_count
-                                                                eteduo_total_dict[subjbase_pk][2] += admin_tv2_count
-
-                                                            if subjbase_pk in examyear_total_dict:
-                                                                # Note: admin has no exams: total_dict[subjbase_pk][0] += 0
-                                                                examyear_total_dict[subjbase_pk][1] += admin_extra_count
-                                                                examyear_total_dict[subjbase_pk][2] += admin_tv2_count
-
-                                                    #if logging_on:
-                                                    #    logger.debug('lvlbase_admin_dict: ' + str( lvlbase_admin_dict) + ' ' + str(type(lvlbase_admin_dict)))
-
-    if logging_on:
-        logger.debug('schoolbase_pk is NOT None')
 
         """
         lvlbase_pk: 13 <class 'int'>
@@ -397,10 +224,10 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
             39: {'c': 'SXMDOE', 430: [0, 21, 0], 440: [0, 14, 0]},
             23: {'c': 'CURETE', 430: [0, 25, 0], 440: [0, 21, 0], 435: [0, 7, 0]}}
 
-"""
+    """
     if logging_on:
-        logger.debug('studsubj_count_dict: ' + str(json.dumps(count_dict, cls=af.LazyEncoder)))
-        logger.debug('receipt_dict: ' + str(json.dumps(receipt_dict, cls=af.LazyEncoder)))
+        logger.debug('????? studsubj_count_dict: ' + str(json.dumps(count_dict, cls=af.LazyEncoder)))
+        logger.debug('????? receipt_dict: ' + str(json.dumps(receipt_dict, cls=af.LazyEncoder)))
 
     """
     studsubj_count_dict: {
@@ -435,7 +262,7 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
             "null": {"c": null, "0": {"c": null, "total": {"0": [0, 0, 0]}, "admin_total": {"23": {"c": "CURETE", "0": [0, 0, 0]}, "34": {"c": "SXMDOE", "0": [0, 0, 0]}}, "13": {"c": "CUR13", "0": [0, 0, 0]}, "14": {"c": "CUR14", "0": [0, 0, 0]}, "21": {"c": "CUR21", "0": [0, 0, 0]}, "22": {"c": "CUR22", "0": [0, 0, 0]}, "25": {"c": "CURCOM", "0": [0, 0, 0]}, "23": {"c": "CURETE", "0": [0, 0, 0]}, "24": {"c": "CURINSP", "0": [0, 0, 0]}, "1": {"c": "CURSYS", "0": [0, 0, 0]}, "30": {"c": "SXM01", "0": [0, 0, 0]}, "33": {"c": "SXM04", "0": [0, 0, 0]}, "34": {"c": "SXMDOE", "0": [0, 0, 0]}, "35": {"c": "SXMINSP", "0": [0, 0, 0]}, "29": {"c": "SXMSYS", "0": [0, 0, 0]}}}}}}
 
     receipt_dict:
-        {"ETE": 
+        {"ETE":  
             {"2": {"c": "CUR01", 
                 "1": {"c": "Vsbo", 
                     "6": {"c": "PBL", "133": [17, 13, 5], "123": [22, 8, 5], "155": [17, 3, 5], "114": [39, 6, 10], "124": [22, 8, 5], "113": [39, 6, 10], "118": [39, 6, 10], "121": [17, 3, 5], "131": [22, 8, 5]}, 
@@ -449,234 +276,6 @@ def create_studsubj_count_dict(sel_examyear_instance, sel_examperiod, request,
 # --- end of create_studsubj_count_dict
 
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def create_envelop_count_per_school_dictNIU(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
-    # PPR2022-08-26 PR2022-09-03 PR2022-10-13
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- create_envelop_count_per_school_dict ----- ')
-        logger.debug('    sel_examyear: ' + str(sel_examyear_instance))
-        logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
-        logger.debug('    subjbase_pk_list: ' + str(subjbase_pk_list))
-
-    # this one is for printing labels per school: dict order: school - dep - lvl - subj - exam - lang -
-    # no count needed, happens when creating labels
-    # ete/DUO not necessary, but let it stay if they want to include them in letter to cinfirm received exams
-
-    #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
-    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
-    #  add extra for ETE and DOE PR2021-09-25
-    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
-
-    print_without_schools = False
-    if schoolbase_pk_list is None:
-        print_without_schools = True
-    elif not len(schoolbase_pk_list):
-        print_without_schools = True
-    elif schoolbase_pk_list[0] == -1:
-        schoolbase_pk_list = None
-
-    rows = create_studsubj_count_rows(
-        sel_examyear_instance=sel_examyear_instance,
-        sel_examperiod=sel_examperiod,
-        request=request,
-        schoolbase_pk_list=schoolbase_pk_list,
-        subjbase_pk_list=subjbase_pk_list
-    )
-
-    # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
-
-    count_per_school_dict = {}
-
-    for row in rows:
-        if logging_on:
-            logger.debug('row: ' + str(row))
-        """
-        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133_1_1', 'lang': 'nl', 'country_id': 1, 'sb_code': 'CUR01', 
-           'lvlbase_id': 6, 'lvl_sequence': 1, 'lvl_abbrev': 'PBL', 
-           'depbase_id': 1, 'dep_sequence': 1, 'depbase_code': 'Vsbo', 
-           'subjbase_code': 'ac', 'subj_name': 'Administratie en commercie', 
-           'schoolbase_id': 2, 'school_name': 'Ancilla Domini Vsbo', 
-           'subj_count': 13, 'exam_count': 2, 'extra_count': 7, 'tv2_count': 5}
-        """
-
-# - get or create schoolbase_dict
-        row_sb_pk = row.get('schoolbase_id') or 0
-        if row_sb_pk not in count_per_school_dict:
-            count_per_school_dict[row_sb_pk] = {
-                'c': row.get('sb_code') or '-'
-            }
-        schoolbase_dict = count_per_school_dict[row_sb_pk]
-
-# - add depbase_dict to schoolbase_dict
-        depbase_pk = row.get('depbase_id')
-        if depbase_pk not in schoolbase_dict:
-            schoolbase_dict[depbase_pk] = {
-                'c': row.get('depbase_code') or '-'
-                #'depbase_code': row.get('depbase_code') or '-',
-                #'school_name': row.get('school_name') or '-'
-            }
-        depbase_dict = schoolbase_dict[depbase_pk]
-
-# - get or create lvlbase_list
-        lvlbase_pk = row.get('lvlbase_id') or 0
-
-        if lvlbase_pk not in depbase_dict:
-            depbase_dict[lvlbase_pk] = []
-        lvlbase_list = depbase_dict[lvlbase_pk]
-
-        lvlbase_list.append(row)
-
-    if logging_on:
-        #datalists_json = json.dumps(count_per_school_dict, cls=af.LazyEncoder)
-        logger.debug('count_per_school_dict: ' + str(count_per_school_dict))
-
-    """              
-    count_per_school_dict: {
-        "2": {"sb_code": "CUR01", "school_name": "Ancilla Domini Vsbo", 
-            "1": {"depbase_code": "Vsbo", "school_name": "Ancilla Domini Vsbo",
-                "6": [{"subjbase_id": 133, "ete_exam": true, "id_key": "1_6_133", "lang": "nl", 
-                        "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", 
-                        "subj_name": "Administratie & Commercie", 
-                        "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", 
-                        "depbase_id": 1, "lvlbase_id": 6, 
-                        "subj_count": 17, "dep_sequence": 1, "lvl_sequence": 1, 
-                        "subjbase_code": "ac", "extra_count": 3, "tv2_count": 5}, 
-                    {"subjbase_id": 123, "ete_exam": true, "id_key": "1_6_123", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Biologie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 22, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "bi", "extra_count": 8, "tv2_count": 5}, 
-                    {"subjbase_id": 155, "ete_exam": true, "id_key": "1_6_155", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Economie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 17, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "ec", "extra_count": 3, "tv2_count": 5}, 
-                    {"subjbase_id": 114, "ete_exam": true, "id_key": "1_6_114", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Engelse taal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 39, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "en", "extra_count": 6, "tv2_count": 10}, 
-                    {"subjbase_id": 124, "ete_exam": true, "id_key": "1_6_124", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Mens & Maatschappij-2", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 22, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "mm2", "extra_count": 8, "tv2_count": 5}, 
-                    {"subjbase_id": 113, "ete_exam": true, "id_key": "1_6_113", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Nederlandse taal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 39, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "ne", "extra_count": 6, "tv2_count": 10}, 
-                    {"subjbase_id": 118, "ete_exam": true, "id_key": "1_6_118", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Papiamentu", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 39, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "pa", "extra_count": 6, "tv2_count": 10}, 
-                    {"subjbase_id": 121, "ete_exam": true, "id_key": "1_6_121", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Wiskunde", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 17, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "wk", "extra_count": 3, "tv2_count": 5}, 
-                    {"subjbase_id": 131, "ete_exam": true, "id_key": "1_6_131", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PBL", "depbase_code": "Vsbo", "subj_name": "Zorg & Welzijn intrasectoraal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 6, "subj_count": 22, "dep_sequence": 1, "lvl_sequence": 1, "subjbase_code": "zwi", "extra_count": 8, "tv2_count": 5}], 
-                "5": [{"subjbase_id": 133, "ete_exam": true, "id_key": "1_5_133", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Administratie & Commercie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 18, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "ac", "extra_count": 7, "tv2_count": 5}, 
-                    {"subjbase_id": 123, "ete_exam": true, "id_key": "1_5_123", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Biologie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 26, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "bi", "extra_count": 4, "tv2_count": 10}, 
-                    {"subjbase_id": 155, "ete_exam": true, "id_key": "1_5_155", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Economie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 18, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "ec", "extra_count": 7, "tv2_count": 5}, 
-                    {"subjbase_id": 114, "ete_exam": true, "id_key": "1_5_114", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Engelse taal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 44, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "en", "extra_count": 6, "tv2_count": 10}, 
-                    {"subjbase_id": 124, "ete_exam": true, "id_key": "1_5_124", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Mens & Maatschappij-2", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 26, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "mm2", "extra_count": 4, "tv2_count": 10},
-                    {"subjbase_id": 113, "ete_exam": true, "id_key": "1_5_113", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Nederlandse taal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 44, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "ne", "extra_count": 6, "tv2_count": 10}, 
-                    {"subjbase_id": 118, "ete_exam": true, "id_key": "1_5_118", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Papiamentu", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 44, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "pa", "extra_count": 6, "tv2_count": 10}, 
-                    {"subjbase_id": 121, "ete_exam": true, "id_key": "1_5_121", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Wiskunde", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 18, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "wk", "extra_count": 7, "tv2_count": 5}, 
-                    {"subjbase_id": 131, "ete_exam": true, "id_key": "1_5_131", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "PKL", "depbase_code": "Vsbo", "subj_name": "Zorg & Welzijn intrasectoraal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 5, "subj_count": 26, "dep_sequence": 1, "lvl_sequence": 2, "subjbase_code": "zwi", "extra_count": 4, "tv2_count": 10}],
-                "4": [{"subjbase_id": 133, "ete_exam": true, "id_key": "1_4_133", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Administratie & Commercie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 7, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "ac", "extra_count": 3, "tv2_count": 5}, 
-                    {"subjbase_id": 123, "ete_exam": false, "id_key": "1_4_123", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Biologie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 52, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "bi", "extra_count": 8, "tv2_count": 15},
-                    {"subjbase_id": 155, "ete_exam": false, "id_key": "1_4_155", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Economie", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 7, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "ec", "extra_count": 3, "tv2_count": 5}, 
-                    {"subjbase_id": 114, "ete_exam": true, "id_key": "1_4_114", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Engelse taal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 59, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "en", "extra_count": 6, "tv2_count": 15}, 
-                    {"subjbase_id": 124, "ete_exam": true, "id_key": "1_4_124", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Mens & Maatschappij-2", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 59, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "mm2", "extra_count": 6, "tv2_count": 15}, 
-                    {"subjbase_id": 113, "ete_exam": true, "id_key": "1_4_113", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Nederlandse taal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 59, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "ne", "extra_count": 6, "tv2_count": 15}, 
-                    {"subjbase_id": 118, "ete_exam": true, "id_key": "1_4_118", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Papiamentu", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 59, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "pa", "extra_count": 6, "tv2_count": 15}, 
-                    {"subjbase_id": 120, "ete_exam": true, "id_key": "1_4_120", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Spaanse taal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 59, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "sp", "extra_count": 6, "tv2_count": 15}, 
-                    {"subjbase_id": 121, "ete_exam": false, "id_key": "1_4_121", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Wiskunde", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 59, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "wk", "extra_count": 6, "tv2_count": 15}, 
-                    {"subjbase_id": 131, "ete_exam": true, "id_key": "1_4_131", "lang": "nl", "country_id": 1, "sb_code": "CUR01", "lvl_abbrev": "TKL", "depbase_code": "Vsbo", "subj_name": "Zorg & Welzijn intrasectoraal", "schoolbase_id": 2, "school_name": "Ancilla Domini Vsbo", "depbase_id": 1, "lvlbase_id": 4, "subj_count": 52, "dep_sequence": 1, "lvl_sequence": 3, "subjbase_code": "zwi", "extra_count": 8, "tv2_count": 15}]}}}                                
-    """
-    return count_per_school_dict
-# --- end of create_envelop_count_per_school_dict
-
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-def create_envelop_print_per_subject_dict(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list, subjbase_pk_list):
-    # PPR2022-08-23
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- create_studsubj_count_dict ----- ')
-        logger.debug('    sel_examyear: ' + str(sel_examyear_instance))
-        logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
-
-    # this one is for printing labels: dict order: dep - lvl - subj - exam - lang - school
-    # no count needed, happens when creating labels
-    # ete/DUO not necessary, but let it stay if they want to include them in letter to cinfirm received exams
-
-    #  create nested dict with subjects count per exam, lang, dep, lvl, school and subjbase_id
-    #  all schools of CUR and SXM only submitted subjects, not deleted # PR2021-08-19
-    #  add extra for ETE and DOE PR2021-09-25
-    # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx, OrderlistsPublishView
-
-    rows = create_studsubj_count_rows(
-        sel_examyear_instance=sel_examyear_instance,
-        sel_examperiod=sel_examperiod,
-        request=request,
-        schoolbase_pk_list=schoolbase_pk_list,
-        subjbase_pk_list=subjbase_pk_list
-    )
-
-    # TODO to be solved: group by si.ete_exam and si.otherlang goes wrong when sectors of one level have different otherlang PR2022-08-13
-
-    school_envelop_studsubj_dict = {}
-
-    for row in rows:
-        if logging_on and False:
-            logger.debug('row: ' + str(row))
-        """
-        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133_1', 'lang': 'nl', 'country_id': 1, 
-        'sb_code': 'CUR01', 'lvl_abbrev': 'PBL', 'dep_abbrev': 'V.S.B.O.', 'subj_name': 'Administratie en commercie', 
-        'subjbase_code': 'ac', 'schoolbase_id': 2, 'school_name': 'Ancilla Domini Vsbo',  'depbase_id': 1, 'lvlbase_id': 6, 
-        'subj_count': 13, 'extra_count': 7, 'tv2_count': 5}
-        """
-
-# - get or create eteduo_dict
-        ete_duo = 'ETE' if row.get('ete_exam', False) else 'DUO'
-        if ete_duo not in school_envelop_studsubj_dict:
-            school_envelop_studsubj_dict[ete_duo] = {}
-        eteduo_dict = school_envelop_studsubj_dict[ete_duo]
-
-# - get or create depbase_dict
-        depbase_pk = row.get('depbase_id')
-
-        if depbase_pk not in eteduo_dict:
-            dep_abbrev = row.get('dep_abbrev')
-            eteduo_dict[depbase_pk] = {'c': dep_abbrev}
-        depbase_dict = eteduo_dict[depbase_pk]
-
-# - get or create lvlbase_dict
-        # value is '0' when lvlbase_id = None (Havo/Vwo)
-        lvlbase_pk = row.get('lvlbase_id', 0)
-        if lvlbase_pk is None:
-            lvlbase_pk = 0
-        if lvlbase_pk not in depbase_dict:
-            lvl_abbrev = row.get('lvl_abbrev') or '-'
-            depbase_dict[lvlbase_pk] = {'c': lvl_abbrev}
-        lvlbase_dict = depbase_dict[lvlbase_pk]
-
-# - get or create subjbase_dict
-        subjbase_pk = row.get('subjbase_id')
-        if subjbase_pk not in depbase_dict:
-            subjbase_code = row.get('subjbase_code', '-')
-            lvlbase_dict[subjbase_pk] = {'c': subjbase_code}
-        subjbase_dict = lvlbase_dict[subjbase_pk]
-
-# - get or create schoolbase_dict
-        row_sb_pk = row.get('schoolbase_id')
-        if row_sb_pk not in subjbase_dict:
-            row_sb_code = row.get('sb_code', '-')  # for testing only
-            subjbase_dict[row_sb_pk] = {'c': row_sb_code, 'count': 0, 'extra': 0, 'tv2': 0}
-        schoolbase_dict = subjbase_dict[row_sb_pk]
-
-        subj_count = row.get('subj_count')
-        if subj_count:
-            schoolbase_dict['count'] += subj_count
-        extra_count = row.get('extra_count')
-        if extra_count:
-            schoolbase_dict['extra'] += extra_count
-        tv2_count = row.get('tv2_count')
-        if tv2_count:
-            schoolbase_dict['tv2'] += tv2_count
-
-    if logging_on:
-        datalists_json = json.dumps(school_envelop_studsubj_dict, cls=af.LazyEncoder)
-        logger.debug('_envelop_studsubj_dict: ' + str(datalists_json))
-
-
-    """
-    school_envelop_studsubj_dict: {'ETE': {1: {'c': 'V.S.B.O.', 6: {'c': 'PBL', 'total': {}, 'country': {}, 133: {'c': 'PBL'}, 2: {'c': 'CUR01'}, 155: {'c': 'PBL'}, 124: {'c': 'PBL'}, 113: {'c': 'PBL'}, 121: {'c': 'PBL'}, 131: {'c': 'PBL'}, 118: {'c': 'PBL'}, 123: {'c': 'PBL'}, 114: {'c': 'PBL'}}, 5: {'c': 'PKL', 'total': {}, 'country': {}, 113: {'c': 'PKL'}, 2: {'c': 'CUR01'}, 114: {'c': 'PKL'}, 133: {'c': 'PKL'}, 123: {'c': 'PKL'}, 118: {'c': 'PKL'}, 121: {'c': 'PKL'}, 155: {'c': 'PKL'}, 131: {'c': 'PKL'}, 124: {'c': 'PKL'}}, 4: {'c': 'TKL', 'total': {}, 'country': {}, 114: {'c': 'TKL'}, 2: {'c': 'CUR01'}, 118: {'c': 'TKL'}, 113: {'c': 'TKL'}, 124: {'c': 'TKL'}, 131: {'c': 'TKL'}, 120: {'c': 'TKL'}, 133: {'c': 'TKL'}}}, 'nl': {'total': {}}}, 'DUO': {1: {'c': 'V.S.B.O.', 4: {'c': 'TKL', 'total': {}, 'country': {}, 155: {'c': 'TKL'}, 2: {'c': 'CUR01'}, 121: {'c': 'TKL'}, 123: {'c': 'TKL'}}}, 'nl': {'total': {}}}}
-[2022-08-23 19:43:24] DEBUG [subjects.orderlists.create_env
-    """
-    return school_envelop_studsubj_dict
-# --- end of create_studsubj_count_dict
-
-
-
-
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def create_mapped_admin_dict(sel_examyear_instance):
     # PR2022-08-13
@@ -687,7 +286,7 @@ def create_mapped_admin_dict(sel_examyear_instance):
 # create mapped_admin_dict with key = country_id and value = row_dict
     mapped_admin_dict = {}
     sql_keys = {'ey_code_int': sel_examyear_instance.code, 'default_role': c.ROLE_064_ADMIN }
-    sql_list = ["SELECT sb.country_id, sch.base_id AS sb_id, sb.code AS c,",
+    sql_list = ["SELECT sb.country_id, sch.base_id AS sb_id, sb.code AS c, country.abbrev AS country_abbrev,",
                 "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
                 "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",
                 "ey.order_admin_divisor, ey.order_admin_multiplier, ey.order_admin_max",
@@ -695,6 +294,7 @@ def create_mapped_admin_dict(sel_examyear_instance):
                 "FROM schools_school AS sch",
                 "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
                 "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "INNER JOIN schools_country AS country ON (country.id = ey.country_id)",
                 "WHERE ey.code = %(ey_code_int)s::INT",
                 "AND sb.defaultrole = %(default_role)s::INT"
                 ]
@@ -735,7 +335,6 @@ def calc_extra_examsNEW(item_count, extra_fixed, extra_perc, round_to):
 # exam_count is number of exams of this subject / dep / level / exammperiod, default = 1
         # was: if not exam_count:
         #           exam_count = 1
-
 # divide items over the exams, calculate extra per exam
         # was: item_count_per_exam = item_count / exam_count
 
@@ -812,14 +411,13 @@ def calc_exams_tv02(item_count, divisor, multiplier, max_exams):  # PR2021-09-25
 # - end of calc_exams_tv02
 
 
-def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, schoolbase_pk_list=None, subjbase_pk_list=None):
-    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-10-10
-    logging_on = False  # s.LOGGING_ON
+def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, subjbase_pk_list=None):
+    # PR2021-08-19 PR2021-09-24 PR2022-08-13 PR2022-10-10 PR2022-10-31
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj_count_rows ----- ')
         logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
         logger.debug('    sel_examperiod: ' + str(sel_examperiod))
-        logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
         logger.debug('    subjbase_pk_list: ' + str(subjbase_pk_list))
 
     #  create nested dict with studsubj count + extra
@@ -828,22 +426,16 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
     #  all schools of CUR and SXM, only submitted subjects, not deleted # PR2021-08-19
     #  add extra for ETE and DOE PR2021-09-25
 
+
+    # PR2022-10-31 this function also adds rows for ETE/DOE with extra exams
+    # therefore don't filter on schoolbase_pk_list, otherwise ETE/DOE extra exams are not calculated properly
+    # instead filter rows aoutside this function
+
     # called by:
     #   create_studsubj_count_dict
     #   create_envelop_count_per_school_dict
     #   create_envelop_print_per_subject_dict
     #   EnvelopPrintView
-
-# - get schoolbase_id of ETE and DOE - necessary to calculate extra exams for ETE and DOE
-
-# - create mapped_admin_dict with key = country_id and value = row_dict
-    # mapped_admin_dict: key = country_id, value = {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', ...
-    mapped_admin_dict = create_mapped_admin_dict(sel_examyear_instance)
-    """
-     mapped_admin_dict: {
-        1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', 'order_extra_fixed': 8, 'order_extra_perc': 8, 'order_round_to': 8, 'order_tv2_divisor': 88, 'order_tv2_multiplier': 8, 'order_tv2_max': 88, 'order_admin_divisor': 88, 'order_admin_multiplier': 8, 'order_admin_max': 88}, 
-        2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}} 
-    """
 
     requsr_country_pk = request.user.country.pk
     sql_keys = {'ey_code_int': sel_examyear_instance.code, 'ep': sel_examperiod, 'requsr_country_id': requsr_country_pk}
@@ -953,6 +545,10 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
                 "sch.base_id AS schoolbase_id, studsubj.depbase_id, studsubj.lvlbase_id,",
                 # "studsubj.dep_sequence, studsubj.lvl_sequence, ",
 
+                #"ey.order_extra_fixed AS oef, ey.order_extra_perc AS oep, ey.order_round_to AS oer,",
+                #"ey.order_tv2_divisor AS otd, ey.order_tv2_multiplier AS otmu, ey.order_tv2_max AS otma,",
+                #"ey.order_admin_divisor AS oad, ey.order_admin_multiplier AS oamu, ey.order_admin_max AS oama,",
+
                 "studsubj.subj_count",
 
                 "FROM schools_school AS sch",
@@ -965,11 +561,6 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
                 # filter by ey.code, because sxm school must also be included
                 "WHERE ey.code = %(ey_code_int)s::INT"
                 ]
-
-# - filter on parameter schoolbase_pk_list when it has value
-    if schoolbase_pk_list:
-        sql_keys['sb_arr'] = schoolbase_pk_list
-        sql_list.append("AND sb.id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
 
     #sql_list.append("ORDER BY studsubj.dep_sequence, LOWER(studsubj.subjbase_code), studsubj.lvl_sequence, LOWER(sb.code)")
     #sql_list.append("ORDER BY LOWER(sb.code), studsubj.dep_sequence, studsubj.lvl_sequence, LOWER(studsubj.subjbase_code)")
@@ -985,36 +576,39 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
 
+    # - get schoolbase_id of ETE and DOE - necessary to calculate extra exams for ETE and DOE
+
+    # - create mapped_admin_dict with key = country_id and value = row_dict
+    # mapped_admin_dict: key = country_id, value = {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', ...
+    mapped_admin_dict = create_mapped_admin_dict(sel_examyear_instance)
+    """
+     mapped_admin_dict: {
+        1: {'country_id': 1, 'sb_id': 23, 'c': 'CURETE', country_abbrev': 'Cur', 'order_extra_fixed': 8, 'order_extra_perc': 8, 'order_round_to': 8, 'order_tv2_divisor': 88, 'order_tv2_multiplier': 8, 'order_tv2_max': 88, 'order_admin_divisor': 88, 'order_admin_multiplier': 8, 'order_admin_max': 88}, 
+        2: {'country_id': 2, 'sb_id': 34, 'c': 'SXMDOE', 'country_abbrev': 'Sxm', 'order_extra_fixed': 2, 'order_extra_perc': 5, 'order_round_to': 5, 'order_tv2_divisor': 25, 'order_tv2_multiplier': 5, 'order_tv2_max': 25, 'order_admin_divisor': 100, 'order_admin_multiplier': 5, 'order_admin_max': 25}} 
+    """
+    # get 'extra' variables from CUracao,
+
+    mapped_ete_dict = {}
+    for admin_dict in mapped_admin_dict.values():
+        country_abbrev = admin_dict.get('country_abbrev') or ''
+        if country_abbrev.lower() == 'cur':
+            mapped_ete_dict = admin_dict
+            break
+    #if logging_on:
+    #   logger.debug('mapped_ete_dict: ' + str(mapped_ete_dict))
+
+    total_dict = {}
     for row in rows:
-
-        # admin_id is schoolbase_id of school of ETE / DOE
-        # admin_id, admin_code = None, None
-        order_extra_fixed, order_extra_perc, order_round_to = None, None, None
-        order_tv2_divisor, order_tv2_multiplier, order_tv2_max = None, None, None
-
-        country_id = row.get('country_id')
-        if country_id in mapped_admin_dict:
-            mapped_country_dict = mapped_admin_dict[country_id]
-            #admin_id = mapped_country_dict.get('sb_id')
-            #admin_code = mapped_country_dict.get('c')
-
-            order_extra_fixed = mapped_country_dict.get('order_extra_fixed')
-            order_extra_perc = mapped_country_dict.get('order_extra_perc')
-            order_round_to = mapped_country_dict.get('order_round_to')
-
-            order_tv2_divisor = mapped_country_dict.get('order_tv2_divisor')
-            order_tv2_multiplier = mapped_country_dict.get('order_tv2_multiplier')
-            order_tv2_max = mapped_country_dict.get('order_tv2_max')
-
-            if logging_on and False:
-                logger.debug('mapped_country_dict: ' + str(mapped_country_dict))
-                #logger.debug('admin_code: ' + str(admin_code))
-                logger.debug('order_extra_fixed: ' + str(order_extra_fixed))
-                logger.debug('order_extra_perc: ' + str(order_extra_perc))
-                logger.debug('order_round_to: ' + str(order_round_to))
+        #if logging_on:
+        #   logger.debug('$$$$$>>>>> row: ' + str(row))
+        """                     
+        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_5_133', 'subjbase_code': 'ac', 'lang': 'en',
+         'country_id': 2, 'schoolbase_id': 31, 'depbase_id': 1, 'lvlbase_id': 5, 
+         'subj_count': 17, 'extra_count': 3, 'tv2_count': 5}
+        """
 
 # +++ count extra exams and examns tv2 per school / subject
-        subj_count = row.get('subj_count', 0)
+        subj_count = row.get('subj_count', 0) or 0
         # was exam_count:
         # practical exams have multiple exams for the same subject (Blue, Red). Count number of exams,
         # default is 1 if no value given or value = 0
@@ -1023,25 +617,155 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
         extra_count = 0
         tv2_count = 0
         if subj_count:
+
+            # admin_id is schoolbase_id of school of ETE / DOE
+            # admin_id, admin_code = None, None
+
+            country_pk = row.get('country_id')
+            mapped_country_dict = mapped_admin_dict.get(country_pk) or {}
+            #admin_pk = mapped_country_dict.get('sb_id')
+            # admin_code = mapped_country_dict.get('c')
+
+            # PR2022-10-31: 'extra' variables are taken from examyear (is different for cur and sxm)
+            # unless it is an ETE exam. In that case the cur variables are used
+            is_ete_exam = row.get('ete_exam') or False
+            mapped_dict = mapped_ete_dict if is_ete_exam else mapped_country_dict
+
+            order_extra_fixed = mapped_dict.get('order_extra_fixed')
+            order_extra_perc = mapped_dict.get('order_extra_perc')
+            order_round_to = mapped_dict.get('order_round_to')
+
+            order_tv2_divisor = mapped_dict.get('order_tv2_divisor')
+            order_tv2_multiplier = mapped_dict.get('order_tv2_multiplier')
+            order_tv2_max = mapped_dict.get('order_tv2_max')
+
             extra_count = calc_extra_examsNEW(subj_count, order_extra_fixed, order_extra_perc, order_round_to)
             tv2_count = calc_exams_tv02(subj_count, order_tv2_divisor, order_tv2_multiplier, order_tv2_max)
 
-    # - add extra_count and tv2_count to row, for enveloplabel print
+            #if logging_on:
+            #    logger.debug('........subj_count: ' + str(subj_count))
+            #    logger.debug('.......extra_count: ' + str(extra_count))
+            #    logger.debug('.........tv2_count: ' + str(tv2_count))
+
+# +++ count total subj_count per country / ededuo / dep / level for admin extra PR2022-10-30
+            if country_pk not in total_dict:
+                total_dict[country_pk] = {}
+            country_total_dict = total_dict[country_pk]
+        # - get eteduo_dict
+            ete_duo = 'ETE' if row.get('ete_exam', False) else 'DUO'
+            if ete_duo not in country_total_dict:
+                country_total_dict[ete_duo] = {}
+            country_eteduo_dict = country_total_dict[ete_duo]
+        # - get lang_dict
+            lang = row.get('lang', 'nl')
+            if lang not in country_eteduo_dict:
+                country_eteduo_dict[lang] = {}
+            country_lang_dict = country_eteduo_dict[lang]
+        # - get depbase_dict
+            depbase_pk = row.get('depbase_id') or 0
+            if depbase_pk not in country_lang_dict:
+                country_lang_dict[depbase_pk] = {}
+            country_depbase_dict = country_lang_dict[depbase_pk]
+        # - get lvlbase_dict
+            # value is '0' when lvlbase_id = None (Havo/Vwo)
+            lvlbase_pk = row.get('lvlbase_id') or 0
+            if lvlbase_pk not in country_depbase_dict:
+                country_depbase_dict[lvlbase_pk] = {}
+            country_lvlbase_dict = country_depbase_dict[lvlbase_pk]
+
+        # - add subj_count to lvlbase_dict total
+            subjbase_pk = row.get('subjbase_id') or 0
+            if subjbase_pk not in country_lvlbase_dict:
+                subjbase_code = row.get('subjbase_code') or '-'
+                country_lvlbase_dict[subjbase_pk] = [subjbase_code, subj_count, tv2_count]
+            else:
+                country_lvlbase_dict[subjbase_pk][1] += subj_count
+                country_lvlbase_dict[subjbase_pk][2] += tv2_count
+        #if logging_on:
+        #    logger.debug('    total_dict: ' + str(total_dict))
+
+# - add extra_count and tv2_count to row
         row['extra_count'] = extra_count
         row['tv2_count'] = tv2_count
 
-        if logging_on :
-            logger.debug('>>>>> row: ' + str(row))
-        """                     
-        row: {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_5_133', 'subjbase_code': 'ac', 'lang': 'en',
-         'country_id': 2, 'schoolbase_id': 31, 'depbase_id': 1, 'lvlbase_id': 5, 
-         'subj_count': 17, 'extra_count': 3, 'tv2_count': 5}
-        """
+    """
+    total_dict: {
+        23: {'c': 'CURETE', 
+            'ETE': {
+                    'nl': {
+                        1: {
+                            5: {118: 351, 113: 351, 120: 70, 123: 91, 129: 57, 131: 89, 133: 105, 124: 78, 
+                                155: 113, 121: 194, 122: 126, 132: 8, 114: 347, 126: 25, 125: 5, 127: 4}, 
+                            4: {133: 253, 114: 660, 118: 660, 120: 318, 124: 262, 137: 151, 131: 174, 113: 660, 132: 15},                              
+                        2: {
+                            0: {118: 525, 165: 525, 159: 200, 145: 246, 146: 83}}, 
+                        3: {0: {118: 140, 146: 73, 165: 140, 145: 58, 159: 30}}}, 
+                    'pa': {1: {4: {133: 11, 124: 8, 137: 22, 131: 6},  
+        34: {'c': 'SXMDOE', 
+            'ETE': {'c': 'ETE', 
+                'en': {
+                    1: { 
+                        6: { 121: 57, 132: 7, 124: 11, 131: 11, 133: 29, 155: 36, 122: 14, 123: 11}, 
+                        5: {133: 38, 121: 86, 155: 44, 132: 6, 131: 27, 124: 27, 123: 27, 122: 19}}}, 
+                'nl': {1: {6: { 113: 61, 129: 4, 114: 61, 126: 8, 125: 2},
+    """
 
-        if logging_on:
-            logger.debug('........subj_count: ' + str(subj_count))
-            logger.debug('.......extra_count: ' + str(extra_count))
-            logger.debug('.........tv2_count: ' + str(tv2_count))
+# +++++ create admin school +++++
+    # +++ after adding schools: loop through count_dict and calculate extra for ETE and DOE:
+
+    # loop through total_dict
+    # and add a row for each country and each subject in total_dict
+    if total_dict:
+        for country_pk, admin_total_dict in total_dict.items():
+            mapped_country_dict = mapped_admin_dict.get(country_pk) or {}
+            admin_pk = mapped_country_dict.get('sb_id')
+            # admin_code = mapped_country_dict.get('c')
+            order_admin_divisor = mapped_country_dict.get('order_admin_divisor')
+            order_admin_multiplier = mapped_country_dict.get('order_admin_multiplier')
+            order_admin_max = mapped_country_dict.get('order_admin_max')
+
+            for ete_duo, admin_eteduo_dict in admin_total_dict.items():
+                is_ete_exam = ete_duo == 'ETE'
+                for lang, admin_lang_dict in admin_eteduo_dict.items():
+                    for depbase_pk, admin_depbase_dict in admin_lang_dict.items():
+                        for lvlbase_pk, admin_lvlbase_dict in admin_depbase_dict.items():
+                            for subjbase_pk, count_list in admin_lvlbase_dict.items():
+                                # - caculate extra exams for ETE / DES, based on total exams / total_tv2 and parameters: order_admin_divisor, order_admin_multiplier, order_admin_max
+                                # ETE has 0 extra exams per 100 with max 0
+                                # DES has 5 extra exams per 100 with max 25
+
+                                # calc_exams_tv02 formula: tv2_count = ROUND_UP( item_count / divisor ) x multiplier
+
+                                # country_lvlbase_dict[subjbase_pk] = [subjbase_code, subj_count, tv2_count]
+                                sj_count = count_list[1]
+                                tv2_count = count_list[2]
+
+                                if sj_count:
+                                    admin_extra_count = calc_exams_tv02(sj_count, order_admin_divisor,
+                                                                        order_admin_multiplier, order_admin_max)
+                                    admin_tv2_count = calc_exams_tv02(tv2_count, order_admin_divisor,
+                                                                      order_admin_multiplier, order_admin_max)
+
+                    # add row of admin to rows
+                                    id_key = '_'.join((str(depbase_pk), str(lvlbase_pk), str(subjbase_pk)))
+                                    admin_row = {
+                                        'country_id': country_pk,
+                                        'ete_exam': is_ete_exam,
+                                        'lang': lang,
+                                        'depbase_id': depbase_pk,
+                                        'lvlbase_id': lvlbase_pk,
+                                        'subjbase_id': subjbase_pk,
+                                        'id_key': id_key,
+
+                                        'schoolbase_id': admin_pk,
+                                        'subjbase_code': count_list[0],
+                                        'subj_count': 0,
+                                        'extra_count': admin_extra_count,
+                                        'tv2_count': admin_tv2_count
+                                    }
+                                    rows.append(admin_row)
+                                    #if logging_on:
+                                    #    logger.debug('$>>>>> admin_row: ' + str(admin_row))
 
     return rows
 # - end of create_studsubj_count_rows
