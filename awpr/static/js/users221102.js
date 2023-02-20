@@ -1,24 +1,23 @@
 // PR2020-07-30 added
 
-// PR2021-09-22  declare variables outside function to make them global variables
+// PR2021-09-22  these variables are declared in base.js to make them global variables
 //let selected_btn = "btn_user";
 //let setting_dict = {};
 //let permit_dict = {};
-const field_settings = {};
 //let loc = {};
 //let urls = {};
 
+const field_settings = {};
+
 let user_list = [];
 let user_rows = [];
+let corrector_rows = [];
 let permit_rows = [];
-
-let school_rows = [];
-let level_rows = [];
-let subject_rows = [];
-let cluster_rows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
+
+    console.log("+++++++ DOMContentLoaded 'user page'")
 
     let el_loader = document.getElementById("id_loader");
 
@@ -34,7 +33,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let mod_dict = {};
     let mod_MUA_dict = {};
     let mod_MUPM_dict = {};
-    let mod_MUPS_dict = {};  // PR2022-10-23
     const mod_MSM_dict = {};
     let time_stamp = null; // used in mod add user
 
@@ -58,10 +56,11 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
     urls.url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
 
-    urls.url_user_allowedschools_upload = get_attr_from_el(el_data, "data-url_user_allowedschools_upload");
+    urls.url_user_allowedsections_upload = get_attr_from_el(el_data, "data-url_user_allowedsections_upload");
 
     urls.url_userpermit_upload = get_attr_from_el(el_data, "data-userpermit_upload_url");
     urls.url_download_permits = get_attr_from_el(el_data, "data-user_download_permits_url");
+    urls.url_download_userdata_xlsx = get_attr_from_el(el_data, "data-url_download_userdata_xlsx");
 
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
     let columns_hidden = [];
@@ -91,10 +90,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]};
 
     field_settings.btn_allowed = {
-                    field_caption: ["", "School_code", "School", "Username", "Allowed_departments", "Allowed_schools",
+                    field_caption: ["", "School_code", "School", "Username", "Allowed_schools", "Allowed_departments",
                                     "Allowed_levels", "Allowed_subjects", "Allowed_clusters", "Inactive"],
-                    field_names: ["select", "sb_code", "school_abbrev", "username", "allowed_depbases", "allowed_schoolbases",
-                                    "allowed_levelbases", "allowed_subjectbases", "allowed_clusterbases", "is_active"],
+                    field_names: ["select", "sb_code", "school_abbrev", "username", "allowed_schoolbases", "allowed_depbases",
+                                    "allowed_lvlbases", "allowed_subjbases", "allowed_clusters", "is_active"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "inactive"],
                     field_width:  ["032", "090", "150", "150", "180", "180", "180", "180", "180", "090"],
@@ -114,6 +113,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["020", "090", "120","150", "075", "075",
                                     "090", "090", "090", "090",  "090", "090"],
                     field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c", "c", "c", "c"]};
+
+    field_settings.btn_correctors = {
+                    field_caption: ["", "School_code", "School", "Username", "Allowed_schools", "Allowed_departments",
+                                    "Allowed_levels", "Allowed_subjects", "Allowed_clusters", "Inactive"],
+                    field_names: ["select", "sb_code", "school_abbrev", "username", "allowed_schoolbases", "allowed_depbases",
+                                    "allowed_lvlbases", "allowed_subjbases", "allowed_clusters", "is_active"],
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "inactive"],
+                    field_width:  ["032", "090", "150", "150", "180", "180", "180", "180", "180", "090"],
+                    field_align: ["c", "l", "l", "l", "l", "l",  "l", "l", "l", "c"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -164,6 +173,29 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         };
+
+        const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
+        if (el_hdrbar_allowed_sections){
+            el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
+        };
+
+// ---  MODAL USER SET ALLOWED SECTIONS
+        const el_MUPS_username = document.getElementById("id_MUPS_username");
+        const el_MUPS_loader = document.getElementById("id_MUPS_loader");
+        console.log("USER PAGE el_MUPS_username", el_MUPS_username)
+
+        const el_MUPS_tbody_container = document.getElementById("id_MUPS_tbody_container");
+        const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
+
+        const el_MUPS_btn_expand_all = document.getElementById("id_MUPS_btn_expand_all");
+        if (el_MUPS_btn_expand_all){
+            el_MUPS_btn_expand_all.addEventListener("click", function() {MUPS_ExpandCollapse_all()}, false);
+        };
+        const el_MUPS_btn_save = document.getElementById("id_MUPS_btn_save");
+        if (el_MUPS_btn_save){
+            el_MUPS_btn_save.addEventListener("click", function() {MUPS_Save("save")}, false);
+        };
+        const el_MUPS_btn_cancel = document.getElementById("id_MUPS_btn_cancel");
 
 // ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
@@ -218,14 +250,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         if (el_MUPM_btn_submit){
             el_MUPM_btn_submit.addEventListener("click", function() {MUPM_Save("save")}, false);
-        };
-
-// ---  MODAL USER SET PERMIT SECTION
-        const el_MUPS_username = document.getElementById("id_MUPS_username");
-
-        const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
-        const el_MUPS_btn_submit = document.getElementById("id_MUPS_btn_submit");        if (el_MUPM_btn_submit){
-            el_MUPS_btn_submit.addEventListener("click", function() {MUPS_Save("save")}, false);
         };
 
 // ---  MOD SELECT MULTIPLE  ------------------------------
@@ -284,12 +308,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 setting: {page: "page_user"},
                 schoolsetting: {setting_key: "import_username"},
                 locale: {page: ["page_user", "upload"]},
+                examyear_rows: {get: true},
                 user_rows: {get: true},
+                corrector_rows: {get: true},
+                usercompensation_rows: {get: true},
+                // PR2023-01-06 was: department_rows: {skip_allowed_filter: true},
                 department_rows: {get: true},
-                school_rows: {get: true},
+                school_rows: {skip_allowed_filter: true},
                 level_rows: {skip_allowed_filter: true},
-                subject_rows: {skip_allowed_filter: true},
-                cluster_rows: {get: true}
+                subject_rows_page_users: {get: true},
+                cluster_rows: {get: true},
             };
 
         DatalistDownload(datalist_request, "DOMContentLoaded");
@@ -344,8 +372,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
                 if ("schoolsetting_dict" in response) { i_UpdateSchoolsettingsImport(response.schoolsetting_dict) };
 
+                if ("examyear_rows" in response) {
+                    examyear_rows = response.examyear_rows;
+                    b_fill_datamap(examyear_map, response.examyear_rows);
+                };
                 if ("user_rows" in response) {
                     user_rows = response.user_rows;
+                };
+
+                if ("corrector_rows" in response) {
+                    corrector_rows = response.corrector_rows;
                 };
                 if ("permit_rows" in response) {
                     permit_rows = response.permit_rows
@@ -361,8 +397,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("school_rows" in response)  {school_rows = response.school_rows};
 
                 if ("level_rows" in response)  {level_rows = response.level_rows};
-                if ("subject_rows" in response)  {subject_rows = response.subject_rows};
-                if ("cluster_rows" in response)  {cluster_rows = response.cluster_rows};
+                if ("subject_rows_page_users" in response)  {subject_rows = response.subject_rows_page_users};
+                if ("cluster_rows" in response)  {
+                    FillDatadicts("cluster", response.cluster_rows);
+                };
 
                 HandleBtnSelect(selected_btn, true);  // true = skip_upload
 
@@ -374,6 +412,34 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }  // function DatalistDownload
+
+
+//=========  FillDatadicts  ===  PR2023-01-26
+    function FillDatadicts(tblName, data_rows) {
+        //console.log("===  FillDatadicts == ");
+        //console.log("    tblName", tblName);
+        //console.log("    data_rows", data_rows);
+
+        const data_dicts = (tblName === "cluster") ? cluster_dictsNEW :  null;
+
+        b_clear_dict(data_dicts);
+
+        if (data_rows && data_rows.length){
+            for (let i = 0, row; row = data_rows[i]; i++) {
+                const pk_int = row.id;
+                const key_str = get_datadicts_keystr(tblName, pk_int, row.studsubj_id);
+                data_dicts[key_str] = row;
+            };
+        };
+        //console.log("    data_dicts", data_dicts);
+    };  // FillDatadicts
+
+    function get_datadicts_keystr(tblName, pk_int, studsubj_pk) {  // PR2023-01-05
+        let key_str = tblName + "_" + ((pk_int) ? pk_int : 0);
+        //if (tblName === "studsubj") {key_str += "_" + ((studsubj_pk) ? studsubj_pk : 0)};
+        return key_str
+    };
+
 
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
@@ -387,6 +453,11 @@ document.addEventListener('DOMContentLoaded', function() {
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, []);
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, []);
             AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, null, "id_submenu_import");
+        };
+        AddSubmenuButton(el_submenu, loc.Download_user_data, function() {ModConfirmOpen_DownloadUserdata("download_userdata_xlsx")});
+
+        if (permit_dict.requsr_role_corr){
+            AddSubmenuButton(el_submenu, loc.Calc_compensation, function() {MCOMP_Open()}, ["tab_show", "tab_btn_correctors"]);
         };
 
         // hardcode access of system admin
@@ -403,14 +474,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ");
-        console.log( "skip_upload", skip_upload);
+        //console.log( "===== HandleBtnSelect ========= ");
+        //console.log( "skip_upload", skip_upload);
 
 // ---  get  selected_btn
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
-        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_allowed", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
+        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_allowed", "btn_userpermit", "btn_correctors" ].includes(data_btn)) ? data_btn : "btn_user"
         //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
@@ -428,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  fill datatable
         FillTblRows(skip_upload);
 
-    }  // HandleBtnSelect
+    };  // HandleBtnSelect
 
 //=========  HandleTblRowClicked  ================ PR2020-08-03 PR2021-08-01
     function HandleTblRowClicked(tr_clicked) {
@@ -463,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  =================== PR2021-08-01 PR2022-02-28
     function FillTblRows(skip_upload) {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn();
 
         const field_setting = field_settings[selected_btn];
@@ -601,8 +672,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01
     function CreateTblRow(tblName, field_setting, map_dict) {
-        console.log("=========  CreateTblRow =========", tblName);
-        //console.log("map_dict", map_dict);
+        //console.log("=========  CreateTblRow =========", tblName);
+    //console.log("    map_dict", map_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -678,11 +749,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (field_name === "select") {
                         // TODO add select multiple users option PR2020-08-18
                     } else if (field_name === "username"){
-                        //if(tblName ==="tbl_allowed"){
-                        //    el.addEventListener("click", function() {MUPS_Open("update", el)}, false)
-                        //} else {
+                        if(tblName ==="tbl_allowed"){
+                            el.addEventListener("click", function() {MUPS_Open(el)}, false)
+                        } else {
                             el.addEventListener("click", function() {MUA_Open("update", el)}, false)
-                        //};
+                        };
                         el.classList.add("pointer_show");
                         add_hover(el);
                     } else if (["sb_code", "school_abbrev", "username", "last_name", "email"].includes(field_name)){
@@ -700,10 +771,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         // attach eventlistener and hover to td, not to el. No need to add icon_class here
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
-
                     } else if (field_name.includes("allowed")) {
-                        td.addEventListener("click", function() {MSM_Open(el)}, false)
-                        add_hover(td);
+                        if (field_name === "allowed_clusters") {
+                            if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
+                                td.addEventListener("click", function() {MSM_Open(el)}, false);
+                                add_hover(td);
+                            };
+                        } else {
+                            // users may always view allowed_sections
+                            el.addEventListener("click", function() {MUPS_Open(el)}, false);
+                            add_hover(td);
+                        };
 
                     } else if (field_name === "activated") {
                         el.addEventListener("click", function() {ModConfirmOpen("user", "send_activation_email", el)}, false )
@@ -721,7 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // if (!columns_hidden.includes(field_name))
         }  // for (let j = 0; j < 8; j++)
 
-        return tblRow
+        return tblRow;
     };  // CreateTblRow
 
 //=========  UpdateTblRow  ================ PR2020-08-01
@@ -730,8 +808,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
                 UpdateField(td.children[0], map_dict);
-            }
-        }
+            };
+        };
     };  // UpdateTblRow
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01
@@ -745,9 +823,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let inner_text = null, title_text = null, filter_value = null;
             if (field_name === "select") {
                 // TODO add select multiple users option PR2020-08-18
+
             } else if (["sb_code", "username", "last_name", "email", "page"].includes(field_name)){
                 inner_text = map_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+
             } else if (field_name === "school_abbrev") {
                 // schoolname cannot be put in user table, because it has no examyear PR2021-07-05
                 // lookup schoolname in school_rows instead
@@ -761,15 +841,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } else if (field_name.includes("allowed")){
 
-        //console.log( "map_dict", map_dict);
-        //console.log( "field_name", field_name);
-        //console.log( "map_dict[field_name]", map_dict[field_name]);
-                const [display, title] = get_allowed_display_txt(field_name, map_dict[field_name]);
-        //console.log( "display", display);
-        //console.log( "title", title);
-                inner_text = (display) ? display : "&nbsp";
-                title_text= (title) ? title : null;
-                filter_value = (inner_text) ? inner_text.toLowerCase() : null;
+    //console.log( "map_dict", map_dict);
+    //console.log( "field_name", field_name);
+    //console.log( "map_dict[field_name]", map_dict[field_name]);
+    //console.log( "display", display);
+    //console.log( "title", title);
+
+                const field_value = (map_dict[field_name]) ? map_dict[field_name] : null;
+                inner_text = (field_value) ? field_value : "&nbsp";
+                if (field_name === "allowed_schoolbases") {
+                    inner_text = (field_value) ? field_value : "&nbsp";
+                    title_text = (map_dict.allowed_schoolbases_title) ? map_dict.allowed_schoolbases_title : null;
+                    filter_value = (field_value) ? field_value.toLowerCase() : null;
+                } else if (field_name === "allowed_subjbases") {
+                    inner_text = (field_value) ? field_value : "&nbsp";
+                    title_text = (map_dict.allowed_subjbases_title) ? map_dict.allowed_subjbases_title : null;
+                    filter_value = (field_value) ? field_value.toLowerCase() : null;
+                } else  if (field_name === "allowed_clusters") {
+                    inner_text = (field_value && field_value.length) ? field_value.join(", ") : "&nbsp";
+                    title_text = (field_value && field_value.length) ? field_value.join("\n") : null;
+                    filter_value = (field_value && field_value.length) ? field_value.join(" ") : "&nbsp";
+                } else {
+                    inner_text = (field_value) ? field_value : "&nbsp";
+                    filter_value = (field_value) ? field_value.toLowerCase() : null;
+                };
 
             } else if (field_name === "role") {
                 const role = map_dict[field_name];
@@ -781,15 +876,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 filter_value = map_dict[field_name];
 
             } else if (field_name.slice(0, 5) === "group") {
+                //  field_name is "group_read", "group_edit",  "group_auth1", "group_auth2", etc
+
                 // map_dict[field_name] example: perm_system: true
                 const db_field = field_name.slice(6);
+                //  db_field is "read", "edit",  "auth1", "auth2", etc
+
                 // const permit_bool = (map_dict[field_name]) ? map_dict[field_name] : false;
                 const permit_bool = (map_dict.usergroups) ? map_dict.usergroups.includes(db_field) : false;
 
-                //console.log("field_name", field_name);
-                //console.log("db_field", db_field);
-                //console.log("map_dict.usergroups", map_dict.usergroups);
-                //console.log("permit_bool", permit_bool);
+    //console.log("    field_name", field_name);
+    //console.log("    db_field", db_field);
+    //console.log("    map_dict.usergroups", map_dict.usergroups);
+    //console.log("    permit_bool", permit_bool);
 
                 filter_value = (permit_bool) ? "1" : "0";
                 el_div.className = (permit_bool) ? "tickmark_2_2" : "tickmark_0_0" ;
@@ -807,6 +906,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add title
                 title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Send_activationlink : null
+
             } else if (field_name === "is_active") {
                 const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
                 // give value '0' when inactive, '1' when active
@@ -816,6 +916,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add title
                 title_text = (is_inactive) ? loc.This_user_is_inactive : null;
+
             } else if ( field_name === "last_login") {
                 const datetimeUTCiso = map_dict[field_name]
                 const datetimeLocalJS = (datetimeUTCiso) ? new Date(datetimeUTCiso) : null;
@@ -829,7 +930,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  add attribute filter_value
         //console.log("filter_value", filter_value);
             add_or_remove_attr (el_div, "data-filter", !!filter_value, filter_value);
-
         };  // if(el_div && field_name){
     };  // UpdateField
 
@@ -911,11 +1011,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // if(permit_dict.usergroup_system)
     }  // UploadToggle
 
-//========= UploadChanges  ============= PR2020-08-03
+//========= UploadChanges  ============= PR2020-08-03 PR2023-01-01
     function UploadChanges(upload_dict, url_str) {
         console.log("=== UploadChanges");
-        console.log("url_str: ", url_str);
-        console.log("upload_dict: ", upload_dict);
+        console.log("    url_str: ", url_str);
+        console.log("    upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -929,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
 
-                    console.log( "response");
+                    console.log("response");
                     console.log( response);
 
                     if("msg_dictlist" in response){
@@ -952,10 +1052,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     if ("updated_permit_rows" in response){
                         RefreshDataRows("userpermit", response.updated_permit_rows, permit_rows, true)  // true = is_update
-                    }
-                    // used in MUPS_Open PR2022-10-26
-                    if ("allowed_schoolbases" in response){
-                        mod_MUPS_dict.allowed_schoolbases = response.allowed_schoolbases;
                     };
 
                 },  // success: function (response) {
@@ -1084,7 +1180,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  hide btn delete when addnew mode
             add_or_remove_class(el_MUA_btn_delete, cls_hide, is_addnew)
 
-
     // ---  disable btn submit
             MUA_DisableBtnSave()
 
@@ -1110,7 +1205,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30
    function MUA_Save(mode) {
-        //console.log("=== MUA_Save === ");
+        console.log("=== MUA_Save === ");
         //console.log("mode: ", mode);
         //  mode = 'validate' when called by el_MUA_btn_submit
         //  mode = "save" after response OK
@@ -1167,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 email: el_MUA_email.value
                               };
             }
-            //console.log("upload_dict: ", upload_dict);
+            console.log("upload_dict: ", upload_dict);
 
             // must lose focus, otherwise green / red border won't show
             //el_input.blur();
@@ -1183,8 +1278,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
-                    //console.log( "response");
-                    //console.log( response);
+                    console.log( "response");
+                    console.log( response);
 
                     // hide loader
                     el_MUA_loader.classList.add(cls_hide);
@@ -1375,86 +1470,98 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MUA_ResetElements
 
-//========= MUA_SetMsgElements  ============= PR2020-08-02
+//========= MUA_SetMsgElements  ============= PR2020-08-02 PR2022-12-31
     function MUA_SetMsgElements(response){
-        //console.log( "===== MUA_SetMsgElements  ========= ");
-        // TOD) switch to render msg box
-        const err_dict = (response && "msg_err" in response) ? response.msg_err : {}
-        const validation_ok = get_dict_value(response, ["validation_ok"], false);
+        console.log( "===== MUA_SetMsgElements  ========= ");
+        // TODO switch to render msg box
+        const err_dict = (response && "msg_err" in response) ? response.msg_err : {};
+        // was const validation_ok = get_dict_value(response, ["validation_ok"], false);
+        const validation_ok = (response && "validation_ok" in response) ? response.validation_ok : false;
 
 
-        const el_msg_container = document.getElementById("id_MUA_msg_container")
-        let err_save = false;
-        let is_ok = (response && "msg_ok" in response);
-        if (is_ok) {
-            const ok_dict = response.msg_ok;
-            document.getElementById("id_msg_01").innerText = get_dict_value(ok_dict, ["msg01"]);
-            document.getElementById("id_msg_02").innerText = get_dict_value(ok_dict, ["msg02"]);
-            document.getElementById("id_msg_03").innerText = get_dict_value(ok_dict, ["msg03"]);
-            document.getElementById("id_msg_04").innerText = get_dict_value(ok_dict, ["msg04"]);
+        if("user_without_userallowed" in response){
 
-            el_msg_container.classList.remove("border_bg_invalid");
-            el_msg_container.classList.add("border_bg_valid");
-// ---  show only the elements that are used in this tab
-            b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
+            // ---  hide modal
+            $("#id_mod_user").modal("hide");
+            // function ModConfirmOpen(tblName, mode, el_input, user_without_userallowed) {
+            ModConfirmOpen(null, "user_without_userallowed", null, response.user_without_userallowed);
 
         } else {
-            // --- loop through input elements
-            if("save" in err_dict){
 
-        //console.log( "err_dict", err_dict);
-                const save_dict = err_dict.save
-        //console.log( "save_dict", save_dict);
-                err_save = true;
 
-                document.getElementById("id_msg_01").innerText = get_dict_value(save_dict, ["msg01"]);
-                document.getElementById("id_msg_02").innerText = get_dict_value(save_dict, ["msg02"]);
-                document.getElementById("id_msg_03").innerText = get_dict_value(save_dict, ["msg03"]);
-                document.getElementById("id_msg_04").innerText = get_dict_value(save_dict, ["msg04"]);
+            const el_msg_container = document.getElementById("id_MUA_msg_container")
+            let err_save = false;
+            let is_ok = (response && "msg_ok" in response);
+            if (is_ok) {
+                const ok_dict = response.msg_ok;
+                document.getElementById("id_msg_01").innerText = get_dict_value(ok_dict, ["msg01"]);
+                document.getElementById("id_msg_02").innerText = get_dict_value(ok_dict, ["msg02"]);
+                document.getElementById("id_msg_03").innerText = get_dict_value(ok_dict, ["msg03"]);
+                document.getElementById("id_msg_04").innerText = get_dict_value(ok_dict, ["msg04"]);
 
-                el_msg_container.classList.remove("border_bg_valid");
-                el_msg_container.classList.add("border_bg_invalid");
-// ---  show only the elements that are used in this tab
+                el_msg_container.classList.remove("border_bg_invalid");
+                el_msg_container.classList.add("border_bg_valid");
+    // ---  show only the elements that are used in this tab
                 b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
 
             } else {
-                const fields = ["username", "last_name", "email"]
-                for (let i = 0, field; field = fields[i]; i++) {
-                    const msg_err = get_dict_value(err_dict, [field]);
-                    const msg_info = loc.msg_user_info[i];
-        //console.log( "-----------field", field);
-        //console.log( "msg_err", msg_err);
-        //console.log( "msg_info", msg_info);
-                    let el_input = document.getElementById("id_MUA_" + field);
+                // --- loop through input elements
+                if("save" in err_dict){
 
-                    const must_blur = ( (!!msg_err && !el_input.classList.contains("border_bg_invalid")) ||
-                                        (!msg_err && !el_input.classList.contains("border_bg_valid")) );
-                    if( must_blur) { el_input.blur() };
-                    add_or_remove_class (el_input, "border_bg_invalid", (!!msg_err));
-                    add_or_remove_class (el_input, "border_bg_valid", (!msg_err));
+            //console.log( "err_dict", err_dict);
+                    const save_dict = err_dict.save
+            //console.log( "save_dict", save_dict);
+                    err_save = true;
 
-                    let el_msg = document.getElementById("id_MUA_msg_" + field);
-                    add_or_remove_class (el_msg, "text-danger", (!!msg_err));
-                    el_msg.innerText = (!!msg_err) ? msg_err : msg_info
+                    document.getElementById("id_msg_01").innerText = get_dict_value(save_dict, ["msg01"]);
+                    document.getElementById("id_msg_02").innerText = get_dict_value(save_dict, ["msg02"]);
+                    document.getElementById("id_msg_03").innerText = get_dict_value(save_dict, ["msg03"]);
+                    document.getElementById("id_msg_04").innerText = get_dict_value(save_dict, ["msg04"]);
+
+                    el_msg_container.classList.remove("border_bg_valid");
+                    el_msg_container.classList.add("border_bg_invalid");
+    // ---  show only the elements that are used in this tab
+                    b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
+
+                } else {
+                    const fields = ["username", "last_name", "email"]
+                    for (let i = 0, field; field = fields[i]; i++) {
+                        const msg_err = get_dict_value(err_dict, [field]);
+                        const msg_info = loc.msg_user_info[i];
+            //console.log( "-----------field", field);
+            //console.log( "msg_err", msg_err);
+            //console.log( "msg_info", msg_info);
+                        let el_input = document.getElementById("id_MUA_" + field);
+
+                        const must_blur = ( (!!msg_err && !el_input.classList.contains("border_bg_invalid")) ||
+                                            (!msg_err && !el_input.classList.contains("border_bg_valid")) );
+                        if( must_blur) { el_input.blur() };
+                        add_or_remove_class (el_input, "border_bg_invalid", (!!msg_err));
+                        add_or_remove_class (el_input, "border_bg_valid", (!msg_err));
+
+                        let el_msg = document.getElementById("id_MUA_msg_" + field);
+                        add_or_remove_class (el_msg, "text-danger", (!!msg_err));
+                        el_msg.innerText = (!!msg_err) ? msg_err : msg_info
+                    }
                 }
+
+                el_MUA_btn_submit.disabled = !validation_ok;
+                if(validation_ok){el_MUA_btn_submit.focus()}
             }
 
-            el_MUA_btn_submit.disabled = !validation_ok;
-            if(validation_ok){el_MUA_btn_submit.focus()}
-        }
+    // ---  show message in footer when no error and no ok msg
+            add_or_remove_class(el_MUA_footer_container, cls_hide, !validation_ok )
 
-// ---  show message in footer when no error and no ok msg
-        add_or_remove_class(el_MUA_footer_container, cls_hide, !validation_ok )
+    // ---  hide submit btn and delete btnwhen is_ok or when error
+            add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok || err_save)
+            add_or_remove_class(el_MUA_btn_delete, cls_hide, is_ok || err_save)
 
-// ---  hide submit btn and delete btnwhen is_ok or when error
-        add_or_remove_class(el_MUA_btn_submit, cls_hide, is_ok || err_save)
-        add_or_remove_class(el_MUA_btn_delete, cls_hide, is_ok || err_save)
-
-// ---  set text on btn cancel
-        if (el_MUA_btn_cancel){
-            el_MUA_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close : loc.Cancel);
-            if(is_ok || err_save){el_MUA_btn_cancel.focus()}
-        }
+    // ---  set text on btn cancel
+            if (el_MUA_btn_cancel){
+                el_MUA_btn_cancel.innerText = ((is_ok || err_save) ? loc.Close : loc.Cancel);
+                if(is_ok || err_save){el_MUA_btn_cancel.focus()}
+            };
+        };
     }  // MUA_SetMsgElements
 
 //=========  MUA_SelectSchool  ================ PR2020-09-25
@@ -1595,47 +1702,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // MUA_headertext
 // +++++++++ END MOD USER ADD ++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// +++++++++ MOD USER PERMIT SECTIONS ++++++++++++++++ PR20220-10-23
-    function MUPS_Open(mode, el_input){
-        console.log(" -----  MUPS_Open   ---- mode: ", mode)  // modes are: addnew, update
-        //console.log("permit_dict: ", permit_dict)
-        //console.log("permit_dict.permit_crud_sameschool: ", permit_dict.permit_crud_sameschool)
-        //console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
-        // mode = 'addnew' when called by SubmenuButton
-        // mode = 'update' when called by tblRow event
+// +++++++++ MOD USER PERMIT SUBJECTS ++++++++++++++++ PR2022-10-23 PR2022-11-21 PR2022-12-04 PR2023-01-06
+    function MUPS_Open(el_input){
+        console.log(" -----  MUPS_Open   ---- ")
 
-        if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool){
-            let data_dict = {}, user_pk = null;
-            let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
+        let data_dict = {}, user_pk = null, user_role = null;
+        let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
+        let user_allowed_sections = {};
+        let modifiedat = null, modby_username = null;
 
-            let modifiedat = null, modby_username = null;
-            const fldName = get_attr_from_el(el_input, "data-field");
-            const is_addnew = (mode === "addnew");
-
-        //console.log("fldName: ", fldName)
-            if(el_input){
-                const tblRow = t_get_tablerow_selected(el_input);
-                user_mapid = tblRow.id;
+        if(el_input){
+            const tblRow = t_get_tablerow_selected(el_input);
+            user_mapid = tblRow.id;
 
 // --- get existing data_dict from data_rows
-                data_dict = get_datadict_from_mapid(tblRow.id);
-    //console.log("data_dict", data_dict)
-                if(!isEmpty(data_dict)){
-                    user_pk = data_dict.id;
-                    user_schoolbase_pk = data_dict.schoolbase_id;
-                    user_schoolbase_code = data_dict.sb_code;
-                    modifiedat= data_dict.modifiedat;
-                    modby_username = data_dict.modby_username;
-                };
+            data_dict = get_datadict_from_mapid(tblRow.id);
+            if(!isEmpty(data_dict)){
+                user_pk = data_dict.id;
+                user_role = data_dict.role;
+                user_schoolbase_pk = data_dict.schoolbase_id;
+                user_schoolbase_code = data_dict.sb_code;
+                user_allowed_sections = (data_dict.allowed_sections) ? data_dict.allowed_sections : {};
 
-        // when el_input is not defined: function is mode 'addnew'
-            } else if (!permit_dict.permit_crud_otherschool){
-                // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
-                user_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
-                user_schoolbase_code = permit_dict.requsr_schoolbase_code;
-            }
+                modifiedat= data_dict.modifiedat;
+                modby_username = data_dict.modby_username;
+            };
 
-            selected_user_pk = user_pk
+        console.log("  data_dict: ", data_dict);
+
+
+
+            selected_user_pk = user_pk;
 
             let user_schoolname = null;
             if(user_schoolbase_pk){
@@ -1647,129 +1744,297 @@ document.addEventListener('DOMContentLoaded', function() {
                             break;
             }}}};
 
+            // all users may view this modal PPR2023-01-26
+            // only users of the same organization and permit_crud may edit
+            const may_edit = (permit_dict.permit_crud && permit_dict.requsr_schoolbase_pk === user_schoolbase_pk);
+
+        console.log("  permit_dict.requsr_schoolbase_pk: ", permit_dict.requsr_schoolbase_pk);
+        console.log("  user_schoolbase_pk: ", user_schoolbase_pk);
+        console.log("  may_edit: ", may_edit);
+
+            add_or_remove_class(el_MUPS_btn_save, cls_hide, !may_edit);
+            if (el_MUPS_btn_cancel){
+                el_MUPS_btn_cancel.innerText = (may_edit) ? loc.Cancel : loc.Close;
+            };
             mod_MUPS_dict = {
-                mode: mode, // modes are: addnew, update
-                //skip_validate_username: is_addnew,
-                //skip_validate_last_name: is_addnew,
-                //skip_validate_email: is_addnew,
+                may_edit: may_edit,
                 user_pk: user_pk,
+                user_role: user_role,
                 user_schoolbase_pk: user_schoolbase_pk,
                 user_schoolbase_code: user_schoolbase_code,
                 user_schoolname: user_schoolname,
                 user_mapid: user_mapid,
+                allowed_sections: user_allowed_sections,
                 username: (data_dict.username) ? data_dict.username : null,
                 last_name: (data_dict.last_name) ? data_dict.last_name : null,
-                email: (data_dict.email) ? data_dict.email : null
+                requsr_same_school: (permit_dict.requsr_same_school) ? permit_dict.requsr_same_school : false,
+                expanded: {}
                 };
-    console.log("mod_MUPS_dict: ", mod_MUPS_dict)
+        console.log("    mod_MUPS_dict: ", mod_MUPS_dict);
 
-    // ---  show only the elements that are used in this tab
-            const container_element = document.getElementById("id_mod_user");
-            let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
-            b_show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
-
-    // ---  set header text
-            //const header_text = (is_addnew) ? loc.Add_user : loc.User + ":  " + mod_MUPS_dict.username;
-            //const el_MUPS_header = document.getElementById("id_MUPS_header");
-            //el_MUPS_header.innerText = header_text;
-
-// ---  set text last modified
-            //el_MUPS_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc, modifiedat, modby_username) : null;
-
-    // ---  fill selecttable
-            MUPS_FillSelectTableSchool();
+    // - create ordered list of all schools with schoolbase.role = c.ROLE_008_SCHOOL:
+            MUPS_CreateSchoolDepLvlSubjlist();
 
     // ---  remove values from elements
-            //MUPS_ResetElements(true);  // true = also_remove_values
+            //add_or_remove_class(el_MUPS_loader, cls_hide, false);
+            //add_or_remove_class( el_MUPS_tbody_container, cls_hide, true);
+            //add_or_remove_class(el_MUPS_btn_expand_all.parentNode, cls_hide, true);
 
-    // --- get urls.url_user_allowedschools_upload
-            const upload_dict = {
-                mode: "get_allowed_schoolbases",
-                user_pk: selected_user_pk
-            }
-           UploadChanges(upload_dict, urls.url_user_allowedschools_upload);
+    // --- get urls.url_user_allowedsections_upload
+            //const upload_dict = {
+            //    mode: "get_allowed_sections",
+            //    user_pk: mod_MUPS_dict.user_pk
+            //}
+           //UploadChanges(upload_dict, urls.url_user_allowedsections_upload);
 
-            el_MUPS_username.value = mod_MUPS_dict.last_name;
+        console.log("USER PAGE el_MUPS_username", el_MUPS_username);
+           el_MUPS_username.value = mod_MUPS_dict.last_name;
 
-    // ---  set focus to next el
-/*
-            const el_focus = (is_addnew && permit_dict.permit_crud_otherschool) ? el_MUPS_schoolname :
-                             ( (is_addnew && !permit_dict.permit_crud_otherschool) || (fldName === "username") ) ? el_MUPS_username :
-                             (fldName === "last_name") ? el_MUPS_last_name :
-                             (fldName === "email") ? el_MUPS_email : null;
-            if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
-*/
-    // ---  set text and hide info footer
-            //el_MUPS_footer01.innerText = loc.Click_to_register_new_user;
-            //el_MUPS_footer02.innerText = loc.We_will_send_an_email_to_the_new_user;
-            //el_MUPS_footer_container.classList.add(cls_hide);
+            add_or_remove_class(el_MUPS_loader, cls_hide, true);
+            add_or_remove_class( el_MUPS_tbody_container, cls_hide, false);
+            add_or_remove_class(el_MUPS_btn_expand_all.parentNode, cls_hide, false);
 
-    // ---  hide loader
-            //el_MUPS_loader.classList.add(cls_hide);
+    // ---  fill selecttable
+            MUPS_FillSelectTable();
 
-    // ---  hide btn delete when addnew mode
-            //add_or_remove_class(el_MUPS_btn_delete, cls_hide, is_addnew)
-
-    // ---  disable btn submit
-            //MUPS_DisableBtnSave()
-
+    // ---  expand all rows
+            MUPS_ExpandCollapse_all();
     // ---  show modal
-            $("#id_mod_userpermitsection").modal({backdrop: true});
-
-        }  //  if(permit_dict.permit_crud)
+            $("#id_mod_userallowedsection").modal({backdrop: true});
+        };
     };  // MUPS_Open
 
+//========= MUPS_Save  ============= PR2022-11-04
     function MUPS_Save(mode, el_input){
-        console.log(" -----  MUPS_Open   ---- mode: ", mode)  // modes are: addnew, update
-    };
+        console.log(" ----- MUPS_Save ---- mode: ", mode);
 
-//========= MUPS_FillSelectTableSchool  ============= PR2022-10-24
-    function MUPS_FillSelectTableSchool() {
-        //console.log("===== MUPS_FillSelectTableSchool ===== ");
+    // --- get urls.url_user_allowedsections_upload
+        const upload_dict = {
+            mode: "update",
+            user_pk: mod_MUPS_dict.user_pk,
+            allowed_sections: mod_MUPS_dict.allowed_sections
+        }
+        const url_str = urls.url_user_allowedsections_upload;
+        console.log("  url_str: ", url_str);
+
+        UploadChanges(upload_dict, url_str);
+
+    // ---  show modal
+       $("#id_mod_userallowedsection").modal("hide");
+    };  // MUPS_Save
+
+//========= MUPS_CreateSchoolDepLvlSubjlist  ============= PR2022-11-04
+    function MUPS_CreateSchoolDepLvlSubjlist() {
+        console.log("===== MUPS_CreateSchoolDepLvlSubjlist ===== ");
+
+    // create ordered list of all schools with schoolbase.role = c.ROLE_008_SCHOOL:
+        mod_MUPS_dict.sorted_school_list = [];
+
+// ---  loop through school_rows
+        if(school_rows && school_rows.length ){
+            //let all_depbases = "";
+            //if(department_rows && department_rows.length ){
+            //    for (let i = 0, data_dict; data_dict = department_rows[i]; i++) {
+            //        if (all_depbases){all_depbases += ";"};
+            //        all_depbases += data_dict.base_id.toString();
+            //    }};
+
+        console.log("    mod_MUPS_dict.user_role ", mod_MUPS_dict.user_role);
+            // Add 'All Schools' if req_usr is Inspectorate or Admin has multiple departments PR2023-01-26
+            if (permit_dict.requsr_role >= 32 && mod_MUPS_dict.user_role >= 32) {  // ROLE_032_INSP}
+                const depbases_arr = [];
+                for (let i = 0, dep_row; dep_row = department_rows[i]; i++) {
+                    depbases_arr.push(dep_row.base_id.toString());
+                };
+                const depbases = (depbases_arr.length) ? depbases_arr.join(";") : null
+
+                mod_MUPS_dict.sorted_school_list.push({
+                    base_id: -9,
+                    sb_code: (setting_dict.sel_country_is_sxm) ? "SXM00" : "CUR00",
+                    name: loc.All_schools,
+                    depbases: depbases
+                });
+            };
+
+            for (let i = 0, data_dict; data_dict = school_rows[i]; i++) {
+                if (!isEmpty(data_dict)) {
+    // - only add schools to list when schoolbase.defaultrole = c.ROLE_008_SCHOOL
+                    if (data_dict.defaultrole === 8){
+    // - when user_role = school: only add school of the user to the list PR2023-01-26
+                        if ( (mod_MUPS_dict.user_role === 8 && mod_MUPS_dict.user_schoolbase_pk === data_dict.base_id ) ||
+                            (mod_MUPS_dict.user_role > 8) ) {
+                        // Note: structure must containe structure in t_MSSSS_Create_SelectRow (base_id, sb_code, name
+                            mod_MUPS_dict.sorted_school_list.push({
+                                base_id: data_dict.base_id,
+                                sb_code: data_dict.sb_code,
+                                name: data_dict.name,
+                                depbases: data_dict.depbases
+                            });
+                        };
+                    };
+                };
+            };
+            // how to sort a list of dicts from https://stackoverflow.com/questions/979256/sorting-an-array-of-objects-by-property-values
+            // PR2022-11-04
+            mod_MUPS_dict.sorted_school_list.sort((a, b) => a.sb_code.localeCompare(b.sb_code) );
+
+    console.log("    mod_MUPS_dict.sorted_school_list", mod_MUPS_dict.sorted_school_list);
+        };
+
+// ---  loop through department_rows
+        mod_MUPS_dict.sorted_department_list = [];
+        if(department_rows && department_rows.length ){
+            // Add 'All Departments' if school has multiple departments PR2023-01-26
+            const all_dep_dict = {base_id: -9, base_code: loc.All_departments, name: loc.All_departments, sequence: 0};
+            mod_MUPS_dict.sorted_department_list.push(all_dep_dict);
+
+            for (let i = 0, data_dict; data_dict = department_rows[i]; i++) {
+                if (!isEmpty(data_dict)) {
+                    // Note: structure must containe structure in t_MSSSS_Create_SelectRow (base_id, sb_code, name
+                    mod_MUPS_dict.sorted_department_list.push({
+                        base_id: data_dict.base_id,
+                        base_code: data_dict.base_code,
+                        name: data_dict.name,
+                        lvl_req: data_dict.lvl_req,
+                        sequence: data_dict.sequence
+                    });
+            }};
+            // how to sort a list of dicts from https://stackoverflow.com/questions/979256/sorting-an-array-of-objects-by-property-values
+            // PR2022-11-04
+            mod_MUPS_dict.sorted_department_list.sort((a, b) => a.sequence - b.sequence);
+        };
+    console.log("    mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
+
+// ---  loop through level_rows
+        mod_MUPS_dict.sorted_level_list = [];
+
+        if(level_rows && level_rows.length ){
+            const all_level_dict = {base_id: -9, name: loc.All_levels, sequence: 0};
+            mod_MUPS_dict.sorted_level_list.push(all_level_dict);
+
+            for (let i = 0, level_dict; level_dict = level_rows[i]; i++) {
+                if (!isEmpty(level_dict)) {
+                    // Note: structure must containe structure in t_MSSSS_Create_SelectRow (base_id, sb_code, name
+                    mod_MUPS_dict.sorted_level_list.push({
+                        base_id: level_dict.base_id,
+                        name: level_dict.name,
+                        sequence: level_dict.sequence
+                    });
+            }};
+            // how to sort a list of dicts from https://stackoverflow.com/questions/979256/sorting-an-array-of-objects-by-property-values
+            // PR2022-11-04
+            mod_MUPS_dict.sorted_level_list.sort((a, b) => a.sequence - b.sequence);
+        };
+    console.log("    mod_MUPS_dict.sorted_level_list", mod_MUPS_dict.sorted_level_list);
+
+// ---  loop through subject_rows
+        mod_MUPS_dict.sorted_subject_list = [];
+        if(subject_rows && subject_rows.length ){
+            for (let i = 0, subject_dict; subject_dict = subject_rows[i]; i++) {
+                if (!isEmpty(subject_dict)) {
+                    // Note: structure must containe structure in t_MSSSS_Create_SelectRow (base_id, sb_code, name
+                    mod_MUPS_dict.sorted_subject_list.push({
+                        id: subject_dict.id,
+                        base_id: subject_dict.base_id,
+                        code: subject_dict.code,
+                        name_nl: subject_dict.name_nl,
+                        depbase_id_arr: (subject_dict.depbase_id_arr) ? subject_dict.depbase_id_arr : [],
+                        lvlbase_id_arr: (subject_dict.lvlbase_id_arr) ? subject_dict.lvlbase_id_arr : []
+                    });
+            }};
+            // how to sort a list of dicts from https://stackoverflow.com/questions/979256/sorting-an-array-of-objects-by-property-values
+            // PR2022-11-04
+            mod_MUPS_dict.sorted_subject_list.sort((a, b) => a.name_nl.localeCompare(b.name_nl) );
+        };
+    console.log("    mod_MUPS_dict.sorted_subject_list", mod_MUPS_dict.sorted_subject_list);
+
+    }; // MUPS_CreateSchoolDepLvlSubjlist
+
+//========= MUPS_FillSelectTable  ============= PR2022-10-24 PR2023-01-06
+    function MUPS_FillSelectTable() {
+        console.log("===== MUPS_FillSelectTable ===== ");
 
         const data_rows = school_rows;
 
         el_MUPS_tbody_select.innerText = null;
 
-        const addnew_dict = {
-            base_id: -1,
-            sb_code: "",
-            name: "< " + loc.Add_school + " >"
+// ---  loop through mod_MUPS_dict.sorted_school_list
+        if(mod_MUPS_dict.sorted_school_list.length){
+        console.log(" >>>>>>>>>>>>   mod_MUPS_dict.sorted_school_list ", mod_MUPS_dict.sorted_school_list);
+
+            if (mod_MUPS_dict.may_edit) {
+
+                // Select school only allowed if req_usr and user have both role greater than ROLE_008_SCHOOL PR2023-01-26
+                const select_schools_allowed = (permit_dict.requsr_role > 8 && mod_MUPS_dict.user_role > 8) // ROLE_008_SCHOOL}
+
+        console.log(" >>>>>>>>>>>>   select_schools_allowed ", select_schools_allowed);
+                let has_unselected_schools = false, first_unselected_schoolbase_id = null, first_unselected_schoolbase_depbase_arr = null;
+                if (mod_MUPS_dict.allowed_sections){
+                    for (let i = 0, school_dict; school_dict = mod_MUPS_dict.sorted_school_list[i]; i++) {
+                        if(!(school_dict.base_id.toString() in mod_MUPS_dict.allowed_sections)){
+                            has_unselected_schools = true;
+                            first_unselected_schoolbase_id = school_dict.base_id;
+                            if (school_dict.depbases){
+                                first_unselected_schoolbase_depbase_arr = school_dict.depbases.split(";");
+                            };
+                            break;
+                        };
+                    };
+                } else {
+                   has_unselected_schools = true;
+                };
+                if (has_unselected_schools) {
+                    // if requsr_same_school and the school is not in allowed_sections: add this school to allowed_sections
+                    if (mod_MUPS_dict.requsr_same_school) {
+                        if (first_unselected_schoolbase_id){
+                            const allowed_dict = {};
+                            // if his school has only 1 dep: add to allowed_deps
+                            if (first_unselected_schoolbase_depbase_arr && first_unselected_schoolbase_depbase_arr.length === 1){
+                                const depbase_pk_str = first_unselected_schoolbase_depbase_arr[0];
+                                const depbase_pk_int = (Number(depbase_pk_str)) ? Number(depbase_pk_str) : null;
+                                if (depbase_pk_int){
+                                    allowed_dict[depbase_pk_int] = {'-9': []}
+                                };
+                            };
+                            mod_MUPS_dict.allowed_sections[first_unselected_schoolbase_id] = allowed_dict;
+                        };
+                    } else {
+                        const addnew_dict = {base_id: -1, name: "< " + loc.Add_school + " >"};
+                        MUPS_CreateTblrowSchool(addnew_dict);
+                    };
+                };
+            };
+        console.log("    mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
+
+ // ---  add selected schools to table
+        console.log("    mod_MUPS_dict.sorted_school_list", mod_MUPS_dict.sorted_school_list);
+        console.log("    mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
+            for (let i = 0, sb_pk_str, school_dict; school_dict = mod_MUPS_dict.sorted_school_list[i]; i++) {
+                //sb_pk_str = (school_dict.base_id) ? school_dict.base_id.toString() : "0"
+                if(mod_MUPS_dict.allowed_sections && school_dict.base_id.toString() in mod_MUPS_dict.allowed_sections){
+                    MUPS_CreateTblrowSchool(school_dict);
+                };
+            };
         };
-        MUPS_CreateTblrowSchool(addnew_dict);
+    }; // MUPS_FillSelectTable
 
-// ---  loop through dictlist
-        let row_count = 0
+    function MUPS_CreateTblrowSchool(school_dict) {
+        console.log("-----  MUPS_CreateTblrowSchool   ----");
+        console.log("    school_dict", school_dict);
+        // PR2022-11-05
 
-        if(data_rows && data_rows.length ){
-            const tblName = "school";
-            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-                if (!isEmpty(data_dict)) {
-                    const defaultrole = (data_dict.defaultrole) ? data_dict.defaultrole : 0;
-    // only add schools to list whith sme or lower role
-                    if (defaultrole <= permit_dict.requsr_role){
-//--------- insert tblBody_select row at row_index -1
-                        MUPS_CreateTblrowSchool(data_dict);
-                    }; //  if (defaultrole < permit_dict.requsr_role)
-                };  //  if (!isEmpty(item_dict))
-            };  // for (const [map_id, data_dict] of data_map.entries())
-
-        };  // if(data_map)
-    }; // MUPS_FillSelectTableSchool
-
-
-    function MUPS_CreateTblrowSchool(data_dict ) {
-    // PR2022-10-24
-// ---  get info from data_dict
-        const base_id = data_dict.base_id;
-        const code = (data_dict.sb_code) ? data_dict.sb_code : "";
-        const name = (data_dict.name) ? data_dict.name : "";
+// ---  get info from school_dict
+        const schoolbase_pk = school_dict.base_id;
+        const code = (school_dict.sb_code) ? school_dict.sb_code : "";
+        const name = (school_dict.name) ? school_dict.name : "";
+        const depbases = (school_dict.depbases) ? school_dict.depbases : null;
+        //console.log("    depbases", depbases);
 
 //--------- insert tblBody_select row at end
         const tblRow = el_MUPS_tbody_select.insertRow(-1);
 
-        tblRow.setAttribute("data-pk", base_id);
         tblRow.setAttribute("data-table", "school");
+        tblRow.setAttribute("data-schoolbase_pk", schoolbase_pk);
 
 // ---  add first td to tblRow.
         let td = tblRow.insertCell(-1);
@@ -1786,79 +2051,877 @@ document.addEventListener('DOMContentLoaded', function() {
         el_div = document.createElement("div");
             el_div.classList.add("tw_480")
             el_div.innerText = name;
-            td.appendChild(el_div);
-            if (base_id === -1){
-
-            el_div.classList.add("awp_modselect_item")
-    // ---  add hover to el_div
+            el_div.classList.add("awp_modselect_school")
     // ---  add addEventListener
-                td.addEventListener("click", function() {MUPS_AddTblrowSchool(tblRow)}, false);
+            if (schoolbase_pk === -1){
+                td.addEventListener("click", function() {MUPS_SelectSchool(tblRow)}, false);
+            } else {
+                td.addEventListener("click", function() {MUPS_ExpandTblrows(tblRow)}, false);
+            };
+            td.appendChild(el_div);
+
+// ---  add delete icon td to tblRow.
+        td = tblRow.insertCell(-1);
+        td.classList.add("awp_bg_blue");
+        // skip when add_new
+        if (schoolbase_pk !== -1){
+            // only add delete btn when may_edit and not requsr_same_school and not user_role = school
+            if (mod_MUPS_dict.may_edit && !mod_MUPS_dict.requsr_same_school && mod_MUPS_dict.user_role > 8) {
+                el_div = document.createElement("div");
+                el_div.classList.add("tw_060")
+                el_div.classList.add("delete_0_0")
+                //b_add_hover_delete_btn(el_div,"delete_0_2", "delete_0_2", "delete_0_0");
+                add_hover(el_div, "delete_0_2", "delete_0_0")
+
+    // ---  add addEventListener
+                td.addEventListener("click", function() {MUPS_DeleteTblrow(tblRow)}, false);
+
+                td.appendChild(el_div);
+            };
+// ---  add department rows
+            const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk.toString()];
+
+        console.log("    schoolbase_pk", schoolbase_pk);
+        console.log("    >>>> mod_MUPS_dict.expanded", mod_MUPS_dict.expanded);
+        console.log("    expanded_schoolbase_dict", expanded_schoolbase_dict);
+            let show_item = false;
+            if (expanded_schoolbase_dict) {
+                show_item = expanded_schoolbase_dict.expanded
+            };
+
+        console.log("    show_item", show_item);
+            if (show_item){
+                MUPS_CreateTableDepartment(school_dict);
+            };
+        };
+    };  // MUPS_CreateTblrowSchool
+
+    function MUPS_CreateTableDepartment(school_dict) { // PR2022-11-04
+        console.log("===== MUPS_CreateTableDepartment ===== ");
+    console.log("    school_dict", school_dict);
+
+// ---  get info from school_dict
+        const schoolbase_pk = school_dict.base_id;
+        const schoolbase_pk_str = schoolbase_pk.toString();
+
+        const sb_depbases = (school_dict.depbases) ? school_dict.depbases : "";
+        const sb_depbases_arr = (school_dict.depbases) ? school_dict.depbases.split(";") : [];
+    console.log("  !!!!  sb_depbases", sb_depbases);
+    console.log("  @@@@@@@  sb_depbases_arr", sb_depbases_arr);
+
+// -  get allowed_depbases from this school from mod_MUPS_dict.allowed_sections
+        const allowed_depbases = (mod_MUPS_dict.allowed_sections && schoolbase_pk_str in mod_MUPS_dict.allowed_sections) ?  mod_MUPS_dict.allowed_sections[schoolbase_pk_str] : {};
+    console.log("    allowed_depbases", allowed_depbases);
+
+// -  add row 'Add_department' in first row if school has multipe deps and has unselected deps and may_edit
+        if (mod_MUPS_dict.may_edit){
+            let has_unselected_departments = false;
+            if (sb_depbases_arr.length > 1){
+
+    // - check if there are unselected departments
+                for (let i = 0, dep_dict; dep_dict = mod_MUPS_dict.sorted_department_list[i]; i++) {
+                    const depbase_pk_str = dep_dict.base_id.toString();
+                    if (sb_depbases_arr.includes(depbase_pk_str)){
+                        if (!(depbase_pk_str in allowed_depbases )) {
+                            has_unselected_departments = true;
+                            break;
+                }}};
+            };
+    console.log("    has_unselected_departments", has_unselected_departments);
+            if (has_unselected_departments){
+                const addnew_dict = {base_id: -1, name: "< " + loc.Add_department + " >"};
+                MUPS_CreateTblrowDep(addnew_dict, schoolbase_pk, sb_depbases, false); // allow_delete = false
+            };
+        };
+    console.log("   ????  mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
+
+// add rows with department if there is only 1
+        if (sb_depbases_arr.length === 1){
+    console.log("  ?????????   sb_depbases_arr", sb_depbases_arr);
+// add rows with the only department of s to school
+            for (let i = 0, dep_dict; dep_dict = mod_MUPS_dict.sorted_department_list[i]; i++) {
+    console.log("  ?????????   dep_dict", dep_dict);
+                if (sb_depbases_arr.includes(dep_dict.base_id.toString())){
+    console.log("  ?????????   sb_depbases_arr.includes(dep_dict.base_id", dep_dict.base_id);
+                    MUPS_CreateTblrowDep(dep_dict, schoolbase_pk, sb_depbases, false); // allow_delete = false
+                };
+            };
+
+        } else if (mod_MUPS_dict.sorted_department_list.length > 1){
+//console.log("    mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
+
+// add rows with selected departments to school
+            for (let i = 0, dep_dict; dep_dict = mod_MUPS_dict.sorted_department_list[i]; i++) {
+                if (dep_dict.base_id.toString() in allowed_depbases){
+                    MUPS_CreateTblrowDep(dep_dict, schoolbase_pk, sb_depbases, true); // allow_delete = true
+                };
+            };
+        };
+    };  // MUPS_CreateTableDepartment
+
+    function MUPS_CreateTblrowDep(department_dict, schoolbase_pk, sb_depbases, allow_delete) {
+        console.log("===== MUPS_CreateTblrowDep ===== ");
+        //console.log("    department_dict", department_dict);
+        // PR2022-11-05
+
+// ---  get info from department_dict
+        const depbase_pk = department_dict.base_id;
+        const name = (department_dict.name) ? department_dict.name : "";
+        const lvl_req = (department_dict.lvl_req) ? department_dict.lvl_req : false;
+        const class_bg_color = "bg_medium_blue";
+        //console.log("lvl_req", lvl_req);
+
+//--------- insert tblBody_select row at end
+        const tblRow = el_MUPS_tbody_select.insertRow(-1);
+
+        tblRow.setAttribute("data-table", "department");
+        tblRow.setAttribute("data-depbase_pk", depbase_pk);
+        tblRow.setAttribute("data-schoolbase_pk", schoolbase_pk);
+        tblRow.setAttribute("data-sb_depbases", sb_depbases);
+
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+            td.classList.add(class_bg_color)
+
+        let el_div = document.createElement("div");
+            el_div.classList.add("tw_075")
+            td.appendChild(el_div);
+
+// ---  add second td to tblRow.
+        td = tblRow.insertCell(-1);
+        td.classList.add(class_bg_color)
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_480")
+            el_div.innerHTML = "&emsp;" + name;
+            td.appendChild(el_div);
+
+            el_div.classList.add("awp_modselect_department")
+
+    // ---  add addEventListener
+            if (depbase_pk === -1){
+                td.addEventListener("click", function() {MUPS_SelectDepartment(tblRow)}, false);
+            } else {
+                td.addEventListener("click", function() {MUPS_ExpandTblrows(tblRow)}, false);
+            };
+
+// ---  add third td to tblRow.
+        td = tblRow.insertCell(-1);
+        td.classList.add(class_bg_color)
+        // skip when add_new or not may_edit
+        if (allow_delete && mod_MUPS_dict.may_edit){
+            el_div = document.createElement("div");
+            el_div.classList.add("tw_060");
+            el_div.classList.add("delete_0_0");
+            add_hover(el_div, "delete_0_2", "delete_0_0");
+
+// ---  add addEventListener
+            td.addEventListener("click", function() {MUPS_DeleteTblrow(tblRow)}, false);
+
+            td.appendChild(el_div);
+        };
+
+// ---  add level rows
+        if (depbase_pk !== -1){
+            let is_expanded = false;
+            const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk.toString()];
+             if (expanded_schoolbase_dict) {
+                const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk.toString()];
+                if (expanded_depbase_dict) {
+                    is_expanded = expanded_depbase_dict.expanded;
+            }};
+
+            if (is_expanded) {
+                if (lvl_req) {
+                    MUPS_CreateTableLevel(department_dict, schoolbase_pk);
+                } else {
+                    // in Havo Vwo there is no level, use lvlbase_pk = -9 to show all subjects PR2022-22-21
+                    MUPS_CreateTableSubject(-9, depbase_pk, schoolbase_pk);
+                };
+            };
+        };
+    };  // MUPS_CreateTblrowDep
+
+//========= MUPS_CreateTableLevel  =============
+    function MUPS_CreateTableLevel(dep_dict, schoolbase_pk) { // PR2022-11-06
+        console.log("===== MUPS_CreateTableLevel ===== ");
+        console.log("    dep_dict", dep_dict);
+
+// ---  get info from dep_dict
+        const schoolbase_pk_str = schoolbase_pk.toString();
+        const depbase_pk = dep_dict.base_id;
+        const depbase_pk_str = depbase_pk.toString();
+        const lvl_req = (dep_dict.lvl_req) ? dep_dict.lvl_req : false;
+
+// -  get levels from this department from mod_MUPS_dict.allowed_sections
+        const allowed_depbases = (mod_MUPS_dict.allowed_sections && schoolbase_pk_str in mod_MUPS_dict.allowed_sections) ?  mod_MUPS_dict.allowed_sections[schoolbase_pk_str] : {};
+        const allowed_lvlbases = (allowed_depbases && depbase_pk_str in allowed_depbases) ?  allowed_depbases[depbase_pk_str] : {};
+
+// ---  loop through mod_MUPS_dict.sorted_level_list
+        if(lvl_req){
+            if(mod_MUPS_dict.sorted_level_list.length ){
+
+// - check if there are unselected levels
+                let has_unselected_levels = false;
+                for (let i = 0, level_dict; level_dict = mod_MUPS_dict.sorted_level_list[i]; i++) {
+                    if (!(level_dict.base_id.toString() in allowed_lvlbases )) {
+                        has_unselected_levels = true;
+                        break;
+                }};
+
+                if (has_unselected_levels && mod_MUPS_dict.may_edit){
+                    const addnew_dict = {base_id: -1, name: "< " + loc.Add_level + " >"};
+                    MUPS_CreateTblrowLvl(addnew_dict, depbase_pk, schoolbase_pk, false); // allow_delete = false
+                };
+
+                for (let i = 0, lvlbase_pk_str, level_dict; level_dict = mod_MUPS_dict.sorted_level_list[i]; i++) {
+                    lvlbase_pk_str = level_dict.base_id.toString();
+                    if(lvlbase_pk_str in allowed_lvlbases){
+                        MUPS_CreateTblrowLvl(level_dict, depbase_pk, schoolbase_pk, true);
+                    };
+                };
+            };
+        };
+    };  // MUPS_CreateTableLevel
+
+//========= MUPS_CreateTblrowLvl  =============
+    function MUPS_CreateTblrowLvl(level_dict, depbase_pk, schoolbase_pk, allow_delete) { // PR2022-11-05
+        console.log("===== MUPS_CreateTblrowLvl ===== ");
+        console.log("  level_dict", level_dict);
+
+// ---  get info from level_dict
+        const lvlbase_pk = level_dict.base_id;
+        const name = (level_dict.name) ? level_dict.name : "";
+        const class_bg_color = "c_columns_tr";
+
+//--------- insert tblBody_select row at end
+        const tblRow = el_MUPS_tbody_select.insertRow(-1);
+
+        tblRow.setAttribute("data-table", "level");
+        tblRow.setAttribute("data-schoolbase_pk", schoolbase_pk);
+        tblRow.setAttribute("data-depbase_pk", depbase_pk);
+        tblRow.setAttribute("data-lvlbase_pk", lvlbase_pk);
+
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+            td.classList.add(class_bg_color)
+
+        let el_div = document.createElement("div");
+            el_div.classList.add("tw_075")
+            td.appendChild(el_div);
+
+// ---  add second td to tblRow.
+        td = tblRow.insertCell(-1);
+        td.classList.add(class_bg_color)
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_480")
+            el_div.innerHTML = "&emsp;&emsp;" + name;
+
+            td.appendChild(el_div);
+
+            el_div.classList.add("awp_modselect_level")
+
+    // ---  add addEventListener
+            if (lvlbase_pk === -1){
+                td.addEventListener("click", function() {MUPS_SelectLevel(tblRow)}, false);
+            } else {
+                td.addEventListener("click", function() {MUPS_ExpandTblrows(tblRow)}, false);
+            };
+
+// ---  add third td to tblRow.
+        td = tblRow.insertCell(-1);
+        td.classList.add(class_bg_color)
+        // skip when add_new or not may_edit
+        if (lvlbase_pk !== -1){
+            // oly add delete btn when may_edit
+            if (mod_MUPS_dict.may_edit) {
+                el_div = document.createElement("div");
+                el_div.classList.add("tw_060");
+                el_div.classList.add("delete_0_0");
+                add_hover(el_div, "delete_0_2", "delete_0_0");
+
+    // ---  add addEventListener
+                td.addEventListener("click", function() {MUPS_DeleteTblrow(tblRow)}, false);
+                td.appendChild(el_div);
+            };
+        };
+
+// ---  add subject rows
+        if (lvlbase_pk !== -1){
+            let show_item = false;
+            const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk.toString()];
+            if (expanded_schoolbase_dict) {
+                const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk.toString()];
+                if (expanded_depbase_dict) {
+                    const expanded_lvlbase_dict = expanded_depbase_dict[lvlbase_pk.toString()];
+                    if (expanded_lvlbase_dict) {
+                        show_item = expanded_lvlbase_dict.expanded;
+            }}};
+            if (show_item){
+                MUPS_CreateTableSubject(lvlbase_pk, depbase_pk, schoolbase_pk);
+            };
+        };
+    };  // MUPS_CreateTblrowLvl
+
+//========= MUPS_CreateTableSubject  ============= PR2022-11-05
+    function MUPS_CreateTableSubject(lvlbase_pk, depbase_pk, schoolbase_pk) { // PR2022-11-05
+        //console.log("===== MUPS_CreateTableSubject ===== ");
+        //console.log("    lvlbase_pk", lvlbase_pk, typeof lvlbase_pk);
+
+// -  get levels from this department from mod_MUPS_dict.allowed_sections
+        const schoolbase_pk_str = schoolbase_pk.toString();
+        const depbase_pk_str = depbase_pk.toString();
+        const lvlbase_pk_str = lvlbase_pk.toString();
+        const allowed_depbases = (mod_MUPS_dict.allowed_sections && schoolbase_pk_str in mod_MUPS_dict.allowed_sections) ?  mod_MUPS_dict.allowed_sections[schoolbase_pk_str] : {};
+        const allowed_lvlbases = (allowed_depbases && depbase_pk_str in allowed_depbases) ?  allowed_depbases[depbase_pk_str] : {};
+        const allowed_subjbase_arr = (allowed_lvlbases && lvlbase_pk_str in allowed_lvlbases) ?  allowed_lvlbases[lvlbase_pk_str] : [];
+
+// - add row 'Add_subject' in first row if may_edit
+        if (mod_MUPS_dict.may_edit){
+            const addnew_dict = {base_id: -1, name_nl: "< " + loc.Add_subject + " >"};
+            MUPS_CreateTblrowSubject(addnew_dict, lvlbase_pk, depbase_pk, schoolbase_pk);
+        };
+// ---  loop through mod_MUPS_dict.sorted_subject_list
+        if(mod_MUPS_dict.sorted_subject_list.length ){
+            for (let i = 0, subject_dict; subject_dict = mod_MUPS_dict.sorted_subject_list[i]; i++) {
+                if (subject_dict.depbase_id_arr.includes(depbase_pk)){
+
+                    // add when lvlbase_pk is in lvlbase_id_arr or when lvlbase_pk = -9 ('all levels')
+                    if (subject_dict.lvlbase_id_arr.includes(lvlbase_pk) || lvlbase_pk === -9){
+                        if (allowed_subjbase_arr && allowed_subjbase_arr.includes(subject_dict.base_id)){
+                            MUPS_CreateTblrowSubject(subject_dict, lvlbase_pk, depbase_pk, schoolbase_pk);
+                        };
+                    };
+                };
+            };
+        };
+    };  // MUPS_CreateTableSubject
+
+//========= MUPS_CreateTblrowSubject  =============
+    function MUPS_CreateTblrowSubject(subject_dict, lvlbase_pk, depbase_pk, schoolbase_pk) {
+    // PR2022-11-05
+        //console.log("===== MUPS_CreateTblrowSubject ===== ");
+        //console.log("subject_dict", subject_dict);
+
+// ---  get info from subject_dict
+        const base_id = subject_dict.base_id;
+        const code = (subject_dict.code) ? subject_dict.code : "";
+        const name_nl = (subject_dict.name_nl) ? subject_dict.name_nl : "";
+
+//--------- insert tblBody_select row at end
+        const tblRow = el_MUPS_tbody_select.insertRow(-1);
+
+        tblRow.setAttribute("data-table", "subject");
+        tblRow.setAttribute("data-subjbase_pk", base_id);
+        tblRow.setAttribute("data-schoolbase_pk", schoolbase_pk);
+        tblRow.setAttribute("data-depbase_pk", depbase_pk);
+        tblRow.setAttribute("data-lvlbase_pk", lvlbase_pk);
+
+// ---  add first td to tblRow.
+        let td = tblRow.insertCell(-1);
+            //td.classList.add(class_bg_color)
+
+        let el_div = document.createElement("div");
+            el_div.classList.add("tw_075")
+            el_div.innerText = code;
+            td.appendChild(el_div);
+
+// ---  add second td to tblRow.
+        td = tblRow.insertCell(-1);
+        //td.classList.add(class_bg_color)
+        el_div = document.createElement("div");
+            el_div.classList.add("tw_480")
+            el_div.innerHTML = "&emsp;&emsp;&emsp;" + name_nl;
+            td.appendChild(el_div);
+
+            if (base_id === -1){
+                el_div.classList.add("awp_modselect_subject")
+                td.addEventListener("click", function() {MUPS_SelectSubject(tblRow)}, false);
                 td.appendChild(el_div);
             };
 
 // ---  add third td to tblRow.
         td = tblRow.insertCell(-1);
-        td.classList.add("awp_bg_blue")
-        // skip when add_new
-        if (base_id !== -1){
+        //td.classList.add(class_bg_color)
+        // skip when add_new or not may_edit
+        if (base_id !== -1 && mod_MUPS_dict.may_edit){
             el_div = document.createElement("div");
             el_div.classList.add("tw_060")
-            el_div.classList.add("delete_0_0")
+            el_div.classList.add("delete_0_1")
             //b_add_hover_delete_btn(el_div,"delete_0_2", "delete_0_2", "delete_0_0");
-            add_hover(el_div, "delete_0_2", "delete_0_0")
+            add_hover(el_div, "delete_0_2", "delete_0_1")
 
 // ---  add addEventListener
-
+            td.addEventListener("click", function() {MUPS_DeleteTblrow(tblRow)}, false);
             td.appendChild(el_div);
         };
-    };
+    };  // MUPS_CreateTblrowSubject
 
-
-    function MUPS_AddTblrowSchool(tblRow ) {
-        console.log(" -----  MUPS_AddTblrowSchool   ----");
-        console.log("tblRow", tblRow);
+    function MUPS_SelectSchool(tblRow ) {
+        //console.log(" -----  MUPS_SelectSchool   ----");
         const tblName = get_attr_from_el(tblRow, "data-table");
-        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-        console.log("pk_int", pk_int);
-        console.log("tblName", tblName);
+        const pk_int = get_attr_from_el_int(tblRow, "data-schoolbase_pk");
 
-        t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MUPS_MSSSS_Response);
+        //console.log("    tblRow", tblRow);
+        //console.log("    pk_int", pk_int);
+        //console.log("    tblName", tblName);
+        //console.log("    mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
+
+// ---  get unselected_school_list
+        const unselected_school_list = MUPS_get_unselected_school_list();
+        //console.log("    unselected_school_list", unselected_school_list);
+
+        t_MSSSS_Open(loc, "school", unselected_school_list, false, false, setting_dict, permit_dict, MUPS_SelectSchool_Response);
     };
 
-    function MUPS_DeleteTblrowSchool(tblRow ) {
-        console.log(" -----  MUPS_DeleteTblrowSchool   ----");
-        console.log("tblRow", tblRow);
+    function MUPS_SelectDepartment(tblRow ) {
+        //console.log(" -----  MUPS_SelectDepartment   ----");
+        //console.log("    tblRow", tblRow);
+
         const tblName = get_attr_from_el(tblRow, "data-table");
-        const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-        console.log("pk_int", pk_int);
-        console.log("tblName", tblName);
+        const pk_int = get_attr_from_el_int(tblRow, "data-depbase_pk");
+        const schoolbase_pk = get_attr_from_el_int(tblRow, "data-schoolbase_pk");
+        const sb_depbases = get_attr_from_el(tblRow, "data-sb_depbases");
+        const sb_depbases_arr = (sb_depbases) ? sb_depbases.split(";") : [];
+
+        const allowed_depbases = (!isEmpty(mod_MUPS_dict.allowed_sections)) ? mod_MUPS_dict.allowed_sections[schoolbase_pk] : {}
+
+        //console.log("    ??? mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
+        //console.log("    tblRow sb_depbases_arr", sb_depbases_arr);
+        //console.log("    mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
+        //console.log("    schoolbase_pk", schoolbase_pk);
+        //console.log("    allowed_depbases", allowed_depbases);
+
+// ---  get unselected_dep_list
+        const unselected_dep_list = [];
+        console.log("  @@@>>>>   mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
+        if(mod_MUPS_dict.sorted_department_list.length ){
+            for (let i = 0, depbase_pk_str, data_dict; data_dict = mod_MUPS_dict.sorted_department_list[i]; i++) {
+                depbase_pk_str = (data_dict.base_id) ? data_dict.base_id.toString() : "0";
+        console.log("  @@@  depbase_pk_str", depbase_pk_str);
+        console.log("    sb_depbases_arr", sb_depbases_arr);
+                if ( (sb_depbases_arr && sb_depbases_arr.includes(depbase_pk_str)) || (depbase_pk_str === "-9")  ){
+        console.log("    allowed_depbases", allowed_depbases);
+                    if(isEmpty(allowed_depbases) || !(depbase_pk_str in allowed_depbases)){
+                        unselected_dep_list.push(data_dict);
+            }}};
+        };
+        //console.log("  ????  unselected_dep_list", unselected_dep_list);
+        t_MSED_OpenDepLvlFromRows(tblName, unselected_dep_list, schoolbase_pk, null, MUPS_DepFromRows_Response)
+
+    };  // MUPS_SelectDepartment
+
+    function MUPS_SelectLevel(tblRow ) {
+        //console.log(" -----  MUPS_SelectLevel   ----");
+        //console.log("    tblRow", tblRow);
+
+        const tblName = get_attr_from_el(tblRow, "data-table");
+        const schoolbase_pk = get_attr_from_el_int(tblRow, "data-schoolbase_pk");
+        const schoolbase_pk_str = schoolbase_pk.toString();
+        const depbase_pk = get_attr_from_el_int(tblRow, "data-depbase_pk");
+        const depbase_pk_str = depbase_pk.toString();
+
+        const allowed_sections = (mod_MUPS_dict.allowed_sections) ? mod_MUPS_dict.allowed_sections : {};
+        const allowed_schoolbase = (schoolbase_pk_str in allowed_sections) ? allowed_sections[schoolbase_pk_str] : {};
+        const allowed_depbase = (depbase_pk_str in allowed_schoolbase) ? allowed_schoolbase[depbase_pk_str] : {};
+
+        //console.log("    allowed_depbase", allowed_depbase);
+
+// ---  get unselected_level_list
+        // row 'All_levels' is already added to mod_MUPS_dict.sorted_level_list
+        //const unselected_level_list = [{base_id: -9, name: "< " + loc.All_levels + " >", sequence: 0}];
+        const unselected_level_list = [];
+        if(mod_MUPS_dict.sorted_level_list.length ){
+            for (let i = 0, lvlbase_pk_str, data_dict; data_dict = mod_MUPS_dict.sorted_level_list[i]; i++) {
+                lvlbase_pk_str = (data_dict.base_id) ? data_dict.base_id.toString() : "0";
+                if(isEmpty(allowed_depbase) || !(lvlbase_pk_str in allowed_depbase)){
+                    unselected_level_list.push(data_dict);
+            }};
+        };
+        t_MSED_OpenDepLvlFromRows(tblName, unselected_level_list, schoolbase_pk, depbase_pk, MUPS_LvlFromRows_Response)
+    };  // MUPS_SelectLevel
+
+    function MUPS_SelectSubject(tblRow ) {
+        //console.log(" -----  MUPS_SelectSubject   ----");
+        //console.log("    tblRow", tblRow);
+
+        const schoolbase_pk = get_attr_from_el_int(tblRow, "data-schoolbase_pk");
+        const depbase_pk = get_attr_from_el_int(tblRow, "data-depbase_pk");
+        const lvlbase_pk = get_attr_from_el_int(tblRow, "data-lvlbase_pk");
+
+        mod_MUPS_dict.sel_schoolbase_pk_str = schoolbase_pk.toString();
+        mod_MUPS_dict.sel_depbase_pk_str = depbase_pk.toString();
+        mod_MUPS_dict.sel_lvlbase_pk_str = lvlbase_pk.toString();
+
+// ---  get unselected_subject_list
+        const unselected_subject_list = MUPS_get_unselected_subject_list(schoolbase_pk, depbase_pk, lvlbase_pk);
+
+        //console.log("    unselected_subject_list", unselected_subject_list);
+        t_MSSSS_Open(loc, "subject", unselected_subject_list, false, false, {}, permit_dict, MUPS_SelectSubject_Response);
+
+    };  // MUPS_SelectSubject
+
+    function MUPS_get_unselected_school_list() {
+// ---  get unselected_school_list
+        const unselected_school_list = [];
+        if(mod_MUPS_dict.sorted_school_list.length ){
+            for (let i = 0, sb_pk_str, data_dict; data_dict = mod_MUPS_dict.sorted_school_list[i]; i++) {
+                sb_pk_str = (data_dict.base_id) ? data_dict.base_id.toString() : "0";
+                if(mod_MUPS_dict.allowed_sections && sb_pk_str in mod_MUPS_dict.allowed_sections){
+                    console.log("    sb_pk_str in mod_MUPS_dict.allowed_sections", sb_pk_str);
+                } else {
+                    unselected_school_list.push(data_dict);
+                };
+            };
+        };
+        return unselected_school_list;
     };
 
-//=========  MUPS_MSSSS_Response  ================ PR2022-10-26
-    function MUPS_MSSSS_Response(tblName, selected_dict, selected_pk) {
-        console.log( "===== MUPS_MSSSS_Response ========= ");
-        console.log( "selected_dict", selected_dict);
-        console.log( "selected_pk", selected_pk);
+    function MUPS_get_unselected_subject_list(schoolbase_pk, depbase_pk, lvlbase_pk) { //PR2022-11-07
+        //console.log(" -----  MUPS_get_unselected_subject_list   ----");
+        //console.log("    lvlbase_pk", lvlbase_pk);
+// ---  get unselected_subject_list
+        // only add subject with this depbase and lvlbase
+        // skip subject thta are already in list
+        const unselected_subject_list = [];
+        if(mod_MUPS_dict.sorted_subject_list.length ){
+
+            const schoolbase_pk_str = schoolbase_pk.toString();
+            const depbase_pk_str = depbase_pk.toString();
+            const lvlbase_pk_str = lvlbase_pk.toString();
+
+            const allowed_sections = (mod_MUPS_dict.allowed_sections) ? mod_MUPS_dict.allowed_sections : {};
+            const allowed_schoolbase = (schoolbase_pk_str in allowed_sections) ? allowed_sections[schoolbase_pk_str] : {};
+            const allowed_depbase = (depbase_pk_str in allowed_schoolbase) ? allowed_schoolbase[depbase_pk_str] : {};
+            const allowed_lvlbase = (lvlbase_pk_str in allowed_depbase) ? allowed_depbase[lvlbase_pk_str] : [];
+
+        //console.log("    allowed_lvlbase", allowed_lvlbase);
+            for (let i = 0, subjectbase_pk_str, data_dict; data_dict = mod_MUPS_dict.sorted_subject_list[i]; i++) {
+        // check if subject exists in this dep and level
+                if (data_dict.depbase_id_arr.includes(depbase_pk)) {
+                    // add when lvlbase_pk is in lvlbase_id_arr or when lvlbase_pk = -9 ('all levels')
+                    if (data_dict.lvlbase_id_arr.includes(lvlbase_pk) || lvlbase_pk === -9) {
+                        subjectbase_pk_str = (data_dict.base_id) ? data_dict.base_id.toString() : "0";
+                        if(!(subjectbase_pk_str in allowed_lvlbase)){
+                            unselected_subject_list.push(data_dict);
+                        };
+                    };
+                };
+            };
+        };
+        return unselected_subject_list;
+    };
+
+    function MUPS_DeleteTblrow(tblRow ) {
+        console.log(" ###########-----  MUPS_DeleteTblrow   ----");
+        console.log("    tblRow", tblRow);
+        const tblName = get_attr_from_el(tblRow, "data-table");
+        console.log("    tblName", tblName);
+
+        const schoolbase_pk_str = get_attr_from_el_int(tblRow, "data-schoolbase_pk").toString();
+        const depbase_pk_str = get_attr_from_el_int(tblRow, "data-depbase_pk").toString();
+        const lvlbase_pk_str = get_attr_from_el_int(tblRow, "data-lvlbase_pk").toString();
+
+        const allowed_sections = (mod_MUPS_dict.allowed_sections) ? mod_MUPS_dict.allowed_sections : {};
+        const allowed_schoolbase = (schoolbase_pk_str in allowed_sections) ? allowed_sections[schoolbase_pk_str] : {};
+        const allowed_depbase = (depbase_pk_str in allowed_schoolbase) ? allowed_schoolbase[depbase_pk_str] : {};
+
+        console.log("    allowed_sections", allowed_sections);
+        console.log("    allowed_schoolbase", allowed_schoolbase);
+        console.log("    allowed_depbase", allowed_depbase);
+
+        if (tblName === "school"){
+            if (schoolbase_pk_str in mod_MUPS_dict.allowed_sections){
+                delete mod_MUPS_dict.allowed_sections[schoolbase_pk_str];
+            };
+        } else if (tblName === "department"){
+            if (depbase_pk_str in allowed_schoolbase){
+                delete allowed_schoolbase[depbase_pk_str];
+            };
+        } else if (tblName === "level"){
+            if (lvlbase_pk_str in allowed_depbase){
+                delete allowed_depbase[lvlbase_pk_str];
+            };
+        } else if (tblName === "subject"){
+            const subjbase_pk_int = get_attr_from_el_int(tblRow, "data-subjbase_pk");
+            if (allowed_depbase && lvlbase_pk_str in allowed_depbase){
+                const allowed_subjbase_arr = allowed_depbase[lvlbase_pk_str];
+                if (allowed_subjbase_arr.length && allowed_subjbase_arr.includes(subjbase_pk_int)){
+                    b_remove_item_from_array(allowed_subjbase_arr, subjbase_pk_int);
+                };
+            };
+        };
+
+        MUPS_FillSelectTable() ;
+    };  // MUPS_DeleteTblrow
+
+    function MUPS_LvlFromRows_Response(sel_lvlbase_pk, schoolbase_pk, depbase_pk) {
+        console.log(" -----  MUPS_LvlFromRows_Response   ----");
+        console.log("    sel_lvlbase_pk", sel_lvlbase_pk);
+        console.log("    schoolbase_pk", schoolbase_pk);
+        console.log("    depbase_pk", depbase_pk);
+
+        if (sel_lvlbase_pk && schoolbase_pk && depbase_pk){
+            const schoolbase_pk_str = schoolbase_pk.toString();
+            const depbase_pk_str = depbase_pk.toString();
+            const lvlbase_pk_str = sel_lvlbase_pk.toString();
+
+            const allowed_sections = (mod_MUPS_dict.allowed_sections) ? mod_MUPS_dict.allowed_sections : {};
+            const allowed_schoolbase = (schoolbase_pk_str in allowed_sections) ? allowed_sections[schoolbase_pk_str] : {};
+            const allowed_depbase = (depbase_pk_str in allowed_schoolbase) ? allowed_schoolbase[depbase_pk_str] : {};
+
+        console.log("    lvlbase_pk_str", lvlbase_pk_str);
+        console.log("    allowed_depbase", allowed_depbase);
+            if( isEmpty(allowed_depbase) || !(lvlbase_pk_str in allowed_depbase) ){
+                allowed_depbase[lvlbase_pk_str] = [];
+        console.log("    allowed_depbase[lvlbase_pk_str]", allowed_depbase[lvlbase_pk_str]);
+
+                // when lvl added and mode = showall: show 'add subject' PR20223-01-26
+                if (mod_MUPS_dict.expand_all) {
+                    const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk_str];
+                console.log("    expanded_schoolbase_dict", expanded_schoolbase_dict);
+                    if (expanded_schoolbase_dict) {
+                        const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk_str];
+                console.log("    expanded_depbase_dict", expanded_depbase_dict);
+                        if (expanded_depbase_dict) {
+                            if (!(lvlbase_pk_str in expanded_depbase_dict)){
+                                expanded_depbase_dict[lvlbase_pk_str] = {"expanded": true}
+                            };
+                        };
+                    };
+                };
+            };
+        };
+
+        MUPS_FillSelectTable();
+    };
+
+    function MUPS_DepFromRows_Response(sel_depbase_pk, schoolbase_pk, depbase_pkNIU) {
+        console.log(" -----  MUPS_DepFromRows_Response   ----");
+        console.log("    sel_depbase_pk", sel_depbase_pk, typeof sel_depbase_pk);
+        console.log("    schoolbase_pk", schoolbase_pk, typeof schoolbase_pk);
+
+        if (sel_depbase_pk && schoolbase_pk){
+            // lookup depbase, get lvl_req
+             let lvl_req = false;
+             for (let i = 0, data_dict; data_dict = mod_MUPS_dict.sorted_department_list[i]; i++) {
+                if (data_dict.base_id == sel_depbase_pk) {
+                    lvl_req = data_dict.lvl_req;
+                    break;
+                };
+            };
+            console.log("    lvl_req", lvl_req)
+
+            const allowed_sections = mod_MUPS_dict.allowed_sections[schoolbase_pk.toString()];
+            console.log("    allowed_sections", allowed_sections, typeof allowed_sections);
+            const schoolbase_pk_str = schoolbase_pk.toString();
+            const depbase_pk_str = sel_depbase_pk.toString();
+            if( isEmpty(allowed_sections) || !(depbase_pk_str in allowed_sections) ){
+                // add 'all levels' (-9) when lvl_req is false (Havo Vwo)
+                allowed_sections[depbase_pk_str] = (!lvl_req) ? {"-9": []} : {};
+
+                // when dep added and mode = showall: show 'add level' PR20223-01-26
+                if (mod_MUPS_dict.expand_all) {
+                    const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk_str];
+                console.log("    expanded_schoolbase_dict", expanded_schoolbase_dict);
+                    if (expanded_schoolbase_dict) {
+                        const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk_str];
+                console.log("    expanded_depbase_dict", expanded_depbase_dict);
+                        if (!(depbase_pk_str in expanded_schoolbase_dict)){
+                            expanded_schoolbase_dict[depbase_pk_str] = {"expanded": true}
+                        };
+                    };
+                };
+            };
+            const allowed_depbases = allowed_sections[depbase_pk_str];
+            console.log("    allowed_depbases", allowed_depbases);
+        };
+        console.log("@@@ mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
+
+// ---  fill selecttable
+        MUPS_FillSelectTable();
+    };
+
+//=========  MUPS_SelectSchool_Response  ================ PR2022-10-26 PR2022-11-21
+    function MUPS_SelectSchool_Response(tblName, selected_dict, selected_pk) {
+        console.log( "===== MUPS_SelectSchool_Response ========= ");
+        console.log( "    tblName", tblName);
+        console.log( "    selected_dict", selected_dict);
+        console.log( "    selected_pk", selected_pk, typeof selected_pk);
 
         // Note: when tblName = school: pk_int = schoolbase_pk
-        if(selected_pk === -1) { selected_pk = null};
+        if (selected_pk === -1) { selected_pk = null};
+        if (selected_pk){
+            const schoolbase_pk_str = selected_pk.toString();
 
-// ---  put new selected_pk in setting_dict
-        //setting_dict.sel_schoolbase_pk = selected_pk;
+            // skip when schoolbase_pk_str in allowed_sections
+            if (!(schoolbase_pk_str in mod_MUPS_dict.allowed_sections)){
+                const sb_dict = {};
+                // add key depbase_pk_str if this school has only 1 department
+                if (selected_dict.depbases){
+                    const sb_depbases_arr = selected_dict.depbases.split(";");
+                    if (sb_depbases_arr.length === 1){
+                        const depbase_pk_str =  sb_depbases_arr[0];
+                        sb_dict[depbase_pk_str] = {};
+                    } else {
 
-// ---  upload new setting and refresh page
-        //let datalist_request = {setting: {page: "page_user", sel_schoolbase_pk: selected_pk}};
-        //DatalistDownload(datalist_request);
+                        // when dep added and mode = showall: show 'add level' PR20223-01-26
+                        if (mod_MUPS_dict.expand_all) {
+                            const expanded_schoolbase_dict = mod_MUPS_dict.expanded[schoolbase_pk_str];
+                        console.log("   @@@@@@@@@@@@  schoolbase_pk_str", schoolbase_pk_str);
+                        console.log("   @@@@@@@@@@@@  mod_MUPS_dict.expanded", mod_MUPS_dict.expanded);
+                        console.log("   @@@@@@@@@@@@  expanded_schoolbase_dict", expanded_schoolbase_dict);
+                            if (expanded_schoolbase_dict) {
+                                const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk_str];
+                        console.log("    expanded_depbase_dict", expanded_depbase_dict);
+                                if (!(depbase_pk_str in expanded_schoolbase_dict)){
+                                    expanded_schoolbase_dict[depbase_pk_str] = {"expanded": true}
+                                };
+                            };
+                        };
+                    };
+                };
+                mod_MUPS_dict.allowed_sections[schoolbase_pk_str] = sb_dict;
+            };
 
-    }  // MUPS_MSSSS_Response
+    // ---  fill selecttable
+            MUPS_FillSelectTable();
+        };
+    }  // MUPS_SelectSchool_Response
+
+//=========  MUPS_SelectSubject_Response  ================ PR2022-10-26 PR2022-11-21
+    function MUPS_SelectSubject_Response(tblName, selected_dict, selected_pk) {
+        console.log( "===== MUPS_SelectSubject_Response ========= ");
+        console.log( "    tblName", tblName);
+        console.log( "    selected_dict", selected_dict);
+        console.log( "    selected_pk", selected_pk, typeof selected_pk);
+
+        // Note: when tblName = school: pk_int = schoolbase_pk
+        if (selected_pk === -1) { selected_pk = null};
+        if (selected_pk){
+            const selected_pk_str = selected_pk.toString();
+
+            const subjbase_pk = selected_dict.base_id;
+            if (subjbase_pk){
+                const allowed_sections = (mod_MUPS_dict.allowed_sections) ? mod_MUPS_dict.allowed_sections : {};
+                const allowed_depbases = (mod_MUPS_dict.sel_schoolbase_pk_str in allowed_sections) ? allowed_sections[mod_MUPS_dict.sel_schoolbase_pk_str] : {};
+                const allowed_lvlbases = (mod_MUPS_dict.sel_depbase_pk_str in allowed_depbases) ? allowed_depbases[mod_MUPS_dict.sel_depbase_pk_str] : {};
+
+                // allowed_subjbase_arr contains integers, not strings PR2022-12-04
+                const allowed_subjbase_arr = (mod_MUPS_dict.sel_lvlbase_pk_str in allowed_lvlbases) ? allowed_lvlbases[mod_MUPS_dict.sel_lvlbase_pk_str] : [];
+
+                if (allowed_subjbase_arr && !allowed_subjbase_arr.includes(subjbase_pk)){
+                        allowed_subjbase_arr.push(subjbase_pk);
+                };
+            };
+
+    // ---  fill selecttable
+            MUPS_FillSelectTable();
+        };
+    }  // MUPS_SelectSubject_Response
 
 //=========  MUPS_MessageClose  ================ PR2022-10-26
     function MUPS_MessageClose() {
         console.log(" --- MUPS_MessageClose --- ");
 
-        $("#id_mod_userpermitsection").modal("hide");
+        $("#id_mod_userallowedsection").modal("hide");
     }  // MUPS_MessageClose
 
+    function MUPS_ExpandTblrows(tblRow ) {
+        console.log("-----  MUPS_ExpandTblrows   ----");
+        console.log("    tblRow", tblRow);
+
+        const tblName = get_attr_from_el(tblRow, "data-table");
+        console.log("    tblName", tblName);
+
+        const schoolbase_pk = get_attr_from_el_int(tblRow, "data-schoolbase_pk");
+        if (schoolbase_pk){
+            const schoolbase_pk_str = schoolbase_pk.toString();
+            if (!(schoolbase_pk_str in mod_MUPS_dict.expanded)){
+                mod_MUPS_dict.expanded[schoolbase_pk_str] = {expanded: false};
+            };
+            const expanded_school_dict = mod_MUPS_dict.expanded[schoolbase_pk_str];
+
+            if (tblName === "school"){
+                expanded_school_dict.expanded = !expanded_school_dict.expanded;
+            } else {
+                const depbase_pk = get_attr_from_el_int(tblRow, "data-depbase_pk");
+                if (depbase_pk){
+                    const depbase_pk_str = depbase_pk.toString();
+                    if (!(depbase_pk_str in expanded_school_dict)){
+                        expanded_school_dict[depbase_pk_str] = {expanded: false};
+                    };
+                    const expanded_depbase_dict = expanded_school_dict[depbase_pk_str];
+
+                    if (tblName === "department"){
+                        expanded_depbase_dict.expanded = !expanded_depbase_dict.expanded;
+                    } else {
+                        const lvlbase_pk = get_attr_from_el_int(tblRow, "data-lvlbase_pk");
+                        if (lvlbase_pk){
+                            const lvlbase_pk_str = lvlbase_pk.toString();
+                            if (!(lvlbase_pk_str in expanded_depbase_dict)){
+                                expanded_depbase_dict[lvlbase_pk_str] = {expanded: false};
+                            };
+                            const expanded_lvlbase_dict = expanded_depbase_dict[lvlbase_pk_str];
+                            if (tblName === "level"){
+                                expanded_lvlbase_dict.expanded = !expanded_lvlbase_dict.expanded;
+                            };
+                        };
+                    };
+                };
+            };
+
+        console.log("    mod_MUPS_dict.expanded", mod_MUPS_dict.expanded);
+            MUPS_FillSelectTable();
+        };
+    };  // MUPS_ExpandTblrows
+
+    function MUPS_ExpandCollapse_all(){
+     // PR2022-11-06
+        console.log("===== MUPS_ExpandCollapse_all ===== ");
+        console.log("    mod_MUPS_dict.allowed_sections", mod_MUPS_dict.allowed_sections);
+        const is_expand = !mod_MUPS_dict.expand_all;
+
+        mod_MUPS_dict.expand_all = is_expand;
+        // remove all expanded items when setting 'Collapse_all'
+        if (!is_expand){
+            mod_MUPS_dict.expanded = {};
+        };
+
+        console.log("    mod_MUPS_dict.expand_all", mod_MUPS_dict.expand_all);
+        el_MUPS_btn_expand_all.innerText = (is_expand) ? loc.Collapse_all : loc.Expand_all;
+
+// ---  loop through mod_MUPS_dict.allowed_sections and expand all items
+        for (const [schoolbase_pk_str, allowed_schoolbase] of Object.entries(mod_MUPS_dict.allowed_sections)) {
+            if (!(schoolbase_pk_str in mod_MUPS_dict.expanded)){
+                mod_MUPS_dict.expanded[schoolbase_pk_str] = {};
+            }
+            const expanded_schoolbase = mod_MUPS_dict.expanded[schoolbase_pk_str];
+            expanded_schoolbase.expanded = is_expand;
+        console.log("    expanded_schoolbase", expanded_schoolbase);
+
+            for (const [depbase_pk_str, allowed_depbase] of Object.entries(allowed_schoolbase)) {
+                if (!(depbase_pk_str in expanded_schoolbase)){
+                    expanded_schoolbase[depbase_pk_str] = {};
+                }
+                const expanded_depbase = expanded_schoolbase[depbase_pk_str];
+                expanded_depbase.expanded = is_expand;
+        console.log("    expanded_depbase", expanded_depbase);
+
+                for (const [lvlbase_pk_str, allowed_lvlbases] of Object.entries(allowed_depbase)) {
+                    if (!(lvlbase_pk_str in expanded_depbase)){
+                        expanded_depbase[lvlbase_pk_str] = {};
+                    }
+                    const expanded_lvlbase = expanded_depbase[lvlbase_pk_str];
+                    expanded_lvlbase.expanded = is_expand;
+                };
+            };
+        };
+        console.log(">>>>>>>>> mod_MUPS_dict.expanded", mod_MUPS_dict.expanded);
+
+        MUPS_FillSelectTable();
+    };  // MUPS_ExpandCollapse_all
+
+/////////////////////
 
 // +++++++++ END OF MOD USER PERMIT SECTIONS ++++++++++++++++ PR20220-10-23
 
@@ -1952,8 +3015,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         $("#id_mod_userpermit").modal("hide");
     }  // MUPM_Save
-
-//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 //========= MUPM_FillSelectTableDepartment  ============= PR2020--09-30
     function MUPM_FillSelectTableDepartment() {
@@ -2111,43 +3172,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }  // MUPM_get_selected_depbases
 
 
-// +++++++++++++++++ MODAL SELECT MULTIPLE DEPS / LEVELS/ SUBJECTS / CLUSTERS ++++++++++++++++++++++++++++++++++++++++++
-//========= MSM_Open ====================================  PR2022-01-26
+// +++++++++++++++++ MODAL SELECT MULTIPLE CLUSTERS ++++++++++++++++++++++++++++++++++++++++++
+//========= MSM_Open ====================================  PR2022-01-26 PR2023-01-26
     function MSM_Open (el_input) {
         console.log(" ===  MSM_Open  =====") ;
-        console.log("el_input", el_input) ;
 
         b_clear_dict(mod_MSM_dict)
 
         const tblRow = t_get_tablerow_selected(el_input);
-
-        const has_permit = (permit_dict.permit_crud_otherschool || permit_dict.permit_crud_sameschool);
-
+        const has_permit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
         if(tblRow && has_permit){
 
 // --- get existing data_dict from data_rows
             const pk_int = get_attr_from_el_int(tblRow, "data-pk")
             const [index, found_dict, compare] = b_recursive_integer_lookup(user_rows, "id", pk_int);
             const data_dict = (!isEmpty(found_dict)) ? found_dict : {};
-    //console.log("data_dict", data_dict)
+    console.log("    data_dict", data_dict)
 
-            // fldName = allowed_subjectbases etc
-            const fldName = get_attr_from_el(el_input, "data-field");
+            // fldName = allowed_clusters
+
             mod_MSM_dict.user_pk = data_dict.id;
             mod_MSM_dict.schoolbase_pk = data_dict.schoolbase_id;
             mod_MSM_dict.mapid = data_dict.mapid;
-            mod_MSM_dict.data_field = fldName;
 
-            // data_array = "117;136"
-            mod_MSM_dict.data_array = data_dict[fldName]
-
-            const caption = get_allowed_caption(fldName);
+            // allowed_clusters = ""ac - 4A1, ac - 4VA1, ac - 4VA2,"
+            mod_MSM_dict.allowed_clusters = data_dict.allowed_clusters;
+            mod_MSM_dict.allowed_clusters_pk_arr = data_dict.allowed_clusters_pk;
 
     // ---  set header text
-            const header_text = loc.Select + caption + ":";
+            const header_text = loc.Select + loc.Clusters.toLowerCase() + ":";
             document.getElementById("id_MSM_hdr_multiple").innerText = header_text;
 
-            const hide_msg = (get_attr_from_el(el_input, "data-field") === "allowed_clusterbases");
+            const hide_msg = (get_attr_from_el(el_input, "data-field") === "allowed_clusters");
         console.log("hide_msg", hide_msg) ;
         console.log("hide_msg", hide_msg) ;
             add_or_remove_class_by_id ("id_MSM_message_container", cls_hide, hide_msg);
@@ -2155,7 +3211,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MSM_input.value = null;
 
     // ---  fill select table 'customer'
-            MSM_FillSelectTable(fldName, caption);
+            MSM_FillSelectTable();
 
     // ---  Set focus to el_MSM_input
             //Timeout function necessary, otherwise focus wont work because of fade(300)
@@ -2165,11 +3221,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }; // MSM_Open
 
-//=========  MSM_Save  ================ PR2022-01-26
+//=========  MSM_Save  ================ PR2022-01-26 PR2023-01-27
     function MSM_Save() {
         console.log("===  MSM_Save =========");
 
-        const has_permit = (permit_dict.permit_crud_otherschool || permit_dict.permit_crud_sameschool);
+        const has_permit = permit_dict.permit_crud_sameschool;
 
         if(has_permit){
 
@@ -2177,7 +3233,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let allowed_str = ""
             const tblBody_select = el_MSM_tblbody_select;
             for (let i = 0, row; row = tblBody_select.rows[i]; i++) {
-                const base_pk_int = get_attr_from_el_int(row, "data-base_pk")
+                const base_pk_int = get_attr_from_el_int(row, "data-pk")
                 if(base_pk_int > 0) {
                     const is_selected = (!!get_attr_from_el_int(row, "data-selected"))
                     if(is_selected){
@@ -2189,19 +3245,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if(new_array){
                 // PR2020-11-02 from https://www.w3schools.com/js/js_array_sort.asp
                 new_array.sort(function(a, b){return a - b});
-                allowed_str = new_array.join(";")
-            }
-            console.log( "new_array:  ", new_array)
-            console.log( "allowed_str:  ", allowed_str)
+            };
 
     // ---  upload changes
-            // mod_MSM_dict = user_data_dict with addotional keys
+            // mod_MSM_dict = user_data_dict with additional keys
             const upload_dict = { user_pk: mod_MSM_dict.user_pk,
                                     schoolbase_pk: mod_MSM_dict.schoolbase_pk,
                                     mapid: mod_MSM_dict.mapid,
-                                    mode: "update"};
-            upload_dict[mod_MSM_dict.data_field] = (allowed_str) ? allowed_str : null;
-            console.log( "upload_dict:  ", upload_dict)
+                                    mode: "update",
+                                    allowed_clusters: (new_array.length) ? new_array : null };
+
             UploadChanges(upload_dict, urls.url_user_upload);
         };
 // hide modal
@@ -2223,38 +3276,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }  // MSM_InputKeyup
 
-//=========  MSM_FillSelectTable  ================ PR2022-01-26 PR2203023
-    function MSM_FillSelectTable(fldName, caption) {
-        //console.log( "===== MSM_FillSelectTable ========= ");
-        //console.log( "fldName: ", fldName);
+//=========  MSM_FillSelectTable  ================ PR2022-01-26 PR23-01-26
+    function MSM_FillSelectTable() {
+        console.log( "===== MSM_FillSelectTable ========= ");
 
-        // check if school has multiple departments, only needed for allowed_clusterbases
+        // check if school has multiple departments, needed for allowed_clusters
         let school_has_multiple_deps = false;
         if (setting_dict.sel_school_depbases ){
             const depbase_arr = setting_dict.sel_school_depbases.split(";");
             school_has_multiple_deps = depbase_arr && depbase_arr.length > 1;
         };
-
-        const data_rows = (fldName === "allowed_depbases") ? department_rows :
-                                (fldName === "allowed_schoolbases") ? school_rows :
-                                (fldName === "allowed_levelbases") ? level_rows :
-                                (fldName === "allowed_subjectbases") ? subject_rows :
-                                (fldName === "allowed_clusterbases") ? cluster_rows : null;
-
-        const display_name_field = (fldName === "allowed_depbases") ? "base_code" :
-                                (fldName === "allowed_schoolbases") ? "name" :
-                                (fldName === "allowed_levelbases") ? "lvlbase_code" :
-                                (fldName === "allowed_subjectbases") ? "name" :
-                                (fldName === "allowed_clusterbases") ? "name" : null;
-
-        const display_code_field = (fldName === "allowed_schoolbases") ? "sb_code" :
-                             (fldName === "allowed_subjectbases") ? "code" : null;
-
-        const display_depbase_field = (school_has_multiple_deps && fldName === "allowed_clusterbases") ? "depbase_code" : null;
+        console.log( "    setting_dict.sel_school_depbases: ", setting_dict.sel_school_depbases);
+        console.log( "    school_has_multiple_deps: ", school_has_multiple_deps);
 
         // cluster has no base table
-        const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
-        const caption_none = loc.No_ + caption;
+        const base_pk_field = "id"
+        const caption_none = loc.No_ + loc.Clusters.toLowerCase();
 
         let tblBody_select = el_MSM_tblbody_select;
         tblBody_select.innerText = null;
@@ -2262,62 +3299,56 @@ document.addEventListener('DOMContentLoaded', function() {
         let has_selected_rows = false;
 
 // --- loop through data_rows
-        if(data_rows && data_rows.length){
-            // data_array contains a list of strings with subbase_id etc.
-            const data_array = (mod_MSM_dict.data_array) ? mod_MSM_dict.data_array.split(";") : [];
+        // data_array contains a list of strings with cluster_id's
+        console.log( "    mod_MSM_dict.allowed_clusters: ", mod_MSM_dict.allowed_clusters);
+        const allowed_clusters_pk_arr = (mod_MSM_dict.allowed_clusters_pk_arr) ? mod_MSM_dict.allowed_clusters_pk_arr : [];
 
-            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-                const base_pk_str = (data_dict[base_pk_field]) ? data_dict[base_pk_field].toString() : null;
-                const row_is_selected = (base_pk_str && data_array && data_array.includes(base_pk_str));
+        console.log( "    allowed_clusters_pk_arr: ", allowed_clusters_pk_arr);
 
-                if(row_is_selected){
-                    has_selected_rows = true;
-                };
+        for (const data_dict of Object.values(cluster_dictsNEW)) {
+    console.log( "    data_dict: ", data_dict)
+            const pk_int = data_dict.id;
+            const row_is_selected = (pk_int && allowed_clusters_pk_arr && allowed_clusters_pk_arr.includes(pk_int));
 
-                const row_index = -1;
-                MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, display_depbase_field, row_is_selected);
+    console.log( "    pk_int: ", pk_int);
+    console.log( "   ==== row_is_selected: ", row_is_selected);
+            if(row_is_selected){
+                has_selected_rows = true;
             };
+
+            const row_index = -1;
+            MSM_FillSelectRow(tblBody_select, data_dict, row_is_selected);
         };
+
+    console.log( "  >>>>>>>>>>   has_selected_rows: ", has_selected_rows);
 
 // ---  add 'all' at the beginning of the list, with id = 0, make selected if no other rows are selected
         const data_dict = {};
-        data_dict[base_pk_field] = 0;
-        data_dict[display_name_field] = "<" + loc.All_ + caption + ">"
+        data_dict.id = -9;
+        data_dict.name = "<" + loc.All_ + loc.Clusters.toLowerCase() + ">"
 
         const row_index = 0;
         // select <All> when has_selected_rows = false;
-        MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, display_depbase_field, !has_selected_rows, true)  // true = insert_at_index_zero
+        MSM_FillSelectRow(tblBody_select, data_dict, !has_selected_rows, true)  // true = insert_at_index_zero
 
     }  // MSM_FillSelectTable
 
 //=========  MSM_FillSelectRow  ================ PR2022-01-26
-    function MSM_FillSelectRow(tblBody_select, data_dict, fldName, display_name_field, display_code_field, display_depbase_field, row_is_selected, insert_at_index_zero) {
-        //console.log( "===== MSM_FillSelectRow ========= ");
-        //console.log("data_dict: ", data_dict);
-        //console.log( "display_name_field: ", display_name_field);
-        //console.log( "display_code_field: ", display_code_field);
+    function MSM_FillSelectRow(tblBody_select, data_dict, row_is_selected, insert_at_index_zero) {
+        console.log( "===== MSM_FillSelectRow ========= ");
+        console.log("data_dict: ", data_dict);
 
         // cluster has no base table
-        const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
-        const base_pk_int = data_dict[base_pk_field];
-        const display_name = ( data_dict[display_name_field] ) ? data_dict[display_name_field] : "-";
+        const pk_int = data_dict.id;
+        const display_name = (data_dict.name) ? data_dict.name : "-";
 
     //console.log( "display_name: ", display_name);
 
         const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
 // ---  lookup index where this row must be inserted
-        const ob1_field = (fldName === "allowed_depbases") ? "sequence" :
-                                (fldName === "allowed_schoolbases") ? "sb_code" :
-                                (fldName === "allowed_levelbases") ? "lvlbase_code" :
-                                (fldName === "allowed_subjectbases") ? "code" :
-                                (fldName === "allowed_clusterbases") ? "dep_sequence" : null;
-        const ob2_field = (fldName === "allowed_clusterbases") ? "name" : null;
-
-        const ob1 = (ob1_field && data_dict[ob1_field]) ?
-                        (typeof data_dict[ob1_field] === 'number') ? "00000" + data_dict[ob1_field].toString() :
-                        data_dict[ob1_field].toLowerCase() : "";
-        const ob2 = (ob2_field && data_dict[ob2_field]) ?  data_dict[ob2_field].toLowerCase() : "";
+        const ob1 = (data_dict.dep_sequence) ? "00000" + data_dict.dep_sequence.toString() : "";
+        const ob2 = (data_dict.name) ? data_dict.name.toLowerCase() : "";
 
         const row_index = (insert_at_index_zero) ? 0 :
             b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1, ob2);
@@ -2326,14 +3357,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const tblRow = tblBody_select.insertRow(row_index);
         tblRow.id = map_id
 
-        tblRow.setAttribute("data-base_pk", base_pk_int);
+        tblRow.setAttribute("data-pk", pk_int);
         tblRow.setAttribute("data-selected", (row_is_selected) ? "1" : "0")
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
-        if(ob2_field) {tblRow.setAttribute("data-ob2", ob2)};
-// ---  add EventListener to tblRow, not when 'no items' (base_pk_int is then -1
-        if (base_pk_int > -1) {
+        tblRow.setAttribute("data-ob2", ob2);
+// ---  add EventListener to tblRow, not when 'no items' (pk_int is then -1, ''all clusters = -9
+        if (pk_int !== -1) {
             tblRow.addEventListener("click", function() {MSM_SelecttableClicked(tblRow)}, false )
 // ---  add hover to tblRow
             add_hover(tblRow);
@@ -2349,34 +3380,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 el.className = (row_is_selected) ? "tickmark_2_2" : "tickmark_0_0";
             td.appendChild(el);
 
-// ---  add td with display_code_field to tblRow, only if display_code_field has value
-        if (display_code_field){
-            td = tblRow.insertCell(-1);
-            td.classList.add("mx-1", "tw_075")
-
-// --- add a element to td., necessary to get same structure as item_table, used for filtering
-            el = document.createElement("div");
-                el.innerText = ( data_dict[display_code_field] ) ? data_dict[display_code_field] : "";
-            td.appendChild(el);
-        }
-// ---  add td with display_name_field to tblRow
+// ---  add td with display_name to tblRow
         td = tblRow.insertCell(-1);
             td.classList.add("mx-1", "tw_270")
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
         el = document.createElement("div");
             el.innerText = display_name;
         td.appendChild(el);
+        if (display_name) { tblRow.title = display_name};
 
-// ---  add td with depbase_code to tblRow, only if display_depbase_field has value
-        if (display_depbase_field){
-            td = tblRow.insertCell(-1);
-            td.classList.add("mx-1", "tw_075")
-
-// --- add a element to td., necessary to get same structure as item_table, used for filtering
-            el = document.createElement("div");
-                el.innerText = ( data_dict[display_depbase_field] ) ? data_dict[display_depbase_field] : "";
-            td.appendChild(el);
-        };
     };  // MSM_FillSelectRow
 
 //=========  MSM_SelecttableClicked  ================ PR2022-01-26
@@ -2390,19 +3402,24 @@ document.addEventListener('DOMContentLoaded', function() {
             tblRow.setAttribute("data-selected", (is_selected) ? "1" : "0")
             tblRow.cells[0].children[0].className = (is_selected) ? "tickmark_2_2" : "tickmark_0_0";
 
-            // row 'all' has pk = 0
+            // row 'all' has pk = -9
             if(is_selected){
-                const base_pk_int = get_attr_from_el_int(tblRow, "data-base_pk");
+                const selected_pk_int = get_attr_from_el_int(tblRow, "data-pk");
+                const selected_is_all = (selected_pk_int === -9);
                 const tblBody_select = tblRow.parentNode;
                 for (let i = 0, lookup_row; lookup_row = tblBody_select.rows[i]; i++) {
-                    const lookup_base_pk_int = get_attr_from_el_int(lookup_row, "data-base_pk");
+                    const lookup_pk_int = get_attr_from_el_int(lookup_row, "data-pk");
+                    if (lookup_pk_int !== selected_pk_int){
+                        const lookup_is_all = (lookup_pk_int === -9);
 
-                    // remove tickmark on all other items when 'all' is selected
-                    // remove  tickmark on 'all' when other item is selected
-                    let remove_selected = (base_pk_int === 0) ? (lookup_base_pk_int !== 0) : (lookup_base_pk_int === 0);;
-                    if(remove_selected){
-                        lookup_row.setAttribute("data-selected", "0");
-                        lookup_row.cells[0].children[0].className = "tickmark_0_0";
+                        // remove tickmark on all other items when 'all' is selected
+                        // remove  tickmark on 'all' when other item is selected
+                        //let remove_selected = (base_is_all) ? (lookup_base_pk_int !== -9) : (lookup_base_pk_int === -9);;
+                        let remove_selected = (selected_is_all && !lookup_is_all) || (!selected_is_all && lookup_is_all);
+                        if(remove_selected){
+                            lookup_row.setAttribute("data-selected", "0");
+                            lookup_row.cells[0].children[0].className = "tickmark_0_0";
+                        };
                     };
                 };
             };
@@ -2410,6 +3427,16 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MSM_SelecttableClicked
 
 // +++++++++++++++++ END OF MODAL SELECT MULTIPLE DEPS / LEVELS/ SUBJECTS / CLUSTERS  +++++++++++++++++++++++++++++++
+
+//////////////////////////////////////
+
+//=========  MODAL calculate compensation ofsecond correctors  ================ PR2023-02-19
+    function MCOMP_Open() {
+
+
+    };
+/////////////////////////////////////
+
 
 
 //========= HandleInputChange  =============== PR2021-03-20 PR2022-02-21
@@ -2445,13 +3472,65 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // HandleInputChange
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-30
-    function ModConfirmOpen(tblName, mode, el_input) {
-        //console.log(" -----  ModConfirmOpen   ----")
-        // values of mode are : "delete", "is_active" or "send_activation_email", "permission_admin"
 
-        //console.log("mode", mode )
-        //console.log("tblName", tblName )
+//=========  ModConfirmOpen_DownloadUserdata  ================ PR2023-01-31
+    function ModConfirmOpen_DownloadUserdata(mode ) {
+        console.log(" -----  ModConfirmOpen_DownloadUserdata   ----")
+
+// variables for future use in other functions
+        console.log("    mode", mode);
+        const may_edit = true;
+        const show_modal = true;
+        const show_large_modal = true;
+
+// ---  create mod_dict
+        mod_dict = {mode: mode};
+
+ // ---  put text in modal for
+        let header_txt = "";
+        const msg_list = [];
+        let caption_save = loc.OK;
+        let hide_save_btn = false;
+
+        header_txt = loc.Download_user_data;
+        caption_save = loc.Yes_download;
+        msg_list.push("<p>" + loc.The_user_data + loc.will_be_downloaded_plur + "</p><p>");
+        msg_list.push("<p>" +  loc.Do_you_want_to_continue + "</p>");
+
+        el_confirm_header.innerText = header_txt;
+        el_confirm_loader.classList.add(cls_visible_hide);
+        el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
+
+        el_confirm_msg_container.innerHTML = msg_list.join("");
+
+        el_confirm_btn_save.innerText = caption_save;
+        add_or_remove_class (el_confirm_btn_save, cls_hide, hide_save_btn);
+
+        //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
+        add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete_candidate"), "btn-primary");
+
+        el_confirm_btn_cancel.innerText = (hide_save_btn) ? loc.Close : loc.No_cancel;
+
+// set focus to cancel button
+        set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+
+// show modal
+        if (show_modal) {
+            $("#id_mod_confirm").modal({backdrop: true});
+
+            // this code must come after $("#id_mod_confirm"), otherwise it will not work
+            add_or_remove_class(document.getElementById("id_mod_confirm_size"), "modal-md", show_large_modal, "modal-md");
+        };
+    };  // ModConfirmOpen_DownloadUserdata
+
+//=========  ModConfirmOpen  ================ PR2020-08-03 PR2021-06-30 PR2022-12-31
+    function ModConfirmOpen(tblName, mode, el_input, user_without_userallowed) {
+        console.log(" -----  ModConfirmOpen   ----")
+        // values of mode are : "delete", "is_active" or "send_activation_email", "permission_admin", "user_without_userallowed"
+
+        // ModConfirmOpen(null, "user_without_userallowed", null, response.user_without_userallowed);
+        console.log("    mode", mode )
+        console.log("    tblName", tblName )
 
 // ---  get selected_pk
         let selected_pk = null;
@@ -2462,18 +3541,17 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             selected_pk = (tblName === "userpermit") ? selected_userpermit_pk : selected_user_pk;
         }
-        //console.log("tblRow", tblRow )
-        //console.log("selected_pk", selected_pk )
+        console.log("    tblRow", tblRow )
+        console.log("    selected_pk", selected_pk )
 
 // --- get data_dict from tblName and selected_pk
         const data_dict = get_datadict_from_pk(tblName, selected_pk)
-        //console.log("data_dict", data_dict);
+        console.log("data_dict", data_dict);
 
 // ---  get info from data_dict
         // TODO remove requsr_pk from client
         const is_request_user = (data_dict && permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id)
-        //console.log("permit_map", permit_map)
-        //console.log("data_dict", data_dict)
+        console.log("    is_request_user", is_request_user)
 
 // ---  create mod_dict
         mod_dict = {mode: mode, table: tblName};
@@ -2488,24 +3566,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         if (mode === "is_active") {
-              mod_dict.current_isactive = data_dict.is_active;
-        }
+            mod_dict.current_isactive = data_dict.is_active;
+        } else if (mode === "user_without_userallowed") {
+            if (!isEmpty(user_without_userallowed)) {
+                mod_dict.user_pk = user_without_userallowed.user_pk;
+                mod_dict.schoolbase_pk = user_without_userallowed.schoolbase_pk;
+                mod_dict.username = user_without_userallowed.username;
+                mod_dict.last_name = user_without_userallowed.last_name;
+            };
+        };
+       console.log("    mod_dict", mod_dict);
 
 // ---  put text in modal form
         let dont_show_modal = false;
         const is_mode_permission_admin = (mode === "permission_admin");
         const is_mode_send_activation_email = (mode === "send_activation_email");
 
-        //console.log("mode", mode)
         const inactive_txt = (mod_dict.current_isactive) ? loc.Make_user_inactive : loc.Make_user_active;
         const header_text = (mode === "delete") ? (tblName === "userpermit") ? loc.Delete_permission : loc.Delete_user :
                             (mode === "is_active") ? inactive_txt :
+                            (mode === "user_without_userallowed") ? loc.Add_user :
                             (is_mode_send_activation_email) ? loc.Send_activation_email :
                             (is_mode_permission_admin) ? loc.Set_permissions : "";
 
         let msg_list = [];
         let hide_save_btn = false;
-        if(!has_selected_item){
+        if(mode === "user_without_userallowed"){
+            // PR2023-01-01 from https://stackoverflow.com/questions/4842993/javascript-push-an-entire-list
+            // use push.apply instead of joining the list before pushing
+            msg_list.push(["<p>", loc.Username, " '", mod_dict.username,  "' ", loc._of_, loc.User.toLowerCase()," '" , mod_dict.last_name, "'</p>"].join(""));
+            msg_list.push(["<p>", loc.already_exists_in_previous_examyear, "</p>"].join(""));
+
+            msg_list.push(["<p class='mt-3'>", loc.Doyou_wantto_add_to_this_examyear, "</p>"].join(""));
+        } else if (!has_selected_item){
             msg_list.push("<p>" + loc.No_user_selected + "</p>");
             hide_save_btn = true;
         } else {
@@ -2581,14 +3674,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // show modal
             $("#id_mod_confirm").modal({backdrop: true});
-        }
-
+        };
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2019-06-23
     function ModConfirmSave() {
-        //console.log(" --- ModConfirmSave --- ");
-        //console.log("mod_dict: ", mod_dict);
+        console.log(" --- ModConfirmSave --- ");
+        console.log("    mod_dict: ", mod_dict);
         let tblRow = document.getElementById(mod_dict.mapid);
 
 // ---  when delete: make tblRow red, before uploading
@@ -2596,13 +3688,35 @@ document.addEventListener('DOMContentLoaded', function() {
             ShowClassWithTimeout(tblRow, "tsa_tr_error");
         }
 
-        let close_modal = false, url_str = null;
+        let close_modal = false, skip_uploadchanges = false, url_str = null;
         const upload_dict = {mode: mod_dict.mode, mapid: mod_dict.mapid};
 
-        if(mod_dict.table === "userpermit"){
+        if (mod_dict.mode === "user_without_userallowed"){
+            url_str = urls.url_user_upload;
+
+            upload_dict.user_pk = mod_dict.user_pk;
+            upload_dict.schoolbase_pk = mod_dict.schoolbase_pk;
+            upload_dict.username = mod_dict.username;
+            upload_dict.schoolbase_pk
+
+            close_modal = true;
+
+        } else if(mod_dict.mode === "download_userdata_xlsx"){
+            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
+            if (el_modconfirm_link) {
+                const href_str = urls.url_download_userdata_xlsx;
+                el_modconfirm_link.setAttribute("href", href_str);
+                el_modconfirm_link.click();
+
+                close_modal = true;
+            };
+            skip_uploadchanges = true;
+
+        } else if(mod_dict.table === "userpermit"){
             if (mod_dict.mode === "delete"){
                 url_str = urls.url_userpermit_upload;
                 upload_dict.userpermit_pk = mod_dict.userpermit_pk;
+
                 close_modal = true;
             }
         } else {
@@ -2621,11 +3735,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         let el_icon = cell.children[0];
                         if(el_icon){add_or_remove_class (el_icon, "inactive_1_3", !mod_dict.new_isactive,"inactive_0_2" )};
                         break;
-                    }
-                }
-            }
+                    };
+                };
+            };
 
-    // ---  Upload Changes
             url_str = urls.url_user_upload;
             upload_dict.user_pk = mod_dict.user_pk;
             upload_dict.schoolbase_pk = mod_dict.user_ppk;
@@ -2633,32 +3746,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 upload_dict.is_active = mod_dict.new_isactive;
             };
         };
+
 // ---  Upload changes
-        UploadChanges(upload_dict, url_str);
+        if (!skip_uploadchanges){
+            UploadChanges(upload_dict, url_str);
+        };
+
 // ---  hide modal
         if(close_modal) {
+
             $("#id_mod_confirm").modal("hide");
-        }
-    }  // ModConfirmSave
+        };
+    };  // ModConfirmSave
 
 //=========  ModConfirmResponse  ================ PR2019-06-23
     function ModConfirmResponse(response) {
         //console.log(" --- ModConfirmResponse --- ");
         //console.log("mod_dict: ", mod_dict);
         // hide loader
-        el_confirm_loader.classList.add(cls_visible_hide)
-        const mode = get_dict_value(response, ["mode"])
+        el_confirm_loader.classList.add(cls_visible_hide);
+        const mode = get_dict_value(response, ["mode"]);
         if(mode === "delete"){
 //--- delete tblRow. Multiple deleted rows not in use yet, may be added in the future PR2020-08-18
             if ("updated_list" in response) {
                 for (let i = 0, updated_dict; updated_dict = response.updated_list[i]; i++) {
                     if(updated_dict.deleted) {
-                        const tblRow = document.getElementById(updated_dict.mapid)
+                        const tblRow = document.getElementById(updated_dict.mapid);
                         if (tblRow){ tblRow.parentNode.removeChild(tblRow) };
-                    }
-                }
+                    };
+                };
             };
-        }
+        };
         if ("msg_err" in response || "msg_ok" in response) {
             let msg_list = [];
             if ("msg_err" in response) {
@@ -2666,7 +3784,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (msg_err) {msg_list.push("<p>" + msg_err + "</p>")};
                 if (mod_dict.mode === "send_activation_email") {
                     msg_list.push("<p>" + loc.Activation_email_not_sent + "</p>")
-                }
+                };
                 el_confirm_msg_container.classList.add("border_bg_invalid");
             } else if ("msg_ok" in response){
                 const msg01 = get_dict_value(response, ["msg_ok", "msg01"]);
@@ -2676,18 +3794,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (msg02) {msg_list.push("<p>" + msg02 + "</p>")};
                 if (msg03) {msg_list.push("<p>" + msg03 + "</p>")};
                 el_confirm_msg_container.classList.add("border_bg_valid");
-            }
+            };
 
             const msg_html = (msg_list.length) ? msg_list.join("") : null;
             el_confirm_msg_container.innerHTML = msg_html;
 
-            el_confirm_btn_cancel.innerText = loc.Close
+            el_confirm_btn_cancel.innerText = loc.Close;
             el_confirm_btn_save.classList.add(cls_hide);
         } else {
         // hide mod_confirm when no message
             $("#id_mod_confirm").modal("hide");
-        }
-    }  // ModConfirmResponse
+        };
+    };  // ModConfirmResponse
 
 //###########################################################################
 
@@ -2972,6 +4090,7 @@ function RefreshDataRowsAfterUpload(response) {
     // - put new filter value in filter_dict
         filter_dict[col_index] = [filter_tag, new_value]
 
+    //console.log( "filter_dict", filter_dict);
         el_input.className = icon_class;
         Filter_TableRows();
     };  // HandleFilterToggle
@@ -2979,11 +4098,12 @@ function RefreshDataRowsAfterUpload(response) {
 //========= HandleFilterInactive  =============== PR2022-03-03
     function HandleFilterInactive(el_filter) {
         //console.log( "===== HandleFilterInactive  ========= ");
-        console.log( "el_filter", el_filter);
+        //console.log( "el_filter", el_filter);
+
         // show active only when opening page
         const filter_showinactive = (filter_dict && filter_dict.showinactive != null) ? filter_dict.showinactive : 1;
-        //console.log( "filter_dict", filter_dict);
-        //console.log( "filter_showinactive", filter_showinactive, typeof filter_showinactive);
+    //console.log( "filter_dict", filter_dict);
+    //console.log( "filter_showinactive", filter_showinactive, typeof filter_showinactive);
 
 // - toggle filter value
         // filter inactive '0'; is show all, '1' is show active only, '2' is show inactive only
@@ -2995,7 +4115,7 @@ function RefreshDataRowsAfterUpload(response) {
 
     // - put new filter value in filter_dict
         filter_dict.showinactive = new_value
-        //console.log( "filter_dict", filter_dict);
+    //console.log( "filter_dict", filter_dict);
 
         if( el_filter ) {el_filter.className = icon_class};
         Filter_TableRows();
@@ -3004,8 +4124,8 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= Filter_TableRows  ====================================
     function Filter_TableRows(set_filter_isactive) {  // PR2019-06-09 PR2020-08-31 PR2022-03-03
-        console.log( "===== Filter_TableRows=== ");
-        console.log( "filter_dict", filter_dict);
+        //console.log( "===== Filter_TableRows=== ");
+        //console.log( "filter_dict", filter_dict);
 
         // function filters by inactive and substring of fields
         //  - iterates through cells of tblRow
@@ -3127,9 +4247,10 @@ function RefreshDataRowsAfterUpload(response) {
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT  ++++++++++++++++++++
 // functions are in table.js, except for MSED_Response
 
-//=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10
+//=========  MSED_Response  ================ PR2020-12-18 PR2021-05-10 PR2022-12-02
     function MSED_Response(new_setting) {
-        //console.log( "===== MSED_Response ========= ");
+        console.log( "===== MSED_Response ========= ");
+        console.log( "new_setting", new_setting);
 
 // ---  upload new selected_pk
         new_setting.page = setting_dict.sel_page;
@@ -3137,11 +4258,18 @@ function RefreshDataRowsAfterUpload(response) {
         const datalist_request = {
                 setting: new_setting,
                 user_rows: {get: true},
-                school_rows: {get: true}
+                corrector_rows: {get: true},
+                department_rows: {get: true},
+                school_rows: {skip_allowed_filter: true},
+                level_rows: {skip_allowed_filter: true},
+                subject_rows_page_users: {get: true},
+                cluster_rows: {get: true}
             };
+
         DatalistDownload(datalist_request);
 
     }  // MSED_Response
+
 //###########################################################################
 //=========  MSSSS_Response  ================ PR2021-04-23  PR2021-07-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
@@ -3171,122 +4299,15 @@ function RefreshDataRowsAfterUpload(response) {
             columns_hidden = ["group_auth3", "group_auth4"];
         } else if (permit_dict.requsr_role_insp) {
             columns_hidden =  ["group_auth3", "group_auth4"];
-        } else if (permit_dict.requsr_role_comm) {
+        } else if (permit_dict.requsr_role_corr) {
             columns_hidden =  ["group_edit", "group_auth1", "group_auth2", "group_auth3", "group_anlz"];
         } else if (permit_dict.requsr_role_school) {
             columns_hidden = ["sb_code", "school_abbrev", "group_anlz", "allowed_schoolbases"];
-            if (permit_dict){
-            };
-
-        }
+        };
     };  // set_columns_hidden
 
 
 //###########################################################################
-
-
-//========= get_allowed_display_txt  ====== PR2022-01-26
-    function get_allowed_display_txt(fldName, allowed_str) {
-        //console.log( "===== get_allowed_display_txt  === ");
-    //console.log( "allowed_str", allowed_str);
-        let display_txt = null, title_txt = null;
-
-        const data_rows = (fldName === "allowed_depbases") ? department_rows :
-                                (fldName === "allowed_schoolbases") ? school_rows :
-                                (fldName === "allowed_levelbases") ? level_rows :
-                                (fldName === "allowed_subjectbases") ? subject_rows :
-                                (fldName === "allowed_clusterbases") ? cluster_rows : null;
-    //console.log( "data_rows", data_rows);
-        // leave field blank when table is empty (happens only in clusters)
-        let show_all_txt = false;
-
-        if (data_rows){
-            if (!allowed_str){
-                const caption = get_allowed_caption(fldName);
-
-                // dipaly 'All' when allowed_str is empty
-                show_all_txt = true
-                 //display_txt = "&#60" + loc.All_ + caption + "&#62";
-                 display_txt = "&nbsp";
-            } else {
-                const allowed_arr = allowed_str.split(";");
-                if (allowed_arr && allowed_arr.length){
-                    const display_name_field = "name";
-
-                    const display_field = (fldName === "allowed_depbases") ? "base_code" :
-                                         (fldName === "allowed_schoolbases") ? "sb_code" :
-                                         (fldName === "allowed_levelbases") ? "lvlbase_code" :
-                                         (fldName === "allowed_subjectbases") ? "code" :
-                                         (fldName === "allowed_clusterbases") ? "name" : null;
-
-                    // cluster has no base table
-                    const base_pk_field = (fldName === "allowed_clusterbases") ? "id" : "base_id";
-
-                    // first put codes in array, so they can be sorted
-
-                    let code_array = [], name_array = [];
-                    for (let i = 0, base_pk_str, data_dict; base_pk_str = allowed_arr[i]; i++) {
-
-    //console.log( "base_pk_str", base_pk_str);
-
-    // --- get existing data_dict from data_rows
-                        const base_pk_int = (Number(base_pk_str)) ?  Number(base_pk_str) : null;
-    //console.log( "base_pk_int", base_pk_int);
-                        // cannot use b_recursive_integer_lookup, it can only be used to lookup by id, not by base_id
-                        if (data_rows){
-                            for (let j = 0, data_dict; data_dict = data_rows[j]; j++) {
-                                if (base_pk_int && base_pk_int === data_dict[base_pk_field]){
-                                    if(data_dict[display_field]){ code_array.push(data_dict[display_field]) };
-                                    if(data_dict[display_name_field]){ name_array.push(data_dict[display_name_field]) };
-                                    break;
-                                };
-                            };
-                        };
-                    };
-    //console.log("code_array", code_array)
-    //console.log("name_array", name_array)
-                    let value_str = "";
-                    if(code_array){
-                        code_array.sort();
-                        code_array.forEach(function (code) {
-    //console.log("code", code)
-                            if (display_txt) {
-                                display_txt += ", " + code;
-                            } else {
-                                display_txt = code;
-                            }
-                        });
-                    }
-                    if(name_array){
-                        name_array.sort();
-                        name_array.forEach(function (name) {
-    //console.log("name", name)
-                            if (title_txt) {
-                                title_txt += "\n" + name;
-                            } else {
-                                title_txt = name;
-                            };
-                        });
-                    };
-                };
-    //console.log("display_txt", display_txt)
-    //console.log("title_txt", title_txt)
-            };
-        };
-        return [display_txt, title_txt];
-    };  // get_allowed_display_txt
-
-
-//========= get_allowed_caption  ====== PR2022-01-26
-    function get_allowed_caption(fldName) {
-
-        return (fldName === "allowed_depbases") ? loc.Departments.toLowerCase() :
-                (fldName === "allowed_schoolbases") ? loc.Schools.toLowerCase() :
-                (fldName === "allowed_levelbases") ? loc.Levels.toLowerCase() :
-                (fldName === "allowed_subjectbases") ? loc.Subjects.toLowerCase() :
-                (fldName === "allowed_clusterbases") ? loc.Clusters.toLowerCase() : "";
-    };
-//###########################
 
 
 //========= get_datadict_from_mapid  ====== PR2021-08-01
@@ -3311,7 +4332,6 @@ function RefreshDataRowsAfterUpload(response) {
     //console.log( "data_rows", data_rows, typeof data_rows );
             const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
             if (!isEmpty(found_dict)) {data_dict = found_dict};
-
         };
         return data_dict;
     };  // get_datadict_from_pk
@@ -3323,7 +4343,7 @@ function RefreshDataRowsAfterUpload(response) {
                 (selected_btn === "btn_usergroup") ? "usergroup" :
                 (selected_btn === "btn_userpermit") ? "userpermit" :
                 (selected_btn === "btn_allowed") ? "tbl_allowed" : null;
-    }
+    };
 
     function get_data_rows(tblName) {  //PR2021-08-01
         //console.log( "  ----- get_data_rows -----");
@@ -3331,7 +4351,7 @@ function RefreshDataRowsAfterUpload(response) {
         return (tblName === "userpermit") ? permit_rows :
                 (tblName === "usergroup") ? user_rows :
                 (tblName === "user") ? user_rows : null;
-    }
+    };
 
 //========= get_datarows_from_selectedBtn  ======== // PR2022-01-25
     function get_datarows_from_selectedBtn() {

@@ -1,0 +1,127 @@
+{% load i18n %}
+{% load static %}
+
+<!-- =================== MODAL LINK STUDENTS  =================== -->
+    <div class="modal" id="id_mod_link_students" tabindex="-1" role="dialog" aria-labelledby="id_modal_cont_label" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+            <div class="modal-content">
+
+                <div class="modal-header tsa_bc_lightlightgrey">
+                    <a href="{% url 'manual_url' 'exemption' 'id_exem_lookup' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
+                    <h4 class="modal-title mx-2" >{% trans 'Look up exemptions of previous examyears' %}</h4>
+                    <button class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+
+                </div>
+
+                <div class="modal_body_right mx-4 mt-2 mb-0">
+                    <div id="id_MLINKSTUD_btn_container" class="btn-group btn-block m-2" role="group" aria-label="Choose option" >
+                        <button data-btn_index="1" class="btn btn-secondary">{% trans 'Step' %} 1: {% trans 'Introduction' %}</button>
+                        <button data-btn_index="2" class="btn btn-secondary">{% trans 'Step' %} 2: {% trans 'Link candidates' %}</button>
+                        <button data-btn_index="3" class="btn btn-secondary">{% trans 'Step' %} 3: {% trans 'Enter exemptions' %}</button>
+                    </div>
+                </div>
+                <div id="id_MLINKSTUD_body" class="mx-4 my-2">
+
+<!-- STEP 1 -->
+                    <div class="mx-4 mt-2 btn_show btn_step1 display_hide">
+                        <div class="border_bg_transparent p-2">
+                            <p>{% trans 'With this window, you can enter the exemptions of candidates, who failed last year.' %}  </p>
+                            <ul><li>{% trans 'In Step 2, you will link the candidates of last year to the corresponding candidates of this year.' %}</li>
+                                <li>{% trans 'In Step 3, AWP will import the exemptions.' %}</li></ul>
+                            <p>{% trans 'It is also possible to import exemptions from an Exel file or enter them manually.' %}
+                            </p>
+                         </div>
+                    </div>
+
+<!-- STEP 2 -->
+                    <div class="ml-2 mt-2 mr-0 btn_show btn_step2 display_hide">
+                        <div id="id_MLINKSTUD_loading" class="display_hidexx">
+
+                            <div class="content_header">
+                                <div class="content_subheader_left border_bg_transparent mx-1 p-2">
+                                                                <div id="id_MLINKSTUD_loader" class="image_container">
+                                <img src="{% static 'img/loader.gif' %}" height="24" width="24">
+                            </div>
+                                    {% trans 'AWP is searching for other candidates with the same ID-number...' %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="id_MLINKSTUD_no_data" class="display_hidexx">
+                            <div class="content_header">
+                                <div class="content_subheader_left border_bg_transparent mx-1 p-2">
+                                    {% trans 'AWP has not found other candidates with the same ID-number,' %}
+                                    <br>
+                                    {% trans 'and therefore cannot enter exemptions.' %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="id_MLINKSTUD_has_data" class="display_hide">
+                            <div class="content_header">
+                                <div id="id_MLINKSTUD_has_unlinked_data" class="flex_2 border_bg_transparent mx-1 p-2 display_hide">
+                                    {% trans 'AWP has found other candidates with the same ID-number.' %}
+                                        <ul class="mb-0">
+                                            <li>{% trans "Click the tickmark icon if it is the same candidate." %}</li>
+                                            <li>{% trans "Click the crosss icon if it is not the same candidate." %}</li>
+                                            <li>{% trans "If you are not sure: click the crosss icon." %}</li>
+                                        </ul>
+                                </div>
+
+                                <div id="id_MLINKSTUD_all_linked_data" class="flex_2 border_bg_transparent mx-1 p-2">
+                                    {% trans 'All candidates are linked.' %}
+                                    <br>
+                                    {% trans "Click 'Show all matching candidates' to show them." %}
+                                </div>
+
+                                <div class="flex_1 mx-1 mt-5">
+                                    <button id="id_MLINKSTUD_btn_showall" class="btn btn-outline-secondary"></button>
+                                </div>
+                            </div>
+
+                            <div id="id_MLINKSTUD_data_container" class="mx-0 mt-2"> </div>
+
+                        </div>
+                    </div>
+
+<!-- STEP 3 -->
+                    <div class="mx-4 mt-2 btn_show btn_step3 display_hide">
+                        <div id="id_MLINKSTUD_step3_msg" class="border_bg_transparent p-2">
+                            <p>{% trans "AWP will enter the exemption grades of candidates and mark the exam as 'bis-exam' when" %}:</p>
+                            <ul class="mb-0"><li>{% trans 'the candidate is linked to a candidate of last year' %};</li>
+                            <li>{% trans 'the candidate has failed the exam of last year' %};</li>
+                           <li>{% trans 'the candidate has the same department and learning path as last year' %};</li>
+                            <li>{% trans 'the candidate has a Proof of Knowledage of the subject' %}.</li></ul>
+                           <p>{% trans "When a candidate is an eveningschool candidate, the rules for eveningschool candidates apply." %}</p>
+                           <p>{% trans "Click 'Enter exemptions' to mark the exam as 'bis-exam' and to enter the exemptions." %}</p>
+                         </div>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer pr-4">
+                    <div class="content_subheader_left mx-1 ">
+                        <div class="sidebar_btngroup btn-group btn-block" role="group" aria-label="Choose option" >
+                            <button id="id_MLINKSTUD_btn_prev" class="btn btn-secondary"> &lt;  {% trans 'Previous step' %}</button>
+                            <button id="id_MLINKSTUD_btn_next" class="btn btn-secondary">{% trans 'Next step' %} &gt; </button>
+                        </div>
+                    </div>
+                    <div class="content_subheader_right">
+                        <button id="id_MLINKSTUD_btn_save" class="btn btn-secondary">{% trans 'Enter exemptions' %}</button>
+                        <button id="id_MLINKSTUD_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
+                    </div>
+                </div>
+
+                <div id="id_MLINKSTUD_data" data-url_import_settings_upload="{% url 'url_import_settings_upload' %}"
+                     data-url_importdata_upload="{% url 'url_importdata_upload' %}"
+                     data-url_importstudent_upload="{% url 'url_importstudent_upload' %}"
+                     data-url_importstudentsubject_upload="{% url 'url_importstudentsubject_upload' %}"
+                     data-url_importgrade_upload="{% url 'url_importgrade_upload' %}"
+                     data-url_importusername_upload="{% url 'url_importusername_upload' %}">
+                </div>
+            </div>
+        </div>
+    </div>
+

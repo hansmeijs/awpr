@@ -15,6 +15,8 @@ from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
 from django.views.generic import View
 
 from accounts import views as acc_view
+from accounts import permits as acc_prm
+
 from awpr import menus as awpr_menu, excel as grd_exc
 from awpr import constants as c
 from awpr import settings as s
@@ -82,7 +84,7 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25
 class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25 PR2022-07-05
 
     def get(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  StudentsubjectListView  =====")
 
@@ -92,7 +94,7 @@ class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25 PR2022-07-05
 
 # - for btn text 'Proof of Knowledge' or 'Proof of Exemption'
         is_evelex_school = False
-        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
         sel_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK) if selected_dict else None
         if request.user:
             sel_school = sch_mod.School.objects.get_or_none(
@@ -134,15 +136,126 @@ class OrderlistsListView(View): # PR2021-07-04
 # - end of OrderlistsListView
 
 
-
 #/////////////////////////////////////////////////////////////////
-def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
-                        student_pk=None, sel_lvlbase_pk=None, sel_sctbase_pk=None):
-    # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15
+def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, append_dict, show_deleted=False, student_pk=None):
+    # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15  PR2023-01-11
     # - show only students that are not tobedeleted
     logging_on = False  # s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' ----- create_student_rows -----')
+        logger.debug('    sel_examyear:   ' + str(sel_examyear))
+        logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
+        logger.debug('    sel_depbase:    ' + str(sel_depbase))
+        logger.debug('    show_deleted:    ' + str(show_deleted))
+
+    sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
+    sql_clause_arr = []
+
+    #  sel_schoolbase is already checked on allowed schoolbases in function download_setting / get_settings_schoolbase / get_sel_schoolbase_instance
+    #  sel_depbase is already checked on allowed depbases in function download_setting / get_settings_departmentbase / get_sel_depbase_instance
+
+    sel_school = sch_mod.School.objects.get_or_none(
+        examyear=sel_examyear,
+        base=sel_schoolbase
+    )
+    sel_department = sch_mod.Department.objects.get_or_none(
+        examyear=sel_examyear,
+        base=sel_depbase
+    )
+    level_is_required = sel_department.level_req if sel_department else False
+
+    if logging_on:
+        logger.debug(' ----------')
+        logger.debug('    sel_school:   ' + str(sel_school))
+        logger.debug('    sel_department: ' + str(sel_department))
+        logger.debug('    level_is_required:    ' + str(level_is_required))
+
+# - get allowed_sections_dict from userallowed
+    allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
+    # allowed_sections_dict: {'13': {'1': {'-9': []}, '2': {'-9': []}}} key is schoolbase_pk / depbase_pk / lvlbase_pk
+
+# - get allowed_schoolbase_dict from allowed_sections_dict
+    allowed_schoolbase_dict, allowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+        userallowed_sections_dict=allowed_sections_dict,
+        sel_schoolbase_pk=sel_schoolbase.pk
+    )
+    # allowed_schoolbase_dict:    {'1': {'-9': []}, '2': {'-9': []}} key is depbase_pk / lvlbase_pk
+
+# - get allowed_depbase_dict from allowed_schoolbase_dict
+    allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
+        allowed_schoolbase_dict=allowed_schoolbase_dict,
+        sel_depbase_pk=sel_depbase.pk
+    )
+    # allowed_depbase_dict:    {'-9': []}
+
+    if logging_on:
+        logger.debug(' ----------')
+        logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+        logger.debug('    allowed_schoolbase_dict:    ' + str(allowed_schoolbase_dict))
+        logger.debug('    allowed_depbase_dict:    ' + str(allowed_depbase_dict))
+
+    sel_lvlbase_pk_arr = []
+
+# - get selected_pk_dict from usersettings
+    selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+
+    if level_is_required:
+
+# - get saved_lvlbase_pk of req_usr
+        saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+        if logging_on:
+            logger.debug(' ----------')
+            logger.debug('    saved_lvlbase_pk: ' + str(saved_lvlbase_pk) + ' ' + str(type(saved_lvlbase_pk)))
+
+# - filter only the saved_lvlbase_pk if exists and allowed
+    # if sel_lvlbase_pk_arr is empty all lvlbases are allowed
+        if not saved_lvlbase_pk or saved_lvlbase_pk == '-9':
+            if allowed_depbase_dict:
+            # if '-9' in allowed_depbase_dict: all levels are allowed, no filter
+            # else: add all allowed lvlbase_pk to sel_lvlbase_pk_arr
+                if '-9' not in allowed_depbase_dict:
+                    for lvlbase_pk_str in allowed_depbase_dict:
+                        sel_lvlbase_pk_arr.append(int(lvlbase_pk_str))
+            #else:
+        # - all lvlbases are allowed if allowed_depbase_dict is empty
+
+        else:
+            if allowed_depbase_dict:
+                if str(saved_lvlbase_pk) in allowed_depbase_dict or \
+                        '-9' in allowed_depbase_dict:
+                    sel_lvlbase_pk_arr.append(saved_lvlbase_pk)
+            else:
+                sel_lvlbase_pk_arr.append(saved_lvlbase_pk)
+
+        if logging_on:
+            logger.debug('    sel_lvlbase_pk_arr: ' + str(sel_lvlbase_pk_arr) + ' ' + str(type(sel_lvlbase_pk_arr)))
+
+# - create lvlbase_clause
+        lvlbase_clause = None
+        if sel_lvlbase_pk_arr:
+            if len(sel_lvlbase_pk_arr) == 1:
+                sql_keys['lvlbase_pk'] = sel_lvlbase_pk_arr[0]
+                lvlbase_clause = "lvl.base_id = %(lvlbase_pk)s::INT"
+            else:
+                sql_keys['lvlbase_pk_arr'] = sel_lvlbase_pk_arr
+                lvlbase_clause = "lvl.base_id IN (SELECT UNNEST(%(lvlbase_pk_arr)s::INT[]))"
+            sql_clause_arr.append(lvlbase_clause)
+
+        if logging_on:
+            logger.debug('    lvlbase_clause: ' + str(lvlbase_clause))
+
+    #allowed_depbase_dict = acc_view.get_requsr_allowed_lvlbases_dict(
+    #    allowed_depbases_dict=allowed_depbases_dict,
+    #    sel_depbase_pk=sel_depbase.pk
+    #)
+
+    # - get selected sctbase_pk of req_usr
+    saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+    if saved_sctbase_pk and saved_sctbase_pk != -9:
+        sql_clause_arr.append(''.join(("(sct.base_id = ", str(saved_sctbase_pk), "::INT)")))
+
+    sql_clause = 'AND ' + ' AND '.join(sql_clause_arr) if sql_clause_arr else ''
 
     student_rows = []
     error_dict = {} # PR2021-11-17 new way of err msg, like in TSA
@@ -150,17 +263,11 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
     if sel_examyear and sel_schoolbase and sel_depbase:
         try:
 
-            if logging_on:
-                logger.debug(' ----- create_student_rows -----')
-                logger.debug('sel_examyear: ' + str(sel_examyear))
-                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
-                logger.debug('sel_depbase: ' + str(sel_depbase))
-                logger.debug('sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
-                logger.debug('sel_sctbase_pk: ' + str(sel_sctbase_pk))
+            sql_studsubj_agg = "SELECT student_id FROM students_studentsubject WHERE NOT deleted AND subj_published_id IS NOT NULL GROUP BY student_id"
 
-            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
-            sql_list = ["SELECT st.id, st.base_id, st.school_id AS s_id,",
-                "sch.locked AS s_locked, ey.locked AS ey_locked, ",
+            sql_list = ["WITH studsubj AS (", sql_studsubj_agg, ")",
+                "SELECT st.id, st.base_id, st.school_id AS s_id,",
+                "school.locked AS s_locked, ey.locked AS ey_locked, ",
                 "st.department_id AS dep_id, st.level_id AS lvl_id, st.sector_id AS sct_id, st.scheme_id,",
                 "dep.base_id AS depbase_id, lvl.base_id AS lvlbase_id, sct.base_id AS sctbase_id, "
                 "dep.abbrev AS dep_abbrev, db.code AS db_code,",
@@ -174,41 +281,52 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
                 "st.idnumber, st.birthdate, st.birthcountry, st.birthcity,",
 
                 "st.classname, st.examnumber, st.regnumber, st.diplomanumber, st.gradelistnumber,",
-                "st.has_dyslexie, st.iseveningstudent, st.islexstudent,",
+                "st.extrafacilities, st.iseveningstudent, st.islexstudent,",
                 "st.bis_exam, st.partial_exam,",
 
                 "st.linked, st.notlinked, st.sr_count, st.reex_count, st.reex03_count, st.withdrawn,",
                 "st.gl_ce_avg, st.gl_combi_avg, st.gl_final_avg,",
 
-                "st.ep01_result, st.ep02_result, st.result, st.result_status, st.result_info, st.tobedeleted,",
+                "st.ep01_result, st.ep02_result, st.result, st.result_status, st.result_info, st.deleted, st.tobedeleted,",
+
+                "CASE WHEN studsubj.student_id IS NOT NULL THEN TRUE ELSE FALSE END AS has_submitted_subjects,",
 
                 "st.modifiedby_id, st.modifiedat,",
                 "au.last_name AS modby_username",
 
                 "FROM students_student AS st",
-                "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                "INNER JOIN schools_school AS school ON (school.id = st.school_id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
                 "LEFT JOIN schools_department AS dep ON (dep.id = st.department_id)",
                 "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id)",
                 "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
                 "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
                 "LEFT JOIN accounts_user AS au ON (au.id = st.modifiedby_id)",
-                "WHERE sch.base_id = %(sb_id)s::INT",
-                        "AND sch.examyear_id = %(ey_id)s::INT",
-                        "AND dep.base_id = %(db_id)s::INT",
-                        "AND NOT st.tobedeleted"]
 
-            if sel_lvlbase_pk:
-                sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
-                sql_keys['lvlbase_id'] = sel_lvlbase_pk
-            if sel_sctbase_pk:
-                sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
-                sql_keys['sctbase_id'] = sel_sctbase_pk
+                "LEFT JOIN studsubj ON (studsubj.student_id = st.id)",
 
+                "WHERE school.examyear_id = %(ey_id)s::INT",
+                "AND school.base_id = %(sb_id)s::INT",
+                "AND dep.base_id = %(db_id)s::INT",
+
+                # PR2023-01-14 tobedeleted records must also be shown
+                # was: "AND NOT st.tobedeleted"
+
+                ]
+
+            #  show deleted students only when SBR 'Show all' is clicked
+            if not show_deleted:
+                sql_list.append('AND NOT st.deleted')
             if student_pk:
                 sql_list.append('AND st.id = %(st_id)s::INT')
                 sql_keys['st_id'] = student_pk
+            else:
+                # sql_clause = acc_view.get_userfilter_allowed_school_dep_lvl_sct(request)
+                if logging_on:
+                    logger.debug('    sql_clause: ' + str(sql_clause))
+                if sql_clause:
+                    sql_list.append(sql_clause)
 
             # order by id necessary to make sure that lookup function on client gets the right row
             sql_list.append("ORDER BY st.id")
@@ -219,8 +337,9 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
                 cursor.execute(sql, sql_keys)
                 student_rows = af.dictfetchall(cursor)
 
-            if logging_on and False:
-                logger.debug('student_rows: ' + str(student_rows))
+            if logging_on:
+                logger.debug('    sql: ' + str(sql))
+                # logger.debug('    student_rows: ' + str(student_rows))
                 # logger.debug('connection.queries: ' + str(connection.queries))
 
         # - add lastname_firstname_initials to rows
@@ -245,7 +364,7 @@ def create_student_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict,
             logger.error(getattr(e, 'message', str(e)))
             # &emsp; add 4 'hard' spaces
             msg_html = '<br>'.join((
-                str(_('An error occurred')) + ':',
+                str(_('An error occurred while loading list of candidates')) + ':',
                 '&emsp;<i>' + str(e) + '</i>'
             ))
             error_dict = {'class': 'border_bg_invalid', 'msg_html': msg_html}
@@ -599,11 +718,14 @@ class ValidateCompositionView(View):  # PR2022-08-25
             logger.debug(' ============= ValidateCompositionView ============= ')
 
         update_wrap = {}
+        msg_list = []
 
 # - get permit, only inspectorate kan set validation
-        has_permit = request.user.role == c.ROLE_032_INSP and af.get_permit_crud_of_this_page('page_studsubj', request)
-        has_permit = True
-        if has_permit:
+        has_permit = request.user.role == c.ROLE_032_INSP and acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
+
+        if not has_permit:
+            msg_list.append(str(_("You don't have permission to validate the composition of subjects.")))
+        else:
 
 # - reset language
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -628,7 +750,6 @@ class ValidateCompositionView(View):  # PR2022-08-25
 
                 updated_rows = []
                 error_list = []
-                messages = []
                 append_dict = {}
 
 # ----- get selected examyear, school and department from usersettings
@@ -637,59 +758,84 @@ class ValidateCompositionView(View):  # PR2022-08-25
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(
-                        request=request,
-                        skip_same_school_clause=True
-                    )
-
-                if sel_msg_list:
-                    msg_html = '<br>'.join(sel_msg_list)
-                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
-                    if logging_on:
-                        logger.debug('messages:   ' + str(messages))
-                else:
+                #sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                #    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
+                #        request=request,
+                #        skip_same_school_clause=True
+                #    )
+                selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
+                sel_examyear = acc_prm.get_sel_examyear_from_selected_pk_dict(selected_pk_dict, request)
+                sel_schoolbase = acc_prm.get_sel_schoolbase_from_selected_pk_dict(selected_pk_dict)
+                sel_depbase = acc_prm.get_sel_depbase_from_selected_pk_dict(selected_pk_dict)
+                if logging_on:
+                    logger.debug('    student_pk:   ' + str(student_pk))
+                    logger.debug('    sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('    sel_schoolbase:   ' + str(sel_schoolbase))
+                    logger.debug('    sel_depbase:   ' + str(sel_depbase))
 
 # +++  get existing student
-                    student_instance = stud_mod.Student.objects.get_or_none(
-                        id=student_pk,
-                        school__examyear=sel_examyear
-                        )
+                student_instance = stud_mod.Student.objects.get_or_none(
+                    id=student_pk,
+                    school__examyear=sel_examyear
+                    )
+                if logging_on:
+                    logger.debug('..... student_instance: ' + str(student_instance))
+
+# -  set subj_dispensation
+                if student_instance:
+                    setattr(student_instance, 'subj_dispensation', subj_dispensation)
+                    setattr(student_instance, 'subj_disp_modifiedby', request.user)
+                    setattr(student_instance, 'subj_disp_modifiedat', timezone.now())
+
+                    # don't update student modifiedby (don't use 'save(reuqest=request)')
+                    student_instance.save()
+
                     if logging_on:
-                        logger.debug('..... student_instance: ' + str(student_instance))
+                        logger.debug('    student_instance.saved:   ' + str(student_instance))
 
-                    if student_instance:
-                        setattr(student_instance, 'subj_dispensation', subj_dispensation)
-                        setattr(student_instance, 'subj_disp_modifiedby', request.user)
-                        setattr(student_instance, 'subj_disp_modifiedat', timezone.now())
+# -  get studsubj_rows of this student, create list of pk's
+                    #studsubj_pk_list = []
+                    #sql_keys = {'stud_id': student_instance.pk}
+                    #sql_list = ["SELECT studsubj.id",
+                    #            "FROM students_studentsubject AS studsubj",
+                    #            "WHERE studsubj.student_id = %(stud_id)s::INT",
+                   #             "AND NOT studsubj.deleted"
+                    #            ]
+                    #sql = ' '.join(sql_list)
 
-                        # dont update student modifiedby
-                        student_instance.save()
+                    #with connection.cursor() as cursor:
+                    #    cursor.execute(sql, sql_keys)
+                   #     for row in cursor.fetchall():
+                    #        studsubj_pk_list.append(row[0])
 
-                        studsubj_rows = stud_mod.Studentsubject.objects.filter(
-                            student=student_instance,
-                            tobedeleted=False
-                        )
-                        if studsubj_rows:
-                            studsubj_pk_list = []
-                            for row in studsubj_rows:
-                                studsubj_pk_list.append(row.pk)
+                    #if logging_on:
+                   #     logger.debug('    studsubj_pk_list:   ' + str(studsubj_pk_list))
 
-                            updated_studsubj_rows = create_studentsubject_rows(
-                                examyear=sel_examyear,
-                                schoolbase=sel_school.base,
-                                depbase=sel_department.base,
-                                requsr_same_school=False,
-                                setting_dict={},
-                                append_dict={},
-                                request=request,
-                                studsubj_pk_list=studsubj_pk_list
-                            )
-                            update_wrap['updated_studsubj_rows'] = updated_studsubj_rows
+# -  get studentsubject_rows of this student, return to client
+                    updated_studsubj_rows = create_studentsubject_rows(
+                        sel_examyear=sel_examyear,
+                        sel_schoolbase=sel_schoolbase,
+                        sel_depbase=sel_depbase,
+                        sel_lvlbase=None,
+                        requsr_same_school=False,
+                        append_dict={},
+                        request=request,
+                        student_pk=student_instance.pk
+                    )
+                    update_wrap['updated_studsubj_rows'] = updated_studsubj_rows
+                    if logging_on:
+                        for row in updated_studsubj_rows:
+                            logger.debug('    row:   ' + str(row))
+
+        if logging_on:
+            logger.debug('    msg_list:   ' + str(msg_list))
 
 # - addd messages to update_wrap
-                if messages:
-                    update_wrap['messages'] = messages
+        if msg_list:
+            header_txt = str(_('Validate subject composition')),
+            update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': header_txt,
+                                        'msg_html': '<br>'.join(msg_list)}]
+
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 
@@ -705,11 +851,271 @@ class ClusterUploadView(View):  # PR2022-01-06
             logger.debug('')
             logger.debug(' ============= ClusterUploadView ============= ')
 
+######## private functions #################
+
+        def create_cluster(subject, cluster_pk, cluster_name):
+            # --- create cluster # PR2022-01-06 PR2022-12-23
+            if logging_on:
+                logger.debug(' ----- create_cluster -----')
+
+            err_list = []
+            new_cluster_pk = None
+            if sel_school and sel_department and subject:
+                # - get value of 'cluster_name'
+                new_value = cluster_name.strip() if cluster_name else None
+                if logging_on:
+                    logger.debug('new_value: ' + str(new_value))
+
+                try:
+                    # - validate length of cluster name
+                    msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_KEY, _('The cluster name'))
+                    if msg_err:
+                        err_list.append(msg_err)
+                    else:
+                        # - validate if cluster already exists
+                        name_exists = subj_mod.Cluster.objects.filter(
+                            school=sel_school,
+                            department=sel_department,
+                            name__iexact=new_value
+                        )
+                        if name_exists:
+                            err_list.append(str(_("%(cpt)s '%(val)s' already exists.") \
+                                                % {'cpt': _('Cluster name'), 'val': new_value}))
+                        else:
+                            # - create and save cluster
+                            cluster = subj_mod.Cluster(
+                                school=sel_school,
+                                department=sel_department,
+                                subject=subject,
+                                name=new_value
+                            )
+                            cluster.save(request=request)
+
+                            if cluster and cluster.pk:
+                                new_cluster_pk = cluster.pk
+                                #  mapped_cluster_pk_dict: {'new_1': 296}
+                                mapped_cluster_pk_dict[cluster_pk] = new_cluster_pk
+                            if logging_on:
+                                logger.debug('new cluster: ' + str(cluster))
+
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+                    err_list.append(str(_('An error occurred.')))
+                    err_list.append(
+                        str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Cluster')),
+                                                                          'val': new_value}))
+
+            return err_list, new_cluster_pk
+        # - end of create_cluster
+
+        def delete_cluster_instance(cluster_instance):
+            # --- delete cluster # PR2022-01-06  PR2022-08-08 PR2022-12-24
+            if logging_on:
+                logger.debug(' ----- delete_cluster_instance -----')
+                logger.debug('    cluster_instance: ' + str(cluster_instance))
+
+            msg_html = None
+            this_txt = _("Cluster '%(val)s' ") % {'val': cluster_instance.name}
+
+            updated_studsubj_pk_list = []
+
+    # - create list of studsubj_pk with thos cluster, to update the stdsubj rows in client
+            if cluster_instance:
+                try:
+                    sql_dict = {'cl_id': cluster_instance.pk}
+                    sql = "SELECT id FROM students_studentsubject WHERE cluster_id = %(cl_id)s::INT"
+
+                    with connection.cursor() as cursor:
+                        cursor.execute(sql, sql_dict)
+                        for row in cursor.fetchall():
+                            updated_studsubj_pk_list.append(row[0])
+
+                except Exception as e:
+                    if logging_on:
+                        logger.error(getattr(e, 'message', str(e)))
+
+                if logging_on:
+                    logger.debug('XXXXXXXXXXXX updated_studsubj_pk_list: ' + str(updated_studsubj_pk_list))
+
+            deleted_row, err_html = sch_mod.delete_instance(
+                table='cluster',
+                instance=cluster_instance,
+                request=request,
+                this_txt=this_txt
+            )
+            if err_html:
+                msg_html = err_html
+
+            if logging_on:
+                logger.debug('    deleted_row: ' + str(deleted_row))
+                logger.debug('    msg_html: ' + str(msg_html))
+
+            return deleted_row, updated_studsubj_pk_list, msg_html
+        # - end of delete_cluster_instance
+
+        def update_cluster_instance(cluster_instance, cluster_dict):
+            # --- update existing cluster name PR2022-01-10
+            logging_on = s.LOGGING_ON
+            if logging_on:
+                logger.debug(' ----- update_cluster_instance -----')
+
+            err_list = []
+            updated_cluster_pk = None
+            if cluster_instance:
+                try:
+                    field = 'name'
+
+        # - get value of 'cluster_name'
+                    cluster_name = cluster_dict.get('cluster_name')
+                    new_value = cluster_name.strip() if cluster_name else None
+
+        # - get saved value of cluster name
+                    saved_value = getattr(cluster_instance, field)
+
+                    if new_value != saved_value:
+
+        # - validate length of cluster name
+                        msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_KEY, _('The cluster name'))
+                        if msg_err:
+                            err_list.append(msg_err)
+                        else:
+
+        # - validate if cluster already exists
+                            name_exists = subj_mod.Cluster.objects.filter(
+                                school=sel_school,
+                                department=sel_department,
+                                name__iexact=new_value
+                            )
+                            if name_exists:
+                                err_list.append(str(_("%(cpt)s '%(val)s' already exists.") \
+                                                    % {'cpt': _('Cluster name'), 'val': new_value}))
+                            else:
+
+        # - save changes
+                                setattr(cluster_instance, field, new_value)
+                                cluster_instance.save(request=request)
+                                updated_cluster_pk = cluster_instance.pk
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+                    err_list.append(''.join((str(_('An error occurred')), ' (', str(e), ').')))
+                    err_list.append(str(_("%(cpt)s have not been saved.") % {'cpt': _('The changes')}))
+
+            if logging_on:
+                logger.debug('    updated_cluster_pk: ' + str(updated_cluster_pk))
+            return err_list, updated_cluster_pk
+        # - end of update_cluster_instance
+
+        def loop_cluster_list(sel_school, sel_department, cluster_list, mapped_cluster_pk_dict):
+            logging_on = s.LOGGING_ON
+            if logging_on:
+                if logging_on:
+                    logger.debug(' +++++ loop_cluster_list  +++++')
+
+            err_list = []
+            created_cluster_pk_arr = []
+            updated_cluster_pk_arr = []
+            deleted_cluster_rows = []
+            updated_studsubj_pk_list = []
+
+            for cluster_dict in cluster_list:
+                if logging_on:
+                    logger.debug('     ..... cluster_dict: ' + str(cluster_dict))
+                    # 'cluster_dict': {'cluster_pk': 'new_1', 'cluster_name': 'spdltl - 1', 'subject_pk': 220, 'mode': 'create'}
+
+                # note: cluster_upload uses subject_pk, not subjbase_pk
+
+                subject_pk = cluster_dict.get('subject_pk')
+                subject = subj_mod.Subject.objects.get_or_none(
+                    pk=subject_pk
+                )
+                if subject:
+                    cluster_pk = cluster_dict.get('cluster_pk')
+
+                    mode = cluster_dict.get('mode')
+                    is_create = mode == 'create'
+                    is_delete = mode == 'delete'
+
+                    if logging_on:
+                        logger.debug('    mode: ' + str(mode))
+                        logger.debug('    cluster_pk: ' + str(cluster_pk))
+
+        # +++  Create new cluster
+                    if is_create:
+                        cluster_name = cluster_dict.get('cluster_name')
+                        err_lst, new_cluster_pk = create_cluster(
+                            subject=subject,
+                            cluster_pk=cluster_pk,
+                            cluster_name=cluster_name
+                        )
+                        if err_lst:
+                            err_list.extend(err_lst)
+                        if new_cluster_pk:
+                            created_cluster_pk_arr.append(new_cluster_pk)
+                        if logging_on:
+                            logger.debug('     new_cluster_pk: ' + str(new_cluster_pk))
+                            logger.debug('     created_cluster_pk_arr: ' + str(created_cluster_pk_arr))
+                            logger.debug('     mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
+
+        # +++  or get existing cluster
+                    # filter out 'new_1', should not happen
+                    elif isinstance(cluster_pk, int):
+                        cluster_instance = subj_mod.Cluster.objects.get_or_none(
+                            pk=cluster_pk,
+                            school=sel_school,
+                            department=sel_department
+                        )
+                        if logging_on:
+                            logger.debug('    cluster_instance: ' + str(cluster_instance))
+
+                        if cluster_instance:
+        # +++ Delete cluster
+                            if is_delete:
+                                messages = []
+                                deleted_row, studsubj_pk_list, err_html = delete_cluster_instance(cluster_instance)
+                                if logging_on:
+                                    logger.debug('    deleted_row: ' + str(deleted_row))
+                                    logger.debug('    msg_html: ' + str(err_html))
+
+                                if err_html:
+                                    messages.append(
+                                        {'header': str(_("Delete cluster")),
+                                         'class': "border_bg_invalid",
+                                         'msg_html': err_html}
+                                    )
+
+                                    err_list.append(err_html)
+                                elif deleted_row:
+                                    deleted_cluster_rows.append(deleted_row)
+                                    if studsubj_pk_list:
+                                        updated_studsubj_pk_list.extend(studsubj_pk_list)
+
+
+        # +++ Update cluster, not when it is created, not when delete has failed (when deleted ok there is no cluster)
+                            else:
+                                err_lst, updated_cluster_pk = update_cluster_instance(
+                                    cluster_instance=cluster_instance,
+                                    cluster_dict=cluster_dict
+                                )
+                                if err_lst:
+                                    err_list.extend(err_lst)
+                                if updated_cluster_pk:
+                                    updated_cluster_pk_arr.append(updated_cluster_pk)
+            if logging_on:
+                logger.debug('    created_cluster_pk_arr: ' + str(created_cluster_pk_arr))
+                logger.debug('    updated_cluster_pk_arr: ' + str(updated_cluster_pk_arr))
+                logger.debug('    deleted_cluster_rows: ' + str(deleted_cluster_rows))
+
+            return err_list, created_cluster_pk_arr, updated_cluster_pk_arr, deleted_cluster_rows, updated_studsubj_pk_list
+        # - end of loop_cluster_list
+
+######## end of private functions #################
+
         update_wrap = {}
         msg_list = []
 
 # - get permit
-        has_permit = af.get_permit_crud_of_this_page('page_studsubj', request)
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
         if has_permit:
 
 # - reset language
@@ -746,17 +1152,19 @@ class ClusterUploadView(View):  # PR2022-01-06
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if logging_on:
-                    logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('sel_school:     ' + str(sel_school))
-                    logger.debug('sel_department: ' + str(sel_department))
-                    logger.debug('may_edit:       ' + str(may_edit))
-                    logger.debug('sel_msg_list:   ' + str(sel_msg_list))
-                    logger.debug('cluster_list:   ' + str(cluster_list))
-                    logger.debug('studsubj_list:   ' + str(studsubj_list))
+                    logger.debug('    sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('    sel_school:     ' + str(sel_school))
+                    logger.debug('    sel_department: ' + str(sel_department))
+                    logger.debug('    sel_level:      ' + str(sel_level))
+                    logger.debug('    may_edit:       ' + str(may_edit))
+                    logger.debug('    sel_msg_list:   ' + str(sel_msg_list))
+                    logger.debug('    cluster_list:   ' + str(cluster_list))
+                    logger.debug('    studsubj_list:  ' + str(studsubj_list))
 
                 if sel_msg_list:
                     msg_list.extend(sel_msg_list)
@@ -766,209 +1174,100 @@ class ClusterUploadView(View):  # PR2022-01-06
 
                     mapped_cluster_pk_dict = {}
 
-                    created_cluster_pk_list = []
-                    deleted_cluster_pk_list = []
                     updated_cluster_pk_list = []
-                    cluster_pk_list = []
+                    updated_studsubj_pk_list = []
+                    updated_cluster_pk_arr = []
 
                     if cluster_list:
-                        err_list = loop_cluster_list(
-                            sel_examyear=sel_examyear,
-                            sel_school=sel_school,
-                            sel_department=sel_department,
-                            cluster_list=cluster_list,
-                            mapped_cluster_pk_dict=mapped_cluster_pk_dict,
-                            created_cluster_pk_list=created_cluster_pk_list,
-                            updated_cluster_pk_list=updated_cluster_pk_list,
-                            deleted_cluster_pk_list=deleted_cluster_pk_list,
-                            request=request
-                        )
-                        if err_list:
-                            msg_list.extend(err_list)
-                        # cluster_pk_list stores cahnged clusters, to update cluster in table with studsubj
-                        if updated_cluster_pk_list:
-                            cluster_pk_list.extend(updated_cluster_pk_list)
-                        if deleted_cluster_pk_list:
-                            cluster_pk_list.extend(deleted_cluster_pk_list)
-
-                        if logging_on:
-                            logger.debug('created_cluster_pk_list: ' + str(created_cluster_pk_list))
-                            logger.debug('deleted_cluster_pk_list: ' + str(deleted_cluster_pk_list))
-                            logger.debug('updated_cluster_pk_list: ' + str(updated_cluster_pk_list))
-                            logger.debug('mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
-                            logger.debug('cluster_pk_list: ' + str(cluster_pk_list))
 
                         updated_cluster_rows = []
-                        if updated_cluster_pk_list:
+                        err_list, created_cluster_pk_arr, updated_cluster_pk_arr, deleted_cluster_rows, \
+                            updated_studsubj_pk_arr = \
+                                loop_cluster_list(
+                                    sel_school=sel_school,
+                                    sel_department=sel_department,
+                                    cluster_list=cluster_list,
+                                    mapped_cluster_pk_dict=mapped_cluster_pk_dict
+                                )
+                        if err_list:
+                            msg_list.extend(err_list)
+
+                        if updated_cluster_pk_arr:
+                            updated_cluster_pk_list.extend(updated_cluster_pk_arr)
+
+                        if updated_studsubj_pk_arr:
+                            updated_studsubj_pk_list.extend(updated_studsubj_pk_arr)
+
+                        if logging_on:
+                            logger.debug('    created_cluster_pk_arr:  ' + str(created_cluster_pk_arr))
+                            logger.debug('    updated_cluster_pk_arr:   ' + str(updated_cluster_pk_arr))
+                            logger.debug('    deleted_cluster_rows:   ' + str(deleted_cluster_rows))
+                            logger.debug('    updated_studsubj_pk_arr:   ' + str(updated_studsubj_pk_arr))
+
+                        if created_cluster_pk_arr or updated_cluster_pk_arr:
+                            # add created pk's to updated ar,, to get cluster_rows in one batch
+                            updated_cluster_pk_arr.extend(created_cluster_pk_arr)
+
                             updated_cluster_rows = sj_vw.create_cluster_rows(
                                 request=request,
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_schoolbase,
                                 sel_depbase=sel_depbase,
                                 cur_dep_only=True,
-                                allowed_only=False,  # TODO check if value  false is ok
-                                cluster_pk_list=updated_cluster_pk_list,
-                                add_field_created=False
+                                allowed_only=False,
+                                cluster_pk_list=updated_cluster_pk_arr
                             )
-                        if created_cluster_pk_list:
-                            created_cluster_rows = sj_vw.create_cluster_rows(
-                                request=request,
-                                sel_examyear=sel_examyear,
-                                sel_schoolbase=sel_schoolbase,
-                                sel_depbase=sel_depbase,
-                                cur_dep_only=True,
-                                allowed_only=False,  # TODO check if value  false is ok
-                                cluster_pk_list=created_cluster_pk_list,
-                                add_field_created=True
-                            )
-                            if created_cluster_rows:
-                                updated_cluster_rows.extend(created_cluster_rows)
 
-                        if deleted_cluster_pk_list:
-                            for deleted_cluster_pk in deleted_cluster_pk_list:
-                                updated_cluster_rows.append({'id': deleted_cluster_pk, 'deleted': True})
+                            if updated_cluster_rows:
+                # - add key 'created' to created rows, used in client to add to table Clustres
+                                for row in updated_cluster_rows:
+                                    if row.get('id') in created_cluster_pk_arr:
+                                        row['created'] = True
+
+            # - add deleted cluster_rows to updated_cluster_rows
+                        # since seleted cluster does not exist any more, add info of deleted_cluster_rows directly to  updated_cluster_rows
+                        if deleted_cluster_rows:
+                            updated_cluster_rows.extend(deleted_cluster_rows)
+
+            # - add updated_cluster_rows to update_wrap
                         if updated_cluster_rows:
                             update_wrap['updated_cluster_rows'] = updated_cluster_rows
 
-                        if logging_on:
-                            logger.debug('updated_cluster_rows: ' + str(updated_cluster_rows))
-
-                    studsubj_pk_list = []
                     if studsubj_list:
                         err_list, studsubj_pk_list = loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request)
                         if err_list:
                             msg_list.extend(err_list)
+                        if studsubj_pk_list:
+                            updated_studsubj_pk_list.extend(studsubj_pk_list )
                         if logging_on:
                             logger.debug('studsubj_pk_list: ' + str(studsubj_pk_list))
 
-                    if studsubj_pk_list or cluster_pk_list:
-                        rows = create_studentsubject_rows(
-                            examyear=sel_examyear,
-                            schoolbase=sel_schoolbase,
-                            depbase=sel_depbase,
+                    if updated_studsubj_pk_list or updated_cluster_pk_arr:
+                        studsubj_rows = create_studentsubject_rows(
+                            sel_examyear=sel_examyear,
+                            sel_schoolbase=sel_schoolbase,
+                            sel_depbase=sel_depbase,
+                            sel_lvlbase=None,
                             requsr_same_school=True,  # check for same_school is included in may_edit
-                            setting_dict={},
                             append_dict=append_dict,
                             request=request,
-                            studsubj_pk_list=studsubj_pk_list,
-                            cluster_pk_list=cluster_pk_list
+                            studsubj_pk_list=updated_studsubj_pk_list,
+                            cluster_pk_list=updated_cluster_pk_arr
                         )
-                        if rows:
-                            update_wrap['updated_studsubj_rows'] = rows
-                    #if logging_on:
-                    #    logger.debug('rows: ' + str(rows))
+
+                        if studsubj_rows:
+                            update_wrap['updated_studsubj_rows'] = studsubj_rows
 
         # - addd messages to update_wrap
         if msg_list:
-            msg_html = '<br>'.join(msg_list)
-            update_wrap['msg_html'] = msg_html
+            update_wrap['messages'] = [{'class': "border_bg_invalid", 'msg_html': '<br>'.join(msg_list)}]
+
+        if logging_on:
+            logger.debug('    update_wrap: ' + str(update_wrap))
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of ClusterUploadView
-
-
-def loop_cluster_list(sel_examyear, sel_school, sel_department, cluster_list, mapped_cluster_pk_dict,
-                      created_cluster_pk_list, updated_cluster_pk_list, deleted_cluster_pk_list, request):
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        if logging_on:
-            logger.debug(' ----- loop_cluster_list  -----')
-            logger.debug('cluster_list: ' + str(cluster_list))
-
-    err_list = []
-
-    for cluster_dict in cluster_list:
-        if logging_on:
-            logger.debug('cluster_dict: ' + str(cluster_dict))
-            # 'cluster_dict': {'cluster_pk': 'new_1', 'cluster_name': 'spdltl - 1', 'subject_pk': 220, 'mode': 'create'}
-
-        # note: cluster_upload uses subject_pk, not subjbase_pk
-
-        subject_pk = cluster_dict.get('subject_pk')
-        subject = subj_mod.Subject.objects.get_or_none(
-            pk=subject_pk
-        )
-        if subject:
-            cluster_pk = cluster_dict.get('cluster_pk')
-
-            mode = cluster_dict.get('mode')
-            is_create = mode == 'create'
-            is_delete = mode == 'delete'
-
-            if logging_on:
-                logger.debug('mode: ' + str(mode))
-                logger.debug('cluster_pk: ' + str(cluster_pk))
-
-    # +++  Create new cluster
-            if is_create:
-                cluster_name = cluster_dict.get('cluster_name')
-                err_lst, new_cluster_pk = create_cluster(sel_school, sel_department, subject, cluster_pk, cluster_name, mapped_cluster_pk_dict, request)
-                if err_lst:
-                    err_list.extend(err_lst)
-                if new_cluster_pk:
-                    created_cluster_pk_list.append(new_cluster_pk)
-                if logging_on:
-                    logger.debug('     new_cluster_pk: ' + str(new_cluster_pk))
-                    logger.debug('     updated_cluster_pk_list: ' + str(updated_cluster_pk_list))
-                    logger.debug('     mapped_cluster_pk_dict: ' + str(mapped_cluster_pk_dict))
-
-    # +++  or get existing cluster
-            # filter out 'new_1', should not happen
-            elif isinstance(cluster_pk, int):
-                cluster_instance = subj_mod.Cluster.objects.get_or_none(
-                    pk=cluster_pk,
-                    school=sel_school,
-                    department=sel_department
-                )
-                if logging_on:
-                    logger.debug('cluster_instance: ' + str(cluster_instance))
-
-                if cluster_instance:
-    # +++ Delete cluster
-                    if is_delete:
-                        # TODO fix messages and updated_rows PR2022-08-08
-                        updated_rows = []
-                        messages = []
-                        deleted_row, err_html = delete_cluster_instance(cluster_instance, request)
-                        if err_html:
-                            messages.append(
-                                {'header': str(_("Delete cluster")),
-                                 'class': "border_bg_invalid",
-                                 'msg_html': err_html}
-                            )
-
-                            err_list.append(err_html)
-                        elif deleted_row:
-                            updated_rows.append(deleted_row)
-                            deleted_cluster_pk = deleted_row.get('id')
-                            if deleted_cluster_pk:
-                                deleted_cluster_pk_list.append(deleted_cluster_pk)
-
-                        if logging_on:
-                            logger.debug('    deleted_row: ' + str(deleted_row))
-                            logger.debug('    msg_html: ' + str(err_html))
-
-                        if logging_on:
-                            logger.debug('deleted_cluster_pk_list: ' + str(deleted_cluster_pk_list))
-    # +++ Update cluster, not when it is created, not when delete has failed (when deleted ok there is no cluster)
-                    else:
-                        err_lst, updated_cluster_pk = update_cluster_instance(
-                            school=sel_school,
-                            department=sel_department,
-                            instance=cluster_instance,
-                            upload_dict=cluster_dict,
-                            request=request
-                        )
-                        if err_lst:
-                            err_list.extend(err_lst)
-                        if updated_cluster_pk:
-                            updated_cluster_pk_list.append(updated_cluster_pk)
-                        if logging_on:
-                            logger.debug('updated_cluster_pk: ' + str(updated_cluster_pk))
-                            logger.debug('updated_cluster_pk_list: ' + str(updated_cluster_pk_list))
-    return err_list
-# - end of loop_cluster_list
 
 
 def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
@@ -1066,14 +1365,14 @@ def loop_studsubj_list(studsubj_list, mapped_cluster_pk_dict, request):
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
+class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18 PR2022-12-27 PR2023-01-16
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= StudentUploadView ============= ')
-
+        messages = []
         update_wrap = {}
 
 # - get upload_dict from request.POST
@@ -1084,9 +1383,18 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 
 # - get permit
             page_name = 'page_result' if mode == 'withdrawn' else 'page_student'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
-            if has_permit:
+            if logging_on:
+                logger.debug('    has_permit:' + str(has_permit))
+
+            if not has_permit:
+                messages.append(
+                    {'class': "border_bg_invalid",
+                     'msg_html': str(_("You don't have permission to perform this action."))}
+                )
+
+            else:
 
 # - reset language
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -1095,7 +1403,8 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 # - get variables
                 student_pk = upload_dict.get('student_pk')
                 is_create = mode == 'create'
-                is_delete =  mode == 'delete'
+                is_delete = mode == 'delete_candidate'
+                is_restore = mode == 'restore_candidate'
 
                 updated_rows = []
                 error_list = []
@@ -1110,8 +1419,8 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if logging_on:
                     logger.debug('    may_edit:       ' + str(may_edit))
@@ -1140,10 +1449,10 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                         lvlbase_pk = upload_dict.get('level')
                         sctbase_pk = upload_dict.get('sector')
 
-                        idnumber_nodots, msg_err, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(
+                        idnumber_nodots, msg_err_list, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(
                             id_number)
-                        if msg_err:
-                            error_list.append(str(msg_err))
+                        if msg_err_list:
+                            error_list.extend(msg_err_list)
 
                         lastname_stripped, msg_err = stud_val.get_string_convert_type_and_strip(_('Last name'), last_name, True)  # True = blank_not_allowed
                         if msg_err:
@@ -1161,7 +1470,7 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 
                         # - create student record
                         if not error_list:
-                            student_instance, error_list = create_student(
+                            student_instance, error_list = create_student_instance(
                                 examyear=sel_examyear,
                                 school=sel_school,
                                 department=sel_department,
@@ -1195,11 +1504,13 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                     if logging_on:
                         logger.debug('student_instance: ' + str(student_instance))
 
+                    restored_student_success = False
+
                     if student_instance:
 
 # +++ Delete student
                         if is_delete:
-                            deleted_row, err_html = delete_student_instance(student_instance, request)
+                            deleted_row, err_html = set_student_instance_tobedeleted(student_instance, request)
                             if err_html:
                                 messages.append(
                                     {'header': str(header_txt),
@@ -1211,8 +1522,27 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
                                 updated_rows.append(deleted_row)
 
                             if logging_on:
+                                logger.debug('    is_delete: ' + str(is_delete))
                                 logger.debug('    deleted_row: ' + str(deleted_row))
-                                logger.debug('    msg_html: ' + str(err_html))
+                                logger.debug('    err_html: ' + str(err_html))
+
+# +++ restore tobedeleted student
+                        elif is_restore:
+                            restored_student_success, updated_studsubj_rows, msg_html = restore_student_instance(student_instance, request)
+                            if msg_html:
+                                messages.append(
+                                    {'header': str(header_txt),
+                                     'class': "border_bg_invalid",
+                                     'msg_html': msg_html}
+                                )
+                            if not restored_student_success:
+                                student_instance = None
+
+                            if logging_on:
+                                logger.debug('    is_restore: ' + str(is_restore))
+                                logger.debug('    restored_student_success: ' + str(restored_student_success))
+                                logger.debug('    updated_studsubj_rows: ' + str(updated_studsubj_rows))
+                                logger.debug('    msg_html: ' + str(msg_html))
 
 # +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
                         else:
@@ -1240,17 +1570,23 @@ class StudentUploadView(View):  # PR2020-10-01 PR2021-07-18
 # - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
                     if student_instance:
                         updated_rows, error_dictNIU = create_student_rows(
+                            request=request,
                             sel_examyear=sel_school.examyear,
                             sel_schoolbase=sel_school.base,
                             sel_depbase=sel_department.base,
                             append_dict=append_dict,
                             student_pk=student_instance.pk)
 
+                        if restored_student_success and updated_rows:
+                            for row in updated_rows:
+                                row['restored'] = True
+
+
                 update_wrap['updated_student_rows'] = updated_rows
 
 # - addd messages to update_wrap
-                if messages:
-                    update_wrap['messages'] = messages
+        if messages:
+            update_wrap['messages'] = messages
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -1277,7 +1613,7 @@ class ChangeBirthcountryView(View):  # PR2022-06-20
 
 # - get permit
             page_name = 'page_result' if mode == 'withdrawn' else 'page_student'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if has_permit:
 
@@ -1286,8 +1622,8 @@ class ChangeBirthcountryView(View):  # PR2022-06-20
                 activate(user_lang)
 
 # ----- get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
@@ -1313,6 +1649,52 @@ class ChangeBirthcountryView(View):  # PR2022-06-20
 # - end of StudentUploadView
 # - end of ChangeBirthcountryView
 
+@method_decorator([login_required], name='dispatch')
+class StudentMultipleOccurrencesView(View):  # PR2021-09-05
+
+    def post(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= StudentMultipleOccurrencesView ============= ')
+
+        # function validates studentsubject records of all students of this dep PR2021-07-10
+        # exclude deleted and other country PR2023-01-17
+        update_wrap = {}
+        multiple_occurrences_list = []
+
+# - get permit - only download list when user has permit_crud
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
+        if has_permit:
+
+# - reset language
+            #user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            #activate(user_lang)
+
+            # - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+
+    # ----- get selected examyear, school and department from usersettings
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_listNIU = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
+    # +++ get dict of multiple_occurrences
+                if sel_examyear and sel_school and sel_department and may_edit:
+                    multiple_occurrences_list, multiple_occurrences_dict = stud_val.get_multiple_occurrences(sel_examyear, sel_school.base, sel_department.base)
+
+    # +++ link students with the same idnumber , lastname and firstname
+                    #if dictlist:
+                    #    stud_val.link_students_with_multiple_occurrences(dictlist)
+                    if multiple_occurrences_list:
+                        update_wrap['multiple_occurrences_dict'] = multiple_occurrences_dict
+
+        update_wrap['multiple_occurrences_list'] = multiple_occurrences_list
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of StudentMultipleOccurrencesView
+
+
+
 
 @method_decorator([login_required], name='dispatch')
 class StudentLinkStudentView(View):  # PR2021-09-06
@@ -1327,7 +1709,7 @@ class StudentLinkStudentView(View):  # PR2021-09-06
         messages = []
 
 # - get permit - StudentLinkStudentView is called from page studsubj
-        has_permit = af.get_permit_crud_of_this_page('page_studsubj', request)
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
         if has_permit:
 
 # - reset language
@@ -1338,6 +1720,7 @@ class StudentLinkStudentView(View):  # PR2021-09-06
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
+                # upload_dict: {'mode': 'tick', 'cur_stud_id': 6259, 'oth_stud_id': 5991, 'table': 'student', 'linked': False}
 
 # - get variables
                 mode = upload_dict.get('mode')
@@ -1345,9 +1728,10 @@ class StudentLinkStudentView(View):  # PR2021-09-06
                 oth_stud_pk = upload_dict.get('oth_stud_id')
 
                 if logging_on:
-                    logger.debug('mode: ' + str(mode))
-                    logger.debug('cur_stud_pk: ' + str(cur_stud_pk))
-                    logger.debug('oth_stud_pk: ' + str(oth_stud_pk))
+                    logger.debug('    upload_dict: ' + str(upload_dict))
+                    logger.debug('    mode: ' + str(mode))
+                    logger.debug('    cur_stud_pk: ' + str(cur_stud_pk))
+                    logger.debug('    oth_stud_pk: ' + str(oth_stud_pk))
 
                 updated_rows = []
                 append_dict = {}
@@ -1359,20 +1743,22 @@ class StudentLinkStudentView(View):  # PR2021-09-06
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if logging_on:
-                    logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('sel_school:     ' + str(sel_school))
-                    logger.debug('sel_department: ' + str(sel_department))
-                    logger.debug('may_edit:       ' + str(may_edit))
-                    logger.debug('sel_msg_list:       ' + str(sel_msg_list))
+                    logger.debug('    sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('    sel_school:     ' + str(sel_school))
+                    logger.debug('    sel_department: ' + str(sel_department))
+                    logger.debug('    may_edit:       ' + str(may_edit))
+                    logger.debug('    sel_msg_list:       ' + str(sel_msg_list))
+                    logger.debug('.....')
 
                 if len(sel_msg_list):
                     msg_html = '<br>'.join(sel_msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
                 else:
+
                     try:
     # +++  get current student
                         cur_student = stud_mod.Student.objects.get_or_none(
@@ -1383,115 +1769,59 @@ class StudentLinkStudentView(View):  # PR2021-09-06
                         if cur_student and oth_stud_pk:
                             other_stud_pk_str = str(oth_stud_pk)
                             if logging_on:
-                                logger.debug('cur_student:   ' + str(cur_student))
-                                logger.debug('oth_stud_pk:   ' + str(oth_stud_pk))
+                                logger.debug('    cur_student:   ' + str(cur_student))
+                                logger.debug('    other_stud_pk_str:   ' + str(other_stud_pk_str))
 
-                    # get notlinked_arr from notlinked charfield
-                            linked_arr, notlinked_arr = [], []
+                    # get linked_arr and notlinked_arr from cur_student
                             linked_str = getattr(cur_student, 'linked')
-                            if linked_str:
-                                linked_arr = linked_str.split(';')
-                            notlinked_str = getattr(cur_student, 'notlinked')
-                            if notlinked_str:
-                                notlinked_arr = notlinked_str.split(';')
+                            linked_arr = linked_str.split(';') if linked_str else []
+                            # linked_arr: ['5991', '8531']
 
-                            cur_student_islinked = (other_stud_pk_str in linked_arr)
-                            cur_student_notlinked = (other_stud_pk_str in notlinked_arr)
+                            notlinked_str = getattr(cur_student, 'notlinked')
+                            notlinked_arr = notlinked_str.split(';') if notlinked_str else []
+                            # notlinked_arr: ['8422']
 
                             if logging_on:
-                                logger.debug('mode: ' + str(mode))
-                                logger.debug('other_stud_pk_str: ' + str(other_stud_pk_str))
-                                logger.debug('linked_arr: ' + str(linked_arr))
-                                logger.debug('notlinked_arr: ' + str(notlinked_arr))
-                                logger.debug('cur_student_islinked: ' + str(cur_student_islinked))
-                                logger.debug('cur_student_notlinked: ' + str(cur_student_notlinked))
+                                logger.debug('    mode: ' + str(mode))
+                                logger.debug('    linked_arr: ' + str(linked_arr))
+                                logger.debug('    notlinked_arr: ' + str(notlinked_arr))
+                                logger.debug('    other_student_islinked: ' + str(other_stud_pk_str in linked_arr))
+                                logger.debug('    other_student_notlinked: ' + str(other_stud_pk_str in notlinked_arr))
 
                 # =====  link ============================
-                            if mode == 'tick':
-                                link_other = upload_dict.get('linked')
+                            if mode == 'link':
 
-                                if link_other:
-                                    # - add oth_stud_pk to linked_arr
-                                    if other_stud_pk_str not in linked_arr:
-                                        linked_arr.append(other_stud_pk_str)
-                                        linked_str = ';'.join(linked_arr)
-                                        setattr(cur_student, 'linked', linked_str)
-                                    # - remove all occurrencies of oth_stud_pk from unlinked charfield, if exists
-                                    # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
-                                    notlinked_str = ';'.join(
-                                        [pk_str for pk_str in notlinked_arr if pk_str != other_stud_pk_str])
-                                    setattr(cur_student, 'notlinked', notlinked_str)
+                                # when clicked on tick: 'linked' = True sets link, 'linked' = False removes link
+                                set_linked = upload_dict.get('linked', False)
 
-                                elif link_other is not None:
-                                    # - remove oth_stud_pk from linked_arr
-                                    if other_stud_pk_str in linked_arr:
-                                        #  -  remove all occurrencies of oth_stud_pk from linked charfield
-                                        # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
-                                        new_linked_str = None
-                                        new_linked_arr = [pk_str for pk_str in linked_arr if
-                                                          pk_str != other_stud_pk_str]
-                                        if new_linked_arr:
-                                            new_linked_str = ';'.join(new_linked_arr)
-                                        setattr(cur_student, 'linked', new_linked_str)
-                                cur_student.save(request=request)
+                                set_student_linked_ok = set_student_linked(
+                                    set_linked, linked_arr, notlinked_arr, other_stud_pk_str, cur_student,
+                                                request)
 
-                            #  TODO make_student_biscandidate(cur_student, other_student, request)
+                                #  TODO make_student_biscandidate(cur_student, other_student, request)
+                                # add exemptions
 
+                                #if set_student_linked_ok:
+                                #    set_student_bisexam_and_exemptions(cur_student, other_stud_pk_str)
                 # =====  unlink ============================
-                            elif mode == 'cross':
+                            elif mode == 'unlink':
+
+                                # when clicked on cross: 'unlinked' = True sets unlink, 'unlinked' = False removes unlink
+
                                 # unlink if other_student is different from cur_student:
                                 #  -  add oth_stud_pk to notlinked charfield, if not exists yet
                                 #  -  remove oth_stud_pk from linked charfield, if exists
 
-                                notlink_other = upload_dict.get('notlinked')
+                                set_notlinked = upload_dict.get('notlinked', False)
+                                set_student_notlinked(set_notlinked, linked_arr, notlinked_arr, other_stud_pk_str,
+                                                 cur_student, request)
 
-                    # if notlinked: add other_stud_pk_str to notlinked
-                                if notlink_other:
-                            # - add other_stud_pk_str to notlinked, remove linked if necessary
-                                    notlinked_arr.append(other_stud_pk_str)
-                                    notlinked_str = ';'.join(notlinked_arr)
-                                    setattr(cur_student, 'notlinked', notlinked_str)
-
-                            # - remove all occurrencies of oth_stud_pk from linked charfield
-                                    if other_stud_pk_str in linked_arr:
-                                        # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
-                                        new_linked_str = None
-                                        new_linked_arr = [pk_str for pk_str in linked_arr if
-                                                          pk_str != other_stud_pk_str]
-                                        if new_linked_arr:
-                                            new_linked_str = ';'.join(new_linked_arr)
-                                        setattr(cur_student, 'linked', new_linked_str)
-                                        logger.debug('new_linked_str: ' + str(new_linked_str))
-
-                                        cur_student.save(request=request)
-                                    else:
-                                        # dont update modifiedat when only other_student removed from nonlinked field
-                                        cur_student.save()
-
-                                elif notlink_other is not None:
-
-                            # - if notlink_other: remove other_stud_pk_str from notlinked
-                                    if other_stud_pk_str in notlinked_arr:
-                                        #  -  remove all occurrencies of oth_stud_pk from notlinked charfield
-                                        # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
-                                        new_notlinked_str = None
-                                        new_notlinked_arr = [pk_str for pk_str in notlinked_arr if pk_str != other_stud_pk_str]
-                                        if new_notlinked_arr:
-                                            new_notlinked_str = ';'.join(new_notlinked_arr)
-                                        setattr(cur_student, 'linked', new_notlinked_str)
-                                        logger.debug('new_linked_str: ' + str(new_notlinked_str))
-                                        # dont update modifiedat when only other_student removed from nonlinked field
-                                        cur_student.save()
-
-                            if logging_on:
-                                logger.debug('cur_student:   ' + str(cur_student))
-                                logger.debug('cur_student.linked: ' + str(cur_student.linked))
-                                logger.debug('cur_student.notlinked: ' + str(cur_student.notlinked))
 
                         # - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
                             #TODO this is not used, check if can be removed
                             student_pk = cur_student.pk if cur_student else None
                             updated_rows, error_dictNIU = create_student_rows(
+                                request=request,
                                 sel_examyear=sel_school.examyear,
                                 sel_schoolbase=sel_school.base,
                                 sel_depbase=sel_department.base,
@@ -1523,6 +1853,565 @@ class StudentLinkStudentView(View):  # PR2021-09-06
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of StudentLinkStudentView
 
+
+def set_student_linked(set_linked, linked_arr, notlinked_arr, other_stud_pk_str, cur_student, request):
+    # PR2021-09-06 PR2023-01-17
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('')
+        logger.debug(' ----- set_student_linked -----')
+        logger.debug('    cur_student: ' + str(cur_student))
+        logger.debug('    set_linked: ' + str(set_linked))
+        logger.debug('    other_stud_pk_str: ' + str(other_stud_pk_str))
+    set_student_linked_ok = False
+    if cur_student and other_stud_pk_str:
+        try:
+
+            if set_linked:
+                # - add oth_stud_pk to linked_arr
+                if other_stud_pk_str not in linked_arr:
+                    linked_arr.append(other_stud_pk_str)
+                    if linked_arr:
+                        linked_arr.sort()
+                    linked_str = ';'.join(linked_arr)
+                    setattr(cur_student, 'linked', linked_str)
+                    set_student_linked_ok = True
+
+                    if logging_on:
+                        logger.debug(' ----set_linked------')
+                        logger.debug('    cur_student.linked: ' + str(cur_student.linked))
+                        logger.debug('    cur_student.notlinked: ' + str(cur_student.notlinked))
+                        logger.debug('    set_student_linked_ok: ' + str(set_student_linked_ok))
+
+
+                # - remove all occurrencies of oth_stud_pk from unlinked charfield, if exists
+                if notlinked_arr and other_stud_pk_str in notlinked_arr:
+                    #  -  note: arr.remove(str) removes only the first occuuerncy
+                    #  -  this removes all occurrencies of oth_stud_pk from linked charfield
+                    # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
+                    new_notlinked_arr = [pk_str for pk_str in notlinked_arr if pk_str != other_stud_pk_str]
+                    new_notlinked_str = ';'.join(new_notlinked_arr) if new_notlinked_arr else None
+
+                    setattr(cur_student, 'notlinked', new_notlinked_str)
+
+                cur_student.save(request=request)
+
+            else:
+                # - remove other_stud_pk from linked_arr
+                if linked_arr and other_stud_pk_str in linked_arr:
+                    #  -  note: arr.remove(str) removes only the first occuuerncy
+                    #  -  this removes all occurrencies of oth_stud_pk from linked charfield
+                    # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
+                    new_linked_arr = [pk_str for pk_str in linked_arr if pk_str != other_stud_pk_str]
+                    new_linked_str = ';'.join(new_linked_arr) if new_linked_arr else None
+
+                    setattr(cur_student, 'linked', new_linked_str)
+
+                    cur_student.save(request=request)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug(' ----------')
+        logger.debug('    cur_student.linked: ' + str(cur_student.linked))
+        logger.debug('    cur_student.notlinked: ' + str(cur_student.notlinked))
+        logger.debug('    set_student_linked_ok: ' + str(set_student_linked_ok))
+
+    return set_student_linked_ok
+
+# - end of set_student_linked
+
+
+def set_student_notlinked(set_notlinked, linked_arr, notlinked_arr, other_stud_pk_str, cur_student, request):
+    # PR2021-09-06 PR2023-01-17
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('')
+        logger.debug(' ----- set_student_notlinked -----')
+
+    set_student_notlinked_ok = False
+    if cur_student and other_stud_pk_str:
+
+        try:
+            # if notlinked: add other_stud_pk_str to notlinked
+            if set_notlinked:
+                # - add other_stud_pk_str to notlinked, remove linked if necessary
+                notlinked_arr.append(other_stud_pk_str)
+                notlinked_arr.sort()
+                notlinked_str = ';'.join(notlinked_arr)
+
+                setattr(cur_student, 'notlinked', notlinked_str)
+
+                # - remove all occurrencies of oth_stud_pk from linked charfield
+                if other_stud_pk_str in linked_arr:
+                    # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
+                    new_linked_arr = [pk_str for pk_str in linked_arr if pk_str != other_stud_pk_str]
+                    new_linked_str = ';'.join(new_linked_arr) if new_linked_arr else None
+
+                    setattr(cur_student, 'linked', new_linked_str)
+                    logger.debug('new_linked_str: ' + str(new_linked_str))
+
+                    cur_student.save(request=request)
+                    set_student_notlinked_ok = True
+                else:
+                    # dont update modifiedat when only other_student removed from nonlinked field
+                    cur_student.save()
+
+            else:
+                # if notlinked = False: remove other_stud_pk_str from notlinked
+                if other_stud_pk_str in notlinked_arr:
+                    #  -  remove all occurrencies of oth_stud_pk from notlinked charfield
+                    # PR2021-09-17 from: https://note.nkmk.me/en/python-list-comprehension/
+                    new_notlinked_arr = [pk_str for pk_str in notlinked_arr if pk_str != other_stud_pk_str]
+                    new_notlinked_str = ';'.join(new_notlinked_arr) if new_notlinked_arr else None
+
+                    setattr(cur_student, 'notlinked', new_notlinked_str)
+                    logger.debug('new_linked_str: ' + str(new_notlinked_str))
+
+                    # dont update modifiedat when only other_student removed from nonlinked field
+                    cur_student.save()
+
+            if logging_on:
+                logger.debug('.............')
+                logger.debug('    cur_student:   ' + str(cur_student))
+                logger.debug('    cur_student.linked: ' + str(cur_student.linked))
+                logger.debug('    cur_student.notlinked: ' + str(cur_student.notlinked))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+    return set_student_notlinked_ok
+# - end of set_student_notlinked
+
+
+@method_decorator([login_required], name='dispatch')
+class StudentEnterExemptionsView(View):  # PR203-01-24
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= StudentEnterExemptionsView ============= ')
+
+        update_wrap = {}
+        messages = []
+
+        log_list = []
+
+# - get permit - StudentLinkStudentView is called from page studsubj
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
+        if has_permit:
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                # upload_dict: {'mode': 'tick', 'cur_stud_id': 6259, 'oth_stud_id': 5991, 'table': 'student', 'linked': False}
+
+# - get variables
+                if logging_on:
+                    logger.debug('    upload_dict: ' + str(upload_dict))
+
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
+                if logging_on:
+                    logger.debug('    sel_examyear:   ' + str(sel_examyear))
+                    logger.debug('    sel_school:     ' + str(sel_school))
+                    logger.debug('    sel_department: ' + str(sel_department))
+                    logger.debug('.....')
+
+                if len(sel_msg_list):
+                    msg_html = '<br>'.join(sel_msg_list)
+                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                else:
+
+                    try:
+        # +++ get dict of multiple_occurrences
+
+                        if sel_examyear and sel_school and sel_department and may_edit:
+                            updated_grade_pk_list = []
+        # - create log_list
+                            today_dte = af.get_today_dateobj()
+                            today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+                            school_name = sel_school.base.code + ' ' + sel_school.name
+                            log_list.append(c.STRING_DOUBLELINE_80)
+                            log_list.append(str(_('Enter exemptions')) + ' ' + str(_('date')) + ': ' + str(today_formatted))
+                            log_list.append(c.STRING_DOUBLELINE_80)
+
+                            log_list.append(c.STRING_SPACE_05 + str(_("School    : %(name)s") % {'name': school_name}))
+                            log_list.append(c.STRING_SPACE_05 + str(_("Department: %(dep)s") % {'dep': sel_department.name}))
+                            log_list.append(c.STRING_SPACE_05 + str(_("Exam year : %(ey)s") % {'ey': str(sel_examyear.code)}))
+
+                            log_list.append(c.STRING_SPACE_05)
+
+                            linked_students = stud_mod.Student.objects.filter(
+                                school=sel_school,
+                                department=sel_department,
+                                linked__isnull=False,
+                                partial_exam=False,
+                                deleted=False,
+                                tobedeleted=False
+                            )
+                            if linked_students:
+                                append_dict = {}
+                                for cur_stud in linked_students:
+                                    cur_examyear_code = cur_stud.school.examyear.code
+                                    cur_depbase = cur_stud.department.base
+                                    cur_depbase_code = cur_depbase.code
+                                    cur_lvlbase = cur_stud.level.base
+                                    cur_sctbase = cur_stud.sector.base
+                                    cur_lvlbase_code = cur_lvlbase.code if cur_lvlbase else ''
+                                    cur_sctbase_code = cur_sctbase.code if cur_sctbase else ''
+
+                                    linked_arr = list(map(int, cur_stud.linked.split(';')))
+
+                                    is_evelex = cur_stud.iseveningstudent or cur_stud.islexstudent
+
+                                    curstud_logtxt_added = False
+
+                                    if logging_on:
+                                        logger.debug('cur_stud:   ' + str(cur_stud))
+                                        logger.debug(' cur_examyear_code:   ' + str(cur_examyear_code))
+                                        logger.debug(' cur_depbase:   ' + str(cur_depbase))
+                                        logger.debug(' cur_lvlbase:   ' + str(cur_lvlbase))
+                                        logger.debug(' linked_arr:   ' + str(linked_arr))
+                                        logger.debug(' ..........')
+
+                                    if linked_arr:
+
+                # ++++++ loop through other_students
+                                        for other_student_pk in linked_arr:
+                                            other_stud = stud_mod.Student.objects.get_or_none(
+                                                pk=other_student_pk,
+                                                deleted=False,
+                                                tobedeleted=False,
+                                                partial_exam=False,
+                                                result=c.RESULT_FAILED
+                                            )
+                                            if other_stud:
+                                                other_examyear_code = other_stud.school.examyear.code
+                                                other_depbase = other_stud.department.base
+                                                other_lvlbase = other_stud.level.base
+                                                other_sctbase = other_stud.sector.base
+                                                other_result_status = other_stud.result_status
+                                                other_failed = (other_stud.result == c.RESULT_FAILED)
+                                                other_school = other_stud.school.name
+                                                other_depbase_code = other_depbase.code
+                                                other_lvlbase_code = other_lvlbase.code if other_lvlbase else ''
+                                                other_sctbase_code = other_sctbase.code if other_sctbase else ''
+
+                                                if logging_on:
+                                                    logger.debug('    other_stud:   ' + str(other_stud))
+                                                    logger.debug('    other_examyear_code:   ' + str(other_examyear_code))
+                                                    logger.debug('    other_depbase:   ' + str(other_depbase))
+                                                    logger.debug('    other_lvlbase:   ' + str(other_lvlbase))
+                                                    logger.debug('    other_failed:   ' + str(other_failed))
+
+                # is exam year correct?
+                                                valid_years = 10 if is_evelex else 1
+                                                examyear_is_correct = (other_examyear_code < cur_examyear_code and
+                                                                    other_examyear_code >= cur_examyear_code - valid_years)
+                                                if logging_on:
+                                                    logger.debug('    examyear_is_correct:   ' + str(examyear_is_correct))
+
+                                                if examyear_is_correct:
+                # dep and level correct?
+                                                    if other_depbase == cur_depbase and other_lvlbase == cur_lvlbase:
+
+                                                        if logging_on:
+                                                            logger.debug('    BINGO:   ')
+
+                # set student bis_exam = True if False
+                                                        cur_stud_bis_exam = getattr(cur_stud, 'bis_exam')
+                                                        if not cur_stud_bis_exam:
+                                                            setattr(cur_stud, 'bis_exam', True)
+                                                            cur_stud.save(request=request)
+
+                 # - create log header for this student
+                                                        if not curstud_logtxt_added:
+                                                            log_list.append(' ')
+
+                                                            log_list.append(''.join((
+                                                                cur_stud.fullname,
+                                                                ' - ' + cur_depbase_code,
+                                                                ' - ' + cur_lvlbase_code if cur_lvlbase else '',
+                                                                ' - ' + cur_sctbase_code if cur_sctbase else ''
+                                                            )))
+                                                            log_list.append(c.STRING_SPACE_05 + str(
+                                                                _("The exam of this candidate is %(is_already)s marked as 'bis-exam'.") %
+                                                                {'is_already': _(
+                                                                    'already') if cur_stud_bis_exam else 'now'}))
+
+                                                            curstud_logtxt_added = True
+
+                                                        log_list.append(''.join((c.STRING_SPACE_05,
+                                                                                     (str(other_examyear_code) + c.STRING_SPACE_05)[:5],
+                                                                                     other_school,
+                                                                                     ' - ' + other_depbase_code,
+                                                                                     ' - ' + other_lvlbase_code if other_lvlbase else '',
+                                                                                     ' - ' + other_sctbase_code if other_sctbase else ''
+                                                                                     ' - ' + other_sctbase_code if other_sctbase else '',
+                                                                                     ' - ' + other_result_status if other_result_status else '',
+                                                                                     )))
+
+                            # - get subjects with pok of other student
+                                                        other_studsubjects = stud_mod.Studentsubject.objects.filter(
+                                                            student=other_stud,
+                                                            tobedeleted=False,
+                                                            deleted=False,
+                                                            pok_validthru__isnull=False
+                                                        )
+                                                        if other_studsubjects is None:
+                                                            log_list.append(''.join((c.STRING_SPACE_10,
+                                                                                     str(_('This candidate has no Proofs of Knowledge.'))
+                                                                                     )))
+                                                        else:
+                                                            for other_studsubj in other_studsubjects:
+
+                                                                subj_code = other_studsubj.schemeitem.subject.base.code if other_studsubj.schemeitem.subject.base.code else '---'
+                                                                pok_sesr = other_studsubj.pok_sesr.replace('.', ',') if other_studsubj.pok_sesr else '-'
+                                                                pok_pece = other_studsubj.pok_pece.replace('.', ',')  if other_studsubj.pok_pece else '-'
+                                                                pok_final = other_studsubj.pok_final.replace('.', ',')  if other_studsubj.pok_final else '-'
+
+                                                                if logging_on:
+                                                                    logger.debug('........ ')
+                                                                    logger.debug('    other_studsubj: ' + str(other_studsubj))
+                                                                    logger.debug('    other_studsubj: ' + str(other_studsubj.schemeitem.subject.base.code))
+                                                                    logger.debug('    other_studsubj pok_validthru: ' + str(other_studsubj.pok_validthru))
+                                                                    logger.debug('    other_studsubj pok_final: ' + str(other_studsubj.pok_final))
+
+                                # get corresonding cur_studsubject
+                                                                cur_studsubj = stud_mod.Studentsubject.objects.get_or_none(
+                                                                    student=cur_stud,
+                                                                    schemeitem__subject__base=other_studsubj.schemeitem.subject.base,
+                                                                    tobedeleted=False,
+                                                                    deleted=False
+                                                                )
+                                                                if cur_studsubj:
+
+                                                                    if logging_on:
+                                                                        logger.debug('    cur_studsubj: ' + str(cur_studsubj))
+                                                                        logger.debug('    cur_studsubj: ' + str(cur_studsubj.schemeitem.subject.base.code))
+                                                                        logger.debug('    cur_studsubj pok_validthru: ' + str(cur_studsubj.pok_validthru))
+                                                                        logger.debug('    cur_studsubj pok_final: ' + str(cur_studsubj.pok_final))
+
+                                                                        logger.debug('    cur_studsubj pk: ' + str(cur_studsubj.pk))
+
+                                                                    grade_logtxt = ''.join((c.STRING_SPACE_10,
+                                                                                            (subj_code + c.STRING_SPACE_10)[:8],
+                                                                                            's: ', (pok_sesr + c.STRING_SPACE_05)[:5],
+                                                                                            'c: ', (pok_pece + c.STRING_SPACE_05)[:5],
+                                                                                            'e: ', (pok_final + c.STRING_SPACE_05)[:5]
+                                                                                            ))
+
+                                                # check if cur_studsubj has already an exemption grade
+                                                                    cur_exem_grade = stud_mod.Grade.objects.filter(
+                                                                        studentsubject=cur_studsubj,
+                                                                        examperiod=c.EXAMPERIOD_EXEMPTION
+                                                                    ).order_by('pk').first()
+
+                                                                    if cur_exem_grade is None:
+
+                                                                        if logging_on:
+                                                                            logger.debug('    cur_exem_grade is None')
+                                                                        cur_exem_grade = stud_mod.Grade(
+                                                                            studentsubject=cur_studsubj,
+                                                                            examperiod=c.EXAMPERIOD_EXEMPTION,
+                                                                            segrade=other_studsubj.pok_sesr,
+                                                                            cegrade=other_studsubj.pok_pece,
+                                                                            finalgrade=other_studsubj.pok_final,
+                                                                            exemption_imported=True  # PR2023-01-24 added to skip approval
+                                                                        )
+                                                                        cur_exem_grade.save(request=request)
+
+                                                                        append_dict[cur_exem_grade.pk] = {'created': True}
+
+                                                                        if cur_exem_grade.pk not in updated_grade_pk_list:
+                                                                            updated_grade_pk_list.append(cur_exem_grade.pk)
+
+                                                                        grade_logtxt += ''.join((' (', str(_('added')), ')'))
+
+                                                                    else:
+                                                                        # check if exemption is alreay submitted
+                                                                        if cur_exem_grade.se_published or cur_exem_grade.ce_published:
+                                                                            grade_logtxt = ''.join((c.STRING_SPACE_10,
+                                                                                                            (subj_code + c.STRING_SPACE_10)[:8],
+                                                                                                str(_('is already submitted'))
+                                                                                                ))
+                                                                        elif other_studsubj.pok_sesr != cur_exem_grade.segrade or \
+                                                                            other_studsubj.pok_pece != cur_exem_grade.cegrade or \
+                                                                            other_studsubj.pok_final != cur_exem_grade.finalgrade or \
+                                                                                cur_exem_grade.tobedeleted or \
+                                                                                cur_exem_grade.deleted:
+
+                                                                            if cur_exem_grade.tobedeleted or cur_exem_grade.deleted:
+
+                                                                                if logging_on:
+                                                                                    logger.debug('    cur_exem_grade is deleted')
+                                                                                setattr(cur_exem_grade, 'tobedeleted', False)
+                                                                                setattr(cur_exem_grade, 'deleted', False)
+
+                                                                                grade_logtxt += ''.join((' (', str(_('was deleted')), ')'))
+
+                                                                                append_dict[cur_exem_grade.pk] = {'created': True}
+                                                                                if logging_on:
+                                                                                    logger.debug('    append_dict: ' + str(append_dict))
+                                                                            else:
+                                                                                cur_sesr = cur_exem_grade.segrade.replace(
+                                                                                    '.',
+                                                                                    ',') if cur_exem_grade.segrade else '-'
+                                                                                cur_pece = cur_exem_grade.cegrade.replace(
+                                                                                    '.',
+                                                                                    ',') if cur_exem_grade.cegrade else '-'
+                                                                                cur_finalgrade = cur_exem_grade.finalgrade.replace(
+                                                                                    '.',
+                                                                                    ',') if cur_exem_grade.finalgrade else '-'
+
+                                                                                grade_logtxt += ''.join(
+                                                                                    (' (', str(_('was')),
+                                                                                     ': s: ', cur_sesr,
+                                                                                     ' c: ', cur_pece,
+                                                                                     ' e: ', cur_finalgrade,
+                                                                                     ')'))
+                                                                            setattr(cur_exem_grade, 'segrade', other_studsubj.pok_sesr)
+                                                                            setattr(cur_exem_grade, 'cegrade', other_studsubj.pok_pece)
+                                                                            setattr(cur_exem_grade, 'finalgrade', other_studsubj.pok_final)
+
+                                                                            setattr(cur_exem_grade, 'exemption_imported', True) # PR2023-01-24 added to skip approval
+
+                                                                            for examtype in ('se', 'ce'):
+                                                                                setattr(cur_exem_grade, examtype + '_blocked', False)
+                                                                                setattr(cur_exem_grade, examtype + '_published_id', None)
+                                                                                setattr(cur_exem_grade, examtype + '_auth1by_id', None)
+                                                                                setattr(cur_exem_grade, examtype + '_auth2by_id', None)
+
+                                                                            cur_exem_grade.save(request=request)
+
+                                                                            if cur_exem_grade.pk not in updated_grade_pk_list:
+                                                                                updated_grade_pk_list.append(
+                                                                                    cur_exem_grade.pk)
+
+                                                                        else:
+                                                                            grade_logtxt += ''.join((' (', str(_('is already entered')), ')'))
+
+                                                                    log_list.append(grade_logtxt)
+
+                                                                    if logging_on:
+                                                                        logger.debug(' +++cur_segrade: ' + str(cur_exem_grade.segrade))
+                                                                        logger.debug('    cur_cegrade: ' + str(cur_exem_grade.cegrade))
+                                                                        logger.debug('    cur_exem_grade: ' + str(cur_exem_grade.finalgrade))
+
+                                                                    setattr(cur_studsubj, 'exemption_year', other_examyear_code)
+                                                                    setattr(cur_studsubj, 'has_exemption', True)
+                                                                    cur_studsubj.save(request=request)
+
+                                                                    if logging_on:
+                                                                        logger.debug('    cur_studsubj.has_exemption: ' + str(cur_studsubj.has_exemption))
+
+                    # ++++++ end of loop through other_students
+
+                # has failed?  - is inlcuded in query
+
+                                if logging_on:
+                                    logger.debug('  XXXXXXXXXXXX   append_dict: ' + str(append_dict))
+
+                # enter exemptions
+                                grade_rows = grd_view.create_grade_rows(
+                                    sel_examyear_pk=sel_examyear.pk,
+                                    sel_schoolbase_pk=sel_school.base_id,
+                                    sel_depbase_pk=sel_department.base_id,
+                                    sel_lvlbase_pk=None,
+                                    sel_examperiod=c.EXAMPERIOD_EXEMPTION,
+                                    request=request,
+                                    append_dict=append_dict,
+                                    grade_pk_list=updated_grade_pk_list,
+                                    remove_note_status=True,
+                                    skip_allowed_filter=True
+                                )
+                                if grade_rows:
+                                    update_wrap['updated_grade_rows'] = grade_rows
+
+                    except Exception as e:
+                        logger.error(getattr(e, 'message', str(e)))
+
+        update_wrap['log_list'] = log_list
+
+        if len(messages):
+            update_wrap['messages'] = messages
+            # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+
+# end of StudentEnterExemptionsView
+
+
+def set_student_bisexam_and_exemptions(cur_student, other_stud_pk_str, request):
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ============= set_student_bisexam_and_exemptions ============= ')
+        logger.debug('cur_student.iseveningstudent: ' + str(cur_student.iseveningstudent))
+        logger.debug('cur_student.islexstudent: ' + str(cur_student.islexstudent))
+
+
+    if cur_student and other_stud_pk_str:
+
+        cur_stud_does_partialexam = cur_student.partial_exam
+        # is cur_student an evening or lex student?
+        cur_stud_is_evelexstudent = cur_student.iseveningstudent or cur_student.islexstudent
+        cur_stud_is_bisexam = cur_student.bis_exam
+
+        cur_examyear_code = cur_student.school.examyear.code
+
+        try:
+
+            if cur_stud_does_partialexam:
+                # don't add exemptions when student does partial exam
+                pass
+            else:
+
+# is cur_student an evening or lex student?
+# - get other_student
+                other_student = stud_mod.Student.objects.get_or_none(
+                   pk=int(other_stud_pk_str)
+                )
+                if other_student:
+                    other_examyear_code = other_student.school.examyear.code
+
+                    other_examyear_ok = False
+
+                    if cur_stud_is_evelexstudent:
+                    # other_examyear_code must be max ten year less than current examyear
+                        if other_examyear_code <= cur_examyear_code - 1 and \
+                            other_examyear_code >= cur_examyear_code - 10:
+                                other_examyear_ok = True
+                    else:
+                    # other_examyear_code must be one year less than current examyear
+                        if other_examyear_code == cur_examyear_code - 1:
+                            other_examyear_ok = True
+
+                    if other_examyear_ok:
+                        # set student as bis_exam - not when evelex student
+                        if not cur_stud_is_evelexstudent:
+                            cur_student.bis_exam = True
+                            cur_student.save(request=request)
+
+                        # get list of pok (proof of knowledge)
+
+
+# is cur_student an evening or lex student?
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+
+# end of set_student_bisexam_and_exemptions
 
 def make_student_biscandidate(cur_student, other_student, request):
     logging_on = False  # s.LOGGING_ON
@@ -1682,8 +2571,9 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 class StudentsubjectValidateAllView(View):  # PR2021-07-24
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
+            logger.debug(' ')
             logger.debug(' ============= StudentsubjectValidateAllView ============= ')
 
         # function validates studentsubject records of all students of this dep PR2021-07-10
@@ -1699,37 +2589,66 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 # - get upload_json from request.POST
         upload_json = request.POST.get('upload', None)
         if upload_json:
-            # upload_dict = json.loads(upload_json)
+            upload_dict = json.loads(upload_json)
+            if logging_on:
+                logger.debug('    upload_dict: ' + str(upload_dict))
+                # upload_dict: {'studsubj_validate': {'get': True}}
 
 # ----- get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
+                    request=request,
+                    skip_same_school_clause=False
+                )
+            if logging_on:
+                logger.debug('    sel_department: ' + str(sel_department))
+                logger.debug('    sel_level: ' + str(sel_level))
 
 # +++ validate subjects of all students of this dep, used to update studsubj table
             # TODO to speed up: get info in 1 request, no msg_text
-            students = stud_mod.Student.objects.filter(
-                school=sel_school,
-                department=sel_department
-            )
+            crit = Q(school=sel_school) & \
+                   Q(department=sel_department) & \
+                   Q(deleted=False)
+
+            if sel_level:
+                crit.add(Q(level=sel_level), crit.connector)
+
+            students = stud_mod.Student.objects.filter(crit)
+            if logging_on:
+                logger.debug('    students: ' + str(students))
 
             if students:
                 validate_studsubj_list = []
                 for student in students:
+
+                    if logging_on:
+                        logger.debug('----student: ' + str(student))
+
                     # validate_studentsubjects_no_msg returns True when there is an error PR2022-08-25
                     no_error = not stud_val.validate_studentsubjects_no_msg(student, 'nl')
+                    if logging_on:
+                        logger.debug('    no_error: ' + str(no_error))
+
                     if (not student.subj_composition_checked) or \
                             (student.subj_composition_checked and student.subj_composition_ok != no_error):
                         setattr(student, 'subj_composition_checked', True)
                         setattr(student, 'subj_composition_ok', no_error)
                         # dont update modified by
                         student.save()
+                        if logging_on:
+                            logger.debug('  student.save  no_error: ' + str(no_error))
 
                     if not no_error:
                         if student.pk not in validate_studsubj_list:
                             validate_studsubj_list.append(student.pk)
+
+                    if logging_on:
+                        logger.debug('    no_error: ' + str(no_error))
+
                 if validate_studsubj_list:
                     update_wrap['validate_studsubj_list'] = validate_studsubj_list
-
+        if logging_on:
+            logger.debug('    update_wrap: ' + str(update_wrap))
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of StudentsubjectValidateAllView
@@ -1739,12 +2658,13 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 class StudentsubjectValidateTestView(View):
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= StudentsubjectValidateTestView ============= ')
 
-        # function validates studentsubject records after oepning modal, subject are in list PR2021-08-17 PR2021-08-31
+        # function validates studentsubject records after opening modal, subjects are in list PR2021-08-17 PR2021-08-31
+        # Note: don't filter on allowed, it will skip not-allowed subjects and give incorrect validation
 
         update_wrap = {'is_test': True}
 
@@ -1760,11 +2680,14 @@ class StudentsubjectValidateTestView(View):
             upload_dict = json.loads(upload_json)
 
 # ----- get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            # PR2022-12-23 debug: don't filter on allowed, it will skip not-allowed subjects and give incorrect validation
+            sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
+                    request=request
+                )
 
 # +++ validate subjects of one student, used in modal
-            student_pk = upload_dict.get('student_pk')
+            student_pk = upload_dict .get('student_pk')
             studsubj_dictlist = upload_dict.get('studsubj_dictlist')
 
             if logging_on:
@@ -1801,47 +2724,6 @@ class StudentsubjectValidateTestView(View):
 
 # - end of StudentsubjectValidateTestView
 
-
-@method_decorator([login_required], name='dispatch')
-class StudentsubjectMultipleOccurrencesView(View):  # PR2021-09-05
-
-    def post(self, request):
-        logging_on = False  # s.LOGGING_ON
-        if logging_on:
-            logger.debug(' ============= StudentsubjectMultipleOccurrencesView ============= ')
-
-        # function validates studentsubject records of all students of this dep PR2021-07-10
-
-        update_wrap = {}
-
-# - get permit - only download list when user has permit_crud
-        has_permit = af.get_permit_crud_of_this_page('page_studsubj', request)
-        if has_permit:
-# - reset language
-            #user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            #activate(user_lang)
-
-            # - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-
-    # ----- get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_edit, msg_listNIU = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
-
-    # +++ validate subjects of all students of this dep, used to update studsubj table
-                if sel_examyear and sel_school and sel_department and may_edit:
-                    dictlist = stud_val.get_multiple_occurrences(sel_examyear, sel_school.base, sel_department.base)
-
-                    if dictlist:
-                        update_wrap['validate_multiple_occurrences'] = dictlist
-
-# - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of StudentsubjectMultipleOccurrencesView
-
-
-
 #####################################################################################
 
 @method_decorator([login_required], name='dispatch')
@@ -1865,7 +2747,7 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
         if upload_json:
             upload_dict = json.loads(upload_json)
             if logging_on:
-                logger.debug('upload_dict: ' + str(upload_dict))
+                logger.debug('    upload_dict: ' + str(upload_dict))
             """
             upload_dict: {'table': 'grade', 'mode': 'submit_save', 'form': 'ex2', 'verificationcode': '', 'verificationkey': None, 'auth_index': 2, 'now_arr': [2022, 4, 18, 11, 21]}
             upload_dict: {'table': 'studsubj', 'form': 'ex4', 'examperiod': 2, 'now_arr': [2022, 5, 31, 7, 29], 'mode': 'request_verif'}
@@ -1891,9 +2773,12 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                 logger.debug('mode: ' + str(mode))
                 logger.debug('sel_page: ' + str(sel_page))
             if req_usr and req_usr.country and req_usr.schoolbase:
-                permit_list = req_usr.permit_list(sel_page)
-                if permit_list and req_usr.usergroup_list:
-                    if 'auth1' in req_usr.usergroup_list or 'auth2' in req_usr.usergroup_list:
+                permit_list = acc_prm.get_permit_list(sel_page, req_usr)
+
+                requsr_usergroup_list, allowed_sections_dictNIU, allowed_clusters_listNIU, sel_examyear_instanceNIU = acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
+
+                if permit_list and requsr_usergroup_list:
+                    if 'auth1' in requsr_usergroup_list or 'auth2' in requsr_usergroup_list:
                         if table == 'result':
                             has_permit = 'permit_submit_ex5' in permit_list
                         elif table == 'grade':
@@ -1917,15 +2802,15 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                 if mode == 'publish_exam':
                     formname = 'ete_exam'
                     sel_school, sel_department = None, None
-                    sel_examyear, may_edit, msg_list = dl.get_selected_examyear_from_usersetting(request)
+                    sel_examyear, may_edit, msg_list = acc_view.get_selected_examyear_from_usersetting(request)
                 elif mode == 'submit_grade_exam':
                     formname = 'grade_exam'
-                    sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                        dl.get_selected_ey_school_dep_from_usersetting(request)
+                    sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                        acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
                 else:
                     formname = upload_dict.get('form')
-                    sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                        dl.get_selected_ey_school_dep_from_usersetting(request)
+                    sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                        acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if may_edit:
                     #try:
@@ -2017,7 +2902,7 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
 
 #####################################################################################
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-30
+class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-30 PR2023-01-10
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -2025,9 +2910,149 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             logger.debug(' ')
             logger.debug(' ============= StudentsubjectApproveOrSubmitEx1Ex4View ============= ')
 
+################################
+        def get_studsubjects(sel_examperiod, sel_school, sel_department, is_submit):
+            if logging_on:
+                logger.debug('    is_submit: ' + str(is_submit))
+            # PR2023-02-12
+            studsubject_rows = []
+
+            if sel_examperiod == 2:
+                auth_clause = "studsubj.reex_auth1by_id AS auth1by_id, studsubj.reex_auth2by_id AS auth2by_id, studsubj.reex_published_id AS published_id,"
+            elif sel_examperiod == 3:
+                auth_clause = "studsubj.reex3_auth1by_id AS auth1by_id, studsubj.reex3_auth2by_id AS auth2by_id, studsubj.reex3_published_id AS published_id,"
+            else:
+                auth_clause = "studsubj.subj_auth1by_id AS auth1by_id, studsubj.subj_auth2by_id AS auth2by_id, studsubj.subj_published_id AS published_id,"
+
+            if (sel_examperiod and sel_school and sel_department):
+                try:
+                    sql_list = [
+                        "SELECT stud.id AS stud_id, stud.idnumber AS idnr, stud.examnumber AS exnr, stud.gender,",
+                        "stud.lastname AS ln, stud.firstname AS fn, stud.prefix AS pref, stud.classname AS class, ",
+                        "stud.level_id, lvl.name AS lvl_name, lvl.abbrev AS lvl_abbrev, sct.abbrev AS sct_abbrev, ",
+
+                        "CASE WHEN stud.subj_composition_ok OR stud.subj_dispensation",
+                        #PR2023-02-17 skip composition check when iseveningstudent, islexstudent or partial_exam
+                        "OR stud.iseveningstudent OR stud.islexstudent OR stud.partial_exam",
+                        "THEN FALSE ELSE TRUE END AS composition_error,",
+
+                        "stud.regnumber AS regnr, stud.diplomanumber AS dipnr, stud.gradelistnumber AS glnr,",
+                        "stud.iseveningstudent AS evest, stud.islexstudent AS lexst,",
+                        "stud.bis_exam AS bisst, stud.partial_exam AS partst, stud.withdrawn AS wdr,",
+
+                        "studsubj.id AS studsubj_id, studsubj.tobedeleted AS studsubj_tobedeleted,",
+
+                        auth_clause,
+                        "subj.id AS subj_id, subjbase.code AS subj_code",
+
+                        "FROM students_studentsubject AS studsubj",
+                        "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
+                        "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
+                        "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+                        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+
+                        "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                        "LEFT JOIN subjects_sector AS sct ON (sct.id = stud.sector_id)",
+
+                        "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
+                        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+                        "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
+
+                        "WHERE school.id = " + str(sel_school.pk) + "::INT",
+                        "AND dep.id = " + str(sel_department.pk) + "::INT",
+
+                        "AND NOT stud.deleted AND NOT studsubj.deleted"
+                        ]
+                    sql = ' '.join(sql_list)
+
+                # filter reex subjects when ex4 or ex4ep3
+                    if sel_examperiod == 2:
+                        sql_list.append("AND stud.has_reex")
+                    elif sel_examperiod == 3:
+                        sql_list.append("AND stud.has_reex03")
+
+        # - get selected values from usersetting selected_dict
+                    sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_cluster_pk = None, None, None, None
+                    selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    if selected_dict:
+                        sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
+                        sel_sctbase_pk = selected_dict.get(c.KEY_SEL_SCTBASE_PK)
+                        sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
+                        sel_cluster_pk = selected_dict.get(c.KEY_SEL_CLUSTER_PK)
+
+        # - may also filter on level when submitting Ex form
+                    # PR2023-02-12 request MPC: must be able to submit per level tkl / pkl/pbl
+                    # PR2023-02-19 debug:  VWO didnt show records, because of filter sel_lvlbase_pk=5
+                    # solved bij adding: if sel_department.level_req
+                    if sel_department.level_req and  sel_lvlbase_pk:
+                        sql_list.append(''.join(("AND (lvl.base_id = ", str(sel_lvlbase_pk), "::INT)")))
+
+        # - other filters are only allowedwhen approving, not when is_submit
+                    if sel_sctbase_pk and not is_submit:
+                        sql_list.append(''.join(("AND sct.base_id = ", str(sel_sctbase_pk), "::INT")))
+
+        # - filter on selected subject, not when is_submit TODO to be changed to subjectbase
+                    if sel_subject_pk and not is_submit:
+                        sql_list.append(''.join(("AND subj.id = ", str(sel_subject_pk), "::INT")))
+
+        # - filter on selected sel_cluster_pk, not when is_submit
+                    if sel_cluster_pk and not is_submit:
+                        sql_list.append(''.join(("AND (studsubj.cluster_id = ", str(sel_cluster_pk), "::INT)")))
+
+        # - get allowed_sections_dict from request
+                    userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
+                    userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+                    if logging_on:
+                        logger.debug('    allowed_sections_dict: ' + str(userallowed_sections_dict))
+                        # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
+
+        # - filter on allowed depbases, levelbase, subjectbases, not when is_submit PR2023-02-18
+                    #dont filter on allowed subjects and allowed clusters, but do filter on allowed lvlbases'
+                    userallowed_schoolbase_dict, userallowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(userallowed_sections_dict, sel_school.base_id)
+                    allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(userallowed_schoolbase_dict, sel_department.base_id)
+
+                    if logging_on:
+                        logger.debug('    userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
+                        logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
+                        logger.debug('    allowed_lvlbase_pk_arr: ' + str(allowed_lvlbase_pk_arr))
+
+                    if allowed_lvlbase_pk_arr:
+                        if -9 in allowed_lvlbase_pk_arr:
+                            lvlbase_clause = None
+                        elif len(allowed_lvlbase_pk_arr) == 1:
+                            lvlbase_clause = ''.join(("lvl.base_id= ", str(allowed_lvlbase_pk_arr[0]), "::INT"))
+                        else:
+                            lvlbase_clause = ''.join(("lvl.base_id IN (SELECT UNNEST(ARRAY",str(allowed_lvlbase_pk_arr), "::INT[]))"))
+
+                        if logging_on:
+                            logger.debug('    lvlbase_clause: ' + str(lvlbase_clause))
+                        if lvlbase_clause:
+                            sql_list.append(lvlbase_clause)
+
+                        if logging_on and False:
+                            for sql_txt in sql_list:
+                                logger.debug('  > ' + str(sql_txt))
+
+        # - don't filter on allowed clusters PR2023-02-18
+                    # PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
+                    # must be able to approve all subjects as chairperson.
+                    # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
+
+                    sql_list.append("ORDER BY stud.lastname, stud.firstname")
+
+                    sql = ' '.join(sql_list)
+                    with connection.cursor() as cursor:
+                        cursor.execute(sql)
+                        studsubject_rows = af.dictfetchall(cursor)
+
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+            return studsubject_rows
+
+################################
 # function sets auth and publish of studentsubject records of current department # PR2021-07-25
         update_wrap = {}
-        messages = []
         requsr_auth = None
         msg_html = None
 
@@ -2041,26 +3066,36 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_studsubj')
-            if permit_list:
+            permit_list = acc_prm.get_permit_list('page_studsubj', req_usr)
+            if logging_on:
+                logger.debug('    permit_list: ' + str(permit_list))
+
+            if permit_list and 'permit_approve_subject' in permit_list:
                 # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-                requsr_usergroup_list = req_usr.usergroup_list
+                # PR2023-02-12 was: requsr_usergroup_list, allowed_sections_dictNIU, allowed_clusters_list, sel_examyear_instance = acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
+                userallowed_instance = acc_prm.get_userallowed_instance_from_user_instance(req_usr)
+                requsr_usergroup_list = acc_prm.get_usergroup_list(userallowed_instance)
+                if logging_on:
+                    logger.debug('    requsr_usergroup_list: ' + str(requsr_usergroup_list))
+
                 is_auth1 = (requsr_usergroup_list and 'auth1' in requsr_usergroup_list)
-                is_auth2 = (requsr_usergroup_list and'auth2' in requsr_usergroup_list)
+                is_auth2 = (requsr_usergroup_list and 'auth2' in requsr_usergroup_list)
                 if is_auth1 + is_auth2 == 1:
                     if is_auth1:
                         requsr_auth = 'auth1'
                     elif is_auth2:
                         requsr_auth = 'auth2'
                 if requsr_auth:
-                    has_permit = 'permit_approve_subject' in permit_list
+                    has_permit = True
 
             if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit:  ' + str(has_permit))
+                logger.debug('    has_permit approve_subject:  ' + str(has_permit))
 
-        if has_permit:
+        if not has_permit:
+            msg_html = "<div class='p-2 border_bg_invalid'>" + str(_("You don't have permission to perform this action.")) + "</div>"
+
+        else:
 
 # -  get user_lang
             user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -2079,20 +3114,19 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                 # - not sel_examyear.published,
                 # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
 
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
-                # TODO: get sel_examperiod as part from get_selected_ey_school_dep_from_usersetting
+                # TODO: get sel_examperiod as part from get_selected_ey_school_dep_lvl_from_usersetting
                 examperiod = upload_dict.get('examperiod')
                 prefix = 'reex3_' if examperiod == 3 else 'reex_' if examperiod == 2 else 'subj_'
-                form_name = 'ex4ep3' if examperiod == 3 else  'ex4' if examperiod == 2 else 'ex1'
+                form_name = 'ex4ep3' if examperiod == 3 else 'ex4' if examperiod == 2 else 'ex1'
 
                 if examperiod not in (1, 2, 3):
                     msg_list.append(str(_('The exam period is not valid.')))
 
                 if len(msg_list):
-                    msg_html = '<br>'.join(msg_list)
-                    messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
+                    msg_html  = "<div class='p-2 border_bg_invalid'>" + '<br>'.join(msg_list) + "</div>"
                 else:
 
     # - get selected mode. Modes are 'approve_test', 'approve_save', 'approve_reset', 'submit_test' 'submit_save'
@@ -2124,53 +3158,35 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                         logger.debug('    msg_html:    ' + str(msg_html))
 
                     if verification_is_ok:
-                        sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_student_pk = None, None, None, None
-                        # don't filter on sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk when is_submit
-                        if is_approve:
-                            selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                            if selected_dict:
-                                sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
+                        sel_lvlbase_pk, sel_sctbase_pk, sel_subject_pk, sel_cluster_pk, sel_student_pk = None, None, None, None, None
+                        # don't filter on sel_sctbase_pk, sel_subject_pk, sel_cluster_pk or allowed when is_submit
+                        # PR2023-01-10 may filter on level, so MPC TKL can submit their own Ex1
+
+                        selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                        if selected_dict:
+                            sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
+                            if is_approve:
                                 sel_sctbase_pk = selected_dict.get(c.KEY_SEL_SCTBASE_PK)
                                 sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
-                                # TODO filter by cluster
+                                sel_cluster_pk = selected_dict.get(c.KEY_SEL_CLUSTER_PK)
+
                         if logging_on:
                             logger.debug('    is_approve: ' + str(is_approve))
                             logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
-                            logger.debug('    sel_sctbase_pk: ' + str(sel_sctbase_pk))
-                            logger.debug('    sel_subject_pk: ' + str(sel_subject_pk))
-                            logger.debug('    sel_student_pk: ' + str(sel_student_pk))
 
 # +++ get selected studsubj_rows
-                        # TODO exclude published rows?? Yes, but count them when checking. You cannot approve or undo approve or submit when submitted
-                        # PR2022-08-25 TODO must also include previously submitted rows in Ex1
-
+                        # PR2023-01-09 new approach:
+                        # - include published studsubjects
+                        # - include tobedeleted studsubjects
                         # when a subject is set 'tobedeleted', the published info is removed, to show up when submitted
-                        crit = Q(student__school=sel_school) & \
-                               Q(student__department=sel_department) & \
-                               Q(tobedeleted=False) & \
-                               Q(student__tobedeleted=False)
-            # filter reex subjects when ex4 or ex4ep3
-                        if examperiod == 2:
-                            crit.add(Q(has_reex=True), crit.connector)
-                        elif examperiod == 3:
-                            crit.add(Q(has_reex03=True), crit.connector)
 
-            # when submit: don't filter on level, sector, subject or cluster
-                        if not is_submit:
-                            if sel_lvlbase_pk:
-                                crit.add(Q(student__level__base_id=sel_lvlbase_pk), crit.connector)
-                                crit.add(Q(schemeitem__scheme__level__base_id=sel_lvlbase_pk), crit.connector)
-                            if sel_sctbase_pk:
-                                crit.add(Q(student__sector__base_id=sel_sctbase_pk), crit.connector)
-                                crit.add(Q(schemeitem__scheme__sector__base_id=sel_sctbase_pk), crit.connector)
-                            if sel_subject_pk:
-                                crit.add(Q(schemeitem__subject_id=sel_subject_pk), crit.connector)
+            # when submit: don't filter on sector, subject or cluster
+                        # PR2023-02-12 request MPC: must be able to submit per level tkl / pkl/pbl
+                        # also filter on level when submitting Ex form
 
+                        studsubjects = get_studsubjects(examperiod, sel_school, sel_department, is_submit)
                         if logging_on:
-                            row_count = stud_mod.Studentsubject.objects.filter(crit).count()
-                            logger.debug('    row_count:      ' + str(row_count))
-
-                        studsubjects = stud_mod.Studentsubject.objects.filter(crit).order_by('schemeitem__subject__base__code', 'student__lastname', 'student__firstname')
+                            logger.debug('    row_count:      ' + str(len(studsubjects)))
 
                         count_dict = {'count': 0,
                                       'student_count': 0,
@@ -2183,10 +3199,10 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                       'saved_error': 0,
                                       'reset': 0,
                                       'already_approved': 0,
-                                      'auth_missing': 0,
-                                      'test_is_ok': False
+                                      'auth_missing': 0
+                                      #'test_is_ok': False
                                     }
-                        if studsubjects is not None:
+                        if studsubjects:
 
 # +++ create new published_instance. Only save it when it is not a test
                             # file_name will be added after creating Ex-form
@@ -2207,101 +3223,169 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                     published_instance_filename = published_instance.filename
 
                             if logging_on:
-                                logger.debug('published_instance_pk' + str(published_instance_pk))
-                                logger.debug('published_instance_filename' + str(published_instance_filename))
+                                logger.debug('    published_instance_pk: ' + str(published_instance_pk))
+                                logger.debug('    published_instance_filename: ' + str(published_instance_filename))
 
                             studsubj_rows = []
 
-# +++++ loop through studsubjects
                             row_count = 0
                             student_pk_list, student_committed_list, student_saved_list, student_saved_error_list = \
                                 [],[], [], []
                             student_composition_error_list = []
+                            student_composition_error_namelist = []
 
-                            if studsubjects:
-                                for studsubj in studsubjects:
-                                    row_count += 1
+                            # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
+                            # and batch update at the end
+                            tobesaved_studsubj_pk_list = []
 
-                                    is_committed = False
-                                    is_saved = False
-                                    is_saved_error = False
+                            # PR2023-01-12 create list of tobedeleted student_pk and batch delete at the end
+                            tobedeleted_student_pk_list = []
 
-                                    if is_approve:
-                                        is_committed, is_saved, is_saved_error = approve_studsubj(studsubj, requsr_auth, prefix, is_test, is_reset, count_dict, request)
-                                    elif is_submit:
-                                        is_committed, is_saved, is_saved_error = submit_studsubj(studsubj, prefix, is_test, published_instance, count_dict, request)
+# +++++ loop through studsubjects +++++
+                            for studsubj in studsubjects:
 
-        # - add student_pk to student_pk_list, student_committed_list or student_saved_list
-                                    # this is used to count the students in msg: '4 students with 39 subjects are added'
-                                    # after the loop the totals are added to count_dict['student_count'] etc
-                                    # PR2022-08-25 submit not allowed when subject composition not coorect and no dispensation
-                                    if studsubj.student_id not in student_composition_error_list:
-                                        if not studsubj.student.subj_dispensation:
-                                            if not studsubj.student.subj_composition_ok:
-                                                student_composition_error_list.append(studsubj.student_id)
+                                if logging_on and False:
+                                    logger.debug('............ ')
+                                    logger.debug('   ' + str(studsubj))
 
-                                    if studsubj.student_id not in student_pk_list:
-                                        student_pk_list.append(studsubj.student_id)
-                                    if is_committed:
-                                        if studsubj.student_id not in student_committed_list:
-                                            student_committed_list.append(studsubj.student_id)
-                                    if is_saved:
-                                        if studsubj.student_id not in student_saved_list:
-                                            student_saved_list.append(studsubj.student_id)
-                                    if is_saved_error:
-                                        if studsubj.student_id not in student_saved_error_list:
-                                            student_saved_error_list.append(studsubj.student_id)
+                                row_count += 1
 
-        # - add rows to studsubj_rows, to be sent back to page
-                                    # to increase speed, dont create return rows but refresh page after finishing this request
-                                    """
-                                    if not is_test and is_saved:
-                                        rows = create_studentsubject_rows(
-                                            examyear=sel_examyear,
-                                            schoolbase=sel_school.base,
-                                            depbase=sel_department.base,
-                                            append_dict={},
-                                            student_pk=None,
-                                            studsubj_pk=studsubj.pk)
-                                        if rows:
-                                              studsubj_rows.append(rows[0])
-                                    """
-    # +++++  end of loop through  studsubjects
+                                is_committed = False
+                                is_saved = False
+
+                                if is_approve:
+                                    is_committed, is_saved = approve_studsubj(studsubj, requsr_auth, prefix, is_test, is_reset, count_dict, request)
+
+                                elif is_submit:
+                                    is_committed, is_saved = submit_studsubj(studsubj, prefix, is_test, count_dict)
+
+                                if is_saved:
+                                    studsubj_pk = studsubj.get('studsubj_id')
+                                    if studsubj_pk:
+                                        tobesaved_studsubj_pk_list.append(studsubj_pk)
+
+    # - add student_pk to student_pk_list, student_committed_list or student_saved_list
+                                # this is used to count the students in msg: '4 students with 39 subjects are added'
+                                # after the loop the totals are added to count_dict['student_count'] etc
+                                # PR2022-08-25 submit not allowed when subject composition not coorect and no dispensation
+                                student_pk = studsubj.get('stud_id')
+                                if logging_on and False:
+                                    logger.debug('    student_pk: ' + str(student_pk))
+
+                                if student_pk not in student_composition_error_list:
+                                    if studsubj.get('composition_error'):
+                                        student_composition_error_list.append(student_pk)
+                                        student_composition_error_namelist.append(', '.join((studsubj.get('ln', '-'), studsubj.get('fn', '-'))))
+
+                                if student_pk not in student_pk_list:
+                                    student_pk_list.append(student_pk)
+
+                                    #if studsubj.student.tobedeleted and student_pk not in tobedeleted_student_pk_list:
+                                    if studsubj.get('studsubj_tobedeleted') and student_pk not in tobedeleted_student_pk_list:
+                                        tobedeleted_student_pk_list.append(student_pk)
+
+                                if is_committed:
+                                    if student_pk not in student_committed_list:
+                                        student_committed_list.append(student_pk)
+                                if is_saved:
+                                    if student_pk not in student_saved_list:
+                                        student_saved_list.append(student_pk)
+
+# +++++  end of loop through  studsubjects
+
+                            if logging_on:
+                                logger.debug('    tobesaved_studsubj_pk_list: ' + str(tobesaved_studsubj_pk_list))
+
+                            auth_missing_count = count_dict.get('auth_missing', 0)
+                            double_approved_count = count_dict.get('double_approved', 0)
+
+                            student_composition_error_count = len(student_composition_error_list)
+
+                            student_committed_count = len(student_committed_list)
+
+                            test_has_failed = False
+                            if not row_count:
+                                test_has_failed = True
+
+                            elif is_submit and auth_missing_count:
+                                test_has_failed = True
+                            elif is_submit and double_approved_count:
+                                test_has_failed = True
+
+                            elif is_submit and student_composition_error_count:
+                                test_has_failed = True
+
+                            elif not student_committed_count:
+                                test_has_failed = True
 
                             count_dict['count'] = row_count
                             count_dict['student_count'] = len(student_pk_list)
-                            count_dict['student_composition_error_count'] = len(student_composition_error_list)
-                            count_dict['student_committed_count'] = len(student_committed_list)
+                            count_dict['student_composition_error_count'] = student_composition_error_count
+                            count_dict['student_committed_count'] = student_committed_count
                             count_dict['student_saved_count'] = len(student_saved_list)
-                            count_dict['student_saved_error_count'] = len(student_saved_error_list)
+
+                            if logging_on:
+                                logger.debug('    count_dict: ' + str(count_dict))
+
                             update_wrap['approve_count_dict'] = count_dict
 
     # - create msg_html with info of rows
                             msg_html = self.create_ex1_ex4_msg_list(
+                                sel_examyear=sel_examyear,
+                                sel_department=sel_department,
+                                sel_lvlbase_pk=sel_lvlbase_pk,
                                 count_dict=count_dict,
                                 requsr_auth=requsr_auth,
                                 is_approve=is_approve,
                                 is_test=is_test,
                                 examperiod=examperiod,
-                                published_instance_filename=published_instance_filename
+                                published_instance_filename=published_instance_filename,
+                                student_composition_error_namelist=student_composition_error_namelist
                             )
 
 # +++++ create Ex1 Ex4 form
                             if row_count:
-                                if is_submit and not is_test:
-                                    self.create_ex1_ex4_form(
-                                        published_instance=published_instance,
-                                        sel_examyear=sel_examyear,
-                                        sel_school=sel_school,
-                                        sel_department=sel_department,
-                                        examperiod=examperiod,
-                                        prefix=prefix,
-                                        save_to_disk=True,
-                                        request=request,
-                                        user_lang=user_lang)
+                                saved_studsubj_pk_list = []
+                                if not is_test:
+                                    if is_submit:
+                                        self.create_ex1_ex4_form(
+                                            published_instance=published_instance,
+                                            sel_examyear=sel_examyear,
+                                            sel_school=sel_school,
+                                            sel_department=sel_department,
+                                            examperiod=examperiod,
+                                            prefix=prefix,
+                                            save_to_disk=True,
+                                            request=request,
+                                            user_lang=user_lang
+                                        )
 
-                    # - delete the 'tobedeleted' rows from StudSubject, only after submitting and no test!
-                                    # TODO put back 'tobedeleted' functions
+# +++++ batch save approval / published PR2023-01-10
+                                    if logging_on:
+                                        logger.debug('    tobesaved_studsubj_pk_list: ' + str(tobesaved_studsubj_pk_list))
+
+                                    if tobesaved_studsubj_pk_list:
+                                        err_html = None
+                                        if is_approve:
+                                            saved_studsubj_pk_list, err_html = self.save_approved_in_studsubj(tobesaved_studsubj_pk_list, is_reset, 'subj_', requsr_auth, request.user)
+                                        elif is_submit:
+                                            saved_studsubj_pk_list, err_html = self.save_published_in_studsubj(tobesaved_studsubj_pk_list, 'subj_', published_instance.pk)
+
+                                        if err_html:
+                                            msg_html = "<div class='p-2 border_bg_invalid'>" + err_html + "</div>"
+
+                                        if logging_on:
+                                            logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
+
+                                    if is_submit and tobedeleted_student_pk_list:
+                                        self.set_student_deleted(tobedeleted_student_pk_list, request)
+
+                                # - delete the 'tobedeleted' rows from StudSubject, only after submitting and no test!
+
+                                    # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
+                                    # list is created outside this function, when is_saved = True
+
+                                # TODO put back 'tobedeleted' functions
                                     #self.delete_tobedeleted_from_studsubj(
                                     #    published_instance=published_instance,
                                     #    sel_examyear=sel_examyear,
@@ -2310,19 +3394,205 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                     #    request=request
                                     #)
 
+                                if logging_on:
+                                    logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
+
+            # - add rows to studsubj_rows, to be sent back to page
+                                # to increase speed, dont create return rows but refresh page after finishing this request
+                                if saved_studsubj_pk_list:
+                                    studsubj_rows = create_studentsubject_rows(
+                                        sel_examyear=sel_examyear,
+                                        sel_schoolbase=sel_school.base,
+                                        sel_depbase=sel_department.base,
+                                        sel_lvlbase=None,
+                                        requsr_same_school=True, # when requsr_same_school=True, it includes students without studsubjects
+                                        append_dict={},
+                                        request=request,
+                                        studsubj_pk_list=saved_studsubj_pk_list
+                                    )
+
+                                if logging_on:
+                                    logger.debug('    studsubj_rows: ' + str(studsubj_rows))
+
                                 if (studsubj_rows):
                                     update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
 
                                 if is_test:
-                                    committed = count_dict.get('committed', 0)
-                                    if committed:
+                                    if not test_has_failed:
                                         update_wrap['test_is_ok'] = True
 
-    # - add  msg_html to update_wrap
+    # - add  msg_html to update_wrap (this one triggers MASS_UpdateFromResponse in page studsubjcts
         update_wrap['approve_msg_html'] = msg_html
 
-# - return update_wrap
+     # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+    # - end of  StudentsubjectApproveOrSubmitEx1Ex4View.post
+
+    def save_approved_in_studsubj(self, studsubj_pk_list, is_reset, prefix, requsr_auth, req_user):
+        # PR2023-01-10
+
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug('----- save_approved_in_studsubj -----')
+
+        saved_studsubj_pk_list = []
+        err_html = None
+        try:
+            requsr_authby_field = ''.join((prefix, requsr_auth, 'by_id'))
+
+            #   was: setattr(studsubj, requsr_authby_field, req_user)
+            # - remove authby when is_reset
+            requsr_authby_value = "NULL" if is_reset else str(req_user.pk)
+
+            sql_keys = {'requsr_pk': req_user.pk, 'sb_arr': studsubj_pk_list}
+
+            sql_list = ["UPDATE students_studentsubject AS studsubj ",
+                        "SET", requsr_authby_field, "=", requsr_authby_value,
+                        "WHERE studsubj.id IN (SELECT UNNEST(%(sb_arr)s::INT[]))",
+                        "AND studsubj.deleted = FALSE",
+                        "RETURNING id;"]
+
+            sql = ' '.join(sql_list)
+
+            if logging_on:
+                logger.debug('    sql: ' + str(sql))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+
+                rows = cursor.fetchall()
+                if rows:
+                    for row in rows:
+                        saved_studsubj_pk_list.append(row[0])
+
+            if logging_on:
+                logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+            err_html = ''.join((
+                str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                str(_('The subjects could not be approved.'))
+            ))
+
+        if logging_on:
+            logger.debug('    err_html: ' + str(err_html))
+
+        return saved_studsubj_pk_list, err_html
+# - end of save_approved_in_studsubj
+
+
+    def set_student_deleted(self, student_pk_list, request):
+        # PR2023-01-12
+
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug('----- set_student_deleted -----')
+            logger.debug('    student_pk_list: ' + str(student_pk_list))
+
+        deleted_student_pk_list = []
+        err_html = None
+
+        try:
+
+            modifiedby_pk_str = str(request.user.pk)
+            modifiedat_str = str(timezone.now())
+
+            sql_keys = {'st_arr': student_pk_list}
+
+            sql_list = ["UPDATE students_student",
+                "SET deleted = TRUE, tobedeleted=FALSE,",
+
+                "modifiedby_id = ", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "'",
+                "WHERE id IN (SELECT UNNEST(%(st_arr)s::INT[]))",
+
+                "RETURNING id;"]
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = cursor.fetchall()
+                if rows:
+                    for row in rows:
+                        deleted_student_pk_list.append(row[0])
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+            err_html = ''.join((
+                str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                str(_('The subjects could not be approved.'))
+            ))
+
+        if logging_on:
+            logger.debug('    deleted_student_pk_list: ' + str(deleted_student_pk_list))
+
+        return deleted_student_pk_list, err_html
+# - end of set_student_deleted
+
+    def save_published_in_studsubj(self, studsubj_pk_list, prefix, published_pk):
+        # PR2022-12-31 PR2023-01-10
+
+        """
+        # when is_approve:
+        #   requsr_authby_field = prefix + requsr_auth + 'by'
+        #   # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, req_user)
+
+        # submit:
+            published = getattr(studsubj, prefix + 'published')
+            put published_id in field subj_published:
+        #    setattr(studsubj, prefix + 'published', published_instance)
+        # -
+        """
+
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ')
+            logger.debug('----- save_published_in_studsubj -----')
+
+        saved_studsubj_pk_list = []
+        err_html = None
+
+        try:
+            published_field = prefix + 'published_id'
+            sql_keys = {'publ_pk': published_pk, 'sb_arr': studsubj_pk_list}
+
+            sql_list = ["UPDATE students_studentsubject AS studsubj",
+                        "SET", published_field, "= %(publ_pk)s::INT,",
+                        "deleted=tobedeleted, tobedeleted=FALSE, tobechanged=FALSE,",
+                        "prev_auth1by_id=NULL, prev_auth2by_id=NULL, prev_published_id=NULL",
+                        "WHERE studsubj.id IN (SELECT UNNEST(%(sb_arr)s::INT[]))",
+                        "AND studsubj.deleted = FALSE",
+
+                        "RETURNING id;"]
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                rows = cursor.fetchall()
+                if rows:
+                    for row in rows:
+                        saved_studsubj_pk_list.append(row[0])
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+            err_html = ''.join((
+                str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+                str(_('The subjects could not be approved.'))
+            ))
+
+        if logging_on:
+            logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
+
+        return saved_studsubj_pk_list, err_html
+
+    # - end of save_published_in_studsubj
 
 
     def delete_tobedeleted_from_studsubj(self, published_instance, sel_examyear, sel_school, sel_department, request):
@@ -2349,13 +3619,13 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 # - end of  delete_tobedeleted_from_studsubj
 
 
-    def create_ex1_ex4_msg_list(self, count_dict, requsr_auth, is_approve, is_test, examperiod, published_instance_filename):
-        # PR2022-08-25
-        logging_on = False  # s.LOGGING_ON
+    def create_ex1_ex4_msg_list(self, sel_examyear, sel_department, sel_lvlbase_pk, count_dict, requsr_auth, is_approve, is_test, examperiod, published_instance_filename, student_composition_error_namelist):
+        # PR2022-08-25 PR2023-01-15
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ----- create_ex1_ex4_msg_list -----')
-            logger.debug('count_dict: ' + str(count_dict))
-            logger.debug('is_test: ' + str(is_test))
+            logger.debug('    count_dict: ' + str(count_dict))
+            logger.debug('    is_test: ' + str(is_test))
 
         count = count_dict.get('count', 0)
         student_count = count_dict.get('student_count', 0)
@@ -2366,6 +3636,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         student_saved_count = count_dict.get('student_saved_count', 0)
         student_saved_error_count = count_dict.get('student_saved_error_count', 0)
         already_published = count_dict.get('already_published', 0)
+
+        all_published = count and already_published == count
+
         auth_missing = count_dict.get('auth_missing', 0)
         already_approved = count_dict.get('already_approved', 0)
         double_approved = count_dict.get('double_approved', 0)
@@ -2379,19 +3652,33 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             logger.debug('.....auth_missing: ' + str(auth_missing))
             logger.debug('.....already_approved: ' + str(already_approved))
             logger.debug('.....double_approved: ' + str(double_approved))
+            logger.debug('.....student_composition_error_count: ' + str(student_composition_error_count))
 
-        show_warning_msg = False
+        level_html = ''
+        if sel_lvlbase_pk:
+            level = subj_mod.Level.objects.get_or_none(
+                examyear=sel_examyear,
+                base_id=sel_lvlbase_pk
+            )
+            if sel_department.level_req and level and level.abbrev:
+                level_html = '<br>' + str(
+                    _('The selection contains only candidates of the learning path: %(lvl_abbrev)s.') % {
+                        'lvl_abbrev': level.abbrev})
+
         show_msg_first_approve_by_pres_secr = False
+
         if is_test:
             if is_approve:
                 class_str = 'border_bg_valid' if committed else 'border_bg_invalid'
             else:
-                if committed:
-                    if (is_test and auth_missing) or (is_test and double_approved):
-                        class_str = 'border_bg_warning'
-                        show_warning_msg = True
-                    else:
-                        class_str = 'border_bg_valid'
+                if all_published:
+                    class_str = 'border_bg_valid'
+                elif student_composition_error_count:
+                    class_str = 'border_bg_invalid'
+                elif auth_missing or double_approved:
+                    class_str = 'border_bg_invalid'
+                elif committed:
+                    class_str = 'border_bg_valid'
                 else:
                     class_str = 'border_bg_invalid'
         else:
@@ -2405,137 +3692,313 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         subjects_txt = _('subjects') if examperiod == 1 else _('re-examinations')
         form_txt = _('Ex1') if examperiod == 1 else _('Ex4')
 
+        if logging_on:
+            logger.debug('    class_str: ' + str(class_str))
+
 # - create first line with 'The selection contains 4 candidates with 39 subjects'
         msg_list = ["<div class='p-2 ", class_str, "'>"]
         if is_test:
             msg_list.append(''.join(( "<p class='pb-2'>",
                         str(_("The selection contains %(stud)s with %(subj)s.") %
-                            {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(examperiod, count)}),
+                            {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(examperiod, count)}), ' ',
+                            level_html,
                         '</p>')))
+
+
 # if students with errors in compositiosn: skip other msg
-        if student_composition_error_count:
-            is_are_str = str(_('is') if student_composition_error_count == 1 else _('are'))
-            msg_list.append(''.join(( "<p class='pb-2'>",
-                            str(_("The Ex1 form cannot be submitted because there %(is_are)s %(count)s candidates, ")
-                                  % {'count': student_composition_error_count, 'is_are': is_are_str}),
-                            str(_(" whose subject composition is not correct.")),
-                            "</p><p class='pb-2'>",
-                            str(_("Make the necessary corrections in the subject composition or contact the Inspectorate.")),
-                            "</p>"
-                            )))
 
-        else:
-# - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
-            if is_test and committed < count:
-                willbe_or_are_txt = pgettext_lazy('plural', 'will be') if is_test else _('are')
-                msg_list.append("<p class='pb-0'>" + str(_("The following %(cpt)s %(willbe)s skipped")
-                                                         % {'cpt': subjects_txt, 'willbe': willbe_or_are_txt}) + ':</p><ul>')
-                if already_published:
-                    msg_list.append('<li>' + str(_("%(val)s already submitted") %
-                                                 {'val': get_subjects_are_text(examperiod, already_published)}) + ';</li>')
-                if auth_missing:
-                    msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
-                                                 {'subj': get_subjects_are_text(examperiod, auth_missing)}) + ';</li>')
-                    show_msg_first_approve_by_pres_secr = True
-                if already_approved:
-                    msg_list.append('<li>' + get_subjects_are_text(examperiod, already_approved) + str(_(' already approved')) + ';</li>')
-                if double_approved:
-                    other_function =  str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
-                    caption = _('subject') if examperiod == 1 else _('re-examination')
-                    msg_list.append(''.join(('<li>', get_subjects_are_text(examperiod, double_approved),
-                                             str(_(' already approved by you as ')), other_function, '.<br>',
-                                    str(_("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {'cpt': caption} ), '</li>')))
-                msg_list.append('</ul>')
+        try:
+            composition_error_names_html = ''
+            if student_composition_error_namelist:
+                student_composition_error_namelist.sort()
+                composition_error_names_html = ''.join((
+                    "<ul class='mt-0'><li>",
+                    "</li><li>".join(student_composition_error_namelist),
+                    "</li></ul>"
+                ))
 
-    # - line with text how many subjects will be approved / submitted
-            msg_list.append('<p>')
-            if is_test:
-                if is_approve:
-                    if not committed:
-                        msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
+############## is_approve  #########################
+            if is_approve:
 
-                    else:
-                        student_count_txt = get_student_count_text(student_committed_count)
-                        subject_count_txt = get_subject_count_text(examperiod, committed)
-                        will_be_text = get_will_be_text(committed)
-                        approve_txt = _('approved.')
-                        msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
-                                            str(will_be_text), str(approve_txt)))
-                else:
-                    if not committed:
-                        if is_approve:
+    #++++++++++++++++ is_test +++++++++++++++++++++++++
+                if is_test:
+
+        # - if any subjects skipped: create lines 'The following subjects will be skipped' plus the reason
+                    if committed < count:
+                        willbe_or_are_txt = pgettext_lazy('plural', 'will be') if is_test else _('are')
+                        msg_list.append("<p class='pb-0'>" + str(_("The following %(cpt)s %(willbe)s skipped")
+                                                                 % {'cpt': subjects_txt, 'willbe': willbe_or_are_txt}) + ':</p><ul>')
+                        if already_published:
+                            msg_list.append('<li>' + str(_("%(val)s already submitted") %
+                                                         {'val': get_subjects_are_text(examperiod, already_published)}) + ';</li>')
+
+                            if logging_on:
+                                logger.debug('    already_published: ' + str(already_published))
+
+                        if auth_missing:
+                            msg_list.append('<li>' + str(_("%(subj)s not fully approved") %
+                                                         {'subj': get_subjects_are_text(examperiod, auth_missing)}) + ';</li>')
+                            show_msg_first_approve_by_pres_secr = True
+                            if logging_on:
+                                logger.debug('    auth_missing: ' + str(auth_missing))
+
+                        if already_approved:
+                            msg_list.append('<li>' + get_subjects_are_text(examperiod, already_approved) + str(_(' already approved')) + ';</li>')
+                            if logging_on:
+                                logger.debug('    already_approved: ' + str(already_approved))
+
+                        if double_approved:
+                            other_function =  str(_('chairperson')) if requsr_auth == 'auth2' else str(_('secretary'))
+                            caption = _('subject') if examperiod == 1 else _('re-examination')
+                            msg_list.append(''.join(('<li>', get_subjects_are_text(examperiod, double_approved),
+                                                     str(_(' already approved by you as ')), other_function, '.<br>',
+                                            str(_("You cannot approve a %(cpt)s both as chairperson and as secretary.") % {'cpt': caption} ), '</li>')))
+                            if logging_on:
+                                logger.debug('    double_approved: ' + str(double_approved))
+
+                        msg_list.append('</ul>')
+
+                # - line with text how many subjects will be approved / submitted
+                        msg_list.append("<p class='pb-2'>")
+                        if not committed:
                             msg_str = _("No %(cpt)s will be approved.") % {'cpt': subjects_txt}
-                        else:
-                            msg_str = _("The %(frm)s form can not be submitted.") % {'frm': form_txt}
-                    else:
-                        student_count_txt = get_student_count_text(student_committed_count)
-                        subject_count_txt = get_subject_count_text(examperiod, committed)
-                        will_be_text = get_will_be_text(committed)
-                        approve_txt = _('approved.') if is_approve else _('added to the %(frm)s form.') % {'frm': form_txt}
-                        msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
-                                            str(will_be_text), str(approve_txt)))
-            else:
-                student_count_txt = get_student_count_text(student_saved_count)
-                subject_count_txt = get_subject_count_text(examperiod, saved)
-                student_saved_error_count_txt = get_student_count_text(student_saved_error_count)
-                subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
+                            if logging_on:
+                                logger.debug('    is_approve not committed: ' + str(not committed))
 
-    # - line with text how many subjects have been approved / submitted
-                if is_approve:
-                    not_str = '' if saved else str(_('not')) + ' '
-                    msg_str = ''
+                        else:
+                            student_count_txt = get_student_count_text(student_committed_count)
+                            subject_count_txt = get_subject_count_text(examperiod, committed)
+                            will_be_text = get_will_be_text(committed)
+                            msg_str = ' '.join((str(subject_count_txt), str(_('of')),  str(student_count_txt),
+                                                str(will_be_text), str(_('approved.'))))
+                            if logging_on:
+                                logger.debug('    is_approve msg_str: ' + str(not msg_str))
+
+                        msg_list.append(str(msg_str))
+                        msg_list.append('</p>')
+
+                # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
+                        if show_msg_first_approve_by_pres_secr:
+                            msg_txt = ''.join(('<div>', str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') % {'cpt': subjects_txt, 'frm': form_txt}   ), '</div>'))
+                            msg_list.append(msg_txt)
+
+
+                    if student_composition_error_count:
+                        is_are_str = str(_('is') if student_composition_error_count == 1 else _('are'))
+                        candidates_cpt = str(_('candidate') if student_composition_error_count == 1 else _('candidates'))
+                        msg_txt = ''.join(("<p class='pb-0'><b>", str(_("ATTENTION")), '</b>: ',
+                                           str(_("There %(is_are)s %(count)s %(cand)s, ")
+                                               % {'count': student_composition_error_count, 'is_are': is_are_str, 'cand': candidates_cpt}),
+                                           str(_(" whose subject composition is not correct.")),
+                                           composition_error_names_html,
+                                           str(_("Make the necessary corrections in the subject composition or contact the Inspectorate.")),
+                                           "</p>"
+                                           ))
+                        msg_list.append(msg_txt)
+
+                        if logging_on:
+                            logger.debug('    msg_txt: ' + str(msg_txt))
+
+    # ++++++++++++++++ not is_test +++++++++++++++++++++++++
+                else:
+
+                    # - line with text how many subjects have been approved
+                    msg_list.append('<p>')
+
+                    student_count_txt = get_student_count_text(student_saved_count)
+                    subject_count_txt = get_subject_count_text(examperiod, saved)
+                    student_saved_error_count_txt = get_student_count_text(student_saved_error_count)
+                    subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
+
+                    if logging_on:
+                        logger.debug('    not is_text: ' + str(not student_count_txt))
+
+                    # - line with text how many subjects have been approved / submitted
                     if not saved and not saved_error:
                         msg_str = str(_("No subjects have been approved."))
                     else:
                         if saved:
                             have_has_been_txt = _('has been') if saved == 1 else _('have been')
                             msg_str = str(_("%(subj)s of %(stud)s %(havehasbeen)s approved.")
-                                                    % {'subj': subject_count_txt, 'stud': student_count_txt, 'havehasbeen': have_has_been_txt})
+                                          % {'subj': subject_count_txt, 'stud': student_count_txt,
+                                             'havehasbeen': have_has_been_txt})
                         else:
                             msg_str = str(_("No subjects have been approved."))
                         if saved_error:
                             if msg_str:
                                 msg_str += '<br>'
-                            could_txt = pgettext_lazy('singular', 'could') if saved_error == 1 else pgettext_lazy('plural', 'could')
-                            msg_str += str(_("%(subj)s of %(stud)s %(could)s not be approved because an error occurred.")
-                                                    % {'subj': subject_error_count_txt, 'stud': student_saved_error_count_txt, 'could': could_txt})
+                            could_txt = pgettext_lazy('singular', 'could') if saved_error == 1 else pgettext_lazy(
+                                'plural', 'could')
+                            msg_str += str(
+                                _("%(subj)s of %(stud)s %(could)s not be approved because an error occurred.")
+                                % {'subj': subject_error_count_txt, 'stud': student_saved_error_count_txt,
+                                   'could': could_txt})
+
+                    msg_list.append(str(msg_str))
+                    msg_list.append('</p>')
+
+############## is submit #########################
+            else:
+                if all_published :
+                    msg_str = ''.join((
+                        "<p class='pb-2'>",
+                       str(_("All subjects are already submitted.")),
+                       "</p>"
+                    ))
+                    msg_list.append(msg_str)
+
+                elif student_composition_error_count:
+                    is_are_str = str(_('is') if student_composition_error_count == 1 else _('are'))
+                    candidates_cpt = str(_('candidate') if student_composition_error_count == 1 else _('candidates'))
+                    msg_str = ''.join((
+                        "<p class='pb-0'>",
+                       str(_("The Ex1 form cannot be submitted because there %(is_are)s %(count)s %(cand)s, ")
+                           % {'count': student_composition_error_count, 'is_are': is_are_str,
+                              'cand': candidates_cpt}),
+                       str(_(" whose subject composition is not correct.")),
+                       composition_error_names_html,
+                       "</p><p class='pb-2'>",
+                       str(_("Make the necessary corrections in the subject composition or contact the Inspectorate.")),
+                       "</p>"
+                    ))
+
+                    if logging_on:
+                        logger.debug('   msg_str: ' + str(msg_str))
+                    msg_list.append(msg_str)
+
+                elif auth_missing or double_approved:
+                    if auth_missing + double_approved == 1:
+                        subjects_txt = str(_('there is 1 subject'))
+                    else:
+                        subjects_txt = str(_("there are %(count)s subjects") % {'count': auth_missing + double_approved})
+                    msg_txt = ''
+                    if auth_missing:
+                        if double_approved:
+                            msg_txt += ''.join((', ', str(_("that are not fully approved")), str(_(" or ")), str(_("that are double approved by the same person."))))
+                        else:
+                            if auth_missing == 1:
+                                msg_txt += ''.join((', ', str(_("that is not fully approved")), "."))
+                            else:
+                                msg_txt += ''.join((', ', str(_("that are not fully approved")), "."))
+                    else:
+                        if double_approved:
+                            if double_approved == 1:
+                                msg_txt += ''.join((', ', str(_("that is double approved by the same person.")), "."))
+                            else:
+                                msg_txt += ''.join((', ', str(_("that are double approved by the same person.")), "."))
+
+                    msg_str = ''.join((
+                        "<p class='pb-2'>",
+                       str(_("The Ex1 form cannot be submitted because ")),
+                       subjects_txt,
+                        msg_txt,
+                       "</p><p class='pb-2'>",
+                       str(_("Make the necessary corrections in the subject composition or contact the Inspectorate.")),
+                       "</p>"
+                    ))
+
+                    if logging_on:
+                        logger.debug('   msg_str: ' + str(msg_str))
+                    msg_list.append(msg_str)
 
                 else:
-                    not_str = '' if saved else str(_('not')) + ' '
-                    msg_str = str(_("The %(frm)s form has %(not)s been submitted.") % {'frm': form_txt, 'not': not_str})
-                    if saved:
-                        student_count_txt = get_student_count_text(student_saved_count)
-                        subject_count_txt = get_subject_count_text(examperiod, saved)
-                        file_name = published_instance_filename if published_instance_filename else '---'
-                        msg_str += ''.join(('<br>',
-                            str(_("It contains %(subj)s of %(stud)s.") % {'stud': student_count_txt, 'subj': subject_count_txt}),
-                            '<br>', str(_("The %(frm)s form has been saved as '%(val)s'.") % {'frm': form_txt, 'val': file_name}),
-                            '<br>', str(_("Go to the page 'Archive' to download the file."))
-                        ))
 
-            msg_list.append(str(msg_str))
-            msg_list.append('</p>')
+                    if is_test and committed < count:
 
-    # - warning if any subjects are not fully approved
-            if show_warning_msg and not is_approve:
-                msg_list.append("<div class='pt-2'><b>")
-                msg_list.append(str(_('WARNING')))
-                msg_list.append(':</b><br>')
-                msg_list.append(str(_('There are subjects that are not fully approved.')))
-                msg_list.append(' ')
-                msg_list.append(str(_('They will not be included in the %(frm)s form.') % {'frm': form_txt}))
-                msg_list.append(' ')
-                msg_list.append(str(_('Are you sure you want to submit the %(frm)s form?') % {'frm': form_txt}))
-                msg_list.append('</div>')
+                        if already_published or committed:
+                            msg_list.append('<ul>')
 
-    # - add line 'both prseident and secretary must first approve all subjects before you can submit the Ex form
-            if show_msg_first_approve_by_pres_secr:
-                msg_txt = ''.join(('<div>', str(_('The chairperson and the secretary must approve all %(cpt)s before you can submit the %(frm)s form.') % {'cpt': subjects_txt, 'frm': form_txt}   ), '</div>'))
-                msg_list.append(msg_txt)
+                        if already_published:
+                            msg_list.append('<li>' + str(_("%(val)s already submitted") % {'val': get_subjects_are_text(examperiod, already_published)}) + ';</li>')
+
+                        if committed:
+                            msg_list.append('<li>' + str(_("%(val)s submitted") % {'val': get_subjects_willbe_text(examperiod, committed)}) + ';</li>')
+
+                        if already_published or committed:
+                            msg_list.append('</ul>')
+
+                    # - line with text how many subjects will be approved / submitted
+                    msg_list.append('<p>')
+                    if is_test:
+                        if not committed:
+                            msg_str = ''.join((
+                                '<p>',
+                                str(_("The %(frm)s form can not be submitted.") % {'frm': form_txt}),
+                                "</p><p>",
+                                str(_(
+                                    'The chairperson and the secretary must approve all subjects before you can submit the Ex1 form.')),
+                                "</p>"
+                            ))
+                            msg_list.append(msg_str)
+                            if logging_on:
+                                logger.debug('   msg_str: ' + str(msg_str))
+                            if logging_on:
+                                logger.debug('   not is_approve not committed: ' + str(not not committed))
+                        else:
+                            """
+                            msg_list.append('<p>')
+
+                            student_count_txt = get_student_count_text(student_committed_count)
+                            subject_count_txt = get_subject_count_text(examperiod, committed)
+                            will_be_text = get_will_be_text(committed)
+                            approve_txt = _('added to the %(frm)s form.') % {'frm': form_txt}
+                            msg_str = ' '.join((str(subject_count_txt), str(_('of')), str(student_count_txt),
+                                                str(will_be_text), str(approve_txt)))
+
+                            if logging_on:
+                                logger.debug('    not is_approve msg_str: ' + str(not msg_str))
+
+                            msg_list.append('</p>')
+                            """
+                    else:
+
+                        msg_list.append("<p class='pb-2'>")
+                        #student_count_txt = get_student_count_text(student_saved_count)
+                        #subject_count_txt = get_subject_count_text(examperiod, saved)
+                        #student_saved_error_count_txt = get_student_count_text(student_saved_error_count)
+                        #subject_error_count_txt = get_subject_count_text(examperiod, saved_error)
+
+                        # - line with text how many subjects have been approved / submitted
+
+                        not_str = '' if saved else str(_('not')) + ' '
+                        msg_str = str(_("The %(frm)s form has %(not)s been submitted.") % {'frm': form_txt, 'not': not_str})
+                        if saved:
+                            #student_count_txt = get_student_count_text(student_saved_count)
+                            #subject_count_txt = get_subject_count_text(examperiod, saved)
+                            file_name = published_instance_filename if published_instance_filename else '---'
+                            msg_str += ''.join(('<br>',
+                                                # PR2023-02-12 dont give number of subjects, because all subjects are added to the Ex form
+                                                #str(_("It contains %(subj)s of %(stud)s.") % {'stud': student_count_txt,
+                                                #                                              'subj': subject_count_txt}),
+                                                #'<br>',
+                                                str(_("The %(frm)s form has been saved as '%(val)s'.") % {'frm': form_txt,
+                                                                                                          'val': file_name}),
+                                                '<br>', str(_("Go to the page 'Archive' to download the file."))
+                                                ))
+
+                        msg_list.append(str(msg_str))
+                        msg_list.append('</p>')
+
+            if logging_on:
+                logger.debug('   msg_list: ' + str(msg_list))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+
+#######################################
 
         msg_list.append('</div>')
 
+
+        if logging_on:
+            logger.debug('   msg_list: ' + str(msg_list))
+
         msg_html = ''.join(msg_list)
+
+        if logging_on:
+            logger.debug('    msg_html: ' + str(msg_html))
+
         return msg_html
 # - end of create_ex1_ex4_msg_list
 
@@ -2581,14 +4044,16 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                 save_to_disk=save_to_disk,
                 request=request,
                 user_lang=user_lang)
-    # - end of create_ex1_ex4_form
 
-# --- end of StudentsubjectApproveOrSubmitEx1Ex4View
+        if logging_on:
+            logger.debug(' ')
+            logger.debug(' ============= end of create_ex1_ex4_form ============= ')
+# --- end of create_ex1_ex4_form
 
 
 #################################################################################
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectApproveSingleView(View):  # PR2021-07-25
+class StudentsubjectApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -2600,25 +4065,28 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
         update_wrap = {}
         msg_list = []
 
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
 # - get permit
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_studsubj')
+            permit_list = acc_prm.get_permit_list('page_studsubj', req_usr)
             if permit_list:
                 has_permit = 'permit_approve_subject' in permit_list
-            if logging_on and False:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
 
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
+        if not has_permit:
+            msg_list.append(str(_("You don't have permission to perform this action.")))
+        else:
 
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('    upload_dict: ' + str(upload_dict))
 
 # ----- get selected examyear, school and department from usersettings
                 # may_edit = False when:
@@ -2628,14 +4096,42 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
                 # - not sel_examyear.published,
                 # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
 
-                sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_editNIU, err_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
                 if err_list:
                     msg_list.extend(err_list)
                 else:
 
+# check if studsubj is allowed PR2023-02-12
+                    userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
+                    if logging_on:
+                        logger.debug('    userallowed_instance: ' + str(userallowed_instance))
+
+                    userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+                    if logging_on:
+                        logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
+
+                    userallowed_schoolbase_dict, userallowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(userallowed_sections_dict, sel_school.base_id)
+                    if logging_on:
+                        logger.debug('    userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
+                        logger.debug('    userallowed_depbases_pk_arr: ' + str(userallowed_depbases_pk_arr))
+
+                    userallowed_depbase_dict, userallowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(userallowed_schoolbase_dict, sel_department.base_id)
+                    if logging_on:
+                        logger.debug('    userallowed_depbase_dict: ' + str(userallowed_depbase_dict))
+                        logger.debug('    userallowed_lvlbase_pk_arr: ' + str(userallowed_lvlbase_pk_arr))
+
+                    sel_lvlbase_pk = sel_level.base_id if sel_level else None
+                    userallowed_subjbase_pk_list = acc_prm.get_userallowed_subjbase_arr(userallowed_depbase_dict, sel_lvlbase_pk)
+
+                    userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+                    if logging_on:
+                        logger.debug('    userallowed_subjbase_pk_list: ' + str(userallowed_subjbase_pk_list))
+                        logger.debug('    userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+
 # - get list of studentsubjects from upload_dict
                     studsubj_list = upload_dict.get('studsubj_list')
+                    #  'studsubj_list': [{'student_pk': 7959, 'studsubj_pk': 64174, 'subj_auth1by': True}]}
                     if studsubj_list:
                         studsubj_rows = []
 # -------------------------------------------------
@@ -2643,10 +4139,6 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
                         for studsubj_dict in studsubj_list:
                             student_pk = studsubj_dict.get('student_pk')
                             studsubj_pk = studsubj_dict.get('studsubj_pk')
-                            if logging_on:
-                                logger.debug('---------- ')
-                                logger.debug('  student_pk: ' + str(student_pk))
-                                logger.debug('  studsubj_pk: ' + str(studsubj_pk))
 
                             append_dict = {}
                             error_dict = {}
@@ -2661,11 +4153,26 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
                                 student=student
                             )
                             if logging_on:
-                                logger.debug('student: ' + str(student))
-                                logger.debug('studsubj: ' + str(studsubj))
+                                logger.debug('---------- ')
+                                logger.debug('    student: ' + str(student))
+                                logger.debug('    studsubj: ' + str(studsubj))
+
+                            may_edit = False
+                            if student and studsubj:
+
+# +++ check if updating is allowed:
+                                may_edit = True
+                                if userallowed_cluster_pk_list:
+                                    may_edit = False
+                                    if studsubj.cluster_id and studsubj.cluster_id in userallowed_cluster_pk_list:
+                                        may_edit = True
+                                    else:
+                                        msg_list.append(
+                                            str(_("This subject does not belong to %(cpt)s.") % {'cpt': _('the allowed clusters')}))
+                                        msg_list.append(str(_("You cannot approve this subject.")))
 
 # +++ update studsubj
-                            if student and studsubj:
+                            if may_edit:
                                 si_pk = studsubj.schemeitem_id
                                 schemeitems_dict = subj_vw.get_scheme_si_dict(sel_examyear.pk, sel_department.base_id, si_pk)
                                 si_dict = schemeitems_dict.get(si_pk)
@@ -2696,12 +4203,15 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25
                                 if logging_on:
                                     logger.debug('studsubj.pk: ' + str(studsubj.pk))
                                 studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
+
+                                # TODO PR2022-12-22 give value to sel_lvlbase
+                                sel_lvlbase = None
                                 rows = create_studentsubject_rows(
-                                    examyear=sel_examyear,
-                                    schoolbase=sel_school.base,
-                                    depbase=sel_department.base,
+                                    sel_examyear=sel_examyear,
+                                    sel_schoolbase=sel_school.base if sel_school else None,
+                                    sel_depbase=sel_department.base if sel_department else None,
                                     requsr_same_school=True,  # check for same_school is included in may_edit
-                                    setting_dict={},
+                                    sel_lvlbase=sel_level.base if sel_level else None,
                                     append_dict=append_dict,
                                     request=request,
                                     student_pk=student.pk,
@@ -2773,82 +4283,111 @@ def get_subjects_are_text(examperiod, count):
     return msg_text
 
 
+def get_subjects_willbe_text(examperiod, count):
+    if not count:
+        msg_text = str(_('no subjects will be')) if examperiod == 1 else str(_('no re-examinations will be'))
+    elif count == 1:
+        msg_text = str(_('1 subject will be')) if examperiod == 1 else str(_('1 re-examination will be'))
+    else:
+        subjects_txt = str(_('subjects will be')) if examperiod == 1 else str(_('re-examinations will be'))
+        msg_text = ' '.join((str(count), subjects_txt))
+    return msg_text
+
 def approve_studsubj(studsubj, requsr_auth, prefix, is_test, is_reset, count_dict, request):
-    # PR2021-07-26 PR2022-05-30
+    # PR2021-07-26 PR2022-05-30 PR2022-12-30 PR2023-02-12
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
     #  prefix = 'reex3_'  'reex_'  'subj_'
+
+    # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
+    # list is created outside this function, when is_saved = True
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- approve_studsubj -----')
-        logger.debug('requsr_auth:  ' + str(requsr_auth))
-        logger.debug('prefix:  ' + str(prefix))
-        logger.debug('is_reset:     ' + str(is_reset))
+        logger.debug('    requsr_auth:  ' + str(requsr_auth))
+        logger.debug('    prefix:  ' + str(prefix))
+        logger.debug('    is_reset:     ' + str(is_reset))
+        logger.debug('    studsubj:     ' + str(studsubj))
 
     is_committed = False
     is_saved = False
-    is_saved_error = False
+
     if studsubj:
         req_user = request.user
 
-# - skip if this studsubj is already published
-        published = getattr(studsubj, prefix + 'published')
+# - skip when this studsubj is already published
+        # PR2023-02-12 was: published = getattr(studsubj, prefix + 'published')
+        published = True if studsubj.get('published_id') else False
         if logging_on:
-            logger.debug('published:    ' + str(published))
+            logger.debug('    published:    ' + str(published))
 
         if published:
             count_dict['already_published'] += 1
         else:
-            requsr_authby_field = prefix + requsr_auth + 'by'
+            #requsr_authby_field = prefix + requsr_auth + 'by'
+            requsr_authby_field = requsr_auth + 'by_id'
 
 # - skip if other_auth has already approved and other_auth is same as this auth. - may not approve if same auth has already approved
-            auth1by = getattr(studsubj, prefix +'auth1by')
-            auth2by = getattr(studsubj, prefix +'auth2by')
+
+            # PR2023-02-12 use sql instead of model:
+            # field auth1by_id, auth2by_id, published_id contains the value are of
+            #   - when axamperiod = 2: studsubj.reex_auth1by_id
+            #   - when axamperiod = 3: studsubj.reex3_auth1by_id
+            #   - else:                 studsubj.subj_auth1by_id
+
+            #auth1by = getattr(studsubj, prefix +'auth1by')
+            #auth2by = getattr(studsubj, prefix +'auth2by')
+            auth1by_id = studsubj.get('auth1by_id')
+            auth2by_id = studsubj.get('auth2by_id')
             if logging_on:
-                logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
-                logger.debug('auth1by:      ' + str(auth1by))
-                logger.debug('auth2by:      ' + str(auth2by))
+                logger.debug('    auth1by_id:      ' + str(auth1by_id))
+                logger.debug('    auth2by_id:      ' + str(auth2by_id))
 
             save_changes = False
 
 # - remove authby when is_reset
             if is_reset:
-                setattr(studsubj, requsr_authby_field, None)
+                # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, None)
                 count_dict['reset'] += 1
                 save_changes = True
             else:
 
 # - skip if this studsubj is already approved
-                requsr_authby_value = getattr(studsubj, requsr_authby_field)
+                # requsr_authby_value = getattr(studsubj, requsr_authby_field)
+                requsr_authby_value = auth1by_id if requsr_auth == 'auth1' else auth2by_id if requsr_auth == 'auth2' else None
                 requsr_authby_field_already_approved = True if requsr_authby_value else False
                 if logging_on:
-                    logger.debug('requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+                    logger.debug('    requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+
                 if requsr_authby_field_already_approved:
                     count_dict['already_approved'] += 1
                 else:
 
 # - skip if this author (like 'chairperson') has already approved this studsubj
         # under a different permit (like 'secretary' or 'corrector')
-                    logger.debug('>>> requsr_auth: ' + str(requsr_auth))
-                    logger.debug('>>> req_user:    ' + str(req_user))
-                    logger.debug('>>> auth1by:     ' + str(auth1by))
-                    logger.debug('>>> auth2by:     ' + str(auth2by))
+
+                    if logging_on:
+                        logger.debug('    > requsr_auth: ' + str(requsr_auth))
+                        logger.debug('    > req_user:    ' + str(req_user))
+                        logger.debug('    > auth1by_id:     ' + str(auth1by_id))
+                        logger.debug('    > auth2by_id:     ' + str(auth2by_id))
 
                     double_approved = False
                     if requsr_auth == 'auth1':
-                        double_approved = True if auth2by and auth2by == req_user else False
+                        double_approved = True if auth2by_id and auth2by_id == req_user.pk else False
                     elif requsr_auth == 'auth2':
-                        double_approved = True if auth1by and auth1by == req_user else False
+                        double_approved = True if auth1by_id and auth1by_id == req_user.pk else False
+
                     if logging_on:
-                        logger.debug('double_approved: ' + str(double_approved))
+                        logger.debug('    double_approved: ' + str(double_approved))
 
                     if double_approved:
                         count_dict['double_approved'] += 1
                     else:
-                        setattr(studsubj, requsr_authby_field, req_user)
-
+                        # PR2022-12-30 was: setattr(studsubj, requsr_authby_field, req_user)
                         save_changes = True
                         if logging_on:
-                            logger.debug('save_changes: ' + str(save_changes))
+                            logger.debug('    save_changes: ' + str(save_changes))
 
 # - set value of requsr_authby_field
             if save_changes:
@@ -2856,22 +4395,21 @@ def approve_studsubj(studsubj, requsr_auth, prefix, is_test, is_reset, count_dic
                     count_dict['committed'] += 1
                     is_committed = True
                 else:
-# - save changes
-                    try:
-                        studsubj.save(request=request)
-                        is_saved = True
-                        count_dict['saved'] += 1
-                    except Exception as e:
-                        logger.error(getattr(e, 'message', str(e)))
-                        is_saved_error = True
-                        count_dict['saved_error'] += 1
 
-    return is_committed, is_saved, is_saved_error
+# - save changes
+                    count_dict['saved'] += 1
+                    is_saved = True
+
+    return is_committed, is_saved
 # - end of approve_studsubj
 
 
-def submit_studsubj(studsubj, prefix, is_test, published_instance, count_dict, request):
-    # PR2021-01-21 PR2021-07-27 PR2022-05-30
+def submit_studsubj(studsubj, prefix, is_test, count_dict):
+    # PR2021-01-21 PR2021-07-27 PR2022-05-30 PR2022-12-30 PR2023-02-12
+
+    # PR2022-12-30 instead of updating each studsubj instance separately, create list of tobesaved studsubj_pk
+    # list is created outside this function, when is_saved = True
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- submit_studsubj -----')
@@ -2879,12 +4417,12 @@ def submit_studsubj(studsubj, prefix, is_test, published_instance, count_dict, r
 
     is_committed = False
     is_saved = False
-    is_saved_error = False
 
     if studsubj:
 
 # - check if this studsubj is already published
-        published = getattr(studsubj, prefix + 'published')
+        #published = getattr(studsubj, prefix + 'published')
+        published = True if studsubj.get('published_id') else False
         if logging_on:
             logger.debug('     subj_published: ' + str(published))
 
@@ -2893,20 +4431,25 @@ def submit_studsubj(studsubj, prefix, is_test, published_instance, count_dict, r
         else:
 
 # - check if this studsubj / examtype is approved by all auth
-            auth1by = getattr(studsubj, prefix + 'auth1by')
-            auth2by = getattr(studsubj, prefix + 'auth2by')
-            auth_missing = auth1by is None or auth2by is None
+            #auth1by = getattr(studsubj, prefix + 'auth1by')
+            #auth2by = getattr(studsubj, prefix + 'auth2by')
+
+            auth1by_id = studsubj.get('auth1by_id')
+            auth2by_id = studsubj.get('auth2by_id')
+            auth_missing = auth1by_id is None or auth2by_id is None
             if logging_on:
-                logger.debug('auth1by: ' + str(auth1by))
-                logger.debug('auth2by: ' + str(auth2by))
-                logger.debug('auth_missing: ' + str(auth_missing))
+                logger.debug('    auth1by_id:      ' + str(auth1by_id))
+                logger.debug('    auth2by_id:      ' + str(auth2by_id))
+                logger.debug('    auth_missing: ' + str(auth_missing))
+
             if auth_missing:
                 count_dict['auth_missing'] += 1
             else:
 # - check if all auth are different
-                double_approved = auth1by == auth2by
+                double_approved = auth1by_id == auth2by_id
                 if logging_on:
-                    logger.debug('double_approved: ' + str(double_approved))
+                    logger.debug('    double_approved: ' + str(double_approved))
+
                 if double_approved and not auth_missing:
                     count_dict['double_approved'] += 1
                 else:
@@ -2915,20 +4458,10 @@ def submit_studsubj(studsubj, prefix, is_test, published_instance, count_dict, r
                         count_dict['committed'] += 1
                         is_committed = True
                     else:
+                        count_dict['saved'] += 1
+                        is_saved = True
 
-                        try:
-# - put published_id in field subj_published
-                            setattr(studsubj, prefix + 'published', published_instance)
-# - save changes
-                            studsubj.save(request=request)
-                            is_saved = True
-                            count_dict['saved'] += 1
-                        except Exception as e:
-                            logger.error(getattr(e, 'message', str(e)))
-                            is_saved_error = True
-                            count_dict['saved_error'] += 1
-
-    return is_committed, is_saved, is_saved_error
+    return is_committed, is_saved
 # - end of submit_studsubj
 
 
@@ -3043,8 +4576,8 @@ class StudentsubjectValidateSchemeView(View):  # PR2021-08-28
                 upload_dict = json.loads(upload_json)
                 correct_errors = upload_dict.get('correct_errors', False)
 
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
             stud_row_count, stud_row_error, student_rows = validate_students_scheme(sel_examyear, correct_errors, request)
             response_dict = {}
@@ -3292,13 +4825,13 @@ def validate_studsubj_scheme(sel_examyear, correct_errors, request):
 
 
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 PR2022-08-30
+class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 PR2022-08-30 PR2023-01-07
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
-            logger.debug(' ============= StudentsubjectUploadView ============= ')
+            logger.debug(' ============= StudentsubjectMultipleUploadView ============= ')
 
         # function creates, deletes and updates studentsubject records of current student PR2020-11-21
         update_wrap = {}
@@ -3308,28 +4841,29 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_studsubj')
+            permit_list = acc_prm.get_permit_list('page_studsubj', req_usr)
             if permit_list:
                 has_permit = 'permit_crud' in permit_list
             if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
+                logger.debug('    permit_list: ' + str(permit_list))
 
+        if logging_on:
+            logger.debug('    has_permit: ' + str(has_permit))
         if has_permit:
 
         # - check for double subjects, double subjects are not allowed -> happens in create_studsubj PR2021-07-11
         # - TODO when deleting: return warning when subject grades have values
 
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get upload_dict from request.POST
+    # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
 
-# ----- get selected examyear, school and department from usersettings
+    # - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+    # - get selected examyear, school and department from usersettings
                 # may_edit = False when:
                 # - examyear, schoolbase, school, depbase or department is None
                 # - country, examyear or school is locked
@@ -3337,16 +4871,17 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                 # - not sel_examyear.published,
                 # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
 
-                sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if logging_on:
-                    logger.debug('upload_dict' + str(upload_dict))
-                    logger.debug('sel_examyear: ' + str(sel_examyear))
-                    logger.debug('sel_school: ' + str(sel_school))
-                    logger.debug('sel_department: ' + str(sel_department))
+                    logger.debug('    upload_dict' + str(upload_dict))
+                    logger.debug('    sel_examyear: ' + str(sel_examyear))
+                    logger.debug('    sel_school: ' + str(sel_school))
+                    logger.debug('    sel_department: ' + str(sel_department))
 
-# - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
+    # - get info from upload_dict
+                # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                 student_instance = None
 
                 if len(err_list):
@@ -3360,7 +4895,7 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                         department=sel_department
                     )
                 if logging_on:
-                    logger.debug('student_instance: ' + str(student_instance))
+                    logger.debug('    student_instance: ' + str(student_instance))
 
 # - get list of studentsubjects from upload_dict
                 studsubj_list = None
@@ -3372,7 +4907,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
 # - get schemitem_info of the scheme of this student, separately, instead of getting t for each subject, should be faster
                     schemeitems_dict = subj_vw.get_scheme_si_dict(sel_examyear.pk, sel_department.base_id, student_instance.scheme_id)
 
+                    updated_studsubj_pk_list = []
                     updated_rows = []
+                    updated_rows_append_dict = {}
                     recalc_subj_composition = False
 
 # -------------------------------------------------
@@ -3384,12 +4921,11 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                         schemeitem_pk = studsubj_dict.get('schemeitem_pk')
 
                         if logging_on:
-                            logger.debug('---------- ')
-                            logger.debug('studsubj mode: ' + str(mode))
-                            logger.debug('studsubj_pk: ' + str(studsubj_pk))
-                            logger.debug('schemeitem_pk: ' + str(schemeitem_pk))
-
-                        append_dict = {}
+                            logger.debug('---------- loop through list of uploaded studentsubjects ')
+                            logger.debug('    mode: ' + str(mode))
+                            logger.debug('    studsubj_dict:   ' + str(studsubj_dict))
+                            logger.debug('    studsubj_pk:   ' + str(studsubj_pk))
+                            logger.debug('    schemeitem_pk: ' + str(schemeitem_pk))
 
 # - get current studsubj - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
                         studsubj = stud_mod.Studentsubject.objects.get_or_none(
@@ -3397,7 +4933,9 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                             student=student_instance
                         )
                         if logging_on:
-                            logger.debug('studsubj: ' + str(studsubj))
+                            logger.debug('    studsubj: ' + str(studsubj))
+
+                        append_dict = {}
 
 # +++ delete studsubj ++++++++++++
                         if mode == 'delete':
@@ -3419,26 +4957,36 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                                     updated_rows.append(deleted_row)
                                     recalc_subj_composition = True
 
-# +++ create new studentsubject, also create grade of first examperiod
+# +++ create or restore new studentsubject, also create grade of first examperiod
                         elif mode == 'create':
                             schemeitem = subj_mod.Schemeitem.objects.get_or_none(id=schemeitem_pk)
                             error_list = []
 
-                            studsubj = create_studsubj(student_instance, schemeitem, messages, error_list, request, False)  # False = don't skip_save
+                            studsubj, append_key = create_studsubj(student_instance, schemeitem, messages, error_list, request, False)  # False = don't skip_save
+
+                            if logging_on:
+                                logger.debug('    studsubj: ' + str(studsubj))
+                                logger.debug('    append_key: ' + str(append_key))
 
                             if studsubj:
-                                append_dict['created'] = True
+                                # PR2023-01-03 was: append_dict['created'] = True
+                                #updated_studsubj_pk_list.append(studsubj.pk)
+                                #if logging_on:
+                                #    logger.debug('    updated_studsubj_pk_list: ' + str(updated_studsubj_pk_list))
+
                                 recalc_subj_composition = True
+
+                                if append_key:  # append_key = 'created' when new or 'updated' when 'restored'
+                                    append_dict = {append_key: True}
 
                             elif error_list:
                                 # TODO check if error is displayed correctly PR2021-07-21
                                 # yes, but messages html is displayed in msg_box. This one not in use??
-                                append_dict['err_create'] = ' '.join(error_list)
-
+                                # PR2023-01-03 was: append_dict['err_create'] = ' '.join(error_list)
+                                append_dict = {'err_create': ' '.join(error_list)}
                             if logging_on:
-                                logger.debug('schemeitem: ' + str(schemeitem))
-                                logger.debug('studsubj: ' + str(studsubj))
-                                logger.debug('append_dict: ' + str(append_dict))
+                                logger.debug('    schemeitem: ' + str(schemeitem))
+                                logger.debug('    append_dict: ' + str(append_dict))
 
 # +++ update existing studsubj - also when studsubj is created - studsubj is None when deleted
                         if studsubj and mode in ('create', 'update'):
@@ -3447,8 +4995,15 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                             err_fields = []
 
                             studsubj_pk_list, recalc_subj_comp = update_studsubj(studsubj, studsubj_dict, si_dict, sel_examyear, sel_school, sel_department, err_list, err_fields, request)
+                            #if studsubj_pk_list:
+                            #    for studsubj_pk in studsubj_pk_list:
+                            #        if studsubj_pk not in updated_studsubj_pk_list:
+                            #            updated_studsubj_pk_list.append(studsubj_pk)
                             if recalc_subj_comp:
                                 recalc_subj_composition = True
+
+                        if studsubj and append_dict:
+                            updated_rows_append_dict[studsubj.pk] = append_dict
 # - end of loop
 # -------------------------------------------------
                     if recalc_subj_composition:
@@ -3459,16 +5014,25 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
                         messages.append({'class': "border_bg_invalid", 'msg_html': msg_html})
 
 # - add update_dict to update_wrap
+                    # must update all studsubjects from this student, because the exclamation sign must be updated
+                    # in all sudsubjects, not only the updeted ones
                     updated_rows = create_studentsubject_rows(
-                        examyear=sel_examyear,
-                        schoolbase=sel_school.base,
-                        depbase=sel_department.base,
+                        sel_examyear=sel_examyear,
+                        sel_schoolbase=sel_school.base if sel_school else None,
+                        sel_depbase=sel_department.base if sel_department else None,
+                        sel_lvlbase=None,
                         requsr_same_school=True,  # check for same_school is included in may_edit
-                        setting_dict={},
-                        append_dict={},
+                        append_dict= updated_rows_append_dict,
                         request=request,
                         student_pk=student_instance.pk
                     )
+                    #PR2023-01-07 added to update composistion tickmark in all studsubjects of this student
+                    for row in updated_rows:
+                        row['changed'] = True
+
+                    if logging_on and False:
+                        logger.debug('    updated_rows: ' + str(updated_rows))
+
                     if updated_rows:
                         update_wrap['updated_studsubj_rows'] = updated_rows
 
@@ -3488,20 +5052,20 @@ class StudentsubjectUploadView(View):  # PR2020-11-20 PR2021-08-17 PR2021-09-28 
         if len(messages):
             update_wrap['messages'] = messages
 
-        if logging_on:
-            logger.debug('update_wrap: ' + str(update_wrap))
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# --- end of StudentsubjectUploadView
+# --- end of StudentsubjectMultipleUploadView
 
 
 def delete_studentsubject(student_instance, studsubj_instance, updated_rows, request):
-    # --- delete student # PR2021-07-18 PR2022-02-16 PR2022-08-05
+    # PR2021-07-18 PR2022-02-16 PR2022-08-05
 
     # published fields are: subj_published, exem_published, reex_published, reex3_published, pok_published
     # if published: don't delete, but set 'tobedeleted' = True, so its remains in the Ex1 form
     #       also remove approved and published info
-    #       also set grades 'tobedeleted'=True
+    #       PR2023-02-12 dont have to set grades 'tobedeleted', grdaes of deleted studsubj are fitered out by sql studsubj.tobedeleted=False
+    #           only exem, reex and reex03 grades are set tobedeleted when deleteingexem, reex or reex 3
+    #           was: also set grades 'tobedeleted'=True
     # if not published: delete studsubj, grades will be cascade deleted
 
     # PR2022-02-15 studentsubject can always be deleted
@@ -3509,10 +5073,10 @@ def delete_studentsubject(student_instance, studsubj_instance, updated_rows, req
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- delete_studentsubject ----- ')
-        logger.debug('studsubj_instance: ' + str(studsubj_instance))
+        logger.debug('    studsubj_instance: ' + str(studsubj_instance))
 
-    deleted_row = None
     msg_html = None
+    err_html = ''
 
 # - create tobedeleted_row - to be returned after successfull delete
     tobedeleted_row = {'stud_id': student_instance.pk,
@@ -3526,23 +5090,66 @@ def delete_studentsubject(student_instance, studsubj_instance, updated_rows, req
         if subject and subject.name_nl:
             this_txt = _("Subject '%(tbl)s' ") % {'tbl': subject.name_nl}
 
+            if logging_on:
+                logger.debug('    subject: ' + str(subject))
+
+# - create deleted_row, to be sent back to page
+    deleted_row = {'id': studsubj_instance.pk,
+                   'mapid': '_'.join(('studsubj', str(studsubj_instance.pk))),
+                   'deleted': True}
+
 # - check if studentsubject has submitted grades or school is locked or examyear is locked PR2021-08-21
     # PR2022-02-15 studentsubject can always be deleted
 
     # PR2022-08-30 MAJOR BUG: student was deleted instead of studsubj,
     # because 'instance=student_instance' instead of 'instance=studsubj_instance'
 
-    # delete student will also cascade delete Grades
-    deleted_rowNIU, err_html = sch_mod.delete_instance(
-        table='studsubj', # used to create mapid in deleted_row
-        instance=studsubj_instance, # MAJOR BUG was: instance=student_instance
-        request=request,
-        this_txt=this_txt
-    )
+    # PR2022-12-18 set tobedeleted=True and remove published info instead of deleting record, also in table grades
+    # was:
+    #   # delete student will also cascade delete Grades
+    #   deleted_rowNIU, err_html = sch_mod.delete_instance(
+    #       table='studsubj', # used to create mapid in deleted_row
+    #       instance=studsubj_instance, # MAJOR BUG was: instance=student_instance
+    #       request=request,
+    #       this_txt=this_txt)
+
+    try:
+        setattr(studsubj_instance, 'tobedeleted', True)
+
+    # - also remove approved and published info, store it in prev_auth1by_id etc
+        setattr(studsubj_instance, 'prev_auth1by_id', getattr(studsubj_instance, 'subj_auth1by_id', None))
+        setattr(studsubj_instance, 'prev_auth2by_id', getattr(studsubj_instance, 'subj_auth2by_id', None))
+        setattr(studsubj_instance, 'prev_published_id', getattr(studsubj_instance, 'subj_published_id', None))
+
+        setattr(studsubj_instance, 'subj_auth1by_id', None)
+        setattr(studsubj_instance, 'subj_auth2by_id', None)
+        setattr(studsubj_instance, 'subj_published_id', None)
+
+        studsubj_instance.save(request=request)
+
+        if logging_on:
+            logger.debug('    studsubj_instance: ' + str(studsubj_instance))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+        err_html = ''.join((
+            str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+            str(_('%(cpt)s could not be deleted.') % {'cpt': this_txt})
+        ))
+        # msg_dict = {'header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
+
+    # grades.tobedeleted and deleted are only used in exem, reex and reex3
+    # NIU: err_html = delete_studentsubject_grades(studsubj_instance, this_txt, tobedeleted_row, updated_rows, request)
+
     if err_html:
         msg_html = err_html
-    elif deleted_rowNIU:
-        # weird code is necessary because mapid of studsubjct is different
+
+    elif deleted_row:
+        # weird code is necessary because mapid of student with and without studentsubject are different
+        # - when student has no subjects:  mapid = 'studsubj_7352'
+        # - when student has subjects:  mapid = 'studsubj_7352_72353'
+
         deleted_row = tobedeleted_row
         updated_rows.append(deleted_row)
 
@@ -3553,6 +5160,51 @@ def delete_studentsubject(student_instance, studsubj_instance, updated_rows, req
     return deleted_row, msg_html
 # - end of delete_studentsubject
 
+
+def delete_studentsubject_grades(studsubj_instance, this_txt, request):
+    logging_on = s.LOGGING_ON
+    #PR2023-02-12 dont set grade.tobedeleted.
+    # grade.tobedeleted is only used when deleting exem. reex or reex03
+    err_html = None
+    try:
+        grades = stud_mod.Grade.objects.filter(
+            studentsubject=studsubj_instance,
+            tobedeleted=False
+        )
+
+        if logging_on:
+            logger.debug('    grades: ' + str(grades))
+
+        modifiedby_pk_str = str(request.user.pk)
+        modifiedat_str = str(timezone.now())
+        sql_keys = {'studsubj_id': studsubj_instance.pk}
+
+        sql_list = [
+            "UPDATE students_grade",
+            "SET tobedeleted = TRUE, deleted = TRUE,",
+            "modifiedby_id =", modifiedby_pk_str, ", modifiedat = '", modifiedat_str, "'",
+            "WHERE students_grade.studentsubject_id = %(studsubj_id)s::INT",
+            "RETURNING id;"
+        ]
+        sql = ' '.join(sql_list)
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+
+            if logging_on:
+                rows = cursor.fetchall()
+                logger.debug(' grade rows: ' + str(rows))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+        err_html = ''.join((
+            str(_('An error occurred')), ':<br>', '&emsp;<i>', str(e), '</i><br>',
+            str(_('%(cpt)s could not be deleted.') % {'cpt': this_txt})
+        ))
+        deleted_row = None
+    return err_html
+# end of delete_studentsubject_grades
 
 ####################################################
 
@@ -3580,12 +5232,9 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_studsubj')
-            has_permit = 'permit_crud' in permit_list
-
+            has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
             if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
+                logger.debug('    has_permit: ' + str(has_permit))
 
         if not has_permit:
             msg_list.append(str(_("You don't have permission to perform this action.")))
@@ -3605,18 +5254,18 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
 
-                # check requsr_same_school is part of get_selected_ey_school_dep_from_usersetting
-                sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                # check requsr_same_school is part of get_selected_ey_school_dep_lvl_from_usersetting
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
                 if err_list:
                     err_list.append(str(_('You cannot make changes.')))
                     msg_list.extend(err_list)
                 else:
                     if logging_on:
-                        logger.debug('upload_dict' + str(upload_dict))
-                        logger.debug('sel_examyear: ' + str(sel_examyear))
-                        logger.debug('sel_school: ' + str(sel_school))
-                        logger.debug('sel_department: ' + str(sel_department))
+                        logger.debug('    upload_dict:    ' + str(upload_dict))
+                        logger.debug('    sel_examyear:   ' + str(sel_examyear))
+                        logger.debug('    sel_school:     ' + str(sel_school))
+                        logger.debug('    sel_department: ' + str(sel_department))
 
 # - get current student from upload_dict, filter: sel_school, sel_department, student is not locked
                     student_pk = upload_dict.get('student_pk')
@@ -3637,43 +5286,59 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         student=student_instance
                     )
                     if studsubj:
-                        if logging_on:
-                            logger.debug('studsubj: ' + str(studsubj))
-
                         studsubj_pk_list = [studsubj.pk]
 
-# - get schemitem_info, separately, instead of getting from grade_instance, should be faster
-                        si_pk = studsubj.schemeitem_id
                         if logging_on:
-                            logger.debug('si_pk: ' + str(si_pk))
+                            logger.debug('    studsubj: ' + str(studsubj))
 
-                        schemeitems_dict = subj_vw.get_scheme_si_dict(
-                                examyear_pk=sel_examyear.pk,
-                                depbase_pk=sel_department.base_id,
-                                schemeitem_pk=si_pk
-                            )
-                        si_dict = schemeitems_dict.get(si_pk)
+# - validate if requsr has allowed_cluster to change this subject - validate allowed levl / subjects not necessary, because only allowed subjects are shown
+                        cluster_pk = studsubj.cluster_id
+                        userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
+                        is_allowed = acc_prm.validate_userallowed_cluster(userallowed_cluster_pk_list, cluster_pk)
+                        if not is_allowed:
+                            msg_list.append(str(_("You don't have permission to change the subject of this cluster.")))
+                            # return err_fields, to restore old value on client
+                            for fld_name in upload_dict:
+                                if fld_name in ('cluster_pk', 'pws_title', 'pws_subjects', 'exemption_year', 'is_thumbrule',
+                                             'is_extra_nocount', 'is_extra_countsNIU', 'has_exemption', 'has_reex', 'has_reex03', '_auth'):
+                                    err_fields.append(fld_name)
+
+                            if logging_on:
+                                logger.debug(' ####   err_fields: ' + str(err_fields))
+                        else:
+
+# - get schemitem_info, separately, instead of getting from grade_instance, should be faster
+                            si_pk = studsubj.schemeitem_id
+                            if logging_on:
+                                logger.debug('si_pk: ' + str(si_pk))
+
+                            schemeitems_dict = subj_vw.get_scheme_si_dict(
+                                    examyear_pk=sel_examyear.pk,
+                                    depbase_pk=sel_department.base_id,
+                                    schemeitem_pk=si_pk
+                                )
+                            si_dict = schemeitems_dict.get(si_pk)
 
 # +++++  update studentsubject
-                        updated_pk_list, recalc_subj_comp = update_studsubj(
-                            studsubj_instance=studsubj,
-                            upload_dict=upload_dict,
-                            si_dict=si_dict,
-                            sel_examyear=sel_examyear,
-                            sel_school=sel_school,
-                            sel_department=sel_department,
-                            msg_list=msg_list,
-                            err_fields=err_fields,
-                            request=request
-                        )
-                        if updated_pk_list:
-                            studsubj_pk_list.extend(updated_pk_list)
+                            updated_pk_list, recalc_subj_comp = update_studsubj(
+                                studsubj_instance=studsubj,
+                                upload_dict=upload_dict,
+                                si_dict=si_dict,
+                                sel_examyear=sel_examyear,
+                                sel_school=sel_school,
+                                sel_department=sel_department,
+                                msg_list=msg_list,
+                                err_fields=err_fields,
+                                request=request
+                            )
+                            if updated_pk_list:
+                                studsubj_pk_list.extend(updated_pk_list)
 
-                        if logging_on:
-                            logger.debug('updated_pk_list: ' + str(updated_pk_list))
+                            if logging_on:
+                                logger.debug('updated_pk_list: ' + str(updated_pk_list))
 
-                        if recalc_subj_comp:
-                            update_student_subj_composition(student_instance)
+                            if recalc_subj_comp:
+                                update_student_subj_composition(student_instance)
 
                         if msg_list:
                             update_wrap['msg_list'] = msg_list
@@ -3689,14 +5354,20 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         #  msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
                         append_dict = {}
                         if err_fields:
-                            append_dict['err_fields'] = err_fields
+                            # PR2023-02-18 note: append_dict has key with studsubj_pk
+                            #append_dict['err_fields'] = err_fields
+                            append_dict[studsubj.pk] = {'err_fields': err_fields}
+                        if logging_on:
+                            logger.debug(' ####   append_dict: ' + str(append_dict))
 
+                        # TODO PR2022-12-22 check if sel_lvlbase must get value
+                        sel_lvlbase = None
                         studsubj_rows = create_studentsubject_rows(
-                            examyear=sel_examyear,
-                            schoolbase=sel_school.base,
-                            depbase=sel_department.base,
+                            sel_examyear=sel_examyear,
+                            sel_schoolbase=sel_school.base if sel_school else None,
+                            sel_depbase=sel_department.base if sel_department else None,
+                            sel_lvlbase=sel_lvlbase,
                             requsr_same_school=True,  # check for same_school is included in may_edit
-                            setting_dict={},
                             append_dict=append_dict,
                             request=request,
                             student_pk=student_instance.pk,
@@ -3721,15 +5392,24 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                     msg_list, err_fields, request):
     # PR2019-06-06 PR2021-12-25 PR2022-04-15 PR2022-06-25 PR2022-08-25
     # --- update existing and new studsubj_instance PR2019-06-06
-    # called by StudentsubjectUploadView, StudentsubjectSingleUpdateView, StudentsubjectApproveSingleView
+    # called by StudentsubjectMultipleUploadView, StudentsubjectSingleUpdateView, StudentsubjectApproveSingleView
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_studsubj -------')
-        logger.debug('upload_dict: ' + str(upload_dict))
-        # upload_dict{'mode': 'update', 'studsubj_pk': 26993, 'schemeitem_pk': 2033, 'subj_auth2by': 48}
-        # upload_dict: {'student_pk': 9224, 'studsubj_pk': 67818, 'has_reex': False}
-        # upload_dict: {'student_pk': 9226, 'studsubj_pk': 67836, 'subj_auth2by': True}
+        logger.debug('    upload_dict: ' + str(upload_dict))
+        """
+        upload_dict{'mode': 'update', 'studsubj_pk': 26993, 'schemeitem_pk': 2033, 'subj_auth2by': 48}
+        upload_dict: {'student_pk': 9224, 'studsubj_pk': 67818, 'has_reex': False}
+        upload_dict: {'student_pk': 9226, 'studsubj_pk': 67836, 'subj_auth2by': True}
+        
+        when changing schemeitem_pk:
+        upload_dict: {
+            'mode': 'update', 
+            'student_pk': 5231, 'studsubj_pk': 45376, 'schemeitem_pk': 1721, 
+            'is_extra_nocount': False, 'is_extra_counts': False, 'pws_title': None, 'pws_subjects': None, 
+            'tobedeleted': False}
+        """
 
     save_changes = False
     recalc_finalgrade = False
@@ -3743,8 +5423,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             saved_schemeitem = getattr(studsubj_instance, 'schemeitem')
             new_schemeitem = subj_mod.Schemeitem.objects.get_or_none(pk=new_value)
             if logging_on:
-                logger.debug('saved_schemeitem: ' + str(saved_schemeitem))
-                logger.debug('new_schemeitem: ' + str(new_schemeitem))
+                logger.debug('    saved studsubj_schemeitem: ' + str(saved_schemeitem))
+                logger.debug('    new_schemeitem: ' + str(new_schemeitem))
 
             if new_schemeitem is None:
                 msg_list.append(str(_("Subject scheme of this subject is not found.")))
@@ -3752,11 +5432,18 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             elif saved_schemeitem:
                 if new_schemeitem.pk != saved_schemeitem.pk:
                     setattr(studsubj_instance, 'schemeitem', new_schemeitem)
+
             # - also remove approved and published info
                     # TODO also from grades??
+                    setattr(studsubj_instance, 'prev_auth1by_id', getattr(studsubj_instance, 'subj_auth1by_id', None))
+                    setattr(studsubj_instance, 'prev_auth2by_id', getattr(studsubj_instance, 'subj_auth2by_id', None))
+                    setattr(studsubj_instance, 'prev_published_id', getattr(studsubj_instance, 'subj_published_id', None))
+
                     setattr(studsubj_instance, 'subj_auth1by', None)
                     setattr(studsubj_instance, 'subj_auth2by', None)
                     setattr(studsubj_instance, 'subj_published', None)
+
+                    setattr(studsubj_instance, 'tobechanged', True)
 
                     save_changes = True
                     recalc_finalgrade = True
@@ -3858,7 +5545,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             if not err_list:
                 saved_value = getattr(studsubj_instance, field)
                 if logging_on:
-                    logger.debug('saved_value: ' + str(saved_value))
+                    logger.debug("new value   of field '" + str(field) + "': " + str(new_value))
+                    logger.debug("saved value of field '" + str(field) + "': " + str(saved_value))
 
                 if new_value != saved_value:
                     setattr(studsubj_instance, field, new_value)
@@ -4006,7 +5694,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         msg_list.extend(err_list)
                         err_fields.append(field)
                     else:
-        # - set has_exemption etc False
+        # - set 'has_exemption' or 'has_reex' or 'has_reex03  False
                         setattr(studsubj_instance, field, new_value)
                         save_changes = True
                         recalc_finalgrade = True
@@ -4019,7 +5707,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                             setattr(studsubj_instance, 'exemption_year', None)
 
 # --- add exem, reex, reex03 grade or make grade 'tobedeleted'
-            # when adding: also pu values of segrade, srgrade and pegrade in new grade_instance
+            # when adding: also put values of segrade, srgrade and pegrade in new grade_instance
             if must_add_delete_exem_reex_reex03:
                 err_list = add_or_delete_grade_exem_reex_reex03( field, studsubj_instance, new_value, request)
                 if logging_on:
@@ -4138,6 +5826,11 @@ def update_student_subj_composition(student_instance):
         setattr(student_instance, 'subj_composition_ok', no_error)
         # dont update modified by
         student_instance.save()
+
+    if logging_on:
+        logger.debug('     subj_composition_checked: ' + str(student_instance.subj_composition_checked))
+        logger.debug('     subj_composition_ok:      ' + str(student_instance.subj_composition_ok))
+
 # --- end of update_student_subj_composition
 
 
@@ -4164,8 +5857,8 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
         logger.debug('     new_value: ' + str(new_value))
 
     err_list = []
-    if True:
-    #try:
+
+    try:
         save_changes = False
 
 # - check if grade of this exam_period exists
@@ -4177,6 +5870,7 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
 
         if logging_on:
             logger.debug('     grade exists: ' + str(grade))
+
 # +++ add or undelete grade
         # when new_value = True: add or undelete grade
         if new_value:
@@ -4184,11 +5878,14 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
 
             if grade:
                 if logging_on:
-                    logger.debug('     grade tobedeleted: ' + str(grade.tobedeleted))
+                    logger.debug('     grade deleted: ' + str(grade.deleted))
         # - if grade exists: it must be deleted row. Undelete
+
+                # TODO PR2023-01-23 replace grade 'tobedeleted' by  grade 'deleted', let 'tobedeleted' stay for now
                 setattr(grade, 'tobedeleted', False)
+                setattr(grade, 'deleted', False)
                 if logging_on:
-                    logger.debug('     grade tobedeleted: ' + str(grade.tobedeleted))
+                    logger.debug('     grade deleted: ' + str(grade.deleted))
             else:
         # - if grade does not exist: create new grade row
                 grade = stud_mod.Grade(
@@ -4221,20 +5918,22 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
 # +++ set grade tobedeleted
     # - when new has_exemption etc. is False: delete row by setting deleted=True and reset all fields
                 clear_grade_fields(grade)
+                # TODO PR2023-012-12 check difference between grade 'tobedeleted' and grade 'deleted'
                 setattr(grade, 'tobedeleted', True)
+                setattr(grade, 'deleted', True)
                 save_changes = True
 
                 if logging_on:
-                    logger.debug('     set grade tobedeleted: ' + str(grade.tobedeleted))
+                    logger.debug('     set grade deleted: ' + str(grade.deleted))
 
         if save_changes:
             grade.save(request=request)
             if logging_on:
                 logger.debug('     saved_changes: ')
 
-    #except Exception as e:
-    #    logger.error(getattr(e, 'message', str(e)))
-    #    err_list.append(str(_('An error occurred. The changes have not been saved.')))
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        err_list.append(str(_('An error occurred. The changes have not been saved.')))
 
     return err_list
 # --- end of add_or_delete_grade_exem_reex_reex03
@@ -4392,7 +6091,7 @@ def update_reexcount_etc_in_student(field, student_pk=None):  # PR2021-12-19 PR2
                 "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
 
                 "WHERE grd.examperiod = %(ep)s::INT",
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted"
+                "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted"
             ]
             if field == 'has_sr':
                 sub_sql_list.append("AND studsubj.has_sr")
@@ -4491,8 +6190,8 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
                 # - get selected examyear, school and department from usersettings
                 # was: sel_examyear, sel_school, sel_department, is_locked, \
                 #examyear_published, school_activated, is_requsr_school =
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - get current grade - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
                 examperiod = upload_dict.get('examperiod')
@@ -4597,13 +6296,13 @@ class StudentsubjectnoteUploadView(View):  # PR2021-01-16
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def delete_student_instance(student_instance, request):
-    # --- delete student # PR2021-07-18 PR2022-02-16 PR2022-08-05
-
-    logging_on = False  # s.LOGGING_ON
+def set_student_instance_tobedeleted(student_instance, request):
+    # --- delete student # PR2021-07-18 PR2022-02-16 PR2022-08-05 PR2022-12-27 PR2023-01-16
+    # dont delete student when student has submitted subjects, but set tobedeleted
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- delete_student_instance ----- ')
-        logger.debug('student_instance: ' + str(student_instance))
+        logger.debug(' ----- set_student_instance_tobedeleted ----- ')
+        logger.debug('    student_instance: ' + str(student_instance))
 
     deleted_row = None
     msg_html = None
@@ -4614,39 +6313,107 @@ def delete_student_instance(student_instance, request):
         student=student_instance,
         subj_published_id__isnull=False
     ).exists()
+    if logging_on:
+        logger.debug('    has_publ_studsubj: ' + str(has_publ_studsubj))
 
     if has_publ_studsubj:
-        msg_html = ''.join((
-            str(_("%(cpt)s has submitted subjects.") % {'cpt': this_txt}), '<br>',
-            str(_('You cannot delete %(cpt)s.') % {'cpt': str(_('This candidate')).lower()})
-        ))
 
-    else:
-        # delete student will also cascade delete studsubj, Grades, Studentsubjectnote, Noteattachment
-        deleted_row, err_html = sch_mod.delete_instance(
-            table='student',
-            instance=student_instance,
-            request=request,
-            this_txt=this_txt
-        )
+# - if student has submitted subjects: mark candidate as 'tobedeleted'
+        setattr(student_instance, 'tobedeleted', True)
+        student_instance.save(request=request)
+
+    # remove approval and subj_published from studentsubject, add published info to prev_published fields
+        updated_studsubj_pk_list, err_html = set_studsubjects_tobedeleted(request, student_instance.pk)
         if err_html:
             msg_html = err_html
+        else:
+    # mark candidate as 'tobedeleted'
+            setattr(student_instance, 'tobedeleted', True)
+            student_instance.save(request=request)
 
-    # - check if this student also exists in other examyears.
-            # PR2022-02-15 deleting student_base not necessary, student will be set tobedeleted
-            #students_exist = stud_mod.Student.objects.filter(base_id=base_pk).exists()
-        # - If not: delete also subject_base
-            #if not students_exist:
-            #    student_base = stud_mod.Studentbase.objects.get_or_none(id=base_pk)
-            #    if student_base:
-            #        student_base.delete()
+    else:
+        deleted_row = {'id': student_instance.pk,
+                       'mapid': 'student_' + str(student_instance.pk),
+                       'deleted': True}
+        if logging_on:
+            logger.debug('    deleted_row: ' + str(deleted_row))
+
+# - if student doesn't have submitted subjects: mark candidate as 'deleted'
+        # also delete studsubj rows (Not necessary, studsub and grades of deletedsudents are filtered out
+        err_html = None
+        try:
+            setattr(student_instance, 'deleted', True)
+            setattr(student_instance, 'tobedeleted', False)
+            student_instance.save(request=request)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            deleted_row = None
+
+            caption = _('Candidate')
+            full_name = stud_fnc.get_full_name(student_instance.lastname, student_instance.firstname, student_instance.prefix)
+            err_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                        str(_("%(cpt)s '%(val)s' could not be deleted.") % {'cpt': caption, 'val': full_name})))
+
+        if err_html:
+            msg_html = err_html
+        if logging_on:
+            logger.debug('    deleted_row: ' + str(deleted_row))
+            logger.debug('    err_html: ' + str(err_html))
 
     if logging_on:
         logger.debug('    deleted_row: ' + str(deleted_row))
         logger.debug('    msg_html: ' + str(msg_html))
 
     return deleted_row, msg_html
-# - end of delete_student_instance
+# - end of set_student_instance_tobedeleted
+
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def restore_student_instance(student_instance, request):
+    # --- restore student and studsubjects # PR2022-12-28
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- restore_student_instance ----- ')
+        logger.debug('    student_instance: ' + str(student_instance))
+
+    restored_student_success = False
+    restored_studsubj_pk_list = []
+    msg_html = None
+
+    this_txt = _("Candidate '%(tbl)s' ") % {'tbl': student_instance.fullname}
+
+    if student_instance.tobedeleted or student_instance.deleted:
+
+    # resore approval and subj_published from studentsubject, from prev_published fields
+        restored_studsubj_pk_list, msg_html = restore_tobedeleted_studsubjects(
+            request=request,
+            student_pk=student_instance.pk,
+            include_deleted=student_instance.deleted,
+        )
+
+        if not msg_html:
+    # remove 'tobedeleted' from candidate
+            try:
+                setattr(student_instance, 'tobedeleted', False)
+                setattr(student_instance, 'deleted', False)
+                student_instance.save(request=request)
+                restored_student_success = True
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+                msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                                    str(_("%(cpt)s could not be restored.") % {'cpt':this_txt})))
+
+    if logging_on:
+        logger.debug('    restored_student_success: ' + str(restored_student_success))
+        logger.debug('    restored_studsubj_pk_list: ' + str(restored_studsubj_pk_list))
+        logger.debug('    msg_html: ' + str(msg_html))
+
+    return restored_student_success, restored_studsubj_pk_list , msg_html
+# - end of restore_student_instance
 
 
 def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_save):
@@ -4700,7 +6467,7 @@ def create_or_get_studentbase(country, upload_dict, messages, error_list, skip_s
 
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_student(examyear, school, department, idnumber_nodots,
+def create_student_instance(examyear, school, department, idnumber_nodots,
                    lastname_stripped, firstname_stripped, prefix_stripped, full_name,
                     lvlbase_pk, sctbase_pk, request, found_is_error, skip_save):
     # --- create student # PR2019-07-30 PR2020-10-11  PR2020-12-14 PR2021-06-15 PR2022-08-20
@@ -4949,7 +6716,6 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     caption = _('ID-number')
                     err_txt = None
                     class_txt = None
-                    idnumber_nodots_stripped_lower = None
 
                     # PR2022-06-29 debug: when value is None it converts it to string 'None'
                     if new_value is not None:
@@ -4960,9 +6726,9 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     #    if new_value:
 
             # - remove dots, check if idnumber is correct
-                    idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
-                    if msg_err:
-                        err_txt = msg_err
+                    idnumber_nodots_stripped_lower, msg_err_list, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
+                    if msg_err_list:
+                        err_txt = ' '.join(msg_err_list)
                         class_txt = "border_bg_invalid"
 
                     if err_txt is None:
@@ -5312,7 +7078,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                         setattr(instance, 'result_info', None)
 
     # - save changes in other fields
-                elif field in ('iseveningstudent', 'islexstudent', 'partial_exam', 'has_dyslexie'):
+                elif field in ('iseveningstudent', 'islexstudent', 'partial_exam', 'extrafacilities'):
                     saved_value = getattr(instance, field)
                     if new_value is None:
                         new_value = False
@@ -5746,154 +7512,318 @@ def update_scheme_in_studsubj(student, request):
                                     logger.debug('    new_subjecttype: ' + str(new_schemeitem.subjecttype))
                     if save_studsubj:
                         studsubj.save(request=request)
-
 # end of update_scheme_in_studsubj
 
 
-def set_studsubj_tobedeleted_or_tobechangedNIU (studsubj, tobedeleted, new_schemeitem, request):
-    # PR2021-08-23
+def set_studsubjects_tobedeleted(request, student_pk, set_deleted=False, studsubj_pk=None):
+    # PR2021-08-23 PR2022-12-28
     # delete studsubj when no scheme > PR2022-07-10 don't, instead: prevent changes when no scheme
-    # check if studsubj is submitted, set delete = True if submitted
+    # check if studsubj is submitted, set tobedeleted = True if submitted
     # called by  update_scheme_in_studsubj 3 times
 
-    #PR2022-05-18 CAL, Omega: all subjects disappear.
+    # PR2022-05-18 CAL, Omega: all subjects disappear.
     # Cause: tobedeleted is set True. Dont know why yet
-    subj_published = getattr(studsubj, 'subj_published')
 
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' >>>>>>>>>>>> ----- set_studsubj_tobedeleted_or_tobechanged ----- ')
-        logger.debug('studsubj: ' + str(studsubj))
-        logger.debug('tobedeleted: ' + str(tobedeleted))
-        logger.debug('new_schemeitem: ' + str(new_schemeitem))
+        logger.debug('----- set_studsubjects_tobedeleted ----- ')
+        logger.debug('    student_pk: ' + str(student_pk))
+        logger.debug('    studsubj_pk: ' + str(studsubj_pk))
 
-    if tobedeleted:
-        field = 'tobedeleted'
-        if subj_published is None:
-            studsubj.delete(request=request)
+    msg_html = None
+    updated_studsubj_pk_list = []
 
-            if logging_on:
-                logger.debug('studsubj.delete: ' + str(field))
-    else:
-        field = 'tobechanged'
-        setattr(studsubj, 'schemeitem', new_schemeitem)
+    if student_pk:
+        try:
+            modifiedby_pk_str = str(request.user.pk)
+            modifiedat_str = str(timezone.now())
 
-        if logging_on:
-            logger.debug('tobechanged: ' + str(field))
+            # store subj_auth and subj_published info in prev_auth and prev_published fields
+            # set subj_auth and subj_published to NULL
+            # set tobedeleted= True, update modified
 
-    if subj_published:
-        setattr(studsubj, field, True)
-        setattr(studsubj,'prev_auth1by', getattr(studsubj, 'subj_auth1by'))
-        setattr(studsubj,'prev_auth2by', getattr(studsubj, 'subj_auth2by'))
-        setattr(studsubj,'prev_published', subj_published)
+            # when set_deleted = True: set deleted, otherwise: set tobedeleted
+            set_deleted_str = "deleted=TRUE, tobedeleted=False, " if set_deleted else "tobedeleted=TRUE, "
+            deleted_clause_str = "AND NOT deleted " if set_deleted else "AND NOT tobedeleted AND NOT deleted "
 
-        if logging_on:
-            logger.debug('if subj_published: ' + str(field))
+            sql_keys = {'stud_id': student_pk}
+            sql_list = ["UPDATE students_studentsubject AS studsubj ",
+                        "SET prev_auth1by_id=subj_auth1by_id, ",
+                            "prev_auth2by_id=subj_auth2by_id, ",
+                            "prev_published_id=subj_published_id, ",
+                            "subj_auth1by_id=NULL, subj_auth2by_id=NULL, subj_published_id=NULL, ",
+                            set_deleted_str,
+                            "modifiedby_id=", modifiedby_pk_str, ", modifiedat='", modifiedat_str, "' ",
+                        "WHERE studsubj.student_id = %(stud_id)s::INT ",
+                        deleted_clause_str,
+                        ]
 
-        studsubj.save(request=request)
-# - end of set_studsubj_tobedeleted_or_tobechanged
+            if studsubj_pk:
+                sql_keys['studsubj_id'] = studsubj_pk
+                sql_list.append("AND id = %(studsubj_id)s::INT ")
+
+            sql_list.append("RETURNING studsubj.id;")
+
+            sql = ''.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                updated_rows = cursor.fetchall()
+                if updated_rows:
+                    for row in updated_rows:
+                        updated_studsubj_pk_list.append(row[0])
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+            msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                                str(_("%(cpt)s could not be restored.") % {'cpt': _('This candidate')})))
+
+    return updated_studsubj_pk_list, msg_html
+# - end of set_studsubjects_tobedeleted
+
+
+def restore_tobedeleted_studsubjects(request, student_pk, studsubj_pk=None, include_deleted=False):
+    # PR2022-12-28 PR2023-01-14
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- restore_tobedeleted_studsubjects ----- ')
+        logger.debug('    student_pk: ' + str(student_pk))
+        logger.debug('    studsubj_pk: ' + str(studsubj_pk))
+
+    msg_html = None
+    updated_studsubj_pk_list = []
+
+    if student_pk:
+        try:
+            modifiedby_pk_str = str(request.user.pk)
+            modifiedat_str = str(timezone.now())
+
+            # restore subj_auth and subj_published info from prev_auth and prev_published fields
+            # set tobedeleted= False, update modified
+
+            sql_keys = {'stud_id': student_pk}
+            sql_list = ["UPDATE students_studentsubject AS studsubj ",
+                        "SET subj_auth1by_id=prev_auth1by_id, ",
+                            "subj_auth2by_id=prev_auth2by_id, ",
+                            "subj_published_id=prev_published_id, ",
+                            "tobedeleted=FALSE, ",
+                            "modifiedby_id=", modifiedby_pk_str, ", modifiedat='", modifiedat_str, "' ",
+                        "WHERE studsubj.student_id = %(stud_id)s::INT AND tobedeleted ",
+                        ]
+
+            if not include_deleted:
+                sql_list.append("AND NOT deleted ")
+
+            if studsubj_pk:
+                sql_keys['studsubj_id'] = studsubj_pk
+                sql_list.append("AND id = %(studsubj_id)s::INT ")
+
+            sql_list.append("RETURNING studsubj.id;")
+
+            sql = ''.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql, sql_keys)
+                updated_rows = cursor.fetchall()
+                if updated_rows:
+                    for row in updated_rows:
+                        updated_studsubj_pk_list.append(row[0])
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+            msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
+                                str(_("%(cpt)s could not be restored.") % {'cpt': _('This candidate')})))
+
+    if logging_on:
+        logger.debug('    updated_studsubj_pk_list: ' + str(updated_studsubj_pk_list))
+        logger.debug('    msg_html: ' + str(msg_html))
+
+    return updated_studsubj_pk_list, msg_html
+# end of restore_tobedeleted_studsubjects
+
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_studsubj(student, schemeitem, messages, error_list, request, skip_save):
-    # --- create student subject # PR2020-11-21 PR2021-07-21
-    logging_on = False  # s.LOGGING_ON
+    # --- create student subject # PR2020-11-21 PR2021-07-21 PR2023-01-02
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_studsubj ----- ')
-        logger.debug('student: ' + str(student))
-        logger.debug('schemeitem: ' + str(schemeitem))
+        logger.debug('    student: ' + str(student))
+        logger.debug('    schemeitem: ' + str(schemeitem))
 
     has_error = False
-    studsubj = None
+    studsubj_instance = None
+    append_key = None
+
     if student and schemeitem:
         subject_name = schemeitem.subject.name_nl if schemeitem.subject and schemeitem.subject.name_nl else '---'
 
-# - check if student already has this subject, with same or different schemeitem
-        msg_err = None
-        studsubjects = stud_mod.Studentsubject.objects.filter(
+# - check if student already has this subject (should be not more than one)
+        studsubj_instance = stud_mod.Studentsubject.objects.filter(
             student=student,
             schemeitem__subject=schemeitem.subject
-        )
-        if studsubjects is not None:
-            doubles_found = False
-            undelete_studsubj = False
-            row_count, deleted_count = 0, 0
-            for studsubj in studsubjects:
-                row_count += 1
-                if studsubj.tobedeleted:
-                    deleted_count += 1
+        ).first()
 
-            if row_count:
-    # - doubles_found = True when non-deleted records found:
-                if row_count > deleted_count:
-                    doubles_found = True
-                elif deleted_count > 1:
-    # - doubles_found = True when multiple deleted records found:
-                    doubles_found = True
-                else:
-    # - when only 1 deleted found: undelete, also undelete grades
-                    undelete_studsubj = True
+        if logging_on:
+            logger.debug('    subject_name: ' + str(subject_name))
+            logger.debug('    studsubj_instance: ' + str(studsubj_instance))
 
-            if doubles_found:
-                has_error = True
-                err_01 = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': _('Subject'), 'val': subject_name})
-                # error_list not in use when using modal form, message is displayed in modmesasges
-                error_list.append(err_01)
+        if studsubj_instance:
+# +++ if studsubj is not tobedeleted and not deleted:
+            if not studsubj_instance.deleted and not studsubj_instance.tobedeleted:
 
-                # this one closes modal and shows modmessage with msg_html
-                msg_dict = {'header': _('Add subject'), 'class': 'border_bg_warning', 'msg_html': err_01}
-                messages.append(msg_dict)
+                if logging_on:
+                    logger.debug('    studsubj_instance.tobedeleted: ' + str(studsubj_instance.tobedeleted))
+                    logger.debug('    studsubj_instance.deleted: ' + str(studsubj_instance.deleted))
 
-            elif undelete_studsubj:
-                # TODO this undelete feature is not tested yet PR2021-07-11
-                deleted_studsubj = stud_mod.Studentsubject.objects.get_or_none(
-                    student=student,
-                    deleted=True
-                )
-                if not skip_save:
-                    if deleted_studsubj:
-                        try:
-                            setattr(deleted_studsubj, 'deleted', False)
-                            setattr(deleted_studsubj, 'schemeitem', schemeitem)
-                            deleted_studsubj.save(request=request)
-                            # also undelete grades
-                            deleted_grades = stud_mod.Grade.objects.filter(
-                                deleted_studsubj=deleted_studsubj,
-                                deleted=True
-                            )
-                            if deleted_grades:
-                                for deleted_grade in deleted_grades:
-                                    setattr(deleted_grade, 'deleted', False)
-                                    deleted_grade.save(request=request)
-                        except Exception as e:
-                            has_error = True
-                            logger.error(getattr(e, 'message', str(e)))
-                            # error_list not in use when using modal form, message is displayed in modmesasges
-                            err_01 = str(_('An error occurred:'))
-                            err_02 = str(e)
-                            err_03 = str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Subject')),
-                                                                                       'val': subject_name})
-                            error_list.extend((err_01, err_02, err_03))
+                #has_error = True
+                #err_01 = str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': _('Subject'), 'val': subject_name})
+                ## error_list not in use when using modal form, message is displayed in modmessages
+                #error_list.append(err_01)
 
-                            # this one closes modal and shows modmessage with msg_html
-                            msg_html = '<br>'.join((err_01, '<i>' + err_02 + '</i>', err_03))
-                            messages.append({'class': "alert-danger", 'msg_html': msg_html})
+                ## this one closes modal and shows modmessage with msg_html
+                #msg_dict = {'header': _('Add subject'), 'class': 'border_bg_warning', 'msg_html': err_01}
+                #messages.append(msg_dict)
 
-# - create and save Studentsubject
-        if not has_error:
+                if schemeitem != studsubj_instance.schemeitem:
+                    try:
+                        # set schemeitem
+                        setattr(studsubj_instance, 'schemeitem', schemeitem)
+                        setattr(studsubj_instance, 'tobechanged', True)
+
+                        setattr(studsubj_instance, 'prev_auth1by_id', None)
+                        setattr(studsubj_instance, 'prev_auth2by_id', None)
+                        setattr(studsubj_instance, 'prev_published_id', None)
+
+                        setattr(studsubj_instance, 'subj_auth1by_id', None)
+                        setattr(studsubj_instance, 'subj_auth2by_id', None)
+                        setattr(studsubj_instance, 'subj_published_id', None)
+
+                        append_key = 'changed'
+
+                        if not skip_save:
+                            studsubj_instance.save(request=request)
+
+                    except Exception as e:
+                        has_error = True
+                        logger.error(getattr(e, 'message', str(e)))
+                        # error_list not in use when using modal form, message is displayed in modmesages
+                        err_01 = str(_('An error occurred:'))
+                        err_02 = str(e)
+                        err_03 = str(_("%(cpt)s '%(val)s' could not be changed.") % {'cpt': str(_('Subject')),
+                                                                                   'val': subject_name})
+                        error_list.extend((err_01, err_02, err_03))
+
+                        # this one closes modal and shows modmessage with msg_html
+                        msg_html = '<br>'.join((err_01, '<i>' + err_02 + '</i>', err_03))
+                        messages.append({'class': "alert-danger", 'msg_html': msg_html})
+
+            else:
+ # +++ subject is found but is tobedeleted or deleted
+                try:
+                    if studsubj_instance.deleted:
+                        # subject is deleted > remove deleted, remove prev_published, remove published
+                        setattr(studsubj_instance, 'deleted', False)
+                        setattr(studsubj_instance, 'tobedeleted', False)
+
+                        setattr(studsubj_instance, 'prev_auth1by_id', None)
+                        setattr(studsubj_instance, 'prev_auth2by_id', None)
+                        setattr(studsubj_instance, 'prev_published_id', None)
+
+                        setattr(studsubj_instance, 'subj_auth1by_id', None)
+                        setattr(studsubj_instance, 'subj_auth2by_id', None)
+                        setattr(studsubj_instance, 'subj_published_id', None)
+
+                        # set schemeitem
+                        setattr(studsubj_instance, 'schemeitem', schemeitem)
+
+                    elif studsubj_instance.tobedeleted:
+                        if schemeitem == studsubj_instance.schemeitem:
+                        # if new studsubj has same schemeitem as tobedeleted one
+                        # if studsubject is tobedeleted > restore studsubject: remove tobedeleted, restore published, remove prev_published (should be None already)
+                            setattr(studsubj_instance, 'deleted', False)
+                            setattr(studsubj_instance, 'tobedeleted', False)
+
+                            setattr(studsubj_instance, 'subj_auth1by_id',getattr(studsubj_instance, 'prev_auth1by_id', None))
+                            setattr(studsubj_instance, 'subj_auth2by_id',getattr(studsubj_instance, 'prev_auth2by_id', None))
+                            setattr(studsubj_instance, 'subj_published_id',getattr(studsubj_instance, 'prev_published_id', None))
+
+                            setattr(studsubj_instance, 'prev_auth1by_id', None)
+                            setattr(studsubj_instance, 'prev_auth2by_id', None)
+                            setattr(studsubj_instance, 'prev_published_id', None)
+
+                        else:
+                    # if new studsubj has different schemeitem as tobedeleted one:
+                    # if studsubject is tobedeleted > remove tobedeleted, set schemeitem, keep prevpublished , remove published (should be None already)
+
+                            setattr(studsubj_instance, 'tobechanged', True)
+
+                            setattr(studsubj_instance, 'deleted', False)
+                            setattr(studsubj_instance, 'tobedeleted', False)
+
+                            setattr(studsubj_instance, 'subj_auth1by_id', None)
+                            setattr(studsubj_instance, 'subj_auth2by_id', None)
+                            setattr(studsubj_instance, 'subj_published_id', None)
+
+                    # set schemeitem
+                            setattr(studsubj_instance, 'schemeitem', schemeitem)
+
+                    append_key = 'restored'
+
+                    if not skip_save:
+                        studsubj_instance.save(request=request)
+
+        # +++++ also undelete grades
+                    # PR2023-02-12 grades are only set tobedeleted or deleted when exem. reex or reex03
+                    #  restore previously deleted grades with ep=1
+                        crit = Q(studentsubject=studsubj_instance) & \
+                               Q(examperiod=c.EXAMPERIOD_FIRST) & \
+                               (Q(tobedeleted=True) | Q(deleted=True))
+                        grades = stud_mod.Grade.objects.filter(crit)
+
+                        if grades:
+                            for grade in grades:
+                                setattr(grade, 'tobedeleted', False)
+                                setattr(grade, 'deleted', False)
+                                if not skip_save:
+                                    grade.save(request=request)
+
+                except Exception as e:
+                    has_error = True
+                    logger.error(getattr(e, 'message', str(e)))
+                    # error_list not in use when using modal form, message is displayed in modmesasges
+                    err_01 = str(_('An error occurred:'))
+                    err_02 = str(e)
+                    err_03 = str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Subject')),
+                                                                               'val': subject_name})
+                    error_list.extend((err_01, err_02, err_03))
+
+                    # this one closes modal and shows modmessage with msg_html
+                    msg_html = '<br>'.join((err_01, '<i>' + err_02 + '</i>', err_03))
+                    messages.append({'class': "alert-danger", 'msg_html': msg_html})
+
+# +++++ if studsubj_instance is None: create and save Studentsubject
+        else:
             try:
-                studsubj = stud_mod.Studentsubject(
+                studsubj_instance = stud_mod.Studentsubject(
                     student=student,
                     schemeitem=schemeitem
                 )
                 if not skip_save:
-                    studsubj.save(request=request)
-                # also create grade of first examperiod
+                    studsubj_instance.save(request=request)
+
+        # - also create grade of first examperiod
                 grade = stud_mod.Grade(
-                    studentsubject=studsubj,
+                    studentsubject=studsubj_instance,
                     examperiod=c.EXAMPERIOD_FIRST
                 )
                 if not skip_save:
                     grade.save(request=request)
+                append_key = 'created'
+
             except Exception as e:
                 has_error = True
                 logger.error(getattr(e, 'message', str(e)))
@@ -5909,48 +7839,64 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
                 messages.append({'class': "alert-danger", 'msg_html': msg_html})
 
         if has_error:
-            studsubj = None
+            studsubj_instance = None
 
-    return studsubj
+    if logging_on:
+        logger.debug('    studsubj_instance: ' + str(studsubj_instance))
+        logger.debug('    append_key: ' + str(append_key))
+
+    return studsubj_instance, append_key
 # - end of create_studsubj
 
 
 #/////////////////////////////////////////////////////////////////
 
-def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school, setting_dict,
+def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, requsr_same_school,
                                append_dict, request, student_pk=None, studsubj_pk_list=None, cluster_pk_list=None):
-    # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-10 studsubj_pk_list added
+    # --- create rows of all students of this examyear / school / dep PR2020-10-27 PR2022-01-10 studsubj_pk_list added
     # PR2022-02-15 show only not tobeleted students and studentsubjects
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
-    logging_on = False  # s.LOGGING_ON
+    # PR2022-12-16 allowed filter renewed
+    logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' =============== create_studentsubject_rows ============= ')
-        logger.debug('student_pk: ' + str(student_pk))
-        logger.debug('studsubj_pk_list: ' + str(studsubj_pk_list))
-        logger.debug('setting_dict: ' + str(setting_dict))
-        logger.debug('append_dict: ' + str(append_dict))
-        logger.debug('cluster_pk_list: ' + str(cluster_pk_list))
+        logger.debug('     student_pk: ' + str(student_pk))
+        logger.debug('     sel_schoolbase: ' + str(sel_schoolbase))
+        logger.debug('     sel_depbase: ' + str(sel_depbase))
+        logger.debug('     sel_lvlbase: ' + str(sel_lvlbase))
+        logger.debug('     requsr_same_school: ' + str(requsr_same_school))
+        logger.debug('     studsubj_pk_list: ' + str(studsubj_pk_list))
+        logger.debug('     append_dict: ' + str(append_dict))
+        logger.debug('     cluster_pk_list: ' + str(cluster_pk_list))
+        logger.debug('     ......................... ')
 
     rows = []
     try:
         # create list of students of this school / examyear, possibly with filter student_pk or studsubj_pk
         # with left join of studentsubjects with deleted=False
         # when role is other than school: only when submitted, don't show students without submitted subjects
-        sel_examyear_pk = examyear.pk if examyear else None
-        sel_schoolbase_pk = schoolbase.pk if schoolbase else None
-        sel_depbase_pk = depbase.pk if depbase else None
+        sel_examyear_pk = sel_examyear.pk if sel_examyear else None
+        sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
+        sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+
+    # - get selected sctbase_pk of req_usr
+        selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
+
+    # - get allowed_sections_dict from request
+        userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
+
+        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+        if logging_on:
+            logger.debug(
+                '    allowed_sections_dict: ' + str(userallowed_sections_dict) + ' ' + str(
+                    type(userallowed_sections_dict)))
+            # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
 
         # dont show students without subject on other users than sameschool
         #PR2022-01-10 also use inner join when studsubj_pk_list has values: only these records must be returned
-        left_or_inner_join = "LEFT JOIN" if requsr_same_school and not studsubj_pk_list else "INNER JOIN"
-
-        sel_lvlbase_pk = None
-        if c.KEY_SEL_LVLBASE_PK in setting_dict:
-            sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-
-        sel_sctbase_pk = None
-        if c.KEY_SEL_SCTBASE_PK in setting_dict:
-            sel_sctbase_pk = setting_dict.get(c.KEY_SEL_SCTBASE_PK)
+        #left_or_inner_join = "LEFT JOIN" if requsr_same_school and not studsubj_pk_list else "INNER JOIN"
+        left_or_inner_join = "LEFT JOIN"
 
         sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'db_id': sel_depbase_pk}
         sql_studsubj_list = ["SELECT studsubj.id AS studsubj_id, studsubj.student_id,",
@@ -5959,7 +7905,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "studsubj.pws_title, studsubj.pws_subjects,",
             "studsubj.has_exemption, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03, studsubj.exemption_year, studsubj.pok_validthru,",
             "si.subject_id, si.subjecttype_id, si.gradetype,",
-            "subjbase.id AS subjbase_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
+            "subjbase.id AS subjbase_id, subjbase.code AS subj_code, subj.name_nl AS subj_name_nl,",
             "si.weight_se, si.weight_ce,",
             "si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed, si.extra_nocount_allowed,",
             "si.has_practexam,",
@@ -5996,6 +7942,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
 
             "FROM students_studentsubject AS studsubj",
 
+            "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
             "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
             "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
             "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
@@ -6029,7 +7976,13 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "LEFT JOIN accounts_user AS pok_auth1 ON (pok_auth1.id = studsubj.pok_auth1by_id)",
             "LEFT JOIN accounts_user AS pok_auth2 ON (pok_auth2.id = studsubj.pok_auth2by_id)",
             "LEFT JOIN schools_published AS pok_published ON (pok_published.id = studsubj.pok_published_id)",
-            "WHERE NOT studsubj.tobedeleted"]
+
+            "WHERE NOT stud.deleted AND NOT studsubj.deleted"
+
+            # PR2022-12-26 show tobedelted records only when they are not submitted yet
+            # "WHERE NOT studsubj.tobedeleted"
+            #"WHERE ( NOT studsubj.tobedeleted OR (studsubj.tobedeleted AND studsubj.subj_published_id IS NULL) )"
+            ]
 
         # studsubj are only visible for other users than sameschool when they are published
 
@@ -6037,9 +7990,10 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         # must show alls subjects to Insp, also when they are not published
         # added: 'and not request.user.role == c.ROLE_032_INSP:'
         if not requsr_same_school and not request.user.role == c.ROLE_032_INSP:
-            # PR2021-09-04 debug: examyears before 2022 have no subj_published_id. Show them to others anyway
-            if examyear is None or examyear.code >= 2022:
-                sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
+            # PR2022-12-16 NIU: there are no examyears before 2022
+            #   PR2021-09-04 debug: examyears before 2022 have no subj_published_id. Show them to others anyway
+            #   if sel_examyear is None or sel_examyear.code >= 2022:
+            sql_studsubj_list.append("AND studsubj.subj_published_id IS NOT NULL")
 
         sql_studsubjects = ' '.join(sql_studsubj_list)
 
@@ -6052,7 +8006,7 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
 
             "st.subj_composition_checked, st.subj_composition_ok, st.subj_dispensation,",
 
-            "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name,",
+            "studsubj.subject_id AS subj_id, studsubj.subj_code, studsubj.subj_name_nl,",
             "dep.base_id AS depbase_id, dep.abbrev AS dep_abbrev,",
             "lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
             "sct.base_id AS sctbase_id, sct.abbrev AS sct_abbrev,",
@@ -6099,33 +8053,23 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
             "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
             "LEFT JOIN subjects_scheme AS scheme ON (scheme.id = st.scheme_id)",
             "LEFT JOIN subjects_package AS package ON (package.id = st.package_id)",
-            "WHERE school.base_id = %(sb_id)s::INT",
-                    "AND school.examyear_id = %(ey_id)s::INT",
-                    "AND dep.base_id = %(db_id)s::INT",
-                    "AND NOT st.tobedeleted"]
 
-        if sel_lvlbase_pk:
-            sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
-            sql_keys['lvlbase_id'] = sel_lvlbase_pk
-        if sel_sctbase_pk:
-            sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
-            sql_keys['sctbase_id'] = sel_sctbase_pk
+            "WHERE school.base_id=" + str(sel_schoolbase_pk) + "::INT",
+            "AND school.examyear_id=" + str(sel_examyear_pk) + "::INT",
+            "AND dep.base_id=" + str(sel_depbase_pk) + "::INT",
+            "AND NOT st.deleted"
+            ]
+
+        #if sel_lvlbase_pk:
+        #    sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
+        #    sql_keys['lvlbase_id'] = sel_lvlbase_pk
+        #if sel_sctbase_pk:
+        #    sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
+        #    sql_keys['sctbase_id'] = sel_sctbase_pk
+
+        # filter on sel_student_pk
         if student_pk:
-            sql_keys['st_id'] = student_pk
-            sql_list.append('AND st.id = %(st_id)s::INT')
-
-        sel_subjbase_pk = None
-        if c.KEY_SEL_SUBJBASE_PK in setting_dict:
-            sel_subjbase_pk = setting_dict.get(c.KEY_SEL_SUBJBASE_PK)
-
-        acc_view.get_userfilter_allowed_subjbase(
-            request=request,
-            sql_keys=sql_keys,
-            sql_list=sql_list,
-            subjbase_pk=sel_subjbase_pk,
-            skip_allowed_filter=False,
-            table='studsubj'
-        )
+            sql_list.append("".join(("AND st.id=", str(student_pk), "::INT")))
 
         # also return existing studsubj of updated clusters, to show changed name in table
         # - filter on studsubj_pk_list with ANY clause
@@ -6133,42 +8077,83 @@ def create_studentsubject_rows(examyear, schoolbase, depbase, requsr_same_school
         if cluster_pk_list:
             sql_keys['cls_pk_list'] = cluster_pk_list
             if studsubj_pk_list:
-                sql_keys['ss_pk_list'] = studsubj_pk_list
-                sql_list.append("AND ( studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[]) OR studsubj.cluster_id = ANY(%(cls_pk_list)s::INT[]) )  ")
-            else:
-                sql_list.append("AND studsubj.cluster_id = ANY(%(cls_pk_list)s::INT[])")
-        else:
-            if studsubj_pk_list:
-                sql_keys['ss_pk_list'] = studsubj_pk_list
-                sql_list.append("AND studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[])")
+                # PR2023-02-18 was:
+                #   sql_keys['ss_pk_list'] = studsubj_pk_list
+                #   PR2022-12-25 was: sql_list.append("AND ( studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[]) OR studsubj.cluster_id = ANY(%(cls_pk_list)s::INT[]) )  ")
+                #   sql_list.append("AND ( studsubj.studsubj_id IN (SELECT UNNEST(%(ss_pk_list)s::INT[])) OR studsubj.cluster_id IN (SELECT UNNEST(%(cls_pk_list)s::INT[])) )")
 
-        sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST')
+                sql_list.append(''.join((
+                    "AND ( studsubj.studsubj_id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[]))) OR studsubj.cluster_id IN (SELECT UNNEST(ARRAY", str(cluster_pk_list), "::INT[])) )"
+                )))
+            else:
+                # PR2023-02-18 was:
+                #   PR2022-12-26 was: sql_list.append("AND studsubj.cluster_id = ANY(%(cls_pk_list)s::INT[])")
+                #   sql_list.append("AND studsubj.cluster_id IN (SELECT UNNEST( %(cls_pk_list)s::INT[]))")
+                sql_list.append(''.join(("AND studsubj.cluster_id IN (SELECT UNNEST(ARRAY", str(cluster_pk_list), "::INT[]))")))
+
+        elif studsubj_pk_list:
+            # PR2023-02-18 was:
+            #   sql_keys['ss_pk_list'] = studsubj_pk_list
+            #   PR2022-12-25 was: sql_list.append("AND studsubj.studsubj_id = ANY(%(ss_pk_list)s::INT[])")
+            #   sql_list.append("AND studsubj.studsubj_id IN (SELECT UNNEST(%(ss_pk_list)s::INT[]))")
+            sql_list.append(''.join(("AND studsubj.studsubj_id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[]))")))
+
+        else:
+    # --- filter on usersetting and allowed
+            # sql_clause = acc_view.get_userfilter_allowed_school_dep_lvl_subj_sct_cluster(request, 'studsubj')
+            #sql_clause = acc_view.get_userallowed_for_subjects_studsubj(
+            #    sel_examyear=sel_examyear,
+            #    sel_schoolbase=sel_schoolbase,
+            #    sel_depbase=sel_depbase,
+            #    sel_lvlbase=sel_lvlbase,
+            #    request=request,
+            #    skip_allowedsubjbase_filter=True,
+            #    table='studsubj'
+            #)
+
+            sql_clause = acc_prm. get_sqlclause_allowed_NEW('studsubj', userallowed_sections_dict, selected_pk_dict)
+            if sql_clause:
+                sql_list.append(sql_clause)
+
+            if logging_on :
+                logger.debug('sql_clause: ' + str(sql_clause))
+
+        sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST;')
+        if logging_on:
+            for sql_str in sql_list:
+                logger.debug('  > ' + str(sql_str))
 
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
+            #cursor.execute(sql, sql_keys)
+            cursor.execute(sql)
             rows = af.dictfetchall(cursor)
 
+        if logging_on and False:
+            for q in connection.queries:
+                logger.debug('   ' + str(q))
+
         if logging_on:
-            logger.debug('sql_keys: ' + str(sql_keys) + ' ' + str(type(sql_keys)))
-            #logger.debug('sql: ' + str(sql) + ' ' + str(type(sql)))
-            #logger.debug('connection.queries: ' + str(connection.queries))
+            logger.debug('    len rows: ' + str(len(rows)))
 
     # - full name to rows
         for row in rows:
-            #if logging_on:
-            #    logger.debug('row: ' + str(row))
             first_name = row.get('firstname')
             last_name = row.get('lastname')
             prefix = row.get('prefix')
             full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
             row['fullname'] = full_name if full_name else None
 
-    # - add messages to all studsubj_rows, only when student_pk or studsubj_pk_list have value
-            if append_dict and student_pk or studsubj_pk_list:
-                for key, value in append_dict.items():
-                    row[key] = value
+    # - add messages to studsubj_rows, only when student_pk or studsubj_pk_list have value
+            if append_dict:
+                studsubj_append_dict = append_dict.get(row.get('studsubj_id'))
+                if studsubj_append_dict:
+                    for key, value in studsubj_append_dict.items():
+                        row[key] = value
+
+            if logging_on and False:
+                logger.debug('row: ' + str(row))
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -6192,7 +8177,7 @@ def create_studentsubjectnote_rows(upload_dict, request):  # PR2021-03-16
         if studsubj_pk:
             if logging_on:
                 logger.debug('studsubj_pk: ' + str(studsubj_pk))
-            sel_examyear_instance = af.get_selected_examyear_instance_from_usersetting(request)
+            sel_examyear_instance = af.get_selected_examyear_from_usersetting_without_check(request)
             if sel_examyear_instance:
                 sql_keys = {
                     'ss_id': studsubj_pk,
@@ -6303,140 +8288,3 @@ def create_ssnote_attachment_rows(upload_dict, request):  # PR2021-03-17
     return note_rows
 # - end of create_studentsubjectnote_rows
 
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def create_cluster(school, department, subject, cluster_pk, cluster_name, mapped_cluster_pk_dict, request):
-    # --- create cluster # PR2022-01-06
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' +++++++++++++++++ create_cluster +++++++++++++++++ ')
-
-    err_list = []
-    new_cluster_pk = None
-    if school and department and subject:
-# - get value of 'cluster_name'
-        new_value = cluster_name.strip() if cluster_name else None
-        if logging_on:
-            logger.debug('new_value: ' + str(new_value))
-
-        try:
-    # - validate length of cluster name
-            msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_KEY, _('The cluster name'))
-            if msg_err:
-                err_list.append(msg_err)
-            else:
-
-# - validate if cluster already exists
-                name_exists = subj_mod.Cluster.objects.filter(
-                    school=school,
-                    department=department,
-                    name__iexact=new_value
-                )
-                if name_exists:
-                    err_list.append(str(_("%(cpt)s '%(val)s' already exists.") \
-                                        % {'cpt': _('Cluster name') , 'val': new_value} ))
-                else:
-# - create and save cluster
-                    cluster = subj_mod.Cluster(
-                        school=school,
-                        department=department,
-                        subject=subject,
-                        name=new_value
-                    )
-                    cluster.save(request=request)
-
-                    if cluster and cluster.pk:
-                        new_cluster_pk = cluster.pk
-                        #  mapped_cluster_pk_dict: {'new_1': 296}
-                        mapped_cluster_pk_dict[cluster_pk] = new_cluster_pk
-                    if logging_on:
-                        logger.debug('new cluster: ' + str(cluster))
-
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-            err_list.append(str(_('An error occurred.')))
-            err_list.append(str(_("%(cpt)s '%(val)s' could not be added.") % {'cpt': str(_('Cluster')), 'val': new_value}))
-
-    return err_list, new_cluster_pk
-# - end of create_cluster
-
-
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-def delete_cluster_instance(cluster_instance, request):
-    # --- delete cluster # PR2022-01-06  PR2022-08-08
-
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- delete_cluster_instance ----- ')
-        logger.debug('cluster_instance: ' + str(cluster_instance))
-
-    msg_html = None
-    this_txt = _("Cluster '%(val)s' ") % {'val': cluster_instance.name}
-
-    deleted_row, err_html = sch_mod.delete_instance(
-        table='student',
-        instance=cluster_instance,
-        request=request,
-        this_txt=this_txt
-    )
-    if err_html:
-        msg_html = err_html
-
-    if logging_on:
-        logger.debug('    deleted_row: ' + str(deleted_row))
-        logger.debug('    msg_html: ' + str(msg_html))
-
-    return deleted_row, msg_html
-# - end of delete_cluster_instance
-
-
-def update_cluster_instance(school, department, instance, upload_dict, request):
-# --- update existing cluster name PR2022-01-10
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ------- update_cluster_instance -------')
-
-    err_list = []
-    updated_cluster_pk = None
-    if instance:
-        try:
-            field = 'name'
-
-# - get value of 'cluster_name'
-            cluster_name = upload_dict.get('cluster_name')
-            new_value = cluster_name.strip() if cluster_name else None
-
-# - save changes in fields 'name'
-            saved_value = getattr(instance, field)
-
-            if new_value != saved_value:
-
-# - validate length of cluster name
-                msg_err = av.validate_notblank_maxlength(new_value, c.MAX_LENGTH_KEY, _('The cluster name'))
-                if msg_err:
-                    err_list.append(msg_err)
-                else:
-
-# - validate if cluster already exists
-                    name_exists = subj_mod.Cluster.objects.filter(
-                        school=school,
-                        department=department,
-                        name__iexact=new_value
-                    )
-                    if name_exists:
-                        err_list.append(str(_("%(cpt)s '%(val)s' already exists.") \
-                                            % {'cpt': _('Cluster name'), 'val': new_value}))
-                    else:
-                        setattr(instance, field, new_value)
-                        instance.save(request=request)
-                        updated_cluster_pk = instance.pk
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-
-            err_list.append(''.join((str(_('An error occurred')), ' (', str(e), ').')))
-            err_list.append(str(_("%(cpt)s have not been saved.") % {'cpt': _('The changes')}))
-
-    if logging_on:
-        logger.debug('updated_cluster_pk: ' + str(updated_cluster_pk))
-    return err_list, updated_cluster_pk
-# - end of update_cluster_instance

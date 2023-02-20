@@ -4,7 +4,7 @@ let envelopsubject_rows = []; // PR2022-10-09
 
 // envelopbundle_rows is made global to show in t_MSSSS_Save
 let envelopbundle_rows = [];
-let subject_rows = [];
+//let subject_rows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let examyear_map = new Map();
     let school_map = new Map();
 
-    let level_rows = [];
+    //let level_rows = [];
 
     //let ete_exam_rows = [];
     let orderlist_rows = [];
@@ -161,6 +161,29 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         // there is no btn select department in headerbar of page_orderlist
         // there is no btn select school in headerbar of page_orderlist
+
+        const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
+        if (el_hdrbar_allowed_sections){
+            el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
+        };
+
+// ---  MODAL USER SET ALLOWED SECTIONS
+        const el_MUPS_username = document.getElementById("id_MUPS_username");
+        console.log("DOMContentLoaded TABLE.js el_MUPS_username", el_MUPS_username);
+        const el_MUPS_loader = document.getElementById("id_MUPS_loader");
+
+        const el_MUPS_tbody_container = document.getElementById("id_MUPS_tbody_container");
+        const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
+
+        const el_MUPS_btn_expand_all = document.getElementById("id_MUPS_btn_expand_all");
+        if (el_MUPS_btn_expand_all){
+            el_MUPS_btn_expand_all.addEventListener("click", function() {MUPS_ExpandCollapse_all()}, false);
+        };
+        const el_MUPS_btn_save = document.getElementById("id_MUPS_btn_save");
+        if (el_MUPS_btn_save){
+            el_MUPS_btn_save.addEventListener("click", function() {MUPS_Save("save")}, false);
+        };
+        const el_MUPS_btn_cancel = document.getElementById("id_MUPS_btn_cancel");
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_examperiod = document.getElementById("id_SBR_select_period");

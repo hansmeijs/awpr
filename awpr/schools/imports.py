@@ -6,6 +6,7 @@ from django.http import HttpResponse
 
 from django.utils import timezone
 from django.utils.decorators import method_decorator
+
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
 
@@ -13,10 +14,11 @@ from django.views.generic import View
 
 from accounts import models as acc_mod
 from accounts import views as acc_view
+from accounts import permits as acc_prm
+
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
-from awpr import downloads as dl
 from awpr import validators as awpr_val
 
 from grades import validators as grade_val
@@ -142,7 +144,7 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23 PR2021-07-17
                 importtable = upload_dict.get('importtable')
                 page = importtable.replace('import', 'page')
 
-                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
+                permit_list, requsr_usergroups_listNIU, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
 
             # to prevent you from locking out when no permits yet
                 if request.user.role == c.ROLE_128_SYSTEM:
@@ -202,12 +204,12 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
 
 # - Reset language
                 # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-                # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_from_usersetting
+                # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_lvl_from_usersetting
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
 # - get permit
-                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
+                permit_list, requsr_usergroups_listNIU,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
                 has_permit = 'permit_crud' in permit_list
 
 # - get selected examyear, school and department from usersettings
@@ -217,8 +219,8 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - check if examyear has no_practexam, sr_allowed, no_centralexam, no_thirdperiod
                 err_list = grade_val.validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype)
@@ -332,6 +334,11 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                             grade_val.get_student_subj_grade_dict(sel_school, sel_department, sel_examperiod,
                                                                   examgradetype, double_idnumberlist)
 
+# - get allowed sections and allowed clusters PR2023-02-16
+                        userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear)
+                        requsr_allowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
+                        requsr_allowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+
                         if logging_on:
                             logger.debug('school_name: ' + str(school_name))
                             #logger.debug('student_subj_grade_dict: ' + str(student_subj_grade_dict))
@@ -340,30 +347,32 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
 # +++++ loop through list of students in upload_data_list
                         for upload_data_dict in upload_data_list:
     # - import grade
-                                has_error = \
-                                    get_tobe_updated_gradelist_from_datalist(
-                                        upload_data_dict=upload_data_dict,
-                                        department=sel_department,
-                                        examyear=sel_examyear,
-                                        examperiod=sel_examperiod,
-                                        examgradetype=examgradetype,
-                                        is_test=is_test,
-                                        double_idnumberlist=double_idnumberlist,
-                                        scheme_si_dict=scheme_si_dict,
-                                        count_dict=count_dict,
-                                        saved_student_subj_grade_dict=student_subj_grade_dict,
-                                        tobe_updated_dict=tobe_updated_dict,
-                                        new_exemption_pk_list=new_exemption_pk_list,
-                                        mapped_new_exemption_grade_list=mapped_new_exemption_grade_list,
-                                        log_list=log_list,
-                                        request=request
-                                    )
+                            has_error = \
+                                get_tobe_updated_gradelist_from_datalist(
+                                    upload_data_dict=upload_data_dict,
+                                    department=sel_department,
+                                    examyear=sel_examyear,
+                                    examperiod=sel_examperiod,
+                                    examgradetype=examgradetype,
+                                    is_test=is_test,
+                                    requsr_allowed_sections_dict=requsr_allowed_sections_dict,
+                                    requsr_allowed_cluster_pk_list=requsr_allowed_cluster_pk_list,
+                                    double_idnumberlist=double_idnumberlist,
+                                    scheme_si_dict=scheme_si_dict,
+                                    count_dict=count_dict,
+                                    saved_student_subj_grade_dict=student_subj_grade_dict,
+                                    tobe_updated_dict=tobe_updated_dict,
+                                    new_exemption_pk_list=new_exemption_pk_list,
+                                    mapped_new_exemption_grade_list=mapped_new_exemption_grade_list,
+                                    log_list=log_list,
+                                    request=request
+                                )
 
-                                count_total += 1
-                                if has_error:
-                                    count_error += 1
-                                # if has_error:
-                                #   count_bisexam += 1
+                            count_total += 1
+                            if has_error:
+                                count_error += 1
+                            # if has_error:
+                            #   count_bisexam += 1
 # +++++ end of loop through upload_data_list
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -395,8 +404,8 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                                 sel_examyear_pk=sel_examyear.pk,
                                 sel_schoolbase_pk=sel_school.base_id,
                                 sel_depbase_pk=sel_department.base_id,
+                                sel_lvlbase_pk=None,
                                 sel_examperiod=sel_examperiod,
-                                setting_dict={},
                                 request=request,
                                 grade_pk_list=updated_grade_pk_list
                             )
@@ -526,7 +535,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
 
 # - Reset language
                 # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-                # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_from_usersetting
+                # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_lvl_from_usersetting
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
@@ -537,10 +546,10 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
-                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
+                permit_list, requsr_usergroups_listNIU,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
 
             # to prevent you from locking out when no permits yet
                 #if request.user.role == c.ROLE_128_SYSTEM:
@@ -701,7 +710,7 @@ class UploadImportStudentsubjectView(View):  # PR2021-07-20
 
 @method_decorator([login_required], name='dispatch')
 class UploadImportStudentView(View):
-    # PR2020-12-05 PR2021-02-23  PR2021-07-17 PR2022-08-21
+    # PR2020-12-05 PR2021-02-23  PR2021-07-17 PR2022-08-21  PR2023-01-16
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -722,24 +731,19 @@ class UploadImportStudentView(View):
                 importtable = upload_dict.get('importtable')
                 page = importtable.replace('import', 'page')
 
-                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
-
-            # to prevent you from locking out when no permits yet
-                if request.user.role == c.ROLE_128_SYSTEM:
-                    if 'permit_crud' not in permit_list:
-                        permit_list.append('permit_crud')
-
-                has_permit = 'permit_crud' in permit_list
+                # PPR2023-01-16 was:
+                #   permit_list, requsr_usergroups_listNIU,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
+                #   has_permit = 'permit_crud' in permit_list
+                has_permit = acc_prm.get_permit_crud_of_this_page(page, request)
 
                 if logging_on:
                     logger.debug('    request.user.role: ' + str(request.user.role))
-                    logger.debug('    permit_list: ' + str(permit_list))
                     logger.debug('    has_permit: ' + str(has_permit))
                     #logger.debug('upload_dict: ' + str(upload_dict))
 
                 if not has_permit:
-                    err_html = _("You don't have permission to perform this action.")
-                    update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
+                    err_html = str(_("You don't have permission to perform this action."))
+                    update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", err_html, "</p>"))
                 else:
 
         # - Reset language
@@ -748,8 +752,8 @@ class UploadImportStudentView(View):
                     activate(user_lang)
 
         # - get selected examyear, school and department from usersettings
-                    sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                        dl.get_selected_ey_school_dep_from_usersetting(request)
+                    sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                        acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
         # - get info from upload_dict
                     is_test = upload_dict.get('test', False)
@@ -803,7 +807,7 @@ class UploadImportStudentView(View):
 
         # - get id_number_list, the list of idnumbers of this school
                         # idnumber_list and examnumber_list will be filled in upload_student_from_datalist
-                        # without a row the reference to these lists et lost. Cost me 2 hours to figure this out. PR2022-08-22
+                        # without a row the reference to these lists get lost. Cost me 2 hours to figure this out. PR2022-08-22
                         idnumber_list, examnumber_list = [], []
 
         # - get diplomanumber_list, gradelistnumber_list, the list of examnumbers of this school
@@ -831,7 +835,7 @@ class UploadImportStudentView(View):
                             
                             awpColdef_list: [
                                 'department', 'level', 'sector', 'examnumber', 'lastname', 'firstname', 'prefix',
-                                 'gender', 'idnumber', 'birthdate', 'birthcountry', 'birthcity', 'classname']
+                                 'gender', 'idnumber', 'extrafacilities', 'birthdate', 'birthcountry', 'birthcity', 'classname']
                             """
 
     # skip empty rows
@@ -878,7 +882,7 @@ class UploadImportStudentView(View):
                                 #   count_bisexam += 1
 # +++++ end of loop through data_list
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        # - return html with number of students, existing, new and erros
+        # - return html with number of students, existing, new and errors
                     result_html = create_result_html(
                         is_test=is_test,
                         count_total=count_total,
@@ -906,7 +910,8 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
                                  double_idnumber_list, double_diplomanumber_list, double_gradelistnumber_list,
                                  idnumber_list, examnumber_list, diplomanumber_list, gradelistnumber_list,
                                  log_list, request):
-    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-21
+
+    #  PR2019-12-17 PR2020-06-03 PR2021-06-19 PR2022-06-26 PR2022-08-21 PR2023-01-16
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_student_from_datalist  --------------------')
@@ -967,10 +972,10 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
         error_list.append(str(_("This candidate belongs to a different department.")))
 
     # dont add error message when student is from diff department
-    idnumber_nodots, msg_err, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
-    if msg_err and not is_diff_dep_student:
+    idnumber_nodots, msg_err_list, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
+    if msg_err_list and not is_diff_dep_student:
         has_error = True
-        error_list.append(str(msg_err))
+        error_list.extend(msg_err_list)
 
     lastname_stripped, msg_err = stud_val.get_string_convert_type_and_strip(_('Last name'), last_name, True) # True = blank_not_allowed
     if msg_err and not is_diff_dep_student:
@@ -989,10 +994,11 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
     full_name = stud_val.get_prefix_lastname_comma_firstname(lastname_stripped, firstname_stripped, prefix_stripped)
 
-    if logging_on and False:
+    if logging_on :
         logger.debug('    idnumber_nodots: ' + str(idnumber_nodots))
         logger.debug('    full_name: ' + str(full_name))
         logger.debug('    student_depbase_pk: ' + str(student_depbase_pk))
+        logger.debug('    error_list: ' + str(error_list))
 
 # - create student_dict
     student_dict = {}
@@ -1081,7 +1087,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
         if student_instance:
             is_existing_student = True
-            student_dict['student_pk'] = student_instance.pk
+            student_dict['student_pk'] = getattr(student_instance, 'pk')
         else:
 
 # +++ create new student when student not found in database
@@ -1101,7 +1107,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
             # note: error_list is list of strings,
             #  messages is list of dicts with format: {'field': fldName, header': header_txt, 'class': 'border_bg_invalid', 'msg_html': msg_html}
             """
-            create_student(examyear, school, department, idnumber_nodots, 
+            create_student_instance(examyear, school, department, idnumber_nodots, 
                                lastname_stripped, firstname_stripped, prefix_stripped, full_name,
                                 lvlbase_pk, sctbase_pk, request, skip_save)
             """
@@ -1109,7 +1115,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
             #  Turned off for now (found_is_error=True) PR2022-08-21
             # TODO also: return message on import modal not giving indo '22 candidates are skipped' etc
     # - create student record
-            student_instance, error_list = stud_view.create_student(
+            student_instance, error_list = stud_view.create_student_instance(
                 examyear=examyear,
                 school=school,
                 department=department,
@@ -1124,7 +1130,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
                 found_is_error=True, # was: False
                 skip_save=is_test
             )
-            #student = stud_view.create_student(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
+            #student = stud_view.create_student_instance(school, department, upload_dict, messagesNIU, error_list, request, is_test) # skip_save = is_test
             if logging_on:
                 student_pk = student_instance.pk if student_instance else 'None'
                 logger.debug('student_instance: ' + str(student_instance))
@@ -1178,6 +1184,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 
             append_dict = {'created': True} if is_new_student else {}
             rows, error_dictNIU = stud_view.create_student_rows(
+                request=request,
                 sel_examyear=school.examyear,
                 sel_schoolbase=school.base,
                 sel_depbase=department.base,
@@ -1193,7 +1200,7 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
             logger.debug('error_list: ' + str(error_list))
 
 # create log for this student
-    student_header = ''.join(((idnumber_nodots + c.STRING_SPACE_10)[:10], c.STRING_SPACE_05, full_name))
+    student_header = ''.join(((idnumber_nodots + c.STRING_SPACE_10)[:10], c.STRING_SPACE_05, full_name)) if idnumber_nodots else full_name
     if has_error or error_create or is_diff_dep_student:
         student_header += str(_(' will be skipped.')) if is_test else str(_(' is skipped.'))
     elif is_new_student:
@@ -1206,6 +1213,9 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
         for err in error_list:
             if err:
                 log_list.append('- '.join((c.STRING_SPACE_15, err)))
+
+                if logging_on:
+                    logger.debug('    err: ' + str(err))
 
     if update_list:
         for update_txt in update_list:
@@ -1388,6 +1398,26 @@ def update_student_fields(data_dict, awpColdef_list, examyear, school, departmen
                         update_str = ((new_abbrev or blank_str) + c.STRING_SPACE_30)[:25] + old_abbrev_str
                         log_list.append(caption_txt + update_str)
                         # logger.debug('log_list.append: ' + str(caption_txt + update_str))
+
+            elif field == 'extrafacilities':
+                # - get new value, convert to boolean, TRue when has value
+                new_value = data_dict.get(field)
+                new_value_bool = not not new_value
+
+            # - get saved_value
+                saved_value = getattr(student, field)
+                if new_value_bool != saved_value:
+                    # put new value in student instance
+                    setattr(student, field, new_value_bool)
+                    field_dict['updated'] = True
+                    save_instance = True
+            # create field_dict and log
+                    if is_existing_student:
+                        old_value_str = was_str + ( str(saved_value) if saved_value else blank_str)
+                        field_dict['info'] = field_caption + ' ' + old_value_str
+                        update_str = ((str(new_value) if new_value else blank_str) + c.STRING_SPACE_30)[:25] + old_value_str
+                        log_list.append(caption_txt + update_str)
+
             # add field_dict to update_dict
             update_dict[field] = field_dict
 
@@ -1435,7 +1465,7 @@ class UploadImportUsernameView(View):  # PR2021-08-04
                 importtable = upload_dict.get('importtable')
                 page = importtable.replace('import', 'page')
 
-                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
+                permit_list, requsr_usergroups_listNIU,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
 # - get permit
                 has_permit = False
             # to prevent you from locking out when no permits yet
@@ -1459,112 +1489,124 @@ class UploadImportUsernameView(View):  # PR2021-08-04
                     user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                     activate(user_lang)
 
-        # - get selected examyear, school and department from usersettings
-                    # no examyear, school and department needed, only system and admin can upload usernames
-
-        # - get info from upload_dict
-                    is_test = upload_dict.get('test', False)
-                    awpColdef_list = upload_dict.get('awpColdef_list')
-                    data_list = upload_dict.get('data_list')
-                    filename = upload_dict.get('filename', '')
-
-                    if logging_on:
-                        logger.debug('is_test: ' + str(is_test))
-                        logger.debug('awpColdef_list: ' + str(awpColdef_list))
-                        logger.debug('len(data_list: ' + str(len(data_list)))
-
-                    updated_rows, log_list = [], []
-                    count_total, count_existing, count_new, count_error, count_bisexam = 0, 0, 0, 0, 0
-
-                    if awpColdef_list and data_list:
-
-        # - create log_list
-                        today_dte = af.get_today_dateobj()
-                        today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
-
-                        log_list = [c.STRING_DOUBLELINE_80,
-                                    str(_('Upload usernames')) + ' ' + str(_('date')) + ': ' + str(today_formatted),
-                                    c.STRING_DOUBLELINE_80]
-
-                        log_list.append(c.STRING_SPACE_10 + str(_("File name : %(file)s") % {'file': filename}))
-
-                        info_txt = str(_("This is a test.")) + ' ' if is_test else ''
-                        not_txt = str(_("not ")) if is_test else ''
-                        info_txt += str(_("The user data are %(val)ssaved.") % {'val': not_txt})
-
-                        log_list.append(c.STRING_SPACE_10 + info_txt)
-
-                        log_list.append(c.STRING_SPACE_10)
-
-    # - get double_username_list, a list of schoolcode + usernames that occur multiple times in data_list
-    # - get double_email_list, a list of schoolcode + email that occur multiple times in data_list
-                        double_username_list, double_email_list = stud_val.get_double_schoolcode_usernamelist_from_uploadfile(data_list)
-                        if logging_on:
-                            logger.debug('double_username_list: ' + str(double_username_list))
-                            # double_username_list: [('cur05', 'user 5')]
-
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# +++++ loop through data_list
-                        for data_dict in data_list:
-
-    # skip empty rows
-                            has_values = False
-                            for field in awpColdef_list:
-                                value = data_dict.get(field)
-                                if value is not None:
-                                    has_values = True
-
-                            if has_values:
-    # - upload username
-                                user_dict, is_new_user, is_existing_user, has_error = \
-                                    upload_username_from_datalist(
-                                        data_dict=data_dict,
-                                        double_username_list=double_username_list,
-                                        double_email_list=double_email_list,
-                                        log_list=log_list,
-                                        is_test=is_test,
-                                        user_lang=user_lang,
-                                        request=request
-                                    )
-                                if not is_test and user_dict:
-                                    updated_rows.append(user_dict)
-
-                                count_total += 1
-                                if is_new_user:
-                                    count_new += 1
-                                elif is_existing_user:
-                                    count_existing += 1
-                                elif has_error:
-                                    count_error += 1
-# +++++ end of loop through data_list
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-         # - return html with number of students, existing, new and erros
-                    result_html = create_result_html(
-                        is_test=is_test,
-                        count_total=count_total,
-                        count_error=count_error,
-                        count_new=count_new,
-                        count_existing=count_existing,
-                        count_diff_dep=0,
-                        count_pws_has_changed=0,
-                        is_user=True
+        # - get selected examyear from usersettings
+                    sel_examyear_instance = acc_prm.get_sel_examyear_from_requsr(request)
+                    sel_examyear_instance, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(
+                        request=request,
+                        allow_not_published=False
                     )
-                    update_dict = { 'is_test': is_test,
-                                    'table': 'user',
-                                    'result': result_html,
-                                    'log_list': log_list}
-                    if not is_test and updated_rows:
-                        update_dict['updated_user_rows'] = updated_rows
+                    if not may_edit:
+                        error_list.append(str(_('You cannot make changes.')))
+                        err_html = '<br>'.join(error_list)
+                        update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
+
+                    else:
+
+            # - get info from upload_dict
+                        is_test = upload_dict.get('test', False)
+                        awpColdef_list = upload_dict.get('awpColdef_list')
+                        data_list = upload_dict.get('data_list')
+                        filename = upload_dict.get('filename', '')
+
+                        if logging_on:
+                            logger.debug('is_test: ' + str(is_test))
+                            logger.debug('awpColdef_list: ' + str(awpColdef_list))
+                            logger.debug('len(data_list: ' + str(len(data_list)))
+
+                        updated_rows, log_list = [], []
+                        count_total, count_existing, count_new, count_error, count_bisexam = 0, 0, 0, 0, 0
+
+                        if awpColdef_list and data_list:
+
+            # - create log_list
+                            today_dte = af.get_today_dateobj()
+                            today_formatted = af.format_WDMY_from_dte(today_dte, user_lang)
+
+                            log_list = [c.STRING_DOUBLELINE_80,
+                                        str(_('Upload usernames')) + ' ' + str(_('date')) + ': ' + str(today_formatted),
+                                        c.STRING_DOUBLELINE_80]
+
+                            log_list.append(c.STRING_SPACE_10 + str(_("File name : %(file)s") % {'file': filename}))
+
+                            info_txt = str(_("This is a test.")) + ' ' if is_test else ''
+                            not_txt = str(_("not ")) if is_test else ''
+                            info_txt += str(_("The user data are %(val)ssaved.") % {'val': not_txt})
+
+                            log_list.append(c.STRING_SPACE_10 + info_txt)
+
+                            log_list.append(c.STRING_SPACE_10)
+
+        # - get double_username_list, a list of schoolcode + usernames that occur multiple times in data_list
+        # - get double_email_list, a list of schoolcode + email that occur multiple times in data_list
+                            double_username_list, double_email_list = stud_val.get_double_schoolcode_usernamelist_from_uploadfile(data_list)
+                            if logging_on:
+                                logger.debug('double_username_list: ' + str(double_username_list))
+                                # double_username_list: [('cur05', 'user 5')]
+
+    # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    # +++++ loop through data_list
+                            for data_dict in data_list:
+
+        # skip empty rows
+                                has_values = False
+                                for field in awpColdef_list:
+                                    value = data_dict.get(field)
+                                    if value is not None:
+                                        has_values = True
+
+                                if has_values:
+        # - upload username
+                                    user_dict, is_new_user, is_existing_user, has_error = \
+                                        upload_username_from_datalist(
+                                            sel_examyear_instance=sel_examyear_instance,
+                                            data_dict=data_dict,
+                                            double_username_list=double_username_list,
+                                            double_email_list=double_email_list,
+                                            log_list=log_list,
+                                            is_test=is_test,
+                                            user_lang=user_lang,
+                                            request=request
+                                        )
+                                    if not is_test and user_dict:
+                                        updated_rows.append(user_dict)
+
+                                    count_total += 1
+                                    if is_new_user:
+                                        count_new += 1
+                                    elif is_existing_user:
+                                        count_existing += 1
+                                    elif has_error:
+                                        count_error += 1
+    # +++++ end of loop through data_list
+    # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+             # - return html with number of students, existing, new and erros
+                        result_html = create_result_html(
+                            is_test=is_test,
+                            count_total=count_total,
+                            count_error=count_error,
+                            count_new=count_new,
+                            count_existing=count_existing,
+                            count_diff_dep=0,
+                            count_pws_has_changed=0,
+                            is_user=True
+                        )
+                        update_dict = { 'is_test': is_test,
+                                        'table': 'user',
+                                        'result': result_html,
+                                        'log_list': log_list}
+                        if not is_test and updated_rows:
+                            update_dict['updated_user_rows'] = updated_rows
 
         return HttpResponse(json.dumps(update_dict, cls=af.LazyEncoder))
 # - end of UploadImportUsernameView
 
 
-# ========  upload_username_from_datalist  ======= # PR2021-08-04 PR2022-03-19
-def upload_username_from_datalist(data_dict, double_username_list, double_email_list, log_list, is_test, user_lang, request):
+# ========  upload_username_from_datalist  ======= # PR2021-08-04 PR2022-03-19 PR2023-01-29
+def upload_username_from_datalist(sel_examyear_instance, data_dict, double_username_list, double_email_list, log_list, is_test, user_lang, request):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------------- upload_username_from_datalist  --------------------')
+        logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
         logger.debug('data_dict: ' + str(data_dict))
         logger.debug('is_test: ' + str(is_test))
         # data_dict: {'schoolcode': 'CUR01', 'username': 'User 1', 'last_name': 'User 1', 'email': 'user@email.com', 'function': 'v'}
@@ -1580,26 +1622,32 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
 
     last_name = data_dict.get('last_name', '')
     email = data_dict.get('email', '')
-    function = data_dict.get('function')
-    function_first_letter_lc = function[0].lower() if function else None
-    usergroups = 'read'
+    function_str = data_dict.get('function')
+    function_first_letter_lc = function_str[0].lower() if function_str else None
+    usergroups_list = ['read']
 
     if function_first_letter_lc:
         if function_first_letter_lc in ('v', 'p'): # 'Voorzitter', 'Chairperson'
-            usergroups = 'archive;auth1;download;read'
+            usergroups_list.extend(['archive', 'auth1', 'download'])
         elif function_first_letter_lc == 's': # 'Secretaris', 'Secretary'
-            usergroups = 'archive;auth2;download;read'
+            usergroups_list.extend(['archive', 'auth2', 'download'])
         elif function_first_letter_lc == 'e':  # 'Examiner'
-            usergroups = 'auth3;read'
+            usergroups_list.append('auth3')
         elif function_first_letter_lc == 'g': # 'Gecommitteerde',
-            usergroups = 'auth4;read'
+            usergroups_list.append('auth4')
         elif function_first_letter_lc == 'c': # 'Chairperson', 'Corrector'
-            if len(function) > 1:
-                function_second_letter_lc = function[1].lower()
+            if len(function_str) > 1:
+                function_second_letter_lc = function_str[1].lower()
                 if function_second_letter_lc == 'h':  # 'Chairperson'
-                    usergroups = 'auth1;read'
+                    usergroups_list.append('auth1')
                 elif function_second_letter_lc == 'o':  # 'Corrector'
-                    usergroups = 'auth4;read'
+                    usergroups_list.append('auth4')
+
+# - sort the list before saving, to be able to compare new and saved usergroups
+    usergroups_list.sort()
+
+# - convert to json
+    usergroups_str = json.dumps(usergroups_list)
 
 # - when school uploads users: get school_code from req_user instead of from data_dict
     if request.user.is_role_school:
@@ -1610,7 +1658,7 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
         logger.debug('username_with_underscore: ' + str(username_with_underscore))
         logger.debug('last_name:  ' + str(last_name))
         logger.debug('email:      ' + str(email))
-        logger.debug('usergroups: ' + str(usergroups))
+        logger.debug('usergroups_list: ' + str(usergroups_list))
 
 # - check for double occurrence in upload file
     has_error = False
@@ -1693,7 +1741,8 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
                     last_name=last_name,
                     email=email,
                     role=role,
-                    usergroups=usergroups,
+                    # PR2023-01-29 usergroups is moved to table UserAllowed
+                    # was: usergroups=usergroups,
                     is_active=True,
                     activated=False,
                     lang=user_lang,
@@ -1703,6 +1752,17 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
                 if not is_test:
                     new_user.save()
                     new_user_pk = new_user.pk
+
+                # add user_allowed record with usergroups PR2023-01-29
+                    now_utc = timezone.now()
+                    new_user_allowed = acc_mod.UserAllowed(
+                        user=new_user,
+                        examyear=sel_examyear_instance,
+                        usergroups=usergroups_str,
+                        modifiedby=request.user,
+                        modifiedat=now_utc
+                    )
+                    new_user_allowed.save()
 
             except Exception as e:
                 has_error = True
@@ -1734,7 +1794,12 @@ def upload_username_from_datalist(data_dict, double_username_list, double_email_
                 log_list.append(' - '.join((c.STRING_SPACE_10, str(err))))
 
     if new_user_pk:
-        updated_rows = acc_view.create_user_rows(request, user_pk=new_user_pk)
+        updated_rows = acc_view.create_user_rowsNEW(
+            sel_examyear=sel_examyear_instance,
+            request=request,
+            user_pk=new_user_pk
+        )
+
         if updated_rows:
             user_dict = updated_rows[0]
             user_dict['created'] = True
@@ -2867,10 +2932,10 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
 
 # - validate idnumber
     id_number = data_dict.get('idnumber')
-    idnumber_nodots, msg_err, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
-    if msg_err:
+    idnumber_nodots, msg_err_list, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
+    if msg_err_list:
         has_error = True
-        log_list.append(msg_err)
+        log_list.extend(msg_err_list)
 
 # - check for double occurrence in upload file
     if not has_error:
@@ -3065,11 +3130,11 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
                     """
                     append_dict = {'created': True}
                     rows = stud_view.create_studentsubject_rows(
-                        examyear=school.examyear,
-                        schoolbase=school.base,
-                        depbase=department.base,
+                        sel_examyear=school.examyear,
+                        sel_schoolbase=school.base if school else None,
+                        sel_depbase=sel_department.base if sel_department else None,
+                        sel_lvlbase=sel_lvlbase,
                         append_dict=append_dict,
-                        setting_dict={},
                         student_pk=student.pk)
                     if rows:
                         studsubj_rows.extend(rows)
@@ -3174,6 +3239,7 @@ def upload_studentsubject_from_datalist(data_dict, school, department, is_test,
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examyear, examperiod, examgradetype, is_test,
+                                requsr_allowed_sections_dict, requsr_allowed_cluster_pk_list,
                                double_idnumberlist, scheme_si_dict, count_dict,
                                saved_student_subj_grade_dict, tobe_updated_dict,
                                 new_exemption_pk_list, mapped_new_exemption_grade_list, log_list, request):
@@ -3245,10 +3311,10 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examy
 
 # - validate idnumber
     id_number = upload_data_dict.get('idnumber')
-    idnumber_nodots, msg_err, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
-    if msg_err:
+    idnumber_nodots, msg_err_list, birthdate_dteobjNIU = stud_val.get_idnumber_nodots_stripped_lower(id_number)
+    if msg_err_list:
         has_error = True
-        log_list.append(msg_err)
+        log_list.extend(msg_err_list)
 
 # - check for double occurrence in upload file
     if not has_error:
@@ -3363,6 +3429,7 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examy
 
                 subject_not_found, subject_has_error, grade_has_error, value_has_changed = \
                     import_studsubj_grade_from_datalist(request, examyear, examperiod, examgradetype, saved_student_dict, scheme_dict,
+                                        requsr_allowed_sections_dict, requsr_allowed_cluster_pk_list,
                                         sjbase_pk_str, grade_arr, tobe_updated_dict, log_list, is_test)
                 if subject_not_found:
                     has_notfound_subjects = True
@@ -3412,6 +3479,7 @@ def get_tobe_updated_gradelist_from_datalist(upload_data_dict, department, examy
 
 
 def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgradetype, saved_student_dict, scheme_dict,
+                            requsr_allowed_sections_dict, requsr_allowed_cluster_pk_list,
                             sjbase_pk_str, grade_arr, tobe_updated_dict, log_list, is_test):
     # PR2021-12-10 PR2022-01-04 PR2022-02-09 PR2022-02-19
     logging_on = s.LOGGING_ON
@@ -3449,7 +3517,7 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
 # --- lookup upload_sjbase_pk_int in saved_subj_grade_dict
     saved_studsubj_dict = saved_student_dict.get(upload_sjbase_pk_int)
     if logging_on:
-        logger.debug('@@@@@@@@@@@@.....  saved_studsubj_dict: ' + str(saved_studsubj_dict))
+        logger.debug('       saved_studsubj_dict: ' + str(saved_studsubj_dict))
 
     """
     saved_student_dict: {
@@ -3516,31 +3584,26 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
 # - check if req_user is allowed to import this grade
             err_list = []
 # - check if school department and level are allowed
-            if request.user.allowed_schoolbases:
-                allowed_schoolbase_pk_arr = request.user.allowed_schoolbases.split(';')
-                schoolbase_pk = saved_student_dict.get('schoolbase_id')
-                if not schoolbase_pk or not str(schoolbase_pk) in allowed_schoolbase_pk_arr:
-                    err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This school').lower()}))
-            if not err_list and request.user.allowed_depbases:
-                allowed_depbase_pk_arr = request.user.allowed_depbases.split(';')
+
+            schoolbase_pk = saved_student_dict.get('schoolbase_id')
+            if not acc_prm.validate_userallowed_school(requsr_allowed_sections_dict, schoolbase_pk):
+                err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This school').lower()}))
+            else:
                 depbase_pk = saved_student_dict.get('depbase_id')
-                if not depbase_pk or not str(depbase_pk) in allowed_depbase_pk_arr:
+                if not acc_prm.validate_userallowed_depbase(requsr_allowed_sections_dict, schoolbase_pk, depbase_pk):
                     err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This department').lower()}))
-            if not err_list and request.user.allowed_levelbases:
-                allowed_lvlbase_pk_arr = request.user.allowed_levelbases.split(';')
-                lvlbase_pk = saved_student_dict.get('lvlbase_id')
-                if not lvlbase_pk or not str(lvlbase_pk) in allowed_lvlbase_pk_arr:
-                    err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('this level')}))
-            if not err_list and request.user.allowed_subjectbases:
-                allowed_subjbase_pk_arr = request.user.allowed_subjectbases.split(';')
-                subjbase_pk = saved_studsubj_dict.get('sjb_id')
-                if not subjbase_pk or not str(subjbase_pk) in allowed_subjbase_pk_arr:
-                    err_list.append(str( _("You don't have permission to upload %(cpt)s.") % {'cpt': _('this subject')}))
-            if not err_list and request.user.allowed_clusterbases:
-                allowed_cluster_pk_arr = request.user.allowed_clusterbases.split(';')
-                cluster_pk = saved_studsubj_dict.get('cluster_id')
-                if not cluster_pk or not str(cluster_pk) in allowed_cluster_pk_arr:
-                    err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This cluster').lower()}))
+                else:
+                    lvlbase_pk = saved_student_dict.get('lvlbase_id')
+                    if not acc_prm.validate_userallowed_lvlbase(requsr_allowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk):
+                        err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('this level')}))
+                    else:
+                        subjbase_pk = saved_studsubj_dict.get('sjb_id')
+                        if not acc_prm.validate_userallowed_subjbase(requsr_allowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk):
+                            err_list.append(str( _("You don't have permission to upload %(cpt)s.") % {'cpt': _('this subject')}))
+                        elif requsr_allowed_cluster_pk_list:
+                            cluster_pk = saved_studsubj_dict.get('cluster_id')
+                            if not cluster_pk or not str(cluster_pk) in requsr_allowed_cluster_pk_list:
+                                err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This cluster').lower()}))
 
 # - validate import grade
             exemption_grade_tobe_created = False
@@ -3692,6 +3755,8 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
                 has_changed_str = '' if not value_has_changed else ''.join((' (', str(_('has changed')), ')'))
                 log_list.append(''.join((caption_txt, output_spaces, str(_('was')), ': ', saved_value_nz[:8], has_changed_str)))
 
+    if logging_on:
+        logger.debug(' ----- end ----- ')
     return subject_not_found, subject_has_error, grade_has_error, value_has_changed
 # --- end of import_studsubj_grade_from_datalist
 
@@ -4006,13 +4071,13 @@ class UploadImportNtermentableView(View):  # PR2022-02-26
 
 # - Reset language
                 # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-                # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_from_usersetting
+                # PR2021-12-09 Debug: must come before get_selected_ey_school_dep_lvl_from_usersetting
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
 # - get permit
                 page = 'page_exams'
-                permit_list, requsr_usergroups_listNIU = acc_view.get_userpermit_list(page, request.user)
+                permit_list, requsr_usergroups_listNIU,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
                 has_permit = 'permit_crud' in permit_list
 
                 if logging_on:
@@ -4022,7 +4087,7 @@ class UploadImportNtermentableView(View):  # PR2022-02-26
 
 # - get selected examyear, school and department from usersettings
                 # PR2022-07-01 TODO
-                sel_examyear, may_edit, err_list = dl.get_selected_examyear_from_usersetting(request)
+                sel_examyear, may_edit, err_list = acc_view.get_selected_examyear_from_usersetting(request)
                 if err_list:
                     msg_list.extend(err_list)
 

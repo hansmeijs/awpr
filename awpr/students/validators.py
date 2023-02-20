@@ -8,11 +8,13 @@ from reportlab.pdfbase.pdfmetrics import stringWidth, registerFont
 from reportlab.pdfbase.ttfonts import TTFont
 import math
 
+from operator import itemgetter
+
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
 
-from schools import models as school_mod
+from schools import models as sch_mod
 from students import models as stud_mod
 from subjects import models as subj_mod
 
@@ -20,59 +22,92 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_multiple_occurrences(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-05
+def get_multiple_occurrences(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-05 PR2023-01-19
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- get_multiple_occurrences ----------- ')
-        logger.debug('--- sel_examyear: ' + str(sel_examyear))
-        logger.debug('--- sel_schoolbase: ' + str(sel_schoolbase))
-        logger.debug('--- sel_depbase: ' + str(sel_depbase))
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+        logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
+        logger.debug('    sel_depbase: ' + str(sel_depbase))
 
-    dictlist = []
+    multiple_occurrences_list = []
+    multiple_occurrences_dict = {}
+
     if sel_examyear and sel_schoolbase and sel_depbase:
 
 # - get students with multiple occurrences
         # to speed up seach: get list of idnumbers of this schoolbase that occurs multiple times in database,
         # in this_year + last_year, for evening and lex school: last 10 years
-        firstinrange_examyear_int, student_idnumber_list = \
+        firstinrange_examyear_int, sorted_idnumber_list = \
             get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_depbase)
         if logging_on:
-            logger.debug('firstinrange_examyear_int: ' + str(firstinrange_examyear_int))
+            logger.debug('    firstinrange_examyear_int: ' + str(firstinrange_examyear_int))
+            logger.debug('    sorted_idnumber_list: ' + str(sorted_idnumber_list))
 
-        if student_idnumber_list:
-            for student_idnumber in student_idnumber_list:
+        if sorted_idnumber_list:
+            for student_idnumber in sorted_idnumber_list:
                 student_dict = lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber)
                 if student_dict:
-                    dictlist.append(student_dict)
-    if logging_on:
-        logger.debug('dictlist: ' + str(dictlist))
+                    if logging_on:
+                        logger.debug('    student_dict: ' + str(student_dict))
+                    """  
+                    student_dict: {
+                        'cur_stud': {
+                            'student_id': 6221, 'base_id': 6230, 'idnumber': '2005120201', 'linked': None, 'notlinked': None, 
+                            'fullname': 'Jantje, Junzaikely Michaela', 'depbase_code': 'Vsbo', 'lvlbase_code': 'TKL', 'sctbase_code': 'z&w'}, 
+                            'cur_name': 'Jantje, Junzaikely Michaela', 
+                        'other_stud': [
+                            {'student_id': 3738, 'base_id': 3747, 'lastname': 'Jantje', 'firstname': 'Junzaikely Michaela', 'prefix': None, 'result_status': 'Geslaagd', 
+                            'linked': None, 'notlinked': None, 'fullname': 'Jantje, Junzaikely Michaela', 'deplvlsct': 'Vsbo PKL z&w', 'examyear': 2022, 
+                            'school_name': 'Dr. Albert Schweitzer College Parera Vsbo', 'depbase_code': 'Vsbo', 'lvl_abbrev': 'PKL', 'sct_abbrev': 'z&w'}]}
+                    """
 
-    return dictlist
+                    cur_student_pk = student_dict.get('cur_student_pk')
+                    if logging_on:
+                        logger.debug('    cur_student_pk: ' + str(cur_student_pk))
+
+                    if cur_student_pk:
+                        multiple_occurrences_list.append(cur_student_pk)
+                        multiple_occurrences_dict[cur_student_pk] = student_dict
+
+    if logging_on:
+        logger.debug('    multiple_occurrences_dict: ' + str(multiple_occurrences_dict))
+
+    return multiple_occurrences_list, multiple_occurrences_dict
+
 # - end of get_multiple_occurrences
 
 
-def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber):  # PR2021-09-05
+def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_schoolbase, sel_depbase, student_idnumber):
+    # PR2021-09-05 PR2023-01-19
     # function looks up matching students in previous year(s)
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----------- lookup_multiple_occurrences ----------- ')
-        logger.debug('--- student: ' + str(student_idnumber))
+        logger.debug('    student: ' + str(student_idnumber))
 
-    # first scheck if this student exists in this school, last year
+    # first check if this student exists in this school, last year
     student_dict = {}
     if student_idnumber:
         idnumber_lower = student_idnumber.lower()
 
         cur_stud_dict = get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
+        if logging_on:
+            logger.debug('    cur_stud_dict: ' + str(cur_stud_dict))
+
         if cur_stud_dict:
             student_pk = cur_stud_dict.get('student_id')
+            student_dict['cur_student_pk'] = student_pk
+            # student_dict['cur_stud_lastname'] = cur_stud_dict.get('lastname') or ''
+            # student_dict['cur_stud_firstname'] = cur_stud_dict.get('firstname') or ''
             student_dict['cur_stud'] = cur_stud_dict
 
 # get other occurrences of this student within period, from all countries
             sql_keys = {'first_ey': firstinrange_examyear_int, 'cur_ey': sel_examyear.code,
                         'st_id': student_pk, 'idnumber': idnumber_lower}
-            sql_list = ["SELECT st.id AS student_id, st.base_id, st.lastname, st.firstname, st.prefix, st.result_info, st.linked, st.notlinked,",
+            sql_list = ["SELECT st.id AS student_id, st.lastname, st.firstname, st.prefix, st.result_status,",
+                        # "st.base_id, st.linked, st.notlinked,",
                         "CONCAT_WS (' ', st.prefix, CONCAT(st.lastname, ','), st.firstname) AS fullname,",
                         "CONCAT(depbase.code, ' ', lvl.abbrev, CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE ' ' END, sct.abbrev) AS deplvlsct,",
                         "ey.code AS examyear, sch.name AS school_name, depbase.code AS depbase_code,",
@@ -87,16 +122,26 @@ def lookup_multiple_occurrences(firstinrange_examyear_int, sel_examyear, sel_sch
                         "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
                         "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id)",
                         "INNER JOIN subjects_sectorbase AS sctbase ON (sctbase.id = sct.base_id)",
-                        "WHERE ey.code <= %(cur_ey)s::INT",
+
+                        "WHERE ey.code >= %(first_ey)s::INT AND ey.code <= %(cur_ey)s::INT",
                         "AND LOWER(st.idnumber) = %(idnumber)s::TEXT",
                         "AND NOT st.id = %(st_id)s::INT",
-                        "AND NOT st.tobedeleted"
+                        "AND NOT st.tobedeleted AND NOT st.deleted"
                         ]
             sql = ' '.join(sql_list)
 
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
-                student_dict['other_stud'] = af.dictfetchall(cursor)
+
+                other_stud_dict = {}
+                rows = af.dictfetchall(cursor)
+                if rows:
+                    for row in rows:
+                        other_student_pk = row.get('student_id')
+                        if other_student_pk:
+                            other_stud_dict[other_student_pk] = row
+
+                student_dict['other_stud'] = other_stud_dict
 
     if logging_on:
         logger.debug('student_dict: ' + str(student_dict))
@@ -113,7 +158,7 @@ def get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
         sql_keys = {'idnumber': idnumber_lower, 'ey_pk': sel_examyear.pk,
                     'sbase_id': sel_schoolbase.pk, 'depbase_id': sel_depbase.pk}
         sql_list = [
-            "SELECT st.id AS student_id, st.base_id, st.idnumber, st.linked, st.notlinked,",
+            "SELECT st.id AS student_id, st.base_id, st.idnumber, st.lastname, st.firstname, st.linked, st.notlinked,",
             "CONCAT_WS (' ', st.prefix, CONCAT(st.lastname, ','), st.firstname) AS fullname,",
             "depbase.code AS depbase_code, lvlbase.code AS lvlbase_code, sctbase.code AS sctbase_code",
     
@@ -143,10 +188,10 @@ def get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
 # - end of
 
 
-def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-05
-    # to speed up seach: get list of students of this schoolbase with idnumber that occurs multiple times in database,
+def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_depbase):  # PR2021-09-05 PR2023-01-17
+    # to speed up search: get list of students of this schoolbase with idnumber that occurs multiple times in database,
     # in this_year + last_year, for evening and lex school: last 10 years
-    # from all countries
+    # from all countries, not deleted, not tobedeleted
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -154,47 +199,110 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
         logger.debug('--- sel_examyear: ' + str(sel_examyear))
         logger.debug('--- sel_schoolbase: ' + str(sel_schoolbase))
         logger.debug('--- sel_depbase: ' + str(sel_depbase))
+
     # first scheck if this student exists in this school, last year
     firstinrange_examyear_int = None
-    student_idnumber_list = []
-    if sel_examyear and sel_schoolbase and sel_depbase:
-        # - get selected school
-        sel_school = school_mod.School.objects.get_or_none(
-            base=sel_schoolbase,
-            examyear=sel_examyear)
-        if sel_school:
-            if logging_on:
-                logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
-                logger.debug('sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
+    sorted_idnumber_list = []
+    try:
+        if sel_examyear and sel_schoolbase and sel_depbase:
+            # - get selected school
+            sel_school = sch_mod.School.objects.get_or_none(
+                base=sel_schoolbase,
+                examyear=sel_examyear)
+            if sel_school:
+                if logging_on:
+                    logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
+                    logger.debug('sel_schoolbase.pk: ' + str(sel_schoolbase.pk))
 
-            current_examyear_int = sel_examyear.code
-            # bewijs van vrijstelling is valid for 10 years when evening or lex school
-            if sel_school.iseveningschool or sel_school.islexschool:
-                firstinrange_examyear_int = current_examyear_int - 10 if current_examyear_int else None
-            else:
-                firstinrange_examyear_int = current_examyear_int - 1 if current_examyear_int else None
+                current_examyear_int = sel_examyear.code
+                # bewijs van vrijstelling is valid for 10 years when evening or lex school
+                if sel_school.iseveningschool or sel_school.islexschool:
+                    firstinrange_examyear_int = current_examyear_int - 10 if current_examyear_int else None
+                else:
+                    firstinrange_examyear_int = current_examyear_int - 1 if current_examyear_int else None
 
-            sql_keys = {'sbase_id': sel_schoolbase.pk, 'last_ey': firstinrange_examyear_int, 'cur_ey': current_examyear_int}
-            sql_list = ["SELECT st.idnumber, count(*),",
-                        "ARRAY_AGG(DISTINCT sch.base_id)",
-                        "FROM students_student AS st",
-                        "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
-                        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-                        "WHERE ey.code >= %(last_ey)s::INT AND ey.code <= %(cur_ey)s::INT",
-                        "AND NOT st.tobedeleted",
-                        "GROUP BY st.idnumber",
-                        "HAVING count(*) > 1",
-                        "AND ARRAY_POSITION(ARRAY_AGG(DISTINCT sch.base_id), %(sbase_id)s::INT) > 0",
-                        ]
-            sql = ' '.join(sql_list)
+                sql_keys = {'sbase_id': sel_schoolbase.pk,
+                            'first_ey': firstinrange_examyear_int,
+                            'cur_ey': current_examyear_int
+                            }
+                sql_list = ["SELECT st.idnumber",
+                
+                            "FROM students_student AS st",
+                            "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                            "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
 
-            with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
-                for row in cursor.fetchall():
-                    student_idnumber_list.append(row[0])
-    return firstinrange_examyear_int, student_idnumber_list
+                            "WHERE NOT st.tobedeleted AND NOT st.deleted",
+                            "AND ey.code >= %(first_ey)s::INT AND ey.code <= %(cur_ey)s::INT",
+
+                            "GROUP BY st.idnumber",
+                            "HAVING count(*) > 1",
+
+                            # show only students that have sel_schoolbase in their array of schoolbases
+                            "AND ARRAY_POSITION(ARRAY_AGG(DISTINCT sch.base_id), %(sbase_id)s::INT) > 0"
+                            ]
+                sql = ' '.join(sql_list)
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+
+                    if logging_on and False:
+                        logger.debug('-----------------')
+                        for q in connection.queries:
+                            logger.debug(str(q))
+                        logger.debug('-----------------')
+                    idnumber_list = []
+                    for row in cursor.fetchall():
+                        if row[0]:
+                            idnumber_lower = row[0].lower()
+                            idnumber_list.append(idnumber_lower)
+
+    # create a sorted list of idnumbers, filter out different department
+                    if idnumber_list:
+                        sql_keys = {'sbase_id': sel_schoolbase.pk,
+                                    'depbase_id': sel_depbase.pk,
+                                    'ey_id': sel_examyear.pk,
+                                    'idnumber_arr': idnumber_list
+                                    }
+                        sql_list = ["SELECT st.idnumber",
+
+                                    "FROM students_student AS st",
+                                    "INNER JOIN schools_school AS sch ON (sch.id = st.school_id)",
+                                    "INNER JOIN schools_department AS dep ON (dep.id = st.department_id)",
+
+                                    "WHERE NOT st.tobedeleted AND NOT st.deleted",
+                                    "AND sch.examyear_id = %(ey_id)s::INT",
+                                    "AND sch.base_id = %(sbase_id)s::INT",
+                                    "AND dep.base_id = %(depbase_id)s::INT",
+                                    "AND st.idnumber::TEXT IN (SELECT UNNEST(%(idnumber_arr)s::TEXT[]) )",
+
+                                    "ORDER BY LOWER(st.lastname), LOWER(st.firstname)"
+                                    ]
+                        sql = ' '.join(sql_list)
+
+                        with connection.cursor() as cursor:
+                            cursor.execute(sql, sql_keys)
+
+                            for row in cursor.fetchall():
+                                if row[0]:
+                                    sorted_idnumber_list.append(row[0])
+
+                                    if logging_on:
+                                        logger.debug('  row: ' + str(row))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    return firstinrange_examyear_int, sorted_idnumber_list
 # - end of get_idnumbers_with_multiple_occurrence
 
+
+def link_students_with_multiple_occurrences(dictlist):  # PR2023-01-18
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ============= link_students_with_multiple_occurrences ============= ')
+# end of link_students_with_multiple_occurrences
 
 # ########################### validate students ##############################
 
@@ -226,6 +334,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 # - count how many students exist with this idnumber in this school (all departments)
         # get all students from this school with this idnumber
         # idnumber can have letters, therefore compare case insensitive
+        # include deleted students PR2023-01-16
         rows = stud_mod.Student.objects.filter(
             idnumber__iexact=idnumber_nodots,
             school=school
@@ -359,7 +468,7 @@ def validate_examnumber_exists(student, examnumber):  # PR2021-08-11
 # ========  validate_studentsubjects  ======= PR2021-08-17
 
 def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, user_lang):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  validate_studentsubjects_TEST  -----')
         logger.debug('    student: ' + str(student))
@@ -388,7 +497,7 @@ def validate_studentsubjects_TEST(student, studsubj_dictlist_with_tobedeleted, u
         if student:
             stud_scheme = student.scheme
             if logging_on:
-                logger.debug('stud_scheme: ' + str(stud_scheme))
+                logger.debug('    stud_scheme: ' + str(stud_scheme))
 
     # - no student.scheme
             if stud_scheme is None:
@@ -706,14 +815,11 @@ def get_is_sxm_student(student_instance):  # PR 2022-09-01
     return is_sxm_student
 
 
-##########################
-
-
 # ========  validate_submitted_locked_grades  ======= PR2021-09-03 PR2022-02-15 PR2022-03-05
 def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperiod=None):
     # PR2022-02-15 don't check on submitted studsubj, only on submitted grades
     # PR2022-03-05 used in remove bis_exam in student page
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- validate_submitted_locked_grades ----- ')
@@ -730,7 +836,7 @@ def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperi
             "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
             "INNER JOIN students_student AS st ON (st.id = studsubj.student_id)",
 
-            "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted",
+            "WHERE NOT st.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted AND NOT grd.deleted",
             "AND (grd.se_published_id IS NOT NULL OR",
                 "grd.sr_published_id IS NOT NULL OR",
                 "grd.pe_published_id IS NOT NULL OR",
@@ -768,6 +874,7 @@ def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperi
     if logging_on:
         logger.debug('has_error: ' + str(has_error))
         logger.debug('has_published: ' + str(has_published))
+
     return has_error, has_published
 # - end of validate_submitted_locked_grades
 
@@ -775,7 +882,7 @@ def validate_submitted_locked_grades(student_pk=None, studsubj_pk=None, examperi
 # ========  validate_studentsubjects  ======= PR2021-07-24 PR2022-08-25
 
 def validate_studentsubjects_no_msg(student_instance, user_lang):
-    # PR2021-07-24 PR2022-08-25 PR2022-08-31
+    # PR2021-07-24 PR2022-08-25 PR2022-08-31 PR2022-12-19 PR2023-01-12
     # function returns True when error or when one of the requirements is not met.
 
     logging_on = False  # s.LOGGING_ON
@@ -783,73 +890,83 @@ def validate_studentsubjects_no_msg(student_instance, user_lang):
         logger.debug(' -----  validate_studentsubjects  -----')
         logger.debug('    student_instance: ' + str(student_instance))
 
+    has_error = False
     # - when sxm_student: skip validate_studentsubjects PR2022-08-31
     is_sxm_student = get_is_sxm_student(student_instance)  # sxm has different rules
     if is_sxm_student:
-        return False
+        pass
+    else:
+        if student_instance:
+            stud_scheme = student_instance.scheme
+            if logging_on:
+                logger.debug('    stud_scheme: ' + str(stud_scheme))
 
-    if student_instance:
-        stud_scheme = student_instance.scheme
-        if logging_on:
-            logger.debug('stud_scheme: ' + str(stud_scheme))
+            if student_instance.tobedeleted:
+                pass
+            elif stud_scheme is None:
+                has_error = True
+            else:
 
-        if stud_scheme is None:
-            return True
-        else:
+    # ++++++++++++++++++++++++++++++++
+    # - get min max subjects and mvt from scheme
+                scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
+    # ++++++++++++++++++++++++++++++++
+    # - get info from studsubjects
+                doubles_pk_list = []
+                msg_list = []
+                studsubj_dict = get_studsubj_dict(stud_scheme, student_instance, doubles_pk_list, msg_list)
+                if msg_list or doubles_pk_list:
+                    has_error = True
+                else:
 
-# ++++++++++++++++++++++++++++++++
-# - get min max subjects and mvt from scheme
-            scheme_dict = get_scheme_si_sjtp_dict(stud_scheme)
-# ++++++++++++++++++++++++++++++++
-# - get info from studsubjects
-            doubles_pk_list = []
-            msg_list = []
-            studsubj_dict = get_studsubj_dict(stud_scheme, student_instance, doubles_pk_list, msg_list)
-            if msg_list:
-                return True
-            if doubles_pk_list:
-                return True
+        # ++++++++++++++++++++++++++++++++
+        # - get eveninstudent or lex student
+                    # skip validaate when is_evening_or_lex_student
+                    is_evening_or_lex_student = get_evening_or_lex_student(student_instance)
+                    if is_evening_or_lex_student:
+                        pass
+                    else:
 
-# ++++++++++++++++++++++++++++++++
-# - get eveninstudent or lex student
-            # skip validaate when is_evening_or_lex_student
-            is_evening_or_lex_student = get_evening_or_lex_student(student_instance)
-            if is_evening_or_lex_student:
-                return False
-# -------------------------------
-# - check required subjects - not when is_evening_or_lex_student
-            validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if msg_list:
-                return True
+                # -------------------------------
+                # - check required subjects - not when is_evening_or_lex_student
+                        validate_required_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                        if msg_list:
+                            has_error = True
+                        else:
+                    # - check total number of subjects
+                            validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
 
-# - check total number of subjects
-            validate_amount_subjects('subject', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if msg_list:
-                return True
+                            if msg_list:
+                                has_error = True
+                            else:
+                    # - check number of mvt, wisk and combi subjects
+                                validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                                if msg_list:
+                                    has_error = True
+                                else:
+                                    validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                                    if msg_list:
+                                        has_error = True
+                                    else:
+                                        validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                                        if msg_list:
+                                            has_error = True
+                                        else:
+                                    # - check number of subjects per subjecttype
+                                            validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
+                                            if msg_list:
+                                                has_error = True
+                                            else:
+                                    # - check total_studyloadhours
+                                                validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang)
+                                                # in 2023 studyloadhours is not required yet
+                                                # if msg_list:
+                                                #    return True
 
-# - check number of mvt, wisk and combi subjects
-            validate_amount_subjects('mvt', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if msg_list:
-                return True
-            validate_amount_subjects('wisk', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if msg_list:
-                return True
-            validate_amount_subjects('combi', is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if msg_list:
-                return True
+                if logging_on:
+                    logger.debug('    msg_list: ' + str(msg_list))
 
-# - check number of subjects per subjecttype
-            validate_amount_subjecttype_subjects(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list)
-            if msg_list:
-                return True
-
-# - check total_studyloadhours
-            validate_min_studyloadhours(is_evening_or_lex_student, scheme_dict, studsubj_dict, msg_list, user_lang)
-            # in 2023 studyloadhours is not required yet
-            # if msg_list:
-            #    return True
-
-    return False
+    return has_error
 # --- end of validate_studentsubjects
 
 
@@ -982,7 +1099,7 @@ def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, stud
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  validate_amount_subjects  -----')
-        logger.debug('field: ' + str(field))
+        logger.debug('    field: ' + str(field))
 
     caption, captions = '', ''
 
@@ -1033,8 +1150,9 @@ def validate_amount_subjects(field, is_evening_or_lex_student, scheme_dict, stud
         msg_count = _('There are %(val)s %(cpt)s.') % {'cpt': captions, 'val': subject_count}
 
     if logging_on:
-        logger.debug('msg_count: ' + str(msg_count))
-        logger.debug('studsubj_list: ' + str(studsubj_list))
+        logger.debug('    msg_count: ' + str(msg_count))
+        logger.debug('    studsubj_list: ' + str(studsubj_list))
+        logger.debug('    subject_count: ' + str(subject_count))
 
     msg_txt, msg_available = '', ''
     if min_subj and max_subj and min_subj == max_subj:
@@ -1420,7 +1538,7 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_studsubj_dict  -----')
-        logger.debug('scheme: ' + str(student))
+        logger.debug('     scheme: ' + str(student))
 
     subject_list = []
     sjtp_dict = {}
@@ -1443,6 +1561,7 @@ def get_studsubj_dict(stud_scheme, student, doubles_list, msg_list):  #  PR2021-
     rows = stud_mod.Studentsubject.objects.filter(
         student=student,
         tobedeleted=False,
+        deleted=False,
         is_extra_nocount=False
     )
     if rows is None:
@@ -1653,7 +1772,7 @@ def get_dateformat_from_uploadfileNIU(data_list, date_field):
 # - end of get_dateformat_from_uploadfile
 
 
-# ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20 PR2022-08-22
+# ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20 PR2022-08-22 PR2023-01-29
 def get_idnumberlist_from_database(sel_school, idnumber_list):
     # get list of idnumbers of this school, used with import student and update student
     # idnumber_list contains tuples with (id, idnumber)
@@ -1671,7 +1790,10 @@ def get_idnumberlist_from_database(sel_school, idnumber_list):
             "FROM students_student AS st",
             "WHERE st.school_id = %(sch_id)s::INT",
             "AND st.idnumber IS NOT NULL",
-            "AND NOT st.tobedeleted",
+            # PR2023-01-29 removed: (mabe should give msg when trying to enter a ID-number taht is tobedeleted
+            #   "AND NOT st.tobedeleted",
+
+            "AND NOT st.deleted", # PR2023-01-29 added: NOT st.deleted
             "ORDER BY st.idnumber"]
         sql = ' '.join(sql_list)
 
@@ -1934,7 +2056,7 @@ def get_double_idnumberlist_from_uploadfile(data_list):
             logger.debug('id_number: ' + str(id_number) + ' ' + str(type(id_number)))
             logger.debug('isinstance(id_number, int): ' + str(isinstance(id_number, int)))
 
-        idnumber_nodots_stripped, msg_errNIU, birthdate_dteobjNIU = get_idnumber_nodots_stripped_lower(id_number)
+        idnumber_nodots_stripped, msg_err_listNIU, birthdate_dteobjNIU = get_idnumber_nodots_stripped_lower(id_number)
         if logging_on:
             logger.debug('idnumber_nodots_stripped: ' + str(idnumber_nodots_stripped) + ' ' + str(type(idnumber_nodots_stripped)))
 
@@ -1961,7 +2083,7 @@ def get_double_idnumberlist_from_uploadfile(data_list):
 
 
 def get_idnumber_nodots_stripped_lower(id_number):
-    # PR2021-07-20 PR2021-09-10 PR2022-08-30
+    # PR2021-07-20 PR2021-09-10 PR2022-08-30 PR2023-01-16
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_idnumber_nodots_stripped_lower  -----')
@@ -1969,8 +2091,7 @@ def get_idnumber_nodots_stripped_lower(id_number):
 
     idnumber_nodots_stripped_lower = ''
     birthdate_dteobj = None
-    msg_err = None
-
+    msg_err_list = []
     if id_number:
         try:
             if not isinstance(id_number, str):
@@ -2001,7 +2122,9 @@ def get_idnumber_nodots_stripped_lower(id_number):
 
                         # ---   convert to date
                                 date_iso = date_str[:4] + "-" + date_str[4:6] + "-" + date_str[6:8]
-                                logger.debug('    date_iso: ' + str(date_iso) )
+                                if logging_on:
+                                    logger.debug('    date_iso: ' + str(date_iso) )
+
                                 birthdate_dteobj = af.get_date_from_ISO(date_iso)
                                 if birthdate_dteobj :
                                     is_ok = True
@@ -2016,46 +2139,32 @@ def get_idnumber_nodots_stripped_lower(id_number):
 
                     if is_ok:
                         idnumber_nodots_stripped_lower = id_number_str
+
                     elif incorrect_date_format:
-                        msg_err = ''.join((
-                            '<p p-2>',
-                            str(_("ID number '%(val)s' is not valid.") % {'val': id_number}),
-                            '</p><p px-2 pt-2>',
-                            str(_("'%(val)s' is not a valid date.") % {'val': incorrect_date_format}),
-                            '<br>',
-                            str(_("The date format is: ‘yyyy.mm.dd’ or ‘yyyymmdd’.")),
-                            '</p>',
-                        ))
+                        msg_err_list.append(str(_("ID number '%(val)s' is not valid.") % {'val': id_number}))
+                        msg_err_list.append(str(_("'%(val)s' is not a valid date.") % {'val': incorrect_date_format}))
+                        msg_err_list.append(str(_("The date format is: ‘yyyy.mm.dd’ or ‘yyyymmdd’.")))
+
                     else:
-                        msg_err = ''.join((
-                            '<p p-2>',
-                            str(_("ID number '%(val)s' is not valid.") % {'val': id_number}),
-                            '</p><p px-2 pt-2>',
-                            str(_("The format is: ‘yyyy.mm.dd.xx’ or ‘yyyymmddxx’,")),
-                            '<br>',
-                            str(_("in which ‘xx’ can be a two digit number, ‘00’ or two letters.")),
-                            '</p>',
-                        ))
+                        msg_err_list.append(str(_("ID number '%(val)s' is not valid.") % {'val': id_number}))
+                        msg_err_list.append(str(_("The format is: ‘yyyy.mm.dd.xx’ or ‘yyyymmddxx’,")))
+                        msg_err_list.append(str(_("in which ‘xx’ can be a two digit number, ‘00’ or two letters.")))
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-            msg_err = ''.join((
-                '<p p-2>',
-                str(_("ID number '%(val)s' is not valid.") % {'val': id_number}),
-                '</p><p px-2 pt-2>',
-                str(_("The format is: ‘yyyy.mm.dd.xx’ or ‘yyyymmddxx’,")),
-                '<br>',
-                str(_("in which ‘xx’ can be a two digit number, ‘00’ or two letters.")),
-                '</p>',
-            ))
+
+            msg_err_list.append(str(_("ID number '%(val)s' is not valid.") % {'val': id_number}))
+            msg_err_list.append(str(_("The format is: ‘yyyy.mm.dd.xx’ or ‘yyyymmddxx’,")))
+            msg_err_list.append(str(_("in which ‘xx’ can be a two digit number, ‘00’ or two letters.")))
+
     else:
-        msg_err = _("The ID number cannot be blank.")
+        msg_err_list.append(str(_("The ID number cannot be blank.")))
 
     if logging_on:
-        logger.debug('    msg_err: ' + str(msg_err))
+        logger.debug('    msg_err_list: ' + str(msg_err_list))
         logger.debug('    idnumber_nodots_stripped_lower: ' + str(idnumber_nodots_stripped_lower) + ' ' + str(type(idnumber_nodots_stripped_lower)))
         logger.debug('    birthdate_dteobj: ' + str(birthdate_dteobj)+ ' ' + str(type(birthdate_dteobj)))
-    return idnumber_nodots_stripped_lower, msg_err, birthdate_dteobj
+    return idnumber_nodots_stripped_lower, msg_err_list, birthdate_dteobj
 # - end of get_idnumber_nodots_stripped_lower
 
 

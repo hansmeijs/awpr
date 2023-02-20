@@ -1,18 +1,21 @@
 // PR2020-09-29 added
 
-// PR2021-07-23  declare variables outside function to make them global variables
+// PR2021-07-23  these variables are declared in base.js to make them global variables
 
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_ep_01";
 
-let school_rows = [];
+//let school_rows = [];
 let student_rows = [];
-let subject_rows = [];
-let studsubj_rows = [];
-let cluster_rows = [];
+//let subject_rows = [];
+//let cluster_rows = [];
 
 let schemeitem_rows = [];
 let published_rows = [];
+
+// PR2023-02-14 moved to base.js
+//const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
+//const cluster_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -67,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_user_modmsg_hide = get_attr_from_el(el_data, "data-url_user_modmsg_hide");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
-    urls.url_student_biscand = get_attr_from_el(el_data, "data-url_student_biscand");
+    urls.url_student_linkstudent = get_attr_from_el(el_data, "data-url_student_linkstudent");
     urls.url_studsubj_upload = get_attr_from_el(el_data, "data-url_studsubj_upload");
     urls.url_studsubj_single_update = get_attr_from_el(el_data, "data-url_studsubj_single_update");
 
@@ -75,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_studsubj_validate_test = get_attr_from_el(el_data, "data-url_studsubj_validate_test");
 
     urls.url_studsubj_validate_all = get_attr_from_el(el_data, "data-url_studsubj_validate_all");
-    urls.url_studsubj_multiple_occurrences = get_attr_from_el(el_data, "data-url_studsubj_multiple_occurrences");
+    urls.url_student_multiple_occurrences = get_attr_from_el(el_data, "data-url_student_multiple_occurrences");
     urls.url_studsubj_approve = get_attr_from_el(el_data, "data-url_studsubj_approve");
     urls.url_studsubj_approve_submit_multiple = get_attr_from_el(el_data, "data-url_studsubj_approve_submit_multiple");
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
@@ -93,10 +96,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // url_importdata_upload is stored in id_MIMP_data of modimport.html
 
     mod_MCOL_dict.columns.all = {
-        examnumber: "Examnumber", lvl_abbrev: "Learning_path", sct_abbrev: "Sector", cluster_name: "Cluster", subj_name: "Subject"
+        examnumber: "Examnumber",
+        lvl_abbrev: "Learning_path", sct_abbrev: "Sector",
+        cluster_name: "Cluster", subj_name_nl: "Subject"
     };
     mod_MCOL_dict.columns.btn_ep_01 = {
-        sjtp_abbrev: "Character", is_thumbrule: "Thumb_rule",
+        sjtp_abbrev: "Character",
+
+        // PR2023-02-12 dont show field thumbrule. Should be done using setting_dict.sel_examyear_thumbrule_allowed
+        //is_thumbrule: "Thumb_rule",
         is_extra_nocount: "Extra_subject_nocount",
         //NIU is_extra_counts:  "Extra_subject_count",
         pws_title: "Assignment_title", pws_subjects: "Assignment_subjects", subj_status: "Status"
@@ -112,32 +120,37 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- get field_settings
     const field_settings = {
         btn_ep_01: {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Character",
-                                "Thumbrule_2lines",  "Extra_subject_nocount_2lines", //NIU  "Extra_subject_count_2lines",
+                                "Abbreviation_twolines", "Subject", "Character", "Extra_subject_nocount_2lines",
+        // PR2023-02-12 dont show field thumbrule. Should be done using setting_dict.sel_examyear_thumbrule_allowed
+                                 //NIU  "Thumbrule_2lines",  "Extra_subject_count_2lines",
                                 "Assignment_title", "Assignment_subjects", ""],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "sjtp_abbrev",
-                                "is_thumbrule", "is_extra_nocount", //NIU  "is_extra_counts",
+                                "subj_code", "subj_name_nl", "sjtp_abbrev", "is_extra_nocount",
+                                //NIU  "is_thumbrule", "is_extra_counts",
                                 "pws_title", "pws_subjects", "subj_status",
                                 ],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div", "div", //NIU "div",
+                                "div", "div", "div", "div",
+                                //NIU "div", "div",
                                 "input", "input", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text",
-                                "text", "text", "text", "toggle", "toggle", //NIU "toggle",
+                                "text", "text", "text", "toggle",
+                                //NIU "toggle", "toggle",
                                 "text", "text", "toggle"],
                     field_width:  ["020", "020", "075", "180", "075", "075", "120",
-                                    "075", "180", "090", "090", "120", //NIU "120",
+                                    "075", "180", "090", "120",
+                                    //NIU "090", "120",
                                     "150","150", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l",
-                                    "c", "l", "l", "c", "c",//NIU  "c",
+                                    "c", "l", "l", "c",
+                                    //NIU  "c", "c",
                                     "l", "l", "c"]},
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
         btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "has_exemption", "exemption_year"],
+                                "subj_code", "subj_name_nl", "has_exemption", "exemption_year"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
                     field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120","120"],
@@ -146,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn_sr:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_schoolexam_2lns", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "has_sr", "sr_status"],
+                                "subj_code", "subj_name_nl", "has_sr", "sr_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
@@ -154,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn_reex:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_examination", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "has_reex", "reex_status"],
+                                "subj_code", "subj_name_nl", "has_reex", "reex_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
@@ -162,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn_reex03:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "has_reex03", "reex3_status"],
+                                "subj_code", "subj_name_nl", "has_reex03", "reex3_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
@@ -170,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn_pok:  {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name", "pok_validthru", "pok_status"],
+                                "subj_code", "subj_name_nl", "pok_validthru", "pok_status"],
                     field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
@@ -193,7 +206,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_tbl_container = document.getElementById("id_tbl_container");
         if(el_tbl_container){
             el_tbl_container.addEventListener("scroll",function(){
-
                const scroll = this.scrollTop - 8
                const translate = "translate(0," + scroll + "px)";
                this.querySelector("thead").style.transform = translate;
@@ -212,28 +224,51 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");
-        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
-        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_examyear){
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
+        const el_hdrbar_department = document.getElementById("id_hdrbar_department");
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click", function() {
                 t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
         };
+        const el_hdrbar_school = document.getElementById("id_hdrbar_school");
         if (el_hdrbar_school){
             el_hdrbar_school.addEventListener("click",
                 function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
         };
 
+        const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
+        if (el_hdrbar_allowed_sections){
+            el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
+        };
+
+// ---  MODAL USER SET ALLOWED SECTIONS
+        const el_MUPS_username = document.getElementById("id_MUPS_username");
+        console.log("DOMContentLoaded TABLE.js el_MUPS_username", el_MUPS_username);
+        const el_MUPS_loader = document.getElementById("id_MUPS_loader");
+
+        const el_MUPS_tbody_container = document.getElementById("id_MUPS_tbody_container");
+        const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
+
+        const el_MUPS_btn_expand_all = document.getElementById("id_MUPS_btn_expand_all");
+        if (el_MUPS_btn_expand_all){
+            el_MUPS_btn_expand_all.addEventListener("click", function() {MUPS_ExpandCollapse_all()}, false);
+        };
+        const el_MUPS_btn_save = document.getElementById("id_MUPS_btn_save");
+        if (el_MUPS_btn_save){
+            el_MUPS_btn_save.addEventListener("click", function() {MUPS_Save("save")}, false);
+        };
+        const el_MUPS_btn_cancel = document.getElementById("id_MUPS_btn_cancel");
+
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         if(el_SBR_select_level){
-            el_SBR_select_level.addEventListener("change", function() {HandleSbrLevelSector("level", el_SBR_select_level)}, false)}
+            el_SBR_select_level.addEventListener("change", function() {t_SBR_select_level_sector("lvlbase", el_SBR_select_level, FillTblRows)}, false)}
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
         if(el_SBR_select_sector){
-            el_SBR_select_sector.addEventListener("change", function() {HandleSbrLevelSector("sector", el_SBR_select_sector)}, false)};
+            el_SBR_select_sector.addEventListener("change", function() {t_SBR_select_level_sector("sctbase", el_SBR_select_sector, FillTblRows)}, false)};
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if(el_SBR_select_subject){
             el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
@@ -241,16 +276,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         if (el_SBR_select_cluster){
             el_SBR_select_cluster.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "cluster", cluster_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+                function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if(el_SBR_select_student){
             el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
-            //el_SBR_select_showall.addEventListener("click", function() {HandleShowAll()}, false);
-            // TODO switch to t_SBR_show_all
-            el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(FillTblRows)}, false);
+            el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(SBR_show_all_response)}, false);
             add_hover(el_SBR_select_showall);
         };
 
@@ -263,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
         }
         if (el_MSSSS_btn_save){
-            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
+            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(el_MSSSS_input, MSSSS_Response)}, false );
         }
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
@@ -492,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 schoolsetting: {setting_key: "import_studsubj"},
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload"]},
                 examyear_rows: {get: true},
-                school_rows: {get: true},
+                school_rows: {skip_allowed_filter: true},
 
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
@@ -550,8 +583,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     loc = response.locale_dict;
                     must_create_submenu = true;
                 };
-                if ("setting_dict" in response) {
 
+                if ("setting_dict" in response) {
                     setting_dict = response.setting_dict;
                     setting_dict.skip_download_multiple_occurrences = false;
 
@@ -559,16 +592,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // ---  fill cols_hidden
                     if("cols_hidden" in setting_dict){
-                        //  setting_dict.cols_hidden was dict with key 'all' or se_btn, changed to array PR2021-12-14
-                        //  skip when setting_dict.cols_hidden is not an array,
-                        // will be changed into an array when saving with t_MCOL_Save
                         b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                         // don'/'t add exemption_year to mod_MCOL_dict.columns
                         // was: if (!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){
                         //    b_remove_item_from_array(mod_MCOL_dict.columns.btn_exem.fields, "exemption_year");
-                        //};
-
                     };
+        // add level to cols_skipped when dep has no level
+                    mod_MCOL_dict.cols_skipped = (!setting_dict.sel_dep_level_req) ? {all: ["lvl_abbrev"]} : {};
+                    mod_MCOL_dict.sel_dep_has_profiel = setting_dict.sel_dep_has_profiel;
 
                     selected.studsubj_dict = null;
                     selected.subject_pk = (setting_dict.sel_subject_pk) ? setting_dict.sel_subject_pk : null;
@@ -593,7 +624,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     must_update_headerbar = true;
                 };
 
-
                 if(must_create_submenu){CreateSubmenu()};
                 if(must_update_headerbar){
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
@@ -614,7 +644,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     department_rows = response.department_rows;
                     b_fill_datamap(department_map, response.department_rows);
                 };
-
                 if ("school_rows" in response)  {
                     school_rows = response.school_rows;
                 };
@@ -633,11 +662,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     subject_rows = response.subject_rows;
                 };
                 if ("cluster_rows" in response) {
-                    cluster_rows = response.cluster_rows;
+                    FillDatadicts("cluster", response.cluster_rows);
                 };
-
                 if ("studentsubject_rows" in response) {
-                    studsubj_rows = response.studentsubject_rows;
+                    FillDatadicts("studsubj", response.studentsubject_rows);
                     check_validation = true;
                 };
                 if ("schemeitem_rows" in response)  {
@@ -646,13 +674,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("published_rows" in response)  {
                     published_rows = response.published_rows;
                 };
+
                 SBR_display_subject_cluster_student();
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
                 if (check_validation) {
-                    DownloadValidationStatusNotes();
+                 DownloadValidationStatusNotes();
                 };
-
             },
             error: function (xhr, msg) {
 // ---  hide loader
@@ -664,6 +692,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }  // function DatalistDownload
 
+//=========  FillDatadicts  ===  PR2023-01-05
+    function FillDatadicts(tblName, data_rows) {
+        //console.log("===  FillDatadicts == ");
+
+        const data_dicts = (tblName === "studsubj") ? studsubj_dictsNEW :
+                           (tblName === "cluster") ? cluster_dictsNEW :  null;
+        // clear dict
+        b_clear_dict(data_dicts);
+
+        if (data_rows && data_rows.length){
+            for (let i = 0, row; row = data_rows[i]; i++) {
+                const pk_int = (tblName === "cluster") ? row.id : row.stud_id;
+                const key_str = get_datadicts_keystr(tblName, pk_int, row.studsubj_id);
+                data_dicts[key_str] = row;
+            };
+        };
+        //console.log("    tblName", tblName);
+        //console.log("    data_dicts", data_dicts);
+    };  // FillDatadicts
+
 //=========  CreateSubmenu  ===  PR2020-07-31
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
@@ -672,13 +720,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_submenu){
             if(permit_dict.requsr_same_school){
                 // btns are btn_exem btn_ep_01 btn_reex btn_reex03 btn_pok
-                if(permit_dict.permit_crud){
-                    AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, function() {ModConfirmOpen("prelim_ex1")}, ["tab_show", "tab_btn_ep_01"]);
-                    AddSubmenuButton(el_submenu, loc.Preliminary_Ex4_form, function() {ModConfirmOpen("prelim_ex4")}, ["tab_show", "tab_btn_reex", "tab_btn_reex03"]);
-                };
                 if (permit_dict.permit_approve_subject){
                     AddSubmenuButton(el_submenu, loc.Approve_subjects, function() {MASS_Open("approve")}, ["tab_show", "tab_btn_ep_01"]);
                     AddSubmenuButton(el_submenu, loc.Approve_reex, function() {MASS_Open("approve")}, ["tab_show", "tab_btn_reex", "tab_btn_reex03"]);
+                };
+                if(permit_dict.permit_crud){
+                    AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, function() {ModConfirmOpen("prelim_ex1")}, ["tab_show", "tab_btn_ep_01"]);
+                    AddSubmenuButton(el_submenu, loc.Preliminary_Ex4_form, function() {ModConfirmOpen("prelim_ex4")}, ["tab_show", "tab_btn_reex", "tab_btn_reex03"]);
                 };
                 if (permit_dict.permit_submit_subject){
                     AddSubmenuButton(el_submenu, loc.Submit_Ex1_form, function() {MASS_Open("submit")}, ["tab_show", "tab_btn_ep_01"]);
@@ -690,11 +738,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     AddSubmenuButton(el_submenu, loc.Upload_subjects, function() {MIMP_Open(loc, "import_studsubj")}, ["tab_show", "tab_btn_ep_01"], "id_submenu_import");
                     AddSubmenuButton(el_submenu, loc.Clusters, function() {MCL_Open()});
                 };
-
-
-            };
-            if(permit_dict.requsr_role === 32){ // Inspectorate
-                AddSubmenuButton(el_submenu, loc.Validate_subject_composition, function() {ModConfirmOpen("validate_subj_composition")}, ["tab_show", "tab_btn_ep_01"]);
             };
 
             AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_studsubj")}, [], "id_submenu_columns")
@@ -706,7 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14 PR2021-08-07 PR2022-01-05
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ", data_btn);
+        //console.log( "===== HandleBtnSelect ========= ", data_btn);
 
 // ---  get data_btn from selected_btn when null;
         if (!data_btn) {data_btn = selected_btn};
@@ -768,41 +811,43 @@ document.addEventListener('DOMContentLoaded', function() {
         selected.student_pk = (data_dict && data_dict.stud_id) ? data_dict.stud_id : null;
         selected.subject_pk = (data_dict && data_dict.subj_id) ? data_dict.subj_id : null;
 
+
+// ---  update btn text in studsubj_dict / student_pk / subject pk
     };  // HandleTblRowClicked
 
 //========= UpdateHeaderText  ================== PR2020-07-31 PR2021-07-23 PR2020-01-06 PR2022-01-08
     function UpdateHeaderText(reset_header){
         //console.log(" --- UpdateHeaderText ---" )
 
-        let header_text_left = "";
-        let header_text_right = "";
+        let header_txt_left = "";
+        let header_txt_right = "";
 
         if (!reset_header){
-            header_text_left = (selected.subject_pk) ? selected.subject_name :
+            header_txt_left = (selected.subject_pk) ? selected.subject_name :
                                 (selected.student_pk) ? selected.student_name : null;
             // only show level_abbrev when sel_dep_level_req
             const lvl_caption = (setting_dict.sel_dep_level_req &&  setting_dict.sel_lvlbase_pk && setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev : "";
             const sct_caption = (setting_dict.sel_sctbase_pk && setting_dict.sel_sector_abbrev) ? setting_dict.sel_sector_abbrev : "";
-            header_text_right = lvl_caption;
-            if(lvl_caption && sct_caption ){header_text_right += " - "};
-            if(sct_caption ){header_text_right += sct_caption};
+            header_txt_right = lvl_caption;
+            if(lvl_caption && sct_caption ){header_txt_right += " - "};
+            if(sct_caption ){header_txt_right += sct_caption};
         };
-        el_header_left.innerText = (header_text_left) ? header_text_left : null;
-        el_header_right.innerText = (header_text_right) ? header_text_right : null;
+        el_header_left.innerText = (header_txt_left) ? header_txt_left : null;
+        el_header_right.innerText = (header_txt_right) ? header_txt_right : null;
 
     }   //  UpdateHeaderText
 
 
 //###########################################################################
 // +++++++++++++++++ FILL TABLE ROWS ++++++++++++++++++++++++++++++++++++++++
-//========= FillTblRows  ==================== PR2021-07-01 PR2021-08-16 PR2021-12-14
+//========= FillTblRows  ==================== PR2021-07-01 PR2021-08-16 PR2021-12-14 PR2023-01-05
     function FillTblRows() {
-        console.log( "===== FillTblRows  === ");
-        console.log( "setting_dict", setting_dict);
+        //console.log( "===== FillTblRows  === ");
+        //console.log( "    setting_dict", setting_dict);
 
         const tblName = "studsubj";
         const field_setting = field_settings[selected_btn];
-        const data_rows = studsubj_rows;
+        const data_rows = studsubj_dictsNEW;
 
 // ---  get list of hidden columns
         const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
@@ -817,8 +862,13 @@ document.addEventListener('DOMContentLoaded', function() {
         CreateTblHeader(field_setting, col_hidden);
 
 // --- create table rows
-        if(data_rows && data_rows.length){
-            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+        //if(data_rows && data_rows.length){
+        if (!isEmpty(studsubj_dictsNEW)){
+            //for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+
+    // ---  loop through studsubj_dictsNEW
+            for (const data_dict of Object.values(studsubj_dictsNEW)) {
+
                 const map_id = data_dict.mapid;
                 const bis_exam = data_dict.bis_exam;
                 let show_row = (!setting_dict.sel_lvlbase_pk || data_dict.lvlbase_id === setting_dict.sel_lvlbase_pk) &&
@@ -841,9 +891,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
           };
         };  // if(data_rows)
-        if (tblBody_datatable.rows.length){
-           Filter_TableRows();
-        } else if (selected_btn === "btn_exem") {
+
+        Filter_TableRows();
+
+        if (selected_btn === "btn_exem") {
             if (!setting_dict.sel_school_iseveningschool && !setting_dict.sel_school_islexschool){
                 let tblRow = tblBody_datatable.insertRow(-1);
                 let td = tblRow.insertCell(-1);
@@ -856,8 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 td.appendChild(el);
             };
         };
-
-    }  // FillTblRows
+    };  // FillTblRows
 
     function create_exemption_message(){
         let tblRow = tblBody_datatable.insertRow(-1);
@@ -994,7 +1044,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
 
-        let tobedeleted = false;
+        let tobedeleted = false, st_tobedeleted = false;
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", ob3 = "";
@@ -1004,6 +1054,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data_dict.subj_code) { ob3 = (data_dict.subj_code.toLowerCase()) };
 
             tobedeleted = (data_dict.tobedeleted) ? data_dict.tobedeleted : false;
+            st_tobedeleted = (data_dict.st_tobedeleted) ? data_dict.st_tobedeleted : false;
+
         } else if (tblName === "published") {
              if (data_dict.datepublished) { ob1 = data_dict.datepublished};
         }
@@ -1076,8 +1128,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 td.appendChild(el);
 
 // --- add EventListener to td
-                if (["select", "subj_error"].includes(field_name)) {
+                if (field_name === "select") {
                     td.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false)
+                    add_hover(td);
+
+                } else if (field_name === "subj_error") {
+                    if(permit_dict.requsr_role === 32){ // Inspectorate
+                        td.addEventListener("click", function() {ModConfirmOpen("validate_subj_composition", el)}, false);
+                    } else {
+                        td.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
+                    };
                     add_hover(td);
                 } else if (field_name.includes("has_")){
                     if(permit_dict.permit_crud && permit_dict.requsr_same_school){
@@ -1148,7 +1208,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add width, text_align, right padding in examnumber
                 // not necessary: td.classList.add(class_width, class_align);
 
-                if(["name", "fullname", "subj_name"].includes(field_name)){
+                if(["name", "fullname", "subj_name_nl"].includes(field_name)){
                     // dont set width in field student and subject, to adjust width to length of name
                     el.classList.add(class_align);
                 } else {
@@ -1162,7 +1222,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 //if(field_name === "examnumber"){el.classList.add("pr-2")}
 
 // --- put value in field
-               UpdateField(el, data_dict, tobedeleted);
+               UpdateField(el, data_dict, tobedeleted, st_tobedeleted);
             }  //  if (columns_hidden[field_name])
         }  // for (let j = 0; j < 8; j++)
 
@@ -1171,23 +1231,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  UpdateTblRow  ================ PR2020-08-01
     function UpdateTblRow(tblRow, tblName, data_dict) {
-        //console.log("=========  UpdateTblRow =========");
+        console.log("=========  UpdateTblRow =========");
         if (tblRow && tblRow.cells){
             const tobedeleted = (data_dict.tobedeleted) ? data_dict.tobedeleted : false;
+            const st_tobedeleted = (data_dict.st_tobedeleted) ? data_dict.st_tobedeleted : false;
         //console.log("data_dict", data_dict);
         //console.log("tobedeleted", tobedeleted);
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
-                UpdateField(td.children[0], data_dict, tobedeleted);
+                UpdateField(td.children[0], data_dict, tobedeleted, st_tobedeleted);
             }
         }
     };  // UpdateTblRow
 
 //=========  UpdateField  ================ PR2020-08-16 PR2021-09-28 PR2022-08-25
-    function UpdateField(el_div, data_dict, tobedeleted) {
+    function UpdateField(el_div, data_dict, tobedeleted, st_tobedeleted) {
         //console.log("=========  UpdateField =========");
-        //console.log("data_dict", data_dict);
-        //console.log("el_div", el_div);
-        //console.log("tobedeleted", tobedeleted);
+        //console.log("    data_dict", data_dict);
+        //console.log("    el_div", el_div);
+        //console.log("    tobedeleted", tobedeleted);
+        //console.log("    st_tobedeleted", st_tobedeleted);
 
         if(el_div){
             const field = get_attr_from_el(el_div, "data-field");
@@ -1200,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (field === "select") {
                     // TODO add select multiple users option PR2020-08-18
                 } else if (["examnumber", "fullname", "lvl_abbrev", "sct_abbrev",
-                            "subj_code", "subj_name", "sjtp_abbrev", "name", "exemption_year", "cluster_name",
+                            "subj_code", "subj_name_nl", "sjtp_abbrev", "name", "exemption_year", "cluster_name",
                             "pws_title", "pws_subjects",
                              ].includes(field)){
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
@@ -1229,12 +1291,18 @@ document.addEventListener('DOMContentLoaded', function() {
                                         (!no_error) ? "note_1_3" : "note_0_0";
                     if(data_dict.subj_dispensation) {
                         title_text = loc.The_composition_is_validated;
+                        if(permit_dict.requsr_role === 32){ // Inspectorate PR2023-01-16
+                            title_text += "\n" + loc.Click_to_remove_validation;
+                        };
                     } else if(!no_error) {
                         if(!data_dict.studsubj_id){
                             title_text = loc.This_candidate_has_nosubjects;
                         } else {
-                            title_text = loc.validation_error + "."
-                        }
+                            title_text = loc.validation_error + ".";
+                            if(permit_dict.requsr_role === 32){ // Inspectorate PR2023-01-16
+                                title_text += "\n" + loc.Click_to_validate;
+                            };
+                        };
                     };
 
                 } else if (field.includes("_status")){
@@ -1254,10 +1322,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 };  // if (field === "select")
 
     // ---  mark tobedeleted row with line-through red
-                add_or_remove_class(el_div, "text_decoration_line_through_red", !!tobedeleted, "text_decoration_initial")
-                if (!title_text && tobedeleted){
-                    title_text = loc.This_subject_ismarked_fordeletion + "\n" + loc.You_must_submit_additional_ex1form;
-                }
+                if (["subj_code", "subj_name_nl", "sjtp_abbrev", "exemption_year", "cluster_name", "pws_title", "pws_subjects",
+                             ].includes(field)){
+                    add_or_remove_class(el_div, "text_decoration_line_through_red", !!tobedeleted, "text_decoration_initial")
+                    if (!title_text && tobedeleted){
+                        title_text = loc.This_subject_ismarked_fordeletion + "\n" + loc.You_must_submit_additional_ex1form;
+                    };
+
+                } else if (["examnumber", "fullname", "lvl_abbrev", "sct_abbrev"].includes(field)){
+
+                    add_or_remove_class(el_div, "text_decoration_line_through_red", !!st_tobedeleted, "text_decoration_initial")
+                    if (!title_text && st_tobedeleted){
+                        title_text = loc.This_candidate_ismarked_fordeletion + "\n" + loc.You_must_submit_additional_ex1form;
+                    };
+                };
 
 // ---  put value in innerText and title
                 if (el_div.tagName === "INPUT"){
@@ -1289,9 +1367,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // note: exemption has no status, only exemption grades must be submitted
         if (field.includes("_status")){
             // skip when row has no studsubj_id
-            const show_diamond = (permit_dict.permit_approve_subject &&
-                                    permit_dict.requsr_same_school &&
-                                    data_dict.studsubj_id) &&
+            //const show_diamond = (permit_dict.permit_approve_subject &&
+            //                        permit_dict.requsr_same_school &&
+            //                        data_dict.studsubj_id) &&
+           //                     ( (setting_dict.sel_examperiod === 1) ||
+            //                        (setting_dict.sel_examperiod === 2 && data_dict.has_reex) ||
+            //                        (setting_dict.sel_examperiod === 3 && data_dict.has_reex03) );
+
+            const show_diamond = (data_dict.studsubj_id) &&
                                 ( (setting_dict.sel_examperiod === 1) ||
                                     (setting_dict.sel_examperiod === 2 && data_dict.has_reex) ||
                                     (setting_dict.sel_examperiod === 3 && data_dict.has_reex03) );
@@ -1349,10 +1432,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 //el_div.setAttribute("data-value", data_value);
             };
         };  // if (field === "select") {
-        return [className, title_text, filter_value]
-    }  // UpdateFieldStatus
 
-//========= get_column_is_hidden  ====== PR2021-03-15 PR2021-07-22 PR2021-12-14
+        //console.log("    filter_value", filter_value);
+        //console.log("    title_text", title_text);
+
+        return [className, title_text, filter_value]
+    };  // UpdateFieldStatus
+
+//========= get_column_is_hidden  ====== PR2021-03-15 PR2021-07-22 PR2021-12-14  PR2023-01-24
     function get_column_is_hidden(field, col_hidden) {
         //console.log( "===== get_column_is_hidden  === ");
         //console.log( "selected_btn", selected_btn);
@@ -1369,13 +1456,14 @@ document.addEventListener('DOMContentLoaded', function() {
         let is_hidden = col_hidden.includes(mapped_field);
         //console.log("is_hidden", is_hidden)
         if(!is_hidden){
-// thumbrule not in Vsbo Cur
+            // thumbrule not in Vsbo Cur
 
             if (["is_extra_nocount", "is_extra_counts"].includes(field)){
                 // PR2022-06-15 Richard Westerink: also available for havo vwo
                 // is_hidden = (setting_dict.sel_depbase_code !== "Vsbo");
             } else if (field === "is_thumbrule"){
-                const show_thumbrule = (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");
+                // PR2023-01-24 added: setting_dict.sel_examyear_thumbrule_allowed
+                const show_thumbrule = (setting_dict.sel_examyear_thumbrule_allowed) && (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");
                 is_hidden = !show_thumbrule;
             };
 
@@ -1397,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     is_hidden = (selected_btn !== "btn_pok");
                 };
             };
-        }
+        };
         //console.log( "is_hidden", is_hidden);
         return is_hidden;
     };  // get_column_is_hidden
@@ -1489,8 +1577,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     const is_published = (!!data_dict[examtype + "_published_id"]);
                     const is_blocked = (!!data_dict[examtype + "_blocked"]);
 
+        // check if cluster is allowed
+                    const is_allowed_cluster = get_is_allowed_cluster(data_dict.cluster_id);
+
+                    if (!is_allowed_cluster){
+                        const msg_html = ["<div class='p-2 border_bg_invalid'>", loc.No_cluster_permission, "</div>"].join("");
+
+                        b_show_mod_message_html(msg_html);
+
+
 // give message and exit when examtype is published
-                    if (is_published){
+                    } else if (is_published){
                         const caption = [ ((examtype === "subj") ? loc.This_subject :
                                         (examtype === "exem") ? loc.This_exemption :
                                         (examtype === "sr") ? loc.This_reex_schoolexam :
@@ -1706,22 +1803,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if ("msg_html" in response) {
                         b_show_mod_message_html(response.msg_html)
-                    }
+                    };
+                    if ("messages" in response) {
+                        b_show_mod_message_html(response.messages)
+                        b_show_mod_message_dictlist(response.messages);
+                    };
                     if ("validate_studsubj_list" in response) {
                         ResponseValidationAll(response.validate_studsubj_list)
-                    }
-
+                    };
                     if ("updated_studsubj_approve_rows" in response) {
-                        RefreshDataRows("studsubj", response.updated_studsubj_approve_rows, studsubj_rows, true); // true = is_update
-                    }
+
+                    console.log("  @@@@@@@@@@@@@@ updated_studsubj_approve_rows", response.updated_studsubj_approve_rows);
+
+                        RefreshDataDictNEW("studsubj", response.updated_studsubj_approve_rows, studsubj_dictsNEW)
+                    };
 
                     if ("updated_studsubj_rows" in response) {
-                        RefreshDataRows("studsubj", response.updated_studsubj_rows, studsubj_rows, true)  // true = update
-                    }
+                        RefreshDataDictNEW("studsubj", response.updated_studsubj_rows, studsubj_dictsNEW)
+                    };
 
                     if ("updated_cluster_rows" in response) {
-                        RefreshDataRows("cluster", response.updated_cluster_rows, cluster_rows, true)  // true = update
-                    }
+                        RefreshDataDictNEW("cluster", response.updated_cluster_rows, cluster_dictsNEW)
+                    };
                     add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
                     if ("studsubj_validate_html" in response) {
                          MSTUDSUBJ_Response(response)
@@ -1762,9 +1865,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }  //  if(!!row_upload)
     };  // UploadChanges
 
+
 // +++++++++++++++++ UPDATE +++++++++++++++++++++++++++++++++++++++++++
 
-// +++++++++ MOD STUDENT SUBJECT++++++++++++++++ PR2020-11-16
+
+
+
+// +++++++++ MOD STUDENT SUBJECT++++++++++++++++ PR2020-11-16 PR2023-01-12
     function MSTUDSUBJ_Open(el_input){
         console.log(" -----  MSTUDSUBJ_Open   ----")
         console.log("el_input", el_input)
@@ -1776,78 +1883,83 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // mod_MSTUDSUBJ_dict stores general info of selected candidate in MSTUDSUBJ PR2020-11-21
             mod_MSTUDSUBJ_dict = {
-                studsubj_dict: {},  // stores studsubj of selected candidate in MSTUDSUBJ
+                studsubj_dict: {},
                 schemeitem_dict: {},
                 sel_studsubj_mapid: null,
                 sel_schemeitem_pk: null,
-                new_studsubj_pk: 0,
+                new_schemeitem_pk: 0,
                 subj_dispensation: false
             };
 
             const tblRow = t_get_tablerow_selected(el_input);
             HandleTblRowClicked(tblRow);
 
-        console.log("selected.studsubj_dict", selected.studsubj_dict)
+        console.log("    selected.studsubj_dict", selected.studsubj_dict)
             // selected.studsubj_dict gets value in HandleTblRowClicked
             if(!isEmpty(selected.studsubj_dict)) {
-                mod_MSTUDSUBJ_dict.stud_id = selected.studsubj_dict.stud_id;
-                mod_MSTUDSUBJ_dict.scheme_id = selected.studsubj_dict.scheme_id;
-                mod_MSTUDSUBJ_dict.subj_dispensation = selected.studsubj_dict.subj_dispensation;
+                if (selected.studsubj_dict.st_tobedeleted){
+                    ModConfirmOpen("st_tobedeleted", el_input);
 
-    // ---  set header text
-                let header_text = loc.Subjects + loc._of_ + selected.studsubj_dict.fullname
-                let dep_lvl_sct_text = (selected.studsubj_dict.dep_abbrev) ? selected.studsubj_dict.dep_abbrev + " - " : "";
-                if(selected.studsubj_dict.lvl_abbrev) {dep_lvl_sct_text += selected.studsubj_dict.lvl_abbrev + " - "};
-                if(selected.studsubj_dict.sct_abbrev) {dep_lvl_sct_text += selected.studsubj_dict.sct_abbrev};
-                if (dep_lvl_sct_text) {header_text += " (" + dep_lvl_sct_text + ")"};
+                } else {
 
-                el_MSTUDSUBJ_hdr.innerText = header_text
-        // ---  remove value from el_mod_employee_input
-                //MSTUD_SetElements();  // true = also_remove_values
+                    mod_MSTUDSUBJ_dict.stud_id = selected.studsubj_dict.stud_id;
+                    mod_MSTUDSUBJ_dict.scheme_id = selected.studsubj_dict.scheme_id;
+                    mod_MSTUDSUBJ_dict.subj_dispensation = selected.studsubj_dict.subj_dispensation;
 
-                //document.getElementById("id_MSTUDSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+        // ---  set header text
+                    let header_txt = loc.Subjects + loc._of_ + selected.studsubj_dict.fullname
+                    let dep_lvl_sct_text = (selected.studsubj_dict.dep_abbrev) ? selected.studsubj_dict.dep_abbrev + " - " : "";
+                    if(selected.studsubj_dict.lvl_abbrev) {dep_lvl_sct_text += selected.studsubj_dict.lvl_abbrev + " - "};
+                    if(selected.studsubj_dict.sct_abbrev) {dep_lvl_sct_text += selected.studsubj_dict.sct_abbrev};
+                    if (dep_lvl_sct_text) {header_txt += " (" + dep_lvl_sct_text + ")"};
 
-                const has_studsubj_rows = MSTUDSUBJ_FillDicts();
-                MSTUDSUBJ_FillTbls();
+                    el_MSTUDSUBJ_hdr.innerText = header_txt
+            // ---  remove value from el_mod_employee_input
+                    //MSTUD_SetElements();  // true = also_remove_values
 
-                MSTUDSUBJ_SetInputFields(null, false);
-        // hide loader and msg_box
-                el_MSTUDSUBJ_msg_container.innerHTML = null
-                add_or_remove_class(el_MSTUDSUBJ_msg_container, cls_hide, true)
-                add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
+                    //document.getElementById("id_MSTUDSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
 
-        // ---  set focus to el_MSTUD_abbrev
-                //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
+                    const has_studsubj_rows = MSTUDSUBJ_FillDicts();
+                    MSTUDSUBJ_FillTbls();
 
-        // ---  hide btn submit when not may_edit, may_edit = false when Inspectorate has validated
-                const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school && !mod_MSTUDSUBJ_dict.subj_dispensation);
-                add_or_remove_class(el_MSTUDSUBJ_btn_save, cls_hide, !may_edit);
+                    MSTUDSUBJ_SetInputFields(null, false);
+            // hide loader and msg_box
+                    el_MSTUDSUBJ_msg_container.innerHTML = null
+                    add_or_remove_class(el_MSTUDSUBJ_msg_container, cls_hide, true)
+                    add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, true);
 
-        // ---  change cancel btn to close when not may_edit
-                if(el_MSTUDSUBJ_btn_cancel) {
-                    el_MSTUDSUBJ_btn_cancel.innerText = (may_edit) ? loc.Cancel : loc.Close;
-                }
-        // ---  disable btn submit on opening modal, hide when Inspectorate has validated
-                el_MSTUDSUBJ_btn_save.disabled = true;
+            // ---  set focus to el_MSTUD_abbrev
+                    //setTimeout(function (){el_MSTUD_abbrev.focus()}, 50);
 
-        // ---  set input boxes readonly when not may_edit
-                const el_MSTUDSUBJ_pwstitle = document.getElementById("id_MSTUDSUBJ_pwstitle");
-                add_or_remove_attr (el_MSTUDSUBJ_pwstitle, "readonly", !may_edit, true);
-                const el_MSTUDSUBJ_pwssubjects = document.getElementById("id_MSTUDSUBJ_pwssubjects");
-                add_or_remove_attr (el_MSTUDSUBJ_pwssubjects, "readonly", !may_edit, true);
+            // ---  hide btn submit when not may_edit, may_edit = false when Inspectorate has validated
+                    const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school && !mod_MSTUDSUBJ_dict.subj_dispensation);
+                    add_or_remove_class(el_MSTUDSUBJ_btn_save, cls_hide, !may_edit);
 
-        // ---  show modal
-                $("#id_mod_studentsubject").modal({backdrop: true});
+            // ---  change cancel btn to close when not may_edit
+                    if(el_MSTUDSUBJ_btn_cancel) {
+                        el_MSTUDSUBJ_btn_cancel.innerText = (may_edit) ? loc.Cancel : loc.Close;
+                    }
+            // ---  disable btn submit on opening modal, hide when Inspectorate has validated
+                    el_MSTUDSUBJ_btn_save.disabled = true;
 
-        // validate student_subjects
-                add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
-                MSTUDSUBJ_ValidateSubjects();
+            // ---  set input boxes readonly when not may_edit
+                    const el_MSTUDSUBJ_pwstitle = document.getElementById("id_MSTUDSUBJ_pwstitle");
+                    add_or_remove_attr (el_MSTUDSUBJ_pwstitle, "readonly", !may_edit, true);
+                    const el_MSTUDSUBJ_pwssubjects = document.getElementById("id_MSTUDSUBJ_pwssubjects");
+                    add_or_remove_attr (el_MSTUDSUBJ_pwssubjects, "readonly", !may_edit, true);
 
-            }  // if(!isEmpty(data_dict)) {
-        }
+            // ---  show modal
+                    $("#id_mod_studentsubject").modal({backdrop: true});
+
+            // validate student_subjects
+                    add_or_remove_class(el_MSTUDSUBJ_loader, cls_hide, false);
+                    MSTUDSUBJ_ValidateSubjects();
+                };
+            };  // if(!isEmpty(data_dict)) {
+        };
     };  // MSTUDSUBJ_Open
 
-//========= MSTUDSUBJ_Save  ============= PR2020-11-18
+//========= MSTUDSUBJ_Save  ============= PR2020-11-18 PR2023-01-04
     function MSTUDSUBJ_Save(){
         console.log(" -----  MSTUDSUBJ_Save   ----")
         console.log( "mod_MSTUDSUBJ_dict.studsubj_dict: ", mod_MSTUDSUBJ_dict.studsubj_dict);
@@ -1866,48 +1978,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 const studsubj_list = []
-    // ---  loop through mod_MSTUDSUBJ_dict.studsubj_dict
-                for (const [studsubj_pk_str, ss_dict] of Object.entries(mod_MSTUDSUBJ_dict.studsubj_dict)) {
-                    //const studsubj_pk = Number(studsubj_pk_str);
-                     const studsubj_pk = (ss_dict.studsubj_id) ? ss_dict.studsubj_id : null
 
-                    if(!isEmpty(ss_dict)){
+    // ---  loop through mod_MSTUDSUBJ_dict.studsubj_dict
+                for (const studsubj_dict of Object.values(mod_MSTUDSUBJ_dict.studsubj_dict)) {
+                     const studsubj_pk = (studsubj_dict.studsubj_id) ? studsubj_dict.studsubj_id : null
+/*
+        console.log("    studsubj_dict", studsubj_dict);
+        console.log("    studsubj_pk", studsubj_pk);
+        console.log("    studsubj_dict.subj_id", studsubj_dict.subj_id);
+        console.log("    studsubj_dict.subj_code", studsubj_dict.subj_code);
+        console.log("    studsubj_dict.subj_name_nl", studsubj_dict.subj_name_nl);
+*/
+                    if(!isEmpty(studsubj_dict)){
                         let mode = null;
-                        if(ss_dict.tobedeleted){
-                            mode = "delete";
-                        } else  if(ss_dict.tobecreated){
+                        if (studsubj_dict.tobecreated){
                             mode = "create";
-                        } else  if(ss_dict.tobechanged){
+                        } else if(studsubj_dict.tobedeleted){
+                            mode = "delete";
+                        } else if(studsubj_dict.tobechanged){
                             mode = "update";
-                        }
+                        };
+
+/*
+        console.log("    studsubj_dict.tobecreated", studsubj_dict.tobecreated);
+        console.log("    studsubj_dict.tobedeleted", studsubj_dict.tobedeleted);
+        console.log("    studsubj_dict.tobechanged", studsubj_dict.tobechanged);
+        console.log("    mode", mode);
+*/
 
                         if (mode){
-                            const studsubj_dict = {
+                            const ss_dict = {
                                     mode: mode,
-                                    student_pk: ss_dict.stud_id,
-                                    studsubj_pk: ss_dict.studsubj_id,
-                                    schemeitem_pk: ss_dict.schemeitem_id,
-                                    is_extra_nocount: ss_dict.is_extra_nocount,
-                                    is_extra_counts: ss_dict.is_extra_counts,
-                                    pws_title: ss_dict.pws_title,
-                                    pws_subjects: ss_dict.pws_subjects
+                                    student_pk: studsubj_dict.stud_id,
+                                    studsubj_pk: studsubj_pk,
+                                    schemeitem_pk: studsubj_dict.schemeitem_id,
+                                    is_extra_nocount: studsubj_dict.is_extra_nocount,
+                                    is_extra_counts: studsubj_dict.is_extra_counts,
+                                    pws_title: studsubj_dict.pws_title,
+                                    pws_subjects: studsubj_dict.pws_subjects
                                 };
 
                             // PR2021-0930 debug: when deleting went wrong subj_published_id still has value (see MSTUDSUBJ_AddRemoveSubject)
                             // in that case set tobechanged = true and set tobedeleted = false
-                            if (ss_dict.tobechanged){
-                                studsubj_dict.tobedeleted = false;
+                            if (studsubj_dict.tobechanged){
+                                ss_dict.tobedeleted = false;
                             }
-                            studsubj_list.push(studsubj_dict)
+                            studsubj_list.push(ss_dict)
                         };  //  if (mode)
                         if (mode === "delete"){
     // - make to_be_deleted tblRow red
-                            const row_id = "studsubj_" + ss_dict.stud_id + "_" + ss_dict.studsubj_id
+                            const row_id = "studsubj_" + studsubj_dict.stud_id + "_" + studsubj_dict.studsubj_id
                             const tblRow = document.getElementById(row_id);
 
                             ShowClassWithTimeout(tblRow, "tsa_tr_error")
                         };
-                    };  // if(!isEmpty(ss_dict))
+                    };  // if(!isEmpty(studsubj_dict))
                 };
                 if(studsubj_list && studsubj_list.length){
                     upload_dict.studsubj_list = studsubj_list;
@@ -1924,7 +2049,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MSTUDSUBJ_Response  ============= PR2021-07-09 PR2021-08-17
     function MSTUDSUBJ_Response(response) {
         console.log("===== MSTUDSUBJ_Response ===== ");
-        console.log("response", response);
+        console.log("    response", response);
 
         const is_test = (!!response.is_test);
         const oneonly_subj_error = (!!response.subj_error);
@@ -1934,7 +2059,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // studsubj_validate_html comes after updated_studsubj_rows, to refresh datarows before filling lists
         if (studsubj_validate_html){
-
             el_MSTUDSUBJ_msg_container.innerHTML = studsubj_validate_html
             add_or_remove_class(el_MSTUDSUBJ_msg_container, cls_hide, false)
             if(!is_test){
@@ -1944,11 +2068,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if(!is_test){
             $("#id_mod_studentsubject").modal("hide");
 
-        console.log("response.updated_MSTUDSUBJ_rows", response.updated_MSTUDSUBJ_rows);
-
             ResponseValidationAll(null, oneonly_student_pk, oneonly_subj_error)
         };
-
     };  // MSTUDSUBJ_Response
 
 //========= MSTUDSUBJ_FillDicts  ============= PR2020-11-17
@@ -1958,7 +2079,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // called by MSTUDSUBJ_Open and MSTUDSUBJ_Response ( after save)
 
         //  mod_MSTUDSUBJ_dict.schemeitem_dict contains all schemitems of the student's scheme
-        //  mod_MSTUDSUBJ_dict.studsubj_dict contains the existing, added and deleted subjects of the student
+        //  mod_MSTUDSUBJ_dict.studsubj_dict contains the existing, added and deleted subjects of the student, with key = subj_id
         mod_MSTUDSUBJ_dict.schemeitem_dict = {};
         mod_MSTUDSUBJ_dict.studsubj_dict = {};
 
@@ -1984,7 +2105,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         subj_id: row_dict.subj_id,
                         subj_code: row_dict.subj_code,
-                        subj_name: row_dict.subj_name,
+                        subj_name_nl: row_dict.subj_name_nl,
                         weight_ce: row_dict.weight_ce,
                         weight_se: row_dict.weight_se,
 
@@ -1992,122 +2113,130 @@ document.addEventListener('DOMContentLoaded', function() {
                         extra_nocount_allowed: row_dict.extra_nocount_allowed,
                         has_practexam: row_dict.has_practexam,
                         is_combi: row_dict.is_combi,
-                        is_mandatory: row_dict.is_mandatory
+                        is_mandatory: row_dict.is_mandatory,
+                        is_mand_subj_id: row_dict.is_mand_subj_id
                     };
                 };
             };
         };
 
-// ---  loop through studsubj_rows
         let has_studsubj_rows = false;
-        for (let i = 0, row_dict; row_dict = studsubj_rows[i]; i++) {
-            const map_id = row_dict.mapid;
-        // add only studsubj from this student
-            if (student_pk === row_dict.stud_id) {
-                has_studsubj_rows = true;
-        // add dict of subject (schemeitem_id) to mod_MSTUDSUBJ_dict.studsubj_dict
-                if(row_dict.schemeitem_id){
-                    // keys are mapid
-                    mod_MSTUDSUBJ_dict.studsubj_dict[row_dict.mapid] = {
-                        mapid: row_dict.mapid,
-                        stud_id: row_dict.stud_id,
-                        scheme_id: row_dict.scheme_id,
-                        studsubj_id: row_dict.studsubj_id,
-                        schemeitem_id: row_dict.schemeitem_id,
-                        subj_id: row_dict.subj_id,
-                        subj_published_id: row_dict.subj_published_id,
 
-                        is_extra_counts: row_dict.is_extra_counts,
-                        is_extra_nocount: row_dict.is_extra_nocount,
-                        pws_subjects: row_dict.pws_subjects,
-                        pws_title: row_dict.pws_title,
+// ---  loop through studsubj_dictsNEW
+        if (!isEmpty(studsubj_dictsNEW)){
+            for (const data_dict of Object.values(studsubj_dictsNEW)) {
+            // add only studsubj from this student
+                if (student_pk === data_dict.stud_id) {
+                    has_studsubj_rows = true;
+                    if(data_dict.schemeitem_id){
 
-                        tobecreated: false,
-                        tobedeleted: false,
-                        tobechanged: false
+            // add studsubj_dict to mod_MSTUDSUBJ_dict.studsubj_dict with key = subj_id
+                        mod_MSTUDSUBJ_dict.studsubj_dict[data_dict.subj_id] = {
+                            stud_id: data_dict.stud_id,
+                            scheme_id: data_dict.scheme_id,
+                            studsubj_id: data_dict.studsubj_id,
+                            schemeitem_id: data_dict.schemeitem_id,
 
-                        // PR2021-09-28 debug: dont put schemeitem info here, it changes when schemeitem_id changes
+                            subj_id: data_dict.subj_id,
+                            subj_code: data_dict.subj_code,
+                            subj_name_nl: data_dict.subj_name_nl,
+                            subj_published_id: data_dict.subj_published_id,
+
+                            is_extra_counts: data_dict.is_extra_counts,
+                            is_extra_nocount: data_dict.is_extra_nocount,
+                            pws_subjects: data_dict.pws_subjects,
+                            pws_title: data_dict.pws_title,
+
+                            // is_deleted means: studsubj is deleted and submitted PR2022-12-29
+                            // is_tobedeleted means: studsubj is set tobedeleted, not yet submitted PR2022-12-29
+                            // tobedeleted means: studsubj is in this modal set to be 'tobedeleted'
+
+                            is_deleted: data_dict.deleted,
+                            is_tobedeleted: data_dict.tobedeleted,
+
+                            // these are used in MSTUDSUBJ_Save
+                            tobecreated: false,
+                            tobedeleted: false,
+                            tobechanged: false
+
+                            // PR2021-09-28 debug: dont put schemeitem info here, it changes when schemeitem_id changes
+                        };
                     };
                 };
             };
         };
-
+/*
         console.log("..................");
-        console.log("mod_MSTUDSUBJ_dict.studsubj_dict:", mod_MSTUDSUBJ_dict.studsubj_dict);
-        console.log("mod_MSTUDSUBJ_dict.schemeitem_dict:", mod_MSTUDSUBJ_dict.schemeitem_dict);
+        console.log("    mod_MSTUDSUBJ_dict.schemeitem_dict:", mod_MSTUDSUBJ_dict.schemeitem_dict);
+        console.log("    mod_MSTUDSUBJ_dict.studsubj_dict:", mod_MSTUDSUBJ_dict.studsubj_dict);
         console.log("..................");
-
+*/
         return has_studsubj_rows;
     } // MSTUDSUBJ_FillDicts
 
-//========= MSTUDSUBJ_FillTbls  ============= PR2020-11-17 PR2021-08-31 PR2021-09-29
+//========= MSTUDSUBJ_FillTbls  ============= PR2020-11-17 PR2021-08-31 PR2021-09-29 PR2023-01-01
     function MSTUDSUBJ_FillTbls() {
         console.log("===== MSTUDSUBJ_FillTbls ===== ");
         // function fills table el_tblBody_studsubjects and el_tblBody_schemeitems
         // with items of mod_MSTUDSUBJ_dict.studsubj_dict and mod_MSTUDSUBJ_dict.schemeitem_dict
-        // mod_MSTUDSUBJ_dict.studsubj_dict also contains deleted subjects of student, with tag 'deleted'
+        // mod_MSTUDSUBJ_dict.studsubj_dict also contains deleted subjects of student, with tag 'deleted' or 'tobedeleted'
         // called by MSTUDSUBJ_Open, MSTUDSUBJ_AddRemoveSubject and MSTUDSUBJ_FillTbls(after save)
 
+        el_tblBody_schemeitems.innerText = null;
         el_tblBody_studsubjects.innerText = null;
 
-        // studsubj_si_list is list of schemeitem_id's of subjects of this student, that are not deleted
-        const studsubj_si_list = [];
-        // studsubj_subj_list is list of subj_id's of subjects of this student, that are not deleted
-        const studsubj_subj_list = [];
+        let has_studsubj_rows = false;
 
-// ---  create a list of schemeitem_pk's and subject_pk's of this student, not tobedeleted
-        let ss_si_pk_list = [], ss_subj_pk_list = [];
-        for (const ss_dict of Object.values(mod_MSTUDSUBJ_dict.studsubj_dict)) {
-            if (!ss_dict.tobedeleted) {
-                if (!ss_si_pk_list.includes(ss_dict.schemeitem_id)){
-                    ss_si_pk_list.push(ss_dict.schemeitem_id);
-                };
-                if (!ss_subj_pk_list.includes(ss_dict.subj_id)){
-                    ss_subj_pk_list.push(ss_dict.subj_id);
-                };
-            };
-        };
-        const has_studsubj_rows = !!ss_si_pk_list.length;
-
-// ---  loop through mod_MSTUDSUBJ_dict.schemeitem_dict
+// +++++  loop through mod_MSTUDSUBJ_dict.schemeitem_dict, check if it must be added to the table of subjects of this candidate
         // mod_MSTUDSUBJ_dict.schemeitem_dict is a dict with schemeitems of the scheme of this candidate, key = schemeitem_pk
-        el_tblBody_schemeitems.innerText = null;
+
         for (const si_dict of Object.values(mod_MSTUDSUBJ_dict.schemeitem_dict)) {
             const si_schemeitem_pk = si_dict.schemeitem_id;
-            const si_subj_pk = si_dict.subj_id;
+            const si_subject_pk = si_dict.subj_id;
             let subj_code = (si_dict.subj_code) ? si_dict.subj_code : "";
             if(si_dict.is_mandatory) {subj_code += " ^" };
             if(si_dict.is_combi) { subj_code += " *" };
-            const subj_name = (si_dict.subj_name) ? si_dict.subj_name : null;
+            const subj_name_nl = (si_dict.subj_name_nl) ? si_dict.subj_name_nl : null;
             const sjtp_abbrev = (si_dict.sjtp_abbrev) ? si_dict.sjtp_abbrev : null;
             const si_studyloadhours = (si_dict.studyloadhours) ? si_dict.studyloadhours : null;
 
-    // lookup if schemitem_pk exists in studsubj_dictlist
-            const add_to_studsubj = ss_si_pk_list.includes(si_schemeitem_pk);
-    // lookup if subj_pk exists in studsubj_dictlist, to disable same subject with different subjectype
-            const subj_exists_in_ss = ss_subj_pk_list.includes(si_subj_pk);
+    //console.log("....",  subj_name_nl, " - ", sjtp_abbrev, " - ", sjtp_abbrev );
 
-            let ss_mapid = null, ss_tobedeleted = false;
-            if(add_to_studsubj){
-                for (const ss_dict of Object.values(mod_MSTUDSUBJ_dict.studsubj_dict)) {
-                    if(ss_dict.schemeitem_id === si_schemeitem_pk){
-                        ss_mapid = ss_dict.mapid;
-                        ss_tobedeleted = ss_dict.tobedeleted;
-                        break;
-                    };
-                };  // for (const ss_dict of Object.values(mod_MSTUDSUBJ_dict.studsubj_dict))
+    // lookup if subj_id exists in studsubj_dictlist
+            const studsubj_dict = mod_MSTUDSUBJ_dict.studsubj_dict[si_dict.subj_id];
+
+            const subj_exists_in_ss = (!isEmpty(studsubj_dict));
+            const ss_dict_has_same_si = (subj_exists_in_ss && studsubj_dict.schemeitem_id === si_schemeitem_pk);
+            const ss_dict_is_tobedeleted = (subj_exists_in_ss && (studsubj_dict.is_deleted || studsubj_dict.is_tobedeleted || studsubj_dict.tobedeleted));
+
+
+            let show_in_studsubj_table = false;
+            if(ss_dict_has_same_si){
+                if(studsubj_dict.tobecreated){
+                    show_in_studsubj_table = true;
+                } else {
+                show_in_studsubj_table = (!studsubj_dict.tobedeleted && !studsubj_dict.is_tobedeleted && !studsubj_dict.is_deleted);
+                }
             };
-            if (add_to_studsubj){
-    // add studsubj to tblBody_studsubjects if it exists in studsubj_dict, not tobedeleted
-                MSTUDSUBJ_CreateSelectRow("studsubj", el_tblBody_studsubjects, ss_mapid, si_schemeitem_pk, subj_code, subj_name, si_studyloadhours,
-                    si_dict.is_mandatory, si_dict.is_combi, sjtp_abbrev,  true, false, ss_tobedeleted)
-            } else {
-    // add schemeitem to tblBody_schemeitems if it does not exist in studsubj_dict, or when it is tobedeleted
-                MSTUDSUBJ_CreateSelectRow("schemeitem", el_tblBody_schemeitems, null, si_schemeitem_pk, subj_code, subj_name, si_studyloadhours,
-                    // enable subject in tblBody_schemeitems when not subj_exists_in_ss
-                    si_dict.is_mandatory, si_dict.is_combi, sjtp_abbrev, !subj_exists_in_ss, false, ss_tobedeleted)
-            };  // if (add_to_studsubj){
-        };  // for (const si_dict] of Object.values(mod_MSTUDSUBJ_dict.schemeitem_dict)) {
+            // don't mark as deleted when subject is 'tobecreated'
+            // don't mark as deleted when subject 'is_deleted' (i.e. when deletion is submitted)
+            const mark_as_tobedeleted = (ss_dict_has_same_si && !studsubj_dict.tobecreated &&  (studsubj_dict.is_tobedeleted || studsubj_dict.tobedeleted)) ;
+            const mark_as_disabled = (subj_exists_in_ss && !ss_dict_has_same_si && !ss_dict_is_tobedeleted);
+
+            if (!has_studsubj_rows && subj_exists_in_ss) {has_studsubj_rows = true};
+/*
+    console.log("    subj_exists_in_ss ", subj_exists_in_ss);
+    console.log("    ss_dict_has_same_si ", ss_dict_has_same_si);
+    console.log("    show_in_studsubj_table ", show_in_studsubj_table);
+    console.log("    mark_as_tobedeleted ", mark_as_tobedeleted);
+    console.log("    mark_as_disabled ", mark_as_disabled);
+*/
+            const tblName = (show_in_studsubj_table) ? "studsubj" : "schemeitem";
+            MSTUDSUBJ_CreateSelectRow(tblName, si_schemeitem_pk, si_subject_pk, subj_code, subj_name_nl,
+                                        si_studyloadhours, si_dict.is_mandatory, si_dict.is_combi, sjtp_abbrev,
+                                        mark_as_disabled, mark_as_tobedeleted);
+        };
+// +++++  end of loop through mod_MSTUDSUBJ_dict.schemeitem_dict
 
 // --- addrow 'This_candidate_has_nosubjects' if student has no subjects
         if(!has_studsubj_rows){
@@ -2120,36 +2249,32 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }; // MSTUDSUBJ_FillTbls
 
-//========= MSTUDSUBJ_CreateSelectRow  ============= PR2020--09-30
-    function MSTUDSUBJ_CreateSelectRow(tblName, tblBody_select,
-            map_id, schemeitem_id, subj_code, subj_name, si_studyloadhours, is_mandatory, is_combi, sjtp_abbrev,
-            enabled, highlighted, tobedeleted) {
+//========= MSTUDSUBJ_CreateSelectRow  ============= PR2020-09-30 PR2022-12-29 PR2023-01-04
+    function MSTUDSUBJ_CreateSelectRow(tblName, schemeitem_pk, subject_pk, subj_code, subj_name_nl,
+            si_studyloadhours, is_mandatory, is_combi, sjtp_abbrev,
+            mark_as_disabled, mark_as_tobedeleted, highlighted) {
         //console.log("===== MSTUDSUBJ_CreateSelectRow ===== ");
+    //console.log("    tblName", tblName);
 
-        //console.log("tblName", tblName);
+        const tblBody_select = (tblName === "studsubj") ? el_tblBody_studsubjects : el_tblBody_schemeitems;
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", ob3 = "";
-        if (subj_name) { ob1 = subj_name.toLowerCase() };
+        if (subj_name_nl) { ob1 = subj_name_nl.toLowerCase() };
         if (sjtp_abbrev) { ob2 = sjtp_abbrev.toString()};
 
         const row_index = b_recursive_tblRow_lookup(tblBody_select, setting_dict.user_lang, ob1, ob2, ob3);
 
         const tblRow = tblBody_select.insertRow(row_index);
-        if (tblName === "studsubj") {
-            //PR2021-09-30 debug: don't use tblRow.id to store map_id, already used in tbody of page, couldn't find right tblrow after update
-            tblRow.setAttribute("data-mapid", map_id)
-        } else {
-            tblRow.id = schemeitem_id;
-        }
 
         // bg_transparent added for transition - not working
         //tblRow.classList.add("bg_transparent");
 
+        tblRow.setAttribute("data-schemeitem_pk", schemeitem_pk);
         tblRow.setAttribute("data-selected", 0);
 
 // ---  add title
-        let title_txt =subj_name;
+        let title_txt =subj_name_nl;
         if(is_mandatory) {title_txt += "\n   ^  " + loc.mandatory_subject };
         if(is_combi) {title_txt += "\n   *   " + loc.combination_subject };
         tblRow.title = title_txt;
@@ -2160,9 +2285,9 @@ document.addEventListener('DOMContentLoaded', function() {
         //tblRow.setAttribute("data-ob3", ob3);
 
 //- add hover to select row
-        if(enabled) {add_hover(tblRow)}
+        if(!mark_as_disabled) {add_hover(tblRow)}
 
-        add_or_remove_class(tblRow, "awp_tr_disabled", !enabled )
+        add_or_remove_class(tblRow, "awp_tr_disabled", mark_as_disabled )
         if(highlighted){ ShowClassWithTimeout(tblRow, "bg_selected_blue")};
 
 // --- add first td to tblRow.
@@ -2178,6 +2303,10 @@ document.addEventListener('DOMContentLoaded', function() {
            // el_div.classList.add("tw_120")
             el_div.classList.add("tw_090")
             el_div.innerText = subj_code;
+
+// ---  mark is_tobedeleted row with line-through red
+            if (mark_as_tobedeleted) {MSTUDSUBJ_Mark_as_tobedeleted(el_div)};
+
             td.appendChild(el_div);
 
 // --- add second td to tblRow.
@@ -2185,6 +2314,10 @@ document.addEventListener('DOMContentLoaded', function() {
         el_div = document.createElement("div");
             el_div.classList.add("tw_120")
             el_div.innerText = sjtp_abbrev;
+
+// ---  mark is_tobedeleted row with line-through red
+            if (mark_as_tobedeleted) {MSTUDSUBJ_Mark_as_tobedeleted(el_div)};
+
             td.appendChild(el_div);
 
 // --- add srudyloadhour td to tblRow.
@@ -2193,11 +2326,15 @@ document.addEventListener('DOMContentLoaded', function() {
             el_div.classList.add("tw_060")
             el_div.innerText = (si_studyloadhours) ? si_studyloadhours.toString() + " " + loc.slh : null;
             el_div.title = (si_studyloadhours) ? si_studyloadhours.toString() + " " + loc.Studyloadhours.toLowerCase() : null;
+
+// ---  mark is_tobedeleted row with line-through red
+            if (mark_as_tobedeleted) {MSTUDSUBJ_Mark_as_tobedeleted(el_div)};
+
             td.appendChild(el_div);
         //td.classList.add("tw_200X", "px-2", "pointer_show") // , cls_bc_transparent)
 
 //--------- add addEventListener
-        if(enabled) {
+        if(!mark_as_disabled) {
             //tblRow.addEventListener("click", function() {MSTUDSUBJ_SelectSubject(tblName, tblRow)}, false);
             tblRow.addEventListener("click", function() {MSTUDSUBJ_ClickedOrDoubleClicked(tblName, tblRow, event)}, false);
         };
@@ -2205,11 +2342,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- if added / removed row highlight row for 1 second
         let show_justLinked = false;
         if (tblName === "studsubj" && mod_MSTUDSUBJ_dict.sel_studsubj_list ){
-            show_justLinked = mod_MSTUDSUBJ_dict.sel_studsubj_list.includes(map_id);
-            // remove map_id from sel_studsubj_list
-            if(show_justLinked) { b_remove_item_from_array(mod_MSTUDSUBJ_dict.sel_studsubj_list, map_id)};
+            show_justLinked = mod_MSTUDSUBJ_dict.sel_studsubj_list.includes(schemeitem_pk);
+            // remove schemeitem_pk from sel_studsubj_list
+            if(show_justLinked) { b_remove_item_from_array(mod_MSTUDSUBJ_dict.sel_studsubj_list, schemeitem_pk)};
         } else if (tblName === "schemeitem"  && mod_MSTUDSUBJ_dict.sel_schemeitem_list ){
-            const schemeitem_pk = (schemeitem_id) ? schemeitem_id : null;
             show_justLinked = mod_MSTUDSUBJ_dict.sel_schemeitem_list.includes(schemeitem_pk);
             // remove schemeitem_pk from sel_schemeitem_list
             if(show_justLinked) { b_remove_item_from_array(mod_MSTUDSUBJ_dict.sel_schemeitem_list, schemeitem_pk)};
@@ -2219,13 +2355,25 @@ document.addEventListener('DOMContentLoaded', function() {
             //td_first.classList.add(cls_just_linked_unlinked)
             //setTimeout(function (){ td_first.classList.remove(cls_just_linked_unlinked)}, 1000);
             ShowClassWithTimeout(tblRow, "bg_selected_blue", 2000) ;
-        }
+        };
+    }; // MSTUDSUBJ_CreateSelectRow
 
-    } // MSTUDSUBJ_CreateSelectRow
+    function MSTUDSUBJ_Mark_as_tobedeleted(el_div) {
+        //console.log("----- MSTUDSUBJ_Mark_as_tobedeleted -----");
+        //console.log("el_div", el_div);
+
+// ---  mark is_tobedeleted row with line-through red PR2022-12-29
+        el_div.classList.add("text_decoration_line_through_red");
+
+        const title_text = [loc.This_subject_ismarked_fordeletion,
+            loc.You_must_submit_exform_todelete_it,
+            loc.or_add_it_again_to_restore_it].join("\n");
+        el_div.setAttribute("title", title_text);
+    };  // MSTUDSUBJ_Mark_as_tobedeleted
 
 //=========  MSTUDSUBJ_ClickedOrDoubleClicked  ================ PR2019-03-30 PR2021-03-05 PR2021-08-31
     function MSTUDSUBJ_ClickedOrDoubleClicked(tblName, tblRow, event) {
-        //console.log("=== MSTUDSUBJ_ClickedOrDoubleClicked");
+        console.log("=== MSTUDSUBJ_ClickedOrDoubleClicked");
         //console.log("event.target", event.target);
         //console.log("event.detail", event.detail);
         // PR2020-02-24 dont use doubleclick event, wil also trigger click twice. Use this function instead
@@ -2247,21 +2395,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     MSTUDSUBJ_AddRemoveSubject(mode);
                 };
         };
+    };  // MSTUDSUBJ_ClickedOrDoubleClicked
 
-    }  // MSTUDSUBJ_ClickedOrDoubleClicked
-
-//========= MSTUDSUBJ_SelectSubject  ============= PR2020-10-01 PR2021-03-05
+//========= MSTUDSUBJ_SelectSubject  ============= PR2020-10-01 PR2021-03-05 PR2023-01-02
     function MSTUDSUBJ_SelectSubject(tblName, tblRow){
-        //console.log( "===== MSTUDSUBJ_SelectSubject  ========= ");
-        //console.log( "tblRow", tblRow);
+        console.log( "===== MSTUDSUBJ_SelectSubject  ========= ");
+        console.log( "    tblName", tblName);
+        console.log( "    tblRow", tblRow);
 
-        mod_MSTUDSUBJ_dict.sel_studsubj_mapid = null;
-        mod_MSTUDSUBJ_dict.sel_schemeitem_pk = null;
-        if (tblName === "studsubj"){
-            mod_MSTUDSUBJ_dict.sel_studsubj_mapid = get_attr_from_el(tblRow, "data-mapid");
-        } else if (tblName === "schemeitem"){
-            mod_MSTUDSUBJ_dict.sel_schemeitem_pk = (tblRow.id) ? Number(tblRow.id) : null;
-        }
+        mod_MSTUDSUBJ_dict.sel_schemeitem_pk = get_attr_from_el(tblRow, "data-schemeitem_pk");
+
         let is_selected = (!!get_attr_from_el_int(tblRow, "data-selected"));
 
 // ---  toggle is_selected
@@ -2269,245 +2412,253 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  in tbl "studsubj" and when selected: deselect all other rows
         if (tblName === "studsubj" && is_selected){
-            MSTUDSUBJ_SetInputFields(mod_MSTUDSUBJ_dict.sel_studsubj_mapid, is_selected)
-        }
+            MSTUDSUBJ_SetInputFields(mod_MSTUDSUBJ_dict.sel_schemeitem_pk, is_selected);
+        };
 
 // ---  put new value in this tblRow, show/hide tickmark PR2020-11-21
-        tblRow.setAttribute("data-selected", ( (is_selected) ? 1 : 0) )
-        add_or_remove_class(tblRow, "bg_selected_blue", is_selected )
-        //const img_class = (is_selected) ? "tickmark_0_2" : "tickmark_0_0"
-        //const el = tblRow.cells[0].children[0];
-        //if (el){el.className = img_class}
+        tblRow.setAttribute("data-selected", ( (is_selected) ? 1 : 0) );
+        add_or_remove_class(tblRow, "bg_selected_blue", is_selected );
+
     }  // MSTUDSUBJ_SelectSubject
 
-    function MSTUDSUBJ_SetInputFields(sel_studsubj_mapid, is_selected){
+    function MSTUDSUBJ_SetInputFields(sel_si_pk, is_selected){  // PR2023-01-04
 // ---  put value in input box 'Characteristics of this subject
         //console.log( "===== MSTUDSUBJ_SetInputFields  ========= ");
-        //console.log( "sel_studsubj_mapid", sel_studsubj_mapid);
-        //console.log( "is_selected", is_selected);
+        //console.log( "    sel_si_pk", sel_si_pk);
+        //console.log( "    is_selected", is_selected);
 
-        let is_empty = true, is_mand = false, is_mand_subj = false, is_combi = false,
-            extra_count_allowed = false, extra_nocount_allowed = false,
+        let is_empty = true, is_mand = false, is_mand_subj_id = null, is_combi = false,
             is_extra_counts = false, is_extra_nocount = false,
             sjtp_has_prac = false, sjtp_has_pws = false,
             pwstitle = null, pwssubjects = null,
-            subj_name = null;
-        let ss_dict = {}, si_dict = {};
+            subj_name_nl = null;
 
-        if(is_selected && sel_studsubj_mapid && mod_MSTUDSUBJ_dict.studsubj_dict[sel_studsubj_mapid]){
-            ss_dict = mod_MSTUDSUBJ_dict.studsubj_dict[sel_studsubj_mapid];
+        let studsubj_dict = {};
 
-        //console.log( "ss_dict", ss_dict);
-            if(!isEmpty(ss_dict)){
+// - get sel_subject_pk from sel_si_dict
+        const sel_si_dict = (mod_MSTUDSUBJ_dict.schemeitem_dict[sel_si_pk]) ? mod_MSTUDSUBJ_dict.schemeitem_dict[sel_si_pk] : {};
+    //console.log( "    sel_si_dict", sel_si_dict);
+        if(!isEmpty(sel_si_dict)){
+            is_mand = sel_si_dict.is_mandatory;
+            is_mand_subj_id = sel_si_dict.is_mand_subj_id;
+            is_combi = sel_si_dict.is_combi;
+
+            sjtp_has_prac = sel_si_dict.sjtp_has_prac;
+            sjtp_has_pws = sel_si_dict.sjtp_has_pws;
+            subj_name_nl = sel_si_dict.subj_name_nl
+
+            studsubj_dict = mod_MSTUDSUBJ_dict.studsubj_dict[sel_si_dict.subj_id];
+    //console.log( "    sel_si_dict.subj_id", sel_si_dict.subj_id);
+    //console.log( " @@@@@@@@@@@@   studsubj_dict", studsubj_dict);
+
+            if(!isEmpty(studsubj_dict)){
                 is_empty = false;
-                is_mand = ss_dict.is_mandatory;
-                is_mand_subj = ss_dict.is_mand_subj;
-                is_combi = ss_dict.is_combi;
-                is_extra_counts = ss_dict.is_extra_counts;
-                is_extra_nocount = ss_dict.is_extra_nocount;
-                pwstitle = ss_dict.pws_title;
-                pwssubjects = ss_dict.pws_subjects;
+                is_extra_counts = studsubj_dict.is_extra_counts;
+                is_extra_nocount = studsubj_dict.is_extra_nocount;
+                pwstitle = studsubj_dict.pws_title;
+                pwssubjects = studsubj_dict.pws_subjects;
+            };
+        };
+        el_MSTUDSUBJ_char_header.innerText = (is_empty) ?  loc.No_subject_selected : subj_name_nl;
 
-                si_dict = mod_MSTUDSUBJ_dict.schemeitem_dict[ss_dict.schemeitem_id];
-                if(!isEmpty(si_dict)){
-                    extra_count_allowed = si_dict.extra_count_allowed;
-                    extra_nocount_allowed = si_dict.extra_nocount_allowed;
-                    sjtp_has_prac = si_dict.sjtp_has_prac;
-                    sjtp_has_pws = si_dict.sjtp_has_pws;
-                    subj_name = si_dict.subj_name
-                }
-        //console.log( "si_dict", si_dict);
-            }
-        }
-        el_MSTUDSUBJ_char_header.innerText = (is_empty) ?  loc.No_subject_selected : subj_name;
+    //console.log( "    studsubj_dict", studsubj_dict);
 
     // ---  put changed values of input elements in upload_dict
         if (el_MSTUDSUBJ_input_controls){
             for (let i = 0, el; el = el_MSTUDSUBJ_input_controls[i]; i++) {
-                const el_wrap = el.parentNode.parentNode.parentNode
+                const el_wrap = el.parentNode.parentNode.parentNode;
 
-                const field = get_attr_from_el(el, "data-field")
+                const field = get_attr_from_el(el, "data-field");
+
+    //console.log( "    >>> field", field);
                 const hide_element = (field === "is_mandatory") ? is_empty :
-                                    (field === "is_mand_subj") ? is_mand_subj :
+                                    // is_mand_subj not in use yet (mandatory if subject exists)
+                                    (field === "is_mand_subj") ? true :  // not in use yet
                                     (field === "is_combi") ? is_empty :
-                                     (field === "is_extra_nocount") ? !extra_nocount_allowed :
-                                     (field === "is_extra_counts") ? !extra_count_allowed :
+                                     (field === "is_extra_nocount") ? !sel_si_dict.extra_nocount_allowed :
+                                     (field === "is_extra_counts") ? !sel_si_dict.extra_count_allowed :
                                      (["pws_title", "pws_subjects"].includes(field) ) ? !sjtp_has_pws : true;
-                if(el_wrap){ add_or_remove_class(el_wrap, cls_hide, hide_element )}
+
+                const field_value = (field === "is_mandatory") ? sel_si_dict.is_mandatory :
+                                    // is_mand_subj not in use yet (mandatory if subject exists)
+                                    (field === "is_mand_subj") ? null :  // not in use yet
+                                    (field === "is_combi") ? sel_si_dict.is_combi :
+                                     (field === "is_extra_nocount") ? studsubj_dict.is_extra_nocount :
+                                     (field === "is_extra_counts") ? studsubj_dict.is_extra_counts :
+                                     (field === "pws_title") ? studsubj_dict.pws_title :
+                                     (field === "pws_subjects") ? studsubj_dict.pws_subjects : null;
+
+    //console.log( "    >>> hide_element", hide_element);
+        //console.log( "    >>> studsubj_dict[field]", studsubj_dict[field]);
+                if(el_wrap){ add_or_remove_class(el_wrap, cls_hide, hide_element )};
 
                if(el.classList.contains("awp_input_text")){
-                    el.value = ss_dict[field];
+                    el.value = (field_value) ? field_value : null;
                } else if(el.classList.contains("awp_input_checkbox")){
-                    el.checked = (ss_dict[field]) ? ss_dict[field] : false;
-               }
-            }
+                    el.checked = (field_value) ? field_value : false;
+               };
+            };
         };
-    }  // MSTUDSUBJ_SetInputFields
+    };  // MSTUDSUBJ_SetInputFields
 
-//========= MSTUDSUBJ_AddRemoveSubject  ============= PR2020-11-18 PR2021-08-31
+//========= MSTUDSUBJ_AddRemoveSubject  ============= PR2020-11-18 PR2021-08-31 PR2023-01-04
     function MSTUDSUBJ_AddRemoveSubject(mode) {
-        console.log("  =====  MSTUDSUBJ_AddRemoveSubject  =====");
-        console.log("mode", mode);
+        console.log("=====  MSTUDSUBJ_AddRemoveSubject  =====");
+        console.log("    mode", mode);
 
         const may_edit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
         if(may_edit){
 
             let must_validate_subjects = false;
 
-            // for highlighting row in other table after addd/remove
+    // for highlighting row in other table after addd/remove
             mod_MSTUDSUBJ_dict.sel_studsubj_list = [];
             mod_MSTUDSUBJ_dict.sel_schemeitem_list = [];
 
             const tblBody = (mode === "add") ? el_tblBody_schemeitems : el_tblBody_studsubjects;
 
-    // ---  loop through selected schemeitem_pk's of tblBody
-            for (let i = 0, tblRow, is_selected; tblRow = tblBody.rows[i]; i++) {
-                is_selected = !!get_attr_from_el_int(tblRow, "data-selected")
-                if (is_selected) {
+// +++++ loop through selected schemeitem_pk's of tblBody +++++
+            for (let i = 0, tblRow; tblRow = tblBody.rows[i]; i++) {
+                if (get_attr_from_el_int(tblRow, "data-selected")) {
 
-// +++++++ add subject
+    // - get selected schemeitem_dict with schemeitem_pk from tblRow
+                    const sel_si_pk = get_attr_from_el_int(tblRow, "data-schemeitem_pk");
+                    const sel_si_dict = (mod_MSTUDSUBJ_dict.schemeitem_dict[sel_si_pk]) ? mod_MSTUDSUBJ_dict.schemeitem_dict[sel_si_pk] : {};
+
+    // - get sel_schemeitem_pk from sel_si_dict, so it will be null when there is no sel_si_dict
+                    const sel_schemeitem_pk = (sel_si_dict.schemeitem_id) ? sel_si_dict.schemeitem_id : null;
+                    const sel_subject_pk = (sel_si_dict.subj_id) ? sel_si_dict.subj_id : null;
+
+    // - get sel_subject_pk from sel_si_dict
+                    const studsubj_dict = mod_MSTUDSUBJ_dict.studsubj_dict[sel_subject_pk];
+
+                    const subj_exists_in_ss = (!isEmpty(studsubj_dict));
+                    const ss_dict_has_same_si = (subj_exists_in_ss && studsubj_dict.schemeitem_id === sel_schemeitem_pk);
+                    const ss_dict_is_tobedeleted = (subj_exists_in_ss && (studsubj_dict.is_deleted || studsubj_dict.is_tobedeleted || studsubj_dict.tobedeleted));
+/*
+            console.log("    studsubj_dict", studsubj_dict);
+            console.log("    sel_schemeitem_pk", sel_schemeitem_pk);
+            console.log("    sel_subject_pk", sel_subject_pk);
+            console.log("    subj_exists_in_ss ", subj_exists_in_ss);
+            console.log("    ss_dict_has_same_si ", ss_dict_has_same_si);
+            console.log("    ss_dict_is_tobedeleted ", ss_dict_is_tobedeleted);
+*/
+
+// +++++++ add subject +++++++
                     if(mode === "add"){
-                        const sel_schemeitem_pk = (tblRow.id) ? Number(tblRow.id) : null;
-                        // get sel_subject_pk from si_map_dict
-                        const si_map_dict = (mod_MSTUDSUBJ_dict.schemeitem_dict[sel_schemeitem_pk]) ? mod_MSTUDSUBJ_dict.schemeitem_dict[sel_schemeitem_pk] : {};
-                        const sel_subject_pk = (si_map_dict.subj_id) ? si_map_dict.subj_id : null;
-        console.log("............... add subject");
-        console.log("sel_schemeitem_pk", sel_schemeitem_pk);
-        console.log("sel_subject_pk", sel_subject_pk);
+            console.log("............... add subject");
 
-        // ---  loop through studsubj_dict and check if sel_subject_pk already exists
-                        let subject_found = false;
-                        for (const ss_dict of Object.values(mod_MSTUDSUBJ_dict.studsubj_dict)) {
-                   // get ss_subj_id from schemeitem_dict
-                            const ss_schemeitem_id = ss_dict.schemeitem_id;
-                            const si_dict = (mod_MSTUDSUBJ_dict.schemeitem_dict[ss_schemeitem_id])
-                            const ss_subj_id = si_dict.subj_id;
+    // --- restore deleted row if it exists in mod_MSTUDSUBJ_dict
+                        if (subj_exists_in_ss){
+            console.log("    ... restore deleted row");
+            console.log("    ss_dict_is_tobedeleted", ss_dict_is_tobedeleted);
 
-        console.log("ss_dict", ss_dict);
-        console.log("si_dict", si_dict);
-                            if(ss_subj_id === sel_subject_pk){
-                                if (!subject_found) {
-                            // this is the first occurrence of sel_subject_pk in ss_dict
-                                    subject_found = true;
-        console.log("ss_dict.tobedeleted", ss_dict.tobedeleted);
-                                    if (ss_dict.tobedeleted){
+                            if (ss_dict_is_tobedeleted ){
+                                studsubj_dict.tobecreated = true;
+                                studsubj_dict.tobedeleted = false;
 
-                           // if the schemeitem_pk of the studsubj_dict is the same as the schemeitem_pk in the selected si_dict
-                                        if (ss_dict.schemeitem_id === sel_schemeitem_pk){
-                                // if 'tobedeleted' has already been saved, then subj_published_id = null
-                                // in that case: set undelete = true, to undo saved tobedeleted
-                                // if it has not been saved yet: just remove tobedeleted
-
-                                // PR2021-0930 debug: when deleting went wrong subj_published_id still has value
-                                // in that case set tobechanged = true
-                                            ss_dict.tobecreated = false;
-                                            ss_dict.tobedeleted = false;
-                                            ss_dict.tobechanged = true;
-
-                           // change this schemeitem_pk if it is different from the schemeitem_pk in the selected studsubj_dict
-                                        } else {
-                                            ss_dict.schemeitem_id = sel_schemeitem_pk;
-                                            ss_dict.subj_id = sel_subject_pk;
-
-                                            ss_dict.tobecreated = false;
-                                            ss_dict.tobedeleted = false;
-                                            ss_dict.tobechanged = true;
-                                        };
-                                        must_validate_subjects = true;
-
-                            // add to sel_studsubj_list, to highlight subject after adding
-                                mod_MSTUDSUBJ_dict.sel_studsubj_list.push(ss_dict.mapid)
-                                    } else {
-                                        // ss_subject is not deleted - this should not be possible - do nothing
-                                    }
-                                } else {
-                // if student has subject multiple times - delete others  -  this should not be possible
-                                    // better not delete others when multiple found
-                                    //  maybe the wrong one will be deleted - let the user delete multiple subjects
-                                };
-                            };
-                        };  // for (const ss_dict of Object.values(mod_MSTUDSUBJ_dict.studsubj_dict))
-
-        // - add row to studsubj_dict if it does not yet exist
-                        if (!subject_found){
-                            const student_pk = mod_MSTUDSUBJ_dict.stud_id;
-                            const si_dict = mod_MSTUDSUBJ_dict.schemeitem_dict[sel_schemeitem_pk];
-
-        console.log("add if not exists .si_dict", si_dict);
-                            if(!isEmpty(si_dict)){
-                                // mapid: "studsubj_29_2" = "studsubj_" + stud_id + "_" + studsubj_id
-                                mod_MSTUDSUBJ_dict.new_studsubj_pk += 1;
-                                const new_map_id = "studsubj_" + student_pk + "_new" + mod_MSTUDSUBJ_dict.new_studsubj_pk;
-
-                                mod_MSTUDSUBJ_dict.studsubj_dict[new_map_id] = {
-                                    mapid: new_map_id,
-                                    stud_id: student_pk,
-                                    scheme_id: si_dict.scheme_id,
-                                    studsubj_id: null,
-                                    schemeitem_id: si_dict.schemeitem_id,
-
-                                    subj_id: si_dict.subj_id,
-                                    subj_code: si_dict.subj_code,
-                                    subj_name: si_dict.subj_name,
-                                    subj_published_id: null,
-
-                                    sjtp_id: si_dict.sjtp_id,
-                                    sjtp_abbrev: si_dict.sjtp_abbrev,
-                                    sjtp_has_prac: si_dict.sjtp_has_prac,
-                                    sjtp_has_pws: si_dict.sjtp_has_pws,
-
-                                    is_combi: si_dict.is_combi,
-                                    is_extra_counts: false,
-                                    is_extra_nocount: false,
-                                    is_mandatory: si_dict.is_mandatory,
-
-                                    pws_subjects: null,
-                                    pws_title: null,
-
-                                    tobecreated: true,
-                                    tobedeleted: false,
-                                    tobechanged: false
+                  // change schemitem_pk if necessary
+                                if (!ss_dict_has_same_si ) {
+                                    studsubj_dict.schemeitem_id = sel_schemeitem_pk;
                                 };
 
+            console.log("    studsubj_dict", studsubj_dict);
                                 must_validate_subjects = true;
-                        // add to sel_studsubj_list, to highlight subject after adding
-                                mod_MSTUDSUBJ_dict.sel_studsubj_list.push(new_map_id)
-                            };
-                        };  // if (!subject_found){
 
-    // +++++++ remove subject
+                        // add sel_schemeitem_pk to sel_studsubj_list, to highlight subject after adding
+                                mod_MSTUDSUBJ_dict.sel_studsubj_list.push(sel_schemeitem_pk);
+                            };
+
+                        } else {
+
+    // --- add row to studsubj_dict if it does not yet exist
+
+            console.log("add row to studsubj_dict if it does not yet exist", sel_si_dict.subj_id);
+                            mod_MSTUDSUBJ_dict.studsubj_dict[sel_si_dict.subj_id] = {
+                                stud_id: mod_MSTUDSUBJ_dict.stud_id,
+                                scheme_id: sel_si_dict.scheme_id,
+                                studsubj_id: null,
+                                schemeitem_id: sel_si_dict.schemeitem_id,
+
+                                subj_id: sel_si_dict.subj_id,
+                                subj_code: sel_si_dict.subj_code,
+                                subj_name_nl: sel_si_dict.subj_name_nl,
+                                subj_published_id: null,
+
+                                is_extra_counts: false,
+                                is_extra_nocount: false,
+                                pws_subjects: null,
+                                pws_title: null,
+
+                                is_deleted: false,
+                                is_tobedeleted: false,
+
+                                tobecreated: true,
+                                tobedeleted: false,
+                                tobechanged: false
+
+                                // PR2021-09-28 debug: don't put schemeitem info here, it changes when schemeitem_id changes
+                            };
+
+                            must_validate_subjects = true;
+
+    // - add sel_schemeitem_pk to sel_studsubj_list, to highlight subject after adding
+                            mod_MSTUDSUBJ_dict.sel_studsubj_list.push(sel_schemeitem_pk)
+                        };
                     } else {
-        // ---  set 'tobedeleted' = true if schemeitem_pk already exists in studsubj_dict
-                        const sel_map_id = get_attr_from_el(tblRow, "data-mapid");
-                        const ss_map_dict = (mod_MSTUDSUBJ_dict.studsubj_dict[sel_map_id]) ? mod_MSTUDSUBJ_dict.studsubj_dict[sel_map_id] : {};
 
-        console.log("ss_map_dict", ss_map_dict);
-                        if (!isEmpty(ss_map_dict)) {
-                            if (ss_map_dict.tobecreated){
-            // when it is a created, not saved, subject: just remove subject from studsubj_dict
-                                delete mod_MSTUDSUBJ_dict.studsubj_dict[sel_map_id];
-                                must_validate_subjects = true;
+// +++++++ remove subject +++++++
+        // ---  set 'tobedeleted' = true if schemeitem_pk already exists in studsubj_dict
+
+    console.log("............... remove subject");
+    console.log("    sel_schemeitem_pk", sel_schemeitem_pk);
+    console.log("    studsubj_dict", studsubj_dict);
+
+                        if (subj_exists_in_ss) {
+                            if (studsubj_dict.tobecreated){
+    console.log("    subject was 'tobecreated'", studsubj_dict.tobecreated);
+
+                                if (!ss_dict_is_tobedeleted){
+
+    console.log("    subject is new, delete it. sel_subject_pk: ", sel_subject_pk);
+
+        // - when it is a created, not saved, subject: just remove subject from studsubj_dict
+                                    delete mod_MSTUDSUBJ_dict.studsubj_dict[sel_subject_pk];
+                                    must_validate_subjects = true;
+
+                                } else {
+    console.log("    subject is is_tobedeleted or is_deleted, remove 'created'");
+                                    studsubj_dict.tobecreated = false;
+                                    studsubj_dict.show_in_tblBody_schemeitems = true;
+                                    must_validate_subjects = true;
+                                };
 
                             } else {
+
+        console.log("    subject was not 'tobecreated'", studsubj_dict.tobecreated);
+        console.log("    subject is set 'tobedeleted'", studsubj_dict.tobedeleted);
+            // - when it is an existing subject: set tobedeleted = true (
 
                                 // when tobechanged = true:
                                 // - changes have been made, either schemeitem or pws title etc
                                 // - when removing this subject: set tobechanged = false, tobedeleted = true
-                                //  - note: the new information of schemeitem or pws title etc stays in ss_map_dict
+                                //  - note: the new information of schemeitem or pws title etc stays in studsubj_dict
 
-                                ss_map_dict.tobedeleted = true;
-                                ss_map_dict.tobechanged = false;
-                            }
+                                studsubj_dict.tobedeleted = true;
+                                studsubj_dict.tobechanged = false;
+                            };
 
                             must_validate_subjects = true;
-                        }
                         // to highlight subject after removing
-                        mod_MSTUDSUBJ_dict.sel_schemeitem_list.push(ss_map_dict.schemeitem_id)
+                            mod_MSTUDSUBJ_dict.sel_schemeitem_list.push(sel_schemeitem_pk)
+
+                        };
                     };  //  if(mode === "add"){
 
                     MSTUDSUBJ_SetInputFields()
-                }
-            }
+                } // if (is_selected)
+            };
+// ---  end of loop through selected schemeitem_pk's of tblBody
 
         console.log("...............");
         console.log("mod_MSTUDSUBJ_dict.studsubj_dict", mod_MSTUDSUBJ_dict.studsubj_dict);
@@ -2516,29 +2667,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  enable btn submit
             el_MSTUDSUBJ_btn_save.disabled = false;
+
     // create uploaddict to validate subjects PR2021-08-17
             if (must_validate_subjects){
                 MSTUDSUBJ_ValidateSubjects()
             };
+
             MSTUDSUBJ_FillTbls();
         };  //  if(may_edit){
     }  // MSTUDSUBJ_AddRemoveSubject
 
 //========= MSTUDSUBJ_ValidateSubjects  ============= PR2021-08-29
     function MSTUDSUBJ_ValidateSubjects() {
-        //console.log("  =====  MSTUDSUBJ_ValidateSubjects  =====");
+        console.log("  =====  MSTUDSUBJ_ValidateSubjects  =====");
 // create uploaddict to validate subjects PR2021-08-17
             // ---  loop through studentsubjects
-            // studsubj_si_list is list of schemeitem_id's of subjects of this student, that are not deleted
             const studsubj_dictlist = [];
             for (const [studsubj_pk_str, dict] of Object.entries(mod_MSTUDSUBJ_dict.studsubj_dict)) {
 
             // - add schemeitem_pk of studsubj to studsubj_dictlist
         // also add the choices that are stored in studsubj: is_extra_counts is_extra_nocount
                 const studsubj_dict = {
-                    tobecreated: !!dict.tobecreated,
-                    tobedeleted: !!dict.tobedeleted,
-                    tobechanged: !!dict.tobechanged,
+                    tobecreated: dict.tobecreated,
+                    tobedeleted: (!dict.tobecreated) && (dict.tobedeleted || dict.is_tobedeleted || dict.is_deleted),
+                    tobechanged: dict.tobechanged,
                     schemeitem_id: dict.schemeitem_id,
                     studsubj_id: dict.studsubj_id,
                     subj_id: dict.subj_id,
@@ -2668,16 +2820,22 @@ document.addEventListener('DOMContentLoaded', function() {
             MCL_FillTableStudsubj();
             MCL_FillSelectClass();
 
+    // - reset el_MCL_chk_hascluster
+            el_MCL_chk_hascluster.checked = false;
+
+    // -  disable save btn
+            el_MCL_btn_save.disabled = true;
+
 // ---  show modal
             $("#id_mod_cluster").modal({backdrop: true});
         };
     };  // MCL_Open
 
-//=========  MCL_Save  ================ PR2022-01-09
+//=========  MCL_Save  ================ PR2022-01-09 PR2022-12-24
     function MCL_Save() {
         console.log("===== MCL_Save =====");
-        console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
-        console.log("mod_MCL_dict.student_list", mod_MCL_dict.student_list);
+        console.log("    mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
+        console.log("    mod_MCL_dict.student_list", mod_MCL_dict.student_list);
 
         //note: cluster_upload uses subject_pk, not subjbase_pk
 // ---  loop through mod_MCL_dict.cluster_list
@@ -2706,7 +2864,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (cluster_list.length || studsubj_list.length){
 
-            console.log("studsubj_list", studsubj_list);
+            console.log("    studsubj_list", studsubj_list);
 
     // ---  upload changes
                 const upload_dict = {
@@ -2719,19 +2877,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (studsubj_list.length){
                     upload_dict.studsubj_list = studsubj_list;
                 };
-        console.log("upload_dict", upload_dict);
+        console.log("    MCL_Save  upload_dict", upload_dict);
+
                 UploadChanges(upload_dict, urls.url_cluster_upload);
+
+    // ---  disable save btn
+                el_MCL_btn_save.disabled = true;
         };
 
         $("#id_mod_cluster").modal("hide");
     };  // MCL_Save
 
-//=========  MCL_BtnClusterClick  ================ PR2022-01-06
+//=========  MCL_BtnClusterClick  ================ PR2022-01-06 PR2022-12-24
     function MCL_BtnClusterClick(mode) {
         console.log("===== MCL_BtnClusterClick =====");
-        console.log("mode", mode);
-        console.log("mod_MCL_dict", mod_MCL_dict);
-        // values of 'mode' are: "add", "delete", "update", "ok", "cancel"
+        console.log("    mode", mode);
+        console.log("    mod_MCL_dict", mod_MCL_dict);
+        // values of 'mode' are: "add", "delete", "update", "save", "cancel"
 
         const header_txt = (mode === "add") ? loc.Add_cluster :
                             (mode === "delete") ? loc.Delete_cluster :
@@ -2749,7 +2911,8 @@ document.addEventListener('DOMContentLoaded', function() {
             mod_MCL_dict.id_new += 1;
             const new_cluster_pk = "new_" + mod_MCL_dict.id_new;
             const new_cluster_name = MCL_get_next_clustername();
-        console.log("new_cluster_name", new_cluster_name);
+        console.log("   new_cluster_name", new_cluster_name);
+
             const new_cluster_dict = {
                 cluster_pk: new_cluster_pk,
                 sortby: new_cluster_name,
@@ -2768,6 +2931,9 @@ document.addEventListener('DOMContentLoaded', function() {
             MCL_FillTableClusters();
             MCL_FillTableStudsubj();
 
+    // ---  enable save btn
+            if (el_MCL_btn_save){el_MCL_btn_save.disabled = false};
+
         } else {
             const cluster_dict = mod_MCL_dict.sel_cluster_dict;
 
@@ -2778,6 +2944,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // changes will be put in mod_MCL_dict when clicked on OK btn
                 mod_MCL_dict.mode_edit_clustername = "update";
                 el_MCL_input_cluster_name.value = cluster_dict.sortby; // sortby = cluster_name
+
+        // -  dont enable save btn, will be done after changing clustername
+                // was: if (el_MCL_btn_save){el_MCL_btn_save.disabled = false};
 
             } else if (mode === "delete"){
 // check if cluster has studsubj
@@ -2792,6 +2961,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     ModConfirmOpen("delete_cluster");
                 } else {
                     MCL_delete_cluster(cluster_dict);
+        // -  enable save btn
+                    if (el_MCL_btn_save){el_MCL_btn_save.disabled = false};
                 };
 
             } else if (mode === "save"){
@@ -2811,9 +2982,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (cluster_dict.mode !== "create"){
                             cluster_dict.mode = "update";
                         };
+
+        // - enable save btn
+                        if (el_MCL_btn_save){el_MCL_btn_save.disabled = false};
+
                     };
                     mod_MCL_dict.cluster_list.sort(b_comparator_sortby);
                     MCL_FillTableClusters();
+
                 };
             };
         };
@@ -2850,13 +3026,12 @@ document.addEventListener('DOMContentLoaded', function() {
         t_MSSSS_Open(loc, "subject", subject_rows, false, false, setting_dict, permit_dict, MSSSS_Response);
     };  // MCL_BtnSelectSubjectClick
 
-  //=========  MCL_InputClusterName  ================ PR2022-01-06
+  //=========  MCL_InputClusterName  ================ PR2022-01-06  PR2022-12-24
     function MCL_InputClusterName(el) {
         console.log("===== MCL_InputClusterName =====");
         console.log("el.value", el.value);
 
         if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
-
         };
     };  // MCL_InputClusterName
 
@@ -2896,20 +3071,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isEmpty(found_dict)){
             mod_MCL_dict.subject_pk = found_dict.id;
             mod_MCL_dict.subject_dict = found_dict;
-            mod_MCL_dict.subject_name = (found_dict.name) ? found_dict.name : null;
+            mod_MCL_dict.subject_name = (found_dict.name_nl) ? found_dict.name_nl : null;
             mod_MCL_dict.subject_code = (found_dict.code) ? found_dict.code : null;
-        }
+        };
 
         selected.subject_pk = mod_MCL_dict.subject_pk;
         if(!selected.subject_pk){selected.student_pk = null};
 
 // update text in select subject div
         el_MCL_select_subject.innerText = (mod_MCL_dict.subject_pk) ?
-                                            mod_MCL_dict.subject_name : loc.Click_here_to_select_subject;;
+                                            mod_MCL_dict.subject_name : loc.Click_here_to_select_subject;
 
         console.log("mod_MCL_dict", mod_MCL_dict);
 
-    }  // MCL_SaveSubject_in_MCL_dict
+    };  // MCL_SaveSubject_in_MCL_dict
 
 //=========  MCL_FillTableClusters  ================ PR2022-01-07
     function MCL_FillTableClusters() {
@@ -2959,20 +3134,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     add_or_remove_class(tblRow, "bg_selected_blue", true);
         }}};
         // add msg when no clusters
-        if (!row_count && mod_MCL_dict.subject_pk){
-            el_MCL_tblBody_clusters.innerHTML = ["<p>", loc.click_add_cluster01, "<br>",
-                        loc.click_add_cluster02, "<br>", loc.click_add_cluster03, "</p>"].join("")
-    // +++ insert tblRow into el_MCL_tblBody_clusters
-    /*
-                let tblRow = el_MCL_tblBody_clusters.insertRow(-1);
-                let td = tblRow.insertCell(-1);
-                td.innerText = loc.click_add_cluster_below;
-                td.classList.add("tw_240");
-                tblRow = el_MCL_tblBody_clusters.insertRow(-1);
-                td = tblRow.insertCell(-1);
-                td.innerText = loc.click_add_cluster_below;
-                td.classList.add("tw_240")
-                */
+        if (!row_count){
+            const msg_list = (mod_MCL_dict.subject_pk) ?
+                            ["<p>", loc.click_add_cluster01, "<br>", loc.click_add_cluster02, "<br>",
+                                loc.click_add_cluster03, "</p>"] :
+                            ["<p>", loc.You_must_select_subject_first, "</p>"];
+            el_MCL_tblBody_clusters.innerHTML = msg_list.join("");
         };
     };  // MCL_FillTableClusters
 
@@ -3036,17 +3203,17 @@ document.addEventListener('DOMContentLoaded', function() {
 // - reset cluster_list
         mod_MCL_dict.cluster_list = [];
 
-// ---  loop through cluster_rows
-        for (let i = 0, data_dict; data_dict = cluster_rows[i]; i++) {
+// ---  loop through cluster_dictsNEW
             /* data_dict = {
                 id: 293
                 name: "cav - 2"
                 subj_code: "cav"
-                subj_name: "Culturele en artistieke vorming"
+                subj_name_nl: "Culturele en artistieke vorming"
                 subjbase_id: 117
                 subject_id: 117
             */
 
+        for (const data_dict of Object.values(cluster_dictsNEW)) {
         console.log("data_dict", data_dict);
     // add only clusters of this subject
             if (data_dict.subject_id === mod_MCL_dict.subject_pk){
@@ -3064,7 +3231,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
     };  // MCL_FillClusterList
 
-//=========  MCL_FillStudentList  ================ PR2022-01-06
+//=========  MCL_FillStudentList  ================ PR2022-01-06 PR2023-01-05
     function MCL_FillStudentList() {
         console.log("===== MCL_FillStudentList =====");
         // called by MCL_Open and by MSSSS_Response (after selecting subject)
@@ -3076,13 +3243,15 @@ document.addEventListener('DOMContentLoaded', function() {
             cluster_id: null
             cluster_name: null
             subj_id: 2114
-            subj_name: "Nederlandse taal"
+            subj_name_nl: "Nederlandse taal"
             stud_id: 9240
             studsubj_id: 67920
         */
 
-        if(studsubj_rows && studsubj_rows.length){
-            for (let i = 0, data_dict; data_dict = studsubj_rows[i]; i++) {
+// ---  loop through studsubj_dictsNEW
+        if (!isEmpty(studsubj_dictsNEW)){
+            for (const data_dict of Object.values(studsubj_dictsNEW)) {
+
 // - add only the studsubjects from this subject to student_list, only when tobeleted=false and st_tobedeleted=false
                 if (data_dict.subj_id && data_dict.subj_id === mod_MCL_dict.subject_pk &&
                         !data_dict.tobedeleted && !data_dict.st_tobedeleted){
@@ -3109,8 +3278,8 @@ document.addEventListener('DOMContentLoaded', function() {
             mod_MCL_dict.student_list.sort(b_comparator_sortby);
             mod_MCL_dict.classname_list.sort();
         };
-        console.log("mod_MCL_dict.student_list", mod_MCL_dict.student_list);
-        console.log("mod_MCL_dict.classname_list", mod_MCL_dict.classname_list);
+        console.log("    mod_MCL_dict.student_list", mod_MCL_dict.student_list);
+        console.log("    mod_MCL_dict.classname_list", mod_MCL_dict.classname_list);
     };  // MCL_FillStudentList
 
 //=========  MCL_FillTableStudsubj  ================ PR2022-01-06
@@ -3126,6 +3295,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  loop through dictlist
         for (let i = 0, student_dict; student_dict = mod_MCL_dict.student_list[i]; i++) {
 
+        console.log(" ", student_dict.sortby);
             /* student_dict = {
                 cluster_pk: null,
                 cluster_name: null,
@@ -3133,9 +3303,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 studsubj_pk: 68758,
                 subject_code: "zwi",
                 sortby: "van den Wall Arnemann, Tamara"}
+
+
+                cluster_pk: null
+                cluster_name: null
+                classname: "4V3"
+                fullname: "Sterling, Stephany N."
+                sortby: "Sterling Stephany Naomi "
+                mode: null
+                studsubj_pk: 47508
+                subject_code: "en"
+                subject_pk: 224
+
+
             */
     // put all studsubjects of this cluster in table el_MCL_tblBody_studs_selected
             const is_selected = (!!student_dict.cluster_pk && student_dict.cluster_pk === mod_MCL_dict.sel_cluster_pk);
+
+        console.log("    is_selected", is_selected);
 
     // include_hascluster and filter_classname in studsubj is available
             let show_row = true;
@@ -3182,7 +3367,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // MCL_FillTableStudsubj
 
-//=========  MCL_StudsubjSelect  ================ PR2022-01-06
+//=========  MCL_StudsubjSelect  ================ PR2022-01-06  PR2022-12-24
     function MCL_StudsubjSelect(tblRow, is_selected) {
 
         console.log("===== MCL_StudsubjSelect =====");
@@ -3220,6 +3405,10 @@ document.addEventListener('DOMContentLoaded', function() {
                              };
                          };
                     };
+
+                // -  enable save btn
+                    if (el_MCL_btn_save){el_MCL_btn_save.disabled = false};
+
             console.log("student_dict", student_dict);
                     break;
                 };
@@ -3229,7 +3418,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // MCL_StudsubjSelect
 
-//=========  MCL_BtnAddRemoveAllClick  ================ PR2022-01-09
+//=========  MCL_BtnAddRemoveAllClick  ================ PR2022-01-09  PR2022-12-24
     function MCL_BtnAddRemoveAllClick(mode) {
         console.log("===== MCL_BtnAddRemoveAllClick =====");
 
@@ -3261,6 +3450,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             }
 
+        // -  enable save btn
+            if (el_MCL_btn_save){el_MCL_btn_save.disabled = false};
+
             MCL_FillTableStudsubj();
         };
     };  // MCL_BtnAddRemoveAllClick
@@ -3276,22 +3468,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  MCL_ChkHasClusterClick  ================ PR2022-01-09
     function MCL_ChkHasClusterClick(el_checkbox) {
-        //console.log("===== MCL_ChkHasClusterClick =====");
+        console.log("===== MCL_ChkHasClusterClick =====");
         mod_MCL_dict.include_hascluster = (el_checkbox.checked) ? el_checkbox.checked : false;
-        //console.log("mod_MCL_dict.include_hascluster", mod_MCL_dict.include_hascluster);
+        console.log("mod_MCL_dict.include_hascluster", mod_MCL_dict.include_hascluster);
 
         MCL_FillTableStudsubj();
 
     };  // MCL_ChkHasClusterClick
 
-//=========  MCL_get_next_clustername  ================ PR2022-01-18
+//=========  MCL_get_next_clustername  ================ PR2022-01-18 PR2022-12-25 PR2023-01-05
     function MCL_get_next_clustername() {
         console.log("===== MCL_get_next_clustername =====");
-        console.log("mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
 
         let max_number = 0;
-        // mod_MCL_dict.cluster_list contains only the clusters of this subject
+        let next_cluster_name = "";
+
+    // check if school has multiple depbases
+        let school_has_multiple_depbases = false;
+        if (setting_dict.sel_school_depbases){
+            const sel_school_depbases_arr = setting_dict.sel_school_depbases.split(";");
+            if (sel_school_depbases_arr.length > 1 ){
+                school_has_multiple_depbases = true;
+            };
+        };
+
+    // get depbase_code_lc of selected dep and subject_codeof mod_MCL_dict
+        const depbase_code_lc = (school_has_multiple_depbases && setting_dict.sel_depbase_code) ?  setting_dict.sel_depbase_code.toLowerCase() : null;
+        const subject_code_lc = (mod_MCL_dict.subject_code) ? mod_MCL_dict.subject_code.toLowerCase() : null;
+
+    console.log("    depbase_code_lc", depbase_code_lc);
+    console.log("    subject_code_lc", subject_code_lc);
+    console.log("    mod_MCL_dict.cluster_list", mod_MCL_dict.cluster_list);
+
+    // mod_MCL_dict.cluster_list contains only the clusters of this subject
         if (mod_MCL_dict.cluster_list && mod_MCL_dict.cluster_list.length){
+
             for (let i = 0, cluster_dict; cluster_dict = mod_MCL_dict.cluster_list[i]; i++) {
 
                 /* cluster_dict = {
@@ -3303,33 +3514,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 */
 
                 const cluster_name = cluster_dict.sortby;
-                if (cluster_name && cluster_name.includes("-")){
-                    const arr = cluster_name.split("-");
-                    if (arr[0] && arr[0].trim().toLowerCase() === cluster_dict.subject_code.toLowerCase()){
-                        console.log("cluster_dict.subject_code", cluster_dict.subject_code);
-                         if (arr[1]){
-                            const arr_number = Number(arr[1]);
-                            if (arr_number && arr_number > max_number) {max_number = arr_number};
-                        };
-                    };
-                };
-            };
+
+                if (cluster_name){
+                    const delim_index = (cluster_name.includes('-')) ? cluster_name.lastIndexOf('-') : 0;
+                    // lastIndexOf = -1 when '-' not in cluster_name
+                    const first_part = (delim_index) ? cluster_name.slice(0, delim_index) : cluster_name;
+                    const first_part_lc = (first_part) ? first_part.trim().toLowerCase() : "" ;
+
+                    const last_part = (delim_index) ? cluster_name.slice(delim_index + 1) : "";
+                    const cls_sequence = (last_part && Number(last_part)) ? Number(last_part) : 0 ;
+
+                    if (first_part_lc){
+                        const fp_delim_index = (first_part_lc.includes(' ')) ? first_part_lc.lastIndexOf(' ') : 0;
+                        const cls_subjectcode = (fp_delim_index) ? first_part_lc.slice(0, fp_delim_index) : first_part_lc;
+                        const cls_depcode = (fp_delim_index) ? first_part_lc.slice(fp_delim_index + 1) : "";
+
+                        if ( (cls_depcode && cls_depcode === depbase_code_lc) || (!cls_depcode) ){
+                            if (cls_subjectcode === subject_code_lc){
+                                if (cls_sequence && cls_sequence > max_number) {
+                                    max_number = cls_sequence;
+            }}}}}};
+
             if (mod_MCL_dict.cluster_list.length > max_number) {
                 max_number = mod_MCL_dict.cluster_list.length;
             };
         };
-        const next_number = max_number + 1;
 
-        let subject_code = mod_MCL_dict.subject_code;
-        if (setting_dict.sel_school_depbases ){
-            const depbase_arr = setting_dict.sel_school_depbases.split(";");
-            if (depbase_arr && depbase_arr.length > 1){
-                if(setting_dict.sel_depbase_code){
-                    subject_code += " " + setting_dict.sel_depbase_code.toLowerCase();
-                };
-            };
+        let subject_code = (mod_MCL_dict.subject_code) ? mod_MCL_dict.subject_code : '---';
+        if (depbase_code_lc ){
+            subject_code += " " + depbase_code_lc;
         };
-        const next_cluster_name = subject_code + " - " + next_number;
+
+        const next_number = max_number + 1;
+        next_cluster_name = subject_code + " - " + next_number;
+
+    //console.log("    next_cluster_name", next_cluster_name);
         return next_cluster_name;
     };  // MCL_get_next_clustername
 
@@ -3337,36 +3556,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ MODAL SELECT EXEMPTION YEAR ++++++++++++++++++++++++++++++++++++++++++
 
-//=========  MExemptionYear_Open  ================ PR2022-04-14
+//=========  MExemptionYear_Open  ================ PR2022-04-14 PR2023-01-12
     function MExemptionYear_Open(el_input) {
         console.log( "===== MExemptionYear_Open ========= ");
 
         const tblRow = t_get_tablerow_selected(el_input)
         const stud_pk_int = get_attr_from_el_int(tblRow, "data-stud_pk");
+        const map_id = tblRow.id;
 
+        console.log( "tblRow", tblRow);
         console.log( "stud_pk_int", stud_pk_int);
+
 // -- lookup selected student
         const [index, student_dict, compare] = b_recursive_integer_lookup(student_rows, "id", stud_pk_int);
         console.log( "student_dict", student_dict);
         if (!isEmpty(student_dict)){
-        console.log( "student_dict.iseveningstudent", student_dict.iseveningstudent);
+    //console.log( "student_dict.iseveningstudent", student_dict.iseveningstudent);
         // chjanging exemption_yrear only possible when iseveningstudent or islexstudent
             if (student_dict.iseveningstudent || student_dict.islexstudent){
-                const studsubj_pk_int = get_attr_from_el_int(tblRow, "data-studsubj_pk");
-                const [index, found_dict, compare] = b_recursive_integer_lookup(studsubj_rows, "stud_id", stud_pk_int, "studsubj_id", studsubj_pk_int);
-                const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-                console.log("data_dict", data_dict);
+                const data_dict = studsubj_dictsNEW[map_id]
+                console.log("    data_dict", data_dict);
 
                 b_clear_dict(mod_MSELEX_dict);
                 if(!isEmpty(data_dict)){
                     mod_MSELEX_dict.mapid = data_dict.mapid;
                     mod_MSELEX_dict.student_pk = data_dict.stud_id;
                     mod_MSELEX_dict.studsubj_pk = data_dict.studsubj_id;
+
+                    mod_MSELEX_dict.tobedeleted = data_dict.tobedeleted;
+                    mod_MSELEX_dict.st_tobedeleted = data_dict.st_tobedeleted;
+
                     mod_MSELEX_dict.selected_exemption_year = (data_dict.exemption_year ) ? data_dict.exemption_year : 0;
                     mod_MSELEX_dict.el_input = el_input;
-            console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
-            console.log( "data_dict.weight_ce", data_dict.weight_ce);
 
+    //console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+    //console.log( "data_dict.weight_ce", data_dict.weight_ce);
 
         // set header text
                     el_MExemptionYear_header.innerText = loc.Select_exemption_examyear;
@@ -3393,7 +3617,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // MExemptionYear_Open
 
-//=========  MExemptionYear_Save  ================ PR2022-04-15
+//=========  MExemptionYear_Save  ================ PR2022-04-15 PR2023-01-12
     function MExemptionYear_Save(mode) {
         console.log("===  MExemptionYear_Save =========");
         // mode = 'save' or 'delete'
@@ -3414,9 +3638,10 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             console.log( "upload_dict", upload_dict);
+
         // update field before upload
             const update_dict = {exemption_year: (selected_exemption_examyear_int) ? selected_exemption_examyear_int : null}
-            UpdateField(mod_MSELEX_dict.el_input, update_dict);
+            UpdateField(mod_MSELEX_dict.el_input, update_dict, mod_MSELEX_dict.tobedeleted, mod_MSELEX_dict.st_tobedeleted);
 
             UploadChanges(upload_dict, urls.url_studsubj_single_update);
         };
@@ -3424,7 +3649,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // hide modal
         $("#id_mod_select_exemptionyear").modal("hide");
 
-    }  // t_MMExemptionYear_Save
+    }  // MExemptionYear_Save
 
 //=========  MExemptionYear_SelectItem  ================ PR2022-04-14
     function MExemptionYear_SelectItem(tblRow, el_icon) {
@@ -3483,7 +3708,6 @@ document.addEventListener('DOMContentLoaded', function() {
             td.appendChild(el_icon);
 // ---  add hover to tblRow
             add_hover(tblRow);
-
 
 // ---  add td with display_code_field to tblRow, only if display_code_field has value
         td = tblRow.insertCell(-1);
@@ -3590,7 +3814,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_cross.classList.add("p-1", "pointer_show")
                         el_cross.setAttribute("data-cur_stud_id", cur.student_id);
                         el_cross.setAttribute("data-oth_stud_id", other.student_id);
-                        el_cross.addEventListener("click", function() {MMUOC_tick_cross(el_cross, "cross")}, false);
+                        el_cross.addEventListener("click", function() {MMUOC_tick_cross(el_cross, "unlink")}, false);
                         el_other_box.appendChild(el_cross);
                             const el_icon_cross = document.createElement("div");
                             el_icon_cross.className = (is_notlinked) ? "note_1_4" : "note_0_4";
@@ -3609,7 +3833,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         el_tick.classList.add("p-1", "pointer_show");
                         el_tick.setAttribute("data-cur_stud_id", cur.student_id);
                         el_tick.setAttribute("data-oth_stud_id", other.student_id);
-                        el_tick.addEventListener("click", function() {MMUOC_tick_cross(el_tick, "tick")}, false);
+                        el_tick.addEventListener("click", function() {MMUOC_tick_cross(el_tick, "link")}, false);
                         el_other_box.appendChild(el_tick);
                             const el_icon_tick = document.createElement("div");
                             el_icon_tick.className = (is_linked) ?  "note_1_6" : "note_0_6";
@@ -3624,7 +3848,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             };
                             el_tick.appendChild(el_icon_tick);
 
-                        const other_name = [other.examyear, other.fullname, other.school_name, other.deplvlsct, other.result_info,].join(' - ')
+                        const other_name = [other.examyear, other.fullname, other.school_name, other.deplvlsct, other.result_status,].join(' - ')
                         const el_info = document.createElement("div");
                         el_info.classList.add("p-1");
                         el_other_box.appendChild(el_info);
@@ -3661,17 +3885,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                cur_stud_id: cur_stud_id,
                                oth_stud_id: oth_stud_id,
                                table: "student"};
-            if (mode === "tick"){
+            if (mode === "link"){
                 // set linked when clicked on 'tick' and is_linked = false
                 // remove linked when clicked on 'tick' and is_linked = true
                 upload_dict.linked = !is_linked;
-            } else if (mode === "cross"){
+            } else if (mode === "unlink"){
                 // set notlinked when clicked on 'cross' and is_notlinked = false
                 // remove notlinked when clicked on 'cross' and is_notlinked = true
                 upload_dict.notlinked = !is_notlinked;
             }
 
-            UploadChanges(upload_dict, urls.url_student_biscand);
+            UploadChanges(upload_dict, urls.url_student_linkstudent);
         };
 
     };  // MMUOC_tick_cross
@@ -3695,21 +3919,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }; // MMUOC_response
 
 // +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++++++++++
-//=========  SBR_display_subject_cluster_student  ================ PR2021-07-24
+
+//=========  SBR_display_subject_cluster_student  ================ PR2023-01-25
     function SBR_display_subject_cluster_student() {
-        //console.log("===== SBR_display_subject_cluster_student =====");
-        let subject_code = null, subject_name = null, student_code = null, student_name = null;
-        if(setting_dict.sel_subject_pk){
-            if(setting_dict.sel_subject_code){subject_code = setting_dict.sel_subject_code};
-            if(setting_dict.sel_subject_name){subject_name = setting_dict.sel_subject_name};
-        } else if (setting_dict.sel_student_pk){
-            if(setting_dict.sel_student_name_init){student_code = setting_dict.sel_student_name_init};
-            if(setting_dict.sel_student_name){student_name = setting_dict.sel_student_name};
-        }
+        console.log("===== SBR_display_subject_cluster_student =====");
+
         t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
-        t_MSSSS_display_in_sbr("cluster", setting_dict.sel_cluster_pk);
         t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
+
+        // PR2023-01-25 t_MSSSS_display_in_sbr_NEW uses dict instead of dictlist
+        t_MSSSS_display_in_sbr_NEW("cluster", setting_dict.sel_cluster_pk);
+
     };  // SBR_display_subject_cluster_student
+
+    function SBR_show_all_response() {
+        console.log("===== SBR_show_all_response =====");
+        // this is response of t_SBR_show_all
+        // ResetFilterRows contains FillTblRows and Filter_TableRows PR2023-01-08
+        //  FillTblRows();
+        //  Filter_TableRows();
+        ResetFilterRows()
+    };  // SBR_show_all_response
+
 
 //=========  HandleSbrLevelSector  ================ PR2021-07-23 PR2021-12-03
     function HandleSbrLevelSector(mode, el_select) {
@@ -3727,6 +3958,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // - put new value in setting_dict
         const sel_pk_key_str = (mode === "sector") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
         const sel_abbrev_key_str = (mode === "sector") ? "sel_sector_abbrev" : "sel_level_abbrev";
+
+    console.log( "sel_abbrev_key_str: ", sel_abbrev_key_str);
+    console.log( "setting_dict[sel_pk_key_str]: ", setting_dict[sel_pk_key_str]);
+
         setting_dict[sel_pk_key_str] = sel_pk_int;
         setting_dict[sel_abbrev_key_str] = sel_abbrev;
         //console.log("setting_dict", setting_dict);
@@ -3739,58 +3974,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const new_setting_dict = {page: "page_studsubj"}
         new_setting_dict[sel_pk_key_str] = sel_pk_int;
 
+        // also get student_rows, subject_rows, cluster_rows again
         const datalist_request = {
             setting: new_setting_dict,
+            student_rows: {cur_dep_only: true},
+            subject_rows: {cur_dep_only: true},
+            cluster_rows: {cur_dep_only: true},
             studentsubject_rows: {cur_dep_only: true},
         };
 
         //console.log("datalist_request", datalist_request);
         DatalistDownload(datalist_request);
     }  // HandleSbrLevelSector
-
-//=========  HandleShowAll  ================ PR2020-12-17
-    function HandleShowAll() {
-        console.log("=== HandleShowAll");
-        //console.log("setting_dict", setting_dict);
-
-        setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_level_abbrev = null;
-
-        setting_dict.sel_sctbase_pk = null;
-        setting_dict.sel_sector_abbrev = null;
-
-        setting_dict.sel_subject_pk = null;
-        setting_dict.sel_student_pk = null;
-
-        el_SBR_select_level.value = null;
-        el_SBR_select_sector.value = null;
-
-        setting_dict.sel_cluster_pk = null;
-
-        ResetFilterRows();
-
-// ---  upload new setting
-        const selected_pk_dict = {sel_lvlbase_pk: null, sel_sctbase_pk: null, sel_subject_pk: null,
-                                    sel_student_pk: null, sel_cluster_pk: null};
-        //const page_grade_dict = {sel_btn: "grade_by_all"}
-       //const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
-        const upload_dict = {selected_pk: selected_pk_dict};
-        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
-        HandleBtnSelect(selected_btn, true) // true = skip_upload
-        // also calls: FillTblRows(), MSSSS_display_in_sbr(), UpdateHeader()
-
-        const datalist_request = {
-                setting: {
-                    page: "page_studsubj",
-                    sel_lvlbase_pk: null,
-                    sel_sctbase_pk: null,
-                    sel_subject_pk: null,
-                    sel_student_pk: null
-                },
-                studentsubject_rows: {cur_dep_only: true},
-            };
-        DatalistDownload(datalist_request);
-    }  // HandleShowAll
 
 // +++++++++++++++++ END OF MODAL SIDEBAR SELECT +++++++++++++++++++++++++++++++++++
 
@@ -3934,7 +4129,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MEX3_UpdateFromResponse  ============= PR2021-10-08
     function MEX3_UpdateFromResponse(response) {
         console.log("  =====  MEX3_UpdateFromResponse  =====");
-        console.log("response", response)
+        console.log("    response", response)
 
         el_MEX3_loader.classList.add(cls_hide);
         mod_MEX3_dict.subject_rows = (response.ex3_subject_rows) ? response.ex3_subject_rows : [];
@@ -3971,10 +4166,10 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MEX3_FillTbls  ============= PR2021-10-06
     function MEX3_FillTbls() {
         console.log("===== MEX3_FillTbls ===== ");
-        console.log("setting_dict", setting_dict);
-        console.log("permit_dict", permit_dict);
-        console.log("mod_MEX3_dict.subject_rows", mod_MEX3_dict.subject_rows);
-        console.log("mod_MEX3_dict.lvlbase_pk_list", mod_MEX3_dict.lvlbase_pk_list, typeof mod_MEX3_dict.lvlbase_pk_list);
+        console.log("    setting_dict", setting_dict);
+        console.log("    permit_dict", permit_dict);
+        console.log("    mod_MEX3_dict.subject_rows", mod_MEX3_dict.subject_rows);
+        console.log("    mod_MEX3_dict.lvlbase_pk_list", mod_MEX3_dict.lvlbase_pk_list, typeof mod_MEX3_dict.lvlbase_pk_list);
 
 // ---  reset tblBody available and selected
         el_MEX3_tblBody_available.innerText = null;
@@ -4037,14 +4232,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MEX3_CreateSelectRow  ============= PR2021-10-07
     function MEX3_CreateSelectRow(row_dict) {
-        //console.log("===== MEX3_CreateSelectRow ===== ");
+        console.log("===== MEX3_CreateSelectRow ===== ");
+        console.log("    row_dict", row_dict);
 
         let has_selected_subjects = false;
 
 // - get ifo from dict
         const subj_id = (row_dict.subj_id) ? row_dict.subj_id : null;
         const subj_code = (row_dict.subj_code) ? row_dict.subj_code : "---";
-        const subj_name = (row_dict.subj_name) ? row_dict.subj_name : "---";
+        const subj_name_nl = (row_dict.subj_name_nl) ? row_dict.subj_name_nl : "---";
         const is_selected = (row_dict.selected) ? row_dict.selected : false;
         const just_selected = (row_dict.just_selected) ? row_dict.just_selected : false;
 
@@ -4071,7 +4267,7 @@ document.addEventListener('DOMContentLoaded', function() {
         td = tblRow.insertCell(-1);
         el_div = document.createElement("div");
             el_div.classList.add("tw_240")
-            el_div.innerText = subj_name;
+            el_div.innerText = subj_name_nl;
             td.appendChild(el_div);
 
         //td.classList.add("tw_200X", "px-2", "pointer_show") // , cls_bc_transparent)
@@ -4153,8 +4349,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // MEX3_reset_layout_options
 
 ///////////////////////////////////////
-// +++++++++ MOD SELECT CLUSTER  ++++++++++++++++ PR2022-01-27
+// +++++++++ MOD SELECT CLUSTER  ++++++++++++++++ PR2022-01-27 PR2022-12-25 PR2023-01-12
     function MSELEX_Open(el_input){
+        // only called to add or remove cluster from studsublect
         console.log(" ===  MSELEX_Open  =====") ;
         console.log( "el_input", el_input);
 
@@ -4173,45 +4370,57 @@ document.addEventListener('DOMContentLoaded', function() {
             const tblRow = t_get_tablerow_selected(el_input)
             const stud_pk_int = get_attr_from_el_int(tblRow, "data-stud_pk");
             const studsubj_pk_int = get_attr_from_el_int(tblRow, "data-studsubj_pk");
-            const [index, found_dict, compare] = b_recursive_integer_lookup(studsubj_rows, "stud_id", stud_pk_int, "studsubj_id", studsubj_pk_int);
-            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+            //const [index, found_dict, compare] = b_recursive_integer_lookup(studsubj_rows, "stud_id", stud_pk_int, "studsubj_id", studsubj_pk_int);
+            //const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+            const data_dict = get_datadict_by_studpk_studsubjpk(stud_pk_int,studsubj_pk_int);
+
         console.log("data_dict", data_dict);
 
             if(!isEmpty(data_dict)){
-                mod_MSELEX_dict.mapid = data_dict.mapid;
-                mod_MSELEX_dict.student_pk = data_dict.stud_id;
-                mod_MSELEX_dict.studsubj_pk = data_dict.studsubj_id;
-                mod_MSELEX_dict.subj_pk = data_dict.subj_id;
-                mod_MSELEX_dict.cluster_pk = data_dict.cluster_id;
-                mod_MSELEX_dict.cluster_name = data_dict.cluster_id;
-        console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
-// ---  fill select table
-            const row_count = MSELEX_FillSelectTable()
+                if (data_dict.tobedeleted) {
+                    ModConfirmOpen("st_tobedeleted", el_input);
+                } else {
 
-// show delete btn, only when studsubj has cluster
-            el_MSELEX_btn_delete.innerText = loc.Remove_cluster;
-            add_or_remove_class(el_MSELEX_btn_delete, cls_hide, !mod_MSELEX_dict.cluster_pk)
-            add_or_remove_class(el_MSELEX_btn_save, cls_hide, true)
-            el_MSELEX_btn_cancel.innerText = loc.Close;
+                    mod_MSELEX_dict.mapid = data_dict.mapid;
+                    mod_MSELEX_dict.student_pk = data_dict.stud_id;
+                    mod_MSELEX_dict.studsubj_pk = data_dict.studsubj_id;
+                    mod_MSELEX_dict.subj_pk = data_dict.subj_id;
+
+                    mod_MSELEX_dict.tobedeleted = data_dict.tobedeleted;
+                    mod_MSELEX_dict.st_tobedeleted = data_dict.st_tobedeleted;
+
+                    mod_MSELEX_dict.cluster_pk = data_dict.cluster_id;
+                    mod_MSELEX_dict.cluster_name = data_dict.cluster_id;
+            console.log( "mod_MSELEX_dict", mod_MSELEX_dict);
+    // ---  fill select table
+                    const row_count = MSELEX_FillSelectTable()
+
+        // show delete btn, only when studsubj has cluster
+                    el_MSELEX_btn_delete.innerText = loc.Remove_cluster;
+                    add_or_remove_class(el_MSELEX_btn_delete, cls_hide, !mod_MSELEX_dict.cluster_pk)
+                    add_or_remove_class(el_MSELEX_btn_save, cls_hide, true)
+                    el_MSELEX_btn_cancel.innerText = loc.Close;
 
 
-// ---  show modal
-            $("#id_mod_select_exam").modal({backdrop: true});
+        // ---  show modal
+                    $("#id_mod_select_exam").modal({backdrop: true});
+                };
             };
         };
     };  // MSELEX_Open
 
-//=========  MSELEX_Save  ================ PR2021-05-22 PR2022-01-24
+//=========  MSELEX_Save  ================ PR2021-05-22 PR2022-01-24 PR2022-12-25
     function MSELEX_Save(mode){
         console.log(" ===  MSELEX_Save  =====") ;
-        // modes are "update" and "delete"
-        console.log( "mod_MSELEX_dict: ", mod_MSELEX_dict);
+        // modes are "update" and "delete" (when removing cluster from studsubj), mode is always 'update' in  upload_dict
+        console.log( "    mode: ", mode);
+        console.log( "    mod_MSELEX_dict: ", mod_MSELEX_dict);
 
         if (permit_dict.permit_crud && permit_dict.requsr_same_school){
             const new_cluster_pk = (mode === "update" && mod_MSELEX_dict.cluster_pk) ? mod_MSELEX_dict.cluster_pk : null;
             const upload_dict = {
                 table: 'studsubj',
-                mode: mode,
+                mode: 'update',
                 cluster_pk: new_cluster_pk,
                 student_pk: mod_MSELEX_dict.student_pk,
                 studsubj_pk: mod_MSELEX_dict.studsubj_pk,
@@ -4219,7 +4428,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // update field before upload
             const update_dict = {cluster_name: (mode === "update") ? mod_MSELEX_dict.cluster_name : null}
-            UpdateField(mod_MSELEX_dict.el_input, update_dict);
+
+            UpdateField(mod_MSELEX_dict.el_input, update_dict, mod_MSELEX_dict.tobedeleted, mod_MSELEX_dict.st_tobedeleted);
 
             UploadChanges(upload_dict, urls.url_studsubj_single_update);
 
@@ -4235,11 +4445,9 @@ document.addEventListener('DOMContentLoaded', function() {
         tblBody_select.innerText = null;
 
         let row_count = 0, add_to_list = false;
-// ---  loop through cluster_rows
-        if(cluster_rows && cluster_rows.length){
-        console.log( "cluster_rows", cluster_rows);
-        //console.log( "mod_MSELEX_dict.subj_pk", mod_MSELEX_dict.subj_pk);
-            for (let i = 0, data_dict; data_dict = cluster_rows[i]; i++) {
+// ---  loop through cluster_dictsNEW
+        if (!isEmpty(cluster_dictsNEW)){
+            for (const data_dict of Object.values(cluster_dictsNEW)) {
             // add only when cluster has same subject as studsubj
                 const show_row = (data_dict.subject_id === mod_MSELEX_dict.subj_pk);
         //console.log( "show_row", show_row);
@@ -4326,43 +4534,64 @@ document.addEventListener('DOMContentLoaded', function() {
     function ModConfirmOpen(mode, el_input) {
         console.log(" -----  ModConfirmOpen   ----")
         console.log("mode", mode)
-        // values of mode are : "delete", "inactive" or "send_activation_email", "permission_sysadm"
-            //AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, null, "id_submenu_download_ex1", urls.url_grade_download_ex1, true);  // true = download
-            //AddSubmenuButton(el_submenu, loc.Preliminary_Ex1_form, null, null, "id_submenu_download_ex1", urls.url_grade_download_ex1, true);  // true = download
+        // values of mode are : "validate_subj_composition", "st_tobedeleted", "delete_cluster"  "delete", "inactive" or "send_activation_email", "permission_sysadm"
+
         let show_modal = false, show_outline_danger = false;
-        let header_txt = null, msg_html = null, btn_save_txt = null, btn_cancel_txt;
+        let header_txt = null, msg_html = null, btn_save_txt = null, btn_cancel_txt = null;
 
         b_clear_dict(mod_dict)
         mod_dict.mode = mode;
 
-        if (mode === "validate_subj_composition"){
+        const tblRow = t_get_tablerow_selected(el_input);
+        if (tblRow){
+            mod_dict.map_id = tblRow.id;
+            mod_dict.stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
+            mod_dict.studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
+            mod_dict.fldName = get_attr_from_el(el_input, "data-field");
 
-// ---  lookup data_dict in data_rows
-            //const data_rows = studentsubject_rows;
-            //const [index, data_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected.student_pk);
-            const data_dict = selected.studsubj_dict
-            if(isEmpty(data_dict)){
-                msg_html = ["<p class='pb-2'>", loc.Select_candidate_first, "</p><p>"].join("");
+            const data_dict = get_datadict_by_studpk_studsubjpk(mod_dict.stud_pk, mod_dict.studsubj_pk);
+            mod_dict.data_dict = data_dict;
+            mod_dict.fullname = (data_dict) ? data_dict.fullname : null;
+            mod_dict.subj_name_nl = (data_dict) ? data_dict.subj_name_nl : null;
+        };
 
-                btn_cancel_txt = loc.Close;
-            } else {
+        if (mode === "st_tobedeleted"){
 
-            console.log("data_dict", data_dict)
+            let dont_show_modal = false;
 
-                mod_dict.student_pk = data_dict.stud_id;
-                mod_dict.new_subj_dispensation = !data_dict.subj_dispensation;
-
-                const msg01_txt = (mod_dict.new_subj_dispensation) ? loc.The_composition_ofthe_subjects_of : loc.The_validation_ofthe_subjects_of;
-                const msg02_txt = (mod_dict.new_subj_dispensation) ? loc.will_be_validated : loc.will_be_removed;
-                msg_html = ["<p>", msg01_txt, ":</p><p class='px-2'>", data_dict.fullname, "</p><p>", msg02_txt,
-                            "</p><p>",loc.Do_you_want_to_continue, "</p>"].join("");
-
-                btn_save_txt = (mod_dict.new_subj_dispensation) ? loc.Yes_validate : loc.Yes_remove;
-                btn_cancel_txt = loc.No_cancel;
+        // ---  set header text
+            if (selected.studsubj_dict) {
+                header_txt = loc.Subjects + loc._of_ + selected.studsubj_dict.fullname;
             };
-            header_txt = (mod_dict.new_subj_dispensation) ? loc.Validate_subject_composition : loc.Remove_subject_validation;
-            show_outline_danger = !mod_dict.new_subj_dispensation;
+
+            msg_html = ["<p>", loc.This_candidate_ismarked_fordeletion,"</p><p>",
+                            loc.You_cannot_make_changes_in_the_subjects, "</p>"].join("")
+            el_confirm_msg_container.className = "p-3";
+
+            btn_cancel_txt = loc.Close;
             show_modal = true;
+
+        } else if (mode === "validate_subj_composition"){
+
+            if(!isEmpty(mod_dict.data_dict)){
+            console.log("mod_dict.data_dict", mod_dict.data_dict)
+                if (mod_dict.data_dict.subj_dispensation || !mod_dict.data_dict.subj_composition_ok) {
+                    mod_dict.student_pk = mod_dict.data_dict.stud_id;
+                    mod_dict.new_subj_dispensation = !mod_dict.data_dict.subj_dispensation;
+
+                    const msg01_txt = (mod_dict.new_subj_dispensation) ? loc.The_composition_ofthe_subjects_of : loc.The_validation_ofthe_subjects_of;
+                    const msg02_txt = (mod_dict.new_subj_dispensation) ? loc.will_be_validated : loc.will_be_removed;
+                    msg_html = ["<p>", msg01_txt, ":</p><p class='px-2'>", mod_dict.data_dict.fullname, "</p><p>", msg02_txt,
+                                "</p><p>",loc.Do_you_want_to_continue, "</p>"].join("");
+
+                    btn_save_txt = (mod_dict.new_subj_dispensation) ? loc.Yes_validate : loc.Yes_remove;
+                    btn_cancel_txt = loc.No_cancel;
+
+                    header_txt = (mod_dict.new_subj_dispensation) ? loc.Validate_subject_composition : loc.Remove_subject_validation;
+                    show_outline_danger = !mod_dict.new_subj_dispensation;
+                    show_modal = true;
+                };
+            };
 
         } else if (mode === "delete_cluster"){
 
@@ -4378,7 +4607,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             msg_html = [
                     "<p>", loc.Cluster, " '", cluster_name, "' " + loc.has_candidates + "</p><p>" +
-                     loc.cluster_willbe_removed  + "</p><p>" + loc.Do_you_want_to_continue + "</p>"].join("")
+                     loc.cluster_willbe_removed  + "</p><p>" +
+                     loc.click_ok_then_save  + "</p><p>" + loc.Do_you_want_to_continue + "</p>"].join("")
 
             btn_save_txt = loc.OK;
             btn_cancel_txt = loc.Cancel;
@@ -4402,15 +4632,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } else if (["has_exemption", "has_sr", "has_reex", "has_reex03"].includes(mode)){
             if (permit_dict.permit_crud && permit_dict.requsr_same_school) {
-                const tblRow = t_get_tablerow_selected(el_input);
-                mod_dict.map_id = tblRow.id;
-                mod_dict.stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
-                mod_dict.studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
-                mod_dict.fldName = get_attr_from_el(el_input, "data-field");
-
-                const [index, found_dict] = get_datadict_by_studpk_studsubjpk(mod_dict.stud_pk, mod_dict.studsubj_pk)
-                const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-                const subj_name = data_dict.subj_name;
 
         // ---  put text in modal form
                 let dont_show_modal = false;
@@ -4424,8 +4645,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 (mode === "has_sr") ? loc.This_reex_schoolexam :
                                 (mode === "has_reex") ? loc.This_reexamination :
                                 (mode === "has_reex03") ? loc.This_reexamination_3rd_period : "";
-                msg_html = ["<p>", caption, loc._of_, data_dict.fullname, loc.will_be_deleted,
-                                    "<ul><li>", data_dict.subj_name, "</li></ul></p><p>",
+                msg_html = ["<p>", caption, loc._of_, mod_dict.fullname, loc.will_be_deleted,
+                                    "<ul><li>", mod_dict.subj_name_nl, "</li></ul></p><p>",
                                 loc.Do_you_want_to_continue, "</p>"].join("")
 
                 el_confirm_msg_container.className = "p-3";
@@ -4452,7 +4673,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_confirm_btn_save.innerText = btn_save_txt;
             el_confirm_btn_cancel.innerText = btn_cancel_txt;
 
-
         // set focus to cancel button
             setTimeout(function (){
                 el_confirm_btn_cancel.focus();
@@ -4461,7 +4681,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };  // ModConfirmOpen
 
-//=========  ModConfirmSave  ================ PR2019-06-23
+//=========  ModConfirmSave  ================ PR2019-06-23 PR2022-12-24
     function ModConfirmSave() {
         console.log(" --- ModConfirmSave --- ");
         console.log("mod_dict: ", mod_dict);
@@ -4480,6 +4700,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (mod_dict.mode === "delete_cluster"){
             MCL_delete_cluster(mod_MCL_dict.sel_cluster_dict);
             close_modal = true;
+
+        // -  enable save btn
+            if (el_MCL_btn_save){el_MCL_btn_save.disabled = false};
+
         } else if (["prelim_ex1", "prelim_ex4"].includes(mod_dict.mode)){
             const el_modconfirm_link = document.getElementById("id_modconfirm_link");
             if (el_modconfirm_link) {
@@ -4622,7 +4846,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  //  RefreshDataRows
 
-//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-04
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
         console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
@@ -4636,6 +4860,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const map_id = update_dict.mapid;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
+            const is_updated = (!!update_dict.updated);
+
+        console.log("    is_deleted", is_deleted);
+        console.log("    is_created", is_created);
+        console.log("    is_updated", is_updated);
 
     // ---  get list of hidden columns
         const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
@@ -4674,7 +4903,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden)
 
                     if(new_tblRow){
-        // --- add1 to item_count and show total in sidebar
+        // --- add 1 to item_count and show total in sidebar
                         selected.item_count += 1;
         // ---  scrollIntoView,
                         new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
@@ -4688,12 +4917,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
                 let data_dict = null, datarow_index = null;
                 if (tblName === "cluster"){
-                    const cluster_pk = (update_dict && update_dict.id) ? update_dict.id : null;
-                    const [index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", cluster_pk);
-                    if (!isEmpty(found_dict)){
-                        data_dict = found_dict;
-                        datarow_index = index;
-                    };
+                    //const cluster_pk = (update_dict && update_dict.id) ? update_dict.id : null;
+                    //const [index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", cluster_pk);
+                    //data_dict = cluster_dictsNEW[update_dict.id];
+                    //if (!isEmpty(found_dict)){
+                    //    data_dict = found_dict;
+                    //    datarow_index = index;
+                    //};
+                    data_dict = (!isEmpty(cluster_dictsNEW[update_dict.id])) ? cluster_dictsNEW[update_dict.id] : null;
                 } else {
                     // 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
                     const student_pk = (update_dict && update_dict.stud_id) ? update_dict.stud_id : null;
@@ -4779,7 +5010,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // - loop through cells of row
                                 const tobedeleted = (update_dict.tobedeleted) ? update_dict.tobedeleted : false;
-    console.log("tobedeleted", tobedeleted);
+                                const st_tobedeleted = (update_dict.st_tobedeleted) ? update_dict.st_tobedeleted : false;
+
                                 for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
                                     el = td.children[0];
                                     if (el){
@@ -4790,12 +5022,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // - update field and make field green when field name is in updated_columns
                                         // PR2022-01-18 debug: UpdateField also when record is tobedeleted
                                         if(is_updated_field || tobedeleted){
-                                            UpdateField(el, update_dict, tobedeleted);
+                                            UpdateField(el, update_dict, tobedeleted, st_tobedeleted);
                                         };
                                         if(is_updated_field){ShowOkElement(el)};
                                         if(is_err_field){
     // - make field red when error and reset old value after 2 seconds
-                                            reset_element_with_errorclass(el, update_dict, tobedeleted)
+                                            reset_element_with_errorclass(el, update_dict, tobedeleted, st_tobedeleted)
                                         };
 
                                     }  //  if (el){
@@ -4814,8 +5046,279 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //###########################################################################
 
-//=========  reset_element_with_errorclass  ================ PR2021-12-15
-    function reset_element_with_errorclass(el_input, update_dict, tobedeleted) {
+//=========  RefreshDataDictNEW  ================  PR2021-06-21 PR2023-01-05
+    function RefreshDataDictNEW(tblName, update_rows, data_dictsNEW) {
+        console.log(" ===== RefreshDataDictNEW  =====");
+        console.log("    tblName", tblName);
+        console.log("    update_rows", update_rows);
+
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            const field_setting = field_settings[selected_btn];
+            const pk_fldName = (tblName === "studsubj") ? "studsubj_id" :
+                                (tblName === "cluster") ?  "id" :  "";
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+                RefreshDatadictItemNEW(tblName, field_setting, update_dict, data_dictsNEW, pk_fldName);
+            };
+        };
+        // clusters are not table rows, skip Filter_TableRows
+        if (tblName !== "cluster"){
+            Filter_TableRows();
+        };
+
+    }  //  RefreshDataDictNEW
+
+//=========  RefreshDatadictItemNEW  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-05
+    function RefreshDatadictItemNEW(tblName, field_setting, update_dict, data_dictsNEW, pk_fldName) {
+        console.log(" --- RefreshDatadictItemNEW  ---");
+        console.log("    pk_fldName", pk_fldName);
+        //console.log("field_setting", field_setting);
+        console.log("    update_dict", update_dict);
+        console.log("    update_dict.err_fields", update_dict.err_fields);
+
+        if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
+
+            const pk_int = (update_dict[pk_fldName]) ? update_dict[pk_fldName] : null;
+
+            const map_id = update_dict.mapid;
+            const is_deleted = (!!update_dict.deleted);
+            const is_created = (!!update_dict.created);
+            const is_restored = (!!update_dict.restored);
+            const is_changed = (!!update_dict.changed);
+
+        console.log("    pk_int", pk_int, typeof pk_int);
+        console.log("    is_deleted", is_deleted);
+        console.log("    is_created", is_created);
+        console.log("    is_restored", is_restored);
+
+    // ---  get list of hidden columns
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
+
+    // ---  get list of columns that are not updated because of errors
+            const error_columns = [];
+            if (update_dict.err_fields){
+                // replace field 'subj_auth2by' by 'subj_status'
+                for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
+                    if (err_field && err_field.includes("_auth")){
+                        const arr = err_field.split("_");
+                        err_field = arr[0] + "_status";
+                    };
+                    error_columns.push(err_field);
+                };
+            };
+
+// ++++ created ++++
+            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
+            //arr.splice(index, 0, item); will insert item into arr at the specified index
+            // (deleting 0 items first, that is, it's just an insert).
+
+            if(is_created){
+    // ---  first remove key 'created' from update_dict
+                delete update_dict.created;
+
+    // --- lookup index where new row must be inserted in data_rows
+                // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
+
+    // ---  add new item in data_rows at end
+                //data_rows.push(update_dict);
+                const pk_int = (tblName === "cluster") ? update_dict.id : update_dict.stud_id;
+                const key_str = get_datadicts_keystr(tblName, pk_int, update_dict.studsubj_id);
+
+                data_dictsNEW[key_str] = update_dict;
+
+    // - delete row without subjects
+                if (tblName === "studsubj"){
+                const nosubjects_keystr = get_datadicts_keystr(tblName, update_dict.stud_id);
+                    if (data_dictsNEW[nosubjects_keystr]){
+                        delete data_dictsNEW[nosubjects_keystr];
+                    };
+                };
+    // clusters are not table rows, skip Filter_TableRows when tblName = "cluster"
+                if (tblName !== "cluster"){
+        // ---  create row in table., insert in alphabetical order
+                    const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden);
+
+                    if(new_tblRow){
+        // --- add1 to item_count and show total in sidebar
+                        selected.item_count += 1;
+        // ---  scrollIntoView,
+                        new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
+
+        // ---  make new row green for 2 seconds,
+                        ShowOkElement(new_tblRow);
+                    };
+                };
+            } else {
+
+// +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
+                let data_dict = null, datarow_index = null;
+                if (tblName === "cluster"){
+                    //const cluster_pk = update_dict.id;
+                    //const [index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", cluster_pk);
+                    //if (!isEmpty(found_dict)){
+                    //    data_dict = found_dict;
+                    //    datarow_index = index;
+                    //};
+                    data_dict = (!isEmpty(cluster_dictsNEW[update_dict.id])) ? cluster_dictsNEW[update_dict.id] : null;
+                } else {
+                    // 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
+                    const student_pk = (update_dict && update_dict.stud_id) ? update_dict.stud_id : null;
+                    const studsubj_pk = (update_dict && update_dict.studsubj_id) ? update_dict.studsubj_id : null;
+                    //const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
+                    //if (!isEmpty(found_dict)){
+                    //    data_dict = found_dict;
+                    //    datarow_index = index;
+                    //};
+                    data_dict = get_datadict_by_studpk_studsubjpk (student_pk, studsubj_pk);
+                };
+
+        console.log("    data_dict", data_dict);
+
+// ++++ deleted ++++
+                if(is_restored){
+
+    // ---  remove key 'restored' from update_dict
+                    delete update_dict.restored;
+
+    // ---  update data_dict
+                    data_dictsNEW[map_id] = update_dict;
+                    let tblRow = document.getElementById(map_id);
+
+    // ---  update tblRow
+                    UpdateTblRow(tblRow, tblName, update_dict);
+
+                } else if(is_changed){
+    // ---  remove key 'changed' from update_dict
+                    delete update_dict.changed;
+
+    // ---  update data_dict
+                    data_dictsNEW[map_id] = update_dict;
+                    let tblRow = document.getElementById(map_id);
+
+    // ---  update tblRow
+                    UpdateTblRow(tblRow, tblName, update_dict);
+
+                } else if(is_deleted){
+                    // delete row from data_rows. Splice returns array of deleted rows
+                    const deleted_row_arr = data_rows.splice(datarow_index, 1)
+                    const deleted_row_dict = deleted_row_arr[0];
+
+        //--- delete tblRow
+                    if (tblName !== "cluster"){
+                        if(deleted_row_dict && deleted_row_dict.mapid){
+                            const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+                            if (tblRow_tobe_deleted ){
+                                tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
+            // --- subtract 1 from item_count and show total in sidebar
+                                selected.item_count -= 1;
+                            };
+                        };
+                    };
+                } else {
+
+// +++++++++++ updated row +++++++++++
+    console.log("updated row");
+    // ---  check which fields are updated, add to list 'updated_columns'
+                    if(!isEmpty(data_dict) && field_names){
+
+    // ---  first add updated fields to updated_columns list, before updating data_row
+                        let updated_columns = [];
+                        // first column subj_error
+                        for (let i = 0, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+
+    // ---  'status' fields are not in data_row
+                            if (col_field.includes("_status")){
+                                const [old_status_className, old_status_title] = UpdateFieldStatus(col_field, data_dict);
+                                const [new_status_className, new_status_title] = UpdateFieldStatus(col_field, update_dict);
+                                if (old_status_className !== new_status_className || old_status_title !== new_status_title ) {
+                                    updated_columns.push(col_field)
+                                };
+                            } else if (col_field === "subj_error"){
+                                    // PR2023-01-16
+                                    if (update_dict.subj_composition_ok !== data_dict.subj_composition_ok ||
+                                        update_dict.subj_dispensation !== data_dict.subj_dispensation) {
+                                            updated_columns.push(col_field);
+                                        };
+
+                            } else if (col_field in data_dict && col_field in update_dict){
+                                if (data_dict[col_field] !== update_dict[col_field] ) {
+                                    updated_columns.push(col_field)
+                                };
+                            };
+                        };
+
+// ---  update fields in data_row
+                        for (const [key, new_value] of Object.entries(update_dict)) {
+                            if (key in data_dict){
+                                const old_value = data_dict[key];
+                                if (new_value !== data_dict[key]) {
+                                    data_dict[key] = new_value;
+                                };
+                            };
+                        };
+
+// ---  update field in tblRow
+                        // note: when updated_columns is empty, then updated_columns is still true.
+                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+                        // PR2021-09-29 always update all columns, to remove strikethrough after undelete
+                        // was: if(updated_columns.length || field_error_list.length){
+
+// --- get existing tblRow
+                            let tblRow = document.getElementById(map_id);
+    console.log("tblRow", tblRow);
+    console.log("updated_columns", updated_columns);
+                            if(tblRow){
+
+    // - to make it perfect: move row when first or last name have changed
+                                if (updated_columns.includes("name")){
+                                //--- delete current tblRow
+                                    tblRow.parentNode.removeChild(tblRow);
+                                //--- insert row new at new position
+                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden)
+                                };
+
+    // - loop through cells of row
+                                const tobedeleted = (update_dict.tobedeleted) ? update_dict.tobedeleted : false;
+                                const st_tobedeleted = (update_dict.st_tobedeleted) ? update_dict.st_tobedeleted : false;
+
+    console.log("tobedeleted", tobedeleted);
+                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
+                                    el = td.children[0];
+                                    if (el){
+                                        el_fldName = get_attr_from_el(el, "data-field");
+                                        const is_updated_field = updated_columns.includes(el_fldName);
+                                        const is_err_field = error_columns.includes(el_fldName);
+
+    // - update field and make field green when field name is in updated_columns
+                                        // PR2022-01-18 debug: UpdateField also when record is tobedeleted
+                                        if(is_updated_field || tobedeleted){
+                                            UpdateField(el, update_dict, tobedeleted);
+                                        };
+                                        if(is_updated_field){ShowOkElement(el)};
+                                        if(is_err_field){
+    // - make field red when error and reset old value after 2 seconds
+                                            reset_element_with_errorclass(el, update_dict, tobedeleted, st_tobedeleted);
+                                        };
+
+                                    }  //  if (el){
+                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++)
+                            };  // if(tblRow)
+                        //}; // if(updated_columns.length)
+                    };  // if(!isEmpty(data_dict) && field_names)
+                };  //  if(is_deleted)
+            }; // if(is_created)
+
+    // ---  show total in sidebar
+            t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Subject, loc.Subjects, setting_dict.user_lang);
+
+        };  // if(!isEmpty(update_dict))
+    }  // RefreshDatadictItemNEW
+
+//###########################################################################
+
+//=========  reset_element_with_errorclass  ================ PR2021-12-15 PR2023-01-12
+    function reset_element_with_errorclass(el_input, update_dict, tobedeleted, st_tobedeleted) {
        // console.log(" --- reset_element_with_errorclass  ---");
 
         // make field red when error and reset old value after 2 seconds
@@ -4824,7 +5327,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         setTimeout(function (){
             el_input.classList.remove(err_class);
-            UpdateField(el_input, update_dict, tobedeleted);
+            UpdateField(el_input, update_dict, tobedeleted, st_tobedeleted);
         }, 2000);
     }  //  reset_element_with_errorclass
 
@@ -5188,7 +5691,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  hide level when not level_req
                 add_or_remove_class(el_MASS_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
-                el_MASS_level.innerText = (setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev : null;
+                el_MASS_level.innerText = (setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev :  "<" + loc.All_levels+ ">";
                 el_MASS_sector_label.innerText = (setting_dict.sel_dep_has_profiel) ? loc.Profile : loc.Sector;
 
                 el_MASS_sector.innerText = (setting_dict.sel_sector_name) ? setting_dict.sel_sector_name :
@@ -5286,9 +5789,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MASS_UpdateFromResponse ============= PR2021-07-25
     function MASS_UpdateFromResponse(response) {
-        console.log( " ==== MASS_UpdateFromResponse ====");
-        console.log( "response", response);
-        console.log("mod_MASS_dict", mod_MASS_dict);
+        console.log("==== MASS_UpdateFromResponse ====");
+        console.log("    response", response);
+        console.log("    mod_MASS_dict", mod_MASS_dict);
 
         mod_MASS_dict.step += 1;
 
@@ -5320,11 +5823,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                 studentsubject_rows: {cur_dep_only: true},
                                 published_rows: {get: true}
                                 }
-                DatalistDownload(datalist_request);
+
+        console.log("......................datalist_request", datalist_request) ;
+                //DatalistDownload(datalist_request);
         };
     };  // MASS_UpdateFromResponse
 
-//=========  MASS_SetInfoboxesAndBtns  ================ PR2021-02-08
+//=========  MASS_SetInfoboxesAndBtns  ================ PR2021-02-08 PR2023-01-10
      function MASS_SetInfoboxesAndBtns(response) {
         console.log("===  MASS_SetInfoboxesAndBtns  =====") ;
         // called by MASS_Open, MASS_Save and MASS_UpdateFromResponse
@@ -5334,6 +5839,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("is_response", is_response) ;
         console.log("test_is_ok", mod_MASS_dict.test_is_ok) ;
         console.log("verification_is_ok", mod_MASS_dict.verification_is_ok) ;
+
 
         mod_MASS_dict.test_is_ok
         // step 0: opening modal
@@ -5355,7 +5861,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (response && response.approve_msg_html) {
             mod_MASS_dict.msg_html = response.approve_msg_html;
         };
-        //console.log("msg_html", msg_html);
+        if (response && response.approve_err_html) {
+            mod_MASS_dict.err_html = response.approve_err_html;
+        };
+        console.log("    mod_MASS_dict.msg_html", mod_MASS_dict.msg_html);
+        console.log("    mod_MASS_dict.err_html", mod_MASS_dict.err_html);
 
         if (step === 0) {
             // step 0: when form opens and request to check is sent to server
@@ -5368,7 +5878,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (step === 1) {
                 // response with checked subjects
                 // msg_info_txt is in response
-                    show_delete_btn =mod_MASS_dict.has_already_approved;
+                    show_delete_btn = mod_MASS_dict.has_already_approved;
                     if (mod_MASS_dict.test_is_ok){
                         save_btn_txt = (mod_MASS_dict.examperiod === 1) ? loc.Approve_subjects : loc.Approve_reex;
                     };
@@ -5414,13 +5924,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // if(mod_MASS_dict.is_approve)
         }  // if (step === 0)
 
-        console.log("msg_info_txt", msg_info_txt) ;
-        if (msg_info_txt){
-            mod_MASS_dict.msg_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + "...</p></div>";
-        }
-        //console.log("mod_MASS_dict.msg_html", mod_MASS_dict.msg_html) ;
-        el_MASS_info_container.innerHTML = mod_MASS_dict.msg_html;
-        add_or_remove_class(el_MASS_info_container, cls_hide, !mod_MASS_dict.msg_html)
+        console.log("    msg_info_txt", msg_info_txt) ;
+        console.log("    mod_MASS_dict.msg_html", mod_MASS_dict.msg_html) ;
+        let msg_info_html = null;
+        if(mod_MASS_dict.msg_html){
+            msg_info_html = mod_MASS_dict.msg_html;
+        } else if (msg_info_txt){
+            msg_info_html = "<div class='p-2 border_bg_transparent'><p class='pb-2'>" +  msg_info_txt + "...</p></div>";
+        };
+        el_MASS_info_container.innerHTML = msg_info_html;
+        add_or_remove_class(el_MASS_info_container, cls_hide, !msg_info_html)
 
         add_or_remove_class(el_MASS_loader, cls_hide, !show_loader)
 
@@ -5472,27 +5985,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= DownloadMultipleOccurrences ============= PR2021-09-05
     function DownloadMultipleOccurrences() {
-        //console.log( " ==== DownloadMultipleOccurrences ====");
-        const url_str = urls.url_studsubj_multiple_occurrences;
+        console.log( " ==== DownloadMultipleOccurrences ====");
+        const url_str = urls.url_student_multiple_occurrences;
         const upload_dict = {studsubj_multiple_occurrences: {get: true}};
         // TODO enable this
-        //UploadChanges(upload_dict, url_str);
+        UploadChanges(upload_dict, url_str);
      } // DownloadMultipleOccurrences
 
 //========= ResponseValidationAll ============= PR2021-07-24 PR2021-08-17
     function ResponseValidationAll(validate_studsubj_list, oneonly_student_pk, oneonly_subj_error) {
-        //console.log( " ==== ResponseValidationAll ====");
-        //console.log( "oneonly_student_pk", oneonly_student_pk);
-        //console.log( "oneonly_subj_error", oneonly_subj_error);
-        return false;
+        console.log( " ==== ResponseValidationAll ====");
+        console.log( "oneonly_student_pk", oneonly_student_pk);
+        console.log( "oneonly_subj_error", oneonly_subj_error);
+
 // ---  loop through validate_studsubj_list and add key 'subj_error'
-        for (let i = 0, row; row = studsubj_rows[i]; i++) {
-            if(oneonly_student_pk){
-                if(row.stud_id === oneonly_student_pk){
-                    row.subj_error = oneonly_subj_error;
+
+        //for (let i = 0, row; row = studsubj_rows[i]; i++) {
+
+        if (!isEmpty(studsubj_dictsNEW)){
+            for (const data_dict of Object.values(studsubj_dictsNEW)) {
+                if(oneonly_student_pk){
+                    if(data_dict.stud_id === oneonly_student_pk){
+                        data_dict.subj_error = oneonly_subj_error;
+                    };
+                } else {
+                    data_dict.subj_error = (validate_studsubj_list && data_dict.stud_id && validate_studsubj_list.includes(data_dict.stud_id))
                 };
-            } else {
-                row.subj_error = (validate_studsubj_list && row.stud_id && validate_studsubj_list.includes(row.stud_id))
             };
         };
 
@@ -5525,35 +6043,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= get_datadict_from_tblRow ============= PR2021-07-25 PR2021-08-08
     function get_datadict_from_tblRow(tblRow) {
-        console.log( " ==== get_datadict_from_tblRow ====");
-        console.log( "tblRow", tblRow);
+        //console.log( " ==== get_datadict_from_tblRow ====");
+        //console.log( "tblRow", tblRow);
+
 // get student_pk and studsubj_pk from tr_clicked.id
         let student_pk = null, studsubj_pk = null;
         if (tblRow && tblRow.id){
             const arr = tblRow.id.split("_");
-        console.log( "arr", arr);
-
+        //console.log( "arr", arr);
             student_pk = (arr[1] && Number(arr[1])) ? Number(arr[1]) : 0;
             studsubj_pk = (arr[2] && Number(arr[2])) ? Number(arr[2]) : 0;
 
         };
-
-        console.log( "student_pk", student_pk);
-        console.log( "studsubj_pk", studsubj_pk);
     //console.log( "student_pk", student_pk);
     //console.log( "studsubj_pk", studsubj_pk);
-        const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
-        let data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+        //const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
+        //let data_dict = (!isEmpty(found_dict)) ? found_dict : null;
 
-        console.log( "data_dict", data_dict);
+        const data_dict =  get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
+
+        //console.log( "data_dict", data_dict);
         // PR2022-03-02 debug: in RefreshDataRows when new  studsubj_pk is added the recursive lookup is not working.
         // lookup the oldfashioned way when student_pk and studsubj_pk have value and found_dict is null
         if (data_dict == null && student_pk && studsubj_pk){
-            for (let i = 0, row; row = studsubj_rows[i]; i++) {
-                 if (row.stud_id === student_pk && row.studsubj_id === studsubj_pk){
-                    data_dict = row;
-    //console.log( " row", row);
-                    break;
+
+                //for (let i = 0, row; row = studsubj_rows[i]; i++) {
+            if (!isEmpty(studsubj_dictsNEW)){
+                for (const studsubj_dict of Object.values(studsubj_dictsNEW)) {
+                     if (studsubj_dict.stud_id === student_pk && studsubj_dict.studsubj_id === studsubj_pk){
+                        data_dict = studsubj_dict;
+                        break;
+                    };
                 };
             };
         }
@@ -5562,10 +6082,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }  //  get_datadict_from_tblRow
 
 
-//========= get_datadict_by_studpk_studsubjpk ============= PR2021-07-25 PR2021-08-08
+    function get_datadicts_keystr(tblName, pk_int, studsubj_pk) {  // PR2023-01-05
+        let key_str = tblName + "_" + ((pk_int) ? pk_int : 0);
+        if (tblName === "studsubj") {
+            key_str += "_" + ((studsubj_pk) ? studsubj_pk : 0);
+        };
+        return key_str
+    };
+
+//========= get_datadict_by_studpk_studsubjpk ============= PR2021-07-25 PR2021-08-08 PR2023-01-05
     function get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk) {
         //console.log( " ==== get_datadict_by_studpk_studsubjpk ====");
-
+/*
         const data_rows = studsubj_rows;
         const lookup_1_field = "stud_id";
         const lookup_2_field = "studsubj_id";
@@ -5574,9 +6102,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const [middle_index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, search_1_int, lookup_2_field, search_2_int);
         const data_dict = found_dict;
         const row_index = middle_index;
+*/
 
-        return [row_index, data_dict];
+        const key_str = get_datadicts_keystr("studsubj", student_pk, studsubj_pk);
+        if (!isEmpty(studsubj_dictsNEW[key_str])){
+            return studsubj_dictsNEW[key_str];
+        } else {
+            return null;
+        };
+
     };  // get_datadict_by_studpk_studsubjpk
+
+
+//========= get_is_allowed_cluster  ======== // PR2022-05-01
+    function get_is_allowed_cluster(cluster_id) {
+        console.log ("----- get_is_allowed_cluster -----")
+        console.log ("permit_dict.allowed_clusters", permit_dict.allowed_clusters)
+        console.log ("cluster_id", cluster_id, typeof cluster_id)
+        // check if cluster is allowed
+        // check for other allowed field not necessarybecause they are not downloaded
+        const is_allowed_cluster =
+            (permit_dict.allowed_clusters) ?
+                (cluster_id) ?
+                    permit_dict.allowed_clusters.includes(cluster_id)
+                    : false
+                : true;
+        return is_allowed_cluster;
+    };
+
+
 
 })  // document.addEventListener('DOMContentLoaded', function()
 

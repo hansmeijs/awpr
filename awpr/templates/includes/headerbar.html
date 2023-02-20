@@ -54,17 +54,14 @@
                             {{ user.username_sliced }}
                         </a>
                         <div class="dropdown-menu" aria-labelledby="userMenu">
-                            {% if auth_list and False %}
-                                {% for auth in auth_list %}
-                                    <button id="{{ auth.usergroup }}" class="dropdown-item {{ auth.color_class }}">{{ auth.function }}</button>
-                                {% endfor %}
-                                <div class="dropdown-divider"></div>
-
-                            {% endif %}
                             {% if 'permit_userpage' in permit_list %}
                                 <a class="dropdown-item" href="{% url 'users_url' %}" >{% trans 'Users' %}</a>
                                 <div class="dropdown-divider"></div>
                             {% endif %}
+
+                            <button id="id_hdrbar_allowed_sections" class="dropdown-item {{ auth.color_class }}">{% trans 'Allowed sections' %}</button>
+                            <div class="dropdown-divider"></div>
+
                             <a class="dropdown-item" href="{% url 'password_change' %}">{% trans 'Change password' %}</a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="{% url 'language_set_url' 'nl' %}"> {% trans 'Dutch' %}</a>
@@ -91,7 +88,7 @@
                 <li>
                      <!-- <a href="{% url 'manual_url' 'intro' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>-->
                     {% if page and paragraph %}
-                         <a href="{% url 'manual_url' page paragraph %}" target="_blank"> <div class="questionmark"></div> </a>
+                         <a id="id_hdrbar_manual" href="{% url 'manual_url' page paragraph %}" target="_blank"> <div class="questionmark"></div> </a>
                     {% else %}
                          <a href="{% url 'manual_url' 'home' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>
                     {% endif %}

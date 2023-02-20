@@ -1,6 +1,6 @@
 // PR2020-09-29 added
 
-// PR2021-07-23  declare variables outside function to make them global variables
+// PR2021-07-23  these variables are declared in base.js to make them global variables
 
 //let selected_btn = "btn_subject";
 
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let subjecttype_rows = [];
     let subjecttypebase_rows = [];
-    let subject_rows = [];
+    //let subject_rows = [];
     let schemeitem_rows = [];
     let scheme_rows = [];
     let scheme_map = new Map();
@@ -293,6 +293,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
 
+        const el_hdrbar_allowed_sections = document.getElementById("id_hdrbar_allowed_sections");
+        if (el_hdrbar_allowed_sections){
+            el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
+        };
+
+// ---  MODAL USER SET ALLOWED SECTIONS
+        const el_MUPS_username = document.getElementById("id_MUPS_username");
+        console.log("DOMContentLoaded TABLE.js el_MUPS_username", el_MUPS_username);
+        const el_MUPS_loader = document.getElementById("id_MUPS_loader");
+
+        const el_MUPS_tbody_container = document.getElementById("id_MUPS_tbody_container");
+        const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
+
+        const el_MUPS_btn_expand_all = document.getElementById("id_MUPS_btn_expand_all");
+        if (el_MUPS_btn_expand_all){
+            el_MUPS_btn_expand_all.addEventListener("click", function() {MUPS_ExpandCollapse_all()}, false);
+        };
+        const el_MUPS_btn_save = document.getElementById("id_MUPS_btn_save");
+        if (el_MUPS_btn_save){
+            el_MUPS_btn_save.addEventListener("click", function() {MUPS_Save("save")}, false);
+        };
+        const el_MUPS_btn_cancel = document.getElementById("id_MUPS_btn_cancel");
+
 // ---  SIDE BAR ------------------------------------
         const el_SBR_select_department = document.getElementById("id_SBR_select_department");
         if (el_SBR_select_department){
@@ -488,6 +511,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         // will be changed into an array when saving with t_MCOL_Save
                         b_copy_array_noduplicates(setting_dict.cols_hidden, mod_MCOL_dict.cols_hidden);
                     };
+
+        // add is_thumbrule to cols_skipped when no thumbrule_allowed PR2023-01-24
+                    mod_MCOL_dict.cols_skipped = (!setting_dict.sel_examyear_thumbrule_allowed) ? {all: ["thumb_rule"]} : {};
+
                     //console.log("columns_hidden", columns_hidden)
                     must_update_headerbar = true;
                 }
@@ -727,8 +754,9 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let j = 0; j < column_count; j++) {
             const field_name = field_setting.field_names[j];
 
-    // --- skip column if in columns_hidden
-            if (!col_hidden.includes(field_name)){
+    // ---skip columns if in columns_hidden
+            const col_is_hidden = get_column_is_hidden(field_name, col_hidden);
+            if (!col_is_hidden){
 
     // --- get field_caption from field_setting,
                 const field_caption = (loc[field_setting.field_caption[j]]) ? loc[field_setting.field_caption[j]] : field_setting.field_caption[j] ;
@@ -853,8 +881,10 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let j = 0; j < column_count; j++) {
             const field_name = field_names[j];
 
-// --- skip columns if in columns_hidden
-            if (!col_hidden.includes(field_name)){
+
+    // ---skip columns if in columns_hidden
+            const col_is_hidden = get_column_is_hidden(field_name, col_hidden);
+            if (!col_is_hidden){
                 const field_tag = field_tags[j];
                 const filter_tag = filter_tags[j];
                 const class_width = "tw_" + field_width[j];
@@ -1009,6 +1039,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }  // if(field_name)
         }  // if(el_div)
     };  // UpdateField
+
+
+//========= get_column_is_hidden  ====== PR2023-01-24
+    function get_column_is_hidden(field_name, col_hidden) {
+        //console.log( "===== get_column_is_hidden  === ");
+
+        // note: exemption has no status, only exemption grades must be submitted
+       // const mapped_field = (field === "reex_status") ? "has_reex" :
+       //                      (field === "reex3_status") ? "has_reex03" :
+       //                      (field === "pok_validthru") ? "pok_status" : field_name;
+        //console.log( "mapped_field", mapped_field);
+
+// --- col_hidden
+        let is_hidden = col_hidden.includes(field_name);
+
+        if(!is_hidden){
+            // thumbrule not in Vsbo Cur
+            if (field_name === "thumb_rule"){
+                // PR2023-01-24 added: setting_dict.sel_examyear_thumbrule_allowed
+                const show_thumbrule = (setting_dict.sel_examyear_thumbrule_allowed) && (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");
+                is_hidden = !show_thumbrule;
+            };
+        };
+        //console.log( "is_hidden", is_hidden);
+        return is_hidden;
+    };  // get_column_is_hidden
+
+
+
 
 //###########################################################################
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++++++++++++++++++++++++++
@@ -1863,6 +1922,10 @@ document.addEventListener('DOMContentLoaded', function() {
             //selected.copyto_examyear_dict = get_mapdict_from_datamap_by_tblName_pk(examyear_map, "examyear", new_setting.copyto_examyear_pk);
             //ModConfirmOpen("examyear", "copy_scheme")
         } else {
+
+// --- reset tblBody
+        tblBody_datatable.innerText = null;
+
     // ---  upload new selected_pk
             new_setting.page = setting_dict.sel_page;
     // also retrieve the tables that have been changed because of the change in examyear / dep

@@ -1,5 +1,7 @@
     "use strict";
 
+console.log("+++++++ script 'base'")
+
 // ========= GLOBAL VARIABLES=================== PR2022-07-21
     // these variables are used in all pages
 
@@ -13,6 +15,17 @@
     let selected = {};
     let loc = {};
     let urls = {};
+
+    // PR2023-01-13  these variables are declared in base.js to make them global variables for t_MUPS_Open
+    let school_rows = [];
+    let level_rows = [];
+    let subject_rows = [];
+    //let cluster_rows = [];
+
+    const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
+    const cluster_dictsNEW = {}; //PR2023-01-26 new approach, dict instead of sorted list
+
+    const manual_dict = {'test': true}
 
     // examyear_rows and department_rows are used in t_MSED_ PR2022-08-01
     let examyear_rows = [];
@@ -95,9 +108,9 @@
 
 //========= b_UploadSettings  ============= PR2019-10-09
     function b_UploadSettings (upload_dict, url_str) {
-        //console.log("=== b_UploadSettings ===");
-        //console.log("url_str", url_str);
-        //console.log("upload_dict", upload_dict);
+        console.log("=== b_UploadSettings ===");
+        console.log("    url_str", url_str);
+        console.log("    upload_dict", upload_dict);
 
         if(!!upload_dict) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -117,14 +130,13 @@
         }
     };  // b_UploadSettings
 
-//========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02
+//========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02 PR2023-01-08
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
         //console.log(" --- UpdateHeaderbar ---" )
         //console.log("setting_dict", setting_dict )
         //console.log("permit_dict", permit_dict )
 
 // --- EXAM YEAR
-       //console.log("setting_dict.sel_examyear_pk", setting_dict.sel_examyear_pk )
         if(el_hdrbar_examyear) {
             let examyer_txt = "";
             if (setting_dict.sel_examyear_pk){
@@ -135,10 +147,10 @@
             }
             el_hdrbar_examyear.innerText = examyer_txt;
 
-// add pointer on hover when there are multiple examyear
-            add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", permit_dict.may_select_examyear, "awp_navbar_item" )
-
-        }
+// add pointer on hover when there are multiple examyears
+            // PR2023-01-08 user may have only one allowed_examyear,
+            add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", permit_dict.may_select_examyear, "awp_navbar_item" );
+        };
 // --- DEPARTMENT
         if(el_hdrbar_department) {
             const display_department = (!!permit_dict.display_department);
@@ -621,18 +633,19 @@
         }};
     };  // add_hover_image
 
-//========= set_focus_on_id_with_timeout  =========== PR2020-05-09
+//========= set_focus_on_id_with_timeout  =========== PR2020-05-09 PR2022-11-03
     function set_focus_on_id_with_timeout(id, ms) {
-        if(!!id && ms){
-            const el = document.getElementById(id);
-            set_focus_on_el_with_timeout(el, ms);
+        if(id){
+            const el_focus = document.getElementById(id);
+            set_focus_on_el_with_timeout(el_focus, ms);
         };
     }; // set_focus_on_id_with_timeout
 
-//========= set_focus_on_el_with_timeout  =========== PR2020-05-09
-    function set_focus_on_el_with_timeout(el, ms) {
-        if(!!el && ms){
-            setTimeout(function() { el.focus() }, ms);
+//========= set_focus_on_el_with_timeout  =========== PR2020-05-09 PR2022-11-03
+    function set_focus_on_el_with_timeout(el_focus, ms) {
+        if(el_focus){
+            if (!ms){ ms = 150};
+            setTimeout(function() { el_focus.focus() }, ms);
         };
     };  // set_focus_on_el_with_timeout
 
@@ -769,13 +782,23 @@
 
 
     function b_get_status_auth_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
-        // PR2022-08-28
+        //console.log( " ==== b_get_status_auth_iconclass ====");
+        //console.log("   publ", publ, "blocked", blocked)
+        //console.log("   auth1", auth1, "auth2", auth2)
+        //console.log("   auth3_must_sign", auth3_must_sign, "auth4_must_sign", auth4_must_sign)
+        //console.log("   auth3", auth3, "auth4", auth4)
+
+        // PR2022-08-28 PR2023-01-24
         // when auth4_must_sign : use function b_get_status_auth1234_iconclass
         // when auth3_must_sign : use function b_get_status_auth123_iconclass
         // orhetrwise: use function b_get_status_auth12_iconclass
-        return (auth4_must_sign) ? b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) :
+
+        const icon_class =  (auth4_must_sign) ? b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) :
                             (auth3_must_sign) ? b_get_status_auth123_iconclass(publ, blocked, auth1, auth2, auth3) :
                                                 b_get_status_auth12_iconclass(publ, blocked, auth1, auth2);
+        //console.log("    icon_class", icon_class);
+
+        return icon_class;
     };  //
 
     function b_get_status_auth1234_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
@@ -1049,6 +1072,53 @@
         return copy_JS
     };
 
+
+//=========  parse_dateJS_from_dateISO ================ PR2023-01-28
+    function get_birthdate_from_idnumber(id_number) {
+        //console.log( "===== get_birthdate_from_idnumber  ========= ");
+        //console.log( "    id_number", id_number);
+
+        let birthdate_iso = null;
+        if (id_number){
+
+        // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/Date#return_value
+        // and https://bobbyhadz.com/blog/javascript-create-date-without-timezone
+
+    // remove dots
+            const id_number_str = id_number.replaceAll('.', '')
+            const len = id_number_str.length;
+
+    // idnumber without dots must have 8 characters at least
+            if(len >= 8){
+                const year_str = id_number_str.slice(0, 4);
+                const month_str = id_number_str.slice(4, 6);
+                const day_str = id_number_str.slice(6, 8);
+
+        //console.log( "    year_str", year_str, "month_str", month_str, "day_str", day_str);
+
+    // check if is numeric
+                const year_int = Number(year_str);
+                const current_year = new Date().getFullYear() ; // returns the current year
+
+                if (year_int && year_int > 1900 && year_int < current_year){
+                    const month_int = Number(month_str);
+                    const day_int = Number(day_str);
+                    if (month_int && month_int <= 12){
+                        if (day_int  && day_int <= 31){
+                            const month_index = month_int -1;
+                            const birthdate_JS = new Date(year_int, month_index, day_int);
+
+        //console.log( "    birthdate_JS", birthdate_JS);
+
+        // ATTENTION: 2010-02-30 converts to JS date: Tue Mar 02 2010 00:00:00 GMT+0100 (Central European Standard Time)
+        // solved by checking if month index is correct
+                            if (birthdate_JS && birthdate_JS.getMonth() === month_index) {
+                                birthdate_iso = [year_str, month_str, day_str].join("-");
+        }}}}}};
+
+        return birthdate_iso;
+    };  // get_birthdate_from_idnumber
+
 //=========  parse_dateJS_from_dateISO ================ PR2020-07-22
     function parse_dateJS_from_dateISO(date_iso) {
         //console.log( "===== parse_dateJS_from_dateISO  ========= ");
@@ -1057,11 +1127,15 @@
         // date_JS = Wed Jul 22 2020 08:03:52 GMT-0400 (Bolivia Time)
 
         // PR2022-03-09 debug: dont use this one for dates.
-        // date_JS gives birthdate one day before birthdat, becasue of timezone
+        // date_JS gives birthdate one day before birthdate, because of timezone
         // data_dict.birthdate 2004-05-30 becomes date_JS = Sat May 29 2004 20:00:00 GMT-0400 (Venezuela Time)
         // use format_date_from_dateISO instead
         // was:
         // const date_JS = parse_dateJS_from_dateISO(data_dict.birthdate);
+
+
+        //https://bobbyhadz.com/blog/javascript-create-date-without-timezone
+
 
         let date_JS = null;
         if (date_iso){
@@ -1577,6 +1651,7 @@
     function b_remove_item_from_array(array, value){
         // PR2021-07-07 remove item from array used in mod select columns
         // from https://stackoverflow.com/questions/3954438/how-to-remove-item-from-array-by-value
+        // PR2022-11-06 https://love2dev.com/blog/javascript-remove-from-array/#remove-from-array-splice-value
 
         if(array && array.length){
             for (let i = 0, item; item = array[i]; i++) {
@@ -1668,7 +1743,7 @@
 //========= b_get_multiple_auth_index_of_requsr  ======== PR2022-02-22
     function b_get_multiple_auth_index_of_requsr(permit_dict){
         // function returns list of booleans, key = auth_index, val 0 = false, 1 = true
-        // USERGROUP_AUTH1_PRES, USERGROUP_AUTH2_SECR, USERGROUP_AUTH3_EXAM, USERGROUP_AUTH4_COM
+        // USERGROUP_AUTH1_PRES, USERGROUP_AUTH2_SECR, USERGROUP_AUTH3_EXAM, USERGROUP_AUTH4_CORR
 
     //console.log( "-----  b_get_multiple_auth_index_of_requsr  -----");
     //console.log( "permit_dict", permit_dict);
@@ -1828,7 +1903,7 @@
                     el_container.innerHTML = null;
                     for (let i = 0, msg_dict; msg_dict = msg_dictlist[i]; i++) {
 
-                    console.log("is object", (typeof msg_dict === "object"))
+                    //console.log("is object", (typeof msg_dict === "object"))
             // skip if msg_dict is not a dictionary
                         if (typeof msg_dict  === "object") {
 
@@ -1892,7 +1967,6 @@
         skip_warning_messages = false;
     };  // b_show_mod_message_dictlist
 
-
 //========= b_render_msg_containerNEW  ================= PR2021-08-13
     function b_render_msg_containerNEW(el_msg_container, msg_list, class_list) {
         // used for el_confirm_msg_container
@@ -1938,6 +2012,53 @@
             add_or_remove_class(el_msg, cls_hide, !has_msg);
         };
     };  // b_render_msg_container
+
+    function b_ManualLoadPage() {  // PR2023-01-31
+        console.log( "===== b_ManualLoadPage ========= ");
+       // console.log( "    page", page);
+        //console.log( "    paragraph_id", paragraph_id);
+        console.log( "    manual_dict", manual_dict);
+
+        // NIU: const el_btn = document.getElementById("id_btn_" + page)
+        //console.log( "el_btn", el_btn);
+
+        const is_en = (setting_dict.user_lang === "en");
+        console.log( "is_en", is_en);
+
+        const page = setting_dict.sel_page;
+        const html_dict = (page === "home") ? man_home :
+                        (page === "user") ? man_user :
+                        (page === "upload") ? man_upload :
+                        (page === "student") ? man_student :
+                        (page === "studsubj") ? man_studsubj :
+                        (page === "cluster") ? man_cluster :
+                        (page === "exemption") ? man_exemption :
+                        (page === "exams") ? man_exams :
+                        (page === "approve") ? man_approve :
+                        (page === "mailbox") ? man_mailbox : man_home;
+        console.log( "    html_dict", html_dict);
+
+        const html_list = (html_dict) ? (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl : null;
+        //console.log( "html_list", html_list);
+
+        const html_str = (html_list && html_list.length) ? html_list.join('') : (is_en) ? "<h4 class='p-5'> This page is not available yet.</h4>" : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
+
+        document.getElementById("id_content").innerHTML = html_str;
+
+        FillSideNav(is_en);
+
+        SelectBtnAndDeselctOthers("id_btn_" + page )
+
+        if (paragraph_id){
+            //console.log(" ----- GotoParagraph ----- ")
+            //console.log("    paragraph_id", paragraph_id)
+            // PR2023-01-27 debug: Timeout added, to load page first before going to paragraph element
+            setTimeout(function (){
+                GotoParagraph(paragraph_id)
+            }, 150);
+
+        };
+    };
 
 //?????????????????????????????????????????????????????????????????
 
@@ -2040,6 +2161,21 @@
         // update progressbars classes so it fits your code
         $(progress_bar_id + " .progress-bar").css("width", +percent + "%");
         $(progress_bar_id + " .status").text(percent + "%");
+    };
+
+    function b_setCaretPosition(ctrl,pos) {
+        // PR2023-01-29 from https://stackoverflow.com/questions/512528/set-keyboard-caret-position-in-html-textbox
+        // used in mod_student add symbol
+        if (ctrl.setSelectionRange){
+            ctrl.focus();
+            ctrl.setSelectionRange(pos,pos);
+        } else if (ctrl.createTextRange) {
+            const range = ctrl.createTextRange();
+            range.collapse(true);
+            range.moveEnd('character', pos);
+            range.moveStart('character', pos);
+            range.select();
+        };
     };
 
 //#########################################################################

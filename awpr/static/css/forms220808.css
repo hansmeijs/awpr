@@ -398,16 +398,26 @@ note_flex_2 {
     border-color: #c4c4c4;
 
 }
-.btn-weekday {
-    padding: 0rem 0.05rem 0rem 0.05rem;
+/* PR2023-01-29 added for mod_student symbols */
+.btn-symbol {
+    padding: 0.05rem 0.05rem 0.05rem 0.05rem;
     margin: 0px;
-    width: 42px;
+    width: 24px;
     color: #303024; /* PR logo zwart */
-    background-color: white;
-    border-color: #c4c4c4;
-    overflow-wrap: break-word;
-
+    background-color: #e8e8e880; /*licht licht grijs 232 232 232 50% */
+    border-color: #d8d8d8;  /* light grey 218 218 218 100%  */
+    border-radius: 0.2rem;
 }
+
+.btn-symbol:hover {
+  color: #000000;
+  background-color: #d8d8d8;  /* light grey 218 218 218 100%  */
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+
 .btn-smallfont {
     font-size: 12px;
     padding: 1px;

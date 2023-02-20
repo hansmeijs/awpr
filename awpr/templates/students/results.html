@@ -59,6 +59,7 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
+            {% include 'accounts/moduserallowedsection.html' %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}

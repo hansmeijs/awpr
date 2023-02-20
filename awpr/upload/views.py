@@ -42,7 +42,7 @@ class UploadOldAwpView(View):  #PR2020-12-13 PR2021-05-03 PR2021-07-03
         uploadedfile = files.get('file')
 
 # get instance of examyear from settings
-        sel_examyear, selected_dict_has_changed_NIU, may_select_examyear_NIU = af.get_sel_examyear_instance(request)
+        sel_examyear, selected_dict_has_changed_NIU, multiple_examyears_exist = af.get_sel_examyear_with_default(request)
 
         if logging_on:
             logger.debug(' ')
@@ -1298,7 +1298,7 @@ def ImportStudent(ws_name, row_data, logfile, mapped, examyear, school, request)
                             student.diplomanumber = row_data.get('dipnr')
                             student.gradelistnumber = row_data.get('gradelistnr')
 
-                            #student.has_dyslexie
+                            #student.extrafacilities
                             student.iseveningstudent = school.iseveningschool
                             student.islexstudent = school.islexschool
                             student.bis_exam = True if row_data.get('bis_exam') == 1 else False

@@ -309,7 +309,7 @@ def get_firstname_prefix_lastname(last_name, first_name, prefix):  # PR2022-03-0
     return _full_name
 # - end of get_firstname_prefix_lastname
 
-def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05  PR2021-10-07
+def get_full_name(last_name, first_name, prefix, has_extrafacilities=False):  # PR2021-07-26 PR2021-09-05  PR2021-10-07 PR2023-01-07
 
     _full_name = last_name.strip() if last_name else ''
 
@@ -320,6 +320,9 @@ def get_full_name(last_name, first_name, prefix):  # PR2021-07-26 PR2021-09-05  
     _firstname = first_name.strip() if first_name else ''
     if _firstname:
         _full_name = ', '.join((_full_name, _firstname))
+
+    if has_extrafacilities:
+        _full_name += ' *'
 
     return _full_name
 # - end of get_full_name
@@ -344,9 +347,9 @@ def get_firstname_initials(first_name):  # PR2021-07-26
     return firstname_initials
 
 
-def get_lastname_firstname_initials(last_name, first_name, prefix):  # PR2021-07-26
+def get_lastname_firstname_initials(last_name, first_name, prefix, has_extrafacilities=False):  # PR2021-07-26 PR2023-01-07
     firstname_initials = get_firstname_initials(first_name)
-    return get_full_name(last_name, firstname_initials, prefix)
+    return get_full_name(last_name, firstname_initials, prefix, has_extrafacilities)
 
 # NOT IN USE
 def SplitPrefix(name, is_firstname):

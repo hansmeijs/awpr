@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 
 from django.db import connection
 
+from accounts import permits as acc_prm
+
 from awpr import constants as c
 from awpr import settings as s
 from grades import calc_finalgrade as calc_final
@@ -15,63 +17,67 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def validate_grade_is_allowed(request, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, msg_list,
-                              is_approve=False, is_score=False, is_grade_exam=False):
-    # PR2022-03-20
-    logging_on = False  # s.LOGGING_ON
+def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, allowed_cluster_pk_list,
+                schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted,
+                msg_list, is_approve=False, is_score=False, is_grade_exam=False):
+    # PR2022-03-20 PR2023-02-18
+    # called by GradeUploadView and by GradeApproveView
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
-        logger.debug('     schoolbase_pk: ' + str(schoolbase_pk))
-        logger.debug('     depbase_pk: ' + str(depbase_pk))
-        logger.debug('     lvlbase_pk: ' + str(lvlbase_pk))
-        logger.debug('     subjbase_pk: ' + str(subjbase_pk))
-        logger.debug('     cluster_pk: ' + str(cluster_pk))
+        logger.debug('     allowed_cluster_pk_list: ' + str(allowed_cluster_pk_list))
+        logger.debug('     studsubj_tobedeleted: ' + str(studsubj_tobedeleted))
 
     not_allowed = False
     caption = None
-    if request.user.allowed_clusterbases:
-        if logging_on:
-            logger.debug('     request.user.allowed_clusterbases: ' + str(request.user.allowed_clusterbases))
-            logger.debug('     request.user.allowed_clusterbases.split: ' + str(request.user.allowed_clusterbases.split(';')))
-            logger.debug('     cluster_pk: ' + str(cluster_pk))
 
-        if not cluster_pk or str(cluster_pk) not in request.user.allowed_clusterbases.split(';'):
-            caption = _('the allowed clusters')
+    # PR2023-02-14 not allowed when subject is tobedeleted
+    if studsubj_tobedeleted:
+        not_allowed = True
+        msg_list.append(str(_("This subject is marked for deletion.")))
+        msg_list.append(str(_("You cannot make changes.")))
+    else:
 
-    if caption is None and request.user.allowed_subjectbases:
-        if not subjbase_pk or str(subjbase_pk) not in request.user.allowed_subjectbases.split(';'):
-            caption = _('the allowed subjects')
+        if caption and not acc_prm.validate_userallowed_school(userallowed_sections_dict, schoolbase_pk):
+                caption = _('the allowed schools')
 
-    if caption is None and request.user.allowed_schoolbases:
-        if not schoolbase_pk or str(schoolbase_pk) not in request.user.allowed_schoolbases.split(';'):
-            caption = _('the allowed schools')
-
-    if caption is None and request.user.allowed_levelbases:
-        if not lvlbase_pk or str(lvlbase_pk) not in request.user.allowed_levelbases.split(';'):
-            caption = _('the allowed learning paths')
-
-    if caption is None and request.user.allowed_depbases:
-        if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
+        if caption and not acc_prm.validate_userallowed_depbase(userallowed_sections_dict, schoolbase_pk, depbase_pk):
             caption = _('the allowed departments')
 
-    if caption:
-        not_allowed = True
-        msg_list.append(str(_("This subject does not belong to %(cpt)s.") % {'cpt': caption}))
-        edit_txt = _('to approve') if is_approve else _('to edit')
-        score_txt = str(_('This exam') if is_grade_exam else _('This score') if is_score else _('This grade')).lower()
-        msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
+        if caption and not acc_prm.validate_userallowed_lvlbase(userallowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk):
+                caption = _('the allowed learning paths')
+
+        if caption and not acc_prm.validate_userallowed_subjbase(userallowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk,subjbase_pk):
+                caption = _('the allowed subjects')
+
+        # PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
+        # must be able to approve all subjects as chairperson.
+        # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
+
+        if requsr_auth not in ('auth1', 'auth2'):
+            if allowed_cluster_pk_list:
+                if not cluster_pk or cluster_pk not in allowed_cluster_pk_list:
+                    caption = _('the allowed clusters')
+
+        if caption:
+            not_allowed = True
+            msg_list.append(str(_("This subject does not belong to %(cpt)s.") % {'cpt': caption}))
+            edit_txt = _('to approve') if is_approve else _('to edit')
+            score_txt = str(_('This exam') if is_grade_exam else _('This score') if is_score else _('This grade')).lower()
+            msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
 
     if logging_on:
-        logger.debug('     caption: ' + str(caption))
+        logger.debug('     msg_list: ' + str(msg_list))
         logger.debug('     not_allowed: ' + str(not_allowed))
 
     return not not_allowed
 # - end of validate_grade_is_allowed
 
 
-def validate_grade_multiple_is_allowed(request, requsr_auth, schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk):
+def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_cluster_pk_list, schoolbase_pk, depbase_pk, lvlbase_pk,
+                                       subjbase_pk, cluster_pk):
     # PR2022-04-07
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
@@ -84,8 +90,9 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, schoolbase_pk, depb
     # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
 
     if requsr_auth not in ('auth1', 'auth2'):
-        if request.user.allowed_clusterbases:
-            if not cluster_pk or str(cluster_pk) not in request.user.allowed_clusterbases.split(';'):
+        if allowed_cluster_pk_list:
+            # also not allowed when allowed_cluster_pk_list is not empty and studsubj does not belong to cluster
+            if not cluster_pk or cluster_pk not in allowed_cluster_pk_list:
                 not_allowed = True
 
     if not not_allowed and request.user.allowed_subjectbases:
@@ -104,6 +111,8 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, schoolbase_pk, depb
         if not depbase_pk or str(depbase_pk) not in request.user.allowed_depbases.split(';'):
             not_allowed = True
 
+    if logging_on:
+        logger.debug('    not_allowed: ' + str(not_allowed))
     return not not_allowed
 # - end of validate_grade_multiple_is_allowed
 
@@ -166,7 +175,7 @@ def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_e
     #  - examyear is not found, not published or locked
     #  - school is not found, not same_school, not activated, or locked
     #  - department is not found, not in user allowed depbase or not in school_depbase
-    #  these are taken care of in GradeUploadView > get_selected_ey_school_dep_from_usersetting
+    #  these are taken care of in GradeUploadView > get_selected_ey_school_dep_lvl_from_usersetting
 
 # - check if it is allowed to enter this examgradetype this examyear
     # - check if examyear has no_practexam, sr_allowed, no_centralexam, no_thirdperiod
@@ -358,7 +367,7 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
     #  - examyear is not found, not published or locked
     #  - school is not found, not same_school, not activated, or locked
     #  - department is not found, not in user allowed depbase or not in school_depbase
-    #  these are taken care of in GradeUploadView > get_selected_ey_school_dep_from_usersetting
+    #  these are taken care of in GradeUploadView > get_selected_ey_school_dep_lvl_from_usersetting
 
 # - check if it is allowed to enter this examgradetype this examyear
     #  - examgradetype not allowed this examyear: already cheked in UploadImportGradeView with validate_grade_examgradetype_in_examyear
@@ -429,7 +438,7 @@ def validate_import_grade(student_dict, studsubj_dict, si_dict, examyear, exampe
     #is_pe_or_ce = (examgradetype in ("pescore", "pegrade", "cescore", "cegrade"))
 
 
-    # has_dyslexie = student.has_dyslexie
+    # extrafacilities = student.extrafacilities
     #iseveningstudent = student_dict.get('iseveningstudent', False)
     #islexstudent = student_dict.get('islexstudent', False)
 
@@ -684,7 +693,7 @@ def validate_grade_examgradetype_in_schemeitem(examperiod, examgradetype, si_dic
             elif 'ce' in examgradetype:
                 caption = str(_('Central exam')).lower()
             if caption:
-                error_list.append(str(_("%(cpt)s is a combination subject.") % {'cpt': si_dict.get('subj_name', '-')}))
+                error_list.append(str(_("%(cpt)s is a combination subject.") % {'cpt': si_dict.get('subj_name_nl', '-')}))
                 error_list.append(str(_("A combination subject doesn't have a %(cpt)s.") % {'cpt': caption }))
 
 # - check if weighing > 0
@@ -932,6 +941,9 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR202
         is_publ, is_auth = False, False
         key_str = ''.join((se_sr_pe_ce, '_published_id'))
         is_publ = getattr(grade_instance, key_str)
+
+        exemption_imported = grade_instance.exemption_imported
+
         if not is_publ:
             for auth_index in range(1, 5):  # range(start_value, end_value, step), end_value is not included!
                 key_str = ''.join((se_sr_pe_ce, '_auth', str(auth_index), 'by_id'))
@@ -943,7 +955,7 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR202
             logger.debug('is_publ: ' + str(is_publ))
             logger.debug('is_auth: ' + str(is_auth))
 
-        if is_publ or is_auth:
+        if is_publ or is_auth or exemption_imported:
             caption = '-'
             examperiod = getattr(grade_instance, 'examperiod')
             if examperiod == c.EXAMPERIOD_EXEMPTION:
@@ -961,6 +973,10 @@ def validate_grade_auth_publ(grade_instance, se_sr_pe_ce):  # PR2021-12-25 PR202
             if is_publ:
                 err_list.append(str(_('%(cpt)s is already submitted.') % {'cpt': caption}))
                 err_list.append(str(_('You must ask the Inspectorate permission to make changes.')))
+
+            elif exemption_imported:
+                err_list.append(str(_('%(cpt)s is imported from a previous exam year.') % {'cpt': caption}))
+                err_list.append(str(_("You cannot change %(cpt)s.") % {'cpt': caption.lower()}))
             elif is_auth:
                 err_list.append(str(_('%(cpt)s is already approved.') % {'cpt': caption}))
                 err_list.append(str(_('You must first remove the approval before you can make changes.')))

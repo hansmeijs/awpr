@@ -5,9 +5,10 @@
 {% block title %}{% trans 'Grades' %}{% endblock %}
 
 {% block script %}
+    <script src="{% static 'js/modallowed230214.js' %}"></script>
     <script src="{% static 'js/import220822.js' %}"></script>
     <script src="{% static 'js/grades220916.js' %}"></script>
-    <script src="{% static 'js/download220105.js' %}"></script>
+    <!-- <script src="{% static 'js/download220105.js' %}"></script> -->
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -18,12 +19,6 @@
         </div>
         {% if not no_access %}
 
-            <div id="id_SBR_container_examtype" class="tw_200 m-2 display_hide">
-                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam type' %}:</h6>
-                <select id="id_SBR_select_examtype" class="tw_200 border_none px-1"
-                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
-               ></select>
-            </div>
             <div id="id_SBR_container_level" class="tw_200 m-2 display_hide">
                 <h6 class="tw_200 line_height_normal px-2">{% trans 'Learning path' %}:</h6>
                 <select id="id_SBR_select_level" class="tw_200 border_none px-1"
@@ -80,6 +75,7 @@
             </div>
 
         {% else %}
+            {% include 'accounts/moduserallowedsection.html' %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectcolumns.html' %}
@@ -89,6 +85,7 @@
             {% include 'includes/modstatus.html' %}
             {% include 'includes/modnote.html' %}
             {% include 'includes/modimport.html' %}
+            {% include 'students/modlinkstudents.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modmessage.html' %}
 
@@ -147,8 +144,12 @@
                     data-url_studentsubjectnote_upload="{% url 'url_studentsubjectnote_upload' %}"
                     data-studentsubjectnote_download_url="{% url 'studentsubjectnote_download_url' %}"
                     data-noteattachment_download_url="{% url 'noteattachment_download_url' pk_int=0 %}"
-                    data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
 
+                    data-url_student_multiple_occurrences="{% url 'url_student_multiple_occurrences' %}"
+                    data-url_student_linkstudent="{% url 'url_student_linkstudent' %}"
+                    data-url_student_enter_exemptions="{% url 'url_student_enter_exemptions' %}"
+
+                    data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
                 >
                 </div>
         {% endif %}

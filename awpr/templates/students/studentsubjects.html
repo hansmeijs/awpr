@@ -5,6 +5,7 @@
 {% block title %}{% trans 'Subjects of candidates' %}{% endblock %}
 
 {% block script %}
+    <script src="{% static 'js/modallowed230214.js' %}"></script>
     <script src="{% static 'js/import220822.js' %}"></script>
     <script src="{% static 'js/studentsubjects220916.js' %}"></script>
 {% endblock %}
@@ -66,6 +67,7 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
+            {% include 'accounts/moduserallowedsection.html' %}
             {% include 'students/modcluster.html' %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
@@ -141,14 +143,14 @@
                  data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
-                data-url_student_biscand="{% url 'url_student_biscand' %}"
+                data-url_student_linkstudent="{% url 'url_student_linkstudent' %}"
                 data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
                 data-url_studsubj_single_update="{% url 'url_studsubj_single_update' %}"
 
                 data-url_studsubj_validate_scheme="{% url 'url_studsubj_validate_scheme' %}"
                 data-url_studsubj_validate_test="{% url 'url_studsubj_validate_test' %}"
                 data-url_studsubj_validate_all="{% url 'url_studsubj_validate_all' %}"
-                data-url_studsubj_multiple_occurrences="{% url 'url_studsubj_multiple_occurrences' %}"
+                data-url_student_multiple_occurrences="{% url 'url_student_multiple_occurrences' %}"
 
                 data-url_studsubj_approve="{% url 'url_studsubj_approve' %}"
                 data-url_studsubj_approve_submit_multiple="{% url 'url_studsubj_approve_submit_multiple' %}"

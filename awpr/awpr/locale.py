@@ -62,6 +62,8 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['All_sectors_profiles'] = _("All sectors / profiles")
     dict['All_clusters'] = _("All clusters")
 
+    dict['All_sections_are_allowed'] = _("All sections are allowed.")
+
     dict['There_is_no__'] = _('There is no ')
     dict['__selected'] = _(' selected.')
 
@@ -202,6 +204,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Upload_candidates'] = _('Upload candidates')
         dict['Upload_subjects'] = _('Upload subjects')
+        dict['Upload_exemptions'] = _('Upload exemptions')
         dict['Upload_grades'] = _('Upload grades')
         dict['Upload_usernames'] = _('Upload usernames')
         dict['Upload_permissions'] = _('Upload permissions')
@@ -254,7 +257,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_examgradetypes_found'] = _('No exam grade types found')
         dict['Select_examgradetype'] = _('Please select an exam grade type')
 
-
 # ====== PAGE USER ========================= PR2019-11-19
     if 'page_user' in page_list:
 
@@ -275,6 +277,15 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Allowed_clusters'] = _('Allowed clusters')
 
         dict['Add_school'] = _('Add school')
+        dict['Add_department'] = _('Add department')
+        dict['Add_level'] = _('Add learning path')
+        dict['Add_subject'] = _('Add subject')
+
+        dict['All_schools'] = _("All schools")
+        dict['All_departments'] = _("All departments")
+
+        dict['Expand_all'] = _('Expand all')
+        dict['Collapse_all'] = _('Collapse all')
 
         dict['Organization'] = TXT_Organization
         dict['Action'] = _('Action')
@@ -320,6 +331,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Add_permission'] = _('Add permission')
         dict['Delete_permission'] = _('Delete permission')
         dict['Download_permissions'] = _('Download permissions')
+        dict['The_user_data'] = _('The user data')
+        dict['Download_user_data'] = _('Download user data')
+        dict['Yes_download'] = _("Yes, download")
 
         dict['No_user_selected'] = _('Please select a user first.')
         dict['Make_user_inactive'] = _('Make user inactive')
@@ -328,10 +342,18 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['role_caption'] = c.ROLE_DICT
 
+        dict['Calc_compensation'] = _('Calculate compensation')
+
+
         dict['msg_user_info'] = [
             str(_('Required, maximum %(max)s characters. Letters, digits and @/./+/-/_ only.') % {'max': c.USERNAME_SLICED_MAX_LENGTH}),
             str(_('Required, maximum %(max)s characters.') % {'max': c.USER_LASTNAME_MAX_LENGTH}),
             str(_('Required. It must be a valid email address.'))]
+
+        dict['already_exists_in_previous_examyear'] = _('already exists in this school, but in a previous exam year.')
+        dict['Doyou_wantto_add_to_this_examyear'] = _('Do you want to add this user to this exam year?')
+
+        dict['_of_'] = TXT__of_
 
         dict['Click_to_register_new_user'] = _('Click the submit button to register the new user.')
         dict['We_will_send_an_email_to_the_new_user'] = _('We will send an email to the new user, with a link to create a password and activate the account.')
@@ -675,6 +697,31 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Remove_evening_student_label'] = _("Remove label 'evening student'")
         dict['Download_candidate_data'] = _('Download candidate data')
 
+        dict['has_submitted_subjects'] = _('has submitted subjects.')
+        dict['Todelete_candidate_follow2steps'] = _('To delete a candidate with submitted subjects, follow these two steps:')
+        dict['First_click_delete_to_markfordeletion'] = _("First click 'Yes, delete'. The candidate will be marked for deletion.")
+        dict['indicated_by_double_line'] = _("This will be indicated by a double red line through the name of the candidate.")
+
+        dict['approve_deletion_of_subjects'] = _("Then, go to the page 'Subjects'. The chairperson and secertary must approve the deletion of the subjects of this candidate.")
+
+        dict['Afterthis_submit_additional_ex1form'] = _('Finally, submit an additional Ex1 form. The candidate will then be deleted.')
+
+        dict['Wait_to_submit_additional_exform'] = _("You can wait to submit the additional Ex1 form until you are about to enter the SE-grades.")
+        dict['Inthisway_changeswillbesubmitted_inoneform'] = _("In this way, all changes will be submitted in one additional Ex1 form.")
+
+        dict['This_candidate_ismarked_fordeletion'] = _('This candidate is marked for deletion.')
+        dict['Submit_exform_todelete_candidate'] = _('Submit an additional Ex1 form to delete this candidate.')
+        dict['This_candidate_is_deleted'] = _('This candidate is deleted.')
+        dict['Click_restore_to_restore_candidate'] = _("Select this candidate, then click the grey button 'Restore candidate' to restore this candidate.")
+
+        dict['ismarked_fordeletion'] = _(' is marked for deletion.')
+        dict['is_deleted'] = _(' is deleted.')
+        dict['Submit_exform_todelete_candidate'] = _('Submit an additional Ex1 form to delete this candidate.')
+
+        dict['Click_to_restore_candidate'] = _("Click 'Restore candidate' if you want to restore this candidate and his/her subjects.")
+
+        dict['Restore_candidate'] = _('Restore candidate')
+
         dict['_of_'] = TXT__of_
         dict['will_be_removed'] = TXT_will_be_removed
         dict['Yes_remove'] = _('Yes, remove')
@@ -682,14 +729,18 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Please_select_candidate_first'] = _('Please, select a candidate first.')
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
+        dict['Please_select_candidate_first'] = _('Please, select a candidate first.')
 
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
-        dict['Regnumber'] = TXT_Regnumber
-        dict['Regnumber_twolines'] = TXT_Regnumber_twolines
+        dict['Regnumber'] = _('Registration number')
+        dict['Regnumber_twolines'] = _('Registration\nnumber')
 
-        dict['Prefix'] = TXT_Prefix
-        dict['Prefix_twolines'] = TXT_Prefix_twolines
+        dict['Extra_facilities'] = _('Extra facilities')
+        dict['Extra_facilities_twolines'] = _('Extra\nfacilities')
+
+        dict['Prefix'] = _('Prefix')
+        dict['Prefix_twolines'] = pgettext_lazy('two lines ', 'Prefix')
 
         dict['Last_name'] = _('Last name')
         dict['First_name'] = _('First name')
@@ -711,6 +762,29 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Validate_candidate_schemes'] = _('Validate candidate schemes')
         dict['Correct_candidate_schemes'] = _('Correct candidate schemes')
         dict['Schemes_of_candidates_willbe_corrected'] = _('Schemes of candidates will be corrected.')
+
+        dict['The_lastname'] = _('The last name')
+        dict['The_firstname'] = _('The first name')
+        dict['The_birthdate'] = _('The birthdate')
+        dict['The_idnumber'] = _('The ID number')
+        dict['The_gender'] = _('The gender')
+        dict['The_examnumber'] = _('The exam number')
+        dict['The_level'] = _('The learning path')
+        dict['The_sector'] = _('The sector')
+        dict['The_profile'] = _('The profile')
+        dict['The_candidate_data'] = _('The candidate data')
+        #dict['The_country_of_birth'] = _('The country of birth')
+        #dict['The_place_of_birth'] = _('The place of birth')
+        dict['Yes_download'] = _("Yes, download")
+
+        dict['Last_name_too_long_max'] = _("%(cpt)s is too long. Maximum is %(max)s characters.") % {'cpt': _('The last name'), 'max': c.MAX_LENGTH_FIRSTLASTNAME}
+        dict['First_name_too_long_max'] = _("%(cpt)s is too long. Maximum is %(max)s characters.") % {'cpt': _('The first name'), 'max': c.MAX_LENGTH_FIRSTLASTNAME}
+        dict['Idnumber_too_long_max'] = _("%(cpt)s is too long. Maximum is %(max)s characters.") % {'cpt': _('The ID number'), 'max': 13}
+
+        dict['The_cob_andor_pob_mustbe_entered'] = _("%(cob)s and / or %(pob)s must be entered.") % {'cob': _('The country of birth'), 'pob': str(_('The place of birth')).lower()}
+
+
+        dict['is_not_valid'] = _(" is not valid.")
 
 # ====== PAGE STUDENTSUBJECTS ========================= PR2020-12-21
     if 'page_studsubj' in page_list:
@@ -740,6 +814,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['This_candidate_has_nosubjects'] = TXT_This_candidate_has_no_subjects
         dict['No_subject_selected'] = TXT_No_subject_selected
         dict['validation_error'] = _('The composition of the subjects is not correct')
+        dict['Click_to_validate'] = _('Click to validate the composition of the subjects.')
+        dict['Click_to_remove_validation'] = _('Click to remove the validation.')
 
         dict['All_subjects'] = TXT_All_subjects
         dict['All_candidates'] = TXT_All_candidates
@@ -777,6 +853,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_classes'] = _('There are no classes')
         dict['has_candidates'] = _('has candidates.')
         dict['cluster_willbe_removed'] = _('The cluster will be removed from these candidates.')
+        dict['click_ok_then_save'] = _("Click 'OK' and then click 'Save'.")
         dict['click_add_cluster01'] = _("First, click the 'Add cluster' button below.")
         dict['click_add_cluster02'] = _("Then, select candidates from the 'Available candidates' list.")
         dict['click_add_cluster03'] = _("Finally, click 'Save'.")
@@ -786,6 +863,15 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['slh'] = _('slh')
         dict['Studyloadhours'] = _('Studyload hours')
+
+        dict['ismarked_fordeletion'] = _(' is marked for deletion.')
+        dict['You_cannot_make_changes_in_the_subjects'] = _('You cannot make changes in the subjects.')
+
+        dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
+        dict['You_must_submit_exform_todelete_it'] = _('You must submit an additional Ex1 form to delete it')
+        dict['or_add_it_again_to_restore_it'] = _('or add it again to restore it.')
+
+        dict['No_cluster_permission'] = _("You don't have permission to approve subjects of this cluster.")
 
         dict['Authorized_chairperson'] = _('Authorized\nchairperson')
         dict['Authorized_secretary'] = _('Authorized\nsecretary')
@@ -836,9 +922,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Date_submitted'] = TXT_Date_submitted
         dict['Download_Exform'] = TXT_Download_Exform
 
-        dict['Show_all_matching_candidates'] = _('Show all matching candidates')
-        dict['Hide_linked_candidates'] = _('Hide linked candidates')
-
         dict['Delete_exemption'] = _('Delete exemption')
         dict['Delete_reex_schoolexam'] = _('Delete re-examination school exam')
         dict['Delete_reexamination'] = _('Delete re-examination ')
@@ -854,8 +937,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['is_already_published'] = _('is already published.')
         dict['You_cannot_change_approval'] = _('You cannot change the approval.')
 
+        dict['This_candidate_ismarked_fordeletion'] = _('This candidate is marked for deletion.')
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
-        dict['You_must_submit_additional_ex1form'] = _('You must submit an additional %(ex)s form to delete it.') % {'ex': 'Ex1'}
+        dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex1 form to delete this subject.')
 
         dict['MASS_info'] = {
             'subheader_approve_ex1': _('Selection of the subjects, that will be approved:'),
@@ -1164,6 +1248,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_examperiod_first'] = _('Please select an exam period in the vertical grey bar at the left first.')
         dict['Please_select_examperiod'] = _('Please select one exam period in the vertical grey bar at the left.')
 
+
+        dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
+        dict['You_cannot_make_changes'] = _('You cannot make changes.')
+
         dict['reex_msg_01'] = _("Only the re-examination subjects will be shown.")
         dict['reex_msg_02'] = _("Go to the page 'Subjects', click on the tab 'Second exam period',")
         dict['reex_msg_03'] = _("and tick off 'Re-examination' to add a re-examination subject.")
@@ -1186,6 +1274,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', 'Download conversion table')
         dict['Download_conv_table'] =_('Download conversion table')
+
+        dict['Lookup_exemptions'] = _('Look up exemptions of previous examyears')
+        dict['Show_all_matching_candidates'] = _('Show all matching candidates')
+        dict['Hide_linked_candidates'] = _('Hide linked candidates')
 
         dict['All_subjects'] = TXT_All_subjects
         dict['All_candidates'] = TXT_All_candidates
@@ -1215,12 +1307,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit_Ex2'] = _('Submit Ex2')
         dict['Submit_Ex2A'] = _('Submit Ex2A')
 
-
-
         dict['Approve_grade'] = _('Approve grade')
         dict['Approve_grades'] = _('Approve grades')
         dict['Block_grade'] = _('Block grade')
         dict['Unblock_grade'] = _('Unblock grade')
+
+        dict['Approve_exemptions'] = _('Approve exemptions')
 
         dict['Ex3_form'] = TXT_Ex3_form
         dict['Ex3_backpage'] = TXT_Ex3_backpage
@@ -1230,6 +1322,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Request_verifcode'] = TXT_Request_verifcode
 
+        dict['Submitted_by'] = TXT_Submitted_by
+
         dict['Submit'] = TXT_Submit
         dict['Show_fully_approved'] = _('Only the grades, that are fully approved or submitted, are shown.')
         dict['Show_not_fully_approved'] = _('Only the grades, that are not fully approved, are shown.')
@@ -1237,10 +1331,12 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['MAG_info'] = {
             'subheader_approve': _('The following grades will be approved:'),
+            'subheader_approve_exem': _('The following exemptions will be approved:'),
             'subheader_submit_ex2': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex2', 'sc_gr': _('grades')},
             'subheader_submit_ex2a': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex2A', 'sc_gr': _('scores')},
             'approve_0_ex2': _("Click 'Check grades' to check the selected grades before approving."),
             'approve_0_ex2a': _("Click 'Check scores' to check the selected scores before approving."),
+            'approve_0_exem': _("Click 'Check grades' to check the selected exemptions before approving."),
             'approve_1_ex2': _('After the grades are approved by the chairperson, secretary and examiner,'),
             'approve_1_ex2a': _('After the scores are approved by the chairperson, secretary, examiner and corrector,'),
             'approve_2_ex2': _('the %(ex)s form can be submitted by the chairperson or secretary.') % {'ex': 'Ex2'},
@@ -1352,6 +1448,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['blocked_12'] = _('It has been submitted again at ')
         dict['blocked_13'] = _("The Inspectorate has not unblocked the grade yet.")
 
+        dict['exemption_approved_01'] = _("This exemption is imported from a previous exam year.")
+        dict['exemption_approved_02'] = _("The chairperson and secretary don't have to approve it.")
+
         dict['and'] = TXT__and_
 
         dict['grade_err_list'] = {
@@ -1423,6 +1522,8 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
                                'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
+                               'Corrector_cannot_approve_exem': _("As a corrector you don't have to approve exemptions."),
+                               'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
                                'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),
                                         str(_("The examiner and corrector don't have to approve designated exams."))))
         }
@@ -1564,7 +1665,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submitted_by'] = TXT_Submitted_by
         dict['Download_Exform'] = TXT_Download_Exform
         dict['Delete_document'] = _('Delete document')
-        dict['Document'] = _('Document')
+        #dict['Document'] = _('Document')
+        dict['This_document_willbe_deleted'] = _('This document will be deleted')
 
         dict['File_not_found'] = _('This file has not been found.')
 
@@ -1700,12 +1802,6 @@ TXT_Organization = _('Organization')
 
 TXT_Examnumber = _('Exam number')
 TXT_Examnumber_twolines = _('Exam\nnumber')
-
-TXT_Regnumber = _('Registration number')
-TXT_Regnumber_twolines = _('Registration\nnumber')
-
-TXT_Prefix = _('Prefix')
-TXT_Prefix_twolines = pgettext_lazy('two lines ', 'Prefix')
 
 TXT_Select_examperiod = _('Select exam period')
 TXT_No_examperiods_found = _('No exam periods found')

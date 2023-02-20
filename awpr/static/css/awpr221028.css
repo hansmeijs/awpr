@@ -379,7 +379,7 @@ select.form-control:not([size]):not([multiple]) {
 
 /* used in userpage PR2022-10-26 */
 
-.awp_modselect_item { /* PR2022-10-26 */
+.awp_modselect_school { /* PR2022-10-26 */
     background:  #2d4e77; /* HeaderBackColor Default Schema Blauw donkerblauw */
     color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
    /* font-size: 1.1rem;*/
@@ -397,8 +397,80 @@ select.form-control:not([size]):not([multiple]) {
                                   supported by Chrome, Edge, Opera and Firefox */
 }
 
-.awp_modselect_item:hover {
+.awp_modselect_school:hover {
   color: #a8c1e0;
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+.awp_modselect_department { /* PR2022-10-26 */
+    background-color: #4c74a7; /* #4c74a7 rgba: 76-116-167-1 medium blue*/
+
+    color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+   /* font-size: 1.1rem;*/
+    /*font-size: 18px;*/
+    /*padding: 0px 8px 0px 8px;*/  /* top, right, bottom, left: */
+    /*margin: 4px 8px 4px 8px;*/
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+.awp_modselect_department:hover {
+  color: #a8c1e0;
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+.awp_modselect_level { /* PR2022-10-26 */
+
+    color: #2D4E77; /* HeaderBackColor Default Schema Blauw donkerblauw */
+    background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+.awp_modselect_level:hover {
+  /*color: #a8c1e0;*/
+
+  color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+.awp_modselect_subject { /* PR2022-11-06 */
+    color: #212529; /* color: #212529;  /* dark dark grey blue  */
+    /*background-color: #ffff; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+.awp_modselect_subject:hover {
+  color:  #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
   text-decoration: none;
   list-style: none;
   cursor: pointer;

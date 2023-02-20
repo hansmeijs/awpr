@@ -69,7 +69,7 @@
 //=========  format_date_from_dateISO ================ PR2022-03-09
     function format_date_from_dateISO(loc, date_iso) {
         //console.log( "===== format_date_from_dateISO  ========= ");
-        // PR2022-03-09 debug: date_JS gives birthdate one day before birthdat, becasue of timezone
+        // PR2022-03-09 debug: date_JS gives birthdate one day before birthdate, because of timezone
         // data_dict.birthdate 2004-05-30 becomes date_JS = Sat May 29 2004 20:00:00 GMT-0400 (Venezuela Time)
         // use format_date_from_dateISO instead
 

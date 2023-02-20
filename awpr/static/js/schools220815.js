@@ -9,7 +9,7 @@
 let selected_period = {};
 
 
-let school_rows = [];
+//let school_rows = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";

@@ -22,7 +22,6 @@ from reportlab.platypus import Paragraph, Frame
 from awpr import constants as c
 from awpr import settings as s
 from awpr import functions as af
-from awpr import downloads as dl
 from awpr import settings as awpr_settings
 from awpr import library as awpr_lib
 
@@ -30,7 +29,7 @@ from accounts import views as acc_view
 from schools import models as sch_mod
 from students import functions as stud_fnc
 from subjects import models as subj_mod
-from grades import views as gr_vw
+from grades import views as grd_view
 
 from os import path
 import io
@@ -130,7 +129,7 @@ class GetEx3infoView(View):  # PR2021-10-06
             # upload_dict = json.loads(upload_json)
 
 # - get ex3 settings from usersetting
-            setting_dict = acc_view.get_usersetting_dict(c.KEY_EX3, request)
+            setting_dict = acc_prm.get_usersetting_dict(c.KEY_EX3, request)
             if logging_on:
                 logger.debug('setting_dict: ' + str(setting_dict))
             if setting_dict:
@@ -144,12 +143,12 @@ class GetEx3infoView(View):  # PR2021-10-06
                     update_wrap['lvlbase_pk_list'] = lvlbase_pk_list
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_editNIU, msg_listNIU = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_editNIU, msg_listNIU = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - get selected examperiod from usersettings
             sel_examperiod = None
-            selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+            selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             if selected_pk_dict:
                 sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
             if not sel_examperiod:
@@ -179,7 +178,7 @@ class GetEx3infoView(View):  # PR2021-10-06
 
         sql_keys = {'ey_id': examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk, 'examperiod': examperiod}
 
-        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
+        sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name_nl,",
                     # TODO add cluster
                     # "MAX(studsubj.clustername) AS max_clustername, MAX(stud.classname) AS max_classname,",
                     "MAX(stud.classname) AS max_classname,",
@@ -199,7 +198,7 @@ class GetEx3infoView(View):  # PR2021-10-06
                     "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
                     "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted",
                     "AND grd.examperiod = %(examperiod)s::INT",
 
                     "GROUP BY subj.id, subjbase.code, subj.name_nl",
@@ -259,7 +258,7 @@ class GetEx3infoView(View):  # PR2021-10-06
                     "WHERE ey.id = %(ey_id)s::INT",
                     "AND school.id = %(sch_id)s::INT",
                     "AND dep.id = %(dep_id)s::INT",
-                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted",
                     "AND grd.examperiod = %(experiod)s::INT",
 
                     "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
@@ -377,7 +376,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 
 
 @method_decorator([login_required], name='dispatch')
-class DownloadEx3View(View):  # PR2021-10-07
+class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
 
     def get(self, request, list):
         logging_on = False  # s.LOGGING_ON
@@ -407,12 +406,12 @@ class DownloadEx3View(View):  # PR2021-10-07
             activate(user_lang)
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
             islexschool = sel_school.islexschool
 
 # - get selected examperiod from usersettings
-            sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+            sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
@@ -437,9 +436,8 @@ class DownloadEx3View(View):  # PR2021-10-07
                 ex3_dict: { 
                     2168: { 'subj_name': 'Culturele en Artistieke Vorming', 
                             'student_list': [
-                                ('V021', ' Albertus, Dinaida L.J.'), 
-                                ('A17', ' Angela, Jean-Drianelys N.E.'),
-                                ('A06', ' Doran, Tianny L.'), 
+                                {'examnumber': '010', 'full_name': 'van Wamel, Chris', 'extrafacilities': False},
+
                 """
 
         # - get arial font
@@ -491,7 +489,8 @@ class DownloadEx3View(View):  # PR2021-10-07
                             first_row_of_page = page_index * max_rows
                             last_row_of_page_plus_one = (page_index + 1) * max_rows
                             row_range = [first_row_of_page, last_row_of_page_plus_one]
-                            draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
+
+                            draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
                                      page_dict, student_list, row_range, line_height, page_index, pages_roundup, user_lang)
                             canvas.showPage()
 
@@ -569,7 +568,7 @@ class DownloadEx3View(View):  # PR2021-10-07
 
         logger.debug('subject_filter: ' + str(subject_filter))
         sql_list = ["SELECT subj.id AS subj_id, subjbase.code AS subj_code, subj.name_nl AS subj_name,",
-                    "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, ",
+                    "stud.lastname, stud.firstname, stud.prefix, stud.examnumber, stud.extrafacilities,",
                     "stud.classname, cl.name AS cluster_name,",
                     "stud.level_id, lvl.name AS lvl_name",
 
@@ -591,7 +590,8 @@ class DownloadEx3View(View):  # PR2021-10-07
                     "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
                     level_filter,
                     subject_filter,
-                    "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+
+                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
                     "AND grd.examperiod = %(experiod)s::INT",
                     "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
                     ]
@@ -615,10 +615,14 @@ class DownloadEx3View(View):  # PR2021-10-07
                 level_id = row.get('level_id')
                 lvl_name = row.get('lvl_name', '---')
                 examnumber = row.get('examnumber', '---')
-                first_name = row.get('firstname')
-                last_name = row.get('lastname')
-                prefix = row.get('prefix')
-                full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
+
+                extrafacilities = row.get('extrafacilities', False)
+                full_name = stud_fnc.get_lastname_firstname_initials(
+                    last_name=row.get('lastname'),
+                    first_name=row.get('firstname'),
+                    prefix=row.get('prefix'),
+                    has_extrafacilities=extrafacilities
+                )
 
                 if sel_layout == "level":
                     key = (subj_pk, level_id)
@@ -640,7 +644,8 @@ class DownloadEx3View(View):  # PR2021-10-07
                     ex3_dict[key]['students'] = []
 
                 student_list = ex3_dict[key].get('students', [])
-                student_list.append((examnumber, full_name))
+                student_dict = {'examnumber': examnumber, 'full_name': full_name, 'extrafacilities': extrafacilities}
+                student_list.append( student_dict)
 
         if logging_on:
             logger.debug('ex3_dict: ' + str(ex3_dict))
@@ -674,8 +679,8 @@ class DownloadEx3BackpageView(View):  # PR2022-02-26
             activate(user_lang)
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
             islexschool = sel_school.islexschool
 
             if sel_school:
@@ -716,120 +721,6 @@ class DownloadEx3BackpageView(View):  # PR2022-02-26
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of DownloadEx3View
-
-
-@method_decorator([login_required], name='dispatch')
-class GradeDownloadEx2aViewXXX(View):  # PR2021-01-24
-
-    def get(self, request):
-        logging_on = s.LOGGING_ON
-        if logging_on:
-            logger.debug(' ============= GradeDownloadEx2aView ============= ')
-        # function creates, Ex2A pdf file based on settings in usersetting
-
-        response = None
-        #try:
-
-        if request.user and request.user.country and request.user.schoolbase:
-            req_user = request.user
-
-# - reset language
-            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get selected examyear, school and department from usersettings
-           # TODO was:  sel_examyear, sel_school, sel_department, is_locked, \
-                #examyear_published, school_activated, requsr_same_schoolNIU = \
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
-
-# - get selected examperiod, examtype, subject_pk from usersettings
-            sel_examperiod, sel_examtype, sel_subject_pk = dl.get_selected_experiod_extype_subject_from_usersetting(request)
-
-            if logging_on:
-                logger.debug('sel_examperiod: ' + str(sel_examperiod))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('sel_subject_pk: ' + str(sel_subject_pk))
-
-            if sel_examperiod and sel_school and sel_department and sel_subject_pk:
-                sel_subject = subj_mod.Subject.objects.get_or_none(
-                    pk=sel_subject_pk,
-                    examyear=sel_examyear
-                )
-                if logging_on:
-                    logger.debug('sel_subject: ' + str(sel_subject))
-
-# +++ get selected grade_rows
-                auth_dict = {}
-                setting_dict = {c.KEY_SEL_SCTBASE_PK: {c.KEY_SEL_SUBJBASE_PK: sel_subject.base_id}}
-
-                grade_rows = gr_vw.create_grade_rows(
-                    sel_examyear_pk=sel_examyear.pk,
-                    sel_schoolbase_pk=sel_school.base_id,
-                    sel_depbase_pk=sel_department.base_id,
-                    sel_examperiod=sel_examperiod,
-                    setting_dict=setting_dict,
-                    request=request,
-                    auth_dict=auth_dict
-                    )
-
-                # https://stackoverflow.com/questions/43373006/django-reportlab-save-generated-pdf-directly-to-filefield-in-aws-s3
-
-                # PR2021-04-28 from https://docs.python.org/3/library/tempfile.html
-                #temp_file = tempfile.TemporaryFile()
-                # canvas = Canvas(temp_file)
-
-                buffer = io.BytesIO()
-                canvas = Canvas(buffer)
-
-                # Start writing the PDF here
-                draw_Ex2A(canvas, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows)
-                #test_pdf(canvas)
-                # testParagraph_pdf(canvas)
-
-                if logging_on:
-                    logger.debug('end of draw_Ex2A')
-
-                canvas.showPage()
-                canvas.save()
-
-                pdf = buffer.getvalue()
-                # pdf_file = File(temp_file)
-
-                # was: buffer.close()
-
-                """
-                # TODO as test try to save file in
-                studsubjnote = stud_mod.Studentsubjectnote.objects.get_or_none(pk=47)
-                content_type='application/pdf'
-                file_name = 'test_try.pdf'
-                if studsubjnote and pdf_file:
-                    instance = stud_mod.Noteattachment(
-                        studentsubjectnote=studsubjnote,
-                        contenttype=content_type,
-                        filename=file_name,
-                        file=pdf_file)
-                    instance.save()
-                    logger.debug('instance.saved: ' + str(instance))
-                # gives error: 'bytes' object has no attribute '_committed'
-                """
-
-                response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="testpdf.pdf"'
-                #response['Content-Disposition'] = 'attachment; filename="testpdf.pdf"'
-
-                response.write(pdf)
-
-        #except Exception as e:
-       #     logger.error(getattr(e, 'message', str(e)))
-       #     raise Http404("Error creating Ex2A file")
-
-        if response:
-            return response
-        else:
-            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
-            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
 def testParagraph_pdf(canvas):
@@ -901,11 +792,12 @@ def test_pdf(canvas):
         doc.build(Story, onFirstPage=myFirstPage, onLaterPages=myLaterPages)
 
 
-def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
+def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
              page_dict, student_list, row_range, line_height, page_index, pages, user_lang):
+    # PR2023-01-07
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug('----- draw_Ex3 -----')
+        logger.debug('----- draw_Ex3_page -----')
         logger.debug('page_dict: ' + str(page_dict))
 
     # page_dict: {
@@ -916,6 +808,9 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
     #   'cluster': None,
     #   'levvl': 'Praktisch Kadergerichte Leerweg',
     #   'student_list': [('A33', 'Alberto, Giorelle L.'),
+
+# - to check if there are any students with extrafacilities on this page
+    has_extrafacilities = False
 
 # - set the corners of the rectangle
     top, right, bottom, left = 287 * mm, 200 * mm, 12 * mm, 10 * mm
@@ -1005,19 +900,26 @@ def draw_Ex3(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_
     # turn off grey lines
     #  canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
 
+    if logging_on:
+        logger.debug('student_list: ' + str(student_list))
+
     for index in range(row_range[0], row_range[1]):  # range(start_value, end_value, step), end_value is not included!
         row_data = None
         if index < len(student_list):
             row_data = student_list[index]
-        draw_Ex3_row(canvas, row_data, left, right, y_bottom, coord, line_height, col_width_list)
+        if logging_on:
+            logger.debug('    row_data: ' + str(row_data))
+        extrafacilities = draw_Ex3_row(canvas, row_data, left, right, y_bottom, coord, line_height, col_width_list)
+        if extrafacilities:
+            has_extrafacilities = True
 
 # - draw page footer
-    # TODO
+    # sequence is not  implemented: scanning all Ex3 forms separately is too much work, evaluation schools aug 2022
     # sequence is number to be added to pages to be used when uploading Ex3 forms with signatures
     sequence = 0
-    draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, user_lang)
+    draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, has_extrafacilities, user_lang)
 
-# - end of draw_Ex3
+# - end of draw_Ex3_page
 
 
 def draw_page_border(canvas, border):
@@ -1087,7 +989,7 @@ def draw_Ex3_page_header(canvas, coord, text_list):
 # - end of draw_Ex3_page_header
 
 
-def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, user_lang):
+def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, has_extrafacilities, user_lang):
     # PR2021-10-08
     footer_height = 10 * mm
     padding_left = 4 * mm
@@ -1108,7 +1010,9 @@ def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, 
     canvas.setFillColor(colors.HexColor("#000000"))
 
 # - column 0 'Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1.'
-    canvas.drawString(x, y, exform_text.get('footer_01', '-'))  # 'col_00_00': 'Examennr.'
+    # canvas.drawString(x, y, exform_text.get('footer_01', '-'))  # 'col_00_00': 'Examennr.'
+    if has_extrafacilities:
+        canvas.drawString(x, y, exform_text.get('extrafacilities', ''))  # 'col_00_00': 'Examennr.'
 
     today_dte = af.get_today_dateobj()
     today_formatted = af.format_DMY_from_dte(today_dte, user_lang, True)  # True = month_abbrev
@@ -1118,7 +1022,7 @@ def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, 
         page_txt = ' '.join(('Pagina', str(page_index + 1), 'van', str(pages)))
         canvas.drawString(right - 60 * mm, y, page_txt)
 
-    # TODO add number to pages to be used when uploading Ex3 fiorms wit h signatures
+    # TODO add number to pages to be used when uploading Ex3 forms wit h signatures
     #canvas.drawRightString(right - 2 * mm, bottom - 4 * mm, str(sequence))
 
 
@@ -1211,21 +1115,24 @@ def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, 
 # - end of draw_Ex3_colum_header
 
 
-
 def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_width_list):
+    # PR2023-01-07
 
     x = left
     y = coord[1] - line_height
     pl = 4 * mm
     pb = 2 * mm
 
+    extrafacilities = False
     try:
         #logger.debug('y: ' + str(y) + ' ' + str(type(y)))
         #logger.debug('tab_list: ' + str(tab_list) + ' ' + str(type(tab_list)))
         # col_width = (25, 65, 17, 22, 22, 22, 17)  # last col is 17 mm
         # draw empty row when row is None, to draw lines till end of page
         if row is not None:
-            examnumber = row[0] or '---'
+            {'examnumber': '010', 'full_name': 'van Wamel, Chris', 'extrafacilities': False},
+
+            examnumber = row.get('examnumber', '---')
             # canvas.drawString(tab_list[0], y, examnumber)
             # canvas.drawCentredString(x + pl + pb, y + pb, examnumber)
 
@@ -1234,8 +1141,10 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
             canvas.drawString(x + pl_exnr, y + pb, examnumber)
 
             x += col_width_list[0] * mm
-            fullname = row[1] or '---'
+            fullname =  row.get('full_name', '---')
             canvas.drawString(x + pl, y + pb, fullname)
+
+            extrafacilities = row.get('extrafacilities', False)
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -1248,6 +1157,8 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
 
     coord[1] = y
     #logger.debug('end of draw_Ex2A_line:')
+
+    return extrafacilities
 # - end of draw_Ex3_row
 
 

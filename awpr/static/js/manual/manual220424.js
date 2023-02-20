@@ -1,9 +1,12 @@
 // PR2021-06-10 added
 
+console.log("+++++++ script 'manual' before DOMContentLoaded")
 let user_lang =  null;
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
+
+console.log("+++++++ script 'manual' after DOMContentLoaded")
 
 // --- get data stored in page
     let el_data = document.getElementById("id_data");
@@ -40,28 +43,29 @@ document.addEventListener('DOMContentLoaded', function() {
 })  // document.addEventListener('DOMContentLoaded', function()
 
 
-//========= LoadPage  ============= PR2021-07-30 PR2021-10-30
-    function LoadPage(page, data_paragraph){
+//========= LoadPage  ============= PR2021-07-30 PR2021-10-30 PR2023-01-27
+    function LoadPage(page, paragraph_id){
         console.log( "===== LoadPage  ========= ");
-        console.log( "page", page);
-        console.log( "data_paragraph", data_paragraph);
-        console.log( "user_lang", user_lang);
+        console.log( "    page", page);
+        console.log( "    paragraph_id", paragraph_id);
+        console.log( "    user_lang", user_lang);
 
-        const el_btn = document.getElementById("id_btn_" + page)
-        console.log( "el_btn", el_btn);
+        // NIU: const el_btn = document.getElementById("id_btn_" + page)
+        //console.log( "el_btn", el_btn);
 
         const is_en = (user_lang === "en");
         console.log( "is_en", is_en);
         const html_dict = (page === "home") ? man_home :
                         (page === "user") ? man_user :
                         (page === "upload") ? man_upload :
+                        (page === "student") ? man_student :
                         (page === "studsubj") ? man_studsubj :
                         (page === "cluster") ? man_cluster :
                         (page === "exemption") ? man_exemption :
                         (page === "exams") ? man_exams :
                         (page === "approve") ? man_approve :
                         (page === "mailbox") ? man_mailbox : null;
-        //console.log( "html_dict", html_dict);
+        console.log( "html_dict", html_dict);
 
         const html_list = (html_dict) ? (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl : null;
         //console.log( "html_list", html_list);
@@ -74,8 +78,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         SelectBtnAndDeselctOthers("id_btn_" + page )
 
-        if (data_paragraph){
-            GotoParagraph(data_paragraph)
+        if (paragraph_id){
+            //console.log(" ----- GotoParagraph ----- ")
+            //console.log("    paragraph_id", paragraph_id)
+            // PR2023-01-27 debug: Timeout added, to load page first before going to paragraph element
+            setTimeout(function (){
+                GotoParagraph(paragraph_id)
+            }, 150);
+
         };
 
     };  // LoadPage
@@ -125,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillSideNav  ============= PR2021-08-23
     function FillSideNav(is_en){
-        console.log( " ===  FillSideNav  ===");
+        //console.log( " ===  FillSideNav  ===");
         //console.log("is_en", is_en)
 
         const sbr_list = (!is_en) ?
@@ -155,6 +165,14 @@ document.addEventListener('DOMContentLoaded', function() {
              ["id_upload_step05", "Uploaden"]
             ]),
 
+        get_dropdown_button("student", "id_intro", "Kandidaten", [
+            ["id_filter_students", "Kandidaten filteren"],
+            ["id_add_student", "Kandidaat toevoegen"],
+            ["id_change_student", "Kandidaatgegevens wijzigen"],
+            ["id_delete_student", "Kandidaat wissen"],
+            ["id_download_students", "Kandidaatgegevens downloaden"]
+            ]),
+
         get_dropdown_button("studsubj", "id_intro", "Vakken van kandidaten", [
             ["id_filter_subjects", "Vakken filteren"],
             ["id_validate_subjects", "Controle op de samenstelling van de vakken"],
@@ -168,11 +186,10 @@ document.addEventListener('DOMContentLoaded', function() {
             ]),
 
         get_dropdown_button("exemption", "id_intro_exemption", "Vrijstellingen", [
-            ["id_exem_bis_exam", "Bis-kandidaten"],
-            ["id_exem_set", "Vrijstellingen aanmaken"],
-            ["id_exem_grades", "Vrijstelling cijfers invoeren"],
+            ["id_exem_lookup", "Vrijstellingen opzoeken"],
+            ["id_exem_enter", "Vrijstellingen invoeren"],
             ["id_exem_upload", "Vrijstelling cijfers uploaden"],
-            ["id_exem_approve", "Vrijstellingen goedkeuren en indienen"],
+            // PR2023-02-20 was: ["id_exem_approve", "Vrijstellingen goedkeuren en indienen"],
             ["id_exem_exemption_year", "Jaar van de vrijstelling"]
             ]),
 
@@ -232,6 +249,14 @@ document.addEventListener('DOMContentLoaded', function() {
              ["id_upload_step05", "Upload"]
             ]),
 
+        get_dropdown_button("student", "id_intro", "Candidates", [
+             ["id_filter_students", "Filter candidates"],
+             ["id_add_student", "Add a candidate"],
+             ["id_change_student", "Change candidate data"],
+             ["id_delete_student", "Delete a candidate"],
+             ["id_download_students", "Download candidate data"]
+            ]),
+
         get_dropdown_button("studsubj", "id_intro", "Subjects of candidates", [
              ["id_filter_subjects", "Filter subjects"],
              ["id_validate_subjects", "Subject composition check"],
@@ -243,13 +268,13 @@ document.addEventListener('DOMContentLoaded', function() {
             ["id_cluster_add_delete", "Clusters toevoegen of wissen"],
             ["id_cluster_student", "Kandidaten toevoegen of verwijderen"]
             ]),
+
         get_dropdown_button("exemption", "id_intro_exemption", "Exemptions", [
-             ["id_exem_bis_exam", "Bis candidates"],
-             ["id_exem_set", "Create exemptions"],
-             ["id_exem_grades", "Enter grade exemption"],
-             ["id_exem_upload", "Number upload exemption"],
-             ["id_exem_approve", "Approve and submit exemptions"],
-             ["id_exem_exemption_year", "Year of the exemption"]
+            ["id_exem_lookup", "Look up exemptions"],
+            ["id_exem_enter", "Enter exemptions"],
+            ["id_exem_upload", "Upload exemption grades"],
+            // PR2023-02-20 was: ["id_exem_approve", "Approve and submit exemptions"],
+            ["id_exem_exemption_year", "Year of the exemption"]
             ]),
 
         get_dropdown_button("exams", "id_intro_exams", "Exams (former WOLF program)", [
@@ -296,9 +321,9 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     function get_dropdown_button(page, first_paragraph, btn_txt, item_list){
-        console.log(" ----- get_dropdown_button ----- ");
-        console.log("first_paragraph", first_paragraph);
-        console.log("btn_txt", btn_txt);
+        //console.log(" ----- get_dropdown_button ----- ");
+        //console.log("first_paragraph", first_paragraph);
+        //console.log("btn_txt", btn_txt);
         let html_str = "<button id='id_btn_" + page + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39, &#39" + first_paragraph + "&#39 )'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
         //let html_str = "<button id='" + btn_id + "' class='dropdown-btn' onclick='LoadPage(&#39" + page + "&#39)'>" + btn_txt + "<i class='fa fa-caret-down'></i></button>";
 

@@ -150,7 +150,7 @@ urlpatterns = [
         path('user', account_views.UserListView.as_view(), name='users_url'),
         path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
 
-        path('allowedschools_download', account_views.UserAllowedschoolsUploadView.as_view(), name='url_user_allowedschools_upload'),
+        path('allowedsections_upload', account_views.UserAllowedSectionsUploadView.as_view(), name='url_user_allowedsections_upload'),
 
         path('userpermit_upload', account_views.UserpermitUploadView.as_view(), name='userpermit_upload_url'),
         path('usersetting_upload', account_views.UserSettingsUploadView.as_view(), name='url_usersetting_upload'),
@@ -158,6 +158,9 @@ urlpatterns = [
 
         path('user_modmsg_hide', account_views.UserModMessageHideView.as_view(), name='url_user_modmsg_hide'),
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
+
+        path('download_userdata_xlsx', account_views.UserdataDownloadXlsxView.as_view(), name='url_download_userdata_xlsx'),
+
     ])),
 
     url(r'session_security/', include('session_security.urls')),
@@ -226,41 +229,48 @@ urlpatterns = [
         path('download_scheme_xlsx', grade_excel.SchemeDownloadXlsxView.as_view(), name='url_download_scheme_xlsx')
     ])),
 
-# ===== STUDENTS ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
+# ===== STUDENTS ==========================
     path('students/', include([
         path('student', student_views.StudentListView.as_view(), name='students_url'),
-
         path('student_upload', student_views.StudentUploadView.as_view(), name='url_student_upload'),
-        path('student_biscand', student_views.StudentLinkStudentView.as_view(), name='url_student_biscand'),
+
+        path('multiple_occurrences', student_views.StudentMultipleOccurrencesView.as_view(), name='url_student_multiple_occurrences'),
+        path('link_student', student_views.StudentLinkStudentView.as_view(), name='url_student_linkstudent'),
+        path('enter_exemptions', student_views.StudentEnterExemptionsView.as_view(), name='url_student_enter_exemptions'),
 
         path('download_student_xlsx', grade_excel.StudentDownloadXlsxView.as_view(), name='url_download_student_xlsx'),
+    ])),
 
+# ===== STUDENTSUBJECTS ==========================
+    path('studsubj/', include([
         path('studentsubject', student_views.StudentsubjectListView.as_view(), name='studentsubjects_url'),
-        path('studsubj_upload', student_views.StudentsubjectUploadView.as_view(), name='url_studsubj_upload'),
+        path('studsubj_upload', student_views.StudentsubjectMultipleUploadView.as_view(), name='url_studsubj_upload'),
         path('studsubj_single_update', student_views.StudentsubjectSingleUpdateView.as_view(), name='url_studsubj_single_update'),
 
         path('studsubj_validate_scheme', student_views.StudentsubjectValidateSchemeView.as_view(), name='url_studsubj_validate_scheme'),
         path('studsubj_validate_test', student_views.StudentsubjectValidateTestView.as_view(), name='url_studsubj_validate_test'),
-        path('studsubj_validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
-        path('studsubj_multiple_occurrences', student_views.StudentsubjectMultipleOccurrencesView.as_view(), name='url_studsubj_multiple_occurrences'),
+        path('validate_all', student_views.StudentsubjectValidateAllView.as_view(), name='url_studsubj_validate_all'),
 
         path('studsubj_approve', student_views.StudentsubjectApproveSingleView.as_view(), name='url_studsubj_approve'),
-        path('studsubj_approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1Ex4View.as_view(), name='url_studsubj_approve_submit_multiple'),
+        path('approve_submit_multiple', student_views.StudentsubjectApproveOrSubmitEx1Ex4View.as_view(), name='url_studsubj_approve_submit_multiple'),
         path('send_email_verifcode', student_views.SendEmailVerifcodeView.as_view(), name='url_send_email_verifcode'),
 
         path('studentsubjectnote_upload', student_views.StudentsubjectnoteUploadView.as_view(), name='url_studentsubjectnote_upload'),
         path('studentsubjectnote_download', student_views.StudentsubjectnoteDownloadView.as_view(), name='studentsubjectnote_download_url'),
         path('noteattachment_download/<int:pk_int>/', student_views.NoteAttachmentDownloadView.as_view(), name='noteattachment_download_url'),
+        path('validate_composition', student_views.ValidateCompositionView.as_view(), name='url_validate_subj_composition'),
 
+        path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload')
+    ])),
+
+# ===== EX1 EX3 EX4 FORMS ==========================
+    path('exforms/', include([
         path('download_ex1', grade_excel.StudsubjDownloadEx1View.as_view(), name='url_download_ex1'),
         path('download_ex4', grade_excel.StudsubjDownloadEx4View.as_view(), name='url_download_ex4'),
 
         path('ex3_getinfo/', grade_exfiles.GetEx3infoView.as_view(), name='url_ex3_getinfo'),
         path('download_ex3/<list>/', grade_exfiles.DownloadEx3View.as_view(), name='url_ex3_download'),
         path('ex3_backpage', grade_exfiles.DownloadEx3BackpageView.as_view(), name='url_ex3_backpage'),
-
-        path('cluster_upload', student_views.ClusterUploadView.as_view(), name='url_cluster_upload'),
-        path('validate_composition', student_views.ValidateCompositionView.as_view(), name='url_validate_subj_composition')
 
     ])),
 
@@ -300,8 +310,8 @@ urlpatterns = [
 
 # ===== ARCHIVES ========================== PR2022-03-09
     path('archives/', include([
-        path('archive', student_results.ArchivesListView.as_view(), name='url_archive'),
-        path('archive_upload', student_results.ArchivesUploadView.as_view(), name='url_archive_upload'),
+        path('archive', school_views.ArchivesListView.as_view(), name='url_archive'),
+        path('archive_upload', school_views.ArchivesUploadView.as_view(), name='url_archive_upload'),
     ])),
 
 # ===== ORDERLISTS ========================== PR2021-04-04
@@ -343,6 +353,11 @@ urlpatterns = [
     ])),
 
 
+# ===== WOLF ========================== PR2022-12-16
+    path('wolf/', include([
+        path('exam', subject_views.WolfListView.as_view(), name='wolf_url'),
+
+    ])),
 # ===== IMPORT ==========================
     path('import/', include([
         #path('import_student_load/', student_views.StudentImportUploadDataView.as_view(), name='import_student_load_url'),

@@ -27,7 +27,7 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
-            {% include 'accounts/moduserpermitsection.html' %}
+            {% include 'accounts/moduserallowedsection.html' %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
             {% include 'includes/modselectmultiple.html' %}
@@ -71,9 +71,12 @@
                 <button data-btn="btn_user" class="btn btn-secondary ">{% trans 'Users' %}</button>
                 <button data-btn="btn_usergroup" class="btn btn-secondary ">{% trans 'User groups' %}</button>
                 <button data-btn="btn_allowed" class="btn btn-secondary ">{% trans 'Allowed sections' %}</button>
+                <button data-btn="btn_correctors" class="btn btn-secondary ">{% trans 'Second correctors' %}</button>
+
                 {% if show_btn_userpermit %}
                     <button data-btn="btn_userpermit" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
                 {% endif %}
+
             </div>
 <!-- end BUTTON GROUP -->
 
@@ -91,11 +94,12 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
-                data-url_user_allowedschools_upload="{% url 'url_user_allowedschools_upload' %}"
+                data-url_user_allowedsections_upload="{% url 'url_user_allowedsections_upload' %}"
 
                 data-user_upload_url="{% url 'user_upload_url' %}"
                 data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"
                 data-user_download_permits_url="{% url 'user_download_permits_url' %}"
+                data-url_download_userdata_xlsx="{% url 'url_download_userdata_xlsx' %}"
             >
             </div>
         {% endif %}

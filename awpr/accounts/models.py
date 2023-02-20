@@ -1,7 +1,7 @@
 # PR2018-04-22 PR2020-09-14
 from django.db import connection
 from django.db.models import Model, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, EmailField
+from django.db.models import CharField, TextField, IntegerField, PositiveSmallIntegerField, SmallIntegerField, BooleanField, DateTimeField, EmailField
 from django.contrib.auth.models import AbstractUser, UserManager
 
 # PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
@@ -17,6 +17,9 @@ from schools.models import Country, Examyear, Departmentbase, Department, School
 from awpr import constants as c
 from awpr import settings as s
 from schools import models as sch_mod
+from subjects import models as subj_mod
+
+from subjects.models import Exam
 
 import json #PR2018-12-19
 import logging # PR2018-05-10
@@ -70,7 +73,10 @@ class User(AbstractUser):
 
     role = PositiveSmallIntegerField(default=0)
 
+    #PR2023-01-12 to be deprecated, moved to table UserAllowed
     usergroups = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+
+    #PR2023-01-12 to be deprecated, moved to table UserAllowed
     allowed_depbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     allowed_levelbases = CharField(max_length=c.MAX_LENGTH_KEY, null=True)
     allowed_schoolbases = CharField(max_length=2048, null=True)
@@ -142,91 +148,6 @@ class User(AbstractUser):
         return self.username[6:]
 
 
-    @property
-    def usergroup_list(self):
-        # --- create list of  usergroups of this user  PR2021-07-26
-        logging_on = False  # s.LOGGING_ON
-        if logging_on:
-            logger.debug(' =============== permit_list ============= ')
-
-        usergroup_list = []
-
-        requsr_role = getattr(self, 'role')
-        requsr_usergroups = getattr(self, 'usergroups')
-
-        if requsr_role and requsr_usergroups:
-            usergroup_list = requsr_usergroups.split(';')
-
-        return usergroup_list
-    # - end of usergroup_list
-
-
-    def permit_list(self, page):
-        # --- create list of all permits  of this user PR2021-04-22  PR2021-07-03
-        logging_on = False  # s.LOGGING_ON
-        if logging_on:
-            logger.debug(' =============== permit_list ============= ')
-            logger.debug('page: ' + str(page) + ' ' + str(type(page)))
-
-        requsr_role = getattr(self, 'role')
-        requsr_usergroups = getattr(self, 'usergroups')
-        if logging_on:
-            logger.debug('requsr_usergroups: ' + str(requsr_usergroups) + ' ' + str(type(requsr_usergroups)))
-            logger.debug('requsr_role: ' + str(requsr_role) + ' ' + str(type(requsr_role)))
-        # requsr_usergroups_list: ['admin', 'auth2', 'edit'] <class 'list'>
-
-        permit_list = []
-        if page and requsr_role and requsr_usergroups:
-            requsr_usergroups_list = requsr_usergroups.split(';')
-            if logging_on:
-                logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
-
-            sql_filter = ""
-            for usergroup in requsr_usergroups_list:
-                sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
-
-            if sql_filter:
-                # remove first 'OR ' from sql_filter
-                sql_filter = "AND (" + sql_filter[4:] + ")"
-
-                sql_keys = {'page': page, 'role': requsr_role}
-                sql_list = ["SELECT p.action FROM accounts_userpermit AS p",
-                            "WHERE (p.page = %(page)s OR p.page = 'page_all')",
-                            "AND p.role = %(role)s::INT",
-                            sql_filter]
-                sql = ' '.join(sql_list)
-
-                with connection.cursor() as cursor:
-                    cursor.execute(sql, sql_keys)
-                    """
-                    accounts_userpermit = {role: 8, page: 'page_school', action: 'view', usergroups: 'admin;anlz;auth1;auth2;auth3;edit;read'} 
-                    """
-                    for row in cursor.fetchall():
-                        if logging_on:
-                            logger.debug('row: ' + str(row) + ' ' + str(type(row)))
-
-                        if row[0]:
-                            permit = 'permit_' + row[0]
-                            if permit not in permit_list:
-                                permit_list.append(permit)
-
-        if logging_on:
-            logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
-        return permit_list
-    # - end of permit_list
-
-
-    @property
-    def is_usergroup_admin(self):
-        _has_permit = False
-        if self.is_authenticated:
-            if self.usergroups is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                usergroups_delim = ''.join((';', self.usergroups, ';' ))
-                if ';admin;' in usergroups_delim:
-                    _has_permit = True
-        return _has_permit
-
-
     # PR2018-05-30 list of permits that user can be assigned to:
     # - System users can only have permits: 'Admin' and 'Read'
     # - System users can add all roles: 'System', Insp', School', but other roles olny with 'Admin' and 'Read' permit
@@ -244,20 +165,10 @@ class User(AbstractUser):
         return self.is_authenticated and self.role is not None and self.role == c.ROLE_128_SYSTEM
 
     @property
-    def is_role_system_group_system(self):
-        _has_permit = False
-        #if self.is_authenticated:
-        #    if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-        #        if self.role == c.ROLE_128_SYSTEM:
-        #            _has_permit = (c.GROUP_128_SYSTEM in self.permits_tuple)
-        return _has_permit
-
-    @property
     def is_role_admin(self):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
         # PR220-09-24 system has also admin rights
-        return (self.is_authenticated) and (self.role is not None) and \
-               (self.role == c.ROLE_064_ADMIN)
+        return (self.is_authenticated) and (self.role is not None) and (self.role == c.ROLE_064_ADMIN)
 
     @property
     def is_role_insp(self):
@@ -265,7 +176,7 @@ class User(AbstractUser):
         return self.is_authenticated and self.role is not None and self.role == c.ROLE_032_INSP
 
     @property
-    def is_role_comm(self):
+    def is_role_corr(self):
         # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
         return self.is_authenticated and self.role is not None and self.role == c.ROLE_016_CORR
 
@@ -282,213 +193,6 @@ class User(AbstractUser):
                 if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_064_ADMIN or self.role == c.ROLE_032_INSP:
                     _has_permit = True
         return _has_permit
-
-    @property
-    def is_role_insp_or_system_and_group_admin(self):
-        _has_permit = False
-        if self.is_authenticated:
-            if self.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
-                if self.role == c.ROLE_128_SYSTEM or self.role == c.ROLE_032_INSP:
-                    if self.is_usergroup_admin:
-                        _has_permit = True
-        return _has_permit
-
- # -----
-    def message(self, page_name ='None'):
-        # PR2018-08-18 Give message when page is not enabled, page is enabled if _page_message = None
-        # school admin may add his own school, subjects etc. Is function, not form
-        # system and insp may add schoolyear
-        #         _has_permit = False
-        # self.is_role_insp_or_system_and_group_admin is: self.is_authenticated AND (self.is_role_system OR self.is_role_insp) AND (self.is_usergroup_admin:
-
-        _no_permission =_("You don't have permission to view this page.")
-
-# ===== every user must be authenticated
-        if not self.is_authenticated:
-            # logger.debug('message : user not authenticated')
-            return _("You must be logged in to view this page.")
-        # logger.debug('message : user is authenticated')
-
-# ===== every insp and school user must have a country PR2018-09-15
-        if not self.is_role_system:
-            if not self.country:
- # >>>>>
-                return _("You are not connected to a country. You cannot view this page.")
-
-# ===== every school user must have a school PR2018-09-15
-        if not self.is_role_insp_or_admin_or_system:
-            if not self.schoolbase:
-                return _("You are not connected to a school. You cannot view this page.")
-
-# ==============================================================
-# ----- these pages can be viewed without country selected:
-# ==============================================================
-    # - userlist: only admin can view and modify userlist
-        if page_name == 'user_view_modify':
-            # only admins can view user list
-            if not self.is_usergroup_admin:
-                return _no_permission
-            else:
-                return None
-    # - countrylist: only system can view countrylist
-        if page_name == 'country_view':
-            # logger.debug('page: country_view username: ' + str(self.username) + ' role: ' + str(self.role))
-            if not self.is_role_system:
-                # logger.debug('page: not self.is_role_system')
- # >>>
-                return _("You don't have permission to view countries.")
-            else:
-                return None # Not disabled: role_system can view country list
-# =====================================================================
-# ===== country selected
-# =====================================================================
-        if not self.country:
-            # logger.debug('page: user not connected to a country')
-  # >>>>>
-            return _("You are not connected to a country. You cannot view this page.")
-# =====================================================================
-# ===== the rest of the pages cannot be viewed without country selected
-# =====================================================================
-    # - userlist, but only by role_insp
-        if page_name == 'user_view':
-            # logger.debug('page: user_view')
-            if self.is_role_insp:
-                # logger.debug('page: user is_role_insp')
-                return None  # Not disabled:  role_insp can view userlist without school selected
-            elif not self.schoolbase:  # role_school need school selected to view userlist
-                # logger.debug('page: user not connected to a school')
-                return _("You are not connected to a school. You cannot view this page.")
-            else:
-                # logger.debug('page: user connected to a school')
-                return None  # Not disabled:  role_system can view userlist without country selected
-
-    # - examyear_list, can only be viewed by role_system and role_insp
-        if page_name == 'examyear_view':
-            # logger.debug('page: examyear_view')
-            if not self.is_role_insp_or_admin_or_system:
-                # logger.debug('page: is_role_insp_or_system_and_group_admin')
-                return _("You don't have permission to view exam years.")
-            else:
-                # logger.debug('page: return False')
-                return None  # Not disabled:  role_system and role_insp can view examyear_list
-
-# - examyear_modify, only by role_system and role_insp, only admin
-        # TODO exclude read, authorize and None permissions
-        if page_name == 'examyear_modify':
-            # logger.debug('page: examyear_modify')
-            if not self.is_role_insp_or_system_and_group_admin:
-                # logger.debug('page: is_role_insp_or_system_and_group_admin')
-                return _("You don't have permission to modify exam years.")
-            elif self.country_locked:
-                # logger.debug('page: country_locked')
-                return _("This country is locked. You cannot modify exam years.")
-            else:
-                # logger.debug('page: return None')
-                return None  # Not disabled: admin of role_system and role_insp can modify examyears, if country not locked
-# =====================================================================
-# ===== no permissions if no examyear selected
-# =====================================================================
-        if not self.examyear:
-            return _("You must first select an examyear, before you can view this page.")
-
-# =====================================================================
-# ===== the rest of the pages cannot be viewed without examyear selected
-# =====================================================================
-
-        # - departments / levels / sectors:  can only be viewed by role_system and role_insp
-        if page_name == 'default_items_view':
-            if not self.is_role_insp_or_admin_or_system:
-                # logger.debug('page: is_role_insp_or_system_and_group_admin')
-                return _("You don't have permission to view these items.")
-            else:
-                # logger.debug('page: return False')
-                return None  # Not disabled:  role_system and role_insp can view examyear_list
-
-        # - departments / levels / sectors: can only be modified by role_system and role_insp, only admin
-        # TODO exclude read, authorize and None permissions
-        if page_name == 'default_items_modify':
-            if not self.is_role_insp_or_system_and_group_admin:
-                return _("You don't have permission to modify these items.")
-            elif self.country_locked:
-                return _("This country is locked. You cannot modify these items.")
-            else:
-                return None  # TODO: change: Not disabled: admin of role_system and role_insp can modify default schools, if country not locked
-
-        # - scheme, PR2018-08-23   >>>>>>>>>/ subject / package:
-        if page_name == 'scheme_etc_view':
-            return None  # Not disabled:  anyone can view schemes
-
-        # - scheme, PR2018-08-23   >>>>>>>>>schooldefault / subjectdefault / departments / levels / sectors: can only be modified by role_system and role_insp, only admin
-        if page_name == 'scheme_etc_edit':
-            # TODO exclude read, authorize and None permissions
-            if not self.is_role_insp_or_system_and_group_admin:
-                return _("You don't have permission to modify these items.")
-            elif self.country_locked:
-                return _("This country is locked. You cannot modify these items.")
-            elif self.examyear_locked:
-                return _("This examyear is locked. You cannot modify these items.")
-            else:
-                return None  # Not disabled: admin of role_system and role_insp can modify schemes, if country not locked
-
-
-        # - school PR2018-09-15
-        if page_name == 'school_view':
-            # filter that role-school users can only view their own school is part of view
-            return None  # Not disabled:  anyone can view school
-
-
- # =====================================================================
-# ===== no permissions if no schoolbase selected
-# =====================================================================
-        if not self.schoolbase:
-            return _("You are not connected to a school. You cannot view this page.")
-
-# =====================================================================
-# ==== the rest of the pages cannot be viewed without schooldefault selected
-# =====================================================================
-
-        if page_name == 'school_edit' or page_name == 'school_add_delete':
-            if self.country_locked:
-                return _("This country is locked. You cannot modify schools.")
-            elif self.examyear_locked:
-                return _("This examyear is locked. You cannot modify schools.")
-            elif not self.is_usergroup_admin:
-                # only admin users can modify school
-                # filter that role-school users can only modify their own school is part of form-get
-                return _("You don't have permission to modify schools.")
-            elif page_name == 'school_add_delete':
-                if not self.is_role_insp_or_admin_or_system:
-                    return _("You don't have permission to add or delete schools.")
-                else:
-                    return None
-            else:
-                return None  # Not disabled: admin of role_system and role_insp can modify schemes, if country not locked
-
-        # - students
-        if page_name == 'students_view':
-            return None  # Not disabled:  anyone can view students
-
-        # - scheme, also for school PR2018-08-23   >>>>>>>>>schooldefault / subjectdefault / departments / levels / sectors: can only be modified by role_system and role_insp, only admin
-        if page_name == 'students_modify':
-            # TODO activate rule that only schools can enter students
-            #  if not self.is_role_school:
-            #    return _("You don't have permission to modify these items.")
-            if self.country_locked:
-                return _("This country is locked. You cannot modify these items.")
-            elif self.examyear_locked:
-                return _("This examyear is locked. You cannot modify these items.")
-            elif self.school_locked:
-                return _("This school is locked. You cannot modify these items.")
-            # TODO  student_locked:, exclude read, authorise, None permissions
-            #     return _("This student is locked. You cannot modify thise item.")
-            else:
-                return None  # Not disabled: admin of role_system and role_insp can modify schemes, if country not locked
-
-# =====================================================================
-# ===== the rest of the pages cannot be viewed without schooldefault selected
-# =====================================================================
-
-        return _("Error. You cannot view this page.")
 
 
 # +++++++++++++++++++  END OF FORM PERMITS  +++++++++++++++++++++++
@@ -576,39 +280,71 @@ class Usersetting(Model):
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
     # jsonsetting = JSONField(null=True)
 
-""" NOT IN USE PR2021-01-25
-    @classmethod
-    def get_jsonsetting(cls, key_str, user):  # PR2019-07-02
-        setting_dict = {}
-        if user and key_str:
-            row = cls.objects.filter(user=user, key=key_str).first()
-            if row:
-                if row.jsonsetting:
-                     # no need to use json.loads: Was: setting_dict = json.loads(row.jsonsetting)
-                    setting_dict = row.jsonsetting
 
-        return setting_dict
+# PR2022-12-04 this table contains the usergroup and allowed settings per examyear
+class UserAllowed(sch_mod.AwpBaseModel):
+    objects = CustomUserManager()
 
-    @classmethod
-    def set_jsonsetting(cls, key_str, setting_dict, user):  # PR2019-07-02 PR2020-07-12
-        #logger.debug('---  set_jsonsetting  ------- ')
-        #logger.debug('key_str: ' + str(key_str))
-        #logger.debug('setting_dict: ' + str(setting_dict))
-        # No need to use json.dumps. Was: new_setting_json = json.dumps(setting_dict)
-        if user and key_str:
-            rowcount = cls.objects.filter(user=user, key=key_str).count()
-            #logger.debug('rowcount: ' + str(rowcount))
-            #rows = cls.objects.filter(user=user, key=key_str)
-            #for item in rows:
-                #logger.debug('row key: ' + str(item.key) + ' jsonsetting: ' + str(item.jsonsetting))
+    user = ForeignKey(User, related_name='+', on_delete=CASCADE)
+    examyear = ForeignKey(Examyear, related_name='+', on_delete=CASCADE)
 
-            # don't use get_or_none, gives none when multiple settings exist and will create extra setting.
-            row = cls.objects.filter(user=user, key=key_str).first()
-            if row:
-                #logger.debug('row exists')
-                row.jsonsetting = setting_dict
-            elif setting_dict:
-                #logger.debug('row does not exist')
-                row = cls(user=user, key=key_str, jsonsetting=setting_dict)
-            row.save()
-    """
+    usergroups = TextField(null=True)
+    allowed_sections = TextField(null=True)
+
+    # PR2023-01-07 allowed_clusterbases was used in table User, cahnged to allowed_clusters in table accounts_userallowed
+    allowed_clusters = TextField(null=True)
+
+    # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+    # jsonsetting = JSONField(null=True)
+
+
+# PR2023-02-19 this table contains the info for paying compensation to correctors
+class UserCompensation(sch_mod.AwpBaseModel):
+    objects = CustomUserManager()
+
+    user = ForeignKey(User, related_name='+', on_delete=CASCADE)
+
+    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
+    exam = ForeignKey(Exam, related_name='+', on_delete=CASCADE)
+
+    amount = PositiveSmallIntegerField(default=0)  # entered by corrector
+    meetings = PositiveSmallIntegerField(default=0)   # entered by corrector
+
+    correction_amount = SmallIntegerField(default=0)   # entered by ministry
+    correction_meetings = SmallIntegerField(default=0) # entered by ministry
+    compensation = IntegerField(default=0) # compensation is calculated in cents
+
+    auth1by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)
+    auth2by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)
+    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
+    void = BooleanField(default=False)
+
+
+# PR2023-02-19
+class UserCompensation_log(sch_mod.AwpBaseModel):
+    objects = CustomUserManager()
+
+    usercompensation_id = IntegerField(db_index=True)
+
+    user_log = ForeignKey(User_log, related_name='+', on_delete=CASCADE)
+
+    school_log = ForeignKey(sch_mod.School_log, related_name='+', on_delete=CASCADE)
+    exam_log = ForeignKey(subj_mod.Exam_log, related_name='+', on_delete=CASCADE)
+
+    amount = PositiveSmallIntegerField(default=0)  # entered by corrector
+    meetings = PositiveSmallIntegerField(default=0)   # entered by corrector
+
+    correction_amount = SmallIntegerField(default=0)   # entered by ministry
+    correction_meetings = SmallIntegerField(default=0) # entered by ministry
+    compensation = IntegerField(default=0) # compensation is calculated in cents
+
+    auth1by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)
+    auth2by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)
+    published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
+
+    void = BooleanField(default=False)
+
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+

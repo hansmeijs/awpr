@@ -3,9 +3,9 @@ from django.db.models import Q
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 
-from accounts import models as am
+
+from accounts import models as acc_mod
 from students import models as stud_mod
 from schools import models as sch_mod
 from subjects import models as subj_mod
@@ -16,15 +16,21 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# === validate_unique_username ===================================== PR2020-03-31 PR2020-09-24 PR2021-01-01 PR2021-08-05
-def validate_unique_username(username, schoolbaseprefix, cur_user_id=None, skip_msg_activated=False):
-    #logger.debug ('=== validate_unique_username ====')
-    #logger.debug ('username: <' + str(username) + '>')
-    #logger.debug ('cur_user_id: <' + str(cur_user_id) + '>')
-    #logger.debug ('schoolbaseprefix: <' + str(schoolbaseprefix) + '>')
+# === validate_unique_username =====================================
+def validate_unique_username(sel_examyear, username, schoolbaseprefix, cur_user_id=None, skip_msg_activated=False):
+    # PR2020-03-31 PR2020-09-24 PR2021-01-01 PR2021-08-05 PR2022-12-31
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  validate_unique_username  -----')
+        logger.debug ('    username: <' + str(username) + '>')
+        logger.debug ('    cur_user_id: <' + str(cur_user_id) + '>')
+        logger.debug ('    schoolbaseprefix: <' + str(schoolbaseprefix) + '>')
+
     # __iexact looks for the exact string, but case-insensitive. If username is None, it is interpreted as an SQL NULL
 
     msg_err = None
+    user_without_userallowed = None
+
     if schoolbaseprefix is None:
         msg_err = get_err_html_cannot_be_blank(_('School'))
 
@@ -35,24 +41,42 @@ def validate_unique_username(username, schoolbaseprefix, cur_user_id=None, skip_
         msg_err = _('Username must have %(fld)s characters or fewer.') % {'fld': c.USERNAME_SLICED_MAX_LENGTH}
     else:
         prefixed_username = schoolbaseprefix + username
-        #logger.debug ('prefixed_username: ' + str(prefixed_username))
-        #logger.debug ('cur_user_id: ' + str(cur_user_id))
+        if logging_on:
+            logger.debug ('    prefixed_username: ' + str(prefixed_username))
+            logger.debug ('    cur_user_id: ' + str(cur_user_id))
+
         if cur_user_id:
-            user = am.User.objects.filter(username__iexact=prefixed_username).exclude(pk=cur_user_id).first()
+            user = acc_mod.User.objects.filter(username__iexact=prefixed_username).exclude(pk=cur_user_id).first()
         else:
-            user = am.User.objects.filter(username__iexact=prefixed_username).first()
-        #logger.debug ('user: ' + str(user))
+            user = acc_mod.User.objects.filter(username__iexact=prefixed_username).first()
+        if logging_on:
+            logger.debug ('user: ' + str(user))
+
         if user:
+            # check if there is a UserAllowed record of this user in this examyear PR2022-12-31
+
+            user_exists_this_examyear = acc_mod.UserAllowed.objects.filter(
+                user=user,
+                examyear=sel_examyear
+            ).exists()
+
             msg_err = str(_("Username '%(val)s' already exists at this school.") % {'val': user.username_sliced})
-            if not skip_msg_activated:
+            if not user_exists_this_examyear:
+                user_without_userallowed = {
+                    'user_pk': user.pk,
+                    'schoolbase_pk': user.schoolbase.pk,
+                    'username': user.username_sliced,
+                    'last_name': user.last_name
+                }
+                msg_err = None
+            elif not skip_msg_activated:
                 if not user.activated:
-                    msg_err += str(_("The account is not activated yet."))
+                    msg_err += ' ' + str(_("The account is not activated yet."))
                 elif not user.is_active:
-                    msg_err += str(_("The account is inactive."))
+                    msg_err += ' ' + str(_("The account is inactive."))
 
-    return msg_err
+    return msg_err, user_without_userallowed
 # - end of validate_unique_username
-
 
 
 # === validate_unique_user_lastname ===================================== PR2021-08-05
@@ -73,12 +97,12 @@ def validate_unique_user_lastname(schoolbase, user_lastname, cur_user_id=None, s
     else:
         # don't use get_or_none, it will return None when multiple users with the same name exist
         if cur_user_id:
-            user = am.User.objects.filter(
+            user = acc_mod.User.objects.filter(
                 schoolbase=schoolbase,
                 last_name__iexact=user_lastname
             ).exclude(pk=cur_user_id).first()
         else:
-            user = am.User.objects.filter(
+            user = acc_mod.User.objects.filter(
                 schoolbase=schoolbase,
                 last_name__iexact=user_lastname
             ).first()
@@ -122,13 +146,13 @@ def validate_unique_useremail(value, country, schoolbase, cur_user_id=None, skip
             msg_err = _('There is no school selected. You must first select a school before you can add a new user')
         else:
             if cur_user_id:
-                user = am.User.objects.filter(
+                user = acc_mod.User.objects.filter(
                     country=country,
                     schoolbase=schoolbase,
                     email__iexact=value
                 ).exclude(pk=cur_user_id).first()
             else:
-                user = am.User.objects.filter(
+                user = acc_mod.User.objects.filter(
                     country=country,
                     schoolbase=schoolbase,
                     email__iexact=value
@@ -757,28 +781,7 @@ def get_err_html_max_char(caption, value, max_len):    # PR2022-08-08
 
 
 ###########################
-def message_diff_exyr(examyear):  # PR2020-10-30
-    # check if selected examyear is the same as this examyear,
-    # return warning when examyear is different from this_examyear
-    awp_message = {}
-    if examyear.code:
-        examyear_int = examyear.code
 
-        now = timezone.now()
-        this_examyear = now.year
-        if now.month > 7:
-            this_examyear = now.year + 1
-        if examyear_int != this_examyear:
-            # TODO === FIXIT set msg, not for admin in July
-            # PR2018-08-24 debug: in base.html  href="#" is needed,
-            # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
-
-            msg = str(_(
-                '<b>Please note</b>:<br>The selected exam year %(exyr)s is different from the current exam year %(cur_ey)s.')
-                      % {'exyr': str(examyear.code), 'cur_ey': str(this_examyear)})
-            awp_message = {'msg_html': [msg], 'class': 'border_bg_warning'}
-
-    return awp_message
 
 
 def message_testsite():  # PR2022-01-12
@@ -811,6 +814,26 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
 
     msg = ''.join((
+        '<p><b>', str(_("The following changes have been made in AWP-online 2023")), ':</b></p>',
+        "<ul><li>", str(_("Previously submitted subjects and deleted subjects are included in the Ex1 form.")), "</li>",
+        "<li>", str(_("When a candidate or subject is deleted, you must submit it in an additional Ex1 form")), "</li></ul>",
+        "<ul><li>", str(_("AWP can enter exemptions from the previous examyear.")), "</li>",
+
+        # PR2023-02-20 not for now: "<li>", str(_("Exemption grades must also be approved.")), "</li>",
+
+        "<li>", str(_("Exemption grades are included in the Ex2 form.")), "</li></ul>",
+        "<ul class='mb-0'><li>", str(_("The accounts of the second correctors will be created by the Ministry of Education.")), "</li>",
+        "<li>", str(_("The 'Allowed sections' window is improved.")), "</li>",
+        "<li>", str(_("In the candidates window you can enter special characters.")), "</li></ul>",
+    ))
+
+    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
+
+    return message
+
+    """
+    
+    msg = ''.join((
         '<p><b>', str(_("Examyear 2023 has been created in AWP-online.")), '</b><br>',
         str(_("You can start entering data now.")), '<br>',
         str(_("Selecting the new examyear goes as follows:")), '<br>',
@@ -820,12 +843,7 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
         str(_('AWP-online gives the warning below, when you open the previous exam year, but you can still enter data.')), '</p>',
         '</p>'
     ))
-
-    message = {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
-
-    return message
-
-    """
+    
     msg = ''.join((
         '<p><b>', str(_("The 'Submit Ex5' button is now available")), '</b><br>',
         str(_('Go to the page <i>Results</i> and click the grey button <i>Submit Ex5</i>.')), ' ',

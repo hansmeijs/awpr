@@ -7,6 +7,7 @@ from django.utils.translation import activate, gettext_lazy as _
 from django.views.generic import View
 
 from accounts import views as acc_view
+from  accounts import  permits as acc_prm
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
@@ -28,15 +29,15 @@ pos_y = 18
 
 MENUS_ITEMS = {
     c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
-                        'page_studsubj', 'page_exams', 'page_grade',
+                        'page_studsubj', 'page_exams', 'page_wolf', 'page_grade',
                       'page_result', 'page_archive'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
-                       'page_studsubj', 'page_exams', 'page_grade',
+                       'page_studsubj', 'page_exams', 'page_wolf', 'page_grade',
                      'page_result', 'page_archive'],  #, 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
                       'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],
-    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_grade', 'page_result', 'page_archive'],
-    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_exams', 'page_grade', 'page_result', 'page_archive'] # 'page_report',
+    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_wolf', 'page_grade', 'page_result', 'page_archive'],
+    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_wolf', 'page_grade', 'page_result', 'page_archive'] # 'page_report',
 }
 
 MENUS_DICT = {
@@ -47,6 +48,7 @@ MENUS_DICT = {
     'page_studsubj': {'caption': _('Subjects'), 'href': 'studentsubjects_url', 'width': 100},
     'page_orderlist': {'caption': _('Orderlist'), 'href': 'orderlists_url', 'width': 120},
     'page_exams': {'caption': _('Exams'), 'href': 'exams_url', 'width': 100},
+    'page_wolf': {'caption': _('Wolf'), 'href': 'wolf_url', 'width': 100},
     'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 100},
     'page_result': {'caption': _('Results'), 'href': 'results_url', 'width': 100},
     'page_report': {'caption': _('Reports'), 'href': 'url_archive', 'width': 120},
@@ -91,12 +93,13 @@ class ManualListView(View):
         return render(request, 'manual.html', param)
 
 
-def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
+def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-01-08
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
     logging_on = False  # s.LOGGING_ON
     if logging_on:
+        logger.debug('')
         logger.debug('===== get_headerbar_param ===== ')
         logger.debug('    sel_page: ' + str(sel_page))
 
@@ -114,42 +117,68 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
     _class_bg_color = 'awp_bg_blue'
     _class_has_mail = 'envelope_0_0'
 
-    req_user = request.user
-    if req_user.is_authenticated and req_user.country and req_user.schoolbase:
+    req_usr = request.user
+    if req_usr.is_authenticated and req_usr.country and req_usr.schoolbase:
 
 # -  get user_lang
-        requsr_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+        requsr_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
         activate(requsr_lang)
 
-# - set background color in headerbar to purple when role is not a school
-        if req_user.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
+        country_locked, examyear_locked, no_examyears, examyear_not_published = False, False, False, False
+        sel_country_abbrev, sel_country_name, sel_examyear_code = None, None, None
+        no_practexam, sr_allowed, no_centralexam, no_thirdperiod = False, False, False, False
+
+# +++ get selected examyear
+    # PR2023-01-06 get examyear first, it is needed in permit_list
+
+    # - get selected examyear from Usersetting
+        # - get new examyear_pk from request_setting,
+        # - if None: get saved_examyear_pk from Usersetting
+        # - if None: get today's examyear
+        # - if None: get latest examyear_int of table
+        sel_examyear_instance, sel_examyear_save, multiple_examyears_exist = af.get_sel_examyear_with_default(request)
+        if logging_on:
+            logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
+            logger.debug('    multiple_examyears_exist: ' + str(multiple_examyears_exist))
+
+    # - if sel_examyear_instance is not saved yet: save it in usersettings
+        if sel_examyear_instance and sel_examyear_save:
+            selected_pk_dict = {c.KEY_SEL_EXAMYEAR_PK: sel_examyear_instance.pk}
+            acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
+
+# - set background color in headerbar
+        if req_usr.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
             _class_bg_color = 'awp_bg_green'
-        elif req_user.role == c.ROLE_064_ADMIN:
+        elif req_usr.role == c.ROLE_064_ADMIN:
             _class_bg_color = 'awp_bg_purple'
-        elif req_user.role == c.ROLE_128_SYSTEM:
+        elif req_usr.role == c.ROLE_128_SYSTEM:
             _class_bg_color = 'awp_bg_yellow'
         else:
             _class_bg_color = 'awp_bg_blue'
 
-        sel_auth_index = af.get_dict_value(acc_view.get_usersetting_dict, (c.KEY_SELECTED_PK, c.KEY_SEL_AUTH_INDEX))
+# -  get sel_auth_index from usersetting
+        sel_auth_index = af.get_dict_value(acc_prm.get_usersetting_dict, (c.KEY_SELECTED_PK, c.KEY_SEL_AUTH_INDEX))
 
-# -  get permit_list
-        permit_list, usergroup_list = acc_view.get_userpermit_list(sel_page, req_user)
-        auth_list = []
-        for usergroup in usergroup_list:
-            if 'auth' in usergroup:
-                if logging_on:
-                    logger.debug('usergroup:           ' + str(usergroup))
-                    logger.debug('usergroup[4:]:           ' + str(usergroup[4:]))
-                    logger.debug('sel_auth_index:           ' + str(sel_auth_index))
-                function = c.USERGROUP_CAPTION.get(usergroup)
-                color_class = 'awp_color_grey' if sel_auth_index and usergroup[4:] != str(sel_auth_index) else 'awp_color_black'
-                if function:
-                    auth_list.append({'id': 'id_' + usergroup, 'function': function, 'color_class': color_class})
+# -  get permit_list from userallowed
+        #PR2023-02-13 not in use, usergroups are displayed in moduserallowedsections
+        permit_list, usergroup_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, sel_page)
+        #auth_list = []
+        #for usergroup in usergroup_list:
+        #    if 'auth' in usergroup:
+        #        if logging_on:
+        #            logger.debug('    sel_auth_index:           ' + str(sel_auth_index) + ' ' + str(type(sel_auth_index)))
+        #            logger.debug('    usergroup:           ' + str(usergroup))
+       #            logger.debug('    usergroup[4:]:           ' + str(usergroup[4:]))
+        #        function = c.USERGROUP_CAPTION.get(usergroup)
+        #        if logging_on:
+        #            logger.debug('    function:           ' + str(function))
+        #        color_class = 'awp_color_grey' if sel_auth_index and usergroup[4:] != str(sel_auth_index) else 'awp_color_black'
+        #        if function:
+        #            auth_list.append({'id': 'id_' + usergroup, 'function': function, 'color_class': color_class})
 
 # - PR2021-06-28 debug. Add permit 'permit_userpage' if role = system,
         # to prevent you from locking out when no permits yet
-        if req_user.role == c.ROLE_128_SYSTEM:
+        if req_usr.role == c.ROLE_128_SYSTEM:
             if 'permit_userpage' not in permit_list:
                 permit_list.append('permit_userpage')
             if sel_page == 'page_user':
@@ -159,54 +188,34 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
                     permit_list.append('permit_view')
 
         if logging_on:
-            logger.debug('    sel_page:           ' + str(sel_page))
-            logger.debug('    req_user.role:  ' + str(req_user.role))
+            logger.debug('    sel_page:       ' + str(sel_page))
+            logger.debug('    req_usr.role:   ' + str(req_usr.role))
             logger.debug('    permit_list:    ' + str(permit_list))
             logger.debug('    usergroup_list: ' + str(usergroup_list))
-            logger.debug('    auth_list: ' + str(auth_list))
 
 # +++ display examyear -------- PR2020-11-17 PR2020-12-24 PR2021-06-14
-    # - get selected examyear from Usersetting
-        no_examyears, examyear_not_published = False, False
 
-        sel_country_abbrev, sel_country_name, country_locked, examyear_locked = None, None, False, False
-        sel_examyear_code = None
-        no_practexam, sr_allowed, no_centralexam, no_thirdperiod = False, False, False , False
-
-        sel_examyear, sel_examyear_save, may_select_examyear = af.get_sel_examyear_instance(request)
-        if sel_examyear is None:
-            # PR2021-06-14 debug: not true. New user has no selected examyear yet
-            # was: there is always an examyear selected, unless country has no examyears
-
-    # - if there is no saved examyear: get latest examyear_pk of table, save it in usersettings
-            sel_examyear = sch_mod.Examyear.objects.filter(
-                country=req_user.country
-            ).order_by('-code').first()
-            if sel_examyear:
-                selected_pk_dict = {c.KEY_SEL_EXAMYEAR_PK: sel_examyear.pk}
-                acc_view.set_usersetting_dict(c.KEY_SELECTED_PK, selected_pk_dict, request)
-
-        if sel_examyear is None:
+        if sel_examyear_instance is None:
             sel_examyear_str = ' <' + str(_('No exam years')) + '>'
             no_examyears = True
         else:
             # examyear.code is PositiveSmallIntegerField
-            sel_examyear_code = sel_examyear.code
-            sel_examyear_str = str(_('Exam year')) + ' ' + str(sel_examyear_code)
-            sel_country_name = sel_examyear.country.name
+            sel_examyear_code = sel_examyear_instance.code
+            sel_examyear_str = str(_('Exam year')) + ' ' + str(sel_examyear_instance)
+            sel_country_name = sel_examyear_instance.country.name
 # +++ do not display pages when country is locked,
-            country_locked = sel_examyear.country.locked
+            country_locked = sel_examyear_instance.country.locked
 # +++ do not display pages when examyear is not published yet,
-            examyear_not_published = not sel_examyear.published
-            examyear_locked = sel_examyear.locked
+            examyear_not_published = not sel_examyear_instance.published
+            examyear_locked = sel_examyear_instance.locked
     # - used in page grades: set tab buttons practexam, sr_allowed, centralexam, thirdperiod
-            no_practexam = sel_examyear.no_practexam
-            sr_allowed = sel_examyear.sr_allowed
-            no_centralexam = sel_examyear.no_centralexam
-            no_thirdperiod = sel_examyear.no_thirdperiod
+            no_practexam = sel_examyear_instance.no_practexam
+            sr_allowed = sel_examyear_instance.sr_allowed
+            no_centralexam = sel_examyear_instance.no_centralexam
+            no_thirdperiod = sel_examyear_instance.no_thirdperiod
 
         if logging_on:
-            logger.debug(' -- sel_examyear: ' + str(sel_examyear))
+            logger.debug(' -- sel_examyear_instance: ' + str(sel_examyear_instance))
         if logging_on:
             logger.debug('    no_practexam:   ' + str(no_practexam))
             logger.debug('    sr_allowed:     ' + str(sr_allowed))
@@ -220,7 +229,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         # <PERMIT> PR2020-10-27
         # - requsr_school is set when user is created and never changes
         # - may_select_school is True when:
-        #   - req_user is_role_comm, is_role_insp, is_role_admin or is_role_system:
+        #   - req_usr is_role_corr, is_role_insp, is_role_admin or is_role_system:
         #   - selected school is stored in usersettings
         #   - otherwise sel_schoolbase_pk is equal to _requsr_schoolbase_pk
         # note: may_select_school only sets hover of school. Permissions are set in JS HandleHdrbarSelect
@@ -232,30 +241,43 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
         # used in page exams template to show school or admin mod exam form PR2021-05-22
         is_requsr_same_school = False
-        is_requsr_admin = req_user.role == c.ROLE_064_ADMIN
+        is_requsr_admin = req_usr.role == c.ROLE_064_ADMIN
 
-        # if sel_examyear and display_school:
-        if sel_examyear:
-            sel_schoolbase, save_sel_schoolbase_NIU = af.get_sel_schoolbase_instance(request)
-            school_name = sel_schoolbase.code if sel_schoolbase.code else ''
-    # - get school from sel_schoolbase and sel_examyear
-            sel_school = sch_mod.School.objects.get_or_none(
-                base=sel_schoolbase,
-                examyear=sel_examyear)
+# - get allowed_sections_dict
+        allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
 
-            if sel_school:
-                school_name += ' ' + sel_school.name
-                is_requsr_same_school = (req_user.role == c.ROLE_008_SCHOOL and
-                                         req_user.schoolbase.pk == sel_schoolbase.pk)
+# - get sel_schoolbase_instance
+        sel_schoolbase_instance, sel_schoolbase_tobesaved_NIU = \
+            acc_view.get_sel_schoolbase_instance(
+                request=request,
+                request_item_schoolbase_pk=None,
+                allowed_sections_dict=allowed_sections_dict
+            )
+        sel_school_instance = None
+
+# if sel_examyear and display_school:
+        if sel_examyear_instance:
+
+            school_name = sel_schoolbase_instance.code if sel_schoolbase_instance.code else ''
+
+    # - get school from sel_schoolbase and sel_examyear_instance
+            sel_school_instance = sch_mod.School.objects.get_or_none(
+                base=sel_schoolbase_instance,
+                examyear=sel_examyear_instance)
+
+            if sel_school_instance:
+                school_name += ' ' + sel_school_instance.name
+                is_requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and
+                                         req_usr.schoolbase.pk == sel_schoolbase_instance.pk)
             else:
                 school_name += ' <' + str(_('School not found in this exam year')) + '>'
 
     # - check if there are any unread mailbox items
-            if af.has_unread_mailbox_items(sel_examyear, req_user):
+            if af.has_unread_mailbox_items(sel_examyear_instance, req_usr):
                 _class_has_mail = 'envelope_0_2'
 
         if logging_on:
-            logger.debug('sel_school: ' + str(sel_school))
+            logger.debug('  ..sel_school_instance: ' + str(sel_school_instance))
 
 # +++ display department -------- PR2029-10-27 PR2020-11-17
 
@@ -263,19 +285,50 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         department_name = ''
         display_department = param.get('display_department', True)
         if display_department:
-            sel_depbase, sel_depbase_save, allowed_depbases = af.get_sel_depbase_instance(sel_school, sel_page, request)
+            # - get allowed_schoolbase_dict
+            allowed_schoolbase_dict, allowed_depbases_pk_arr = \
+                acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+                    userallowed_sections_dict=allowed_sections_dict,
+                sel_schoolbase_pk=sel_schoolbase_instance.pk if sel_schoolbase_instance else None
+                )
 
-            sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase, examyear=sel_examyear)
+
+            if logging_on:
+                logger.debug('  ..allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+                logger.debug('  ..allowed_depbases_pk_arr: ' + str(allowed_depbases_pk_arr))
+
+            # - get sel_depbase_instance
+            sel_depbase_instance, sel_depbase_tobesavedNIU, allowed_schoolbase_dict, allowed_depbases_arr = \
+                acc_view.get_sel_depbase_instance(
+                    sel_school_instance=sel_school_instance,
+                    page=sel_page,
+                    request=request,
+                    request_item_depbase_pk=None,
+                    allowed_schoolbase_dict=allowed_schoolbase_dict
+                )
+
+            sel_department = sch_mod.Department.objects.get_or_none(base=sel_depbase_instance, examyear=sel_examyear_instance)
             if sel_department is None:
                 department_name = '<' + str(_('No department')) + '>'
             else:
-                department_name = sel_depbase.code
+                department_name = sel_depbase_instance.code
 
         if logging_on:
-            logger.debug('department_name: ' + str(department_name))
-            logger.debug('display_department: ' + str(display_department))
+            logger.debug('    department_name: ' + str(department_name))
+            logger.debug('    display_department: ' + str(display_department))
 
-# ------- set menu_items -------- PR2018-12-21
+
+# ----- set background color in headerbar
+        if req_usr.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
+            _class_bg_color = 'awp_bg_green'
+        elif req_usr.role == c.ROLE_064_ADMIN:
+            _class_bg_color = 'awp_bg_purple'
+        elif req_usr.role == c.ROLE_128_SYSTEM:
+            _class_bg_color = 'awp_bg_yellow'
+        else:
+            _class_bg_color = 'awp_bg_blue'
+
+# ----- set menu_items -------- PR2018-12-21
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
         menu_items = set_menu_items(sel_page, _class_bg_color, request)
 
@@ -302,12 +355,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
 
        # elif examyear_locked:
             # this is a warning, dont block access when examyear_locked
-            #no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear.code)}
+            #no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear_instance.code)}
             #messages.append(no_access_message)
         elif examyear_not_published:
             # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd
             school_admin = sch_mod.School.objects.filter(
-                base__country=req_user.country,
+                base__country=req_usr.country,
                 base__defaultrole=c.ROLE_064_ADMIN
             ).order_by('-examyear', '-pk').first()
 
@@ -333,7 +386,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
             'examyear_locked': examyear_locked,
             'is_requsr_same_school': is_requsr_same_school,
             'is_requsr_admin': is_requsr_admin,
-            'auth_list': auth_list,
             'examyear_code': sel_examyear_str,
             'display_school': display_school, 'school': school_name,
             'display_department': display_department, 'department': department_name,
@@ -358,6 +410,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25
         logger.debug('headerbar_param: ' + str(headerbar_param))
 
     return headerbar_param
+# - end of get_headerbar_param
 
 
 def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-12-23 PR22021-12-03
@@ -540,13 +593,13 @@ def get_depbase_list(request, requsr_school):  # PR2018-08-24  PR2018-11-23 PR20
     may_select_dep = False
     sel_depbase_instance = None
 
-    req_user = request.user
-    if req_user and requsr_school:
+    req_usr = request.user
+    if req_usr and requsr_school:
         allowed_dep_count = 0
 # - if school does not have any departments: sel_depbase_instance = None
         if requsr_school.depbases:
 # - if requsr_allowed_depbase_list is empty: add all school_depbases to list
-            if req_user.allowed_depbases is None:
+            if req_usr.allowed_depbases is None:
                 depbase_pk_list = requsr_school.depbases
                 allowed_dep_count = len(depbase_pk_list)
             else:
@@ -555,7 +608,7 @@ def get_depbase_list(request, requsr_school):  # PR2018-08-24  PR2018-11-23 PR20
                 # add only the ones in requsr_allowed_depbase_list
                 for school_depbase_pk in requsr_school.depbases:
     # - add_to_list if school_depbase is in requsr_allowed_depbase_list
-                    if school_depbase_pk in req_user.allowed_depbases:
+                    if school_depbase_pk in req_usr.allowed_depbases:
                         depbase_pk_list.append(school_depbase_pk)
                         allowed_dep_count += 1
     # if there is only 1 allowed dep: set user_dep = this dep

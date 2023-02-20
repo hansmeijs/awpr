@@ -1,7 +1,8 @@
 // PR2021-07-18 added
 
-    "use strict";
+"use strict";
 
+console.log("+++++++ script 'man_home'")
 const man_home = {
     nl: [
         write_paragraph_header("id_intro", "Welkom bij AWP-online"),
@@ -56,7 +57,7 @@ const man_home = {
         write_paragraph_header("id_filterrow", "De filterregel"),
         write_paragraph_body("",
             ["<p>Als een tabel veel regels heeft is het niet handig om met de muis naar beneden te scrollen tot je de gewenste regel hebt gevonden. ",
-                "Beter is het de regels te filteren met behulp van de <b>filterregel</b>, dit is de lege regel onder de kolomnaam.</p>"
+                "Beter is het de regels te filteren met behulp van de <b>filterregel</b>, dit is de lege lichtgrijze regel onder de kolomnaam.</p>"
             ]),
         write_image("img_intro_filterrow_ne"),
 
@@ -181,14 +182,14 @@ const man_home = {
         write_paragraph_header("id_filterrow", "The filter row"),
         write_paragraph_body("",
             ["<p>If a table has many rows it is not useful to scroll down with the mouse until you find the desired row. ",
-                 "It is better to filter the rows using the <b>filter row</b>, this is the empty row under the column name.</p>"
+                 "It is better to filter the rows using the <b>filter row</b>, this is the empty light grey row under the column name.</p>"
             ]),
          write_image("img_intro_filterrow_ne"),
 
         write_paragraph_body("",
-            ["<p class='pb-0'>For <b>columns with text</b> you can type one or more letters in the filter row, ",
-                "then only the rows with those letters in the column will be displayed.",
-                "You can filter multiple columns at once.",
+            ["<p class='pb-0'>For <b>columns with text</b> you can type one or more letters in the filter row. ",
+                "Then, only the rows with those letters in the column will be displayed. ",
+                "You can filter multiple columns at once. ",
                 "There are some special characters you can type to filter:</p>"]),
 
 
@@ -254,4 +255,5 @@ const man_home = {
             ]),
         write_image("img_intro_hide_columns_en")
     ]
-}
+};
+manual_dict.man_home = man_home;

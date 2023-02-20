@@ -24,6 +24,8 @@ from django.views.generic import View
 from reportlab.pdfgen.canvas import Canvas
 
 from accounts import views as acc_view
+from  accounts import permits as acc_prm
+
 from awpr import settings as s
 from awpr import menus as awpr_menu
 from awpr import logs as awpr_logs
@@ -204,7 +206,11 @@ class SubjectListView(View):
         activate(user_lang)
 
 # - get sel_schoolbase from settings / request when role is insp, admin or system, from req_usr otherwise
-        sel_schoolbase, sel_schoolbase_saveNIU = af.get_sel_schoolbase_instance(request)
+        sel_schoolbase, sel_schoolbase_saveNIU = acc_view.get_sel_schoolbase_instance(
+            request=request,
+            request_item_schoolbase_pk=None,
+            allowed_sections_dict={}
+        )
 
         # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
         # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
@@ -228,19 +234,19 @@ class SubjectListView(View):
         return render(request, html_page, params)
 
 
-def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase,
-                        skip_allowed_filter=False, skip_notatdayschool=False,
+def create_subject_rows(request, sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase,
+                        skip_allowedsubjbase_filter=False, skip_notatdayschool=False,
                         subject_pk=None, cur_dep_only=False, duo_exam_only=False):
-    # PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07 PR2022-08-21
+    # PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07 PR2022-08-21 PR2022-12-19
     # --- create rows of all subjects of this examyear
-    # skip_allowed_filter is used in userpage: when setting 'allowed_', all subjects must be shown
-    logging_on = False  # s.LOGGING_ON
+    # skip_allowedsubjbase_filter is used in userpage: when setting 'allowed_', all subjects must be shown
+    logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_subject_rows ============= ')
-        logger.debug('skip_allowed_filter: ' + str(skip_allowed_filter))
-        logger.debug('skip_notatdayschool: ' + str(skip_notatdayschool))
-        logger.debug('cur_dep_only: ' + str(cur_dep_only))
+        logger.debug('    skip_allowedsubjbase_filter: ' + str(skip_allowedsubjbase_filter))
+        logger.debug('    skip_notatdayschool: ' + str(skip_notatdayschool))
+        logger.debug('    cur_dep_only: ' + str(cur_dep_only))
 
     # lookup if sel_depbase_pk is in subject.depbases PR2020-12-19
     # use: AND %(depbase_pk)s::INT = ANY(sj.depbases)
@@ -284,74 +290,85 @@ def create_subject_rows(request, sel_examyear, sel_depbase, sel_lvlbase,
         if not skip_notatdayschool:
             sub_sql_list.append("AND NOT si.notatdayschool")
 
-        sel_depbase_pk = None
-        if cur_dep_only and sel_depbase:
-            sel_depbase_pk = sel_depbase.pk
-        acc_view.get_userfilter_allowed_depbase(
-            request = request,
-            sql_keys = sql_keys,
-            sql_list = sub_sql_list,
-            depbase_pk = sel_depbase_pk
-        )
-
-        sel_lvlbase_pk = None
-        if not skip_allowed_filter and sel_lvlbase:
-            sel_lvlbase_pk = sel_lvlbase.pk
-        acc_view.get_userfilter_allowed_lvlbase(
-            request=request,
-            sql_keys=sql_keys,
-            sql_list=sub_sql_list,
-            lvlbase_pk=sel_lvlbase_pk,
-            skip_allowed_filter=False
-        )
-
         # note: don't filter on sel_subjbase_pk, must be able to change within allowed
-        sel_subjbase_pk = None
-        # when setting 'allowed_' in userpage, all subjects must be shown
-        if not skip_allowed_filter:
-            acc_view.get_userfilter_allowed_subjbase(
-                request=request,
-                sql_keys=sql_keys,
-                sql_list=sub_sql_list,
-                subjbase_pk=sel_subjbase_pk,
-                skip_allowed_filter=False
-            )
+
+        #    )
+
+    # --- filter on usersetting and allowed
+        sql_clause = acc_view.get_userallowed_for_subjects_studsubj(
+            sel_examyear=sel_examyear,
+            sel_schoolbase=sel_schoolbase,
+            sel_depbase=sel_depbase,
+            sel_lvlbase=sel_lvlbase,
+            request=request,
+            skip_allowedsubjbase_filter=skip_allowedsubjbase_filter
+        )
+        if sql_clause:
+            sub_sql_list.append("AND " + sql_clause)
 
         sub_sql_list.append("GROUP BY si.subject_id")
 
         sub_sql = ' '.join(sub_sql_list)
+        if logging_on:
+            logger.debug(' <>>  sql_clause: ' + str(sql_clause))
+            logger.debug(' <>>  sub_sql: ' + str(sub_sql))
+
+        """
+         sql: WITH sub_sql AS ( SELECT si.subject_id FROM subjects_schemeitem AS si 
+         INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id) 
+         INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id) 
+         INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id) 
+         LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id) 
+         LEFT JOIN subjects_sector AS sct ON (sct.id = scheme.sector_id) 
+         WHERE subj.examyear_id = %(ey_id)s::INT AND NOT si.notatdayschool 
+         AND 
+         (
+            CONCAT(';', subj.depbases::TEXT, ';') LIKE 1::TEXT 
+                AND 
+            lvl.base_id IN (   SELECT UNNEST(   ARRAY[4, 5]::INT[]   )   )
+        ) 
+         AND (sct.base_id = 14::INT) GROUP BY si.subject_id ) 
+         
+         SELECT subj.id, subj.base_id, subj.examyear_id, CONCAT('subject_', subj.id::TEXT) AS mapid, 
+         sb.code, subj.name_nl, subj.name_en, subj.name_pa, subj.sequence, subj.depbases,  
+         ey.code AS examyear_code FROM subjects_subject AS subj 
+         INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id) 
+         INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)  
+         INNER JOIN sub_sql ON (sub_sql.subject_id = subj.id) ORDER BY subj.id
+        """
 
         user_line, user_join = '', ''
         if request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN, c.ROLE_128_SYSTEM):
             user_line = "subj.modifiedby_id, subj.modifiedat, au.last_name AS modby_username,"
             user_join = "LEFT JOIN accounts_user AS au ON (au.id = subj.modifiedby_id)"
 
-        sql_list = [
-            "SELECT subj.id, subj.base_id, subj.examyear_id,",
-            "CONCAT('subject_', subj.id::TEXT) AS mapid,",
-            "sb.code, subj.name_nl, subj.name_en, subj.name_pa, subj.sequence, subj.depbases,",
-            user_line,
-            "ey.code AS examyear_code",
-    
-            "FROM subjects_subject AS subj",
-            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
-            "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
-            user_join,
-            "INNER JOIN (", sub_sql, ") AS sub_sql ON (sub_sql.subject_id = subj.id)",
-            #"WHERE subj.id IN (", sub_sql ,  ")",
-            ]
+        sql_list = ["WITH sub_sql AS (", sub_sql, ")",
+                    "SELECT subj.id, subj.base_id, subj.examyear_id,",
+                    "CONCAT('subject_', subj.id::TEXT) AS mapid,",
+                    "sb.code, subj.name_nl, subj.name_en, subj.name_pa, subj.sequence, subj.depbases,",
+                    user_line,
+                    "ey.code AS examyear_code",
 
-        sql_list.append("ORDER BY subj.id")
+                    "FROM subjects_subject AS subj",
+                    "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+                    "INNER JOIN schools_examyear AS ey ON (ey.id = subj.examyear_id)",
+                    user_join,
+                    "INNER JOIN sub_sql ON (sub_sql.subject_id = subj.id)",
+                    "ORDER BY subj.id"
+                    ]
 
         sql = ' '.join(sql_list)
 
         if logging_on:
-            logger.debug('sql_keys: ' + str(sql_keys))
-            logger.debug('sql: ' + str(sql))
+            logger.debug('    sql_keys: ' + str(sql_keys))
+            logger.debug('    sql: ' + str(sql))
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
             subject_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('    subject_rows: ' + str(subject_rows))
 
     return subject_rows
 # --- end of create_subject_rows
@@ -410,14 +427,58 @@ def create_subjectrows_for_page_subjects(sel_examyear, append_dict, subject_pk=N
                     row[key] = value
 
     return subject_rows
-
 # --- end of create_subjectrows_for_page_subjects
 
 
+def create_subjectrows_for_page_users(sel_examyear):
+    # PR2022-08-05
+    # --- create rows of all subjects of this examyear for page subjects
+
+    # PR2022-06-15 debug: new subject has no si yet, will not show, cannot add si.
+    # Make separate sql for page Subjects, without si link
+
+    logging_on = s.LOGGING_ON
+
+    if logging_on:
+        logger.debug(' =============== create_subjectrows_for_page_users ============= ')
+
+    subject_rows = []
+    if sel_examyear:
+        sql_keys = {'ey_id': sel_examyear.pk}
+        sql_list = ["SELECT subj.id, subj.base_id,",
+            "subjbase.code, subj.name_nl, subj.sequence,",
+            "ARRAY_AGG(DISTINCT dep.base_id) AS depbase_id_arr,",
+            "ARRAY_AGG(DISTINCT lvl.base_id) AS lvlbase_id_arr",
+
+            "FROM subjects_schemeitem AS si",
+            "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
+            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+            "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+            "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+            "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
+
+            "WHERE subj.examyear_id = %(ey_id)s::INT",
+            "GROUP BY subj.id, subj.base_id, subjbase.code, subj.name_nl, subj.sequence",
+            "ORDER BY subj.id"
+            ]
+        sql = ' '.join(sql_list)
+
+        if logging_on:
+            logger.debug('sql_keys: ' + str(sql_keys))
+            logger.debug('sql: ' + str(sql))
+
+        with connection.cursor() as cursor:
+            cursor.execute(sql, sql_keys)
+            subject_rows = af.dictfetchall(cursor)
+
+    return subject_rows
+# --- end of create_subjectrows_for_page_users
+
+
 def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
-                        cur_dep_only, allowed_only=False, cluster_pk_list=None, add_field_created=False):
-    # --- create rows of all clusters of this examyear this department  PR2022-01-06
-    logging_on = False  # s.LOGGING_ON
+                        cur_dep_only, allowed_only=False, cluster_pk_list=None):
+    # --- create rows of all clusters of this examyear this department  PR2022-01-06 PR2022-12-25 PR2023-02-09
+    logging_on = s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')
@@ -430,18 +491,16 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
     cluster_rows = []
     if sel_examyear and sel_schoolbase and sel_depbase:
         try:
-            add_field_created_str = ", TRUE AS created" if add_field_created else ''
 
             sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
-            sql_list = ["SELECT cl.id, cl.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
+            sql_list = ["SELECT cluster.id, cluster.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
                         "dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
                         "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl",
-                        add_field_created_str,
-                        "FROM subjects_cluster AS cl",
-                        "INNER JOIN subjects_subject AS subj ON (subj.id = cl.subject_id)",
+                        "FROM subjects_cluster AS cluster",
+                        "INNER JOIN subjects_subject AS subj ON (subj.id = cluster.subject_id)",
                         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-                        "INNER JOIN schools_school AS sch ON (sch.id = cl.school_id)",
-                        "INNER JOIN schools_department AS dep ON (dep.id = cl.department_id)",
+                        "INNER JOIN schools_school AS sch ON (sch.id = cluster.school_id)",
+                        "INNER JOIN schools_department AS dep ON (dep.id = cluster.department_id)",
                         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
                         "WHERE subj.examyear_id = %(ey_id)s::INT",
@@ -449,32 +508,39 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                         "AND sch.base_id = %(sb_id)s::INT"
                         ]
 
-            if cluster_pk_list:
-                sql_keys['cluster_pk_arr'] = cluster_pk_list
-                sql_list.append("AND cl.id IN ( SELECT UNNEST( %(cluster_pk_arr)s::INT[]))")
-
             if cur_dep_only:
-                sql_keys['db_id'] = sel_depbase.pk
-                sql_list.append("AND dep.base_id = %(db_id)s::INT")
+                if sel_depbase:
+                    sel_depbase_clause = ''.join(( "AND dep.base_id = ", str(sel_depbase.pk), "::INT"))
+                else:
+                    sel_depbase_clause = "AND FALSE"
+                sql_list.append(sel_depbase_clause)
 
-# SO FAR @@@@@@@@@@@@@@@@@@@@@@@@@@@
-            acc_view.get_userfilter_allowed_subjbase(
-                request=request,
-                sql_keys=sql_keys,
-                sql_list=sql_list,
-                subjbase_pk=None,
-                skip_allowed_filter= not allowed_only,
-                table=None)
+    # - filter on allowed depbases, levelbase, subjectbases
+                # this doesnt work, because table level is missing in sql. Skip it for now
+                # TODO add table level in sql
+                #sqlclause_allowed_dep_lvl_subj = acc_prm.get_sqlclause_allowed_dep_lvl_subj(
+                #    table='cluster',
+                #    userallowed_sections_dict=acc_prm.get_userallowed_sections_dict_from_request(request),
+                #    sel_schoolbase_pk=sel_schoolbase.pk,
+                #    sel_depbase_pk=sel_depbase.pk
+                #)
+                #if sqlclause_allowed_dep_lvl_subj:
+                #    sql_list.append(sqlclause_allowed_dep_lvl_subj)
 
-            acc_view.get_userfilter_allowed_cluster(
-                request=request,
-                sql_keys=sql_keys,
-                sql_list=sql_list,
-                cluster_pk=None,
-                skip_allowed_filter=not not allowed_only,
-                table=None)
+    # - filter on allowed clusters
+            userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
+            userallowed_cluster_pk_clause = acc_prm.get_sqlclause_allowed_clusters('cluster', userallowed_cluster_pk_list)
+            if userallowed_cluster_pk_clause:
+                sql_list.append(userallowed_cluster_pk_clause)
+            if logging_on:
+                logger.debug('   userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
+                logger.debug('   userallowed_cluster_pk_clause: ' + str(userallowed_cluster_pk_clause))
 
-            sql_list.append("ORDER BY cl.id")
+            sql_list.append("ORDER BY cluster.id")
+
+            if logging_on:
+                for sql_txt in sql_list:
+                    logger.debug('    > ' + str(sql_txt))
 
             sql = ' '.join(sql_list)
 
@@ -483,8 +549,7 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                 cluster_rows = af.dictfetchall(cursor)
 
                 if logging_on:
-                    logger.debug('sql: ' + str(sql))
-                    logger.debug('cluster_rows: ' + str(cluster_rows) )
+                    logger.debug('    len(cluster_rows: ' + str(len(cluster_rows) ))
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -541,7 +606,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                 # - no exam year selected
                 # - exam year is locked
                 # - (skip check for not published)
-                sel_examyear, may_edit, sel_msg_list = dl.get_selected_examyear_from_usersetting(request, True) # allow_not_published = True
+                sel_examyear, may_edit, sel_msg_list = acc_view.get_selected_examyear_from_usersetting(request, True) # allow_not_published = True
                 if sel_msg_list:
                     msg_html = '<br>'.join(sel_msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
@@ -1241,7 +1306,7 @@ def get_sel_examyear(message_header, msg_dictlist, request):
     # return None when examyear is locked, give msg_err
     # function is only used for updating subjects etx
     # in SchemeUploadView, SchemeitemUploadView and SubjecttypeUploadView
-    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+    selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
     examyear = None
     if selected_examyear_pk:
@@ -1325,23 +1390,87 @@ def get_subjecttypebase_instance(sjtpbase_pk, error_list, message_header, loggin
 
     return subjecttypebase
 
-
 #############################
 
 
-# ========  EXAMS  =====================================
+# ========  WOLF  =====================================
 @method_decorator([login_required], name='dispatch')
-class ExamListView(View):  # PR2021-04-04
+class WolfListView(View):  # PR2022-12-16
 
     def get(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  -----  WolfListView -----')
 
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
 # - get sel_schoolbase from settings / request when role is insp, admin or system, from req_usr otherwise
-        sel_schoolbase, sel_schoolbase_saveNIU = af.get_sel_schoolbase_instance(request)
+        sel_examyear_instance = acc_view.get_selected_examyear_from_usersetting_short(request)
+        userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear_instance)
+
+        if logging_on:
+            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+
+        sel_schoolbase, sel_schoolbase_saveNIU = acc_view.get_sel_schoolbase_instance(
+            request=request,
+            request_item_schoolbase_pk=None,
+            allowed_sections_dict=allowed_sections_dict
+        )
+        if logging_on:
+            logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
+
+# requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
+        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
+        requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and request.user.schoolbase.pk == sel_schoolbase.pk)
+
+# - set headerbar parameters
+        # PR2022-08-29 don't show school when user is not same school
+        page = 'page_wolf'
+        param = {'display_school': True, 'display_department': True}
+        params = awpr_menu.get_headerbar_param(request, page, param)
+
+        if logging_on:
+            logger.debug('    params: ' + str(params))
+
+# - save this page in Usersetting, so at next login this page will open.  Used in LoggedIn
+        #         # PR2021-06-22 moved to get_headerbar_param
+
+        return render(request, 'wolf.html', params)
+# - end of WolfListView
+
+
+
+#############################
+
+
+# ========  EXAMS  =====================================
+@method_decorator([login_required], name='dispatch')
+class ExamListView(View):  # PR2021-04-04 PR2022-12-16
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  -----  ExamListView -----')
+
+# -  get user_lang
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get sel_schoolbase from settings / request when role is insp, admin or system, from req_usr otherwise
+        sel_examyear_instance = acc_view.get_selected_examyear_from_usersetting_short(request)
+        userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear_instance)
+        if logging_on:
+            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+
+        sel_schoolbase, sel_schoolbase_saveNIU = acc_view.get_sel_schoolbase_instance(
+            request=request,
+            request_item_schoolbase_pk=None,
+            allowed_sections_dict=allowed_sections_dict
+        )
+        if logging_on:
+            logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
 
 # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
         # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Comm can not neter grades
@@ -1354,8 +1483,7 @@ class ExamListView(View):  # PR2021-04-04
         params = awpr_menu.get_headerbar_param(request, page, param)
 
         if logging_on:
-            logger.debug('  =====  ExamListView ===== ')
-            logger.debug('params: ' + str(params))
+            logger.debug('    params: ' + str(params))
 
 # - save this page in Usersetting, so at next login this page will open.  Used in LoggedIn
         #         # PR2021-06-22 moved to get_headerbar_param
@@ -1396,7 +1524,7 @@ class ExamUploadView(View):
 # - add edit permit
             has_permit = False
             if req_usr and req_usr.country:
-                permit_list = req_usr.permit_list('page_exams')
+                permit_list = acc_prm.get_permit_list('page_exams', req_usr)
                 if permit_list:
                     # unpublish only allowed when permit_publish_exam
                     if mode == 'undo_published':
@@ -1440,8 +1568,8 @@ class ExamUploadView(View):
                 show_all = upload_dict.get('show_all') or False
 
 # - get selected examyear and from Usersetting
-                sel_examyear, sel_schoolNIU, sel_department, may_editNIU, msg_listNIU = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_schoolNIU, sel_department, sel_level, may_editNIU, msg_listNIU = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 # note: exams can be changed before publishing examyear, therefore don't filter on examyear.published
                 if sel_examyear and sel_department:
@@ -1609,7 +1737,7 @@ class ExamCopyView(View):
 # - add edit permit
         has_permit = False
         if req_usr and req_usr.country:
-            permit_list = req_usr.permit_list('page_exams')
+            permit_list = acc_prm.get_permit_list('page_exams', req_usr)
             if permit_list:
                 has_permit = 'permit_crud' in permit_list
             if logging_on:
@@ -1642,7 +1770,7 @@ class ExamCopyView(View):
                     subject_pk = upload_dict.get('subject_pk')
 
     # - check if examyear exists and equals selected examyear from Usersetting
-                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                     if examyear_pk == selected_examyear_pk:
                         examyear = sch_mod.Examyear.objects.get_or_none(
@@ -1741,7 +1869,7 @@ class ExamCopyNtermenView(View):
 # - add edit permit
         has_permit = False
         if req_usr and req_usr.country:
-            permit_list = req_usr.permit_list('page_exams')
+            permit_list = acc_prm.get_permit_list('page_exams', req_usr)
             if permit_list:
                 has_permit = 'permit_crud' in permit_list
             if logging_on:
@@ -1772,7 +1900,7 @@ class ExamCopyNtermenView(View):
                         logger.debug('examyear_pk' + str(examyear_pk) + ' ' + str(type(examyear_pk)))
 
     # - check if examyear exists and equals selected examyear from Usersetting
-                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                     if logging_on:
                         logger.debug('selected_examyear_pk: ' + str(selected_examyear_pk) + ' ' + str(type(selected_examyear_pk)))
@@ -1868,7 +1996,7 @@ class ExamLinkExamToGradesView(View):
 # - add edit permit
         has_permit = False
         if req_usr and req_usr.country:
-            permit_list = req_usr.permit_list('page_exams')
+            permit_list = acc_prm.get_permit_list('page_exams', req_usr)
             if permit_list:
                 has_permit = 'permit_crud' in permit_list
             if logging_on:
@@ -1933,7 +2061,7 @@ class ExamLinkExamToGradesView(View):
                     #       DUO -exams are created or deleted when linking a subject with a ntermen exam
 
                     requsr_examyear_pk, requsr_depbase_pk = None, None
-                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     if selected_dict:
                         requsr_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
                         requsr_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
@@ -2081,7 +2209,7 @@ class ExamUploadDuoExamView(View):
 # - add edit permit
         has_permit = False
         if req_usr and req_usr.country:
-            permit_list = req_usr.permit_list('page_exams')
+            permit_list = acc_prm.get_permit_list('page_exams', req_usr)
             if permit_list:
                 has_permit = 'permit_crud' in permit_list
             if logging_on:
@@ -2177,7 +2305,7 @@ class ExamUploadDuoExamView(View):
                                     if logging_on:
                                         logger.debug('examyear:       ' + str(examyear))
 
-                    selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     selected_examyear_pk = selected_dict.get(c.KEY_SEL_EXAMYEAR_PK)
 
                     if logging_on:
@@ -2327,11 +2455,13 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.is_role_admin and req_usr.schoolbase:
 
-            permit_list = req_usr.permit_list('page_exams')
+            permit_list = acc_prm.get_permit_list('page_exams', req_usr)
+
             if permit_list:
-                requsr_usergroup_list = req_usr.usergroup_list
                 # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
+                # PR2023-02-03 was: was: requsr_usergroup_list = req_usr.usergroup_list
+                requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(req_usr)
                 is_auth1 = 'auth1' in requsr_usergroup_list
                 is_auth2 = 'auth2' in requsr_usergroup_list
                 if is_auth1 + is_auth2 == 1:
@@ -2360,8 +2490,8 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
 # ----- get selected examyear and department from usersettings
                 msg_list = []
                 sel_examyear, sel_department, sel_schoolNIU, sel_examperiod = \
-                    dl.get_selected_examyear_examperiod_dep_school_from_usersetting(request)
-                dl.message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
+                    acc_view.get_selected_examyear_examperiod_dep_school_from_usersetting(request)
+                acc_view.message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
 
                 if msg_list:
                     msg_html = ''.join(("<div class='p-2 border_bg_warning'>", '<br>'.join(msg_list), '</>'))
@@ -2393,7 +2523,7 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                     if verification_is_ok:
                         # also filter on sel_lvlbase_pk, sel_subject_pk when is_submit
                         sel_lvlbase_pk, sel_subject_pk = None, None
-                        selected_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                        selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                         if selected_dict:
                             sel_lvlbase_pk = selected_dict.get(c.KEY_SEL_LVLBASE_PK)
                             sel_subject_pk = selected_dict.get(c.KEY_SEL_SUBJECT_PK)
@@ -2554,13 +2684,14 @@ class ExamApproveOrSubmitGradeExamView(View):
 
 # - get permit
         if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_exams')
+            permit_list = acc_prm.get_permit_list('page_exams', req_usr)
             if permit_list:
-                requsr_usergroup_list = req_usr.usergroup_list
                 # msg_err is made on client side. Here: just skip if user has no or multiple functions
 
-                is_auth1 = ('auth1' in requsr_usergroup_list)
-                is_auth2 = ('auth2' in requsr_usergroup_list)
+                # PR2023-02-03 was: was: requsr_usergroup_list = req_usr.usergroup_list
+                requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(req_usr)
+                is_auth1 = 'auth1' in requsr_usergroup_list
+                is_auth2 = 'auth2' in requsr_usergroup_list
                 if is_auth1 + is_auth2 == 1:
                     if is_auth1:
                         requsr_auth = 'auth1'
@@ -2611,8 +2742,8 @@ class ExamApproveOrSubmitGradeExamView(View):
                 # not necessary. Single grade exams are approved in GradeUploadView.update_grade_instance, field 'auth_index'
 
 # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_edit, err_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request=request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request=request)
 
 # - check if user is same_school
                 is_role_same_school = req_usr.is_role_school and sel_school and req_usr.schoolbase and req_usr.schoolbase.pk == sel_school.base_id
@@ -2635,7 +2766,7 @@ class ExamApproveOrSubmitGradeExamView(View):
 # - get selected examperiod from usersetting
                     sel_examperiod, sel_lvlbase_pk, sel_subject_pk, sel_subjbase_pk, sel_cluster_pk = None, None, None, None, None
 
-                    selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
                     if selected_pk_dict:
                         sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
                         sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
@@ -3526,7 +3657,7 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_ex
                 "WHERE school.id = %(school_id)s::INT AND dep.id = %(dep_id)s::INT",
                 "AND ey.id = %(ey_id)s::INT",
                 "AND ce_exam.ete_exam AND grd.examperiod = %(experiod)s::INT",
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                 ]
 
     if sel_lvlbase_pk:
@@ -4121,7 +4252,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                 if lvlbase_pk:
                     sub_sql_list.append("AND lvl.base_id = %(lb_pk)s::INT")
 
-                sub_sql_list.append("AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted ")
+                sub_sql_list.append("AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted ")
                 if is_test:
                     sub_sql_list.append("ORDER BY schoolbase.code, dep.sequence, lvl.sequence, stud.lastname, stud.firstname")
 
@@ -4862,8 +4993,8 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
     #       - this examyear_code i.e both exams of Cur and Sxm are showing
     # - when role = admin:
     #       - this examyear_pk i.e only exams of Cur or Sxm are showing
-
-    sql_keys = {'depbase_id': sel_depbase.pk}
+    sel_depbase_pk = sel_depbase.pk if sel_depbase else None
+    sql_keys = {'depbase_id': sel_depbase_pk}
 
     sql_list = [
         "SELECT exam.id, exam.subject_id AS subj_id, subj.base_id AS subjbase_id, subj.examyear_id AS subj_examyear_id,",
@@ -5041,18 +5172,20 @@ def create_duo_subject_rows(sel_examyear, sel_depbase, append_dict, setting_dict
 
 
 def create_ntermentable_rows(sel_examyear, sel_depbase, setting_dict):
-    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23
+    # --- create rows of all exams of this examyear  PR2021-04-05  PR2022-01-23 PR2022-02-23 PR2022-12-16
     logging_on = False  #  s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_ntermentable_rows ============= ')
     # sty_id 1 = vwo, 2 = havo, 3 = vmbo
     sty_id = None
-    if sel_depbase.code == 'Vsbo':
-        sty_id = 3
-    elif sel_depbase.code == 'Havo':
-        sty_id = 2
-    elif sel_depbase.code == 'Vwo':
-        sty_id = 1
+    if sel_depbase and sel_depbase.code:
+        sel_depbase_code_lower = sel_depbase.code.lower()
+        if sel_depbase_code_lower == 'vsbo':
+            sty_id = 3
+        elif sel_depbase_code_lower == 'havo':
+            sty_id = 2
+        elif sel_depbase_code_lower == 'vwo':
+            sty_id = 1
     # - only show published exams when user is school
     sql_keys = {'ey_code': sel_examyear.code, 'sty_id': sty_id}
 
@@ -6581,8 +6714,8 @@ class ExamDownloadExamView(View):  # PR2021-05-06
                 #logger.debug('list_dict: ' + str(list_dict))
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_school: ' + str(sel_school))
@@ -6690,8 +6823,8 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
                 #logger.debug('list_dict: ' + str(list_dict))
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_school: ' + str(sel_school))
@@ -6802,8 +6935,8 @@ class ExamDownloadConversionView(View):  # PR2022-05-08
                 exam_pk = int(list)
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_school: ' + str(sel_school))
@@ -6925,7 +7058,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
                             "AND grd.ce_exam_published_id IS NOT NULL",
 
                             "AND grd.ce_exam_score IS NOT NULL",
-                            "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                            "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                             ]
 
                 if sel_lvlbase_pk:
@@ -7050,7 +7183,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
 
                             "AND grd.ce_exam_score IS NOT NULL",
                             "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
-                            "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                            "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
                             ]
 
                 sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
@@ -7436,7 +7569,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             activate(user_lang)
 
 # - get selected examyear and examperiod from usersettings
-            sel_examyear, sel_examperiod = dl.get_selected_examyear_examperiod_from_usersetting(request)
+            sel_examyear, sel_examperiod = acc_view.get_selected_examyear_examperiod_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_examperiod: ' + str(sel_examperiod))
@@ -7453,7 +7586,7 @@ class ExamDownloadExamJsonView(View):  # PR2021-05-06
             if sel_examperiod in (1, 2):
                 examenlijst = []
 
-                selected_pk_dict = acc_view.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 
                 exam_rows = get_exam_rows(sel_examyear.code, sel_examperiod, selected_pk_dict, request)
                 if logging_on:
@@ -7734,7 +7867,7 @@ def get_ce_examresult_rows():
                 "WHERE ey.id = %(ey_id)s::INT",
                 "AND school.id = %(sch_id)s::INT",
                 "AND dep.id = %(dep_id)s::INT",
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted",
                 "AND grd.examperiod = %(experiod)s::INT",
 
                 "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
@@ -7830,7 +7963,7 @@ def check_verifcode_local(upload_dict, request ):
     if form_name and verif_key and verif_code:
         key_code = '_'.join((verif_key, verif_code))
     # - get saved key_code
-        saved_dict = acc_view.get_usersetting_dict(c.KEY_VERIFICATIONCODE, request)
+        saved_dict = acc_prm.get_usersetting_dict(c.KEY_VERIFICATIONCODE, request)
         if logging_on:
             logger.debug('saved_dict: ' + str(saved_dict))
 

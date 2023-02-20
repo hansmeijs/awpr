@@ -7,9 +7,9 @@ from django.utils.translation import gettext_lazy as _
 from awpr import constants as c
 from awpr import settings as s
 
+from accounts import models as acc_mod
 from schools import models as sch_mod
 from subjects import models as subj_mod
-from  subjects import views as subj_vw
 
 import logging
 logger = logging.getLogger(__name__)
@@ -86,6 +86,51 @@ def copy_examyear_from_prev_examyearNIU(prev_examyear, new_examyear, log_list):
         logger.error(getattr(e, 'message', str(e)))
         log_list.append(get_error_logtext(_('exam year data'), e))
 # - end of copy_examyear_from_prev_examyear
+
+
+
+def copy_userallowed_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
+    # copy userallowed records from previous examyear PR2022-12-16
+    # TODO test if code is correct
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- copy_userallowed_from_prev_examyear -------')
+
+    caption = _('User permissions')
+
+# - loop through deps of prev examyear
+    prev_userallowed_rows = acc_mod.UserAllowed.objects.filter(
+        examyear_id=prev_examyear_pk
+    )
+
+    for prev_row in prev_userallowed_rows:
+        if logging_on:
+            logger.debug('prev_row: ' + str(prev_row))
+        try:
+            new_prev_userallowed_row = acc_mod.UserAllowed(
+                user_id=prev_row.user_id,
+                examyear_id=new_examyear_pk,
+
+                usergroups=prev_row.usergroups,
+                allowed_sections = prev_row.allowed_sections,
+                allowed_clusters = prev_row.allowed_clusters,
+
+                modifiedby_id=prev_row.modifiedby_id,
+                modifiedat=prev_row.modifiedat
+            )
+
+            new_prev_userallowed_row.save()
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            log_list.append(get_error_logtext(caption, e))
+
+    row_count = len(prev_userallowed_rows) if prev_userallowed_rows else 0
+    log_txt = str(_("The permissions of %(row_count)s users are copied.") % {'row_count': row_count})
+    log_list.append(c.STRING_SPACE_05 + log_txt)
+
+
+# - end of copy_userallowed_from_prev_examyear
 
 
 def copy_exfilestext_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
@@ -552,7 +597,13 @@ def copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped
 # get mapped values of scheme, subject and subjecttype
             prev_si_pk = prev_si.pk
             new_scheme_pk = mapped_schemes.get(prev_si.scheme_id)
+
             new_subject_pk = mapped_subjects.get(prev_si.subject_id)
+
+            # PR2023-01-04 new_is_mand_subj_pk is not tested yet:
+            # is_mand_subj: only mandatory if student has this subject
+            new_is_mand_subj_pk = mapped_subjects.get(prev_si.is_mand_subj_id)
+
             new_subjecttype_pk = mapped_subjecttypes.get(prev_si.subjecttype_id)
 
             new_si = subj_mod.Schemeitem(
@@ -571,7 +622,7 @@ def copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped
                 multiplier=prev_si.multiplier,
 
                 is_mandatory=prev_si.is_mandatory,
-                is_mand_subj=prev_si.is_mand_subj,
+                is_mand_subj_id=new_is_mand_subj_pk,
                 is_combi=prev_si.is_combi,
 
                 extra_count_allowed=prev_si.extra_count_allowed,
@@ -889,7 +940,7 @@ def copy_enveloplabelitems_from_prev_examyear(prev_examyear_pk, mapped_envelopla
 
 
 def copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list):
-    # copy exams from previous examyear PR2022-08-07
+    # copy exams from previous examyear PR2022-08-07  PR2022-12-16
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_exams_from_prev_examyear -------')
@@ -919,7 +970,7 @@ def copy_exams_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, 
                 examperiod=prev_exam.examperiod,
                 version=prev_exam.version,
 
-                envelopbundle=new_envelopbundle_pk,
+                envelopbundle_id=new_envelopbundle_pk,
                 has_errata=False,
                 subject_color=prev_exam.subject_color,
                 evl_modifiedby=prev_exam.evl_modifiedby,

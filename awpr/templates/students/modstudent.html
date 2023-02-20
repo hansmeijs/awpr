@@ -12,83 +12,85 @@
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
+                <div id="id_MSTUD_symbol_container" class="modal-body pb-0">
+
+                </div>
 
                 <div id="id_MSTUD_div_form_controls" class="modal-body pb-0">
                      <div class="content_header">
                          <div class="flex_3 mx-1">
                             <label for="id_MSTUD_lastname" class="label_margin_top_m3">{% trans 'Last name' %}:</label>
-                            <input id="id_MSTUD_lastname" type="text" data-field="lastname" class="form-control"
+                            <input id="id_MSTUD_lastname" type="text" data-field="lastname" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            <div class="content_subheader_left mx-2">
+                                <small id="id_MSTUD_err_lastname" class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
                          <div class="flex_4  mx-1">
                             <label for="id_MSTUD_firstname" class="label_margin_top_m3">{% trans 'First names' %}:</label>
-                            <input id="id_MSTUD_firstname" type="text" data-field="firstname" class="form-control"
+                            <input id="id_MSTUD_firstname" type="text" data-field="firstname" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_firstname" class="text-danger awp_msg_err"></small>
+                            </div>
+
                          </div>
                          <div class="flex_1 mx-1">
                             <label for="id_MSTUD_prefix" class="label_margin_top_m3">{% trans 'Prefix' %}:</label>
-                            <input id="id_MSTUD_prefix" type="text" data-field="prefix" class="form-control"
+                            <input id="id_MSTUD_prefix" type="text" data-field="prefix" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+
+                             <div class="content_subheader_left mx-2">
+                                  <small id="id_MSTUD_err_prefix" class="text-danger awp_msg_err"></small>
+                             </div>
+
                          </div>
                          <div class="flex_1 mx-1">
                             <label for="id_MSTUD_gender" class="label_margin_top_m3">{% trans 'Gender' %}:</label>
-                             <select id="id_MSTUD_gender" data-field= "gender" class="form-control"
+                             <select id="id_MSTUD_gender" data-field= "gender" class="form-control awp_input_text"
                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                <!--  <option value="">-</option> -->
                                  <option value="M">{% trans 'M' %}</option>
                                  <option value="V">{% trans 'F' %}</option>
                             </select>
+                            <div class="content_subheader_left mx-2">
+                                <small id="id_MSTUD_err_gender" class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
-
                       </div>
-                     <div class="content_header">
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_lastname" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_firstname" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_prefix" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_gender" class="text-danger"></small>
-                         </div>
-                     </div>
+
                      <div class="content_header">
                          <div class="content_subheader_left mx-1">
                             <label for="id_MSTUD_idnumber" class="label_margin_top_m3">{% trans 'ID-number' %}:</label>
-                            <input id="id_MSTUD_idnumber" type="text" data-field="idnumber" class="form-control"
+                            <input id="id_MSTUD_idnumber" type="text" data-field="idnumber" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_idnumber" class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
                          <div class="content_subheader_left mx-1 ">
                             <label for="id_MSTUD_birthdate" class="label_margin_top_m3">{% trans 'Birth date' %}:</label>
-                            <input id="id_MSTUD_birthdate" type="date" data-field= "birthdate" class="form-control"
+                            <input id="id_MSTUD_birthdate" type="date" data-field= "birthdate" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            <div class="content_subheader_left mx-2">
+                                <small id="id_MSTUD_err_birthdate" class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
                          <div class="content_subheader_left mx-1 ">
                             <label for="id_MSTUD_birthcountry" class="label_margin_top_m3">{% trans 'Birth country' %}:</label>
-                            <input id="id_MSTUD_birthcountry" type="text" data-field= "birthcountry" class="form-control"
+                            <input id="id_MSTUD_birthcountry" type="text" data-field= "birthcountry" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_birthcountry" class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
                          <div class="content_subheader_left mx-1 ">
                             <label for="id_MSTUD_birthcity" class="label_margin_top_m3">{% trans 'Place of birth' %}:</label>
-                            <input id="id_MSTUD_birthcity" type="text" data-field= "birthcity" class="form-control"
+                            <input id="id_MSTUD_birthcity" type="text" data-field= "birthcity" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                         </div>
-                     </div>
-                     <div class="content_header">
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_idnumber" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_birthdate" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_birthcountry" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_birthcity" class="text-danger"></small>
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_birthcity" class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
                      </div>
                      <div class="content_header">
@@ -99,34 +101,22 @@
                          </div>
                          <div class="content_subheader_left mx-1">
                             <label for="id_MSTUD_examnumber" class="label_margin_top_m3">{% trans 'Exam number' %}:</label>
-                            <input id="id_MSTUD_examnumber" type="text" data-field= "examnumber" class="form-control"
+                            <input id="id_MSTUD_examnumber" type="text" data-field= "examnumber" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_examnumber"  class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
 
                          <div class="content_subheader_left mx-1">
                             <label for="id_MSTUD_diplomanumber" class="label_margin_top_m3">{% trans 'Diploma number' %}:</label>
-                            <input id="id_MSTUD_diplomanumber" type="text" data-field= "diplomanumber" class="form-control"
+                            <input id="id_MSTUD_diplomanumber" type="text" data-field= "diplomanumber" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
                          </div>
                          <div class="content_subheader_left mx-1">
                             <label for="id_MSTUD_gradelistnumber" class="label_margin_top_m3">{% trans 'Grade list number' %}:</label>
-                            <input id="id_MSTUD_gradelistnumber" type="text" data-field= "gradelistnumber" class="form-control"
+                            <input id="id_MSTUD_gradelistnumber" type="text" data-field= "gradelistnumber" class="form-control awp_input_text"
                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                         </div>
-                     </div>
-                     <div class="content_header">
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_regnumber" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_examnumber"  class="text-danger"></small>
-                         </div>
-
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_diplomanumber" class="text-danger"></small>
-                         </div>
-                         <div class="content_subheader_left mx-2">
-                              <small id="id_MSTUD_err_gradelistnumber" class="text-danger"></small>
                          </div>
                      </div>
                      <div class="content_header">
@@ -136,16 +126,22 @@
                                    readonly autocomplete="off" ondragstart="return false;" ondrop="return false;">
                          </div>
                          <div id="id_MSTUD_level_div" class="flex_1 mx-1">
-                            <label id="id_MSTUD_level_label" for="id_MSTUD_level_select" class="label_margin_top_m3">{% trans 'Learning path' %}:</label>
-                            <select id="id_MSTUD_level_select" data-field= "lvlbase_id" class="form-control"
+                            <label id="id_MSTUD_level_label" for="id_MSTUD_lvlbase_id" class="label_margin_top_m3">{% trans 'Learning path' %}:</label>
+                            <select id="id_MSTUD_lvlbase_id" data-field= "lvlbase_id" class="form-control awp_input_text"
                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
                             </select>
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_lvlbase_id" class="text-danger awp_msg_err"></small>
+                            </div>
                          </div>
                          <div id="id_MSTUD_sector_div" class="flex_1 mx-1">
-                            <label id="id_MSTUD_sector_label" for="id_MSTUD_sector_select" class="label_margin_top_m3"></label>
-                            <select id="id_MSTUD_sector_select" data-field= "sctbase_id" class="form-control"
+                            <label id="id_MSTUD_sector_label" for="id_MSTUD_sctbase_id" class="label_margin_top_m3"></label>
+                            <select id="id_MSTUD_sctbase_id" data-field= "sctbase_id" class="form-control awp_input_text"
                                    autocomplete="off" ondragstart="return false;" ondrop="return false;">
                             </select>
+                            <div class="content_subheader_left mx-2">
+                              <small id="id_MSTUD_err_sctbase_id" class="text-danger awp_msg_err"></small>
+                            </div>
                         </div>
                         <div class="flex_1 mx-1">
                             <label for="id_MSTUD_classname" class="label_margin_top_m3">{% trans 'Class' %}:</label>
@@ -155,6 +151,12 @@
                      </div>
 
                      <div class="content_header">
+                         <div class="flex_1 mx-1">
+                            <label for="id_MSTUD_bis_exam" class="label_margin_top_m3">{% trans 'Extra facilities' %}:</label>
+                            <div id="id_MSTUD_extrafacilities" data-field="extrafacilities" class="form-control pt-2 pointer_show">
+                                <div class="tickmark_1_1"></div>
+                            </div>
+                         </div>
                          <div class="flex_1 mx-1">
                             <label for="id_MSTUD_bis_exam" class="label_margin_top_m3">{% trans 'Bis candidate' %}:</label>
                             <div id="id_MSTUD_bis_exam" data-field="bis_exam" class="form-control pt-2 pointer_show">
@@ -185,6 +187,7 @@
                 <div class="modal-footer">
                     <div class="content_subheader_left mx-1">
                         <button id="id_MSTUD_btn_delete"  data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Delete candidate' %}</button>
+                        <button id="id_MSTUD_btn_symbols" class="btn btn-outline-secondary" >{% trans 'Enter special characters' %}</button>
                         <button id="id_MSTUD_btn_log" class="btn btn-outline-secondary display_hide" >{% trans 'Show logfile' %}</button>
                     </div>
                     <div class="content_subheader_right">

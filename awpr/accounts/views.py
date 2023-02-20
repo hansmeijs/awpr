@@ -59,14 +59,17 @@ from .tokens import account_activation_token
 from .models import User, User_log, Usersetting
 
 from accounts import models as acc_mod
+from accounts import permits as acc_prm
 from awpr import settings as s
 from awpr import constants as c
-from awpr import validators as v
+from awpr import validators as awpr_val
 
 from awpr import functions as af
 from awpr import menus as awpr_menu
+from awpr import excel as awpr_excel
 
 from schools import models as sch_mod
+from subjects import  models as subj_mod
 
 from datetime import datetime
 import pytz
@@ -99,13 +102,14 @@ class UserListView(ListView):
         # - else (role is school): all users with role 'school' and schoolcode == request_user.schooldefault
 
         show_btn_userpermit = False
-
         if request.user.role is not None: # PR2018-05-31 debug: self.role = False when value = 0!!! Use is not None instead
             if request.user.is_role_system:
                 show_btn_userpermit = True
 
         # get_headerbar_param(request, page, param=None):  # PR2021-03-25
-        headerbar_param = awpr_menu.get_headerbar_param(request, 'page_user', {'show_btn_userpermit': show_btn_userpermit} )
+        page = 'page_user'
+        param = {'show_btn_userpermit': show_btn_userpermit, 'display_school': True, 'display_department': False }
+        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
         if logging_on:
             logger.debug("show_btn_userpermit: " + str(show_btn_userpermit))
             logger.debug("headerbar_param: " + str(headerbar_param))
@@ -115,8 +119,9 @@ class UserListView(ListView):
 # How To Create Users Without Setting Their Password PR2018-10-09
 # from https://django-authtools.readthedocs.io/en/latest/how-to/invitation-email.html
 
+
 ########################################################################
-# === UserUploadView ===================================== PR2020-08-02
+# === UserUploadView ===================================== PR2020-08-02 PR2022-12-07
 @method_decorator([login_required], name='dispatch')
 class UserUploadView(View):
     #  UserUploadView is called from Users form when the sysadmin has filled in username and email and clicked on 'Submit'
@@ -124,36 +129,52 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
         msg_list =[]
-        if request.user and request.user.country and request.user.schoolbase:
-            req_user = request.user
+        user_without_userallowed = None
+
+# - reset language
+        # PR2019-03-15 Debug: language gets lost, get req_usr.lang again
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get permit
+        req_usr = request.user
+        if req_usr and req_usr and req_usr:
+            req_usr = request.user
             # <PERMIT> PR2020-09-24
             #  - only perm_admin and perm_system can add / edit / delete users
             #  - only role_system and role_admin (ETE) can add users of other schools
-            #  - role_system, role_admin, role_insp and role_school can add users of their own school
+            #  - role_system, role_admin, role_insp, role_corr and role_school can add users of their own school
 
-            requsr_usergroupslist = req_user.usergroups.split(';') if req_user.usergroups else []
+# - get selected examyear from usersettings,
+            # - checks if country is locked and if examyear is missing, not published or locked
+            # - skip allow_not_published when req_usr is admin (ETE) or system
+            allow_not_published = req_usr.role >= c.ROLE_064_ADMIN
+            sel_examyear, may_edit, msg_lst = get_selected_examyear_from_usersetting(request, allow_not_published)
+            if msg_lst:
+                msg_list.extend(msg_lst)
 
             # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
-            requsr_permitlist = req_user.permit_list('page_user')
+            requsr_permitlist = acc_prm.get_permit_list('page_user', req_usr)
 
             has_permit_same_school, has_permit_other_schools = False, False
-            if requsr_permitlist:
+            if may_edit and requsr_permitlist:
                 has_permit_other_schools = 'permit_crud_otherschool' in requsr_permitlist
                 has_permit_same_school = 'permit_crud_sameschool' in requsr_permitlist
 
             if logging_on:
-                logger.debug('requsr_permitlist: ' + str(requsr_permitlist))
-                logger.debug('has_permit_other_schools: ' + str(has_permit_other_schools))
-                logger.debug('has_permit_same_school: ' + str(has_permit_same_school))
+                logger.debug('    requsr_permitlist: ' + str(requsr_permitlist))
+                logger.debug('    has_permit_other_schools: ' + str(has_permit_other_schools))
+                logger.debug('    has_permit_same_school: ' + str(has_permit_same_school))
 
             if has_permit_same_school or has_permit_other_schools:
+
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
@@ -161,18 +182,15 @@ class UserUploadView(View):
 
                     if logging_on:
                         logger.debug('upload_dict: ' + str(upload_dict))
+                        logger.debug('    sel_examyear: ' + str(sel_examyear))
 
-                    # upload_dict: {'mode': 'validate', 'company_pk': 3, 'pk_int': 114, 'user_ppk': 3,
-                    #               'employee_pk': None, 'employee_code': None, 'username': 'Giterson_Lisette',
-                    #               'last_name': 'Lisette Sylvia enzo Giterson', 'email': 'hmeijs@gmail.com'}
                     # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
+                    """
+                    upload_dict: {'user_pk': None, 'schoolbase_pk': 13, 'mode': 'validate', 
+                        'username': 'Hans__Meijs', 'last_name': 'Hans', 'email': 'hmeijs@gmail.com'}
+                    """
 
-    # - reset language
-                    # PR2019-03-15 Debug: language gets lost, get req_user.lang again
-                    user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
-                    activate(user_lang)
-
-    # - get info from upload_dict
+# - get info from upload_dict
                     user_pk = upload_dict.get('user_pk')
                     user_schoolbase_pk = upload_dict.get('schoolbase_pk')
                     map_id = upload_dict.get('mapid')
@@ -182,17 +200,23 @@ class UserUploadView(View):
                     update_wrap['mode'] = mode
 
                     if logging_on:
-                        logger.debug('user_pk: ' + str(user_pk))
-                        logger.debug('user_schoolbase_pk: ' + str(user_schoolbase_pk))
-                        logger.debug('map_id: ' + str(map_id))
-                        logger.debug('mode: ' + str(mode))
+                        logger.debug('    user_pk: ' + str(user_pk))
+                        logger.debug('    user_schoolbase_pk: ' + str(user_schoolbase_pk))
+                        logger.debug('    map_id: ' + str(map_id))
+                        logger.debug('    mode: ' + str(mode))
 
-    # - check if the user schoolbase exists
+# - check if the user schoolbase exists
                     user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
                         id=user_schoolbase_pk,
-                        country=req_user.country
+                        country=req_usr.country
                     )
-                    is_same_schoolbase = (user_schoolbase and user_schoolbase == req_user.schoolbase)
+                    is_same_schoolbase = (user_schoolbase and user_schoolbase == req_usr.schoolbase)
+
+                    if is_same_schoolbase:
+                        new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT)
+                    else:
+                        new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_DOWNLOAD,
+                                              c.USERGROUP_ARCHIVE, c.USERGROUP_ADMIN)
 
                     # <PERMIT> PR2021-04-23
                     # user role can never be higher dan requser role
@@ -200,23 +224,21 @@ class UserUploadView(View):
                     err_dict = {}
                     has_permit = False
                     if user_schoolbase:
-                    # <PERMIT> PR2021-04-23
-                    # user role can never be higher dan requser role
                         user_schoolbase_defaultrole = getattr(user_schoolbase, 'defaultrole')
                         if user_schoolbase_defaultrole is None:
                             user_schoolbase_defaultrole = 0
-                        if user_schoolbase_defaultrole <= req_user.role:
+                        if user_schoolbase_defaultrole <= req_usr.role:
                             if has_permit_other_schools:
                                 has_permit = True
                             elif has_permit_same_school:
                                 has_permit = is_same_schoolbase
 
                         if logging_on:
-                            logger.debug('user_schoolbase: ' + str(user_schoolbase))
-                            logger.debug('user_schoolbase_defaultrole: ' + str(user_schoolbase_defaultrole))
-                            logger.debug('has_permit_other_schools: ' + str(has_permit_other_schools))
-                            logger.debug('has_permit_same_school: ' + str(has_permit_same_school))
-                            logger.debug('has_permit: ' + str(has_permit))
+                            logger.debug('    user_schoolbase: ' + str(user_schoolbase))
+                            logger.debug('    user_schoolbase_defaultrole: ' + str(user_schoolbase_defaultrole))
+                            logger.debug('    has_permit_other_schools: ' + str(has_permit_other_schools))
+                            logger.debug('    has_permit_same_school: ' + str(has_permit_same_school))
+                            logger.debug('    has_permit: ' + str(has_permit))
 
                     if not has_permit:
                         err_dict['msg01'] = _("You don't have permission to perform this action.")
@@ -227,132 +249,174 @@ class UserUploadView(View):
                         if mode == 'send_activation_email':
                             send_activation_email(user_pk, update_wrap, err_dict, request)
 
-# ++++  delete user ++++++++++++
-                        elif mode == 'delete':
+# ++++  delete user or add userallowed ++++++++++++
+                        elif mode in ('delete', 'user_without_userallowed'):
                             if user_pk:
-                                instance = None
+                # - get user_instance
+                                user_instance = None
                                 if has_permit_other_schools:
-                                    instance = acc_mod.User.objects.get_or_none(
+                                    user_instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
-                                        country=req_user.country
+                                        country=req_usr.country
                                     )
                                 elif has_permit_same_school:
-                                    instance = acc_mod.User.objects.get_or_none(
+                                    user_instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
-                                        country=req_user.country,
-                                        schoolbase=req_user.schoolbase
+                                        country=req_usr.country,
+                                        schoolbase=req_usr.schoolbase
                                     )
 
                                 if logging_on:
-                                    logger.debug('instance: ' + str(instance))
+                                    logger.debug('user_instance: ' + str(user_instance))
 
-                                if instance:
-                                    deleted_instance_list = create_user_rows(request, instance.pk)
+                                if user_instance:
 
-                                    if logging_on:
-                                        logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
+                                    if mode == 'user_without_userallowed':
 
-                                    if deleted_instance_list:
-                                        updated_dict = deleted_instance_list[0]
-                                        updated_dict['mapid'] = 'user_' + str(instance.pk)
+# ++++  add userallowed record of this examyear to user
+                        # - get usergroups_arr from last UserAllowed record, get default if None
 
-                                    if c.USERGROUP_ADMIN in requsr_usergroupslist and instance == req_user:
-                                        err_dict['msg01'] = _("System administrators cannot delete their own account.")
-                                    else:
-                                        try:
-                                            # PR2021-02-05 debug: CASCADE delete usersetting not working. Delete manually
-                                            usersettings = Usersetting.objects.filter(user=instance)
-                                            for usersetting in usersettings:
+                                        last_userallowed = acc_mod.UserAllowed.objects.filter(
+                                            user=user_instance
+                                        ).order_by('-examyear__code').first()
+
+                                        if last_userallowed and last_userallowed.usergroups:
+                                            usergroups_str = last_userallowed.usergroups
+                                        else:
+                                            usergroups_str = json.dumps(new_usergroups_arr)
+
+                                        now_utc = timezone.now()
+
+                                        new_user_allowed = acc_mod.UserAllowed(
+                                            user=user_instance,
+                                            examyear=sel_examyear,
+                                            usergroups=usergroups_str,
+                                            modifiedby=request.user,
+                                            modifiedat=now_utc
+                                        )
+                                        new_user_allowed.save()
+
+                                        if new_user_allowed:
+                                            created_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
+                                            if created_instance_list:
+                                                updated_dict = created_instance_list[0]
+                                                updated_dict['created'] = True
+
+                                    elif mode == 'delete':
+
+# ++++  delete user ++++++++++++
+                                        deleted_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
+
+                                        if logging_on:
+                                            logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
+
+                                        if deleted_instance_list:
+                                            updated_dict = deleted_instance_list[0]
+                                            updated_dict['mapid'] = 'user_' + str(user_instance.pk)
+
+                                        # TODO change to userexamyear setting
+
+                                        allowed_sections_dict, usergroups_arr, allowed_clusters_arr = get_requsr_usergroups_allowedsections_allowedclusters(request, sel_examyear)
+
+                                        requsr_usergroupslist, allowed_sections_dict, allowed_clusters_list, sel_examyear_instance = acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
+
+                                        if c.USERGROUP_ADMIN in requsr_usergroupslist and user_instance == req_usr:
+                                            err_dict['msg01'] = _("System administrators cannot delete their own account.")
+                                        else:
+                                            try:
+                                                # PR2021-02-05 debug: CASCADE delete usersetting not working. Delete manually
+                                                usersettings = Usersetting.objects.filter(user=user_instance)
+                                                for usersetting in usersettings:
+
+                                                    if logging_on:
+                                                        logger.debug('usersetting delete: ' + str(usersetting))
+                                                    usersetting.delete()
+                                                user_instance.delete()
+                                                updated_dict['deleted'] = True
 
                                                 if logging_on:
-                                                    logger.debug('usersetting delete: ' + str(usersetting))
-                                                usersetting.delete()
-                                            instance.delete()
-                                            updated_dict['deleted'] = True
+                                                    logger.debug('deleted: ' + str(True))
+                                            except Exception as e:
+                                                logger.error(getattr(e, 'message', str(e)))
+                                                msg_html = ''.join((
+                                                    str(_("User account '%(val)s' can not be deleted.") % {'val': user_instance.username_sliced}),
+                                                    '<br>',
+                                                    str(_("Instead, you can make the user account inactive."))))
+                                                msg_dict = {'header': str(_('Delete user')), 'class': 'border_bg_invalid',
+                                                            'msg_html': msg_html}
+                                                msg_list.append(msg_dict)
+                                            else:
+                                                user_instance = None
+                                                deleted_ok = True
+                                                ##############
 
-                                            if logging_on:
-                                                logger.debug('deleted: ' + str(True))
-                                        except Exception as e:
-                                            logger.error(getattr(e, 'message', str(e)))
-                                            msg_html = ''.join((
-                                                str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
-                                                str(_("User account '%(val)s' can not be deleted.") % {'val': instance.username_sliced}),
-                                                str(_("Instead, you can make the user account inactive."))))
-                                            msg_dict = {'header': str(_('Delete user')), 'class': 'border_bg_invalid',
-                                                        'msg_html': msg_html}
-                                            msg_list.append(msg_dict)
-                                        else:
-                                            instance = None
-                                            deleted_ok = True
-                                            ##############
-
-    # ++++  create or validate new user ++++++++++++
+# ++++  create or validate new user ++++++++++++
                         elif mode in ('create', 'validate'):
                             # - get permits of new user.
                             #       - new_permits is 'write' when user_school is same as requsr_school,
                             #       - permits is 'write' plus 'admin' when user_school is different from requsr_school
 
                             # is_existing_user = True if user_pk else False
-                            if is_same_schoolbase:
-                                new_usergroups = ';'.join((c.USERGROUP_READ, c.USERGROUP_EDIT))
-                            else:
-                                new_usergroups = ';'.join((c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_DOWNLOAD,
-                                                           c.USERGROUP_ARCHIVE, c.USERGROUP_ADMIN))
 
-                            new_user_pk, err_dict, ok_dict = \
+                            new_user_pk, err_dict, ok_dict, user_without_userallowed = \
                                 create_or_validate_user_instance(
                                     user_schoolbase=user_schoolbase,
                                     upload_dict=upload_dict,
                                     user_pk=user_pk,
-                                    usergroups=new_usergroups,
+                                    usergroups_arr=new_usergroups_arr,
                                     is_validate_only=is_validate_only,
                                     user_lang=user_lang,
+                                    sel_examyear=sel_examyear,
                                     request=request
                                 )
 
                             if err_dict:
                                 update_wrap['msg_err'] = err_dict
-                            if ok_dict:
+                            elif user_without_userallowed:
+                                update_wrap['user_without_userallowed'] = user_without_userallowed
+                            elif ok_dict:
                                 update_wrap['msg_ok'] = ok_dict
                             # - new_user_pk has only value when new user is created, not when is_validate_only
                             # - create_user_rows returns list of only 1 user
                             if new_user_pk:
-                                created_instance_list = create_user_rows(request, new_user_pk)
+                                created_instance_list = create_user_rowsNEW(sel_examyear, request, new_user_pk)
                                 if created_instance_list:
                                     updated_dict = created_instance_list[0]
                                     updated_dict['created'] = True
                         else:
 
 # - +++++++++ update ++++++++++++
-                            instance = None
+                            user_instance = None
                             if has_permit_other_schools:
-                                instance = acc_mod.User.objects.get_or_none(
+                                user_instance = acc_mod.User.objects.get_or_none(
                                     id=user_pk,
-                                    country=req_user.country)
+                                    country=req_usr.country)
                             elif has_permit_same_school:
-                                instance = acc_mod.User.objects.get_or_none(
+                                user_instance = acc_mod.User.objects.get_or_none(
                                     id=user_pk,
-                                    country=req_user.country,
-                                    schoolbase=req_user.schoolbase
+                                    country=req_usr.country,
+                                    schoolbase=req_usr.schoolbase
                                 )
                             if logging_on:
-                                logger.debug('user instance: ' + str(instance))
+                                logger.debug('    user_instance: ' + str(user_instance))
 
-                            if instance:
-                                err_dict, ok_dict = update_user_instance(instance, upload_dict, msg_list, request)
+                            if user_instance:
+                                err_dict, ok_dict = update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, request)
                                 if err_dict:
                                     update_wrap['msg_err'] = err_dict
                                 if ok_dict:
                                     update_wrap['msg_ok'] = ok_dict
-                                # - create_user_rows returns list of only 1 user
-                                updated_instance_list = create_user_rows(request, instance.pk)
+
+        # - create_user_rows returns list of only 1 user
+                                updated_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
                                 updated_dict = updated_instance_list[0] if updated_instance_list else {}
                                 updated_dict['updated'] = True
-                                updated_dict['mapid'] = 'user_' + str(instance.pk)
+                                updated_dict['mapid'] = 'user_' + str(user_instance.pk)
 
     # - +++++++++ en of is update ++++++++++++
                         if updated_dict:
                             update_wrap['updated_user_rows'] = [updated_dict]
+
                     if err_dict:
                         update_wrap['msg_err'] = err_dict
                     elif is_validate_only:
@@ -360,25 +424,28 @@ class UserUploadView(View):
         # TODO append  err_dict to  msg_list
         if msg_list:
             update_wrap['msg_dictlist'] = msg_list
+        if user_without_userallowed:
+            update_wrap['user_without_userallowed'] = user_without_userallowed
         # - create_user_rows returns list of only 1 user
         #update_wrap['user_list'] = ad.create_user_rows(request, instance.pk)
+
 # - return update_wrap
         update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
         return HttpResponse(update_wrap_json)
 # === end of UserUploadView =====================================
 
-########################################################################
-# === UserAllowedschoolsUploadView ===================================== PR2022-10-26
 
+########################################################################
+# === UserAllowedSectionsUploadView ===================================== PR2022-10-26 PR2022-12-04 PR2023-01-16
 @method_decorator([login_required], name='dispatch')
-class UserAllowedschoolsUploadView(View):
-    #  UserAllowedschoolsUploadView is called from Users form
+class UserAllowedSectionsUploadView(View):
+    #  UserAllowedSectionsUploadView is called from Users form MUPS_Open
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
-            logger.debug(' ========== UserAllowedschoolsUploadView ===============')
+            logger.debug(' ========== UserAllowedSectionsUploadView ===============')
 
         update_wrap = {}
         msg_list = []
@@ -388,50 +455,205 @@ class UserAllowedschoolsUploadView(View):
         activate(user_lang)
 
 # - get permit
-        has_permit = False
-        req_usr = request.user
-
-        permit_list = req_usr.permit_list('page_user')
-        has_permit = 'permit_crud' in permit_list
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_user', request)
 
         if logging_on:
-            logger.debug('permit_list: ' + str(permit_list))
-            logger.debug('has_permit: ' + str(has_permit))
+            logger.debug('    has_permit: ' + str(has_permit))
 
         if not has_permit:
             msg_list.append(str(_("You don't have permission to perform this action.")))
         else:
 
-            # - get upload_dict from request.POST
+# - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
 
-     # - get info from upload_dict
+# - get info from upload_dict
                 selected_user_pk = upload_dict.get('user_pk')
                 mode = upload_dict.get('mode')
 
                 update_wrap['mode'] = mode
 
-                selected_user_instance = acc_mod.User.objects.get_or_none(
-                    id=selected_user_pk
+# - get selected examyear from usersettings
+                sel_examyear, may_edit, msg_list = \
+                    get_selected_examyear_from_usersetting(request)
+
+# - get selected user instance
+                user_instance = acc_mod.User.objects.get_or_none(
+                    pk=selected_user_pk
                 )
                 if logging_on:
-                    logger.debug('selected_user_instance: ' + str(selected_user_instance))
+                    logger.debug('    user_instance: ' + str(user_instance))
 
-                allowed_schoolbases = None
-                if selected_user_instance:
-                    allowed_schoolbases = getattr(selected_user_instance, 'allowed_schoolbases')
-                update_wrap['allowed_schoolbases'] = allowed_schoolbases
+                userallowed_instance = acc_mod.UserAllowed.objects.get_or_none(
+                    user=user_instance,
+                    examyear = sel_examyear
+                )
+                if logging_on:
+                    logger.debug('userallowed_instance: ' + str(userallowed_instance))
+                if mode == 'update':
+                    new_allowed_sections = upload_dict.get('allowed_sections')
+                    if logging_on:
+                        logger.debug('    new_allowed_sections: ' + str(new_allowed_sections) + str(type(new_allowed_sections)))
+
+                # - convert keys (these are strings) to integer, convert to json
+                    tobesaved_dict = {}
+                    if new_allowed_sections:
+                        for schoolbase_pk_str, schoolbase_dict in new_allowed_sections.items():
+                            tobesaved_schoolbase_dict = {}
+                            if schoolbase_dict:
+                                if logging_on:
+                                    logger.debug('    schoolbase_dict: ' + str(schoolbase_dict) + str(type(schoolbase_dict)))
+                                for depbase_pk_str, depbase_dict in schoolbase_dict.items():
+                                    tobesaved_depbase_dict = {}
+                                    if depbase_dict:
+                                        if logging_on:
+                                            logger.debug('    depbase_dict: ' + str(depbase_dict) + str(type(depbase_dict)))
+
+                                        for lvlbase_pk_str, lvlbase_arr in depbase_dict.items():
+                                            tobesaved_lvlbase_arr = []
+                                            if logging_on:
+                                                logger.debug('    lvlbase_arr: ' + str(lvlbase_arr) + str(type(lvlbase_arr)))
+
+                                            if lvlbase_arr:
+                                                for subjbase_pk_str in lvlbase_arr:
+                                                    tobesaved_lvlbase_arr.append(int(subjbase_pk_str))
+
+                                            tobesaved_depbase_dict[int(lvlbase_pk_str)] = tobesaved_lvlbase_arr
+
+                                    tobesaved_schoolbase_dict[int(depbase_pk_str)] = tobesaved_depbase_dict
+
+                            tobesaved_dict[int(schoolbase_pk_str)] = tobesaved_schoolbase_dict
+
+                    new_allowed_sections_str = json.dumps(tobesaved_dict) if tobesaved_dict else None
+
+                    if logging_on:
+                        logger.debug('    tobesaved_dict: ' + str(tobesaved_dict))
+                        logger.debug('    new_allowed_sections_str: ' + str(new_allowed_sections_str))
+
+                    setattr(userallowed_instance, 'allowed_sections', new_allowed_sections_str)
+                    userallowed_instance.save(request=request)
+
+                allowed_sections_dict = {}
+                if userallowed_instance and userallowed_instance.allowed_sections:
+                    allowed_sections_dict = json.loads(userallowed_instance.allowed_sections)
+                update_wrap['allowed_sections'] = allowed_sections_dict
+
+        # - create_user_rows returns list of only 1 user
+                updated_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
+                updated_dict = updated_instance_list[0] if updated_instance_list else {}
+                #updated_dict['updated'] = True
+                if updated_dict:
+                    update_wrap['updated_user_rows'] = [updated_dict]
 
         if msg_list:
             msg_html = '<br>'.join(msg_list)
             update_wrap['msg_html'] = msg_html
+        if logging_on:
+            logger.debug('    update_wrap: ' + str(update_wrap))
 
-# - return update_wrap
+        # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-# - end of UserAllowedschoolsUploadView
+# - end of UserAllowedSectionsUploadView
 
+
+
+########################################################################
+# === UserDownloadUserdataXlsxView ===================================== PR2023-01-31
+
+@method_decorator([login_required], name='dispatch')
+class UserdataDownloadXlsxView(View):  # PR2023-01-31
+
+    def get(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ============= UserdataDownloadXlsxView ============= ')
+        # function xlsx file with student data
+        response = None
+
+        def get_mapped_depcodes():
+            mapped_depcodes = {-9: str(_('all'))}
+            sql = "SELECT id, code FROM schools_departmentbase"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                for row in cursor.fetchall():
+                    mapped_depcodes[row[0]] = row[1]
+            return mapped_depcodes
+
+        def get_mapped_lvlcodes():
+            mapped_lvlcodes = {-9: str(_('all'))}
+            sql = "SELECT id, code FROM subjects_levelbase"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                for row in cursor.fetchall():
+                    mapped_lvlcodes[row[0]] = row[1]
+            return mapped_lvlcodes
+
+        def get_mapped_schoolcodes():
+            mapped_schoolcodes = {-9: str(_('all'))}
+            sql = "SELECT id, code FROM schools_schoolbase"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                for row in cursor.fetchall():
+                    mapped_schoolcodes[row[0]] = row[1]
+            return mapped_schoolcodes
+
+        def get_mapped_subjectcodes():
+            mapped_subjectcodes = {-9: str(_('all'))}
+            sql = "SELECT id, code FROM subjects_subjectbase"
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                for row in cursor.fetchall():
+                    mapped_subjectcodes[row[0]] = row[1]
+            return mapped_subjectcodes
+
+        #try:
+        if True:
+            if request.user and request.user.country and request.user.schoolbase:
+                req_usr = request.user
+
+    # - reset language
+                user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+    # - get selected examyear, school and department from usersettings
+                sel_examyear = acc_prm.get_sel_examyear_from_requsr(request)
+
+                req_usr_school = sch_mod.School.objects.get_or_none(
+                    base=req_usr.schoolbase_id,
+                    examyear=sel_examyear
+                )
+                if logging_on:
+                    logger.debug('    sel_examyear: ' + str(sel_examyear))
+
+                if sel_examyear :
+                    req_usr_school = sch_mod.School.objects.get_or_none(
+                        base=req_usr.schoolbase_id,
+                        examyear=sel_examyear
+                    )
+
+                    # --- create rows of all users of this examyear / school  / department PR2020-10-27 PR2022-01-03 PR2022-05-18 PR2023-01-30
+                    user_rows = create_user_rowsNEW(sel_examyear, request)
+                    mapped_depcodes = get_mapped_depcodes()
+                    mapped_lvlcodes = get_mapped_lvlcodes()
+                    mapped_schoolcodes = get_mapped_schoolcodes()
+                    mapped_subjectcodes = get_mapped_subjectcodes()
+
+                    response = awpr_excel.create_userdata_xlsx(sel_examyear, req_usr_school, req_usr.role, mapped_depcodes, mapped_lvlcodes, mapped_schoolcodes, mapped_subjectcodes, user_rows, user_lang)
+
+                    if logging_on:
+                        logger.debug('    response: ' + str(response))
+
+        #except Exception as e:
+        #    logger.error(getattr(e, 'message', str(e)))
+
+        if response:
+            return response
+        else:
+            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+# - end of UserdataDownloadXlsxView
 
 
 ########################################################################
@@ -449,9 +671,9 @@ class UserDownloadPermitsView(View):
 
         response = None
         if request.user is not None and request.user.country is not None:
-            req_user = request.user
+            req_usr = request.user
             # PR2021-05-25 debug. Don't use permit_list, to prevent locking out yourself
-            permit_listNIU, requsr_usergroups_list = get_userpermit_list('page_user', req_user)
+            permit_listNIU, requsr_usergroups_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, 'page_user')
             has_permit = request.user.is_role_system and  'admin' in requsr_usergroups_list
             if logging_on:
                 logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list))
@@ -459,8 +681,8 @@ class UserDownloadPermitsView(View):
 
             if has_permit:
                 # - reset language
-                # PR2019-03-15 Debug: language gets lost, get req_user.lang again
-                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                # PR2019-03-15 Debug: language gets lost, get req_usr.lang again
+                user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
                 permits_rows = create_permits_rows()
@@ -551,14 +773,14 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
 
 
 ########################################################################
-# === UserpermitUploadView ===================================== PR2021-03-18
+# === UserpermitUploadView ===================================== PR2021-03-18 PR2023-01-15
 @method_decorator([login_required], name='dispatch')
 class UserpermitUploadView(View):
     #  UserpermitUploadView is called from Users form
     #  it returns a HttpResponse, with ok_msg or err-msg
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserpermitUploadView ===============')
@@ -566,12 +788,12 @@ class UserpermitUploadView(View):
         update_wrap = {}
 # -  get permit -- don't use requsr_usergroups_list, you might lock yourself out PR2021-05-20
         if request.user is not None and request.user.country is not None:
-            req_user = request.user
-            has_permit = (req_user.role == c.ROLE_128_SYSTEM)
+            req_usr = request.user
+            has_permit = (req_usr.role == c.ROLE_128_SYSTEM)
 
             if has_permit:
 # -  get user_lang
-                user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
+                user_lang = req_usr.lang if req_usr.lang else c.LANG_DEFAULT
                 activate(user_lang)
 
 # - get upload_dict from request.POST
@@ -590,34 +812,34 @@ class UserpermitUploadView(View):
                     action = upload_dict.get('action')
 
                     if logging_on:
-                        logger.debug('mode:     ' + str(mode))
-                        logger.debug('role:     ' + str(role) + ' ' + str(type(role)))
-                        logger.debug('page:     ' + str(page))
-                        logger.debug('action:   ' + str(action))
-                        logger.debug('userpermit_pk:   ' + str(userpermit_pk))
+                        logger.debug('    mode:     ' + str(mode))
+                        logger.debug('    role:     ' + str(role) + ' ' + str(type(role)))
+                        logger.debug('    page:     ' + str(page))
+                        logger.debug('    action:   ' + str(action))
+                        logger.debug('    userpermit_pk:   ' + str(userpermit_pk))
 
                     append_dict = {}
                     error_dict = {}
                     updated_permit_rows = []
 
 # +++  get current permit - when mode is 'create': permit is None. It will be created at "elif mode == 'create'"
-                    instance = acc_mod.Userpermit.objects.get_or_none(
+                    userpermit_instance = acc_mod.Userpermit.objects.get_or_none(
                         pk=userpermit_pk
                     )
                     if logging_on:
-                        logger.debug('instance: ' + str(instance))
+                        logger.debug('    userpermit_instance: ' + str(userpermit_instance))
 
 # +++  delete permit ++++++++++++
                     if mode == 'delete':
-                        if instance:
+                        if userpermit_instance:
                             try:
-                                instance.delete(request=request)
+                                userpermit_instance.delete(request=request)
                                 # - add deleted_row to updated_permit_rows
                                 updated_permit_rows.append({'userpermit_pk': userpermit_pk,
                                                   'mapid': 'userpermit_' + str(userpermit_pk),
                                                   'deleted': True})
                                 if logging_on:
-                                    logger.debug('instance: ' + str(instance))
+                                    logger.debug('userpermit_instance: ' + str(userpermit_instance))
 
                             except Exception as e:
                                 logger.error(getattr(e, 'message', str(e)))
@@ -633,32 +855,37 @@ class UserpermitUploadView(View):
                                     role_list = (role,)
 
                                 for value in role_list:
-                                    instance = acc_mod.Userpermit(
+                                    userpermit_instance = acc_mod.Userpermit(
                                         role=value,
                                         page=page,
                                         action=action
                                     )
-                                    instance.save()
+                                    userpermit_instance.save()
                             except Exception as e:
-                                logger.error('e: ' + str(e))
+                                logger.error(getattr(e, 'message', str(e)))
+
                                 append_dict['err_create'] = getattr(e, 'message', str(e))
                             finally:
                                 append_dict['created'] = True
 
-# +++ update existing studsubj - also when studsubj is created - studsubj is None when deleted
-                    if instance and mode in ('create', 'update'):
-                        update_grouppermit(instance, upload_dict, error_dict, request)
-                    if logging_on and error_dict:
-                        logger.debug('error_dict: ' + str(error_dict))
+# +++ update existing userpermit - also when userpermit is created - userpermit is None when deleted
+                    if userpermit_instance and mode in ('create', 'update'):
+                        sel_examyear = get_selected_examyear_from_usersetting_short(request)
+                    if logging_on :
+                        logger.debug('    sel_examyear: ' + str(sel_examyear))
+
+                        update_grouppermit(userpermit_instance, upload_dict, error_dict, request)
+                    if logging_on :
+                        logger.debug('    error_dict: ' + str(error_dict))
 
 # - add update_dict to update_wrap
-                    if instance:
+                    if userpermit_instance:
                         if error_dict:
                             append_dict['error'] = error_dict
 
                # - add update_dict to update_wrap
-                        if instance.pk:
-                            permit_row = create_permit_list(instance.pk)
+                        if userpermit_instance.pk:
+                            permit_row = create_permit_list(userpermit_instance.pk)
                             if permit_row:
                                 updated_permit_rows.append(permit_row)
 
@@ -669,40 +896,75 @@ class UserpermitUploadView(View):
 # - end of UserpermitUploadView
 
 
-def update_grouppermit(instance, upload_dict, msg_dict, request):
-    # --- update existing and new instance PR2021-03-20
+def update_grouppermit(userpermit_instance, upload_dict, msg_dict, request): # PR2021-03-20 PR2023-01-15
+    # --- update existing and new userpermit_instance
     # add new values to update_dict (don't reset update_dict, it has values)
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_grouppermit -------')
-        logger.debug('upload_dict' + str(upload_dict))
+        logger.debug('    upload_dict' + str(upload_dict))
 
     save_changes = False
     for field, new_value in upload_dict.items():
         if field in ['role', 'page', 'action']:
-            saved_value = getattr(instance, field)
+            saved_value = getattr(userpermit_instance, field)
             if logging_on:
-                logger.debug('field:       ' + str(field))
-                logger.debug('saved_value: ' + str(saved_value) + str(type(saved_value)))
-                logger.debug('new_value:   ' + str(new_value) + str(type(new_value)))
+                logger.debug('    field:       ' + str(field))
+                logger.debug('    saved_value: ' + str(saved_value) + str(type(saved_value)))
+                logger.debug('    new_value:   ' + str(new_value) + str(type(new_value)))
 
             if new_value and new_value != saved_value:
-                setattr(instance, field, new_value)
+                setattr(userpermit_instance, field, new_value)
                 save_changes = True
 
         elif field == 'usergroups':
-            # 'permits': {'group_read': True}}
-            usergroups_haschanged = update_usergroups(instance, new_value, False, request)  # False = don't validate
-            if usergroups_haschanged:
-                save_changes = True
+            saved_usergroups_str = getattr(userpermit_instance, field)
+            if logging_on:
+                logger.debug('    saved_usergroups_str: ' + str(saved_usergroups_str))
+
+            if new_value:
+                save_usergroups_changes = False
+
+                usergroups_list = saved_usergroups_str.split(';') if saved_usergroups_str else []
+                if logging_on:
+                    logger.debug('    usergroups_list: ' + str(usergroups_list))
+
+                for usergroup, value in new_value.items():
+                    if logging_on:
+                        logger.debug('    usergroup: ' + str(usergroup))
+                        logger.debug('    value: ' + str(value))
+                    if value:
+                        if usergroup not in usergroups_list:
+                            usergroups_list.append(usergroup)
+                            save_usergroups_changes = True
+                    else:
+                        if usergroup in usergroups_list:
+                            usergroups_list.remove(usergroup)
+                            save_usergroups_changes = True
+
+
+
+                if save_usergroups_changes:
+                    if usergroups_list:
+                        usergroups_list.sort()
+                    if logging_on:
+                        logger.debug('    usergroups_list: ' + str(usergroups_list))
+                        usergroups_str = ';'.join(usergroups_list)
+                        setattr(userpermit_instance, field, usergroups_str)
+                    else:
+                        setattr(userpermit_instance, field, None)
+                    save_changes = True
 
     # - save changes`
     if logging_on:
         logger.debug('save_changes' + str(save_changes) + str(type(save_changes)))
+
     if save_changes:
         try:
-            instance.save(request=request)
+            userpermit_instance.save(request=request)
         except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
             msg_dict['err_update'] = getattr(e, 'message', str(e))
             #msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
 
@@ -715,7 +977,7 @@ def update_grouppermit(instance, upload_dict, msg_dict, request):
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -1019,7 +1281,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
 
     has_error = False
     if user:
-        req_user = request.user.last_name
+        req_usr = request.user.last_name
         req_school = get_usr_schoolname_with_article(request.user)
 
         update_wrap['user'] = {'pk': user.pk, 'username': user.username}
@@ -1027,7 +1289,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
         current_site = get_current_site(request)
 
 # - check if user.email is a valid email address:
-        msg_err = v.validate_email_address(user.email)
+        msg_err = awpr_val.validate_email_address(user.email)
         if msg_err:
             err_dict['msg01'] = _("'%(email)s' is not a valid email address.") % {'email': user.email}
             has_error = True
@@ -1049,14 +1311,14 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
                     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                     'token': account_activation_token.make_token(user),
                     'req_school': req_school,
-                    'req_user': req_user,
+                    'req_usr': req_usr,
                 })
                 if logging_on:
                     logger.debug('user: ' + str(user))
                     logger.debug('current_site.domain: ' + str(current_site.domain))
                     logger.debug('urlsafe_base64_encode(force_bytes(user.pk)): ' + str(urlsafe_base64_encode(force_bytes(user.pk))))
                     logger.debug('account_activation_token.make_token(user): ' + str(account_activation_token.make_token(user)))
-                    logger.debug('req_user: ' + str(req_user))
+                    logger.debug('req_usr: ' + str(req_usr))
 
                 # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                 mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
@@ -1446,19 +1708,23 @@ class UserModMessageHideView(View):
             set_usersetting_dict(c.KEY_OPENARGS, {'show_msg': False, 'hide_msg': True}, request)
 
         if logging_on:
-            logger.debug(str(get_usersetting_dict(c.KEY_OPENARGS, request)))
+            logger.debug(str(acc_prm.get_usersetting_dict(c.KEY_OPENARGS, request)))
 
 # - return update_wrap
         update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
         return HttpResponse(update_wrap_json)
 # end of UserModMessageHideView
 
-def create_user_rows(request, user_pk=None):
-    # --- create list of all users of this school, or 1 user with user_pk PR2020-07-31
+
+def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR2022-12-02
+    # --- create list of all users of this school, or 1 user with user_pk
+    # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug(' =============== create_user_rows ============= ')
-        logger.debug('user_pk: ' + str(user_pk))
+        logger.debug(' ')
+        logger.debug(' =============== create_user_rowsNEW ============= ')
+        logger.debug('    user_pk: ' + str(user_pk))
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
 
     #ROLE_008_SCHOOL = 8
     #ROLE_032_INSP = 32
@@ -1473,34 +1739,271 @@ def create_user_rows(request, user_pk=None):
     # - when role is inspection or school: show only users of request.user.schoolbase
     # - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
 
+    def get_allowed_schoolbases(schoolbase_pk_arr):
+
+        schoolbase_code_list = []
+        schoolbase_name_list = []
+
+        if schoolbase_pk_arr:
+            try:
+                # add 'All schools' when -9 in list
+                if -9 in schoolbase_pk_arr:
+                    is_sxm = sel_examyear.country.abbrev.lower() == 'sxm'
+                    code = 'SXM00' if is_sxm else 'CUR00'
+                    name = str(_('All schools'))
+                    code_name = ' '.join((code, name))
+
+                    schoolbase_code_list.append(code)
+                    schoolbase_name_list.append(code_name)
+
+                    schoolbase_pk_arr.remove(-9)
+
+                sql_keys = {'ey_pk': sel_examyear.pk, 'sb_arr': schoolbase_pk_arr}
+                sql = ' '.join(("SELECT sb.code, sch.name",
+                                "FROM schools_school AS sch",
+                                "INNER JOIN schools_schoolbase AS sb ON (sb.id = sch.base_id)",
+                                "WHERE sch.examyear_id = %(ey_pk)s::INT",
+                                "AND sch.base_id IN (SELECT UNNEST(%(sb_arr)s::INT[]))",
+                                "ORDER BY sb.code"
+                                ))
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+                    for row in cursor.fetchall():
+                        code = row[0] if row[0] else ''
+                        name = row[1] if row[1] else ''
+                        code_name = ' '.join((code, name))
+
+                        if code and code not in schoolbase_code_list:
+                            schoolbase_code_list.append(code)
+                        if code_name and code_name not in schoolbase_name_list:
+                            schoolbase_name_list.append(code_name)
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+        schoolbases_code = None
+        schoolbases_name = None
+
+        if schoolbase_code_list:
+            schoolbases_code = ', '.join(schoolbase_code_list)
+        if schoolbase_name_list:
+            schoolbases_name = '\n'.join(schoolbase_name_list)
+
+        return schoolbases_code,  schoolbases_name
+
+    def get_all_depbases_rows():
+        all_depbases_rows = []
+        try:
+            all_depbases_rows.append({'base_id': -9, 'code': str(_('all'))})
+
+            sql = ' '.join(("SELECT dep.base_id, db.code, dep.level_req",
+                            "FROM schools_department AS dep",
+                            "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
+                            "WHERE dep.examyear_id = ", str(sel_examyear.pk), "::INT",
+                            "ORDER BY dep.sequence"))
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = af.dictfetchall(cursor)
+
+            if rows:
+                all_depbases_rows.extend(rows)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        return all_depbases_rows
+
+    def get_allowed_depbases(depbase_pk_arr, all_depbases_rows):
+        depbase_code_list = []
+        has_level_req = False
+
+        if all_depbases_rows and depbase_pk_arr:
+            # loop through all_lvlbases_rows to display levels in right sequence
+            for depbase_dict in all_depbases_rows:
+                depbase_pk = depbase_dict.get('base_id')
+                if depbase_pk and depbase_pk in depbase_pk_arr:
+                    code = depbase_dict.get('code')
+                    if code and code not in depbase_code_list:
+                        depbase_code_list.append(code)
+
+                    if depbase_dict.get('level_req') or False:
+                        has_level_req = True
+
+        depbases_code = None
+        if depbase_code_list:
+            depbases_code = ', '.join(depbase_code_list)
+
+        return depbases_code, has_level_req
+
+    def get_all_lvlbases_rows():
+        all_lvlbases_rows = []
+        try:
+            all_lvlbases_rows.append({'base_id': -9, 'code': str(_('all'))})
+            sql = ' '.join(("SELECT lvl.base_id, lb.code",
+                            "FROM subjects_level AS lvl",
+                            "INNER JOIN subjects_levelbase AS lb ON (lb.id = lvl.base_id)",
+                            "WHERE lvl.examyear_id = ", str(sel_examyear.pk) , "::INT",
+                            "ORDER BY lvl.sequence"))
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = af.dictfetchall(cursor)
+
+            if rows:
+                all_lvlbases_rows.extend(rows)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        return all_lvlbases_rows
+
+    def get_allowed_lvlbases(lvlbase_pk_arr, has_level_req, all_lvlbases_rows):
+        lvlbase_code_list = []
+        if all_lvlbases_rows and lvlbase_pk_arr and has_level_req:
+            # loop through all_lvlbases_rows to display levels in right sequence
+            for lvlbase_dict in all_lvlbases_rows:
+                lvlbase_pk = lvlbase_dict.get('base_id')
+                if logging_on:
+                    logger.debug(' WWW   lvlbase_dict: ' + str(lvlbase_dict))
+                    logger.debug('    lvlbase_pk: ' + str(lvlbase_pk))
+                    logger.debug('    lvlbase_pk_arr: ' + str(lvlbase_pk_arr))
+                if lvlbase_pk and lvlbase_pk in lvlbase_pk_arr:
+                    code = lvlbase_dict.get('code')
+                    if code and code not in lvlbase_code_list:
+                        lvlbase_code_list.append(code)
+
+        lvlbases_code = None
+        if lvlbase_code_list:
+            lvlbases_code = ', '.join(lvlbase_code_list)
+
+        return lvlbases_code
+
+    def get_all_subjbases_dict():
+        all_subjbases_dict = {}
+        try:
+            sql = ' '.join(("SELECT subj.base_id, sb.code, subj.name_nl",
+                            "FROM subjects_subject AS subj",
+                            "INNER JOIN subjects_subjectbase AS sb ON (sb.id = subj.base_id)",
+                            "WHERE subj.examyear_id = ", str(sel_examyear.pk) , "::INT"
+                            ))
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+            if rows:
+                for row in rows:
+                    all_subjbases_dict[row[0]] = {'base_id': row[0], 'code': row[1], 'name_nl': row[2]}
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        return all_subjbases_dict
+
+    def get_allowed_subjbases(subjbase_pk_arr, all_subjbases_dict):
+        subjbase_code_list = []
+        subjbase_name_list = []
+
+        if all_subjbases_dict and subjbase_pk_arr:
+            # subjects are sorted in this function.Therefore no need to loop through all_subjbases_rows
+            # instead: lookup subjbase_pk in all_subjbases_dict
+            for subjbase_pk in subjbase_pk_arr:
+                if subjbase_pk in all_subjbases_dict:
+                    subjbase_dict = all_subjbases_dict.get(subjbase_pk)
+                    if subjbase_dict:
+                        code = subjbase_dict.get('code') or '-'
+                        if code not in subjbase_code_list:
+                            subjbase_code_list.append(code)
+
+                        name_nl = subjbase_dict.get('name_nl') or '-'
+                        if name_nl not in subjbase_name_list:
+                            subjbase_name_list.append(name_nl)
+
+        if subjbase_code_list:
+            subjbase_code_list.sort(key=lambda v: v.lower())
+
+        subjbases_code = None
+        if subjbase_code_list:
+            subjbases_code = ', '.join(subjbase_code_list)
+
+        subjbases_name = None
+        if subjbase_name_list:
+            subjbases_name = '\n'.join(subjbase_name_list)
+
+        return subjbases_code, subjbases_name
+
+    def get_all_clusters_dict():
+        all_clusters_dict = {}
+        try:
+            sql = ' '.join(("SELECT cl.id, cl.name",
+                            "FROM subjects_cluster AS cl",
+                            "INNER JOIN schools_school AS sch ON (sch.id = cl.school_id)",
+                            "WHERE sch.examyear_id = ", str(sel_examyear.pk) , "::INT"
+                            ))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+            if rows:
+                for row in rows:
+                    all_clusters_dict[row[0]] = row[1] if row[1] else '-'
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+        return all_clusters_dict
+
+
+    def get_allowed_clusters(cluster_pk_arr, all_clusters_dict):
+        cluster_pk_list = []
+        cluster_name_list = []
+        if all_clusters_dict and cluster_pk_arr:
+            for cluster_pk in cluster_pk_arr:
+                if cluster_pk and cluster_pk in all_clusters_dict:
+                    if cluster_pk not in cluster_pk_list:
+                        cluster_pk_list.append(cluster_pk)
+
+                    cluster_name = all_clusters_dict.get(cluster_pk)
+                    if cluster_name and cluster_name not in cluster_name_list:
+                        cluster_name_list.append(cluster_name)
+
+        if cluster_name_list:
+            cluster_name_list.sort(key=lambda v: v.lower())
+
+        return cluster_pk_list, cluster_name_list
+
+###############
+
     user_list = []
     if request.user.country and request.user.schoolbase:
         if request.user.role >= c.ROLE_008_SCHOOL:
-            #if request.user.is_usergroup_admin:
+
+            all_depbases_rows = get_all_depbases_rows()
+            all_lvlbases_rows = get_all_lvlbases_rows()
+            all_subjbases_dict = get_all_subjbases_dict()
+            all_clusters_dict = get_all_clusters_dict()
+
             try:
-                sql_keys = {'country_id': request.user.country.pk, 'max_role': request.user.role}
+                sql_keys = {'ey_pk': sel_examyear.pk, 'max_role': request.user.role}
 
                 sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
                 sql_list = ["WITH mod_user AS (", sql_moduser, ")",
                     "SELECT u.id, u.schoolbase_id,",
                     "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
                     "SUBSTRING(u.username, 7) AS username,",
-                    "u.last_name, u.email, u.role, u.usergroups,",
+                    "u.last_name, u.email, u.role,",
 
                     "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
                     "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
 
-                    "u.allowed_depbases, u.allowed_levelbases, u.allowed_schoolbases, u.allowed_subjectbases, u.allowed_clusterbases,",
-
+                    "usal.usergroups AS usal_usergroups, usal.allowed_sections, usal.allowed_clusters, usal.examyear_id,"
                     "u.lang, u.modified_at AS modifiedat, mod_user.modby_username",
 
                     "FROM accounts_user AS u",
+                    "INNER JOIN accounts_userallowed AS usal ON (usal.user_id = u.id)",
                     "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
-                    "LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+                    "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
 
                     "LEFT JOIN mod_user ON (mod_user.id = u.modified_by_id)",
 
-                    "WHERE u.country_id = %(country_id)s::INT",
+                    "WHERE usal.examyear_id = %(ey_pk)s::INT",
                     "AND role <= %(max_role)s::INT"]
                 if user_pk:
                     sql_keys['u_id'] = user_pk
@@ -1515,31 +2018,250 @@ def create_user_rows(request, user_pk=None):
 
                 sql = ' '.join(sql_list)
 
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+                    user_list = af.dictfetchall(cursor)
+
+                    # convert string allowed_schoolbases to dict, remove string PR2022-11-22
+                    if user_list:
+                        for user_dict in user_list:
+
+                            if logging_on:
+                                logger.debug('  ====>  user_dict: ' + str(user_dict))
+
+                            usergroups_str = user_dict.get('usal_usergroups')
+                            user_dict['usergroups'] = json.loads(usergroups_str) if usergroups_str else None
+                            # del user_dict['usal_usergroups']
+
+                            allowed_clusters_str = user_dict.get('allowed_clusters')
+                            allowed_cluster_pk_arr = json.loads(allowed_clusters_str) if allowed_clusters_str else None
+                            del user_dict['allowed_clusters']
+
+                            allowed_sections_str = user_dict.get('allowed_sections')
+                            allowed_sections_dict = json.loads(allowed_sections_str) if allowed_sections_str else None
+
+                            user_dict['allowed_sections_dict'] = allowed_sections_dict if allowed_sections_dict else None
+
+                            # create allowed depbase, schoolbases, levelbases
+                            if allowed_sections_dict:
+                                # allowed_sections_dict: {'5': {'1': {'5': [118, 132, 154], '6': [118, 132, 154]}}} <class 'dict'>
+
+                                if logging_on:
+                                    logger.debug('  @@@@@@   allowed_sections_dict: ' + str(allowed_sections_dict))
+
+                                r_allowed_sections = {}
+                                schoolbase_pk_arr, r_depbase_pk_arr, lvlbase_pk_arr, r_subjbase_pk_arr = [], [], [], []
+
+                                for schoolbase_pk_str, allowed_depbases_dict in allowed_sections_dict.items():
+                                    # depbases_dict: {'1': {'5': [118, 132, 154], '6': [118, 132, 154]}} <class 'dict'>
+
+                                    schoolbase_pk_int = int(schoolbase_pk_str)
+                                    if schoolbase_pk_int not in schoolbase_pk_arr:
+                                        schoolbase_pk_arr.append(schoolbase_pk_int)
+
+                                    r_depbase_dict = {}
+                                    if allowed_depbases_dict:
+                                        for depbase_pk_str, lvlbases_dict in allowed_depbases_dict.items():
+                                            # lvlbases_dict: {'5': [118, 132, 154], '6': [118, 132, 154]} <class 'dict'>
+
+                                            depbase_pk_int = int(depbase_pk_str)
+                                            if depbase_pk_int not in r_depbase_pk_arr:
+                                                r_depbase_pk_arr.append(depbase_pk_int)
+
+                                            r_lvlbase_dict = {}
+                                            if lvlbases_dict:
+
+                                                if logging_on:
+                                                    logger.debug(' ===   lvlbases_dict: ' + str(lvlbases_dict) + ' ' + str(type(lvlbases_dict)))
+
+                                                for lvlbase_pk_str, lvl_base_subjbases_arr in lvlbases_dict.items():
+                                                    # lvl_base_subjbases_arr: [118, 132, 154] <class 'list'>
+                                                    lvlbase_pk_int = int(lvlbase_pk_str)
+                                                    if lvlbase_pk_int not in lvlbase_pk_arr:
+                                                        lvlbase_pk_arr.append(int(lvlbase_pk_str))
+
+                                                    r_subjbases_arr = []
+                                                    for subjbase_pk_int in lvl_base_subjbases_arr:
+                                                        if logging_on:
+                                                            logger.debug(' ???   subjbase_pk_int: ' + str(subjbase_pk_int) + ' ' + str(type(subjbase_pk_int)))
+                                                        if subjbase_pk_int not in r_subjbase_pk_arr:
+                                                            r_subjbase_pk_arr.append(subjbase_pk_int)
+
+                                                    r_lvlbase_dict[lvlbase_pk_int] = lvl_base_subjbases_arr
+
+                                            r_depbase_dict[depbase_pk_int] = r_lvlbase_dict
+
+                                    r_allowed_sections[schoolbase_pk_int] = r_depbase_dict
+
+                                user_dict['allowed_sections'] = r_allowed_sections if r_allowed_sections else None
+
+                                schoolbases_code, schoolbases_name = get_allowed_schoolbases(schoolbase_pk_arr)
+                                user_dict['allowed_schoolbases'] = schoolbases_code
+                                user_dict['allowed_schoolbases_title'] = schoolbases_name
+                                user_dict['allowed_depbases'], has_level_req = get_allowed_depbases(r_depbase_pk_arr, all_depbases_rows)
+                                user_dict['allowed_lvlbases'] = get_allowed_lvlbases(lvlbase_pk_arr, has_level_req, all_lvlbases_rows)
+
+                                subjbases_code, subjbases_name = get_allowed_subjbases(r_subjbase_pk_arr, all_subjbases_dict)
+                                user_dict['allowed_subjbases'] = subjbases_code
+                                user_dict['allowed_subjbases_title'] = subjbases_name
+
+                                cluster_pk_list, cluster_name_list = get_allowed_clusters(allowed_cluster_pk_arr, all_clusters_dict)
+                                user_dict['allowed_clusters_pk'] = cluster_pk_list
+                                user_dict['allowed_clusters'] = cluster_name_list
+
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+    return user_list
+# - end of create_user_rowsNEW
+
+
+def create_corrector_rows(request):
+    # --- create list of all correctors of this school, or  PR2022-11-21
+    logging_on = False  #  s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_corrector_rows ============= ')
+
+    #ROLE_008_SCHOOL = 8
+    #ROLE_032_INSP = 32
+    #ROLE_064_ADMIN = 64
+    #ROLE_128_SYSTEM = 128
+
+    # <PERMIT> PR2020-10-12
+    # PR2018-05-27 list of users in UserListView:
+    # - only perm_system and perm_admin can create corrector_list
+    # - role teacher, student have no access
+    # - dont show users with higher role
+    # - when role is inspection or school: show only users of request.user.schoolbase
+    # - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
+
+    corrector_list = []
+    if request.user.country and request.user.schoolbase:
+        if request.user.role >= c.ROLE_008_SCHOOL:
+
+            try:
+                sql_keys = {'country_id': request.user.country.pk, 'role': c.ROLE_016_CORR, 'usergroup': c.USERGROUP_AUTH4_CORR}
+
+                sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
+                sql_list = ["WITH mod_user AS (", sql_moduser, ")",
+                    "SELECT u.id, u.schoolbase_id,",
+                    "CONCAT('user_', u.id) AS mapid,",
+                    "SUBSTRING(u.username, 7) AS username,",
+                    "u.last_name, u.email, u.role, u.usergroups,",
+
+                    "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
+
+                    # PR2023-02-09 was: "u.allowed_depbases, u.allowed_levelbases, u.allowed_schoolbases, u.allowed_subjectbases, u.allowed_clusterbases,",
+
+                    "u.modified_at AS modifiedat, mod_user.modby_username",
+
+                    "FROM accounts_user AS u",
+                    "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
+                    "LEFT JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+
+                    "LEFT JOIN mod_user ON (mod_user.id = u.modified_by_id)",
+
+                    "WHERE u.country_id = %(country_id)s::INT",
+                    # "AND u.role = %(role)s::INT",
+                    "AND (POSITION('" + c.USERGROUP_AUTH4_CORR + "' IN u.usergroups) > 0)"
+                    ]
+
+                if request.user.role < c.ROLE_016_CORR:
+                    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+                    sql_keys['sb_id'] = schoolbase_pk
+                    sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
+
+                sql_list.append('ORDER BY u.id')
+
+                sql = ' '.join(sql_list)
+
                 if logging_on:
                     logger.debug('sql: ' + str(sql))
 
                 with connection.cursor() as cursor:
                     cursor.execute(sql, sql_keys)
-                    user_list = af.dictfetchall(cursor)
+                    corrector_list = af.dictfetchall(cursor)
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
-        logger.debug('user_list: ' + str(user_list))
+        logger.debug('    corrector_list: ' + str(corrector_list))
 
-    return user_list
+    return corrector_list
+
+
+def create_usercompensation_rows(request):
+    # --- create list of all correctors of this school, or  PR2023-02-19
+    logging_on = False  #  s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_usercompensation_rows ============= ')
+
+    corrector_list = []
+    if request.user.country and request.user.schoolbase:
+        if request.user.role >= c.ROLE_008_SCHOOL:
+
+            try:
+                sql_keys = {'country_id': request.user.country.pk, 'role': c.ROLE_016_CORR, 'usergroup': c.USERGROUP_AUTH4_CORR}
+
+                sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
+                sql_list = ["WITH mod_user AS (", sql_moduser, ")",
+                    "SELECT u.id, u.schoolbase_id,",
+                    "CONCAT('user_', u.id) AS mapid,",
+                    "SUBSTRING(u.username, 7) AS username,",
+                    "u.last_name, u.email, u.role, u.usergroups,",
+
+                    "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
+
+                    # PR2023-02-09 was: "u.allowed_depbases, u.allowed_levelbases, u.allowed_schoolbases, u.allowed_subjectbases, u.allowed_clusterbases,",
+
+                    "u.modified_at AS modifiedat, mod_user.modby_username",
+
+                    "FROM accounts_usercompensation AS uc",
+                    "INNER JOIN accounts_user AS u ON (u.id = uc.user_id)",
+                    "INNER JOIN schools_school AS school ON (school.id = uc.school_id)",
+                    "INNER JOIN subjects_exam AS exam ON (exam.id = uc.exam_id)",
+
+                    "WHERE u.country_id = %(country_id)s::INT",
+                    # "AND u.role = %(role)s::INT",
+                    "AND (POSITION('" + c.USERGROUP_AUTH4_CORR + "' IN u.usergroups) > 0)"
+                    ]
+
+                if request.user.role < c.ROLE_016_CORR:
+                    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+                    sql_keys['sb_id'] = schoolbase_pk
+                    sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
+
+                sql_list.append('ORDER BY u.id')
+
+                sql = ' '.join(sql_list)
+
+                if logging_on:
+                    logger.debug('sql: ' + str(sql))
+
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, sql_keys)
+                    corrector_list = af.dictfetchall(cursor)
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('    corrector_list: ' + str(corrector_list))
+
+    return corrector_list
 
 
 ########################################################################
 
 def create_permit_list(permit_pk=None):
     # --- create list of all permits PR2021-03-18
-    #logger.debug(' =============== create_permit_list ============= ')
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== create_permit_list ============= ')
 
     sql_keys = {}
     sql_list = ["SELECT p.id, CONCAT('userpermit_', p.id::TEXT) AS mapid,",
                 "p.action, p.role, p.page, p.usergroups",
-                "FROM accounts_userpermit AS p",
+                "FROM accounts_userpermit AS p"
                 ]
     if permit_pk:
         sql_keys['pk'] = permit_pk
@@ -1552,68 +2274,27 @@ def create_permit_list(permit_pk=None):
         cursor.execute(sql, sql_keys)
         rows = af.dictfetchall(cursor)
 
+    # row: {'id': 69, 'mapid': 'userpermit_69', 'action': 'view', 'role': 8,
+    #       'page': 'page_student', 'usergroups': 'admin;anlz;auth1;auth2;auth3;edit;read'}
+
     return rows
 # - end of create_permit_list
 
-# TODO to be replaced by req_usr.permit_list('page_xxx') PR2021-07-03
-
-def get_userpermit_list(page, req_user):
-    # --- create list of all permits and usergroups of req_usr PR2021-03-19
-
-    logging_on = False  # s.LOGGING_ON
-
-    role = req_user.role
-
-    requsr_usergroups_list = []
-    if req_user.usergroups:
-        requsr_usergroups_list = req_user.usergroups.split(';')
-    if logging_on:
-        logger.debug('=============== get_userpermit_list ============= ')
-        logger.debug('page:                   ' + str(page) + ' ' + str(type(page)))
-        logger.debug('requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
-
-    permit_list = []
-    if role and page:
-        sql_filter = ""
-        for usergroup in requsr_usergroups_list:
-            sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
-
-        if sql_filter:
-            sql_filter = "AND (" + sql_filter[4:] + ")"
-
-            sql_keys = {'page': page, 'role': role}
-            sql_list = ["SELECT p.action FROM accounts_userpermit AS p",
-                        "WHERE (p.page = %(page)s OR p.page = 'page_all') AND p.role = %(role)s::INT",
-                        sql_filter
-                        ]
-            sql = ' '.join(sql_list)
-
-            with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
-                for row in cursor.fetchall():
-                    if row[0]:
-                        permit = 'permit_' + row[0]
-                        if permit not in permit_list:
-                            permit_list.append(permit)
-
-    if logging_on:
-        logger.debug('permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
-
-    return permit_list, requsr_usergroups_list
-# - end of get_userpermit_list
-
 
 ########################################################################
-# === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01
+# === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01 PR2022-012-07
 
-def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups, is_validate_only, user_lang, request):
-    logging_on = False  # s.LOGGING_ON
+def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups_arr, is_validate_only,
+                                     user_lang, sel_examyear, request):
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-----  create_or_validate_user_instance  -----')
-        logger.debug('upload_dict: ' + str(upload_dict))
-        logger.debug('user_schoolbase: ' + str(user_schoolbase))
-        logger.debug('user_pk: ' + str(user_pk))
-        logger.debug('is_validate_only: ' + str(is_validate_only))
+        logger.debug('    upload_dict:      ' + str(upload_dict))
+        logger.debug('    user_schoolbase:  ' + str(user_schoolbase))
+        logger.debug('    user_pk:          ' + str(user_pk))
+        logger.debug('    is_validate_only: ' + str(is_validate_only))
+
+    # - also add userAllowed instance, it stores usergroups
 
     country = request.user.country
 
@@ -1639,146 +2320,168 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
     username = upload_dict.get('username')
     schoolbaseprefix = user_schoolbase.prefix if user_schoolbase else None
     if logging_on:
-        logger.debug('username: ' + str(username))
-        logger.debug('schoolbaseprefix: ' + str(schoolbaseprefix))
-    msg_err = v.validate_unique_username(username, schoolbaseprefix, user_pk)
-    if msg_err:
-        err_dict['username'] = msg_err
-        has_error = True
+        logger.debug('    username: ' + str(username))
+        logger.debug('    schoolbaseprefix: ' + str(schoolbaseprefix))
+    msg_err, user_without_userallowed = awpr_val.validate_unique_username(sel_examyear, username, schoolbaseprefix, user_pk)
 
-# - check if namelast is blank
-    last_name = upload_dict.get('last_name')
-    #logger.debug('last_name: ' + str(last_name))
-    msg_err = v.validate_notblank_maxlength(last_name, c.MAX_LENGTH_NAME, _('The name'))
-    if msg_err:
-        err_dict['last_name'] = msg_err
-        has_error = True
+    if user_without_userallowed is None:
+        if msg_err:
+            err_dict['username'] = msg_err
+            has_error = True
 
-# - check if this is a valid email address:
-    email = upload_dict.get('email')
-    #logger.debug('email: ' + str(email))
-    msg_err = v.validate_email_address(email)
-    if msg_err:
-        err_dict['email'] = msg_err
-        has_error = True
+    # - check if namelast is blank
+        last_name = upload_dict.get('last_name')
+        #logger.debug('last_name: ' + str(last_name))
+        msg_err = awpr_val.validate_notblank_maxlength(last_name, c.MAX_LENGTH_NAME, _('The name'))
+        if msg_err:
+            err_dict['last_name'] = msg_err
+            has_error = True
 
-# - check if this email address already exists
-    else:
-        msg_err = v.validate_unique_useremail(email, country, user_schoolbase, user_pk)
+    # - check if this is a valid email address:
+        email = upload_dict.get('email')
+        #logger.debug('email: ' + str(email))
+        msg_err = awpr_val.validate_email_address(email)
         if msg_err:
             err_dict['email'] = msg_err
             has_error = True
 
-    if not is_validate_only and not has_error:
-    # - get now
-        # timezone.now() is timezone aware, based on the USE_TZ setting;
-        # datetime.now() is timezone naive. PR2018-06-07
-        now_utc = timezone.now()
+    # - check if this email address already exists
+        else:
+            msg_err = awpr_val.validate_unique_useremail(email, country, user_schoolbase, user_pk)
+            if msg_err:
+                err_dict['email'] = msg_err
+                has_error = True
 
-    # - new user gets role from defaultrole of user_schoolbase
-    #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase! > is done in create_school_instance
-        role = user_schoolbase.defaultrole
+        if not is_validate_only and not has_error:
+        # - get now
+            # timezone.now() is timezone aware, based on the USE_TZ setting;
+            # datetime.now() is timezone naive. PR2018-06-07
+            now_utc = timezone.now()
 
-    # - create new user
-        prefixed_username = user_schoolbase.prefix + username
-        new_user = acc_mod.User(
-            country=country,
-            schoolbase=user_schoolbase,
-            username=prefixed_username,
-            last_name=last_name,
-            email=email,
-            role=role,
-            usergroups=usergroups,
-            is_active=True,
-            activated=False,
-            lang=user_lang,
-            modified_by=request.user,
-            modified_at=now_utc)
-        new_user.save()
+        # - new user gets role from defaultrole of user_schoolbase
+        #   PR2021-02-06 debug: don't forget to set values of defaultrole in schoolbase! > is done in create_school_instance
+            role = user_schoolbase.defaultrole
 
-        #logger.debug('new_user: ' + str(new_user))
-        if new_user:
-            new_user_pk = new_user.pk
+        # - create new user
+            prefixed_username = user_schoolbase.prefix + username
+            new_user = acc_mod.User(
+                country=country,
+                schoolbase=user_schoolbase,
+                username=prefixed_username,
+                last_name=last_name,
+                email=email,
+                role=role,
+                # NIU usergroups=usergroups,
+                is_active=True,
+                activated=False,
+                lang=user_lang,
+                modified_by=request.user,
+                modified_at=now_utc)
+            new_user.save()
 
-            current_site = get_current_site(request)
+            #logger.debug('new_user: ' + str(new_user))
+            if new_user:
+                usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
+                # PR2023-02-17 add UserAllowed record for each examyear.
+                # otherwise new users cannot access previous years
+                examyears = sch_mod.Examyear.objects.filter(
+                    country=country
+                )
+                for examyear in examyears:
+                    new_user_allowed = acc_mod.UserAllowed(
+                        user=new_user,
+                        examyear=examyear,
+                        usergroups=usergroups_str,
+                        modifiedby=request.user,
+                        modifiedat=now_utc
+                    )
+                    new_user_allowed.save()
 
-# -  create first line of email
-            # {{ requsr_schoolname }} {% trans 'has made the following AWP-online account for you:' %}
-            # When requser and new_user are from the same school: requser.last_name
-            # - get selected examyear from request_item_setting, Usersetting or first in list
+                new_user_pk = new_user.pk
 
-            sel_examyear, examyear_save_NIU, may_select_NIU = af.get_sel_examyear_instance(request)
-            requsr_school = sch_mod.School.objects.get_or_none( base=request.user.schoolbase, examyear=sel_examyear)
-            new_user_school = sch_mod.School.objects.get_or_none( base=user_schoolbase, examyear=sel_examyear)
+                current_site = get_current_site(request)
 
-            req_user = request.user.last_name if request.user.last_name else request.user.username
-            req_school = ''
-            if requsr_school and requsr_school.name:
-                if requsr_school.article:
-                    req_school = requsr_school.article.capitalize() + ' '
-                req_school += requsr_school.name
-            else:
-                req_school = request.user.schoolbase.code if request.user.schoolbase.code else '---'
+    # -  create first line of email
+                # {{ requsr_schoolname }} {% trans 'has made the following AWP-online account for you:' %}
+                # When requser and new_user are from the same school: requser.last_name
+                # - get selected examyear from request_item_setting, Usersetting or first in list
 
-            usr_schoolname_with_article = ''
-            if new_user_school and new_user_school.name:
-                if new_user_school.article:
-                    usr_schoolname_with_article = new_user_school.article.lower() + ' '
-                usr_schoolname_with_article += new_user_school.name
-            else:
-                usr_schoolname_with_article = '---'
+                sel_examyear, examyear_save_NIU, multiple_examyears_exist = af.get_sel_examyear_with_default(request)
+                requsr_school = sch_mod.School.objects.get_or_none( base=request.user.schoolbase, examyear=sel_examyear)
+                new_user_school = sch_mod.School.objects.get_or_none( base=user_schoolbase, examyear=sel_examyear)
 
-# -  send email 'Activate your account'
-            subject = _('Activate your AWP-online account')
-            from_email = 'AWP-online <noreply@awponline.net>'
-            message = render_to_string('signup_activation_email.html', {
-                'user': new_user,
-                'usr_schoolname': usr_schoolname_with_article,
-                'req_school': req_school,
-                'req_user': req_user,
-                'domain': current_site.domain,
+                req_usr = request.user.last_name if request.user.last_name else request.user.username
+                req_school = ''
+                if requsr_school and requsr_school.name:
+                    if requsr_school.article:
+                        req_school = requsr_school.article.capitalize() + ' '
+                    req_school += requsr_school.name
+                else:
+                    req_school = request.user.schoolbase.code if request.user.schoolbase.code else '---'
 
-                # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
-                # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-                # PR2021-03-24 debug. Gave error: 'str' object has no attribute 'decode'
-                # apparently force_bytes(user.pk) returns already a string, no need for decode() any more
-                # from https://stackoverflow.com/questions/28583565/str-object-has-no-attribute-decode-python-3-error
-                # was: 'uid': urlsafe_base64_encode(force_bytes(new_user.pk)).decode(),
-                'uid': urlsafe_base64_encode(force_bytes(new_user.pk)),
-                'token': account_activation_token.make_token(new_user),
-            })
-            # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
-            mails_sent = send_mail(subject, message, from_email, [new_user.email], fail_silently=False)
-            #logger.debug('mails sent: ' + str(mails_sent))
-            # - return message 'We have sent an email to user'
-            msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': usr_schoolname_with_article}
-            msg02 = _("We have sent an email to the email address '%(email)s'.") % {'email': new_user.email}
-            msg03 = _(
-                'The user must click the link in that email to verify the email address and create a password.')
-            msg04 = _('Check the spam folder, if the email does not appear within a few minutes.')
-            ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03, 'msg04': msg04}
+                usr_schoolname_with_article = ''
+                if new_user_school and new_user_school.name:
+                    if new_user_school.article:
+                        usr_schoolname_with_article = new_user_school.article.lower() + ' '
+                    usr_schoolname_with_article += new_user_school.name
+                else:
+                    usr_schoolname_with_article = '---'
+
+    # -  send email 'Activate your account'
+                subject = _('Activate your AWP-online account')
+                from_email = 'AWP-online <noreply@awponline.net>'
+                message = render_to_string('signup_activation_email.html', {
+                    'user': new_user,
+                    'usr_schoolname': usr_schoolname_with_article,
+                    'req_school': req_school,
+                    'req_usr': req_usr,
+                    'domain': current_site.domain,
+
+                    # PR2018-04-24 debug: In Django 2.0 you should call decode() after base64 encoding the uid, to convert it to a string:
+                    # 'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                    # PR2021-03-24 debug. Gave error: 'str' object has no attribute 'decode'
+                    # apparently force_bytes(user.pk) returns already a string, no need for decode() any more
+                    # from https://stackoverflow.com/questions/28583565/str-object-has-no-attribute-decode-python-3-error
+                    # was: 'uid': urlsafe_base64_encode(force_bytes(new_user.pk)).decode(),
+                    'uid': urlsafe_base64_encode(force_bytes(new_user.pk)),
+                    'token': account_activation_token.make_token(new_user),
+                })
+                # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
+                mails_sent = send_mail(subject, message, from_email, [new_user.email], fail_silently=False)
+                #logger.debug('mails sent: ' + str(mails_sent))
+                # - return message 'We have sent an email to user'
+                msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': usr_schoolname_with_article}
+                msg02 = _("We have sent an email to the email address '%(email)s'.") % {'email': new_user.email}
+                msg03 = _(
+                    'The user must click the link in that email to verify the email address and create a password.')
+                msg04 = _('Check the spam folder, if the email does not appear within a few minutes.')
+                ok_dict = {'msg01': msg01, 'msg02': msg02, 'msg03': msg03, 'msg04': msg04}
 
     if logging_on:
-        logger.debug('err_dict: ' + str(err_dict))
+        logger.debug('    err_dict: ' + str(err_dict))
+        logger.debug('    ok_dict: ' + str(ok_dict))
+        logger.debug('    user_without_userallowed: ' + str(user_without_userallowed))
 
-    return new_user_pk, err_dict, ok_dict
+    return new_user_pk, err_dict, ok_dict, user_without_userallowed
 # - +++++++++ end of create_or_validate_user_instance ++++++++++++
 
+
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01 PR2022-02-18
-def update_user_instance(instance, upload_dict, msg_list, request):
-    logging_on = False  # s.LOGGING_ON
+def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, request):
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_user_instance  -----')
-        logger.debug('instance: ' + str(instance))
-        logger.debug('upload_dict: ' + str(upload_dict))
+        logger.debug('    user_instance: ' + str(user_instance))
+        logger.debug('    upload_dict: ' + str(upload_dict))
+
     has_error = False
     err_dict = {}
     ok_dict = {}
 
-    if instance:
+    if user_instance:
         country = request.user.country
-        usr_schoolbase = instance.schoolbase
-        user_pk = instance.pk
+        usr_schoolbase = user_instance.schoolbase
+        user_pk = user_instance.pk
 
         data_has_changed = False
         # upload_dict: {'mode': 'update', 'schoolbase_pk': 23, 'username': 'Ete', 'last_name': 'Ete2',
@@ -1786,79 +2489,89 @@ def update_user_instance(instance, upload_dict, msg_list, request):
         for field, field_value in upload_dict.items():
 
             if logging_on:
-                logger.debug('field: ' + str(field))
-                logger.debug('field_value: ' + str(field_value))
+                logger.debug('    field: ' + str(field))
+                logger.debug('    field_value: ' + str(field_value))
 
 # - check if this username already exists in this school, exept for this user
             if field == 'username':
                 new_username = field_value
-                msg_err = v.validate_unique_username(new_username, usr_schoolbase.prefix, user_pk)
+                msg_err, user_without_userallowed = awpr_val.validate_unique_username(sel_examyear, new_username, usr_schoolbase.prefix, user_pk)
 
                 if logging_on:
-                    logger.debug('new_username: ' + str(new_username))
-                    logger.debug('msg_err: ' + str(msg_err))
+                    logger.debug('    new_username: ' + str(new_username))
+                    logger.debug('    msg_err: ' + str(msg_err))
 
                 if msg_err:
                     err_dict[field] = msg_err
                     has_error = True
-                if not has_error and new_username and new_username != instance.username:
+                if not has_error and new_username and new_username != user_instance.username:
                     prefixed_username = usr_schoolbase.prefix + new_username
-                    instance.username = prefixed_username
+                    user_instance.username = prefixed_username
                     data_has_changed = True
 
 # - check if namelast is blank
             elif field == 'last_name':
                 new_last_name = field_value
-                msg_err = v.validate_notblank_maxlength(new_last_name, c.MAX_LENGTH_NAME, _('The name'))
+                msg_err = awpr_val.validate_notblank_maxlength(new_last_name, c.MAX_LENGTH_NAME, _('The name'))
 
                 if logging_on:
-                    logger.debug('new_last_name: ' + str(new_last_name))
-                    logger.debug('msg_err: ' + str(msg_err))
+                    logger.debug('    new_last_name: ' + str(new_last_name))
+                    logger.debug('    msg_err: ' + str(msg_err))
 
                 if msg_err:
                     err_dict[field] = msg_err
                     has_error = True
-                if not has_error and new_last_name and new_last_name != instance.last_name:
-                    instance.last_name = new_last_name
+                if not has_error and new_last_name and new_last_name != user_instance.last_name:
+                    user_instance.last_name = new_last_name
                     data_has_changed = True
 
 # - check if this is a valid email address:
             elif field == 'email':
                 new_email = field_value
-                msg_err = v.validate_email_address(new_email)
+                msg_err = awpr_val.validate_email_address(new_email)
 
                 if logging_on:
-                    logger.debug('new_email: ' + str(new_email))
-                    logger.debug('msg_err: ' + str(msg_err))
+                    logger.debug('    new_email: ' + str(new_email))
+                    logger.debug('    msg_err: ' + str(msg_err))
 
                 if msg_err:
                     err_dict[field] = msg_err
                     has_error = True
 # - check if this email address already exists
                 else:
-                    msg_err = v.validate_unique_useremail(new_email, country, usr_schoolbase, user_pk)
+                    msg_err = awpr_val.validate_unique_useremail(new_email, country, usr_schoolbase, user_pk)
                     if msg_err:
                         err_dict[field] = msg_err
                         has_error = True
 
-                if not has_error and new_email and new_email != instance.email:
-                    instance.email = new_email
+                if not has_error and new_email and new_email != user_instance.email:
+                    user_instance.email = new_email
                     data_has_changed = True
 
             elif field == 'usergroups':
-                # field_value is dict: {read: true}
-                usergroups_haschanged = update_usergroups(instance, field_value, True, request) # True = validate
+                # field_value is dict: {'edit': True}
+                usergroups_haschanged = update_userallowed_usergroups(request, user_instance, sel_examyear, field_value)
                 if usergroups_haschanged:
                     data_has_changed = True
+                if logging_on:
+                    logger.debug('    usergroups_haschanged: ' + str(usergroups_haschanged))
 
-            elif field in ('allowed_depbases', 'allowed_schoolbases', 'allowed_levelbases', 'allowed_subjectbases', 'allowed_clusterbases'):
-                old_value = getattr(instance, field)
+            elif field == 'allowed_clusters':
+                allowedcluster_haschanged = update_allowedclusters(request, user_instance, sel_examyear, field_value, True) # True = validate
+                if allowedcluster_haschanged:
+                    data_has_changed = True
+                if logging_on:
+                    logger.debug('    allowedcluster_haschanged: ' + str(allowedcluster_haschanged))
+
+            # PR2023-02-14 deprecated. Table accounts_userallowed is updated by UserAllowedSectionsUploadView
+            elif field in ('allowed_depbases', 'allowed_schoolbases', 'allowed_levelbases', 'allowed_subjectbases', 'allowed_clusterbases') and False:
+                old_value = getattr(user_instance, field)
                 if logging_on:
                     logger.debug('>>>>>>>>>>>>>>> field: ' + str(field))
                     logger.debug('field_value: ' + str(field_value))
                     logger.debug('old_value: ' + str(old_value))
                 if field_value != old_value:
-                    setattr(instance, field, field_value)
+                    setattr(user_instance, field, field_value)
                     data_has_changed = True
                 if logging_on:
                     logger.debug('field_value: ' + str(field_value))
@@ -1866,9 +2579,9 @@ def update_user_instance(instance, upload_dict, msg_list, request):
 
         # - sysadmins cannot remove sysadmin permission from their own account
                 """
-                if request.user.is_usergroup_admin:
+                if acc_prm.is_usergroup_admin(request.user):
                     if permit_field in ('perm_admin', 'perm_system'):
-                        if instance == request.user:
+                        if user_instance == request.user:
                             if not new_permit_bool:
                                 err_dict[field] = _("System administrators cannot remove their own 'system administrator' permission.")
                                 has_error = True
@@ -1895,18 +2608,18 @@ def update_user_instance(instance, upload_dict, msg_list, request):
                         #logger.debug('saved_permit_list: ' + str(saved_permit_list))
                         #logger.debug('new_permit_sum: ' + str(new_permit_sum))
 
-                        instance.permits = new_permit_sum
+                        user_instance.permits = new_permit_sum
                         data_has_changed = True
                     """
             elif field == 'is_active':
                 new_isactive = field_value if field_value else  False
                 # sysadmins cannot remove is_active from their own account
-                if request.user.is_usergroup_admin and instance == request.user:
+                if acc_prm.is_usergroup_admin(request.user) and user_instance == request.user:
                     if not new_isactive:
                         err_dict[field] = _("System administrators cannot make their own account inactive.")
                         has_error = True
-                if not has_error and new_isactive != instance.is_active:
-                    instance.is_active = new_isactive
+                if not has_error and new_isactive != user_instance.is_active:
+                    user_instance.is_active = new_isactive
                     data_has_changed = True
 
 # -  update user
@@ -1917,9 +2630,9 @@ def update_user_instance(instance, upload_dict, msg_list, request):
                 now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
 
                 try:
-                    instance.modifiedby = request.user
-                    instance.modifiedat = now_utc
-                    instance.save()
+                    user_instance.modifiedby = request.user
+                    user_instance.modifiedat = now_utc
+                    user_instance.save()
                     ok_dict = {'msg01':  _("The changes have been saved successfully.")}
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
@@ -1936,91 +2649,174 @@ def update_user_instance(instance, upload_dict, msg_list, request):
     return err_dict, ok_dict
 # - +++++++++ end of update_user_instance ++++++++++++
 
-# === update_usergroups ===================================== PR2021-03-24 PR2021-08-01
-
-def update_usergroups(instance, field_dict, validate, request):
+# === update_userallowed_usergroups ===================================== PR2021-03-24 PR2021-08-01 PR2023-01-14
+def update_userallowed_usergroups(request, user_instance, sel_examyear, field_dict):
     # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
     # validate only when called by update_user_instance
+    # when validate = True: when setting value: remove auth1 or auth2 when the other one is selected
+    #                       when removing value: skip when auuth tries to remove it won auth usergroup
+
     # usergroups: {auth2: false} dict always contains only 1 auth key
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug('-----  update_usergroups  -----')
-        logger.debug('field_dict: ' + str(field_dict))
-        logger.debug('validate: ' + str(validate))
 
-    saved_usergroups_str = instance.usergroups
-    saved_usergroups_list = []
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  update_userallowed_usergroups  -----')
+        logger.debug('    field_dict:    ' + str(field_dict) + ' ' + str(type(field_dict)))
+        logger.debug('    user_instance: ' + str(user_instance) + '  ' + str(type(user_instance)))
+        logger.debug('    sel_examyear:  ' + str(sel_examyear))
+        logger.debug('    -----')
+
+# - get sel_examyear_instance from req_usr. NOT from user_instance
+    # PR2023-02-17 debug: new user that has not activated his account yet has no selected_examyear yet.
+    # therefore admin could not could not cahnge usergroups.
+    # must use sel_examyear_instance from req_usr. NOT from user_instance
+    sel_examyear_instance = acc_prm.get_sel_examyear_from_user_instance(request.user)
+
+# - get userallowed_instance from user_instance, NOT from request.user
+    userallowed_instance = acc_prm.get_userallowed_instance(user_instance, sel_examyear_instance)
+
     data_has_changed = False
-    if instance.usergroups:
-        saved_usergroups_list = instance.usergroups.split(';')
 
-    if logging_on:
-        logger.debug('saved_usergroups_str:  ' + str(saved_usergroups_str))
-        logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
+    if userallowed_instance:
+        if logging_on:
+            logger.debug('    userallowed_instance:  ' + str(userallowed_instance))
+            logger.debug('    userallowed_instance.usergroups:  ' + str(userallowed_instance.usergroups))
 
-    if field_dict:
-        # field_dict =  {auth2: false} it always contains only 1 auth key
-        for usergroup, new_value in field_dict.items():
-            new_value = False if new_value is None else new_value
+# - get saved_usergroups_list from userallowed_instance
+        saved_usergroups_str = None
+        new_usergroups_list = []
+        if userallowed_instance:
+            saved_usergroups_str = getattr(userallowed_instance, 'usergroups')
+            if saved_usergroups_str:
+                saved_usergroups_list = json.loads(saved_usergroups_str)
+                if saved_usergroups_list:
+                    for saved_usergroup in saved_usergroups_list:
+                        if saved_usergroup and isinstance(saved_usergroup, str):
+                            new_usergroups_list.append(saved_usergroup)
+
+        if logging_on:
+            logger.debug('    saved_usergroups_str: ' + str(saved_usergroups_str) + ' ' + str(type(saved_usergroups_str)))
+            logger.debug('    new_usergroups_list: ' + str(new_usergroups_list) + ' ' + str(type(new_usergroups_list)))
+            # saved_usergroups_list: [1689, 1690] <class 'list'>
+
+        if field_dict:
             if logging_on:
-                logger.debug('usergroup: ' + str(usergroup))
-                logger.debug('new_value: ' + str(new_value))
+                logger.debug('    field_dict: ' + str(field_dict) + ' ' + str(type(field_dict)))
+                # field_dict =  {auth2: false} it always contains only 1 auth key
 
-            if new_value:
-                # if corrector: remove all other auth
+            for usergroup, new_value in field_dict.items():
+                new_value = False if new_value is None else new_value
+                if logging_on:
+                    logger.debug('    usergroup: ' + str(usergroup) + ' ' + str(type(usergroup)))
+                    logger.debug('    new_value: ' + str(new_value) + ' ' + str(type(new_value)))
 
-        # - remove other 'auth' usergroups when usergroup = 'auth123' is set to True
-        #   only when called by update_user_instance
+                if new_value:
 
-                if validate:
-                    if saved_usergroups_list:
+                    if new_usergroups_list:
 
+            # - user cannot be auth1 and auth2 at the same time, remove the other if exists
                         auth_list = (c.USERGROUP_AUTH1_PRES, c.USERGROUP_AUTH2_SECR)
                         if usergroup in auth_list:
                             for auth in auth_list:
+                                if logging_on:
+                                    logger.debug('....usergroup: ' + str(usergroup) + ' ' + str(type(usergroup)))
+                                    logger.debug('    auth: ' + str(auth) + ' ' + str(type(auth)))
                                 if auth != usergroup:
-                                    if auth in saved_usergroups_list:
-                                        saved_usergroups_list.remove(auth)
+                                    if auth in new_usergroups_list:
+                                        new_usergroups_list.remove(auth)
+                                        if logging_on:
+                                            logger.debug('    new_usergroups_list.remove(auth): ' + str(auth) + ' ' + str(type(auth)))
+
                         # PR2022-03-08 yes, user can be auth3 and auth4 at the same time
-                        # was: # PR2022-02-17 cannot be auth3 and auth4 at the same time
-                        #auth_list = (c.USERGROUP_AUTH3_EXAM, c.USERGROUP_AUTH4_COM)
-                        #if usergroup in auth_list:
-                        #    for auth in auth_list:
-                        #        if auth != usergroup:
-                        #            if auth in saved_usergroups_list:
-                        #                saved_usergroups_list.remove(auth)
+                        #   was: # PR2022-02-17 cannot be auth3 and auth4 at the same time
 
-                if usergroup not in saved_usergroups_list:
-                    saved_usergroups_list.append(usergroup)
-            else:
-                if usergroup in saved_usergroups_list:
-        # - admin cannot remove his own admin usergroup
-        #   only when called by update_user_instance
-                    if validate and \
-                            instance.pk == request.user.pk and \
-                            usergroup == c.USERGROUP_ADMIN and \
-                            request.user.usergroups and c.USERGROUP_ADMIN in request.user.usergroups:
+                    if usergroup not in new_usergroups_list:
+                        new_usergroups_list.append(usergroup)
                         if logging_on:
-                            logger.debug('pass: request.user.usergroups: ' + str(request.user.usergroups))
-                        pass
-                    else:
-                        saved_usergroups_list.remove(usergroup)
+                            logger.debug('    new_usergroups_list: ' + str(new_usergroups_list))
+                else:
+                    if usergroup in new_usergroups_list:
+            # - admin cannot remove his own admin usergroup
+            #   only when called by update_user_instance
 
-    # sort the list before saving, to be able to compare new and saved usergroups
-    saved_usergroups_list.sort()
+                        # pass when request_usr is admin and wants to delete it own admin usergroup
+                        if usergroup == c.USERGROUP_ADMIN and user_instance.pk == request.user.pk:
+                            if logging_on:
+                                logger.debug('pass when request_usr is admin and wants to delete it own admin usergroup')
+                            pass
+                        else:
+                            new_usergroups_list.remove(usergroup)
+                logger.debug('    ..........')
+# - end of loop
 
-    if logging_on:
-        logger.debug('saved_usergroups_list: ' + str(saved_usergroups_list))
+        # sort the list before saving, to be able to compare new and saved usergroups
+        new_usergroups_list.sort()
+        if logging_on:
+            logger.debug('    new_usergroups_list: ' + str(new_usergroups_list))
 
-    new_usergroups_str = ';'.join(saved_usergroups_list)
-    if logging_on:
-        logger.debug('new_usergroups_str: ' + str(new_usergroups_str))
-    if new_usergroups_str != saved_usergroups_list:
-        setattr(instance, 'usergroups', new_usergroups_str)
-        data_has_changed = True
+        new_usergroups_str = json.dumps(new_usergroups_list)
+
+        if new_usergroups_str != saved_usergroups_str:
+            setattr(userallowed_instance, 'usergroups', new_usergroups_str)
+            userallowed_instance.save()
+
+            data_has_changed = True
+        if logging_on:
+            logger.debug('    new_usergroups_str: ' + str(new_usergroups_str))
+            logger.debug('    data_has_changed: ' + str(data_has_changed))
 
     return data_has_changed
+# - end of update_userallowed_usergroups
 
+
+# === update_allowedclusters ===================================== PR2023-01-27
+def update_allowedclusters(request, user_instance, sel_examyear, field_value, validate):
+    # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
+    # validate only when called by update_user_instance
+    # usergroups: {auth2: false} dict always contains only 1 auth key
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('-----  update_allowedclusters  -----')
+        logger.debug('    field_value:    ' + str(field_value) + ' ' + str(type(field_value)))
+        logger.debug('    validate:      ' + str(validate))
+        logger.debug('    user_instance: ' + str(user_instance))
+        logger.debug('    sel_examyear:  ' + str(sel_examyear))
+
+# - get userallowed
+    userallowed_instance = acc_mod.UserAllowed.objects.filter(
+        user=user_instance,
+        examyear=sel_examyear
+    ).order_by('-pk').first()
+    if logging_on:
+        logger.debug('    userallowed_instance:    ' + str(userallowed_instance))
+
+    data_has_changed = False
+
+    if userallowed_instance:
+        new_allowed_clusters_str = None
+        saved_allowed_clusters_str = userallowed_instance.allowed_clusters
+
+        if field_value:
+            # field_value:    [407, 412, 413, 414, 421, 423] <class 'list'>
+            new_allowed_clusters_list = field_value
+
+        # sort the list before saving, to be able to compare new and saved allowed_clusters
+            new_allowed_clusters_list.sort()
+
+            new_allowed_clusters_str = json.dumps(new_allowed_clusters_list)
+
+        if logging_on:
+            logger.debug('    new_allowed_clusters_str: ' + str(new_allowed_clusters_str))
+            logger.debug('    saved_allowed_clusters_str: ' + str(saved_allowed_clusters_str))
+
+        if new_allowed_clusters_str != saved_allowed_clusters_str:
+            setattr(userallowed_instance, 'allowed_clusters', new_allowed_clusters_str)
+            userallowed_instance.save()
+
+            data_has_changed = True
+
+    return data_has_changed
+# - end of update_allowedclusters
 
 # +++++++++++++++++++  permits +++++++++++++++++++++++
 def get_permit(permits_int, permit_index):  # PR2020-10-12 PR2021-01-18
@@ -2059,8 +2855,8 @@ def remove_other_auth_permits(permit_field, permit_list):
         permit_list.remove(c.USERGROUP_AUTH2_SECR)
     if permit_field != "perm_auth3" and c.USERGROUP_AUTH3_EXAM in permit_list:
         permit_list.remove(c.USERGROUP_AUTH3_EXAM)
-    if permit_field != "perm_auth4" and c.USERGROUP_AUTH4_COM in permit_list:
-        permit_list.remove(c.USERGROUP_AUTH4_COM)
+    if permit_field != "perm_auth4" and c.USERGROUP_AUTH4_CORR in permit_list:
+        permit_list.remove(c.USERGROUP_AUTH4_CORR)
 
 
 def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made PR2021-01-18
@@ -2072,29 +2868,8 @@ def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made
 
 
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
-def get_usersetting_dict(key_str, request):  # PR2019-03-09 PR2021-01-25
-    # function retrieves the string value of the setting row that match the filter and converts it to a dict
-    # logger.debug(' ---  get_usersetting_dict  ------- ')
-    #  json.dumps converts a dict in a json object
-    #  json.loads retrieves a dict (or other type) from a json object
 
-    # logger.debug('cls: ' + str(cls) + ' ' + str(type(cls)))
-    setting_dict = {}
-    row_setting = None
-    try:
-        if request.user and key_str:
-            row = Usersetting.objects.filter(user=request.user, key=key_str).order_by('-id').first()
-            if row:
-                row_setting = row.setting
-                if row_setting:
-                    setting_dict = json.loads(row_setting)
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-        logger.error('key_str: ', str(key_str))
-        logger.error('row_setting: ', str(row_setting))
-
-    return setting_dict
-
+#   get_usersetting_dict is moved to accounts.permits PR2023-01-25
 
 def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021-01-25
     # function saves setting in first row that matches the filter, adds new row when not found
@@ -2131,16 +2906,16 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
 
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
         logger.debug('     upload_dict: ' + str(upload_dict))
-        # upload_dict: {'selected_pk': {'sel_examtype': 'sr', 'sel_examperiod': 1}}
 
+    # upload_dict: {'selected_pk': {'sel_examtype': 'sr', 'sel_examperiod': 1}}
     # upload_dict: {'selected_pk': {'sel_subject_pk': 46}}
     # logger.debug('upload_dict: ' + str(upload_dict))
 
-    # PR2020-07-12 debug. creates multiple rows when key does not exist and newdict has multiple subkeys
+    # PR2020-07-12 debug. creates multiple rows when key does not exist and new dict has multiple subkeys
     # PR2020-10-04 not any more, don't know why
     # - loop through keys of upload_dict
     for key, new_setting_dict in upload_dict.items():
@@ -2172,7 +2947,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
     #           'page_student' = {'sel_btn': 'btn_subject', 'cols_hidden': {'subject': ['name', ...]}
     # new_setting_dict = 'page_examyear', dict = {'sel_btn': 'examyears'}
     # get saved_settings_dict. new settings will be put in saved_settings_dict,  saved_settings_dict will be saved
-    saved_settings_dict = get_usersetting_dict(key_str, request)
+    saved_settings_dict = acc_prm.get_usersetting_dict(key_str, request)
 
     if logging_on:
         logger.debug('     saved_settings_dict: ' + str(saved_settings_dict))
@@ -2337,120 +3112,11 @@ def get_username_dict(request):  # PR2021-12-19 PR2022-06-24
 # - end of get_username_dict
 
 
-def get_userfilter_allowed_depbase(request, sql_keys, sql_list, depbase_pk=None, skip_allowed_filter=False):
-    # PR2022-03-14
 
-    #  if depbase_pk has value:
-    #       if arr exists and not skip_allowed_filter:
-    #           --> filter on depbase_pk_pk, only when depbase_pk_pk in arr, otherwise: return no records
-    #       else:
-    #           --> filter on depbase_pk_pk
-    #  if depbase_pk_pk is None:
-    #       if arr exists and not skip_allowed_filter:
-    #           --> filter on depbase_pk_pk's in array
-    #       else:
-    #           --> no filter
+def get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, lvlbase_pk=None,
+                                   sel_schoolbase_pk=None, sel_depbase_pk=None, skip_allowed_filter=False):
+    # PR2022-03-12 PR2022-12-09
 
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug('----- get_userfilter_allowed_depbase ----- ')
-        logger.debug('depbase_pk: ' + str(depbase_pk) + ' ' + str(type(depbase_pk)))
-        logger.debug('skip_allowed_filter: ' + str(skip_allowed_filter))
-
-    filter_single_pk, filter_pk_arr, filter_none = None, None, False
-
-    allowed_depbase_arr = request.user.allowed_depbases.split(';') if request.user.allowed_depbases else []
-
-    if depbase_pk:
-        if not allowed_depbase_arr or str(depbase_pk) in allowed_depbase_arr or skip_allowed_filter:
-            filter_single_pk = depbase_pk
-        else:
-            filter_none = True
-
-    elif allowed_depbase_arr and not skip_allowed_filter:
-        if len(allowed_depbase_arr) == 1:
-            filter_single_pk = allowed_depbase_arr[0]
-        else:
-            filter_pk_arr = allowed_depbase_arr
-
-    if logging_on:
-        logger.debug('    allowed_depbase_arr: ' + str(allowed_depbase_arr) + ' ' + str(type(allowed_depbase_arr)))
-        logger.debug('    filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
-        logger.debug('    filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
-        logger.debug('    filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
-
-    if filter_single_pk:
-        sql_keys['dep_pk'] = filter_single_pk
-        sql_list.append("AND dep.base_id = %(dep_pk)s::INT")
-
-    elif filter_pk_arr:
-        sql_keys['dep_arr'] = filter_pk_arr
-        sql_list.append("AND dep.base_id IN (SELECT UNNEST(%(dep_arr)s::INT[]) )")
-
-    elif filter_none:
-        sql_list.append("AND FALSE")
-# - end of get_userfilter_allowed_depbase
-
-
-def get_userfilter_allowed_schoolbase(request, sql_keys, sql_list, schoolbase_pk=None, skip_allowed_filter=False, table=None):
-    # PR2022-03-13
-    #  if schoolbase_pk has value:
-    #       if arr exists and not skip_allowed_filter:
-    #           --> filter on schoolbase_pk_pk, only when schoolbase_pk_pk in arr, otherwise: return no records
-    #       else:
-    #           --> filter on schoolbase_pk_pk
-    #  if schoolbase_pk_pk is None:
-    #       if arr exists and not skip_allowed_filter:
-    #           --> filter on schoolbase_pk_pk's in array
-    #       else:
-    #           --> no filter
-
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug('----- get_userfilter_allowed_schoolbase_pk ----- ')
-        logger.debug('schoolbase_pk: ' + str(schoolbase_pk) + ' ' + str(type(schoolbase_pk)))
-
-    filter_single_pk, filter_pk_arr, filter_none = None, None, False
-
-    allowed_schoolbase_pk_arr = request.user.allowed_schoolbases.split(';') if request.user.allowed_schoolbases else []
-
-    if schoolbase_pk:
-        if not allowed_schoolbase_pk_arr or str(schoolbase_pk) in allowed_schoolbase_pk_arr or skip_allowed_filter:
-            filter_single_pk = schoolbase_pk
-        else:
-            filter_none = True
-
-    elif allowed_schoolbase_pk_arr and not skip_allowed_filter:
-        if len(allowed_schoolbase_pk_arr) == 1:
-            filter_single_pk = allowed_schoolbase_pk_arr[0]
-        else:
-            filter_pk_arr = allowed_schoolbase_pk_arr
-
-    if logging_on:
-        logger.debug('allowed_schoolbase_pk_arr: ' + str(allowed_schoolbase_pk_arr) + ' ' + str(type(allowed_schoolbase_pk_arr)))
-        logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
-        logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
-        logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
-
-    if filter_single_pk:
-        sql_keys['sb_pk'] = filter_single_pk
-        if table == 'studsubj':
-            sql_list.append("AND studsubj.schoolbase_id = %(sb_pk)s::INT")
-        else:
-            sql_list.append("AND school.base_id = %(sb_pk)s::INT")
-    elif filter_pk_arr:
-        sql_keys['sb_arr'] = filter_pk_arr
-        if table == 'studsubj':
-            sql_list.append("AND studsubj.schoolbase_id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
-        else:
-            sql_list.append("AND school.base_id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
-    elif filter_none:
-        sql_list.append("AND FALSE")
-# - end of get_userfilter_allowed_schoolbase
-
-
-def get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, lvlbase_pk=None, skip_allowed_filter=False):
-    # PR2022-03-12
     #  if lvlbase_pk has value:
     #       if arr exists:
     #           --> filter on lvlbase_pk, only when lvlbase_pk in arr, otherwise: return no records
@@ -2465,26 +3131,62 @@ def get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, lvlbase_pk=None,
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_userfilter_allowed_lvlbase ----- ')
-        logger.debug('lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(type(lvlbase_pk)))
+        logger.debug('    lvlbase_pk: ' + str(lvlbase_pk) + ' ' + str(type(lvlbase_pk)))
+        logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk) + ' ' + str(type(sel_schoolbase_pk)))
+        logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
+        logger.debug('    skip_allowed_filter: ' + str(skip_allowed_filter))
 
     filter_single_pk, filter_pk_arr, filter_none = None, None, False
 
-    allowed_levelbase_arr = request.user.allowed_levelbases.split(';') if request.user.allowed_levelbases else []
+    usergroups_arrNIU, allowed_sections_dict, allowed_clusters_arrNIU = get_request_userallowed(request)
+    if logging_on:
+        logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict) + ' ' + str( type(allowed_sections_dict)))
+
+    allowed_lvlbase_pk_arr = []
+
+    if allowed_sections_dict:
+        sel_schoolbase_pk_str = str(sel_schoolbase_pk)
+        allowed_schoolbase_dict = allowed_sections_dict.get(sel_schoolbase_pk_str)
+        if logging_on:
+            logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+
+        if allowed_schoolbase_dict:
+            sel_depbase_pk_str = str(sel_depbase_pk)
+            allowed_depbase_dict = allowed_schoolbase_dict.get(sel_depbase_pk_str)
+            if logging_on:
+                logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
+
+            if allowed_depbase_dict:
+                all_allowed = False
+                for lvlbase_pk_str in allowed_depbase_dict:
+                    lvlbase_pk_int = int(lvlbase_pk_str)
+                    if lvlbase_pk_int == -9:
+                        all_allowed = True
+                        break
+                    else:
+                        allowed_lvlbase_pk_arr.append(lvlbase_pk_int)
+                if all_allowed:
+                    allowed_lvlbase_pk_arr = []
+    if logging_on:
+        logger.debug('    allowed_lvlbase_pk_arr: ' + str(allowed_lvlbase_pk_arr) + ' ' + str( type(allowed_lvlbase_pk_arr)))
+
+    # NIU, moved to allowed_sections_dict: PR2022-12-09
+    #   allowed_levelbase_arr = request.user.allowed_levelbases.split(';') if request.user.allowed_levelbases else []
 
     if lvlbase_pk:
-        if not allowed_levelbase_arr or str(lvlbase_pk) in allowed_levelbase_arr or skip_allowed_filter:
+        if not allowed_lvlbase_pk_arr or str(lvlbase_pk) in allowed_lvlbase_pk_arr or skip_allowed_filter:
             filter_single_pk = lvlbase_pk
         else:
             filter_none = True
 
-    elif allowed_levelbase_arr and not skip_allowed_filter:
-        if len(allowed_levelbase_arr) == 1:
-            filter_single_pk = allowed_levelbase_arr[0]
+    elif allowed_lvlbase_pk_arr and not skip_allowed_filter:
+        if len(allowed_lvlbase_pk_arr) == 1:
+            filter_single_pk = allowed_lvlbase_pk_arr[0]
         else:
-            filter_pk_arr = allowed_levelbase_arr
+            filter_pk_arr = allowed_lvlbase_pk_arr
 
     if logging_on:
-        logger.debug('allowed_levelbase_arr: ' + str(allowed_levelbase_arr) + ' ' + str(type(allowed_levelbase_arr)))
+        logger.debug('allowed_lvlbase_pk_arr: ' + str(allowed_lvlbase_pk_arr) + ' ' + str(type(allowed_lvlbase_pk_arr)))
         logger.debug('filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
         logger.debug('filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
         logger.debug('filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
@@ -2502,9 +3204,2581 @@ def get_userfilter_allowed_lvlbase(request, sql_keys, sql_list, lvlbase_pk=None,
 # - end of get_userfilter_allowed_lvlbase
 
 
-def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=None, skip_allowed_filter=False, table=None):
-    # PR2022-03-13
-    # this function adds allowed_subjectbases filter to sql, or filters single subjbase_pk
+def get_userallowed_for_subjects_studsubj(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase,
+    request, skip_allowedsubjbase_filter, table=None):
+    # PR2022-03-13 PR2022-12-17 PR2023-01-09
+    # this function adds selected / allowed  filter to sql for subjects row, for page studsubject, subjects, exam, wolf
+    # called by subjects.create_subject_rows
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' +++++ get_userallowed_for_subjects_studsubj +++++')
+
+    sql_clause = ""
+
+    try:
+        sql_clause_arr = []
+
+        req_usr = request.user
+        subjbase_id_fld = 'studsubj.subjbase_id'  if table == 'studsubj' else 'subj.base_id'
+        depbase_id_fld = 'dep.base_id'
+
+# - get selected_pk_dict from usersettings
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if logging_on:
+            logger.debug('    selected_pk_dict: ' + str(selected_pk_dict) + ' ' + str(type(selected_pk_dict)))
+        # selected_pk_dict: {'sel_schoolbase_pk': 2, 'sel_examyear_pk': 4, 'sel_depbase_pk': 1, 'sel_examperiod': 1, 'sel_examtype': 'ce', 'sel_auth_index': 2, 'sel_lvlbase_pk': 5} <class 'dict'>
+
+# - get allowed_sections_dict from userallowed
+        allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
+        if logging_on:
+            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+        #  allowed_sections_dict: {'13': {'1': {'4': [131], '-9': [117]}, '2': {'-9': [167, 118]}, '3': {'-9': []}}}
+
+# +++ SCHOOL +++
+    # - get selected school
+        # - when role = school: selected school = req_usr.schoolbase
+        # - otherwise: get selected school from settings
+        #   do not add school_clause, only get allowed departments from school, school_clause and examyear are already in sql
+
+        sel_schoolbase_pk = None
+        if req_usr.role == c.ROLE_008_SCHOOL:
+            if req_usr.schoolbase:
+                sel_schoolbase_pk = req_usr.schoolbase_id
+        else:
+            # - check if school base is allowed
+            # when allowed_sections_dict is empty: selected school is always allowed
+            sel_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+
+# - check if selected school is allowed
+    # - get allowed_schoolbase_dict, dict with allowed depbases / lvlbases of selected school
+        allowed_schoolbase_dict, allowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(allowed_sections_dict, sel_schoolbase_pk)
+        # allowed_schoolbase_dict: {'1': {'-9': []}, '2': {'-9': []}, '3': {'-9': []}}
+        # allowed_depbases_pk_arr: [1, 2, 3] <class 'list'>
+
+        # - school is allowed when exists in allowed_sections_dict or when allowed_sections_dict is empty
+        school_is_allowed = False
+        if allowed_sections_dict:
+            if allowed_schoolbase_dict:
+                school_is_allowed = True
+        else:
+            school_is_allowed = True
+
+        sel_school = None
+        if sel_examyear and sel_schoolbase_pk and school_is_allowed:
+            sel_school = sch_mod.School.objects.get_or_none(
+                examyear=sel_examyear,
+                base_id=sel_schoolbase_pk
+                )
+        if logging_on:
+            logger.debug('    school_is_allowed: ' + str(school_is_allowed))
+            logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+
+# +++ DEPARTMENT +++
+        # Note: there can be multiple departments allowed,
+        # but there must be a selected depbase in page studsubject
+
+    # - get saved_depbase_pk of req_usr
+        saved_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
+
+    # - get allowed_depbase_dict
+        allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
+            allowed_schoolbase_dict, saved_depbase_pk)
+        if logging_on:
+            logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
+            logger.debug('    allowed_lvlbase_pk_arr: ' + str(allowed_lvlbase_pk_arr))
+
+    # - get array of school_allowed_depbases_arr
+        sel_school_allowed_depbases_arr = []
+        if sel_school:
+            # - get allowed_depbases of selected school
+            # sel_school_allowed_depbases_arr must always have at least 1 value
+            sel_school_allowed_depbases_arr = list(
+                map(int, sel_school.depbases.split(';'))) if sel_school.depbases else []
+        else:
+            # get all deps when skip_school_clause
+            for depbase in sch_mod.Departmentbase.objects.all().values('pk'):
+                sel_school_allowed_depbases_arr.append(depbase.pk)
+
+        if logging_on:
+            logger.debug('    saved_depbase_pk: ' + str(saved_depbase_pk))
+            logger.debug('    sel_school_allowed_depbases_arr: ' + str(sel_school_allowed_depbases_arr))
+        # sel_school_allowed_depbases_arr: [1, 2, 3]
+
+    # - get allowed_depbases of req_usr
+        # allowed_schoolbase_dict = {} when sel_schoolbase_pk is None
+        allowed_schoolbase_dict, allowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+            allowed_sections_dict, sel_schoolbase_pk)
+
+        if logging_on:
+            logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+            logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+        # allowed_schoolbase_dict: {'1': {'4': [131], '-9': [117]}, '2': {'-9': [167, 118]}, '3': {'-9': []}}
+
+    # - get array of depbase_pk that are in requsr_allowed_depbases and school_allowed_depbases and saved_depbase_pk (if any)
+        sel_depbase_pk_arr = []
+        # loop through sel_school_allowed_depbases_arr
+        for school_depbase_pk in sel_school_allowed_depbases_arr:
+            # if saved_depbase_pk has value: filter only saved_depbase_pk
+            if saved_depbase_pk is None or school_depbase_pk == saved_depbase_pk:
+                # filter only allowed_depbases of user
+                if not allowed_schoolbase_dict or str(school_depbase_pk) in allowed_schoolbase_dict:
+                    sel_depbase_pk_arr.append(school_depbase_pk)
+        if logging_on:
+            logger.debug('    sel_depbase_pk_arr: ' + str(sel_depbase_pk_arr))
+
+        dep_lvl_subj_clause_arr = []
+        if sel_depbase_pk_arr:
+
+# +++++ loop through allowed depbases +++++
+            for sel_depbase_pk in sel_depbase_pk_arr:
+
+    # - get sel_department_instance
+                sel_department_instance = sch_mod.Department.objects.get_or_none(
+                    examyear=sel_examyear,
+                    base_id=sel_depbase_pk
+                )
+                if sel_department_instance:
+
+        # - get depbase_clause
+                    depbase_clause = get_depbase_clause(sel_depbase_pk)
+                    if logging_on:
+                        logger.debug(' .. sel_depbase_pk: ' + str(sel_depbase_pk))
+                        logger.debug('    depbase_clause: ' + str(depbase_clause))
+                    # depbase_clause: CONCAT(';', subj.depbases::TEXT, ';') LIKE %(depbase_pk_2)s::TEXT
+
+        # - get allowed_lvlbases_dict
+                    allowed_lvlbases_dict = get_requsr_allowed_lvlbases_dict(allowed_schoolbase_dict, sel_depbase_pk)
+                    if logging_on:
+                        logger.debug('    allowed_lvlbases_dict: ' + str(allowed_lvlbases_dict))
+                    # allowed_lvlbases_dict: {'-9': [167, 118]}
+
+        # - get array of allowed levels, [-9] when 'all levels'
+                    level_is_required = sel_department_instance.level_req
+                    sel_lvlbase_pk_arr = get_sel_lvlbase_pk_arr(allowed_lvlbases_dict, selected_pk_dict, level_is_required)
+
+                    if logging_on:
+                        logger.debug('    level_is_required: ' + str(level_is_required))
+                        logger.debug('    sel_lvlbase_pk_arr: ' + str(sel_lvlbase_pk_arr) + ' ' + str(type(sel_lvlbase_pk_arr)))
+                    # sel_lvlbase_pk_arr: [-9] <class 'list'>
+
+        # get lvl_subjbase_clause
+                    lvl_subjbase_clause = get_lvl_subjbase_clause(sel_lvlbase_pk_arr, allowed_lvlbases_dict, subjbase_id_fld, skip_allowedsubjbase_filter)
+                    if logging_on:
+                        logger.debug(' >> lvl_subjbase_clause: ' + str(lvl_subjbase_clause))
+                        # lvl_subjbase_clause: ((subj.base_id IN (SELECT UNNEST(ARRAY[167, 118]::INT[]))))
+
+            # - join depbase_clause and lvlbase_clause  and add to array, to prvent error when base_clause = None
+                    dep_lvl_subj_clause = join_dep_lvl_subj_clause(depbase_clause, lvl_subjbase_clause)
+                    if dep_lvl_subj_clause:
+                        dep_lvl_subj_clause_arr.append(''.join(('(', dep_lvl_subj_clause, ')')))
+
+########## end of loop through allowed depbases ########################
+
+            # - join depbase_clause and lvlbase_clause  and add to array, to prevent error when base_clause = None
+            if dep_lvl_subj_clause_arr:
+                depbase_lvlbase_clause = ' OR '.join(dep_lvl_subj_clause_arr)
+                if logging_on:
+                    logger.debug(' >  depbase_lvlbase_clause: ' + str(depbase_lvlbase_clause))
+
+# +++ end of loop through allowed depbases
+            if dep_lvl_subj_clause_arr:
+                all_depbase_lvlbase_clauses = ''.join(('(', ' OR '.join(dep_lvl_subj_clause_arr), ')'))
+            else:
+                all_depbase_lvlbase_clauses = "(FALSE)"
+            sql_clause_arr.append(all_depbase_lvlbase_clauses)
+            if logging_on:
+                logger.debug('    sql_clause_arr: ' + str(sql_clause_arr))
+
+# +++ SELECTED SECTORBASE +++
+        # - get selected sctbase_pk of req_usr
+        saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+        if saved_sctbase_pk and saved_sctbase_pk != -9:
+            sql_clause_arr.append(''.join(("(sct.base_id = ", str(saved_sctbase_pk), "::INT)")))
+
+        sql_clause = ' AND '.join(sql_clause_arr)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug(' >>> sql_clause: ' + str(sql_clause))
+        logger.debug('--- of get_userfilter_allowed_subjbase: ')
+
+    return sql_clause
+# - end of get_userallowed_for_subjects_studsubj
+
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+def get_depbase_clause(sel_depbase_pk):
+    # PR2022-12-22
+    #depbase_lookup_key = 'depbase_pk_' + str(sel_depbase_pk)
+    #depbase_lookup = ''.join(('%;', str(sel_depbase_pk), ';%'))
+
+    # PR2022-12-18 debug: this one gives error: argument formats can't be mixed:
+    # depbase_clause =  ''.join(("CONCAT(';', subj.depbases::TEXT, ';') LIKE ", depbase_lookup , "::TEXT"))
+    # the one with LIKE %(key)s works
+
+    # THis one works: depbase_clause = ''.join(("CONCAT(';', subj.depbases::TEXT, ';') LIKE %(", depbase_lookup_key, ")s::TEXT"))
+
+    # PR2022-12-21 instead of filtering on allowed_depbases, filter on dep.base_id
+    depbase_clause = ''.join(("dep.base_id = ", str(sel_depbase_pk), "::INT"))
+
+    return depbase_clause
+
+
+def get_sel_lvlbase_pk_arr(allowed_lvlbases_dict, selected_pk_dict, level_is_required):
+    # PR2022-12-22
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ..... get_sel_lvlbase_pk_arr .....')
+
+# - get array of allowed levels, [-9] when 'all levels'
+    sel_lvlbase_pk_arr = []
+    #allowed_lvlbases_arr = []
+    #if level_is_required:
+    #    if allowed_lvlbases_dict:
+    #        for lvlbase_pk_str in allowed_lvlbases_dict:
+    #            allowed_lvlbases_arr.append(int(lvlbase_pk_str))
+    #if not allowed_lvlbases_arr:
+    #    allowed_lvlbases_arr.append(-9)
+    # if logging_on:
+    #    logger.debug('    allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
+    # allowed_lvlbases_arr: [-9]
+
+    # - sel_lvlbase_pk_arr contains the selected lvlbase or all allowed lvlbasescreate array of allowed depbases of requsr from allowed_depbases_dict and sel_school_allowed_depbases_arr
+
+    if level_is_required:
+
+# - get saved_lvlbase_pk of req_usr
+        saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+        if logging_on:
+            logger.debug('    saved_lvlbase_pk: ' + str(saved_lvlbase_pk) + ' ' + str(type(saved_lvlbase_pk)))
+            logger.debug('    allowed_lvlbases_dict: ' + str(allowed_lvlbases_dict) + ' ' + str(type(allowed_lvlbases_dict)))
+
+# - filter only the saved_lvlbase_pk if exists and allowed
+        if saved_lvlbase_pk and allowed_lvlbases_dict and str(saved_lvlbase_pk) in allowed_lvlbases_dict:
+            logger.debug('  ???  saved_lvlbase_pk: ' + str(saved_lvlbase_pk) + ' ' + str(type(saved_lvlbase_pk)))
+            sel_lvlbase_pk_arr.append(saved_lvlbase_pk)
+            logger.debug('  ???  sel_lvlbase_pk_arr: ' + str(sel_lvlbase_pk_arr) + ' ' + str(type(sel_lvlbase_pk_arr)))
+
+        else:
+            logger.debug('    else allowed_lvlbases_dict: ' + str(allowed_lvlbases_dict) + ' ' + str(type(allowed_lvlbases_dict)))
+# - filter all allowed lvlbases
+            if allowed_lvlbases_dict:
+                for sel_lvlbase_pk_str in allowed_lvlbases_dict:
+                    logger.debug('    else sel_lvlbase_pk_str: ' + str(sel_lvlbase_pk_str) + ' ' + str(type(sel_lvlbase_pk_str)))
+                    sel_lvlbase_pk_arr.append(int(sel_lvlbase_pk_str))
+    else:
+        sel_lvlbase_pk_arr.append(-9)
+
+    if logging_on:
+        logger.debug('    sel_lvlbase_pk_arr: ' + str(sel_lvlbase_pk_arr) + ' ' + str(type(sel_lvlbase_pk_arr)))
+
+    return sel_lvlbase_pk_arr
+# end of get_sel_lvlbase_pk_arr
+
+
+def get_lvl_subjbase_clause(sel_lvlbase_pk_arr, allowed_lvlbases_dict, subjbase_id_fld, skip_allowedsubjbase_filter):
+    # PR2022-12-22
+    logging_on = s.LOGGING_ON
+    lvl_subjbase_clause = None
+
+    if sel_lvlbase_pk_arr:
+        lvl_subjbase_clause_arr = []
+
+# +++++ loop through sel_lvlbase_pk_arr
+        for sel_lvlbase_pk in sel_lvlbase_pk_arr:
+
+            # - create lvlbase_clause
+            if sel_lvlbase_pk == -9:
+                lvlbase_clause = None
+            else:
+                lvlbase_id_fld = 'lvl.base_id'
+                lvlbase_clause = ''.join((lvlbase_id_fld, " = ", str(sel_lvlbase_pk), "::INT"))
+
+            # - create subjbase_clause
+            subjbase_clause = None
+            subjbase_pk_arr = allowed_lvlbases_dict.get(str(sel_lvlbase_pk))
+            if subjbase_pk_arr and not skip_allowedsubjbase_filter:
+                if len(subjbase_pk_arr) == 1:
+                    subjbase_clause = ''.join((subjbase_id_fld, " = ", str(subjbase_pk_arr[0]), "::INT"))
+                else:
+                    subjbase_clause = ''.join(
+                        (subjbase_id_fld, " IN (SELECT UNNEST(ARRAY", str(subjbase_pk_arr), "::INT[]))"))
+            # subjbase_clause: subj.base_id IN (SELECT UNNEST(ARRAY[167, 118]::INT[]))
+
+    # - join depbase_clause and lvlbase_clause  and add to array, to prvent error when base_clause = None
+            lvl_subjbase = None
+            if lvlbase_clause:
+                if subjbase_clause:
+                    lvl_subjbase = ' AND '.join((lvlbase_clause, subjbase_clause))
+                else:
+                    lvl_subjbase = lvlbase_clause
+            else:
+                if subjbase_clause:
+                    lvl_subjbase = subjbase_clause
+
+            if lvl_subjbase:
+                lvl_subjbase_clause_arr.append(''.join(('(', lvl_subjbase, ')')))
+            # lvl_subjbase: subj.base_id IN (SELECT UNNEST(ARRAY[167, 118]::INT[]))
+
+# +++++ end of loop through sel_lvlbase_pk_arr
+        # lvl_subjbase_clause_arr: ['(subj.base_id IN (SELECT UNNEST(ARRAY[167, 118]::INT[])))']
+
+        # join lvl_subjbase_clause_arr
+        if lvl_subjbase_clause_arr:
+            lvl_subjbase_clause = ''.join(('(', ' OR '.join(lvl_subjbase_clause_arr), ')'))
+
+    return lvl_subjbase_clause
+
+
+def join_dep_lvl_subj_clause(depbase_clause, lvl_subjbase_clause):
+    # PR2022-12-22
+    # - join depbase_clause and lvlbase_clause  and add to array, to prvent error when base_clause = None
+    dep_lvl_subj_clause = None
+    if depbase_clause:
+        if lvl_subjbase_clause:
+            dep_lvl_subj_clause = ' AND '.join((depbase_clause, lvl_subjbase_clause))
+        else:
+            dep_lvl_subj_clause = depbase_clause
+    else:
+        if lvl_subjbase_clause:
+            dep_lvl_subj_clause = lvl_subjbase_clause
+    return dep_lvl_subj_clause
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+""" NIU 
+def get_userfilter_allowed_school_dep_lvl_sct(request, table=None):
+    # PR2022-12-15
+    # this function adds selected / allowed  filter to sql
+    # called by downloads.create_student_rows
+
+    req_usr = request.user
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' +++++ get_userfilter_allowed_school_dep_lvl_sct +++++ ')
+
+    sql_clause = ""
+    sql_clause_arr = []
+
+# - get sel_examyear_instance
+    sel_examyear_instance = get_selected_examyear_from_usersetting_short(request)
+
+# - get allowed_sections_dict from userallowed
+    allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
+
+# - get selected_pk_dict from usersettings
+    selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+
+# +++ SCHOOL +++
+    sel_school, sel_schoolbase_pk, schoolbase_clause = get_sql_schoolbase_clause(req_usr, sel_examyear_instance, allowed_sections_dict, selected_pk_dict)
+    sql_clause_arr.append(schoolbase_clause)
+    if logging_on:
+        logger.debug('    schoolbase_clause: ' + str(schoolbase_clause))
+    if sel_school:
+
+# +++ DEPARTMENT +++
+        allowed_schoolbase_dict, allowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+                allowed_sections_dict, sel_schoolbase_pk)
+        sel_department_instance, sel_depbase_pk, depbase_clause = get_sql_depbase_clause(sel_examyear_instance, sel_school, allowed_schoolbase_dict, selected_pk_dict)
+        sql_clause_arr.append(depbase_clause)
+        if logging_on:
+            logger.debug('    depbase_clause: ' + str(depbase_clause))
+        if sel_department_instance:
+
+# +++ LEVEL +++
+            allowed_lvlbases_dict = get_requsr_allowed_lvlbases_dict(allowed_schoolbase_dict, sel_depbase_pk)
+            level_is_required = sel_department_instance.level_req
+            sql_levelbases_clause = get_sql_levelbases_clause(req_usr, level_is_required, allowed_lvlbases_dict, selected_pk_dict)
+            if sql_levelbases_clause:
+                sql_clause_arr.append(sql_levelbases_clause)
+            if logging_on:
+                logger.debug('    sql_levelbases_clause: ' + str(sql_levelbases_clause))
+
+# +++ SELECTED SECTORBASE +++
+            # - get selected sctbase_pk of req_usr
+            saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+            sql_sctbases_clause = ''.join(("(sct.base_id = ", str(saved_sctbase_pk), "::INT)")) if saved_sctbase_pk else None
+            if sql_sctbases_clause:
+                sql_clause_arr.append(sql_sctbases_clause)
+            if logging_on:
+                logger.debug('    sql_sctbases_clause: ' + str(sql_sctbases_clause))
+
+    if sql_clause_arr:
+        sql_clause ='AND ' + ' AND '.join(sql_clause_arr)
+
+    if logging_on:
+        logger.debug('    sql_clause: ' + str(sql_clause))
+        logger.debug('--- end of get_userfilter_allowed_subjbase: ')
+
+    return sql_clause
+# - end of get_userfilter_allowed_school_dep_lvl_sct
+
+
+def get_sql_levelbases_clause(req_usr, level_is_required, allowed_lvlbases_dict, selected_pk_dict):
+    # PR2022-12-15
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_sql_levelbases_clause ----- ')
+        logger.debug('    level_is_required: ' + str(level_is_required))
+        logger.debug('    allowed_lvlbases_dict: ' + str(allowed_lvlbases_dict))
+        logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
+
+    sql_levelbases_clause = None
+
+    try:
+    # - get allowed_lvlbases_dict
+        # allowed_lvlbases_dict: {'5': [123]}
+
+    # - sel_lvlbase_pk_arr contains the selected lvlbase or all allowed lvlbasescreate array of allowed depbases of requsr from allowed_depbases_dict and sel_school_allowed_depbases_arr
+        sel_lvlbase_pk_arr = []
+        sql_levelbases_clause = None
+
+        if level_is_required:
+
+    # - get saved_lvlbase_pk of req_usr
+            saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+            if logging_on:
+                logger.debug('    saved_lvlbase_pk: ' + str(saved_lvlbase_pk) + ' ' + str(type(saved_lvlbase_pk)))
+
+    # - filter only the saved_lvlbase_pk if exists and allowed
+            if saved_lvlbase_pk:
+                if str(saved_lvlbase_pk) in allowed_lvlbases_dict or \
+                        '-9' in allowed_lvlbases_dict:
+                    sel_lvlbase_pk_arr.append(saved_lvlbase_pk)
+            else:
+    # - filter all allowed lvlbases
+                if allowed_lvlbases_dict:
+                    for sel_lvlbase_pk_str in allowed_lvlbases_dict:
+                        sel_lvlbase_pk_arr.append(int(sel_lvlbase_pk_str))
+
+        else:
+            # add '-9' when lvl not required (allowedsubjects are stored in lvl '-9'
+            sel_lvlbase_pk_arr.append(-9)
+
+        if logging_on:
+            logger.debug('    sel_lvlbase_pk_arr: ' + str(sel_lvlbase_pk_arr) + ' ' + str(type(sel_lvlbase_pk_arr)))
+
+# +++ loop through selected levels +++
+        levelbases_clause_arr = []
+        if sel_lvlbase_pk_arr:
+            for sel_lvlbase_pk in sel_lvlbase_pk_arr:
+
+                allowed_subjbases_arr = get_requsr_allowed_subjbases_arr(allowed_lvlbases_dict, sel_lvlbase_pk)
+                if logging_on:
+                    logger.debug('   +++++ ')
+                    logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                    logger.debug('    allowed_subjbases_arr: ' + str(allowed_subjbases_arr) + ' ' + str(type(allowed_subjbases_arr)))
+                    # allowed_subjbase_pk_arr: [123] <class 'list'>
+
+                len_allowed_subjbases_arr = len(allowed_subjbases_arr)
+
+    # - create lvlbase_clause
+                lvlbase_clause = None
+                if sel_lvlbase_pk == -9:
+                    pass
+                elif len_allowed_subjbases_arr == 0 and req_usr.role == c.ROLE_016_CORR:
+                    # when corrector: must have allowd_subjects, 'all' is not allowed
+                    pass
+                else:
+                    # - when not corrector: show allowed subjects or all subjects when allowed_subjbases_arr is empty
+                    lvlbase_clause = ''.join(("lvl.base_id = ", str(sel_lvlbase_pk), "::INT"))
+
+                if lvlbase_clause:
+                    levelbases_clause_arr.append(lvlbase_clause)
+
+    # - join lvlbase_clause and subjbase_clause
+
+
+    # +++ end of loop through levels
+        if levelbases_clause_arr:
+            sql_levelbases_clause = ''.join(('(', ' OR '.join(levelbases_clause_arr), ')'))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    if logging_on:
+        logger.debug('    sql_levelbases_clause: ' + str(sql_levelbases_clause))
+
+    return sql_levelbases_clause
+
+# - end of get_sql_levelbases_clause
+
+
+"""
+
+def get_sql_schoolbase_clause(req_usr, sel_examyear_instance, allowed_sections_dict, selected_pk_dict):
+    # PR2022-12-15
+    # - get selected school
+    # - when role = school: selected school = req_usr.schoolbase
+    # - otherwise: get selected school from settings
+    # - if None: don't return records
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_sql_schoolbase_clause ----- ')
+        if logging_on:
+            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+
+    sel_schoolbase_pk = None
+    if req_usr.role == c.ROLE_008_SCHOOL:
+        if req_usr.schoolbase:
+            sel_schoolbase_pk = req_usr.schoolbase_id
+    else:
+        # - check if schoolbase is allowed
+        # when allowed_sections_dict is empty: selected school is always allowed
+        saved_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+        if logging_on:
+            logger.debug('    saved_schoolbase_pk: ' + str(saved_schoolbase_pk))
+        if saved_schoolbase_pk:
+            if allowed_sections_dict:
+                if str(saved_schoolbase_pk) in allowed_sections_dict or '-9' in allowed_sections_dict:
+                    sel_schoolbase_pk = saved_schoolbase_pk
+            else:
+                sel_schoolbase_pk = saved_schoolbase_pk
+
+    if logging_on:
+        logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+
+    sel_school = None
+    if sel_examyear_instance and sel_schoolbase_pk:
+        sel_school = sch_mod.School.objects.get_or_none(
+            examyear=sel_examyear_instance,
+            base_id=sel_schoolbase_pk
+        )
+
+    schoolbase_clause = ''.join(("(school.base_id = ", str(sel_schoolbase_pk), "::INT)")) if sel_school else "(FALSE)"
+
+    if logging_on:
+        logger.debug('    schoolbase_clause: ' + str(schoolbase_clause))
+    return sel_school, sel_schoolbase_pk, schoolbase_clause
+# - end of get_sql_schoolbase_clause
+
+
+def get_sql_depbase_clause(sel_examyear_instance, sel_school, allowed_depbases_dict, selected_pk_dict):
+    # PR2022-12-15 PR2023-01-06
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_sql_depbase_clause ----- ')
+
+    sel_depbase_pk = None
+
+# - get allowed_depbases of selected school
+    # sel_school_allowed_depbases_arr must always have at least 1 value
+    sel_school_allowed_depbases_arr = list(
+        map(int, sel_school.depbases.split(';'))) if sel_school.depbases else []
+    if logging_on:
+        logger.debug('    sel_school_allowed_depbases_arr: ' + str(sel_school_allowed_depbases_arr) + ' ' + str(
+            type(sel_school_allowed_depbases_arr)))
+        # sel_school_allowed_depbases_arr: [1] <class 'list'>
+
+    # - use depbase of selected school when school has only 1 department (is always allowed when school has only 1 dep)
+    if len(sel_school_allowed_depbases_arr) == 1:
+        sel_depbase_pk = sel_school_allowed_depbases_arr[0]
+    else:
+
+# - get saved_depbase_pk of req_usr
+        saved_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
+        if logging_on:
+            logger.debug('    saved_depbase_pk: ' + str(saved_depbase_pk) + ' ' + str(type(saved_depbase_pk)))
+
+        if saved_depbase_pk:
+            if saved_depbase_pk in sel_school_allowed_depbases_arr:
+                if allowed_depbases_dict and  str(saved_depbase_pk) in allowed_depbases_dict or not allowed_depbases_dict:
+                    sel_depbase_pk = saved_depbase_pk
+
+    if logging_on:
+        logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk) + ' ' + str(type(sel_depbase_pk)))
+
+    sel_department_instance = sch_mod.Department.objects.get_or_none(
+        examyear=sel_examyear_instance,
+        base_id=sel_depbase_pk
+    )
+
+    depbase_clause = ''.join(("(dep.base_id = ", str(sel_depbase_pk), "::INT)")) if sel_department_instance else "(FALSE)"
+
+    if logging_on:
+        logger.debug('    depbase_clause: ' + str(depbase_clause))
+
+    return sel_department_instance, sel_depbase_pk, depbase_clause
+# - end of get_sql_depbase_clause
+
+
+
+def get_permit_crud(page, request):
+    # --- get crud permit for page # PR2022-08-07
+    logging_on = False  # s.LOGGING_ON
+
+    if logging_on:
+        logger.debug(' ----- get_permit_crud ----- ')
+
+    has_permit = False
+    if request.user and request.user.country and request.user.schoolbase:
+        permit_list = request.user.permit_list(page)
+        if permit_list:
+            has_permit = 'permit_crud' in permit_list
+
+        if logging_on:
+            logger.debug('permit_list: ' + str(permit_list))
+            logger.debug('has_permit: ' + str(has_permit))
+
+    return has_permit
+# - end of get_permit_crud
+
+
+def check_schoolbase_allowed(schoolbase_instance, request):
+    # - check if requsr_schoolbase is in allowed_sections, set None if not found PR2022-0=12-05
+    schoolbase_is_allowed = False
+    if schoolbase_instance:
+        usergroups_arrNIU, allowed_sections_dict, allowed_clusters_arrNIU = get_request_userallowed(request)
+        if allowed_sections_dict:
+            requsr_schoolbase_pk_str = str(schoolbase_instance.pk)
+            # schoolbase is also allowed when 'all' (-9) in allowed_sections_dict
+            if requsr_schoolbase_pk_str in allowed_sections_dict or '-9' in allowed_sections_dict:
+                schoolbase_is_allowed = True
+        else:
+            # schoolbase is also allowed when allowed_sections_dict is empty
+            schoolbase_is_allowed = True
+    return schoolbase_is_allowed
+
+
+def get_request_userallowed(request):  # PR2022-12-04
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('---  get_request_userallowed  ------- ')
+
+# - get selected examyear
+    sel_examyear, examyear_save_NIU, multiple_examyears_exist = af.get_sel_examyear_with_default(request)
+
+    allowed_sections_dict, usergroups_arr, allowed_clusters_arr = get_requsr_usergroups_allowedsections_allowedclusters(request, sel_examyear)
+
+    if logging_on:
+        logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+
+    return usergroups_arr, allowed_sections_dict, allowed_clusters_arr
+
+
+def get_requsr_allowed_lvlbases_dict(allowed_depbase_dict, sel_lvlbase_pk):
+    # PR2022-12-10 PR2023-01-09
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ---  get_requsr_allowed_lvlbases_dict  ------- ')
+        logger.debug('    allowed_depbase_dict:      ' + str(allowed_depbase_dict))
+        logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+
+    allowed_lvlbase_dict = {}
+    if allowed_depbase_dict and sel_lvlbase_pk:
+        sel_lvlbase_pk_str = str(sel_lvlbase_pk)
+        if sel_lvlbase_pk_str in allowed_depbase_dict:
+            allowed_lvlbase_dict = allowed_depbase_dict.get(sel_lvlbase_pk_str) or {}
+
+    if logging_on:
+        logger.debug('    allowed_lvlbase_dict: ' + str(allowed_lvlbase_dict))
+
+
+    return allowed_lvlbase_dict
+# - end of get_requsr_allowed_lvlbases_dict
+
+
+def get_requsr_usergroups_allowedsections_allowedclusters (request, sel_examyear):  # PR2022-12-11 PR2023-01-07
+    # function gets setting in first row that matches the filter
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('---  get_requsr_usergroups_allowedsections_allowedclusters  ------- ')
+        logger.debug('    request.user:      ' + str(request.user))
+        logger.debug('    sel_examyear:      ' + str(sel_examyear))
+
+    #  json.dumps converts a dict to a json object
+    #  json.loads retrieves a dict (or other type) from a json string
+    #  json.load deserialize file
+
+    allowed_sections_dict = {}
+    usergroups_arr = []
+    allowed_clusters_arr = []
+    try:
+        if request.user and sel_examyear:
+            userallowed = acc_mod.UserAllowed.objects.filter(
+                user=request.user,
+                examyear=sel_examyear,
+            ).order_by('id').first()
+
+            if userallowed:
+                allowed_sections_str = getattr(userallowed, 'allowed_sections')
+                if allowed_sections_str:
+                    allowed_sections_dict = json.loads(allowed_sections_str)
+
+                usergroups_str = getattr(userallowed, 'usergroups')
+                if usergroups_str:
+                    usergroups_arr = json.loads(usergroups_str)
+
+                allowed_clusters_str = getattr(userallowed, 'allowed_clusters')
+                if allowed_clusters_str:
+                    allowed_clusters_arr = json.loads(allowed_clusters_str)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+    return allowed_sections_dict, usergroups_arr, allowed_clusters_arr
+# - end of get_requsr_usergroups_allowedsections_allowedclusters
+
+
+def set_userallowed_dict(user_pk, examyear_pk, usergroups_arr, allowed_clusters_arr, allowed_sections_dict):  # PR2022-12-02
+    # function saves setting in first row that matches the filter, adds new row when not found
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('---  set_userallowed_dict  ------- ')
+        logger.debug('    user_pk:      ' + str(user_pk))
+        logger.debug('    usergroups_arr:      ' + str(usergroups_arr))
+        logger.debug('    llowed_sections_dict: ' + str(allowed_sections_dict))
+
+    #  json.dumps converts a dict to a json object
+    #  json.loads retrieves a dict (or other type) from a json object
+
+    try:
+        #PR2021-07-05 debug: is_authenticated added to prevent error: 'AnonymousUser' object is not iterable
+        if user_pk and examyear_pk:
+            allowed_sections_str = json.dumps(allowed_sections_dict) if allowed_sections_dict else None
+            usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
+            allowed_clusters_str = json.dumps(allowed_clusters_arr) if allowed_clusters_arr else None
+
+            row = acc_mod.UserAllowed.objects.filter(
+                user_id=user_pk,
+                examyear_id=examyear_pk
+            ).order_by('id').first()
+
+            if row:
+                setattr(row, 'usergroups', usergroups_str)
+                setattr(row, 'allowed_clusters', allowed_clusters_str)
+                setattr(row, 'allowed_sections', allowed_sections_str)
+
+            else:
+                # don't add row when setting has no value
+                # note: empty setting_dict {} = False, empty json "{}" = True, therefore check if setting_dict is empty
+
+                row = acc_mod.UserAllowed(
+                    user_id=user_pk,
+                    examyear_id=examyear_pk,
+                    usergroups=usergroups_str,
+                    allowed_clusters=allowed_clusters_str,
+                    allowed_sections=allowed_sections_str
+                )
+            row.save()
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+# - end of set_userallowed_dict
+
+
+
+############## get selected ###############################
+
+############## moved frnm downloads 2022-12-18 ###########################
+
+# ===== PAGE SETTINGS =======================
+def get_settings_page(request, request_item_setting, page, setting_dict):
+    # PR2021-06-22 PR2022-02-25 PR2022-12-11
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_page -------')
+
+# settings 'sel_btn' can be changed by calling download, also changes by b_UploadSettings
+# settings 'cols_hidden' cannot be changed by calling downloads function
+# value of key 'sel_page' is set and retrieved in get_headerbar_param
+
+    if logging_on:
+        logger.debug('++++++++++++  PAGE SETTINGS  ++++++++++++++++++++++++')
+        logger.debug('..... page: ' + str(page))
+
+        # request_item_setting: {'page': 'page_exams', 'page_exams': {'sel_btn': 'btn_ntermen'}}
+
+    # get page settings from usersetting
+    if page:
+        # get new page settings from request_item_setting
+        reqitem_page_dict = request_item_setting.get(page)
+        reqitem_sel_btn, saved_sel_btn = None, None
+        if reqitem_page_dict:
+            reqitem_sel_btn = reqitem_page_dict.get('sel_btn')
+        # get saved page settings from usersetting
+        saved_page_dict = acc_prm.get_usersetting_dict(page, request)
+        if saved_page_dict is None:
+            saved_page_dict = {}
+        else:
+    # - get saved_sel_btn from  usersetting
+            saved_sel_btn = saved_page_dict.get(c.KEY_SEL_BTN)
+
+        # page_dict: {'sel_btn': 'btn_studsubj', 'cols_hidden': {'published': ['examperiod'], 'studsubj': ['examnumber']}}
+        if logging_on:
+            logger.debug('..... reqitem_page_dict: ' + str(reqitem_page_dict))
+            logger.debug('..... reqitem_sel_btn: ' + str(reqitem_sel_btn))
+            logger.debug('..... saved_page_dict: ' + str(saved_page_dict))
+            logger.debug('..... saved_sel_btn: ' + str(saved_sel_btn))
+            # saved_page_dict: {'sel_btn': 'btn_ntermen'}
+
+    # - replace by reqitem_sel_btn, if any
+        if reqitem_sel_btn and reqitem_sel_btn != saved_sel_btn:
+            saved_sel_btn = reqitem_sel_btn
+            saved_page_dict[c.KEY_SEL_BTN] = reqitem_sel_btn
+
+    # - save reqitem_sel_btn, if changed
+            set_usersetting_dict(page, saved_page_dict, request)
+
+        if logging_on:
+            logger.debug('..... saved_sel_btn: ' + str(saved_sel_btn))
+
+# - add info to setting_dict, will be sent back to client
+        if saved_sel_btn:
+            setting_dict[c.KEY_SEL_BTN] = saved_sel_btn
+
+# - add list of hidden columns PR2021-07-07 - cols_hidden cannot be changed by calling downloads function
+        cols_hidden = saved_page_dict.get(c.KEY_COLS_HIDDEN)
+        if cols_hidden:
+            setting_dict[c.KEY_COLS_HIDDEN] = cols_hidden
+# - end of get_settings_page
+
+
+# ===== COUNTRY =======================
+def get_settings_country(request, permit_dict):
+    # - get country from req_usr PR2022-12-10
+    if request.user.country:
+        permit_dict['requsr_country_pk'] = request.user.country.pk
+        permit_dict['requsr_country'] = request.user.country.name
+        # set locked=True if country is locked or country is None
+        permit_dict['requsr_country_locked'] = request.user.country.locked
+# - end of get_settings_country
+
+
+# ===== EXAMYEAR =======================
+def get_settings_examyear(request, request_item_setting, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
+    # PR2022-12-10 PR2023-01-24
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_examyear -------')
+
+# - get selected examyear:
+    # - check if there is a new examyear_pk in request_setting, check if request_examyear exists
+    # - if None: get saved_examyear_pk from Usersetting, check if saved_examyear exists
+    # - if None: get today's examyear
+    # - if None: get latest examyear_int of table
+    # this comes before get permit_list, rest of examyear is done further in this def
+    sel_examyear_instance, sel_examyear_tobesaved, multiple_examyears_exist = \
+        af.get_sel_examyear_with_default(
+            request=request,
+            request_item_examyear_pk=request_item_setting.get(c.KEY_SEL_EXAMYEAR_PK)
+        )
+
+    # every user can change examyear, may_select_examyear is False when there is only 1 allowed examyear PR2023-01-08
+    permit_dict['may_select_examyear'] = multiple_examyears_exist
+
+    if logging_on:
+        logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+
+    reset_examperiod = False
+
+# - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
+    if sel_examyear_tobesaved:
+        # sel_examyear_instance has always value when selected_pk_dict_has_changed
+        selected_pk_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
+
+        # PR2022-08-23 Roland Guribadi Lauffer: cannot find upload subject btn. Reason: tab was not set to first exam period
+        # to prevent this: reset examperiod to 1st when changing examyear
+        reset_examperiod = True
+
+# - add info to setting_dict, will be sent back to client
+    if sel_examyear_instance:
+        setting_dict[c.KEY_SEL_EXAMYEAR_PK] = sel_examyear_instance.pk
+        # sel_country_is_sxm is only used in page studsubj show_thumbrule = (setting_dict.sel_country_is_sxm || setting_dict.sel_depbase_code !== "Vsbo");
+        setting_dict['sel_country_is_sxm'] = (sel_examyear_instance.country.abbrev == 'Sxm')
+
+        setting_dict['sel_examyear_code'] = sel_examyear_instance.code if sel_examyear_instance.code else None
+        setting_dict['sel_examyear_thumbrule_allowed'] = sel_examyear_instance.thumbrule_allowed
+        if not sel_examyear_instance.published:
+            permit_dict['examyear_not_published'] = True
+
+# - add message when school is not published PR2021-12-04
+            # not when role is admin PR2022-08-09
+            if request.user.role < c.ROLE_064_ADMIN:
+                msg_list.append({'msg_html': [
+                    '<br>'.join((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
+                                                     {'admin': _('The Division of Examinations'), 'exyr': str(sel_examyear_instance.code)}),
+                                 str(_('You cannot enter data.'))))
+                ], 'class': 'border_bg_warning'})
+
+        if sel_examyear_instance.locked:
+            permit_dict['examyear_locked'] = True
+
+# - add message when examyear is locked PR22021-12-04
+            # not when page_examyear PR2022-08-09
+            if request.user.role != c.ROLE_064_ADMIN or page != 'page_examyear':
+                msg_list.append({'msg_html': [
+                    '<br>'.join((str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
+                                 str(_('You cannot make changes.'))))
+                ], 'class': 'border_bg_warning'})
+
+        if sel_examyear_instance.no_practexam:
+            setting_dict['no_practexam'] = sel_examyear_instance.no_practexam
+        if sel_examyear_instance.sr_allowed:
+            setting_dict['sr_allowed'] = sel_examyear_instance.sr_allowed
+        if sel_examyear_instance.no_centralexam:
+            setting_dict['no_centralexam'] = sel_examyear_instance.no_centralexam
+        if sel_examyear_instance.no_thirdperiod:
+            setting_dict['no_thirdperiod'] = sel_examyear_instance.no_thirdperiod
+
+# - add message when examyear is different from this examyear
+        message = message_diff_exyr(request, sel_examyear_instance)
+        if message:
+            msg_list.append(message)
+
+    return sel_examyear_instance, sel_examyear_tobesaved, reset_examperiod
+# - end of get_settings_examyear
+
+
+# ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-10
+def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance, allowed_sections_dict, page,
+                            permit_dict, setting_dict, selected_pk_dict, msg_list):
+    # PR2022-12-10
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_schoolbase -------')
+
+    # - get schoolbase from settings / request when role is corr, insp, admin or system, from req_usr when role is school
+    # req_usr.schoolbase cannot be changed
+    # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}.
+    # Note: key 'selected_pk' is not used in request_item, format is: datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
+
+# - get requsr_schoolbase
+    requsr_schoolbase = request.user.schoolbase
+    permit_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
+    permit_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
+
+# - get sel_schoolbase_instance
+    # - when role = school: sel_schoolbase = requsr_schoolbase
+    # - else[ check if request_item_schoolbase_pk exists: check if is allowed
+    # - if requestitem_saved schoolbase is None or not allowed: check if saved schoolbase exists and is allowed
+    # - if saved schoolbase is None or not allowed: use requsr_schoolbase
+
+    sel_schoolbase_instance, sel_schoolbase_tobesaved = \
+        get_sel_schoolbase_instance(
+            request=request,
+            request_item_schoolbase_pk=request_item_setting.get(c.KEY_SEL_SCHOOLBASE_PK),
+            allowed_sections_dict=allowed_sections_dict
+        )
+    if sel_schoolbase_tobesaved:
+        # when sel_schoolbase_tobesaved=True, there is always a sel_schoolbase_instance
+        selected_pk_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
+
+    if sel_schoolbase_instance:
+        setting_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
+        setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
+
+    # requsr_same_school = True when requsr.role = school and selected school is same as requsr_school PR2021-04-27
+    # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
+    requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and
+                          sel_schoolbase_instance and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
+    permit_dict['requsr_same_school'] = requsr_same_school
+    # this one is used in create_studentsubject_rows and create_grade_rows, to block view of non-submitted subjects and grades
+    setting_dict['requsr_same_school'] = requsr_same_school
+
+# ===== SCHOOL =======================
+    # - only roles corr, insp, admin and system may select other schools
+    # these are use in b_UpdateHeaderbar
+    may_select_school = (request.user.role > c.ROLE_008_SCHOOL)
+    permit_dict['may_select_school'] = may_select_school
+
+    if page in ('page_examyear', 'page_user'):
+        display_school = (request.user.role <= c.ROLE_008_SCHOOL)
+    else:
+        display_school = True
+    permit_dict['display_school'] = display_school
+
+# - get school from sel_schoolbase and sel_examyear_instance
+    sel_school_instance = sch_mod.School.objects.get_or_none(
+        base=sel_schoolbase_instance,
+        examyear=sel_examyear_instance)
+    if logging_on:
+        logger.debug('    sel_school_instance: ' + str(sel_school_instance) + ' pk: ' + str(sel_school_instance.pk))
+
+    if sel_school_instance:
+        setting_dict['sel_school_pk'] = sel_school_instance.pk
+        setting_dict['sel_school_name'] = sel_school_instance.name
+        setting_dict['sel_school_abbrev'] = sel_school_instance.abbrev
+        setting_dict['sel_school_depbases'] = sel_school_instance.depbases
+
+        if sel_school_instance.isdayschool:
+            setting_dict['sel_school_isdayschool'] = True
+        if sel_school_instance.iseveningschool:
+            setting_dict['sel_school_iseveningschool'] = True
+        if sel_school_instance.islexschool:
+            setting_dict['sel_school_islexschool'] = True
+
+# - add message when school is locked PR2021-12-04
+        if sel_school_instance.locked:
+            setting_dict['sel_school_locked'] = True
+            msg_list.append({'msg_html': [
+                '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {
+                    'exyr': str(sel_school_instance.examyear.code)}),
+                             str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
+
+    return sel_schoolbase_instance, sel_schoolbase_tobesaved, sel_school_instance
+# - end of get_settings_schoolbase
+
+
+# ===== DEPARTMENTBASE ======================= PR2022-12-10
+def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
+                                allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
+    # PR2022-12-10  PR2023-01-08
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_departmentbase -------')
+
+    # every user can change depbase, if in .sel_school_depbases and in user_allowed if existst
+# - get sel_depbase_instance
+    #   - check if request_item_depbase_pk is allowed and exists
+    #   - if not exists and not 'all_allowed': check if saved depbase is allowed and exists
+    #   - if not exists and not 'all_allowed': get first available depbase that is allowed
+
+    request_item_depbase_pk = request_item_setting.get(c.KEY_SEL_DEPBASE_PK)
+
+    sel_depbase_instance, sel_depbase_tobesaved, allowed_schoolbase_dict, allowed_depbases_arr = \
+        get_sel_depbase_instance(
+                sel_school_instance=sel_school_instance,
+                page=page,
+                request=request,
+                request_item_depbase_pk=request_item_depbase_pk,
+                allowed_schoolbase_dict=allowed_schoolbase_dict
+            )
+    if logging_on:
+        logger.debug('    sel_depbase_instance: ' + str(sel_depbase_instance))
+        logger.debug('    sel_depbase_tobesaved: ' + str(sel_depbase_tobesaved))
+        logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+        logger.debug('    allowed_depbases_arr: ' + str(allowed_depbases_arr))
+
+    # every user can change examyear, may_select_examyear is False when there is only 1 allowed examyear PR2023-01-08
+    # permit_dict['may_select_department'] = True
+
+
+    permit_dict['allowed_depbases'] = allowed_depbases_arr
+    allowed_depbases_len = len(allowed_depbases_arr)
+    # Note: set may_select_department also in ExamyearListView
+    # in page exam: ETE may_select_department
+    may_select_department = False
+    if page == 'page_examyear':
+        pass
+    elif page == 'page_exams' and request.user.role >= c.ROLE_064_ADMIN:
+        may_select_department = True
+    else:
+        may_select_department = allowed_depbases_len > 1
+
+    permit_dict['may_select_department'] = may_select_department
+    permit_dict['display_department'] = (page not in ('page_examyear', 'page_user'))
+
+    # NIU, I think PR2022-12-11
+    # get_sel_depbase_instance has already filter requser_allowed_databases
+    # now remove depbases from requser_allowed_databases when not in allowed_databases
+    # requsr_allowed_depbases = permit_dict.get('requsr_allowed_depbases')
+    # if allowed_depbases_arr and requsr_allowed_depbases:
+    #     new_arr = []
+    #     for item in requsr_allowed_depbases:
+    #         if item in allowed_depbases_arr:
+    #             new_arr.append(item)
+    #     if new_arr:
+    #         permit_dict['requsr_allowed_depbases'] = new_arr
+    #     else:
+    #         permit_dict.pop('requsr_allowed_depbases')
+
+    # if logging_on:
+    #     logger.debug('    allowed_depbases_arr: ' + str(allowed_depbases_arr))
+    #     logger.debug('    may_select_department: ' + str(may_select_department))
+    #     logger.debug('    permit_dict[display_department]: ' + str(permit_dict['display_department']))
+
+# - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
+    if sel_depbase_tobesaved:
+        # sel_depbase_instance has always value when sel_depbase_tobesaved = True
+        selected_pk_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
+
+# - add info to setting_dict, will be sent back to client
+    sel_department_instance = None
+    if sel_depbase_instance:
+        setting_dict[c.KEY_SEL_DEPBASE_PK] = sel_depbase_instance.pk
+        setting_dict['sel_depbase_code'] = sel_depbase_instance.code if sel_depbase_instance.code else None
+
+        sel_department_instance = sch_mod.Department.objects.get_or_none(base=sel_depbase_instance,
+                                                                         examyear=sel_examyear_instance)
+        if sel_department_instance:
+            setting_dict['sel_department_pk'] = sel_department_instance.pk
+            # setting_dict['sel_department_abbrev'] = sel_department_instance.abbrev
+            # setting_dict['sel_department_name'] = sel_department_instance.name
+            setting_dict['sel_dep_level_req'] = sel_department_instance.level_req
+            setting_dict['sel_dep_has_profiel'] = sel_department_instance.has_profiel
+            # setting_dict['sel_dep_sector_req'] = sel_department_instance.sector_req
+
+    return sel_depbase_instance, sel_depbase_tobesaved, sel_department_instance
+# - end of get_settings_departmentbase
+
+
+# ===== LEVELBASE =======================
+def get_settings_levelbase(request, request_item_setting, sel_examyear_instance, sel_department_instance,
+                                allowed_depbase_dict, page, permit_dict, setting_dict, selected_pk_dict):
+    # PR2022-12-11 PR2023-01-11
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('===== LEVELBASE ======================= ')
+        logger.debug(' ------- get_settings_levelbase -------')
+        logger.debug('    request_item_setting: ' + str(request_item_setting))
+
+    # every user can change lvlbase, if in sel_department_lvlbases and in user allowed_lvlbases
+    # only called by DatalistDownloadView.download_setting
+
+# - get sel_lvlbase_instance
+    request_item_lvlbase_pk = request_item_setting.get(c.KEY_SEL_LVLBASE_PK)
+    if logging_on:
+        logger.debug('    request_item_lvlbase_pk: ' + str(request_item_lvlbase_pk) + ' ' + str(type(request_item_lvlbase_pk)))
+
+    sel_lvlbase_instance, sel_lvlbase_tobesaved, allowed_lvlbases_arr = \
+        get_sel_lvlbase_instance(
+                sel_department=sel_department_instance,
+                request=request,
+                request_item_lvlbase_pk=request_item_lvlbase_pk,
+                allowed_depbase_dict=allowed_depbase_dict
+            )
+    if logging_on:
+        logger.debug('    sel_lvlbase_instance: ' + str(sel_lvlbase_instance))
+        logger.debug('    allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
+
+# - update permit_dict
+    permit_dict['allowed_lvlbases'] = allowed_lvlbases_arr
+    permit_dict['may_select_level'] = len(allowed_lvlbases_arr) > 1
+
+# - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
+    if sel_lvlbase_tobesaved:
+        # save lvlbase_pk when sel_lvlbase_instance exists
+        if sel_lvlbase_instance:
+            selected_pk_dict[c.KEY_SEL_LVLBASE_PK] = sel_lvlbase_instance.pk
+        else:
+            # romeove key when 'all' is selected
+            if selected_pk_dict and c.KEY_SEL_LVLBASE_PK in selected_pk_dict:
+                selected_pk_dict.pop(c.KEY_SEL_LVLBASE_PK)
+
+# - add info to setting_dict, will be sent back to client
+    sel_level_instance = None
+    if sel_lvlbase_instance:
+        setting_dict[c.KEY_SEL_LVLBASE_PK] = sel_lvlbase_instance.pk
+        setting_dict['sel_lvlbase_code'] = sel_lvlbase_instance.code if sel_lvlbase_instance.code else None
+
+        sel_level_instance = subj_mod.Level.objects.get_or_none(base=sel_lvlbase_instance,
+                                                                         examyear=sel_examyear_instance)
+        if sel_level_instance:
+            setting_dict['sel_level_pk'] = sel_level_instance.pk
+            setting_dict['sel_level_abbrev'] = sel_level_instance.abbrev
+            setting_dict['sel_level_name'] = sel_level_instance.name
+
+    if logging_on:
+        logger.debug('    setting_dict: ' + str(setting_dict))
+        logger.debug(' ------- end of get_settings_levelbase -------')
+
+    return sel_lvlbase_instance, sel_lvlbase_tobesaved, sel_level_instance
+# - end of get_settings_levelbase
+
+
+# ===== SUBJECTBASE ======================= PR2022-12-11
+def get_settings_subjectbase(allowed_subjbases_arr, permit_dict):
+    # PR2022-12-11
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_subjectbase -------')
+
+    if allowed_subjbases_arr:
+        permit_dict['allowed_subjbases'] = allowed_subjbases_arr
+# - end of get_settings_subjectbase
+
+
+# ===== EXAMPERIOD ======================= PR2022-12-11
+def get_settings_examperiod(request, request_item_setting, setting_dict, selected_pk_dict, reset_examperiod):
+    # every user can change exam period
+    # PR2022-12-11
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_examperiod -------')
+
+# - get selected examperiod from request_item_setting, from Usersetting if request_item is None
+    request_item_examperiod = request_item_setting.get(c.KEY_SEL_EXAMPERIOD)
+    sel_examperiod, sel_examperiod_save = get_sel_examperiod(selected_pk_dict, request_item_examperiod)
+
+    # PR2022-08-23 Roland Guribadi Lauffer: cannot find upload subject btn. Reason: tab was not set to first exam period
+    # to prevent this: reset examperiod to 1st when changing examyear
+    if reset_examperiod:
+        if sel_examperiod != c.EXAMPERIOD_FIRST:
+            sel_examperiod = c.EXAMPERIOD_FIRST
+            sel_examperiod_save = True
+            # not working, must set sel_btn in page_studsubj and page_grade
+
+            set_usersetting_from_uploaddict({'page_studsubj': {'sel_btn': 'btn_ep_01'}}, request)
+            set_usersetting_from_uploaddict({'page_grade': {'sel_btn': 'btn_ep_01'}}, request)
+            # this works
+
+    if logging_on:
+        logger.debug('..... EXAM PERIOD .....')
+        logger.debug('    request_item_examperiod: ' + str(request_item_examperiod))
+        logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+        logger.debug('    sel_examperiod_save: ' + str(sel_examperiod_save))
+
+    # - add info to setting_dict, will be sent back to client
+    setting_dict[c.KEY_SEL_EXAMPERIOD] = sel_examperiod
+
+# - update selected_pk_dict when sel_examperiod_tobesaved, will be saved at end of def
+    sel_examperiod_tobesaved = False
+    if sel_examperiod_save:
+        # sel_depbase_instance has always value when sel_depbase_save = True
+        selected_pk_dict[c.KEY_SEL_EXAMPERIOD] = sel_examperiod
+        sel_examperiod_tobesaved = True
+
+    return sel_examperiod, sel_examperiod_tobesaved
+# - end of get_settings_examperiod
+
+
+def get_sel_examperiod(selected_pk_dict, request_item_examperiod):  # PR2021-09-07 PR2021-12-04
+    logging_on = False  #s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  get_sel_examperiod  -----')
+        logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+        logger.debug('request_item_examperiod: ' + str(request_item_examperiod))
+
+    save_changes = False
+
+# - get saved_examperiod from Usersetting, default EXAMPERIOD_FIRST if not found
+    sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+
+# - check if request_item_examperiod is the same as the saved one
+    # examperiod cannot be None, ignore request_item_examperiod when it is None
+    if request_item_examperiod:
+        if request_item_examperiod != sel_examperiod:
+            sel_examperiod = request_item_examperiod
+            save_changes = True
+
+# - set sel_examperiod to default EXAMPERIOD_FIRST if None
+    if sel_examperiod is None:
+        sel_examperiod = c.EXAMPERIOD_FIRST
+        save_changes = True
+
+    return sel_examperiod, save_changes
+# --- end of get_sel_examperiod
+
+
+# ===== EXAMTYPE ======================= PR2022-12-11
+def get_settings_examtype(request_item_setting, setting_dict, selected_pk_dict, sel_examperiod):
+    # every user can change exam period
+    # PR2022-12-11
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_examtype -------')
+
+    # every user can change examtype
+
+    # - get selected examtype from request_item_setting, from Usersetting if request_item is None
+    request_item_examtype = request_item_setting.get(c.KEY_SEL_EXAMTYPE)
+    sel_examtype, sel_examtype_save = get_sel_examtype(selected_pk_dict, request_item_examtype, sel_examperiod)
+
+    # - add info to setting_dict, will be sent back to client
+    setting_dict[c.KEY_SEL_EXAMTYPE] = sel_examtype
+    setting_dict['sel_examtype_caption'] = c.get_examtype_caption(sel_examtype)
+
+    if logging_on:
+        logger.debug('..... EXAM TYPE .....')
+        logger.debug('    request_item_examtype: ' + str(request_item_examtype))
+        logger.debug('    sel_examtype: ' + str(sel_examtype))
+        logger.debug('    sel_examtype_save: ' + str(sel_examtype_save))
+
+# - update selected_pk_dict when selected_pk_dict_has_changed, will be saved at end of def
+    sel_examptype_tobesaved = False
+    if sel_examtype_save:
+        # sel_depbase_instance has always value when sel_depbase_save = True
+        selected_pk_dict[c.KEY_SEL_EXAMTYPE] = sel_examtype
+        sel_examptype_tobesaved = True
+
+    return sel_examtype, sel_examptype_tobesaved
+# - end of get_settings_examtype
+
+
+def get_sel_examtype(selected_pk_dict, request_item_examtype, sel_examperiod):  # PR2021-09-07  PR2021-12-04  PR2023-02-03
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  get_sel_examtype  -----')
+        logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+        logger.debug('request_item_examtype: ' + str(request_item_examtype))
+
+# - get saved_examtype from Usersetting
+    sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
+
+# - check if request_item_examtype is the same as the saved one
+    save_changes = False
+    # skip if request_item_examtype is None
+    if request_item_examtype:
+        if request_item_examtype != sel_examtype:
+            sel_examtype = request_item_examtype
+            save_changes = True
+
+    if logging_on:
+        logger.debug('sel_examtype: ' + str(sel_examtype))
+
+# - check if examtype is allowed in this saved_examperiod_int
+    # make list of examtypes that are allowed in this examperiod
+    # - also get the default_examtype of this examperiod
+    if sel_examperiod == 1:
+        allowed_examtype_list = ['se', 'sr', 'pe', 'ce']
+        default_examtype = 'se'
+    elif sel_examperiod == 2:
+        allowed_examtype_list = ['ce']
+        default_examtype = 'ce'
+    elif sel_examperiod == 3:
+        allowed_examtype_list = ['ce']
+        default_examtype = 'ce'
+    elif sel_examperiod == 4:
+        allowed_examtype_list = ['se', 'ce']
+        default_examtype = 'se'
+    else:
+        allowed_examtype_list = []
+        default_examtype = None
+
+    if logging_on:
+        logger.debug('allowed_examtype_list: ' + str(allowed_examtype_list))
+
+# - check if saved examtype is allowed in this examperiod, set to default if not, make selected_pk_dict_has_changed = True
+    if sel_examtype:
+        if allowed_examtype_list:
+            if sel_examtype not in allowed_examtype_list:
+                sel_examtype = default_examtype
+                save_changes = True
+        else:
+            sel_examtype = None
+            save_changes = True
+    else:
+        sel_examtype = default_examtype
+        save_changes = True
+
+    if allowed_examtype_list:
+        if sel_examtype not in allowed_examtype_list:
+            sel_examtype = default_examtype
+            save_changes = True
+
+    # - update selected_pk_dict
+    selected_pk_dict[c.KEY_SEL_EXAMTYPE] = sel_examtype
+
+    return sel_examtype, save_changes
+# --- end of get_sel_examtype
+
+
+# ===== AUTH INDEX ======================= PR2022-12-11
+def get_settings_auth_index(usergroups_arr, request_item_setting, setting_dict, selected_pk_dict, sel_examperiod):
+    # PR2022-12-11
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- get_settings_auth_index -------')
+
+# - get all auth index from usergroups_arr
+    auth_index_list = []
+    sel_auth_index = None
+    sel_auth_index_tobesaved = False
+
+    if usergroups_arr:
+        for ug in usergroups_arr:
+            if 'auth' in ug:
+                auth_index_list.append(int(ug[4:]))
+    if logging_on:
+        logger.debug('usergroups_arr: ' + str(usergroups_arr))
+        logger.debug('auth_index_list: ' + str(auth_index_list))
+
+    if auth_index_list:
+        if len(auth_index_list) == 1:
+            # when user has only 1 auth: make it selected
+            sel_auth_index = auth_index_list[0]
+        else:
+            # - get selected auth_index from request_item_setting
+            request_item_auth = request_item_setting.get(c.KEY_SEL_AUTH_INDEX)
+            if logging_on:
+                logger.debug('request_item_auth: ' + str(request_item_auth) + ' ' + str(type(request_item_auth)))
+            # - make it the selected auth if in auth_list
+            if request_item_auth and request_item_auth in auth_index_list:
+                sel_auth_index = request_item_auth
+                if logging_on:
+                    logger.debug('make request_item_auth the selected auth: ' + str(sel_auth_index))
+
+    # - get saved_auth_index from Usersetting - saved_auth_index is string!
+    saved_auth_index = None
+    saved_auth_index_str = selected_pk_dict.get(c.KEY_SEL_AUTH_INDEX)
+    if saved_auth_index_str:
+        saved_auth_index = int(saved_auth_index_str)
+    if logging_on:
+        logger.debug('get saved_auth_index: ' + str(saved_auth_index) + ' ' + str(type(saved_auth_index)))
+        logger.debug('sel_auth_index: ' + str(sel_auth_index) + ' ' + str(type(sel_auth_index)))
+
+    # - make saved_auth_index the selected index if sel_auth_index is None
+    if sel_auth_index is None:
+        if saved_auth_index and saved_auth_index in auth_index_list:
+            sel_auth_index = saved_auth_index
+            if logging_on:
+                logger.debug('make saved_auth_index the selected index: ' + str(sel_auth_index))
+
+    # - get first_auth_index if sel_auth_index is still None
+    if sel_auth_index is None:
+        if auth_index_list:
+            sel_auth_index = auth_index_list[0]
+            if logging_on:
+                logger.debug('get first_auth_index if still None: ' + str(sel_auth_index))
+
+    # - add info to setting_dict, will be sent back to client
+    if sel_auth_index:
+        setting_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
+        setting_dict['sel_auth_function'] = c.USERGROUP_CAPTION.get('auth' + str(sel_auth_index))
+
+    # save sel_auth_index if it is different from saved_auth_index
+    if sel_auth_index != saved_auth_index:
+        selected_pk_dict[c.KEY_SEL_AUTH_INDEX] = sel_auth_index
+        sel_auth_index_tobesaved = True
+
+    if logging_on:
+        logger.debug('sel_auth_index: ' + str(sel_auth_index))
+        logger.debug('sel_auth_index_tobesaved: ' + str(sel_auth_index_tobesaved))
+
+    return sel_auth_index_tobesaved
+# - end of get_settings_auth_index
+
+
+def message_diff_exyr(request, sel_examyear_instance):
+    # PR2020-10-30 PR2022-12-18
+    # check if selected examyear is the same as this examyear,
+    # return warning when examyear is different from this_examyear
+    msg_dict = {}
+    if sel_examyear_instance and sel_examyear_instance.code:
+        examyear_int = sel_examyear_instance.code
+
+        now = timezone.now()
+        this_examyear = now.year
+        if now.month > 7:
+            this_examyear = now.year + 1
+        if examyear_int != this_examyear:
+            # TODO === FIXIT set msg, not for admin in July
+            if request.user.role == c.ROLE_064_ADMIN and now.month == 7:
+                # skip message in July when role = admin, in July ETE is working on the subjectscheme for the next examyear
+                pass
+            else:
+                # PR2018-08-24 debug: in base.html  href="#" is needed,
+                # because bootstrap line 233: a:not([href]):not([tabindex]) overrides navbar-item-warning
+                msg = str(_(
+                    '<b>Please note</b>:<br>The selected exam year %(exyr)s is different from the current exam year %(cur_ey)s.')
+                          % {'exyr': str(examyear_int), 'cur_ey': str(this_examyear)})
+                msg_dict = {'msg_html': [msg], 'class': 'border_bg_warning'}
+    return msg_dict
+
+
+############## end of moved from downloads 2022-12-18 ###########################
+
+def get_selected_examyear_from_usersetting(request, allow_not_published=False):
+    # PR2021-09-08 PR2022-02-26 PR2022-04-16 PR2022-08-04
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
+    # this function gets sel_examyear, from req_usr and usersetting
+    # used in user_upload, userallowed.uplaod, publish orderlist and upload dnt, where no selected school or dep is needed
+    # checks if country is locked and if examyear is missing, not published or locked
+
+    req_usr = request.user
+    sel_examyear = None
+    msg_list = []
+
+# ==== COUNTRY ========================
+# - get country from req_usr
+    if req_usr.country:
+        requsr_country = req_usr.country
+        if requsr_country.locked:
+            msg_list.append(str(_('This country is locked.')))
+        else:
+            selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+            if logging_on:
+                logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+
+# ===== EXAMYEAR =======================
+    # - get selected examyear from Usersetting
+            sel_examyear_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=sel_examyear_pk,
+                country=requsr_country
+            )
+            if logging_on:
+                logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
+                logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+
+    # - add info to msg_list, will be sent back to client
+            message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published)
+
+    may_edit = not msg_list
+    if not may_edit:
+        sel_examyear = None
+
+    if logging_on:
+        logger.debug('msg_list: ' + str(msg_list))
+        logger.debug('may_edit: ' + str(may_edit))
+
+    return sel_examyear, may_edit, msg_list
+# - end of get_selected_examyear_from_usersetting
+
+
+def get_selected_examyear_from_usersetting_short(request):  #  PR2022-12-11
+    sel_examyear_instance = None
+    selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+    if selected_pk_dict:
+        sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(
+            pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+            country=request.user.country
+        )
+    return sel_examyear_instance
+
+
+def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08 PR2022-12-11
+    # - get selected examyear.code and examperiod from usersettings, only examyear from request.user.country
+    # used in ExamyearUploadView, OrderlistDownloadView, ExamDownloadExamJsonView
+    # note: examyear.code is integer '2021'
+    sel_examyear, sel_examperiod = None, None
+    req_usr = request.user
+    if req_usr:
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_pk_dict:
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=request.user.country
+            )
+
+        sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+
+    return sel_examyear, sel_examperiod
+
+
+def get_selected_examyear_examperiod_dep_school_from_usersetting(request):  # PR2022-01-31
+    # - get selected examyear and department from usersettings, only examyear from request.user.country
+    # used in ExamyearUploadView, OrderlistDownloadView
+    # note: examyear.code is integer '2021'
+    sel_examyear, sel_department, sel_school, sel_examperiod = None, None, None, None
+    if request.user and request.user.country:
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_pk_dict:
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=request.user.country
+            )
+            sel_department = sch_mod.Department.objects.get_or_none(
+                base_id=selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK),
+                examyear=sel_examyear
+            )
+            sel_school = sch_mod.School.objects.get_or_none(
+                base_id=selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK),
+                examyear=sel_examyear
+            )
+            sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+
+    return sel_examyear, sel_department, sel_school, sel_examperiod
+# - end of get_selected_examyear_examperiod_dep_school_from_usersetting
+
+
+def get_selected_examyear_scheme_pk_from_usersetting(request):  # PR2021-07-13
+    # - get selected examyear.code and scheme_p from usersettings
+    # used in SchemeDownloadXlsxView
+    # note: examyear.code is integer '2021'
+    sel_examyear, sel_scheme_pk = None, None
+    req_usr = request.user
+    if req_usr:
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_pk_dict:
+            sel_examyear = sch_mod.Examyear.objects.get_or_none(
+                pk=selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK),
+                country=request.user.country
+            )
+
+        sel_scheme_pk = selected_pk_dict.get(c.KEY_SEL_SCHEME_PK)
+
+    return sel_examyear, sel_scheme_pk
+#  end of get_selected_examyear_scheme_pk_from_usersetting
+
+
+def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-20 PR2021-10-06 PR2022-03-08
+    # - get selected examperiod and examtype and sel_subject_pk from usersettings
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_selected_experiod_extype_subject_from_usersetting ----- ')
+
+    sel_examperiod, sel_examtype, sel_subject_pk = None, None, None
+    req_usr = request.user
+    if req_usr:
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if logging_on:
+            logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+
+        if selected_pk_dict:
+            sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+            sel_examtype = selected_pk_dict.get(c.KEY_SEL_EXAMTYPE)
+            sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
+    return sel_examperiod, sel_examtype, sel_subject_pk
+# - end of get_selected_experiod_extype_subject_from_usersetting
+
+
+def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_clause=False, page=None):
+    # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ' )
+        logger.debug(' +++++ get_selected_ey_school_dep_lvl_from_usersetting +++++ ' )
+        logger.debug('    skip_same_school_clause: ' + str(skip_same_school_clause))
+    # this function gets sel_examyear, sel_school, sel_department from req_usr and usersetting
+
+    # checks if user may edit .
+        # may_edit = False when:
+        # - examyear, schoolbase, school, depbase or department is None
+        # - country, examyear or school is locked
+        # - not requsr_same_school,
+        # - not sel_examyear.published,
+        # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
+
+    sel_examyear_instance, sel_school_instance, sel_department_instance, sel_level_instance = None, None, None, None
+
+    def get_sel_examyear_instance():
+        err_list = []
+    # - get selected exam year
+        selected_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
+        sel_examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=selected_pk)
+
+    # - add info to setting_dict, will be sent back to client
+        if sel_examyear_instance:
+
+    # - add message when school is not published PR22021-12-04
+            # not when role is admin PR2022-08-09
+            if not sel_examyear_instance.published:
+                if request.user.role < c.ROLE_064_ADMIN:
+                    err_list.append({'msg_html': [
+                        '<br>'.join((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
+                                         {'admin': _('The Division of Examinations'),
+                                          'exyr': str(sel_examyear_instance.code)}),
+                                     str(_('You cannot enter data.'))))
+                    ], 'class': 'border_bg_warning'})
+
+    # - add message when examyear is locked PR22021-12-04
+            # not when page_examyear PR2022-08-09
+            if request.user.role != c.ROLE_064_ADMIN or page != 'page_examyear':
+                if sel_examyear_instance.locked:
+                    err_list.append({'msg_html': [
+                        '<br>'.join(
+                            (str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
+                             str(_('You cannot make changes.'))))
+                    ], 'class': 'border_bg_warning'})
+        else:
+            err_list.append({'msg_html': [str(_('Exam year is not found.'))], 'class': 'border_bg_invalid'})
+
+        if logging_on:
+            logger.debug( '    sel_examyear_instance: ' + str(sel_examyear_instance) + ' pk: ' + str(sel_examyear_instance.pk))
+            logger.debug('    err_list: ' + str(err_list))
+
+        return sel_examyear_instance, err_list
+# - end of get_sel_examyear_instance
+
+    def get_settings_schoolbase_short(request, sel_examyear_instance, allowed_sections_dict, selected_pk_dict):
+        # PR2022-12-18
+
+        sel_schoolbase_instance = None
+        msg_list = []
+
+        req_usr = request.user
+        requsr_country = req_usr.country
+
+        # - get req_usr.schoolbase if role = school
+        if req_usr.role == c.ROLE_008_SCHOOL:
+            sel_schoolbase_instance = req_usr.schoolbase
+        else:
+
+            # - get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
+            saved_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+
+            # check if saved_schoolbase exists
+            saved_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+                pk=saved_schoolbase_pk,
+                country=requsr_country
+            )
+            if saved_schoolbase:
+
+                # check if saved_schoolbase is in allowed_sections
+                # schoolbase is allowed when allowed_sections_dict is empty or  when 'all schools' (-9) in allowed_sections_dict
+                if not allowed_sections_dict or '-9' in allowed_sections_dict:
+                    saved_schoolbase_is_allowed = True
+                else:
+                    # schoolbase is allowed when request_item_schoolbase in allowed_sections_dict
+                    saved_schoolbase_is_allowed = (str(saved_schoolbase.pk) in allowed_sections_dict)
+                if saved_schoolbase_is_allowed:
+                    sel_schoolbase_instance = saved_schoolbase
+
+        if logging_on:
+            logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
+
+        # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
+        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
+        requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and
+                              sel_schoolbase_instance and request.user.schoolbase and request.user.schoolbase.pk == sel_schoolbase_instance.pk)
+
+        # - get school from sel_schoolbase and sel_examyear_instance
+        sel_school_instance = sch_mod.School.objects.get_or_none(
+            base=sel_schoolbase_instance,
+            examyear=sel_examyear_instance)
+        if logging_on:
+            logger.debug('    sel_school_instance: ' + str(sel_school_instance) + ' pk: ' + str(sel_school_instance.pk))
+
+        # - add message when school is locked PR2021-12-04
+        if sel_school_instance:
+            if sel_school_instance.locked:
+                msg_list.append({'msg_html': [
+                    '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {
+                        'exyr': str(sel_school_instance.examyear.code)}),
+                                 str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
+
+        return sel_school_instance, requsr_same_school, msg_list
+    # - end of get_settings_schoolbase_short
+
+    def get_sel_depbase_instance_short(request, sel_examyear_instance, sel_school_instance,
+                                          allowed_schoolbase_dict, selected_pk_dict):
+        # PR2022-12-19 PR2023-01-08
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ------- get_sel_depbase_instance_short -------')
+
+        sel_department_instance = None
+
+        if request.user and request.user.country:
+            sel_depbase_pk = None
+
+            # +++++ get allowed_depbases_list
+            allowed_depbases_list = []
+
+            # - get list of allowed_depbases of selected school
+            sel_school_allowed_depbases_list = []
+            if sel_school_instance and sel_school_instance.depbases:
+                sel_school_allowed_depbases_list = list(map(int, sel_school_instance.depbases.split(';')))
+
+            # - if there is only 1 allowed_depbase: select that one
+            if len(sel_school_allowed_depbases_list) == 1:
+                sel_depbase_pk = sel_school_allowed_depbases_list[0]
+                if logging_on:
+                    logger.debug('    there is only 1 sel_school_allowed_depbases: ' + str(sel_depbase_pk))
+
+            # - create array of allowed depbases: allowed_depbases_list
+            # - must be in sel_school_allowed_depbases_list
+            # - and in allowed_depbases_dict, unless allowed_depbases_dict is empty
+            for depbase_pk_int in sel_school_allowed_depbases_list:
+                if not allowed_schoolbase_dict or str(depbase_pk_int) in allowed_schoolbase_dict:
+                    allowed_depbases_list.append(depbase_pk_int)
+            if logging_on:
+                logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
+
+            # +++++ get saved depbase
+            # - if sel_depbase_pk is empty :
+            if not sel_depbase_pk:
+                #  - get saved_depbase_pk from Usersetting
+                selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                if selected_dict:
+                    sel_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+                    if sel_depbase_pk and sel_depbase_pk in allowed_depbases_list:
+                        saved_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk)
+                        if logging_on:
+                            logger.debug('    saved_depbase_instance: ' + str(saved_depbase_instance))
+                        if saved_depbase_instance:
+                            sel_depbase_instance = saved_depbase_instance
+
+            # +++++ get sel_department_instance
+            if sel_depbase_pk:
+                sel_department_instance = sch_mod.Department.objects.get_or_none(
+                    base_id=sel_depbase_pk,
+                    examyear=sel_examyear_instance
+                )
+            if logging_on:
+                logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk))
+
+        if logging_on:
+            logger.debug('    sel_department_instance: ' + str(sel_department_instance))
+
+        return sel_department_instance
+    # - end of get_sel_depbase_instance_short
+
+    def get_settings_levelbase_short(request, sel_examyear_instance, sel_department_instance,
+                                        allowed_lvlbases_dict, selected_pk_dict):
+        # PR2022-12-19
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' ------- get_settings_levelbase_short -------')
+
+        sel_level_instance = None
+
+        if request.user and request.user.country:
+
+            # - check if level is required in this department
+            level_is_required = (sel_department_instance and sel_department_instance.level_req)
+            if level_is_required:
+                sel_lvlbase_pk = None
+
+                # - create array of allowed lvlbase_pk of requsr from allowed_lvlbases_dict
+                allowed_lvlbases_arr = []
+                if allowed_lvlbases_dict:
+                    for lvlbase_pk_str in allowed_lvlbases_dict:
+                        allowed_lvlbases_arr.append(int(lvlbase_pk_str))
+                if logging_on:
+                    logger.debug('    allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
+
+                # - get sel_lvlbase_pk if only 1 allowed
+                if len(allowed_lvlbases_arr) == 1:
+                    sel_lvlbase_pk = allowed_lvlbases_arr[0]
+                else:
+
+                    # - if multiple allowed: get saved_lvlbase_pk from Usersetting
+                    saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+
+                    # - don't get saved_depbase when saved_depbase_pk is 'select all'
+                    if saved_lvlbase_pk and saved_lvlbase_pk not in (-1, -9):
+                        # - check if saved_depbase is in allowed_depbases_arr
+                        if saved_lvlbase_pk in allowed_lvlbases_arr:
+                            sel_lvlbase_pk = saved_lvlbase_pk
+
+                if sel_lvlbase_pk:
+                    sel_lvlbase_instance = subj_mod.Levelbase.objects.get_or_none(
+                        pk=sel_lvlbase_pk
+                    )
+
+                    if sel_lvlbase_instance:
+                        sel_level_instance = subj_mod.Level.objects.get_or_none(
+                            base=sel_lvlbase_instance,
+                            examyear=sel_examyear_instance
+                        )
+
+        if logging_on:
+            logger.debug('    sel_level_instance: ' + str(sel_level_instance))
+
+        return sel_level_instance
+    # - end of get_settings_levelbase_short
+
+#######################################
+    msg_list = []
+    req_usr = request.user
+
+    #try:
+    if True:
+        if logging_on:
+            logger.debug('    req_usr: ' + str(req_usr))
+            logger.debug('    req_usr.country: ' + str(req_usr.country))
+
+    # - get country from req_usr
+        if req_usr.country is None:
+            msg_list.append(str(_('User has no country.')))
+        else:
+            requsr_country = req_usr.country
+            if requsr_country.locked:
+                msg_list.append(str(_('This country is locked.')))
+
+            selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+
+            if logging_on:
+                logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
+
+    # - get selected examyear
+            sel_examyear_instance, msg_lst = get_sel_examyear_instance()
+            if msg_lst:
+                msg_list.extend(msg_lst)
+
+            if logging_on:
+                logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
+                logger.debug('msg_list: ' + str(msg_list))
+
+    # - get allowed_sections_dict
+            allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
+            if logging_on:
+                logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+
+    # - get sel_school_instance
+            sel_school_instance, requsr_same_school, msg_lst = \
+                get_settings_schoolbase_short(
+                    request=request,
+                    sel_examyear_instance=sel_examyear_instance,
+                    allowed_sections_dict=allowed_sections_dict,
+                    selected_pk_dict=selected_pk_dict
+                )
+            if msg_lst:
+                msg_list.extend(msg_lst)
+
+            if logging_on:
+                logger.debug('    sel_school_instance: ' + str(sel_school_instance))
+                logger.debug('msg_list: ' + str(msg_list))
+
+    # - get sel_department_instance
+            allowed_schoolbase_dict, allowed_depbases_pk_arr = \
+                acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+                    userallowed_sections_dict=allowed_sections_dict,
+                    sel_schoolbase_pk=sel_school_instance.base_id if sel_school_instance else None
+                )
+
+            if logging_on:
+                logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+
+            sel_department_instance = get_sel_depbase_instance_short(
+                    request=request,
+                    sel_examyear_instance=sel_examyear_instance,
+                    sel_school_instance=sel_school_instance,
+                    allowed_schoolbase_dict=allowed_schoolbase_dict,
+                    selected_pk_dict=selected_pk_dict
+                )
+
+            if logging_on:
+                logger.debug('    sel_department_instance: ' + str(sel_department_instance))
+
+    # - get sel_level_instance
+            allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
+                allowed_schoolbase_dict=allowed_schoolbase_dict,
+                sel_depbase_pk=sel_department_instance.base_id if sel_department_instance else None
+            )
+
+            allowed_lvlbases_dict = get_requsr_allowed_lvlbases_dict(
+                allowed_depbase_dict=allowed_depbase_dict,
+                sel_lvlbase_pk=sel_department_instance.base_id if sel_department_instance else None
+            )
+            if logging_on:
+                logger.debug('    allowed_lvlbases_dict: ' + str(allowed_lvlbases_dict))
+
+            sel_level_instance = get_settings_levelbase_short(
+                    request=request,
+                    sel_examyear_instance=sel_examyear_instance,
+                    sel_department_instance=sel_department_instance,
+                    allowed_lvlbases_dict=allowed_lvlbases_dict,
+                    selected_pk_dict=selected_pk_dict
+                )
+            if logging_on:
+                logger.debug('    sel_level_instance: ' + str(sel_level_instance))
+
+# ===== EXAM PERIOD =======================
+            # NIU
+            # - get saved_examperiod from Usersetting, default EXAMPERIOD_FIRST if not found
+            #sel_examperiod = selected_pk_dict.get(c.KEY_SEL_EXAMPERIOD)
+            # - set sel_examperiod to default EXAMPERIOD_FIRST if None
+            #if sel_examperiod is None:
+            #    sel_examperiod = c.EXAMPERIOD_FIRST
+
+# ===== EXAM TYPE =======================
+            # dont get examtype
+
+    #except Exception as e:
+    #    logger.error(getattr(e, 'message', str(e)))
+    #    msg_list.append({'class': 'border_bg_invalid',
+    #                'msg_html': '<br>'.join((str(_('An error occurred')) + ':', '<i>' + str(e) + '</i>'))
+    #                     })
+
+    may_edit = len(msg_list) == 0
+
+    if logging_on:
+        logger.debug(' >> msg_list: ' + str(msg_list))
+        logger.debug('    may_edit: ' + str(may_edit))
+
+    return sel_examyear_instance, sel_school_instance, sel_department_instance, sel_level_instance, may_edit, msg_list
+# - end of get_selected_ey_school_dep_lvl_from_usersetting
+
+
+def get_sel_schoolbase_instance(request, request_item_schoolbase_pk, allowed_sections_dict):
+    # PR2020-12-25 PR2021-04-23 PR2021-08-12 PR2022-12-10
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('  -----  get_sel_schoolbase_instance  -----')
+        logger.debug('    request_item_schoolbase_pk: ' + str(request_item_schoolbase_pk))
+        logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+
+    # - get schoolbase from req_usr when role = school,
+    #   from request_item_schoolbase_pk or saved settings otherwise
+    #   req_usr.schoolbase cannot be changed
+    #   Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}
+
+    sel_schoolbase_instance = None
+    sel_schoolbase_tobesaved = False
+
+    if request.user and request.user.country:
+        req_usr = request.user
+        requsr_country = req_usr.country
+
+# - get req_usr.schoolbase if role = school
+        may_select_schoolbase = (req_usr.role > c.ROLE_008_SCHOOL)
+        if not may_select_schoolbase:
+            sel_schoolbase_instance = req_usr.schoolbase
+        else:
+
+# - check if there is a new schoolbase_pk in request_item, check if request_item_schoolbase exists
+            if request_item_schoolbase_pk:
+                request_item_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+                    pk=request_item_schoolbase_pk,
+                    country=requsr_country
+                )
+                if request_item_schoolbase:
+
+    # - check if request_item_schoolbase is in allowed_sections
+                # schoolbase is allowed when allowed_sections_dict is empty or when 'all schools' (-9) in allowed_sections_dict
+                    if not allowed_sections_dict or '-9' in allowed_sections_dict:
+                        request_item_schoolbase_is_allowed = True
+                    else:
+                # schoolbase is allowed when request_item_schoolbase in allowed_sections_dict
+                        request_item_schoolbase_is_allowed = (str(request_item_schoolbase.pk) in allowed_sections_dict)
+
+                    if request_item_schoolbase_is_allowed:
+                        sel_schoolbase_instance = request_item_schoolbase
+                        sel_schoolbase_tobesaved = True
+
+# - if sel_schoolbase_instance does not exist:
+#       get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
+            if sel_schoolbase_instance is None:
+                selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                saved_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+
+        # check if saved_schoolbase exists
+                saved_schoolbase = sch_mod.Schoolbase.objects.get_or_none(pk=saved_schoolbase_pk, country=requsr_country)
+                if saved_schoolbase:
+
+        # check if saved_schoolbase is in allowed_sections
+                # schoolbase is allowed when allowed_sections_dict is empty or  when 'all schools' (-9) in allowed_sections_dict
+                    if not allowed_sections_dict or '-9' in allowed_sections_dict:
+                        saved_schoolbase_is_allowed = True
+                    else:
+                # schoolbase is allowed when request_item_schoolbase in allowed_sections_dict
+                        saved_schoolbase_is_allowed = (str(saved_schoolbase.pk) in allowed_sections_dict)
+                    if saved_schoolbase_is_allowed:
+                        sel_schoolbase_instance = saved_schoolbase
+
+    # - if there is no saved nor request schoolbase: get schoolbase of this user
+            if sel_schoolbase_instance is None:
+                sel_schoolbase_instance = req_usr.schoolbase
+                if sel_schoolbase_instance is not None:
+                    sel_schoolbase_tobesaved = True
+    if logging_on:
+        logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
+        logger.debug('    sel_schoolbase_tobesaved: ' + str(sel_schoolbase_tobesaved))
+
+    return sel_schoolbase_instance, sel_schoolbase_tobesaved
+# --- end of get_sel_schoolbase_instance
+
+
+def get_sel_depbase_instance(sel_school_instance, page, request, request_item_depbase_pk, allowed_schoolbase_dict):
+    # PR2020-12-26 PR2021-05-07 PR2021-08-13 PR2022-10-19 PR2022-03-16
+    #  code works ok: it returns
+    #  - combination of allowed_depbases from user and school and
+    #  - request_item_depbase_pk or saved depbase_pk or first allowed depbase_pk
+
+    # PR2022-10-19 TODO
+    # code to switch selected depbase is not perfect yet. To be improved, take in account:
+    # depbase can be changed in 2 ways:
+    # - in the menubar. Then there is no 'all deps' possible, use saved or default if necessary
+    # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
+    # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  get_sel_depbase_instance  -----')
+        logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
+        logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+
+    def get_saved_depbase_instance():
+        saved_depbase_instance = None
+        selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_dict:
+            sel_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+            if sel_depbase_pk:
+                saved_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk)
+        return saved_depbase_instance
+
+    sel_depbase_instance = None
+    sel_depbase_tobesaved = False
+    multiple_depbases_exist = False
+    allowed_depbases_list = []
+
+    if request.user and request.user.country:
+        req_usr = request.user
+
+        # PR2022-10-16 debug: when setting depbase_pk in orderlist, 'Havo' switched back to 'Vsbo when refreshing page.
+        # cause: ETE user had Vsbo school selected, since it doesn't have Havo, it changed dp to Vsbo
+        # solution: skip this check when page = orderlist
+        skip_school_allowed_depbases = (page in ('page_subject', 'page_orderlist'))
+
+# +++++ get allowed_depbases_list
+    # - get list of allowed_depbases of selected school
+        sel_school_allowed_depbases_list = []
+        if sel_school_instance and sel_school_instance.depbases:
+            sel_school_allowed_depbases_list = list(map(int, sel_school_instance.depbases.split(';')))
+        if logging_on:
+            logger.debug('    sel_school_allowed_depbases_list: ' + str(sel_school_allowed_depbases_list))
+
+    # - if there is only 1 allowed_depbase: select that one
+        if len(sel_school_allowed_depbases_list) == 1:
+            sel_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(
+                pk=sel_school_allowed_depbases_list[0],
+            )
+            if logging_on:
+                logger.debug('    there is only 1 sel_school_allowed_depbases: ' + str(sel_depbase_instance))
+
+            # - save if different from saved_examyear_instance
+            if sel_depbase_instance:
+                saved_depbase_instance = get_saved_depbase_instance()
+                if sel_depbase_instance != saved_depbase_instance:
+                    sel_depbase_tobesaved = True
+
+    # - create array of allowed depbases: allowed_depbases_list
+        # - must be in sel_school_allowed_depbases_list
+        # - and in allowed_schoolbase_dict, unless allowed_schoolbase_dict is empty
+        if sel_depbase_instance is None:
+            if allowed_schoolbase_dict:
+                for depbase_pk_int in sel_school_allowed_depbases_list:
+                    if str(depbase_pk_int) in allowed_schoolbase_dict or not allowed_schoolbase_dict:
+                        allowed_depbases_list.append(depbase_pk_int)
+            else:
+                allowed_depbases_list = sel_school_allowed_depbases_list
+
+        if logging_on:
+            logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
+
+# +++++ get request_item_depbase
+    # - check if there is a new depbase_pk in request_item and check if request_item_depbase exists
+        if sel_depbase_instance is None:
+            if request_item_depbase_pk:
+                if request_item_depbase_pk == -1:
+                    # TODO check if this is in use and correct (is 'all' = -1 or -9 ? )
+                    # don't get saved_depbase_pk when request_item_depbase_pk is 'select all'
+                    sel_depbase_instance = None
+                    sel_depbase_tobesaved = True
+                else:
+                    if request_item_depbase_pk in allowed_depbases_list:
+                        request_item_depbase = sch_mod.Departmentbase.objects.get_or_none(
+                            pk=request_item_depbase_pk
+                        )
+                        if request_item_depbase:
+                            sel_depbase_instance = request_item_depbase
+                            sel_depbase_tobesaved = True
+
+        if logging_on:
+            logger.debug('    sel_depbase_instance = request_item_depbase: ' + str(sel_depbase_instance))
+
+# +++++ saved depbase
+    # - if sel_depbase_instance does not exist:
+        #  get saved_depbase_pk from Usersetting, except when request_item_depbase_pk == -1
+        if sel_depbase_instance is None and not sel_depbase_tobesaved:
+            saved_depbase_instance = None
+            selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+            if logging_on:
+                logger.debug('    selected_dict: ' + str(selected_dict))
+
+            if selected_dict:
+                saved_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+                # when saving 'All departments' saved_depbase_pk = -1, change it to None
+                if logging_on:
+                    logger.debug('    saved_depbase_pk: ' + str(saved_depbase_pk))
+
+                if saved_depbase_pk == -1:
+                    # don't get saved_depbase when saved_depbase_pk is 'select all'
+                    pass
+                else:
+    # check if saved_schoolbase exists
+                    saved_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=saved_depbase_pk)
+
+                    if logging_on:
+                        logger.debug('    saved_depbase_instance: ' + str(saved_depbase_instance))
+
+                    if saved_depbase_instance:
+    # check if saved_depbase is in allowed_schoolbase_dict
+                        # PR2023-01-16 debug: skip this check when allowed_schoolbase_dict is empty
+                        if allowed_schoolbase_dict and str(saved_depbase_instance.pk) in allowed_schoolbase_dict or \
+                                not allowed_schoolbase_dict:
+                            sel_depbase_instance = saved_depbase_instance
+
+# +++++ get first available depbase
+    # - get first available depbase when sel_depbase_instance is None, except when select_all_allowed
+
+        if sel_depbase_instance is None:
+            # PR2022-10-17 debug: in page_orderlist dep returns Vsbo instead of 'All deps'
+            # also in page_exams when requsr = admin
+            select_all_allowed = (page == 'page_orderlist') or \
+                                 (page == 'page_exams' and req_usr.role == c.ROLE_064_ADMIN)
+            if not select_all_allowed:
+                if allowed_depbases_list:
+                    allowed_depbases_list.sort()
+                    depbase_pk_int = allowed_depbases_list[0]
+                    depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=depbase_pk_int)
+                    if depbase_instance:
+                        sel_depbase_instance = depbase_instance
+                        sel_depbase_tobesaved = True
+
+    if logging_on:
+        logger.debug('....sel_depbase_instance: ' + str(sel_depbase_instance) + ' ' + str(type(sel_depbase_instance)))
+        logger.debug('....sel_depbase_tobesaved: ' + str(sel_depbase_tobesaved) + ' ' + str(type(sel_depbase_tobesaved)))
+        logger.debug('....allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict) + ' ' + str(type(allowed_schoolbase_dict)))
+        logger.debug('....allowed_depbases_list: ' + str(allowed_depbases_list) + ' ' + str(type(allowed_depbases_list)))
+
+    return sel_depbase_instance, sel_depbase_tobesaved, allowed_schoolbase_dict, allowed_depbases_list
+# --- end of get_sel_depbase_instance
+
+
+def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, allowed_depbase_dict):
+    # PR2022-12-11 PR2023-01-11
+
+    # PR2023-01-11 only called by get_settings_levelbase
+    # ThisCodeIsOK
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  get_sel_lvlbase_instance  -----')
+        logger.debug('    sel_department: ' + str(sel_department))
+        logger.debug('    request_item_lvlbase_pk: ' + str(request_item_lvlbase_pk))
+        logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
+        logger.debug(' ----------')
+
+    sel_lvlbase_instance = None
+    sel_lvlbase_tobesaved = False
+    allowed_lvlbases_arr = []
+
+    if request.user:
+
+    # - check if level is required in this department
+        level_is_required = (sel_department and sel_department.level_req)
+        if level_is_required:
+            if logging_on:
+                logger.debug('    level_is_required: ' + str(level_is_required))
+
+        # - create array of allowed lvlbases integers of requsr from allowed_depbase_dict,
+            # array stays empty when '-9' (all) in allowed_depbase_dict
+            if allowed_depbase_dict:
+                if '-9' not in allowed_depbase_dict:
+                    for lvlbase_pk_str in allowed_depbase_dict:
+                        allowed_lvlbases_arr.append(int(lvlbase_pk_str))
+            if logging_on:
+                logger.debug('    allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
+
+        # - get saved_lvlbase_pk from Usersetting
+            saved_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+            saved_lvlbase_pk = saved_dict.get(c.KEY_SEL_LVLBASE_PK)
+            if logging_on:
+                logger.debug('    saved_lvlbase_pk: ' + str(saved_lvlbase_pk))
+
+        # - check if request_item_lvlbase_pk exists and is allowed
+            sel_lvlbase_pk = None
+            if request_item_lvlbase_pk == -9:
+                sel_lvlbase_pk = request_item_lvlbase_pk
+                sel_lvlbase_tobesaved = sel_lvlbase_pk != saved_lvlbase_pk
+
+            elif request_item_lvlbase_pk:
+                # value -9 (all) is not in allowed_lvlbases_arr, it is filtered out above in this function
+                if (not allowed_lvlbases_arr) or (allowed_lvlbases_arr and request_item_lvlbase_pk in allowed_lvlbases_arr):
+                    sel_lvlbase_pk = request_item_lvlbase_pk
+                    sel_lvlbase_tobesaved = sel_lvlbase_pk != saved_lvlbase_pk
+
+            if logging_on:
+                logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                logger.debug('    sel_lvlbase_tobesaved: ' + str(sel_lvlbase_tobesaved))
+
+    # - if sel_lvlbase_pk is None: get saved_lvlbase_pk, check if is allowed
+            if not sel_lvlbase_pk:
+                if saved_lvlbase_pk == -9:
+                    sel_lvlbase_pk = saved_lvlbase_pk
+                elif saved_lvlbase_pk:
+                    # value -9 (all) is not in allowed_lvlbases_arr, it is filtered out above in this function
+                    if allowed_lvlbases_arr:
+                        if saved_lvlbase_pk in allowed_lvlbases_arr:
+                            sel_lvlbase_pk = saved_lvlbase_pk
+                    else:
+                        sel_lvlbase_pk = saved_lvlbase_pk
+
+     # - if sel_lvlbase_pk is None and there is only 1 allowed lvlbase_pk : get allowed lvlbase_pk
+            if not sel_lvlbase_pk or sel_lvlbase_pk == -9:
+                # value -9 (all) is not in allowed_lvlbases_arr, it is filtered out above in this function
+                if len(allowed_lvlbases_arr) == 1:
+                    sel_lvlbase_pk = allowed_lvlbases_arr[0]
+                    sel_lvlbase_tobesaved = True
+
+    # - get sel_lvlbase_instance from sel_lvlbase_instance
+            if sel_lvlbase_pk and sel_lvlbase_pk != -9:
+                sel_lvlbase_instance = subj_mod.Levelbase.objects.get_or_none(
+                    pk=sel_lvlbase_pk
+                )
+
+    if logging_on:
+        logger.debug('....sel_lvlbase_instance: ' + str(sel_lvlbase_instance))
+        logger.debug('....sel_lvlbase_tobesaved: ' + str(sel_lvlbase_tobesaved))
+        logger.debug('....allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
+
+    return sel_lvlbase_instance, sel_lvlbase_tobesaved, allowed_lvlbases_arr
+# --- end of get_sel_lvlbase_instance
+
+######################################################
+
+
+# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- get_selected_lvlbase_sctbase_from_usersetting ----- ' )
+    # this function gets sel_lvlbase_pk and sel_sctbase_pk from req_usr and usersetting
+    # used in DownloadGradelistDiplomaView (for now)
+    # checks if user may edit .
+
+    req_usr = request.user
+    sel_lvlbase_pk = None
+    sel_sctbase_pk = None
+
+    if req_usr and req_usr.schoolbase:
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_pk_dict:
+            sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+            sel_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+
+    return sel_lvlbase_pk, sel_sctbase_pk
+# - end of get_selected_lvlbase_sctbase_from_usersetting
+
+
+def message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published=False):  # PR2021-12-04 PR2022-08-04
+    if sel_examyear is None:
+        msg_list.append(str(_('There is no exam year selected.')))
+    elif sel_examyear.locked:
+        msg_list.append(str(_('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)}))
+    elif not allow_not_published and not sel_examyear.published:
+        msg_list.extend((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
+                             {'admin': _('The Division of Examinations'), 'exyr': str(sel_examyear.code)}),
+                         str(_('You cannot enter data.'))))
+# - end of message_examyear_missing_notpublished_locked
+
+
+def message_school_missing_locked(sel_school, sel_examyear, msg_list):
+    # PR2021-12-04  PR2022-02-05 PR2022-08-20
+
+    if sel_school is None:
+        msg_list.append(str(_('School not found in this exam year.')))
+    elif sel_school.locked:
+        msg_list.append(str(_('Exam year %(ey_code)s of this school is locked.') % {'ey_code': str(sel_examyear.code)}))
+# - end of message_school_missing_locked
+
+
+
+
+############ allowed sections #########################
+
+"""
+def get_requsr_allowed_depbases_arr(req_usr, sel_examyear, sel_school, skip_school_allowed_depbases):
+    # PR2022-10-18 PR2022-12-09
+
+    # +++ get allowed_depbases - combination of user_allowed_depbases and school_allowed_depbases with skip_school_allowed_depbases
+    # skip school_allowed_depbases when page == 'page_orderlist'
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('')
+        logger.debug(' ----- get_requsr_allowed_depbases_arr -----')
+
+    allowed_depbases_list = []
+
+    def get_user_allowed_depbases_list():
+        allowed_depbases_list = []
+        allowed_sections_dict, usergroups_arr, allowed_clusterbases_arr = get_requsr_usergroups_allowedsections_allowedclusters(request, sel_examyear)
+        # allowed_sections_dict: {'2': {'1': {}}, '16': {'3': {'-9': []}}, '17': {'3': {'-9': [160]}}}
+
+        if allowed_sections_dict and sel_school:
+            sel_schoolbase_pk_str = str(sel_school.base.pk)
+            allowed_depbases_dict = allowed_sections_dict[sel_schoolbase_pk_str]
+            # allowed_depbases_dict: {'3': {'-9': []}}
+
+            if allowed_depbases_dict:
+                for depbase_pk_str in allowed_depbases_dict:
+                    allowed_depbases_list.append(int(depbase_pk_str))
+            # allowed_depbases_list: [3]
+
+        return allowed_depbases_list
+
+    def get_school_allowed_depbases_list():
+        allowed_depbases_list = []
+        if not skip_school_allowed_depbases and sel_school and sel_school.depbases:
+            allowed_depbases_list = list(map(int, sel_school.depbases.split(';')))
+        return allowed_depbases_list
+
+# - get user_allowed_depbases_list from allowed_sections_dict
+    user_allowed_depbases_list = get_user_allowed_depbases_list()
+
+# - get school_allowed_depbases_list, not when skip_school_allowed_depbases
+    school_allowed_depbases_list = get_school_allowed_depbases_list()
+
+# - combine allowed_depbases
+    # if allowed_depbases is empty, all depbases are allowed
+    if user_allowed_depbases_list:
+        if school_allowed_depbases_list:
+            for depbase_pk in user_allowed_depbases_list:
+                if depbase_pk in school_allowed_depbases_list:
+                    allowed_depbases_list.append(depbase_pk)
+        else:
+            allowed_depbases_list = user_allowed_depbases_list
+    else:
+        if school_allowed_depbases_list:
+            allowed_depbases_list = school_allowed_depbases_list
+
+    if logging_on:
+        logger.debug('    user_allowed_depbases_list: ' + str(user_allowed_depbases_list))
+        logger.debug('    school_allowed_depbases_list: ' + str(school_allowed_depbases_list))
+        logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
+
+    return allowed_depbases_list
+# end of get_requsr_allowed_depbases_arr
+
+def get_requsr_allowed_lvlbases_arrNIU(req_usr, sel_examyear, sel_school, sel_department, skip_school_allowed_depbases):
+    # PR2022-12-10
+
+    # +++ get allowed_depbases - combination of user_allowed_depbases and school_allowed_depbases with skip_school_allowed_depbases
+    # skip school_allowed_depbases when page == 'page_orderlist'
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('')
+        logger.debug(' ----- get_requsr_allowed_lvlbases_arr -----')
+
+    allowed_depbases_list = []
+
+    def get_user_allowed_lvlbases_list():
+        allowed_lvlbases_list = []
+        usergroups_arr, allowed_sections_dict, allowed_clusterbases_arr = get_requsr_allowedsections(req_usr.pk, sel_examyear.pk)
+        # allowed_sections_dict: {'2': {'1': {}}, '16': {'3': {'-9': []}}, '17': {'3': {'-9': [160]}}}
+
+        if allowed_sections_dict and sel_school:
+            sel_schoolbase_pk_str = str(sel_school.base.pk)
+            allowed_depbases_dict = allowed_sections_dict.get(sel_schoolbase_pk_str)
+            # allowed_depbases_dict: {'3': {'-9': []}}
+            if allowed_depbases_dict and sel_department:
+                sel_depbase_pk_str = str(sel_department.base.pk)
+                allowed_lvlbases_dict = allowed_depbases_dict.get(sel_depbase_pk_str)
+                if allowed_lvlbases_dict:
+                    for lvlbase_pk_str in allowed_lvlbases_dict:
+                        allowed_lvlbases_list.append(int(lvlbase_pk_str))
+            # allowed_lvlbases_list: [3]
+
+        return allowed_lvlbases_list
+
+    def get_school_allowed_depbases_list():
+        allowed_depbases_list = []
+        if not skip_school_allowed_depbases and sel_school and sel_school.depbases:
+            allowed_depbases_list = list(map(int, sel_school.depbases.split(';')))
+        return allowed_depbases_list
+
+# - get user_allowed_depbases_list from allowed_sections_dict
+    user_allowed_depbases_list = get_user_allowed_depbases_list()
+
+# - get school_allowed_depbases_list, not when skip_school_allowed_depbases
+    school_allowed_depbases_list = get_school_allowed_depbases_list()
+
+# - combine allowed_depbases
+    # if allowed_depbases is empty, all depbases are allowed
+    if user_allowed_depbases_list:
+        if school_allowed_depbases_list:
+            for depbase_pk in user_allowed_depbases_list:
+                if depbase_pk in school_allowed_depbases_list:
+                    allowed_depbases_list.append(depbase_pk)
+        else:
+            allowed_depbases_list = user_allowed_depbases_list
+    else:
+        if school_allowed_depbases_list:
+            allowed_depbases_list = school_allowed_depbases_list
+
+    if logging_on:
+        logger.debug('    user_allowed_depbases_list: ' + str(user_allowed_depbases_list))
+        logger.debug('    school_allowed_depbases_list: ' + str(school_allowed_depbases_list))
+        logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
+
+    return allowed_depbases_list
+# end of get_requsr_allowed_lvlbases_arr
+
+
+
+def get_requsr_allowedsections_dict_OK (req_usr, sel_examyear):
+    # PR2022-12-10
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('---  get_requsr_allowedsections_dict_OK  ------- ')
+        logger.debug('req_usr:      ' + str(req_usr))
+        logger.debug('sel_examyear: ' + str(sel_examyear))
+
+    #  json.dumps converts a dict to a json object
+    #  json.loads retrieves a dict (or other type) from a json string
+    #  json.load deserializes a file
+
+    allowed_sections_dict = {}
+
+    if req_usr and sel_examyear :
+        userallowed = acc_mod.UserAllowed.objects.filter(
+            user=req_usr,
+            examyear=sel_examyear,
+        ).order_by('id').first()
+
+        if userallowed:
+            allowed_sections_str = getattr(userallowed, 'allowed_sections')
+            if allowed_sections_str:
+                allowed_sections_dict = json.loads(allowed_sections_str)
+
+    return allowed_sections_dict
+# - end of get_requsr_allowedsections_dict_OK
+
+def get_requsr_allowed_schoolbase_dict_OK(allowed_sections_dict, sel_schoolbase_pk):
+    # PR2023-01-09
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ---  get_requsr_allowed_schoolbase_dict_OK  ------- ')
+        logger.debug('    allowed_sections_dict:      ' + str(allowed_sections_dict))
+        logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+
+    allowed_schoolbase_dict = {}
+    allowed_depbases_pk_arr = []
+    if allowed_sections_dict:
+
+# - check if sel_schoolbase_pk exists in allowed_sections_dict
+        if sel_schoolbase_pk:
+            sel_schoolbase_pk_str = str(sel_schoolbase_pk)
+            allowed_schoolbase_dict = allowed_sections_dict.get(sel_schoolbase_pk_str) or {}
+
+# - if not, check if '-9' (all) exists in allowed_sections_dict
+        if not allowed_schoolbase_dict:
+            sel_schoolbase_pk_str = '-9'
+            allowed_schoolbase_dict = allowed_sections_dict.get(sel_schoolbase_pk_str) or {}
+
+# - add allowed depbase_pk_int to allowed_depbases_pk_arr
+        if allowed_schoolbase_dict:
+            for depbase_pk_str in allowed_schoolbase_dict:
+                allowed_depbases_pk_arr.append(int(depbase_pk_str))
+
+    if logging_on:
+        logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+        logger.debug('    allowed_depbases_pk_arr: ' + str(allowed_depbases_pk_arr) + ' ' + str( type(allowed_depbases_pk_arr)))
+
+    # allowed_schoolbase_dict: {'1': {'-9': []}, '2': {'-9': []}, '3': {'-9': []}}
+    # allowed_depbases_pk_arr: [1, 2, 3] <class 'list'>
+    return allowed_schoolbase_dict, allowed_depbases_pk_arr
+# - end of get_requsr_allowed_schoolbase_dict_OK
+
+
+def  get_userfilter_allowed_school_dep_lvl_subj_sct_cluster(request, table=None):
+    # PR2022-03-13 PR2022-12-12
+    # this function adds selected / allowed  filter to sql, called by create_grade_rows
+    # called by downloads.create_grade_rows
+
+    # filter examyear and examperiod are outside this function
+    # filter school is required:
+    #  - when user is school: get req_usr.schoolbase
+    #  - get selected otherwise
+    #  - check if school is allowed
+    #  - return no records when no school
+    # filter depbase is required:
+    #  - get depbase of selected school when school has only 1 department
+    #  - get selected depbase otherwise
+    #  - return no records when no depbase
+    # filter lvlbase:
+    #  - don't filter on lvlbase when level not required in selected department (then lvlbase_pk = -9 ('all levels')
+    #  - filter on selected lvlbase, if allowed
+    #  - if no selected lvlbase: filter through allowed lvlbases
 
     #  if subjectbase_pk has value:
     #       if arr exists and not skip_allowed_filter:
@@ -2518,50 +5792,346 @@ def get_userfilter_allowed_subjbase(request, sql_keys, sql_list, subjbase_pk=Non
     #           --> no filter
 
     logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' +++++ get_userfilter_allowed_school_dep_lvl_subj_sct_cluster +++++')
+
+    sql_clause = ""
+
+    try:
+        req_usr = request.user
+        sql_clause_arr = []
+
+        if table == 'studsubj':
+            subjbase_id_fld= 'studsubj.subjbase_id'
+        else:
+            subjbase_id_fld = 'subj.base_id'
+
+    # - get sel_examyear_instance
+        sel_examyear_instance = get_selected_examyear_from_usersetting_short(request)
+
+    # - get allowed_sections_dict from request
+        allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
+        if logging_on:
+            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict) + ' ' + str(type(allowed_sections_dict)))
+        #  allowed_sections_dict: {'2': {'1': {'5': [123]}}, '16': {'2': {'-9': [123]}, '3': {'-9': []}}, '17': {'3': {'-9': [160]}}} <class 'dict'>
+
+    # - get selected_pk_dict from usersettings
+        selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if logging_on:
+            logger.debug('    selected_pk_dict: ' + str(selected_pk_dict) + ' ' + str(type(selected_pk_dict)))
+        # selected_pk_dict: {'sel_schoolbase_pk': 2, 'sel_examyear_pk': 4, 'sel_depbase_pk': 1, 'sel_examperiod': 1, 'sel_examtype': 'ce', 'sel_auth_index': 2, 'sel_lvlbase_pk': 5} <class 'dict'>
+
+# +++ SCHOOL +++
+        # - get selected school
+        # - when role = school: selected school = req_usr.schoolbase
+        # - otherwise: get selected school from settings
+        # - if None: don't return records
+
+        sel_schoolbase_pk = None
+        if req_usr.role == c.ROLE_008_SCHOOL:
+            if req_usr.schoolbase:
+                sel_schoolbase_pk = req_usr.schoolbase_id
+        else:
+            # - check if schoolbase is allowed
+            # when allowed_sections_dict is empty: selected school is always allowed
+            schoolbase_pk_tobechecked = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+            if schoolbase_pk_tobechecked:
+                if allowed_sections_dict:
+                    if str(schoolbase_pk_tobechecked) in allowed_sections_dict:
+                        sel_schoolbase_pk = schoolbase_pk_tobechecked
+                else:
+                    sel_schoolbase_pk = schoolbase_pk_tobechecked
+
+        sel_school = None
+        if sel_examyear_instance and sel_schoolbase_pk:
+            sel_school = sch_mod.School.objects.get_or_none(
+                examyear=sel_examyear_instance,
+                base_id=sel_schoolbase_pk
+            )
+
+        sel_depbase_pk = None
+        allowed_depbases_dict = {}
+
+        if sel_school is None:
+            sql_clause_arr.append("(FALSE)")
+        else:
+            sql_clause_arr.append(''.join(("(school.base_id = ", str(sel_schoolbase_pk), "::INT)")))
+
+    # +++ DEPARTMENT +++
+            # - get allowed_depbases of selected school
+            # sel_school_allowed_depbases_arr must always have at least 1 value
+            sel_school_allowed_depbases_arr = list(
+                map(int, sel_school.depbases.split(';'))) if sel_school.depbases else []
+            if logging_on:
+                logger.debug('    sel_school_allowed_depbases_arr: ' + str(sel_school_allowed_depbases_arr) + ' ' + str(
+                    type(sel_school_allowed_depbases_arr)))
+                # sel_school_allowed_depbases_arr: [1] <class 'list'>
+
+        # - use depbase of selected school when school has only 1 department
+            if len(sel_school_allowed_depbases_arr) == 1:
+                depbase_pk_tobechecked = sel_school_allowed_depbases_arr[0]
+            else:
+
+        # - get saved_depbase_pk of req_usr
+                depbase_pk_tobechecked = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
+            if logging_on:
+                logger.debug('    depbase_pk_tobechecked: ' + str(depbase_pk_tobechecked) + ' ' + str(
+                    type(depbase_pk_tobechecked)))
+
+            if depbase_pk_tobechecked:
+                allowed_schoolbase_dict, allowed_depbases_pk_arr = \
+                    acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
+                        userallowed_sections_dict=allowed_sections_dict,
+                        sel_schoolbase_pk=sel_schoolbase_pk
+                    )
+
+                if logging_on:
+                    logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+                    # allowed_schoolbase_dict:  {'1': {'5': [123]}}
+
+                if str(depbase_pk_tobechecked) in allowed_schoolbase_dict and \
+                        depbase_pk_tobechecked in sel_school_allowed_depbases_arr:
+                    sel_depbase_pk = depbase_pk_tobechecked
+
+            sel_department_instance = sch_mod.Department.objects.get_or_none(
+                examyear=sel_examyear_instance,
+                base_id=sel_depbase_pk
+            )
+
+            if sel_department_instance is None:
+                sql_clause_arr.append("(FALSE)")
+
+            else:
+                sql_clause_arr.append(''.join(("(dep.base_id = ", str(sel_depbase_pk), "::INT)")))
+
+    # +++ SELECTED SECTORBASE +++
+                # - get selected sctbase_pk of req_usr
+                saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+                if saved_sctbase_pk:
+                    sql_clause_arr.append(''.join(("(sct.base_id = ", str(saved_sctbase_pk), "::INT)")))
+
+    # +++ SELECTED CLUSTER +++
+        # - get selected cluster_pk of req_usr
+                saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+                if saved_cluster_pk:
+                    sql_clause_arr.append(''.join(("(studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)")))
+
+    # +++ LEVEL +++
+                allowed_lvlbases_arr = []
+
+                level_is_required = sel_department_instance.level_req
+
+                # - get allowed_lvlbases_dict
+                allowed_lvlbases_dict = get_requsr_allowed_lvlbases_dict(allowed_schoolbase_dict, sel_depbase_pk)
+                if logging_on:
+                    logger.debug('    level_is_required: ' + str(level_is_required))
+                    logger.debug('    allowed_lvlbases_dict: ' + str(allowed_lvlbases_dict) + ' ' + str(
+                        type(allowed_lvlbases_dict)))
+                # allowed_lvlbases_dict: {'5': [123]}
+
+                # - get array of allowed levels, [-9] when 'all levels'
+                if level_is_required:
+                    if allowed_lvlbases_dict:
+                        for lvlbase_pk_str in allowed_lvlbases_dict:
+                            allowed_lvlbases_arr.append(int(lvlbase_pk_str))
+                if not allowed_lvlbases_arr:
+                    allowed_lvlbases_arr.append(-9)
+
+                # - sel_lvlbase_pk_arr contains the selected lvlbase or all allowed lvlbasescreate array of allowed depbases of requsr from allowed_schoolbase_dict and sel_school_allowed_depbases_arr
+                sel_lvlbase_pk_arr = []
+
+                if level_is_required:
+
+        # - get saved_lvlbase_pk of req_usr
+                    saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+                    if logging_on:
+                        logger.debug(
+                            '    saved_lvlbase_pk: ' + str(saved_lvlbase_pk) + ' ' + str(type(saved_lvlbase_pk)))
+
+                    # - filter only the saved_lvlbase_pk if exists and allowed
+                    if saved_lvlbase_pk:
+                        if str(saved_lvlbase_pk) in allowed_lvlbases_dict or \
+                                '-9' in allowed_lvlbases_dict:
+                            sel_lvlbase_pk_arr.append(saved_lvlbase_pk)
+                    else:
+                        # - filter all allowed lvlbases
+                        if allowed_lvlbases_dict:
+                            for sel_lvlbase_pk_str in allowed_lvlbases_dict:
+                                sel_lvlbase_pk_arr.append(int(sel_lvlbase_pk_str))
+
+                else:
+                    # add '-9' when lvl not required (allowedsubjects are stored in lvl '-9'
+                    sel_lvlbase_pk_arr.append(-9)
+
+                if logging_on:
+                    logger.debug('    sel_lvlbase_pk_arr: ' + str(sel_lvlbase_pk_arr) + ' ' + str(type(sel_lvlbase_pk_arr)))
+
+                # format of lvl / subjc filter clause:
+                #   - when lvl.base_id = -9 there is no filter on lvl.base_id, only on subjbase_pk
+                #   - when subjbase_pk_arr is empty:
+                #       - when role = corrector: dont show any subjbase_pk: filter: WHERE NOT lvl.base_id = 5
+                #       - when other roles: show all subjects: filter: no filter
+                #  AND (
+                #        (subj.base_id IN (SELECT UNNEST(ARRAY[116, 145]::INT[])) OR
+                #        (lvl.base_id = 5::INT AND subj.base_id IN (SELECT UNNEST(ARRAY[116, 145]::INT[])) OR
+                #        (lvl.base_id = 6::INT AND subj.base_id = 116::INT)
+                #       )
+
+         # +++ loop through selected levels +++
+                levelbases_clause_arr = []
+                if sel_lvlbase_pk_arr:
+                    for sel_lvlbase_pk in sel_lvlbase_pk_arr:
+
+                        allowed_subjbases_arr = acc_prm.get_userallowed_subjbase_arr(allowed_lvlbases_dict, sel_lvlbase_pk)
+                        if logging_on:
+                            logger.debug('   +++++ ')
+                            logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+                            logger.debug('    allowed_subjbases_arr: ' + str(allowed_subjbases_arr) + ' ' + str(
+                                type(allowed_subjbases_arr)))
+                            # allowed_subjbase_pk_arr: [123] <class 'list'>
+
+                        len_allowed_subjbases_arr = len(allowed_subjbases_arr)
+
+            # - create lvlbase_clause
+                        lvlsubjbase_clause_arr = []
+                        lvlbase_clause = None
+                        if sel_lvlbase_pk == -9:
+                            pass
+                        elif len_allowed_subjbases_arr == 0 and req_usr.role == c.ROLE_016_CORR:
+                            # when corrector: must have allowd_subjects, 'all' is not allowed
+                            pass
+                        else:
+                            # - when not corrector: show allowed subjects or all subjects when allowed_subjbases_arr is empty
+                            lvlbase_clause = ''.join(("lvl.base_id = ", str(sel_lvlbase_pk), "::INT"))
+                        if lvlbase_clause:
+                            lvlsubjbase_clause_arr.append(lvlbase_clause)
+                        if logging_on:
+                            logger.debug(' >  lvlbase_clause: ' + str(lvlbase_clause))
+
+        # +++ SUBJECTBASES +++
+                        subjbase_clause = ""
+
+            # - get saved_subjbase_pk of req_usr
+                        saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+                        if logging_on:
+                            logger.debug(
+                                '    saved_subjbase_pk: ' + str(saved_subjbase_pk) + ' ' + str(type(saved_subjbase_pk)))
+
+            # + loop through allowed subjects and add selected or allowed subjects
+                        sel_subjbase_pk_arr = []
+                        if allowed_subjbases_arr:
+                            for subjbase_pk_int in allowed_subjbases_arr:
+                                if not saved_subjbase_pk or subjbase_pk_int == saved_subjbase_pk:
+                                    sel_subjbase_pk_arr.append(subjbase_pk_int)
+                        len_subjbase_pk_arr = len(sel_subjbase_pk_arr)
+
+            # - create subjbase_clause
+                        if len_subjbase_pk_arr:
+                            if len_subjbase_pk_arr == 1:
+                                subjbase_clause = ''.join((subjbase_id_fld, " = ", str(sel_subjbase_pk_arr[0]), "::INT"))
+                            else:
+                                # unnest(ARRAY[10, 11, 12, 13, 14, 15, 16]
+                                subjbase_clause = ''.join(
+                                    (subjbase_id_fld, " IN (SELECT UNNEST(ARRAY", str(sel_subjbase_pk_arr), "::INT[]))"))
+                        if subjbase_clause:
+                            lvlsubjbase_clause_arr.append(subjbase_clause)
+
+                        if logging_on:
+                            logger.debug(
+                                ' >  subjbase_clause: ' + str(subjbase_clause) + ' ' + str(type(subjbase_clause)))
+
+            # - join lvlbase_clause and subjbase_clause
+                        lvlsubjbase_clause = " AND ".join(lvlsubjbase_clause_arr)
+                        if logging_on:
+                            logger.debug(' >> lvlsubjbase_clause: ' + str(lvlsubjbase_clause))
+
+                        if lvlsubjbase_clause:
+                            levelbases_clause_arr.append(lvlsubjbase_clause)
+
+        # +++ end of loop through levels
+                if levelbases_clause_arr:
+                    sql_clause_arr.append(''.join(('(', ' OR '.join(levelbases_clause_arr), ')')))
+
+        sql_clause = ' AND '.join(sql_clause_arr)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
-        logger.debug('----- get_userfilter_allowed_subjbase ----- ')
+        logger.debug(' >>>sql_clause: ' + str(sql_clause))
+        logger.debug('--- end of get_userfilter_allowed_subjbase: ')
+
+    return sql_clause
+# - end of get_userfilter_allowed_school_dep_lvl_subj_sct_cluster
+
+
+
+def get_userfilter_allowed_schoolbase(request, sql_keys, sql_list, schoolbase_pk=None, skip_allowed_filter=False, table=None):
+    # PR2022-03-13 PR2022-12-04
+    #  if schoolbase_pk has value:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on schoolbase_pk_pk, only when schoolbase_pk_pk in arr, otherwise: return no records
+    #       else:
+    #           --> filter on schoolbase_pk_pk
+    #  if schoolbase_pk_pk is None:
+    #       if arr exists and not skip_allowed_filter:
+    #           --> filter on schoolbase_pk_pk's in array
+    #       else:
+    #           --> no filter
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug('----- get_userfilter_allowed_schoolbase_pk ----- ')
+        logger.debug('    schoolbase_pk: ' + str(schoolbase_pk) + ' ' + str(type(schoolbase_pk)))
 
     filter_single_pk, filter_pk_arr, filter_none = None, None, False
 
-    allowed_subjbase_arr = request.user.allowed_subjectbases.split(';') if request.user.allowed_subjectbases else []
+    usergroups_arr, allowed_sections_dict, allowed_clusters_arr = get_request_userallowed(request)
 
-    if subjbase_pk:
-        if not allowed_subjbase_arr or str(subjbase_pk) in allowed_subjbase_arr or skip_allowed_filter:
-            filter_single_pk = subjbase_pk
+    allowed_schoolbase_pk_arr = []
+    if allowed_sections_dict:
+        for schoolbase_pk_str in allowed_sections_dict:
+            allowed_schoolbase_pk_arr.append(int(schoolbase_pk_str))
+    if logging_on:
+        logger.debug('allowed_schoolbase_pk_arr: ' + str(allowed_schoolbase_pk_arr) + ' ' + str(type(allowed_schoolbase_pk_arr)))
+
+    if schoolbase_pk and schoolbase_pk != -9:
+        if not allowed_schoolbase_pk_arr or str(schoolbase_pk) in allowed_schoolbase_pk_arr or skip_allowed_filter:
+            filter_single_pk = schoolbase_pk
         else:
             filter_none = True
 
-    elif allowed_subjbase_arr and not skip_allowed_filter:
-        if len(allowed_subjbase_arr) == 1:
-            filter_single_pk = allowed_subjbase_arr[0]
+    elif allowed_schoolbase_pk_arr and not skip_allowed_filter:
+        if len(allowed_schoolbase_pk_arr) == 1:
+            filter_single_pk = allowed_schoolbase_pk_arr[0]
         else:
-            filter_pk_arr = allowed_subjbase_arr
+            filter_pk_arr = allowed_schoolbase_pk_arr
+    # TODO 2022-11-24
+    # allowed_schoolbase_pk_arr: ['{"2": {"1": {"4": ["120"]}}, "11": {"1": {"4": ["120"]}}}'] <class 'list'>
 
+    # [2022-11-24 19:07:32] DEBUG [accounts.views.get_userfilter_allowed_schoolbase:2550]
     if logging_on:
-        logger.debug('     subjbase_pk: ' + str(subjbase_pk) + ' ' + str(type(subjbase_pk)))
-        logger.debug('     allowed_subjbase_arr: ' + str(allowed_subjbase_arr) + ' ' + str(type(allowed_subjbase_arr)))
-        logger.debug('     filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
-        logger.debug('     filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
-        logger.debug('     filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
+        logger.debug('    allowed_schoolbase_pk_arr: ' + str(allowed_schoolbase_pk_arr) + ' ' + str(type(allowed_schoolbase_pk_arr)))
+        logger.debug('    filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
+        logger.debug('    filter_pk_arr: ' + str(filter_pk_arr) + ' ' + str(type(filter_pk_arr)))
+        logger.debug('    filter_none: ' + str(filter_none) + ' ' + str(type(filter_none)))
 
     if filter_single_pk:
-        sql_keys['sjb_pk'] = filter_single_pk
+        sql_keys['sb_pk'] = filter_single_pk
         if table == 'studsubj':
-            sql_list.append("AND studsubj.subjbase_id = %(sjb_pk)s::INT")
+            sql_list.append("AND studsubj.schoolbase_id = %(sb_pk)s::INT")
         else:
-            sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
-
+            sql_list.append("AND school.base_id = %(sb_pk)s::INT")
     elif filter_pk_arr:
-        sql_keys['sjb_arr'] = filter_pk_arr
+        sql_keys['sb_arr'] = filter_pk_arr
         if table == 'studsubj':
-            sql_list.append("AND studsubj.subjbase_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
+            sql_list.append("AND studsubj.schoolbase_id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
         else:
-            sql_list.append("AND subj.base_id IN ( SELECT UNNEST(%(sjb_arr)s::INT[]) )")
-
+            sql_list.append("AND school.base_id IN ( SELECT UNNEST(%(sb_arr)s::INT[]) )")
     elif filter_none:
         sql_list.append("AND FALSE")
-# - end of get_userfilter_allowed_subjbase
+# - end of get_userfilter_allowed_schoolbase
+
 
 
 def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None, skip_allowed_filter=False, table=None):
@@ -2587,7 +6157,7 @@ def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None,
 
     filter_single_pk, filter_pk_arr, filter_none = None, None, False
 
-    allowed_cluster_arr = request.user.allowed_clusterbases.split(';') if request.user.allowed_clusterbases else []
+    allowed_cluster_arr = request.user.allowed_clusters.split(';') if request.user.allowed_clusters else []
 
     if cluster_pk:
         if not allowed_cluster_arr or str(cluster_pk) in allowed_cluster_arr or skip_allowed_filter:
@@ -2626,24 +6196,7 @@ def get_userfilter_allowed_cluster(request, sql_keys, sql_list, cluster_pk=None,
 # - end of get_userfilter_allowed_cluster
 
 
-def get_permit_crud(page, request):
-    # --- get crud permit for page # PR2022-08-07
-    logging_on = False  # s.LOGGING_ON
 
-    if logging_on:
-        logger.debug(' ----- get_permit_crud ----- ')
 
-    has_permit = False
-    if request.user and request.user.country and request.user.schoolbase:
-        permit_list = request.user.permit_list(page)
-        if permit_list:
-            has_permit = 'permit_crud' in permit_list
-
-        if logging_on:
-            logger.debug('permit_list: ' + str(permit_list))
-            logger.debug('has_permit: ' + str(has_permit))
-
-    return has_permit
-# - end of get_permit_crud
-
+"""
 

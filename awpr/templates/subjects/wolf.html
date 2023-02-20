@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load i18n %} {% load l10n %}
+{% load static %}
+
+{% block title %}Wolf{% endblock %}
+
+{% block script %}
+    <script src="{% static 'js/wolf221216.js' %}"></script>
+    <script src="{% static 'js/download220105.js' %}"></script>
+{% endblock %}
+
+<!-- SIDE BAR -->
+{% block sidebar %}
+    <nav id="id_sidebar" class="awp_sidebar">
+        <div class="sidebar_header">
+            <h3>Wolf</h3>
+        </div>
+        {% if not no_access %}
+            <div class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Exam period' %}:</h6>
+                <select id="id_SBR_select_period" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
+
+            <div class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Learning path' %}:</h6>
+                <select id="id_SBR_select_level" class="tw_200 border_none px-1"
+                    autocomplete="off" ondragstart="return false;" ondrop="return false;"
+               ></select>
+            </div>
+
+            <div id="id_SBR_container_subject" class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Subject' %}:</h6>
+                <input id="id_SBR_select_subject" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
+
+            {% if is_requsr_same_school %}
+                <div class="tw_200 m-2 display_hide">
+                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
+                   <input id="id_SBR_select_cluster" type="text"
+                        class="tw_200 border_none pointer_show px-2" readonly>
+                </div>
+
+                <div class="tw_200 m-2 display_hide">
+                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
+                    <input id="id_SBR_select_student" type="text"
+                        class="tw_200 border_none pointer_show px-1" readonly>
+                </div>
+            {% endif %}
+            <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
+                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
+            </div>
+
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
+            </div>
+        {% endif %}
+    </nav>
+{% endblock %}
+<!-- END SIDE BAR -->
+
+{% block content %}
+    <div id="id_content">
+        {% if no_access %}
+            {% include 'includes/message_noaccess.html' %}
+        {% else %}
+            {% include 'subjects/modexamquestions.html' %}
+            {% include 'subjects/modduoexam.html' %}
+            {% include 'subjects/modduoexamcreate.html' %}
+
+            {% include 'includes/modselectexamyearordepbase.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modselectcolumns.html' %}
+            {% include 'includes/modselectexam.html' %}
+            {% include 'subjects/modapproveexam.html' %}
+            {% include 'includes/modmessage.html' %}
+            {% include 'includes/modconfirm.html' %}
+            {% include 'includes/modstatus.html' %}
+            {% include 'includes/modimportdnt.html' %}
+
+    <!-- CONTENT HEADER - LOADER -->
+            <div class="margin_top80_left16_right32">
+    <!-- content_header -->
+                <div class="flex_container">
+        <!-- header_text left -->
+                    <div class="flex_2 p-2">
+                        <div>
+                            <h5 id="id_header_left" class="mb-0"></h5>
+                        </div>
+                    </div>
+        <!-- loader -->
+                    <div id="id_loader" class="py-2">
+                        <div class="loader p-2">
+                            <div class="duo duo1">
+                                <div class="dot dot-a"></div>
+                                <div class="dot dot-b"></div>
+                            </div>
+                                <div class="duo duo2">
+                                <div class="dot dot-a"></div>
+                                <div class="dot dot-b"></div>
+                            </div>
+                        </div>
+                    </div>
+        <!-- header_text right -->
+                    <div class="flex_2_align_right p-2">
+                        <h5 id="id_header_right" class="mb-0"></h5>
+                    </div>
+                </div>
+            </div>
+    <!-- end content_header -->
+
+    <!-- BUTTON GROUP -->
+            <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
+                {% if is_requsr_admin %}
+                    <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
+                    <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'CVTE exams' %}</button>
+                    <button data-btn="btn_ntermen" class="btn btn-secondary ">{% trans 'N-termen tabel' %}</button>
+                {% else %}
+                    <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
+                    {% if not no_centralexam %}
+                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
+                    {% endif %}
+                {% endif %}
+
+                <button data-btn="btn_results" class="btn btn-secondary ">{% trans 'Overview exams' %}</button>
+            </div>
+
+
+    <!-- end BUTTON GROUP -->
+    <!-- END OF CONTENT HEADER - LOADER -->
+
+<!-- CONTENT BODY -->
+
+    <!-- =================== DATA TABLE  =================== -->
+            <div id="id_tbl_container" class="content_body mx-2 mt-2 pr-4">
+                <table class="table tsa_tbl">
+                    <thead id="id_tblHead_datatable"></thead>
+                    <tbody id="id_tblBody_datatable"></tbody>
+                </table>
+            </div>
+<!-- END OF CONTENT BODY -->
+            <div id="id_data"
+                 data-url_user_modmsg_hide="{% url 'url_user_modmsg_hide' %}"
+                data-url_datalist_download="{% url 'url_datalist_download' %}"
+                data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
+                data-url_student_upload="{% url 'url_student_upload' %}"
+                data-url_studsubj_upload="{% url 'url_studsubj_upload' %}"
+                data-url_exam_upload="{% url 'url_exam_upload' %}"
+                data-url_duo_exam_upload="{% url 'url_duo_exam_upload' %}"
+                data-url_exam_copy="{% url 'url_exam_copy' %}"
+                data-url_exam_copy_ntermen="{% url 'url_exam_copy_ntermen' %}"
+                data-url_link_exam_to_grades="{% url 'url_link_exam_to_grades' %}"
+
+                data-url_approve_publish_exam="{% url 'url_approve_publish_exam' %}"
+                data-url_approve_submit_grade_exam="{% url 'url_approve_submit_grade_exam' %}"
+                data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
+
+                data-url_exam_download_exam_pdf="{% url 'url_exam_download_exam_pdf'  '-' %}"
+                data-url_exam_download_grade_exam_pdf="{% url 'url_exam_download_grade_exam_pdf'  '-' %}"
+                data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
+
+                data-url_exam_download_exam_json="{% url 'url_exam_download_exam_json' %}"
+
+                data-url_grade_upload="{% url 'url_grade_upload' %}"
+
+                data-page="{{page}}"
+                data-paragraph="{{paragraph}}"
+                data-lang="{{lang}}"
+            >
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

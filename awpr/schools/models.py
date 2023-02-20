@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
 from django.contrib.postgres.fields import ArrayField #, JSONField
 
-from django.db import connection
 from django.db.models import Model, Manager, ForeignKey, PROTECT, CASCADE, SET_NULL
 from django.db.models import CharField, IntegerField, PositiveSmallIntegerField, BooleanField, DateTimeField, DateField, FileField
 from django.utils import timezone
@@ -20,6 +19,7 @@ from django.utils.translation import gettext_lazy as _
 from awpr import constants as c
 from awpr import settings as s
 from awpr.storage_backends import PrivateMediaStorage
+
 
 # PR2018-09-15 Departmnet moved from Subjects to Schools; because this doesn/'t work, circular reference: from subjects.models import Department
 
@@ -193,6 +193,9 @@ class Examyear(AwpBaseModel):  # PR2018-06-06
     no_thirdperiod = BooleanField(default=False)
     # deleted: no_exemption_ce = BooleanField(default=False)
 
+    # PR2023-01-21, to skip thumbrule from 2023
+    thumbrule_allowed = BooleanField(default=False)
+
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
@@ -243,6 +246,9 @@ class Examyear_log(AwpBaseModel):
     no_centralexam = BooleanField(default=False)
     no_thirdperiod = BooleanField(default=False)
 
+    # PR2023-01-21, to skip thumbrule from 2023
+    thumbrule_allowed = BooleanField(default=False)
+
     createdat = DateTimeField(null=True)
     publishedat = DateTimeField(null=True)
     lockedat = DateTimeField(null=True)
@@ -259,6 +265,35 @@ class Examyear_log(AwpBaseModel):
     order_admin_divisor = PositiveSmallIntegerField(default=25)
     order_admin_multiplier = PositiveSmallIntegerField(default=5)
     order_admin_max = PositiveSmallIntegerField(default=25)
+
+    mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+
+# PR2023-02-19 to store compensation per approved subject
+class Examyearsetting(AwpBaseModel):
+    objects = AwpModelManager()
+
+    examyear = ForeignKey(Examyear, related_name='+', on_delete=CASCADE)
+    key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+
+    setting = CharField(db_index=True, max_length=2048)
+    # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+    # jsonsetting = JSONField(null=True)
+
+
+# PR2023-02-19
+class Examyearsetting_log(AwpBaseModel):
+    objects = AwpModelManager()
+
+    examyearsetting_id = IntegerField(db_index=True)
+
+    examyear_log = ForeignKey(Examyear_log, related_name='+', on_delete=CASCADE)
+
+    key = CharField(db_index=True, max_length=c.MAX_LENGTH_KEY)
+
+    setting = CharField(db_index=True, max_length=2048)
+    # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
+    # jsonsetting = JSONField(null=True)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 

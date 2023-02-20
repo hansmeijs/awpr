@@ -1,11 +1,11 @@
 // PR2022-03-09 added
 
-// PR2021-07-23  declare variables outside function to make them global variables
+// PR2021-07-23  these variables are declared in base.js to make them global variables
 
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_exform";
 
-let school_rows = [];
+//let school_rows = [];
 let published_rows = [];
 
 const field_settings = {};
@@ -332,6 +332,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvlbase_id")};
 
+        // hide delete btn when not req_usr is admin PR2022-11-21
+        if(!permit_dict.requsr_role_admin){col_hidden.push("delete")};
+
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
@@ -351,9 +354,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15 PR2021-08-02 PR2021-12-14
     function CreateTblHeader(field_setting, col_hidden) {
-        //console.log("===  CreateTblHeader ===== ");
-        //console.log("field_setting", field_setting);
-        //console.log("col_hidden", col_hidden);
+        console.log("===  CreateTblHeader ===== ");
+        console.log("field_setting", field_setting);
+        console.log("col_hidden", col_hidden);
 
 //--- get info from selected department_map
         let sct_caption = null, has_profiel = false,  lvl_req = false, sct_req = false;
@@ -515,7 +518,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     //td.classList.add("pointer_show");
                     add_hover(td);
                 } else if (field_name === "delete"){
-                    //td.addEventListener("click", function() {ModConfirmOpen("delete", tblRow)}, false);
+                    td.addEventListener("click", function() {ModConfirmOpen("delete", tblRow)}, false);
                 };
     // --- put value in field
                UpdateField(el, data_dict)
@@ -585,12 +588,12 @@ document.addEventListener('DOMContentLoaded', function() {
         };  // if(el_div)
     };  // UpdateField
 
-//========= UploadChanges  ============= PR2020-08-03
+//========= UploadChanges  ============= PR2022-11-03
+    // only called by ModConfirmSave
     function UploadChanges(upload_dict, url_str) {
         console.log("=== UploadChanges");
         console.log("url_str: ", url_str);
         console.log("upload_dict: ", upload_dict);
-
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
             let response = "";
@@ -605,10 +608,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( "response");
                     console.log( response);
 
-                    if("messages" in response){
-                        b_show_mod_message_dictlist(response.messages);
+                    if("updated_published_rows" in response){
+                        ModConfirmResponseNEW(response);
                     }
-
 
                 },  // success: function (response) {
                 error: function (xhr, msg) {
@@ -624,21 +626,25 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2022-11-02
     function ModConfirmOpen(mode, tblRow) {
-        console.log(" -----  ModConfirmOpen   ----")
-        console.log("mode", mode)
-        console.log("tblRow", tblRow)
-            console.log( "published_rows: ", published_rows);
+        //console.log(" -----  ModConfirmOpen   ----")
+        //console.log("mode", mode)
+        //console.log("tblRow", tblRow)
+
+// reset  modal
+        el_confirm_header.innerText = null;
+        el_confirm_msg_container.innerHTML = null;
+        el_confirm_loader.classList.add(cls_hide);
+        el_confirm_btn_save.classList.remove(cls_hide);
+        el_confirm_btn_cancel.innerText = loc.Cancel;
 
         if (mode === "delete"){
             mod_dict = {mode: mode}
 
-            const header_txt = loc.Delete_document;
+            el_confirm_header.innerText = loc.Delete_document;
 
 // --- get existing data_dict from data_rows
             const pk_int = get_attr_from_el_int(tblRow, "data-pk");
             const [index, data_dict, compare] = b_recursive_integer_lookup(published_rows, "id", pk_int);
-            console.log( "pk_int: ", pk_int, typeof pk_int);
-            console.log( "data_dict: ", data_dict);
 
 // skip if no tblRow selected or if exam has no envelopbundle
             if (!isEmpty(data_dict)){
@@ -647,14 +653,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     mode: mode,
                     table: tblName,
                     published_pk: data_dict.id,
+                    map_id: data_dict.mapid,
                 };
                 const msg_html = ["<div class='mx-2'>",
-                                "<p>", loc.Document,  ":</p><p class='pl-3'>", data_dict.name, "</p><p>", loc.will_be_deleted, "</p>",
+                                "<p>", loc.This_document_willbe_deleted,  ":</p><p class='pl-3'>", data_dict.name, "</p>",
                                 "<p>", loc.Do_you_want_to_continue, "</p>",
                              "</div>"].join("")
 
-                el_confirm_header.innerText = header_txt;
-                el_confirm_loader.classList.add(cls_visible_hide)
+                el_confirm_loader.classList.add(cls_hide)
                 el_confirm_msg_container.className = "p-3";
                 el_confirm_msg_container.innerHTML = msg_html;
 
@@ -663,9 +669,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", true, "btn-primary");
 
     // set focus to cancel button
-                setTimeout(function (){
-                    el_confirm_btn_cancel.focus();
-                }, 500);
+                set_focus_on_el_with_timeout(el_confirm_btn_save)
         // show modal
                 $("#id_mod_confirm").modal({backdrop: true});
             };
@@ -679,22 +683,126 @@ document.addEventListener('DOMContentLoaded', function() {
         let close_modal_with_timout = false;
 
         if (mod_dict.mode === "delete"){
+            // remove msg
+            el_confirm_msg_container.innerHTML = null;
+            // show loader
+            el_confirm_loader.classList.remove(cls_hide);
+            // hide save btn
+            el_confirm_btn_save.classList.add(cls_hide);
+            // rename cancel btn
+            el_confirm_btn_cancel.innerText = loc.Close;
+
             let upload_dict = {
                 table: mod_dict.table,
                 mode: "delete",
                 published_pk: mod_dict.published_pk
             };
-
             UploadChanges(upload_dict, urls.url_archive_upload);
 
             const tblRow = document.getElementById(mod_dict.map_id)
             ShowClassWithTimeout(tblRow, "tsa_tr_error")
         };
-        $("#id_mod_confirm").modal("hide");
-
     };  // ModConfirmSave
 
+//=========  ModConfirmResponseNEW  ================ PR2022-11-03
+    function ModConfirmResponseNEW(response) {
+        // only called by UploadChanges after ModConfirmSave
+        console.log(" --- ModConfirmResponseNEW --- ");
+        console.log("response: ", response);
 
+    // - hide loader
+        el_confirm_loader.classList.add(cls_hide);
+        if ("message_list" in response) {
+            const msg_list = response.message_list;
+        console.log("msg_list: ", msg_list, typeof msg_list);
+            if (msg_list && msg_list.length){
+                // msg_list only contains 1 message
+                const msg_dict = msg_list[0];
+                if(msg_dict){
+                    el_confirm_msg_container.classList.add(msg_dict.class, "m-4");
+                    el_confirm_msg_container.innerHTML = msg_dict.msg_html;
+                };
+            };
+        } else {
+            $("#id_mod_confirm").modal("hide");
+            RefreshDataRows("published", response.updated_published_rows, published_rows, true); // true = is_update
+        };
+    };  // ModConfirmResponseNEW
+////////////////////////
+
+//=========  RefreshDataRows  ================ R2022-11-03
+    function RefreshDataRows(tblName, update_rows, data_rows, is_update, skip_show_ok) {
+        console.log(" --- RefreshDataRows  ---");
+        console.log("is_update", is_update);
+        console.log("update_rows", update_rows);
+
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            const field_setting = field_settings[tblName];
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+                RefreshDatarowItem(tblName, field_setting, data_rows, update_dict, skip_show_ok);
+            }
+        } else if (!is_update) {
+            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
+            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
+           data_rows = [];
+        }
+    }  //  RefreshDataRows
+
+//=========  RefreshDatarowItem  ================ PR2022-11-03
+    function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("tblName", tblName);
+        console.log("field_setting", field_setting);
+        console.log("update_dict", update_dict);
+
+        if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
+
+            const map_id = update_dict.mapid;
+            const is_deleted = (!!update_dict.deleted);
+            const is_created = (!!update_dict.created);
+
+// ---  get list of hidden columns
+            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
+
+// ---  get list of columns that are not updated because of errors
+            const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
+
+// --- get existing data_dict from data_rows
+            const pk_int = (update_dict && update_dict.id) ? update_dict.id : null;
+            const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
+            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
+            const datarow_index = index;
+    console.log("pk_int", pk_int);
+    console.log("data_dict", data_dict);
+
+// ++++ deleted ++++
+            if(is_deleted){
+                // delete row from data_rows. Splice returns array of deleted rows
+                const deleted_row_arr = data_rows.splice(datarow_index, 1)
+                const deleted_row_dict = deleted_row_arr[0];
+    //console.log("deleted_row_dict", deleted_row_dict);
+    //console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
+
+    //--- delete tblRow
+                if(deleted_row_dict && deleted_row_dict.mapid){
+                    const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+    //console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
+                    if (tblRow_tobe_deleted ){
+                        tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
+                    };
+                };
+// --- subtract 1 from item_count
+                selected.item_count -= 1;
+// ---  show total in sidebar
+                t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Candidate, loc.Candidates, setting_dict.user_lang);
+            };  // if(is_deleted)
+        //console.log("student_rows", student_rows);
+        };  // if(!isEmpty(update_dict))
+    };  // RefreshDatarowItem
+
+////////////////////////
 
 //###########################################################################
 // +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++

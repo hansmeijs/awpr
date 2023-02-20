@@ -19,11 +19,15 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.platypus import Paragraph, Frame
 
+from accounts import views as acc_view
+from accounts import permits as acc_prm
+
 from awpr import constants as c
 from awpr import settings as s
 from awpr import functions as af
 from awpr import validators as av
 from awpr import downloads as dl
+
 from schools import models as sch_mod
 from students import validators as stud_val
 from subjects import models as subj_mod
@@ -70,7 +74,7 @@ class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18  PR2022-09-16
 
 # - get permit
             page_name = 'page_orderlist'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if logging_on:
                 logger.debug('has_permit: ' + str(has_permit))
@@ -102,7 +106,7 @@ class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18  PR2022-09-16
                 header_txt = _('Create label text') if is_create else _('Delete label text') if is_delete else _('Edit label text')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -382,7 +386,7 @@ class EnvelopLabelUploadView(View):  # PR2022-08-08 PR2022-09-16
 
 # - get permit
             page_name = 'page_orderlist'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if logging_on:
                 logger.debug('has_permit: ' + str(has_permit))
@@ -431,7 +435,7 @@ class EnvelopLabelUploadView(View):  # PR2022-08-08 PR2022-09-16
                 header_txt = _('Create label') if is_create else _('Delete label') if is_delete else _('Edit label')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -732,7 +736,7 @@ class EnvelopBundleUploadView(View):  # PR2022-08-11 PR2022-09-16
 
 # - get permit
             page_name = 'page_orderlist'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if logging_on:
                 logger.debug('has_permit: ' + str(has_permit))
@@ -770,7 +774,7 @@ class EnvelopBundleUploadView(View):  # PR2022-08-11 PR2022-09-16
                 header_txt = _('New label bundle') if is_create else _('Delete label bundle') if is_delete else _('Edit label bundle')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -1045,7 +1049,7 @@ class EnvelopSubjectUploadView(View):  # PR2022-10-10
 
 # - get permit
             page_name = 'page_orderlist'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if logging_on:
                 logger.debug('has_permit: ' + str(has_permit))
@@ -1071,7 +1075,7 @@ class EnvelopSubjectUploadView(View):  # PR2022-10-10
                 header_txt = _('Edit subject bundle')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -1921,7 +1925,7 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
 
 # - get permit
             page_name = 'page_orderlist'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if logging_on:
                 logger.debug('has_permit: ' + str(has_permit))
@@ -1939,7 +1943,7 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
                 activate(user_lang)
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -1951,7 +1955,7 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
                 else:
 
 # - get selected examperiod from usersettings
-                    sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+                    sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
                     if logging_on:
                         logger.debug('sel_examperiod:   ' + str(sel_examperiod))
 # +++ get schoolbase dictlist
@@ -2036,11 +2040,11 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
             activate(user_lang)
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - get selected examperiod from usersettings
-            sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = dl.get_selected_experiod_extype_subject_from_usersetting(request)
+            sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
             # PR2022-08-27 debug: saved sel_examperiod was 12 (deprecated, 12 was all exam periods), change it to 1
             if sel_examperiod not in (1,2,3):
                 sel_examperiod = 1
@@ -3335,7 +3339,7 @@ def get_ex3_grade_rows (self, examyear, school, department, upload_dict, examper
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
                 level_filter,
                 subject_filter,
-                "AND NOT grd.tobedeleted AND NOT studsubj.tobedeleted",
+                "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted",
                 "AND grd.examperiod = %(experiod)s::INT",
                 "ORDER BY LOWER(subj.name_nl), LOWER(stud.lastname), LOWER(stud.firstname)"
                 ]

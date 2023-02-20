@@ -23,6 +23,9 @@ from reportlab.lib.units import mm
 from reportlab.lib import colors
 
 from accounts import models as acc_mod
+from  accounts import views as acc_view
+from  accounts import  permits as acc_prm
+
 from awpr import menus as awpr_menu
 from awpr import constants as c
 from awpr import settings as s
@@ -33,6 +36,7 @@ from awpr import library as awpr_lib
 from grades import calc_results as calc_res
 from grades import exfiles as grd_exfiles
 
+from schools import models as sch_mod
 from students import functions as stud_fnc
 
 import io
@@ -73,96 +77,6 @@ class ResultListView(View):  # PR2021-11-15
         return render(request, 'results.html', params)
 
 
-@method_decorator([login_required], name='dispatch')
-class ArchivesListView(View):  # PR2022-03-09
-
-    def get(self, request):
-        logging_on = False  # s.LOGGING_ON
-        if logging_on:
-            logger.debug(' =====  ArchivesListView ===== ')
-
-# -  get user_lang
-        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-        activate(user_lang)
-
-# - get headerbar parameters
-        page = 'page_archive'
-        params = awpr_menu.get_headerbar_param(request, page)
-
-# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
-        #         # PR2021-06-22 moved to get_headerbar_param
-
-        return render(request, 'archives.html', params)
-# - end of ArchivesListView
-
-
-@method_decorator([login_required], name='dispatch')
-class ArchivesUploadView(View):  # PR2022-11-02
-
-    def post(self, request):
-        logging_on = s.LOGGING_ON
-        if logging_on:
-            logger.debug('')
-            logger.debug(' ============= ArchivesUploadView ============= ')
-
-        update_wrap = {}
-
-        # - get upload_dict from request.POST
-        upload_json = request.POST.get('upload', None)
-        if upload_json:
-            upload_dict = json.loads(upload_json)
-            mode = upload_dict.get('mode')
-
-            # - get permit
-            page_name = 'page_archive'
-            has_permit = af.get_permit_crud_of_this_page(page_name, request)
-            has_permit = True
-            if logging_on:
-                logger.debug('    has_permit:       ' + str(has_permit))
-            if has_permit:
-
-    # - reset language
-                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                activate(user_lang)
-
-                # - get variables
-                published_pk = upload_dict.get('published_pk')
-                is_create = mode == 'create'
-                is_delete = mode == 'delete'
-
-                updated_rows = []
-                error_list = []
-                messages = []
-                append_dict = {}
-
-                header_txt = _('Add document') if is_create else _('Delete document') if is_delete else _(
-                    'Edit document')
-
-                # ----- get selected examyear, school and department from usersettings
-                # may_edit = False when:
-                #  - country is locked,
-                #  - examyear is not found, not published or locked
-                #  - school is not found, not same_school, or locked
-                #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, sel_msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
-                if is_delete:
-                    pass
-
-                if logging_on:
-                    logger.debug('    may_edit:       ' + str(may_edit))
-                    logger.debug('    sel_msg_list:       ' + str(sel_msg_list))
-                    logger.debug('    upload_dict:       ' + str(upload_dict))
-
-                # - addd messages to update_wrap
-                if messages:
-                    update_wrap['messages'] = messages
-
-        # - return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
-
-# - end of ArchivesUploadView
-
 
 @method_decorator([login_required], name='dispatch')
 class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
@@ -176,7 +90,7 @@ class GetGradelistDiplomaAuthView(View):  # PR2021-11-19
         messages = []
 
 # - get permit
-        has_permit = af.get_permit_crud_of_this_page('page_result', request)
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_result', request)
         if True:
 
 # - reset language
@@ -291,12 +205,12 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-06
             activate(user_lang)
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - get selected examperiod and sel_subject_pk from usersettings
             sel_examperiodNIU, sel_examtype_NIU, sel_subject_pk = \
-                dl.get_selected_experiod_extype_subject_from_usersetting(request)
+                acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
 
             if logging_on:
                 logger.debug('sel_school: ' + str(sel_school))
@@ -306,8 +220,8 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-06
             if sel_school and sel_department:
 
                 # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
                 sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
                 if logging_on:
                     logger.debug('sel_school: ' + str(sel_school))
@@ -417,8 +331,8 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
             activate(user_lang)
 
 # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
             sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
             if logging_on:
                 logger.debug('     sel_school: ' + str(sel_school))
@@ -657,9 +571,9 @@ class DownloadPokView(View):  # PR2022-07-02
             activate(user_lang)
 
    # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                dl.get_selected_ey_school_dep_from_usersetting(request)
-            sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+            sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
             if logging_on:
                 logger.debug('     sel_school: ' + str(sel_school))
                 logger.debug('     sel_department: ' + str(sel_department))

@@ -288,12 +288,11 @@ KEY_SEL_DEPBASE_PK = 'sel_depbase_pk'
 KEY_SEL_LVLBASE_PK = 'sel_lvlbase_pk'
 KEY_SEL_SCTBASE_PK = 'sel_sctbase_pk'
 KEY_SEL_SUBJBASE_PK = 'sel_subjbase_pk'
-KEY_SEL_STUDBASE_PK = 'sel_studbase_pk'
+KEY_SEL_STUDENT_PK = 'sel_student_pk'
 KEY_SEL_CLUSTER_PK = 'sel_cluster_pk'
 KEY_SEL_AUTH_INDEX = 'sel_auth_index'
 #TODO to be deprecated
 KEY_SEL_SUBJECT_PK = 'sel_subject_pk'
-KEY_SEL_STUDENT_PK = 'sel_student_pk'
 
 KEY_SEL_SCHEME_PK = 'sel_scheme_pk'
 KEY_SEL_BTN = 'sel_btn'
@@ -355,6 +354,8 @@ KEY_COLDEF = {
         {'awpColdef': 'classname', 'caption': _('Class name')},
         #{'awpColdef': 'iseveningstudent', 'caption': _('Evening student')},
         {'awpColdef': 'bis_exam', 'caption': _('Bis exam')},
+
+        {'awpColdef': 'extrafacilities', 'caption': _('Extra facilities')},
         {'awpColdef': 'department', 'caption': _('Department')},
 
         {'awpColdef': 'level', 'caption': _('Level'), 'linkrequired': True},
@@ -394,6 +395,7 @@ CAPTIONS = {'student': {'lastname': _('Last name'),
                         'birthcountry': _('Country of birth'),
                         'birthcity': _('Place of birth'),
                         'classname': _('Class name'),
+                        'extrafacilities': _('Extra facilities'),
                         'iseveningstudent': _('Evening student'),
                         'bis_exam': _('Bis exam'),
                         'department': _('Department'),
@@ -492,7 +494,7 @@ def get_role_options(request):
     ETE_DEX = _('Division of Examinations') if request.user.country.abbrev.lower() == 'sxm' else 'ETE'
     _role_options = [
         {'value': ROLE_008_SCHOOL, 'caption': _('School')},
-        {'value': ROLE_016_CORR, 'caption': _('Correctors')},
+        {'value': ROLE_016_CORR, 'caption': _('Second correctors')},
         {'value': ROLE_032_INSP, 'caption': _('Inspectorate')},
         {'value': ROLE_064_ADMIN, 'caption': ETE_DEX},
         {'value': ROLE_128_SYSTEM, 'caption': _('System manager')}
@@ -507,7 +509,7 @@ USERGROUP_EDIT = 'edit'
 USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
 USERGROUP_AUTH3_EXAM = 'auth3'
-USERGROUP_AUTH4_COM = 'auth4'
+USERGROUP_AUTH4_CORR = 'auth4'
 USERGROUP_DOWNLOAD = 'download'
 USERGROUP_ARCHIVE = 'archive'
 USERGROUP_ANALYZE = 'anlz'
@@ -520,7 +522,7 @@ USERGROUP_TUPLE = (
     USERGROUP_AUTH1_PRES,
     USERGROUP_AUTH2_SECR,
     USERGROUP_AUTH3_EXAM,
-    USERGROUP_AUTH4_COM,
+    USERGROUP_AUTH4_CORR,
     USERGROUP_DOWNLOAD,
     USERGROUP_ARCHIVE,
     USERGROUP_ANALYZE,
@@ -534,7 +536,7 @@ USERGROUP_CAPTION = {
     USERGROUP_AUTH1_PRES: _('Chairperson'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
     USERGROUP_AUTH3_EXAM: _('Examiner'),
-    USERGROUP_AUTH4_COM: _('Corrector'),
+    USERGROUP_AUTH4_CORR: _('Corrector'),
     USERGROUP_DOWNLOAD: _('Download'),
     USERGROUP_ARCHIVE: _('Archive'),
     USERGROUP_ANALYZE: _('Analyze'),
@@ -707,6 +709,14 @@ LABEL_TEXT = {
 XF_BOLD = {'bold': True}
 XF_BOLD_FCBLUE = {'font_color': 'blue', 'bold': True}
 XF_FCBLUE = {'font_color': 'blue'}
+
+
+XF_FOOTER_SIZE11_ALIGNCENTER_BLACK = {'font_size': 11, 'font_color': 'black', 'align': 'center', 'valign': 'vcenter'}
+XF_FOOTER_SIZE08_ALIGNCENTER_BLACK = {'font_size': 8, 'font_color': 'black', 'align': 'center', 'valign': 'vcenter'}
+XF_FOOTER_SIZE11_ALIGNLEFT_BLACK = {'font_size': 11, 'font_color': 'black', 'align': 'left', 'valign': 'vcenter'}
+XF_FOOTER_SIZE08_ALIGNCENTER_BLUE = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter'}
+XF_FOOTER_SIZE11_ALIGNLEFT_BLUE = {'font_size': 11, 'font_color': 'blue', 'align': 'left', 'valign': 'vcenter'}
+XF_FOOTER_SIZE11_ALIGNCENTER_RED = {'font_size': 11, 'font_color': 'red', 'align': 'center', 'valign': 'vcenter'}
 
 # row_align_left
 XF_ROW_ALIGN_LEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'left', 'valign': 'vcenter', 'border': True}

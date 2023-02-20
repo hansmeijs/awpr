@@ -122,7 +122,7 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     diplomanumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
     gradelistnumber = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_EXAMNUMBER)
 
-    has_dyslexie = BooleanField(default=False)
+    extrafacilities = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
@@ -174,6 +174,7 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     result_info = CharField(max_length=2048, null=True, blank=True)
 
     tobedeleted = BooleanField(default=False)
+    deleted = BooleanField(default=False)
 
     class Meta:
         ordering = [Lower('lastname'), Lower('firstname')]
@@ -270,7 +271,7 @@ class Student_log(sch_mod.AwpBaseModel):
     diplomanumber = CharField(max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
     gradelistnumber = CharField(max_length=c.MAX_LENGTH_EXAMNUMBER, null=True, blank=True)
 
-    has_dyslexie = BooleanField(default=False)
+    extrafacilities = BooleanField(default=False)
     iseveningstudent = BooleanField(default=False)
     islexstudent = BooleanField(default=False)
     bis_exam = BooleanField(default=False)
@@ -321,6 +322,7 @@ class Student_log(sch_mod.AwpBaseModel):
     result_info = CharField(max_length=2048, null=True, blank=True)
 
     tobedeleted = BooleanField(default=False)
+    deleted = BooleanField(default=False)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
 
@@ -394,7 +396,8 @@ class Studentsubject(sch_mod.AwpBaseModel):
     #has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
 
     #  exemption_year to be added in 2023
-    exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020)
+    exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020, also for some subjects in 2021)
+
     # has proof of knowledge = True when pok_validthru has value PR2021-09-07
     pok_validthru = PositiveSmallIntegerField(null=True)
 
@@ -407,9 +410,10 @@ class Studentsubject(sch_mod.AwpBaseModel):
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    # TODO add 'tobechanged', when schemeitem (=subjecttype) changes it must be submitted again
+    # 'tobechanged' is set True when schemeitem (=subjecttype) changes, it must be submitted again
     tobechanged = BooleanField(default=False)
     tobedeleted = BooleanField(default=False)
+    deleted = BooleanField(default=False)
 
     prev_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     prev_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -478,6 +482,7 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     #has_pex = BooleanField(default=False)  # proof of exemption (for evening school, lex school)
 
     exemption_year = PositiveSmallIntegerField(null=True)  # examyear of exemption, to determine if has no CE (year 2020)
+
     # has proof of knowledge = True when pok_validthru has value PR2021-09-07
     pok_validthru = PositiveSmallIntegerField(null=True)
 
@@ -490,8 +495,8 @@ class Studentsubject_log(sch_mod.AwpBaseModel):
     subj_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     subj_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
-    tobechanged = BooleanField(default=False)
     tobedeleted = BooleanField(default=False)
+    deleted = BooleanField(default=False)
 
     prev_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     prev_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -674,7 +679,12 @@ class Grade(sch_mod.AwpBaseModel):
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_blocked = BooleanField(default=False)
 
+    # PR2023-01-24 added, to skip approval when imported
+    exemption_imported = BooleanField(default=False)
+
+    # TODO deprecate tobedeleted, only deleted is used PR2023-01-24
     tobedeleted = BooleanField(default=False)
+    deleted = BooleanField(default=False)
 
     # TODO deprecate
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -759,11 +769,16 @@ class Grade_log(sch_mod.AwpBaseModel):
     ce_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     ce_exam_blocked = BooleanField(default=False)
 
+    # PR2023-01-24 added, to skip approval when imported
+    exemption_imported = BooleanField(default=False)
+
     #answers = CharField(max_length=2048, null=True)
     #blanks = PositiveSmallIntegerField(null=True)
     #answers_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
 
+    # TODO deprecate tobedeleted, only deleted is used PR2023-01-24
     tobedeleted = BooleanField(default=False)
+    deleted = BooleanField(default=False)
 
     del_auth1by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
     del_auth2by = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=PROTECT)
@@ -772,3 +787,22 @@ class Grade_log(sch_mod.AwpBaseModel):
     status = PositiveSmallIntegerField(default=0)
 
     mode = CharField(max_length=c.MAX_LENGTH_01, null=True)
+
+
+class DiplomaGradelist(sch_mod.AwpBaseModel): # PR2023-02-19
+    objects = CustomManager()
+
+    student = ForeignKey(Student, related_name='+', on_delete=PROTECT)
+
+    regnumber = CharField(db_index=True, max_length=c.MAX_LENGTH_IDNUMBER)
+    name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
+    filename = CharField(max_length=255, null=True)
+
+    file = FileField(storage=PrivateMediaStorage(), null=True)
+
+    datepublished = DateField()
+    deleted = BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+    # DiplomaGradelist has no log because its data don't change

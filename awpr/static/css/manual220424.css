@@ -373,6 +373,94 @@
 }
 
 /* ---------------------------------------------------
+    IMAGES - STUDENT PAGE
+----------------------------------------------------- */
+
+.img_student_page_ne, .img_student_page_en {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+
+    width: 1088px;
+    height: 416px;
+    background-size: 1088px 416px;
+ }
+.img_student_page_ne {
+    background-image: url('/static/manual/student_page_ne.png');
+}
+.img_student_page_en {
+    background-image: url('/static/manual/student_page_en.png');
+}
+
+.img_student_mod_addnew_ne, .img_student_mod_addnew_en {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+
+    width: 800px;
+    height: 606px;
+    background-size: 800px 606px;
+ }
+.img_student_mod_addnew_ne {
+    background-image: url('/static/manual/student_mod_addnew_ne.png');
+}
+.img_student_mod_addnew_en {
+    background-image: url('/static/manual/student_mod_addnew_en.png');
+}
+
+.img_student_deleted {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+
+    width: 600px;
+    height: 80px;
+    background-size: 600px 80px;
+
+    background-image: url('/static/manual/student_deleted.png');
+}
+
+.img_stud_mod_link01_ne, .img_stud_mod_link01_en {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+    width: 800px;
+    height: 395px;
+    background-size: 800px 395px;
+ }
+.img_stud_mod_link01_ne {
+    background-image: url('/static/manual/stud_mod_link01_ne.png');
+}
+.img_stud_mod_link01_en {
+    background-image: url('/static/manual/stud_mod_link01_en.png');
+}
+
+.img_stud_mod_link02_ne, .img_stud_mod_link02_en {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+    width: 800px;
+    height: 627px;
+    background-size: 800px 627px;
+ }
+.img_stud_mod_link02_ne {
+    background-image: url('/static/manual/stud_mod_link02_ne.png');
+}
+.img_stud_mod_link02_en {
+    background-image: url('/static/manual/stud_mod_link02_en.png');
+}
+
+.img_stud_mod_link03_ne, .img_stud_mod_link03_en {
+    background-repeat: no-repeat;
+    margin-left: 8px;
+    width: 800px;
+    height: 459px;
+    background-size: 800px 459px;
+ }
+.img_stud_mod_link03_ne {
+    background-image: url('/static/manual/stud_mod_link03_ne.png');
+}
+.img_stud_mod_link03_en {
+    background-image: url('/static/manual/stud_mod_link03_en.png');
+}
+
+
+/* ---------------------------------------------------
     IMAGES - STUDENT SUBJECTS
 ----------------------------------------------------- */
 
@@ -384,7 +472,7 @@
 .img_studsubj_tab_subj_ne, .img_studsubj_tab_subj_en {
     width: 1118px;
     height: 554px;
-    background-size: 1131px 554px;
+    background-size: 1118px 554px;
  }
 .img_studsubj_tab_subj_ne {
     background-image: url('/static/manual/studsubj_tab_subj_ne.png');
@@ -407,7 +495,7 @@
 
 .img_exclamationsign {
     background-position: -120px -40px;
-    background-image: url('/static/img/notes210917.png');
+    background-image: url('/static/img/notes230124.png');
     background-size: 360px 120px;
 
     background-repeat: no-repeat;

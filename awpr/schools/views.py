@@ -22,8 +22,9 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.generic import View
 
-from accounts import views as acc_view
 from accounts import models as acc_mod
+from accounts import views as acc_view
+from accounts import permits as acc_prm
 
 from awpr import settings as s
 from awpr import excel as awpr_excel
@@ -101,7 +102,7 @@ def Loggedin(request):
     if request and request.user:
         req_usr = request.user
         #logger.debug('req_usr: ' + str(req_usr))
-        sel_page_dict = acc_view.get_usersetting_dict(c.KEY_SEL_PAGE, request)
+        sel_page_dict = acc_prm.get_usersetting_dict(c.KEY_SEL_PAGE, request)
 
         if logging_on:
             logger.debug('sel_page_dict: ' + str(sel_page_dict))
@@ -113,7 +114,7 @@ def Loggedin(request):
         af.reset_show_msg(request)
 
 # ----- display opening message ------ PR2022-05-28
-        usersetting_dict = acc_view.get_usersetting_dict(c.KEY_OPENARGS, request)
+        usersetting_dict = acc_prm.get_usersetting_dict(c.KEY_OPENARGS, request)
         # skip displaying opening message when user has ticked off 'Dont show message again'
         hide_msg = False
         if usersetting_dict:
@@ -236,7 +237,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
                 is_created = (mode == 'save' and not is_saved)
 
 # - get selected examyear from usersettings
-                sel_examyear = af.get_selected_examyear_instance_from_usersetting(request)
+                sel_examyear = af.get_selected_examyear_from_usersetting_without_check(request)
 
                 if logging_on:
                     logger.debug('sel_examyear: ' + str(sel_examyear))
@@ -370,7 +371,7 @@ class MailboxUploadView(View):  # PR2021-10-28
                 message_header = _('Message')
 
 # - get selected examyear, school from usersettings
-                sel_examyear = af.get_selected_examyear_instance_from_usersetting(request)
+                sel_examyear = af.get_selected_examyear_from_usersetting_without_check(request)
 
 # +++  get mailbox instance
                 mailbox_instance = sch_mod.Mailbox.objects.get_or_none(
@@ -427,7 +428,7 @@ class MailboxRecipientsDownloadView(View):  # PR2021-10-23
 
     # - get variables
             mailmessage_pk = upload_dict.get('mailmessage_pk')
-            sel_examyear = af.get_selected_examyear_instance_from_usersetting(request)
+            sel_examyear = af.get_selected_examyear_from_usersetting_without_check(request)
             if logging_on:
                 logger.debug('mailmessage_pk: ' + str(mailmessage_pk))
                 logger.debug('sel_examyear: ' + str(sel_examyear))
@@ -506,7 +507,7 @@ class MailinglistUploadView(View):  # PR2021-10-23
                 is_created = False
 
 # - get selected examyear from usersettings
-                sel_examyear = af.get_selected_examyear_instance_from_usersetting(request)
+                sel_examyear = af.get_selected_examyear_from_usersetting_without_check(request)
 
                 if logging_on:
                     logger.debug('sel_examyear: ' + str(sel_examyear))
@@ -1605,7 +1606,7 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
 
 # - get selected examyear and school from usersettings
                 sel_examyear, may_edit, msg_list = \
-                    dl.get_selected_examyear_from_usersetting(request)
+                    acc_view.get_selected_examyear_from_usersetting(request)
 
                 if logging_on:
                     logger.debug('msg_list: ' + str(msg_list))
@@ -1786,7 +1787,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
         update_wrap = {}
 
 # - get permit
-        has_permit = af.get_permit_crud_of_this_page('page_examyear', request)
+        has_permit = acc_prm.get_permit_crud_of_this_page('page_examyear', request)
         if has_permit:
 
 # - get country of requsr, only if country is not locked
@@ -2112,7 +2113,7 @@ class OrderlistsParametersView(View):  # PR2021-08-31
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_orderlist')
+            permit_list = acc_prm.get_permit_list('page_orderlist', req_usr)
             if permit_list:
                 has_permit = 'permit_crud' in permit_list
             if logging_on:
@@ -2131,7 +2132,7 @@ class OrderlistsParametersView(View):  # PR2021-08-31
                 # - get selected examyear,from usersettings
                 # exames are only ordered in first exam period
                 sel_examyear_instance, sel_examperiodNIU = \
-                    dl.get_selected_examyear_examperiod_from_usersetting(request)
+                    acc_view.get_selected_examyear_examperiod_from_usersetting(request)
                 if logging_on:
                     logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
 
@@ -2174,11 +2175,10 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country:
-            permit_list = req_usr.permit_list('page_orderlist')
+            permit_list = acc_prm.get_permit_list('page_orderlist', req_usr)
             if permit_list:
                 has_permit = 'permit_submit_orderlist' in permit_list
             if logging_on:
-                logger.debug('req_usr.usergroup_list: ' + str(req_usr.usergroup_list))
                 logger.debug('permit_list: ' + str(permit_list))
                 logger.debug('has_permit: ' + str(has_permit))
 
@@ -2198,7 +2198,7 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 sel_examyear, may_edit, msg_list = \
-                    dl.get_selected_examyear_from_usersetting(request)
+                    acc_view.get_selected_examyear_from_usersetting(request)
 
                 if not may_edit:
                     class_str = 'border_bg_warning'
@@ -2258,7 +2258,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
         has_permit = False
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = req_usr.permit_list('page_orderlist')
+            permit_list = acc_prm.get_permit_list('page_orderlist', req_usr)
             if permit_list:
                 has_permit = 'permit_submit_orderlist' in permit_list
             if logging_on:
@@ -2287,7 +2287,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                     logger.debug('upload_dict' + str(upload_dict))
 
                 sel_examyear_instance, may_edit, msg_list = \
-                    dl.get_selected_examyear_from_usersetting(request)
+                    acc_view.get_selected_examyear_from_usersetting(request)
 
                 if not may_edit:
                     class_str = 'border_bg_warning'
@@ -2312,7 +2312,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 # - get selected examyear,from usersettings
                         # exams are only ordered in first exam period
                         sel_examyear_instance, sel_examperiodNIU = \
-                            dl.get_selected_examyear_examperiod_from_usersetting(request)
+                            acc_view.get_selected_examyear_examperiod_from_usersetting(request)
                         if logging_on:
                             logger.debug('sel_examyear_instance: ' + str(sel_examyear_instance))
 
@@ -2743,10 +2743,20 @@ def get_school_emailto_list(school, allowed_usergroups):  # PR2021-09-09
     sendto_pk_str_list, sendto_email_list, sendto_name_list = [], [], []
     # get list of users of this school, for sending email
     # only users with allowed_usergroups will be added
-    school_users = acc_mod.User.objects.filter(
-        schoolbase=school.base,
-        activated=True,
-        is_active=True,
+
+    # TODO PR2022-12-11: check if this is correct usergroups moved from suer to userallowed ( PR2022-12-11
+    # was:
+    # school_users = acc_mod.User.objects.filter(
+    #     schoolbase=school.base,
+    #     activated=True,
+    #     is_active=True,
+    #     usergroups__isnull=False
+    # )
+
+    school_users = acc_mod.UserAllowed.objects.filter(
+        user__schoolbase=school.base,
+        user__activated=True,
+        user__is_active=True,
         usergroups__isnull=False
     )
     for school_user in school_users:
@@ -3215,7 +3225,7 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
         SXM_added_list = []
         if request.user is not None and request.user.country is not None:
             req_usr = request.user
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
+            permit_list, requsr_usergroups_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, 'page_examyear')
             has_permit = 'permit_crud' in permit_list
 
             if logging_on:
@@ -3235,8 +3245,8 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
 
 # - get examyear_code_int of current examyear
                 sel_examyear_code_int = None
-                sel_examyear, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                sel_examyear, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
                 if sel_examyear:
                     sel_examyear_code_int = sel_examyear.code
 
@@ -3312,7 +3322,7 @@ class CopySchemesFromExamyearView(View):  # PR2021-09-24
         log_list = []
         if request.user is not None and request.user.country is not None:
             req_usr = request.user
-            permit_list, requsr_usergroups_list = acc_view.get_userpermit_list('page_examyear', req_usr)
+            permit_list, requsr_usergroups_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, 'page_examyear')
             has_permit = 'permit_crud' in permit_list and request.user.is_role_system
 
             if logging_on:
@@ -3338,8 +3348,8 @@ class CopySchemesFromExamyearView(View):  # PR2021-09-24
                 copyto_examyear_pk = upload_dict.get('copyto_examyear_pk')
 
 # - get copyfrom_examyear  - which is the current examyear
-                copyfrom_examyear_instance, sel_schoolNIU, sel_departmentNIU, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
+                copyfrom_examyear_instance, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if logging_on:
                     logger.debug('copyfrom_examyear_instance: ' + str(copyfrom_examyear_instance) + ' ' + str(copyfrom_examyear_instance.country.abbrev))
@@ -3593,6 +3603,7 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
 
         if logging_on:
             logger.debug('    mapped_schemeitems: ' + str(mapped_schemeitems))
+
         # Not in use
         #mapped_packages = sf.copy_packages_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
         #sf.copy_packageitems_from_prev_examyear(prev_examyear_pk, mapped_packages, mapped_schemeitems, log_list)
@@ -3692,7 +3703,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                 # - exam year is locked
                 # - (skip check for not published)
                 sel_examyear, may_edit, sel_msg_list = \
-                    dl.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                    acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if sel_msg_list:
                     msg_html = '<br>'.join(sel_msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
@@ -3897,58 +3908,7 @@ class SchoolImportUploadSetting(View):   # PR2019-03-10
 # --- end of SubjectImportUploadSetting
 
 
-@method_decorator([login_required], name='dispatch')
-class SchoolAwpUploadView(View):  # PR2021-05-03
-
-    def post(self, request):
-        logging_on = s.LOGGING_ON
-
-        files = request.FILES
-        file = files.get('file')
-        if logging_on:
-            logger.debug(' ============= SchoolAwpUploadView ============= ')
-            logger.debug('files: ' + str(files) + ' ' + str(type(files)))
-            logger.debug('file: ' + str(file) + ' ' + str(type(file)))
-
-        # function creates, deletes and updates studentsubject records of current student PR2020-11-21
-        update_wrap = {}
-
-        #<PERMIT>
-        # only users with role > student and perm_edit can change student data
-        # only school that is requsr_school can be changed
-        #   current schoolbase can be different from request.user.schoolbase (when role is insp, admin, system)
-        # only if country/examyear/school/student not locked, examyear is published and school is activated
-        has_permit = False
-        if request.user and request.user.country and request.user.schoolbase:
-            has_permit = True # (request.user.role > c.ROLE_002_STUDENT and request.user.is_group_edit)
-        if has_permit:
-
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-# - get upload_dict from request.POST
-            upload_json = request.POST.get('upload', None)
-            if upload_json:
-                upload_dict = json.loads(upload_json)
-                logger.debug('upload_dict: ' + str(upload_dict))
-
-                # - get selected examyear, school and department from usersettings
-                sel_examyear, sel_school, sel_department, is_locked, \
-                examyear_published, school_activated, requsr_same_schoolNIU = \
-                    dl.get_selected_ey_school_dep_from_usersetting(request)
-
-                file_type = upload_dict.get('file_type')
-                file_name = upload_dict.get('file_name')
-                file_size = upload_dict.get('file_size')
-
-
-# 9. return update_wrap
-        return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
-# - end of SchoolAwpUploadView
-
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 def create_school_instance(examyear, upload_dict, request):
     # --- create school # PR2019-07-30 PR2020-10-22 PR2021-06-20 PR2022-08-07
     logging_on = False  # s.LOGGING_ON
@@ -4213,7 +4173,174 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
 # - -end of update_school_instance
 
 
+
+@method_decorator([login_required], name='dispatch')
+class ArchivesListView(View):  # PR2022-03-09
+
+    def get(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(' =====  ArchivesListView ===== ')
+
+# -  get user_lang
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get headerbar parameters
+        page = 'page_archive'
+        params = awpr_menu.get_headerbar_param(request, page)
+
+# - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
+        #         # PR2021-06-22 moved to get_headerbar_param
+
+        return render(request, 'archives.html', params)
+# - end of ArchivesListView
+
+
+@method_decorator([login_required], name='dispatch')
+class ArchivesUploadView(View):  # PR2022-11-02
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ArchivesUploadView ============= ')
+
+        update_wrap = {}
+        updated_rows = []
+
+        # - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+
+            # - get permit
+            page_name = 'page_archive'
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+            has_permit = True
+            if logging_on:
+                logger.debug('    has_permit:       ' + str(has_permit))
+            if has_permit:
+
+    # - reset language
+                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+                activate(user_lang)
+
+                # - get variables
+                published_pk = upload_dict.get('published_pk')
+                is_create = mode == 'create'
+                is_delete = mode == 'delete'
+
+                message_list = []
+                append_dict = {}
+
+                header_txt = _('Delete document')
+
+                # ----- get selected examyear, school and department from usersettings
+                # may_edit = False when:
+                #  - country is locked,
+                #  - examyear is not found, not published or locked
+                #  - school is not found, not same_school, or locked
+                #  - department is not found, not in user allowed depbase or not in school_depbase
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, sel_msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
+                        request=request,
+                        skip_same_school_clause=True
+                    )
+
+                if sel_msg_list:
+                    msg_html = '<br>'.join(sel_msg_list)
+                    message_list.append({'class': "border_bg_invalid", 'msg_html': msg_html})
+                    if logging_on:
+                        logger.debug('message_list:   ' + str(message_list))
+                else:
+
+            # +++  get existing published_instance
+                    published_instance = sch_mod.Published.objects.get_or_none(
+                        id=published_pk
+                    )
+                    if logging_on:
+                        logger.debug('    published_instance.modifiedby: ' + str(published_instance.modifiedby))
+                        logger.debug('    request.user: ' + str(request.user))
+
+            # +++ Delete published_instance
+                    if is_delete and published_instance:
+                        modby_usr = published_instance.modifiedby
+                        req_usr = request.user
+                        # PR2022-11-21
+                        # published document may only be deleted by ETE and when req_usr is from teh same organization
+                        # as the user who created the file
+                        # schools cannot delete published items
+                        if req_usr.role == c.ROLE_064_ADMIN and modby_usr.schoolbase == req_usr.schoolbase:
+
+                        # document may only be deleted when req_usr is from teh same organization
+                        # as the user who created the file
+
+
+                        # only 'Bestellijst' documents may be deleted, only by  by ETE
+                        #if published_instance.name and ('Orderlist' in published_instance.name or 'Bestellijst' in published_instance.name):
+
+                            deleted_row, err_html = delete_published_instance(published_instance, request)
+                            if err_html:
+                                message_list.append(
+                                    {'header': str(header_txt),
+                                     'class': "border_bg_invalid",
+                                     'msg_html': err_html}
+                                )
+                            elif deleted_row:
+                                updated_rows.append(deleted_row)
+
+                        else:
+                            if modby_usr.role == c.ROLE_008_SCHOOL:
+                                msg_html = '<br>'.join((
+                                    str(_("Document '%(val)s' is created by a school.") % {'val': published_instance.name}),
+                                    str(_("You cannot delete this document."))))
+                            else:
+                                msg_html = str(_("You don't have permission to delete document '%(val)s'.") % {'val': published_instance.name})
+                            message_list.append({'class': "border_bg_invalid", 'msg_html': msg_html})
+
+        # - addd message_list to update_wrap
+                if message_list:
+                    update_wrap['message_list'] = message_list
+
+        update_wrap['updated_published_rows'] = updated_rows
+
+        # - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - end of ArchivesUploadView
+
+
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+def delete_published_instance(published_instance, request):
+    # --- delete publshed #  PR2022-11-03
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- delete_published_instance ----- ')
+        logger.debug('published_instance: ' + str(published_instance))
+
+    deleted_row = None
+    msg_html = None
+    this_txt = _("Document '%(val)s' ") % {'val': published_instance.name if published_instance.name else '-'}
+
+    # delete publshed will also cascade delete studsubj, Grades, publshedsubjectnote, Noteattachment
+    deleted_row, err_html = sch_mod.delete_instance(
+        table='published',
+        instance=published_instance,
+        request=request,
+        this_txt=this_txt
+    )
+    if err_html:
+        msg_html = err_html
+
+    if logging_on:
+        logger.debug('    deleted_row: ' + str(deleted_row))
+        logger.debug('    msg_html: ' + str(msg_html))
+
+    return deleted_row, msg_html
+# - end of delete_published_instance
+
 
 def get_field_caption(table, field):
     caption = ''

@@ -1,7 +1,10 @@
 import json
 
 from django.db import connection
+
 from accounts import views as acc_view
+from accounts import permits as acc_prm
+
 from awpr import constants as c
 from awpr import functions as af
 from awpr import settings as s
@@ -434,6 +437,7 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
         sql_list = ["SELECT ey.id, ey.country_id, ey.code AS examyear_code, CONCAT('examyear_', ey.id::TEXT) AS mapid,",
             "sch.id AS school_id, sch.name, sch.locked, sch.lockedat,",
             "ey.published AS examyear_published, ey.locked AS examyear_locked,",
+            "ey.thumbrule_allowed AS thumbrule_allowed,",
             "sch.modifiedby_id, sch.modifiedat, au.last_name AS modby_username",
             "FROM schools_school AS sch",
             "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
@@ -449,6 +453,7 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
             "ey.order_extra_fixed, ey.order_extra_perc, ey.order_round_to,",
             "ey.order_tv2_divisor, ey.order_tv2_multiplier, ey.order_tv2_max,",
             "ey.order_admin_divisor, ey.order_admin_multiplier, ey.order_admin_max,",
+            "ey.thumbrule_allowed AS thumbrule_allowed,",
             "ey.modifiedby_id, ey.modifiedat, au.last_name AS modby_username",
             "FROM schools_examyear AS ey",
             "INNER JOIN schools_country AS cntr ON (cntr.id = ey.country_id)",
@@ -489,11 +494,14 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
 # --- end of create_examyear_rows
 
 
-def create_department_rows(examyear, skip_allowed_filter, request):
-    # --- create rows of all departments of this examyear / country PR2020-09-30 PR2022-08-03
-    logging_on = False  # s.LOGGING_ON
+def create_department_rows(examyear, sel_schoolbase, skip_allowed_filter, request):
+    # --- create rows of all departments of this examyear / country PR2020-09-30 PR2022-08-03 PR2023-01-09
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_department_rows ============= ')
+        logger.debug('    examyear: ' + str(examyear))
+        logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
+
 
     sql_keys = {'ey_id': examyear.pk}
 
@@ -509,13 +517,26 @@ def create_department_rows(examyear, skip_allowed_filter, request):
 
         "WHERE ey.id = %(ey_id)s::INT"
     ]
-    acc_view.get_userfilter_allowed_depbase(
+
+    allowed_depbase_sql_clause, allowed_depbase_sql_key_dict = acc_prm.get_sqlclause_allowed_depbase_from_request(
         request=request,
-        sql_keys=sql_keys,
-        sql_list=sql_list,
         depbase_pk=None,
+        sel_schoolbase_pk=sel_schoolbase.pk,
         skip_allowed_filter=skip_allowed_filter
     )
+
+    if logging_on:
+        logger.debug('    allowed_depbase_sql_clause: ' + str(allowed_depbase_sql_clause))
+        logger.debug('    allowed_depbase_sql_key_dict: ' + str(allowed_depbase_sql_key_dict))
+
+    if allowed_depbase_sql_clause:
+        sql_list.append(allowed_depbase_sql_clause)
+    if allowed_depbase_sql_key_dict:
+        sql_keys.update(allowed_depbase_sql_key_dict)
+
+    if logging_on:
+        logger.debug('    sql_keys: ' + str(sql_keys))
+
     sql_list.append("ORDER BY dep.id")
     sql = ' '.join(sql_list)
 
@@ -530,14 +551,16 @@ def create_department_rows(examyear, skip_allowed_filter, request):
     return rows
 # --- end of create_department_rows
 
-def create_level_rows(request, examyear, depbase, cur_dep_only, skip_allowed_filter):
+
+def create_level_rows(request, examyear, sel_schoolbase, sel_depbase, cur_dep_only, skip_allowed_filter):
     # --- create rows of all levels of this examyear / country PR2020-12-11 PR2021-03-08  PR2021-06-24
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_level_rows ============= ')
-        logger.debug('    examyear: ' + str(examyear))
-        logger.debug('    depbase: ' + str(depbase))
-        logger.debug('    cur_dep_only: ' + str(cur_dep_only))
+        logger.debug('    examyear:       ' + str(examyear))
+        logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
+        logger.debug('    sel_depbase:    ' + str(sel_depbase))
+        logger.debug('    cur_dep_only:   ' + str(cur_dep_only))
 
     rows =[]
     if examyear:
@@ -559,16 +582,14 @@ def create_level_rows(request, examyear, depbase, cur_dep_only, skip_allowed_fil
 
         if cur_dep_only:
             depbase_lookup = None
-            if depbase:
+            if sel_depbase:
                 department = sch_mod.Department.objects.get_or_none(
                     examyear=examyear,
-                    base=depbase
+                    base=sel_depbase
                 )
                 if department:
                     if department.level_req:
-                        depbase_lookup = ''.join( ('%;', str(depbase.pk), ';%') )
-
-
+                        depbase_lookup = ''.join( ('%;', str(sel_depbase.pk), ';%') )
                 if logging_on:
                     logger.debug('department: ' + str(department))
                     logger.debug('depbase_lookup: ' + str(depbase_lookup))
@@ -584,7 +605,9 @@ def create_level_rows(request, examyear, depbase, cur_dep_only, skip_allowed_fil
             sql_keys=sql_keys,
             sql_list=sql_list,
             skip_allowed_filter=skip_allowed_filter,
-            lvlbase_pk=None
+            lvlbase_pk=None,
+            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+            sel_depbase_pk=sel_depbase.pk if sel_depbase else None
         )
 
         sql_list.append("ORDER BY lvl.id")
@@ -664,66 +687,82 @@ def create_sector_rows(examyear, depbase, cur_dep_only):
 
 def create_school_rows(request, examyear, append_dict, skip_allowed_filter=False, school_pk=None):
     # --- create rows of all schools of this examyear / country
-    # PR2020-09-18 PR2021-04-23 PR2022-03-13 PR2022-08-07
-    logging_on = False  # s.LOGGING_ON
+    # PR2020-09-18 PR2021-04-23 PR2022-03-13 PR2022-08-07 PR2022-12-05 PR2023-02-16
+
+    logging_on = s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' =============== create_school_rows ============= ')
+        logger.debug('    school_pk: ' + str(school_pk) + ' ' + str(type(school_pk)))
+        logger.debug('    skip_allowed_filter: ' + str(skip_allowed_filter) + ' ' + str(type(skip_allowed_filter)))
 
+    school_rows = []
 
-    requsr_role = request.user.role
-    requsr_schoolbase_pk = request.user.schoolbase.pk
+    try:
+        requsr_role = request.user.role
+        requsr_schoolbase_pk = request.user.schoolbase.pk
 
-    sql_keys = {'ey_id': examyear.pk, 'max_role': requsr_role}
+        examyear_pk = examyear.pk if examyear else None
+        max_role = requsr_role
+        sql_list = ["SELECT school.id, school.base_id, school.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
+            "CONCAT('school_', school.id::TEXT) AS mapid, sb.defaultrole,",
+            "school.name, school.abbrev, school.article, sb.code AS sb_code, school.depbases, school.otherlang,",
+            "school.isdayschool, school.iseveningschool, school.islexschool, school.activated, school.activatedat, school.locked, school.lockedat,",
+            "school.modifiedby_id, school.modifiedat, au.last_name AS modby_username",
 
-    sql_list = ["SELECT school.id, school.base_id, school.examyear_id, ey.code AS examyear_code, ey.country_id, c.name AS country,",
-        "CONCAT('school_', school.id::TEXT) AS mapid, sb.defaultrole,",
-        "school.name, school.abbrev, school.article, sb.code AS sb_code, school.depbases, school.otherlang,",
-        "school.isdayschool, school.iseveningschool, school.islexschool, school.activated, school.activatedat, school.locked, school.lockedat,",
-        "school.modifiedby_id, school.modifiedat, au.last_name AS modby_username",
+            "FROM schools_school AS school",
+            "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
+            "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
+            "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
+            "LEFT JOIN accounts_user AS au ON (au.id = school.modifiedby_id)",
 
-        "FROM schools_school AS school",
-        "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-        "INNER JOIN schools_country AS c ON (c.id = ey.country_id)",
-        "LEFT JOIN accounts_user AS au ON (au.id = school.modifiedby_id)",
+            "WHERE ey.id=" + str(examyear_pk) + "::INT",
+            "AND sb.defaultrole <= " + str(max_role) + "::INT"]
 
-        "WHERE ey.id = %(ey_id)s::INT",
-        "AND sb.defaultrole <= %(max_role)s::INT"]
+        schoolbase_pk = None
+        if school_pk:
+            # school_pk has only a value after update in SchoolUploadView
+            # then one row is retrieved,  to put new values on page
+            sql_list.append(''.join(("AND school.id=" , str(school_pk), "::INT")))
 
-    schoolbase_pk = None
-    if school_pk:
-        # school_pk has only a value after update
-        # then one row is retrieved,  to put new values on page
-        sql_list.append('AND school.id = %(sch_id)s::INT')
-        sql_keys['sch_id'] = school_pk
-    elif requsr_role <= c.ROLE_008_SCHOOL:
-        # schools can only view their own school
-        schoolbase_pk = requsr_schoolbase_pk
+        elif requsr_role <= c.ROLE_008_SCHOOL:
+            # schools can only view their own school
+            schoolbase_pk = requsr_schoolbase_pk
 
-    acc_view.get_userfilter_allowed_schoolbase(
-        request=request,
-        sql_keys=sql_keys,
-        sql_list=sql_list,
-        schoolbase_pk=schoolbase_pk,
-        skip_allowed_filter=skip_allowed_filter)
-    # order by id necessary to make sure that lookup function on client gets the right row
-    sql_list.append("ORDER BY school.id")
+        allowed_schoolbase_sql_clause = acc_prm.get_sqlclause_allowed_schoolbase_from_request(
+            request=request,
+            schoolbase_pk=schoolbase_pk,
+            skip_allowed_filter=skip_allowed_filter
+        )
+        if allowed_schoolbase_sql_clause:
+            sql_list.append(allowed_schoolbase_sql_clause)
 
-    sql = ' '.join(sql_list)
-    if logging_on:
-        logger.debug('sql_keys' + str(sql_keys))
+        # order by id necessary to make sure that lookup function on client gets the right row
+        # TODO to be deprecated when changing do dict instead of sorted dictlist PR2023-01-25
+        sql_list.append("ORDER BY school.id")
 
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        school_rows = af.dictfetchall(cursor)
+        sql = ' '.join(sql_list)
+        if logging_on:
+            for row in sql_list:
+                logger.debug(' > ' + str(row))
 
-# - add messages to school_row, only if school_pk has value
-    if school_pk and school_rows and append_dict:
-        # when subject_pk has value there is only 1 row
-        row = school_rows[0]
-        if row:
-            for key, value in append_dict.items():
-                row[key] = value
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            school_rows = af.dictfetchall(cursor)
+
+        if logging_on:
+            logger.debug('    len(school_rows): ' + str(len(school_rows)))
+
+    # - add messages to school_row, only if school_pk has value
+        if school_pk and school_rows and append_dict:
+            # when subject_pk has value there is only 1 row
+            row = school_rows[0]
+            if row:
+                for key, value in append_dict.items():
+                    row[key] = value
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
     return school_rows
 # --- end of create_school_rows

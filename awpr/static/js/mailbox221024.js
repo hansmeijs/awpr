@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let user_list = [];
     let user_rows = [];
     let permit_rows = [];
-    let school_rows = [];
+    //let school_rows = [];
 
     let examyear_map = new Map();
 

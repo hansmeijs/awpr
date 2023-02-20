@@ -39,6 +39,14 @@ def update_library(examyear, request):
         ('exform', 'col_exnr', 'Ex.nr.'),
         ('exform', 'col_idnr', 'ID-nummer'),
         ('exform', 'bullet', '*'),
+
+        ('exform', 'extrafacilities', 'Kandidaat maakt gebruik van extra faciliteiten.'),
+        ('exform', 'bullet_submitted', 'Dit vak is al op een eerder Ex-formulier ingediend.'),
+        ('exform', 'bullet_new', 'Dit is een nieuw vak.'),
+        ('exform', 'bullet_deleted', 'Dit vak is gewist.'),
+        ('exform', 'bullet_changed', 'Het karakter van dit vak is gewijzigd.'),
+
+
         ('exform', 'signature_chairperson', '(Handtekening voorzitter)'),
         ('exform', 'signature_secretary', '(Handtekening secretaris)'),
 
@@ -73,8 +81,8 @@ def update_library(examyear, request):
         ('ex1', 'title', 'Genummerde alfabetische naamlijst van de kandidaten'),
         ('ex1', 'submit_before', 'Inzenden vóór 1 november *'),
         ('ex1', 'footnote01', 'Dit formulier dient tevens voor bestelling schriftelijk werk.'),
-        ('ex1', 'footnote02', 'Ex.nr.: onder dit nummer doet de kandidaat examen.'),
-        ('ex1', 'footnote03', 'Vakken waarin geëxamineerd moet worden aangeven met x.'),
+        ('ex1', 'footnote02', 'Examennummer.: onder dit nummer doet de kandidaat examen.'),
+        ('ex1', 'footnote03', 'Vakken waarin geëxamineerd moet worden zijn aangegeven met een cirkel.'),
         ('ex1', 'footnote04', None),
         ('ex1', 'footnote05', None),
         ('ex1', 'footnote06', '*  Het getekend exemplaar en een digitale versie'),
@@ -84,6 +92,7 @@ def update_library(examyear, request):
         ('ex1', 'lex_footnote08', None),
 
         ('ex2', 'ex2_title', 'Verzamellijst van cijfers van schoolexamens'),
+        ('ex2', 'ex2_title_exem', 'Verzamellijst van cijfers van vrijstellingen'),
         ('ex2', 'submit_before', 'Inzenden ten minste 3 dagen vóór aanvang van de centrale examens*'),
         ('ex2', 'footnote01', 'Ex. nr. en naam dienen in overeenstemming '),
         ('ex2', 'footnote02', 'te zijn met formulier EX.1'),

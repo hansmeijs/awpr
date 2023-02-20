@@ -9,18 +9,20 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
 from django.views.generic import View
 
+from decimal import Decimal
+from accounts import views as acc_view
+from accounts import  permits as acc_prm
+
 from awpr import constants as c
 from awpr import settings as s
 from awpr import functions as af
 from awpr import downloads as dl
-
 
 from grades import calculations as grade_calc
 from grades import calc_score as calc_score
 from students import functions as stud_fnc
 from students import views as stud_view
 
-from decimal import Decimal
 
 import json
 
@@ -133,7 +135,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
         activate(user_lang)
 
 # - get permit
-        has_permit = af.get_permit_of_this_page('page_result', 'calc_results', request)
+        has_permit = acc_prm.get_permit_of_this_page('page_result', 'calc_results', request)
 
         # note: this is part of get_permit_crud_of_this_page:
         #       'if has_permit and request.user and request.user.country and request.user.schoolbase:'
@@ -157,8 +159,8 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
-                sel_examyear, sel_school, sel_department, may_edit, msg_list = \
-                    dl.get_selected_ey_school_dep_from_usersetting(
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
+                    acc_view.get_selected_ey_school_dep_lvl_from_usersetting(
                         request=request,
                         skip_same_school_clause= request.user.role in (c.ROLE_032_INSP, c.ROLE_064_ADMIN)
                     )
@@ -188,6 +190,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                     update_wrap['log_student_name'] = single_student_name
 
                     update_wrap['updated_student_rows'], error_dict = stud_view.create_student_rows(
+                        request=request,
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_school.base,
                         sel_depbase=sel_department.base,
@@ -3030,11 +3033,11 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
                 # "studsubj.gradelist_sesrgrade, studsubj.gradelist_pecegrade, studsubj.gradelist_finalgrade,",
                 # "studsubj.pws_title, studsubj.pws_subjects,",
 
-                "grade.examperiod, grade.segrade AS se, grade.srgrade AS sr, grade.sesrgrade AS sesr,",
-                "grade.pegrade AS pe, grade.cegrade AS ce, grade.pecegrade AS pece, grade.finalgrade AS final",
+                "grd.examperiod, grd.segrade AS se, grd.srgrade AS sr, grd.sesrgrade AS sesr,",
+                "grd.pegrade AS pe, grd.cegrade AS ce, grd.pecegrade AS pece, grd.finalgrade AS final",
 
                 "FROM students_studentsubject AS studsubj",
-                "INNER JOIN students_grade AS grade ON (grade.studentsubject_id = studsubj.id)",
+                "INNER JOIN students_grade AS grd ON (grd.studentsubject_id = studsubj.id)",
 
                 "INNER JOIN subjects_schemeitem AS si ON (si.id = studsubj.schemeitem_id)",
                 "INNER JOIN subjects_subject AS subj ON (subj.id = si.subject_id)",
@@ -3042,7 +3045,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
                 "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
-                "WHERE NOT studsubj.tobedeleted AND NOT grade.tobedeleted",
+                "WHERE NOT studsubj.tobedeleted AND NOT grd.tobedeleted AND NOT grd.deleted",
                 "ORDER BY subjbase.code"
                 ]
 
@@ -4047,7 +4050,7 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
     # - AWP calculates the result based on the exemption
     #  - the student fails again
     # - because she did the exam this year, she must get a new exemption
-    # - therefore calculating max_pok is not enough, because it looks at the exemption and gives pok = Fals
+    # - therefore calculating max_pok is not enough, because it looks at the exemption and gives pok = False
     # - solution: add pok_sesr, pok_pece and pok_final to studsubject
 
 # 1. geen BvK als het cijfer gebaseerd is op vrijstelling

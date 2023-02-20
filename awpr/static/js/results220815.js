@@ -1,6 +1,6 @@
 // PR2020-09-29 added
 
-// PR2021-07-23  declare variables outside function to make them global variables
+// PR2021-07-23  these variables are declared in base.js to make them global variables
 
 // selected_btn is also used in t_MCOL_Open
 //let selected_btn = "btn_result";
@@ -9,7 +9,7 @@
 let student_rows = [];
 let results_per_school_rows = [];
 let pres_secr_dict = {};
-let school_rows = [];
+//let school_rows = [];
 
 const field_settings = {};
 
@@ -223,28 +223,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
-        if(el_SBR_select_level){
-            el_SBR_select_level.addEventListener("change",
-                function() {t_SBR_select_and_update_level_sector("lvlbase", el_SBR_select_level, Response_from_SBR_select_level_sector)}, false);
-        };
+        el_SBR_select_level.addEventListener("change",function() {SBR_select_lvlbase_sctbase("lvlbase", el_SBR_select_level)}, false);
+
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
-        if(el_SBR_select_sector){
-            el_SBR_select_sector.addEventListener("change",
-                function() {t_SBR_select_and_update_level_sector("sctbase", el_SBR_select_sector, Response_from_SBR_select_level_sector)}, false);
-        };
-        const el_SBR_select_class = document.getElementById("id_SBR_select_class");
-        if(el_SBR_select_class){
-            el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+        el_SBR_select_sector.addEventListener("change",function() {SBR_select_lvlbase_sctbase("sctbase", el_SBR_select_sector)}, false);
+
+        //const el_SBR_select_class = document.getElementById("id_SBR_select_class");
+        //if(el_SBR_select_class){
+        //    el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, false, setting_dict, permit_dict, SBR_MSSSS_Response)}, false)};
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
-        if(el_SBR_select_student){
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+        el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, SBR_MSSSS_Response)}, false);
 
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
-        if(el_SBR_select_showall){
-            el_SBR_select_showall.addEventListener("click", function() {SBR_show_all(FillTblRows)}, false);
-            add_hover(el_SBR_select_showall);
-        };
+        el_SBR_select_showall.addEventListener("click", function() {SBR_show_all(FillTblRows)}, false);
+        add_hover(el_SBR_select_showall);
+
         const el_SBR_item_count = document.getElementById("id_SBR_item_count")
 
 // ---  MODAL SIDEBAR FILTER ------------------------------------
@@ -274,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_MAG_subj_lvl_cls_container = document.getElementById("id_MAG_subj_lvl_cls_container");
             const el_MAG_subject = document.getElementById("id_MAG_subject");
-            const el_MAG_lvlbase = document.getElementById("id_MAG_lvlbase");
+            const el_MAG_level_abbrev = document.getElementById("id_MAG_level_abbrev");
             const el_MAG_cluster = document.getElementById("id_MAG_cluster");
 
         const el_MAG_approved_by_label = document.getElementById("id_MAG_approved_by_label");
@@ -1979,8 +1973,8 @@ function RefreshDataRowsAfterUpload(response) {
                 const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req;
                 add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
 
-                const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
-                el_MAG_lvlbase.innerText = level_abbrev;
+                //const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
+                //el_MAG_level_abbrev.innerText = level_abbrev;
 
 // --- get approved_by
                 if (el_MAG_approved_by_label){
@@ -2616,38 +2610,92 @@ function RefreshDataRowsAfterUpload(response) {
     };  // MSED_Response
 
 
-//###########################################################################
-//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
-    function MSSSS_Response(tblName, selected_dict, selected_pk) {
-        //console.log( "===== MSSSS_Response ========= ");
-        //console.log( "selected_pk", selected_pk);
-        //console.log( "selected_code", selected_code);
-        //console.log( "selected_name", selected_name);
+// +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++
 
-// --- reset table
+//=========  SBR_select_lvlbase_sctbase  ================ PR2022-12-07
+    function SBR_select_lvlbase_sctbase(mode, el_select) {
+        console.log("=== SBR_select_Level_Sector");
+        //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        // mode = "level" or "sector"
+
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
 
-// ---  upload new setting and refresh page
+// --- reset SBR_item_count
+        el_SBR_item_count.innerText = null;
+
+// - put new value in setting_dict
+        // not necessary, new setting_dict will be downloaded
+
+// ---  upload new setting -
+        // not necessary, new setting will be saved in DatalistDownload
+
+// ---  upload new setting and download datarows
+        const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
+        const sel_pk_key_str = (mode === "sector") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
+        const new_setting_dict = {page: "page_student"}
+        new_setting_dict[sel_pk_key_str] = sel_pk_int;
+
         const datalist_request = {
-                setting: {page: "page_result",
-                          sel_schoolbase_pk: selected_pk  },
-                school_rows: {get: true},
-                department_rows: {get: true},
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-                student_rows: {get: true},
-                subject_rows: {get: true},
-                studentsubject_rows: {get: true},
-                scheme_rows: {cur_dep_only: true},
-            };
+            setting: new_setting_dict,
+            // not necessary:
+            //  level_rows: {cur_dep_only: true},
+            //  sector_rows: {cur_dep_only: true},
+            student_rows: {cur_dep_only: true},
+        };
 
         DatalistDownload(datalist_request);
 
-    };  // MSSSS_Response
+    }  // SBR_select_lvlbase_sctbase
 
-//=========  SBR_show_all  ================ PR2021-11-18
-    function SBR_show_all(FillTblRows) {
-        console.log("===== SBR_show_all =====");
+
+//=========  SBR_MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26 PR2022-12-07
+    function SBR_MSSSS_Response(tblName, selected_dict, selected_pk) {
+        console.log( "===== SBR_MSSSS_Response ========= ");
+        console.log( "    selected_pk", selected_pk);
+        console.log( "    selected_dict", selected_dict);
+        // function SBR_select_student only filters the stduent rows.
+        // it does not upload the selected student_pk and doen not send a datalist_request
+
+// --- reset table rows, also delete header
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
+// --- reset SBR_item_count
+        el_SBR_item_count.innerText = null;
+
+// ---  upload new setting and download datarows
+        const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
+        const sel_pk_key_str = (mode === "sector") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
+        const new_setting_dict = {page: "page_student"}
+        new_setting_dict[sel_pk_key_str] = sel_pk_int;
+
+
+// ---  upload new setting and refresh page
+        const datalist_request = {
+            setting: new_setting_dict,
+            // not necessary:
+            //  level_rows: {cur_dep_only: true},
+            //  sector_rows: {cur_dep_only: true},
+            student_rows: {cur_dep_only: true},
+        };
+        DatalistDownload(datalist_request);
+
+
+    };  // SBR_MSSSS_Response
+
+
+
+
+
+
+
+//=========  SBR_show_all  ================ PR2020-12-17 like in grades.js
+    function SBR_show_all() {
+        console.log("=====  SBR_show_all  ========");
+
+        // don't reset setting_dict.sel_depbase_pk
 
         setting_dict.sel_lvlbase_pk = null;
         setting_dict.sel_level_abbrev = null;
@@ -2655,34 +2703,39 @@ function RefreshDataRowsAfterUpload(response) {
         setting_dict.sel_sctbase_pk = null;
         setting_dict.sel_sector_abbrev = null;
 
-        setting_dict.sel_classname = null;
-
         setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
 
-        const el_SBR_select_department = document.getElementById("id_SBR_select_department");
-        const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
-        const el_SBR_select_class = document.getElementById("id_SBR_select_class");
+        // NIU setting_dict.sel_classname = null;
+        // NIU setting_dict.sel_student_pk = null;
 
-        if (el_SBR_select_department){ el_SBR_select_department.value = null};
-        if (el_SBR_select_level){ el_SBR_select_level.value = null};
-        if (el_SBR_select_sector){ el_SBR_select_sector.value = null};
-        if (el_SBR_select_class){ el_SBR_select_class.value = "0"};
+        el_SBR_select_level.value = null;
+        el_SBR_select_sector.value = null;
 
-// ---  upload new setting
-        const selected_pk_dict = {};
-        if (el_SBR_select_department){selected_pk_dict.sel_depbase_pk = null};
-        if (el_SBR_select_level){selected_pk_dict.sel_lvlbase_pk = null};
-        if (el_SBR_select_sector){selected_pk_dict.sel_sctbase_pk = null};
-        if (el_SBR_select_class){selected_pk_dict.sel_classname = null};
+        t_MSSSS_display_in_sbr("student", "0");
 
-        const new_setting = {page: "page_result", sel_lvlbase_pk: null, sel_sctbase_pk: null };
+// --- reset table
+        tblHead_datatable.innerText = null;
+        tblBody_datatable.innerText = null;
+
+// --- reset SBR_item_count
+        el_SBR_item_count.innerText = null;
+
+// ---  upload new setting and refresh page
         const datalist_request = {
-                setting: new_setting,
-                student_rows: {cur_dep_only: true}
+                setting: {
+                    page: "page_result",
+                    sel_lvlbase_pk: null,
+                    sel_sctbase_pk: null,
+                    sel_student_pk: null
+                },
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
+                student_rows: {get: true},
             };
-        DatalistDownload(datalist_request, true); // true = skip_message
-
+            DatalistDownload(datalist_request);
     };  // SBR_show_all
+
 
 
 //========= get_recursive_integer_lookup  ========  PR2021-09-08
