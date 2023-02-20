@@ -1088,7 +1088,7 @@ def system_updates(examyear, request):
 
 
 # once only function converts allowed deps, levels and subjects to a dict and stores it in allword_schools PR2022-11-23
-    convertAllowedSectionsONCEONLY(request)
+    #convertAllowedSectionsONCEONLY(request)
 
 # PR 2022-10-09 one time function to fill table EnvelopSubject
     # fillEnvelopSubjectONCEONLY(request)
@@ -1350,14 +1350,14 @@ def calcPok2022AndSaveInStudsubjONCEONLY(request):
 
 def convertAllowedSectionsONCEONLY(request):
     # functions converts allowed deps, levels and subjects to a dict and stores it in allowerd_schools PR2022-11-23 PR2022-12-03
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- convertAllowedSectionsONCEONLY -------')
 
-    def get_subject_dict():
+    def get_subject_dict(examyear_pk):
         subject_dict = {}
 
-        sql_keys = {'ey_id': examyear.pk}
+        sql_keys = {'ey_id': examyear_pk}
         sql = ' '.join(["SELECT subj.base_id,",
                     "ARRAY_AGG(DISTINCT dep.base_id) AS depbase_id_arr,",
                     "ARRAY_AGG(DISTINCT lvl.base_id) AS lvlbase_id_arr",
@@ -1495,7 +1495,7 @@ def convertAllowedSectionsONCEONLY(request):
                 users = get_user_list(examyear_pk)
 
                 # subjects_dict = {157: [[1, 2, 3], [4, 5, 6, None]]}
-                subjects_dict = get_subject_dict()
+                subjects_dict = get_subject_dict(examyear_pk)
 
             # - loop through user list
                 for user in users:

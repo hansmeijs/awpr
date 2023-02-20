@@ -55,6 +55,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
         if request.user and request.user.country and  request.user.schoolbase:
             if request.POST['download']:
 
+
+# once only function converts allowed deps, levels and subjects to a dict and stores it in allword_schools PR2022-11-23
+                af.convertAllowedSectionsONCEONLY(request)
+
+
 # ----- get user_lang
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
                 activate(user_lang)
