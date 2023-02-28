@@ -368,6 +368,27 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Yes_send_email'] = _('Yes, send email')
 
+    if 'page_corrector' in page_list:
+
+        dict['Subjectcode_2lines'] = _('Subject\ncode')
+        dict['Subject_code'] = _('Subject code')
+        dict['Number_approvals'] = _('Number of approvals')
+        dict['Number_meetings'] = _('Number of meetings')
+        dict['Number_approvals_2lines'] = _('Number of\napprovals')
+        dict['Number_meetings_2lines'] = _('Number of\nmeetings')
+        dict['Compensation'] = _('Compensation')
+        dict['Version'] = _('Version')
+        dict['Exam_period'] = _('Exam period')
+
+        dict['Abbrev'] = _('Abbrev.')
+        dict['is_an_invalid_number'] = _(' is an invalid number.')
+        dict['is_not_valid'] = _(' is not valid.')
+
+        dict['must_enter_whole_number_between_0_and_'] = _('You must enter a whole number between 0 and ')
+
+        dict['cannot_enter_meetings_in_tab_compensation'] = _("You cannot enter the number of meetings in this tab 'Compensation'.")
+        dict['select_tab_approvals_to_enter_meetings'] = _("Select the tab 'Approvals' and try again.")
+
 # ====== PAGE EXAM YEAR ========================= PR2020-10-04
     if 'page_examyear' in page_list:
         dict['Created_at'] = _('Created at ')
@@ -941,6 +962,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
         dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex1 form to delete this subject.')
 
+
+        dict['ATTENTION'] = _('ATTENTION')
+        dict['Only_the_learningpath'] = _('Only the learning path ')
+        dict['willbe_added_to_Ex1form'] = _(' will be added to the Ex1 form.')
+        dict['Select_all_learningpaths'] = _("Select 'All learning paths' in the grey bar on the left to include all learning paths.")
+
         dict['MASS_info'] = {
             'subheader_approve_ex1': _('Selection of the subjects, that will be approved:'),
             'subheader_approve_ex4': _('Selection of the re-examinations, that will be approved:'),
@@ -1325,11 +1352,22 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submitted_by'] = TXT_Submitted_by
 
         dict['Submit'] = TXT_Submit
-        dict['Show_fully_approved'] = _('Only the grades, that are fully approved or submitted, are shown.')
-        dict['Show_not_fully_approved'] = _('Only the grades, that are not fully approved, are shown.')
-        dict['Show_blocked'] = _('Only the grades, that are blocked by the Inspectorate, are shown.')
+
+        dict['grade_status'] = {
+            '1': _('Only the grades, that nobody has approved, are shown.'),
+            '2': _('Only the grades, that are not approved by the chairperson, are shown.'),
+            '3': _('Only the grades, that are not approved by the secretary, are shown.'),
+            '4': _('Only the grades, that are not approved by the examiner, are shown.'),
+            '5': _('Only the grades, that are not approved by the second corrector, are shown.'),
+            '6': _('Only the grades, that are fully approved, are shown.'),
+            '7': _('Only the grades, that are submitted, are shown.'),
+            '8': _('Only the grades, that are blocked by the Inspectorate, are shown.')
+        }
 
         dict['MAG_info'] = {
+            'awp_is_checking_grades': _('AWP is checking the %(sc_gr)s of the candidates') % {'sc_gr': _('grades')},
+            'awp_is_checking_scores': _('AWP is checking the %(sc_gr)s of the candidates') % {'sc_gr': _('scores')},
+
             'subheader_approve': _('The following grades will be approved:'),
             'subheader_approve_exem': _('The following exemptions will be approved:'),
             'subheader_submit_ex2': _('An %(ex)s form with the following %(sc_gr)s will be submitted:') % {'ex': 'Ex2', 'sc_gr': _('grades')},

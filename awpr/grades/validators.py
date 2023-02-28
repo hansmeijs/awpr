@@ -17,7 +17,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, allowed_cluster_pk_list,
+def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, userallowed_cluster_pk_list,
                 schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted,
                 msg_list, is_approve=False, is_score=False, is_grade_exam=False):
     # PR2022-03-20 PR2023-02-18
@@ -25,7 +25,7 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, a
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
-        logger.debug('     allowed_cluster_pk_list: ' + str(allowed_cluster_pk_list))
+        logger.debug('     userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
         logger.debug('     studsubj_tobedeleted: ' + str(studsubj_tobedeleted))
 
     not_allowed = False
@@ -55,8 +55,8 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, a
         # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
 
         if requsr_auth not in ('auth1', 'auth2'):
-            if allowed_cluster_pk_list:
-                if not cluster_pk or cluster_pk not in allowed_cluster_pk_list:
+            if userallowed_cluster_pk_list:
+                if not cluster_pk or cluster_pk not in userallowed_cluster_pk_list:
                     caption = _('the allowed clusters')
 
         if caption:
@@ -74,10 +74,10 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, a
 # - end of validate_grade_is_allowed
 
 
-def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_cluster_pk_list, schoolbase_pk, depbase_pk, lvlbase_pk,
+def validate_grade_multiple_is_allowed(request, requsr_auth, userallowed_cluster_pk_list, schoolbase_pk, depbase_pk, lvlbase_pk,
                                        subjbase_pk, cluster_pk):
     # PR2022-04-07
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- validate_grade_is_allowed -------')
         logger.debug(' '.join(('schoolbase_pk:', str(schoolbase_pk), 'depbase_pk:', str(depbase_pk),
@@ -90,9 +90,9 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, allowed_cluster_pk_
     # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
 
     if requsr_auth not in ('auth1', 'auth2'):
-        if allowed_cluster_pk_list:
-            # also not allowed when allowed_cluster_pk_list is not empty and studsubj does not belong to cluster
-            if not cluster_pk or cluster_pk not in allowed_cluster_pk_list:
+        if userallowed_cluster_pk_list:
+            # also not allowed when userallowed_cluster_pk_list is not empty and studsubj does not belong to cluster
+            if not cluster_pk or cluster_pk not in userallowed_cluster_pk_list:
                 not_allowed = True
 
     if not not_allowed and request.user.allowed_subjectbases:

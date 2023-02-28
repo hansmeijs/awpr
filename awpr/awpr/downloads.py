@@ -133,11 +133,14 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get correctors
                 if datalist_request.get('corrector_rows'):
-                    datalists['corrector_rows'] = acc_view.create_corrector_rows(request)
+                    datalists['corrector_rows'] = acc_view.create_corrector_rows(sel_examyear, request)
 
 # ----- get UserCompensation
-                if datalist_request.get('usercompensation_rows'):
-                    datalists['usercompensation_rows'] = acc_view.create_corrector_rows(request)
+                if datalist_request.get('userapproval_rows'):
+                    acc_view.update_usercompensation(sel_examyear, request)
+                    datalists['userapproval_rows'] = acc_view.create_userapproval_rows(sel_examyear, request)
+                    datalists['usercompensation_rows'] = acc_view.calc_usercompensation_rows(sel_examyear, request)
+
 
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
@@ -352,6 +355,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_examyear=sel_examyear,
                             sel_schoolbase=sel_schoolbase,
                             sel_depbase=sel_depbase,
+                            sel_lvlbase=sel_lvlbase,
                             sel_examperiod=sel_examperiod,
                             setting_dict=new_setting_dict,
                             request=request
@@ -825,7 +829,7 @@ def download_setting(request_item_setting, user_lang, request):
                     examyear=sel_examyear_instance,
                     base_id=saved_pk_int)
                 if sector:
-                    setting_dict['sel_sector_abbrev'] = sector.abbrev
+                    setting_dict['sel_sctbase_code'] = sector.base.code if sector.base else '-'
                     setting_dict['sel_sector_name'] = sector.name
 
             elif key_str == c.KEY_SEL_CLUSTER_PK:

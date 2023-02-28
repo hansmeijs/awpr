@@ -161,6 +161,9 @@ urlpatterns = [
 
         path('download_userdata_xlsx', account_views.UserdataDownloadXlsxView.as_view(), name='url_download_userdata_xlsx'),
 
+        path('corrector', account_views.CorrectorListView.as_view(), name='url_corrector'),
+        path('usercompensation_upload', account_views.UserCompensationUploadView.as_view(), name='url_usercompensation_upload'),
+
     ])),
 
     url(r'session_security/', include('session_security.urls')),
@@ -312,6 +315,7 @@ urlpatterns = [
     path('archives/', include([
         path('archive', school_views.ArchivesListView.as_view(), name='url_archive'),
         path('archive_upload', school_views.ArchivesUploadView.as_view(), name='url_archive_upload'),
+
     ])),
 
 # ===== ORDERLISTS ========================== PR2021-04-04

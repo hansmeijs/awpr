@@ -314,7 +314,7 @@ select.form-control:not([size]):not([multiple]) {
   background-color: #646464; /* #606060; */
   color: white;
 }
-.svg_menu_item {
+.svg_menu_button {
     margin: 2px 0px;
     padding: 0;
 }

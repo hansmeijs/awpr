@@ -558,10 +558,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     SBR_FillSelectOptions("department");
                 };
                 if ("level_rows" in response) {
+                    level_rows = response.level_rows;
                     b_fill_datamap(level_map, response.level_rows);
                     SBR_FillSelectOptions("level");
                 };
                 if ("sector_rows" in response) {
+                    sector_rows = response.sector_rows;
                     b_fill_datamap(sector_map, response.sector_rows);
                     SBR_FillSelectOptions("sector");
                 };
@@ -1765,7 +1767,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // reset leerweg and sector when dep set to havo / vwo
             if (!selected.level_req){
                 selected.lvlbase_pk =  null;
-                selected.sel_level_abbrev = null;
+                selected.sel_lvlbase_code = null;
                 if (el_SBR_select_level){ el_SBR_select_level.value = null};
                 //upload_dict.page_subject.selected_pk.sel_lvlbase_pk = null;
             }

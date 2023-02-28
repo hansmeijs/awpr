@@ -27,17 +27,17 @@ pos_y = 18
 # viewpermits: 'none', 'read', 'write', 'auth', 'admin', 'all'
 
 
-MENUS_ITEMS = {
+MENUS_BUTTONS = {
     c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
                         'page_studsubj', 'page_exams', 'page_wolf', 'page_grade',
-                      'page_result', 'page_archive'], #  'page_report', 'page_analysis'],
+                      'page_result', 'page_corrector', 'page_archive'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
                        'page_studsubj', 'page_exams', 'page_wolf', 'page_grade',
-                     'page_result', 'page_archive'],  #, 'page_report', 'page_analysis'],
+                     'page_result', 'page_corrector', 'page_archive'],  #, 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
                       'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],
-    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_wolf', 'page_grade', 'page_result', 'page_archive'],
-    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_wolf', 'page_grade', 'page_result', 'page_archive'] # 'page_report',
+    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive'],
+    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive'] # 'page_report',
 }
 
 MENUS_DICT = {
@@ -52,6 +52,7 @@ MENUS_DICT = {
     'page_grade': {'caption': _('Grades'), 'href': 'grades_url', 'width': 100},
     'page_result': {'caption': _('Results'), 'href': 'results_url', 'width': 100},
     'page_report': {'caption': _('Reports'), 'href': 'url_archive', 'width': 120},
+    'page_corrector': {'caption': _('Second correctors'), 'href': 'url_corrector', 'width': 150},
     'page_archive': {'caption': _('Archive'), 'href': 'url_archive', 'width': 90},
     'page_analysis': {'caption':  _('Analysis'), 'href': 'url_archive', 'width': 90}
 }
@@ -161,7 +162,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
 
 # -  get permit_list from userallowed
         #PR2023-02-13 not in use, usergroups are displayed in moduserallowedsections
-        permit_list, usergroup_list,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, sel_page)
+        permit_list, usergroup_list, requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = \
+            acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, sel_page)
         #auth_list = []
         #for usergroup in usergroup_list:
         #    if 'auth' in usergroup:
@@ -317,7 +319,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
             logger.debug('    department_name: ' + str(department_name))
             logger.debug('    display_department: ' + str(display_department))
 
-
 # ----- set background color in headerbar
         if req_usr.role in (c.ROLE_016_CORR, c.ROLE_032_INSP):
             _class_bg_color = 'awp_bg_green'
@@ -328,9 +329,9 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
         else:
             _class_bg_color = 'awp_bg_blue'
 
-# ----- set menu_items -------- PR2018-12-21
+# ----- set menu_buttons -------- PR2018-12-21
         # get selected menu_key and selected_button_key from request.GET, settings or default, check viewpermit
-        menu_items = set_menu_items(sel_page, _class_bg_color, request)
+        menu_buttons = set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request)
 
 # ------- set no_access -------- PR2021-04-27 PR2021-07-03 PR2022-05-30
         #  PR2022-05-30 only give no_access when user has no usergroups (commissioner could not log in
@@ -389,7 +390,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
             'examyear_code': sel_examyear_str,
             'display_school': display_school, 'school': school_name,
             'display_department': display_department, 'department': department_name,
-            'menu_items': menu_items,
+            'menu_buttons': menu_buttons,
             'messages': messages,
             'permit_list': permit_list,
             'page': sel_page[5:],
@@ -432,12 +433,12 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
     return page_href
 
 
-def set_menu_items(sel_page, _class_bg_color, request):
-    # function is called by get_headerbar_param, creates template tags menu_items and submenus
+def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
+    # function is called by get_headerbar_param, creates template tags menu_buttons and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
     logging_on = False  # s.LOGGING_ON
     if logging_on:
-        logger.debug('===== set_menu_items ===== ')
+        logger.debug('===== set_menu_buttons ===== ')
         logger.debug('sel_page: ' + str(sel_page))
 
 # - reset language
@@ -451,55 +452,68 @@ def set_menu_items(sel_page, _class_bg_color, request):
     menu_item_tags = []
 
     # list of menuitems to be shown in page
-    menu_items = MENUS_ITEMS.get(request.user.role)
+    menu_buttons = MENUS_BUTTONS.get(request.user.role)
 
     # loop through all menus in menus, to retrieve href from all menu-buttons
     # from https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/
-    for menu_index, key_str in enumerate(menu_items):
+    for menu_index, key_str in enumerate(menu_buttons):
         menu_item = MENUS_DICT[key_str]
 
-        # lookup the href that belongs to this index in submenus_tuple
-        # function gets first href in href_string, when insp or admin it gets the second item
-        menu_href = menu_item.get('href')
+        # PR2023-02-24 show menu button 'Second correctors' only when:
+        # - role is corrector or admin
+        #  - or if role c.ROLE_008_SCHOOL and user has usergroup chairperson, secretary or corrector (auth1, auth2, auth4)
 
-    # ------------ get menu ------------
-        caption = menu_item.get('caption', '-')
-        if logging_on:
-            logger.debug('caption: ' + str(caption))
-
-
-        h_ref_reverse = ''
-        if menu_href:
-           h_ref_reverse = reverse_lazy(menu_href)
-
-        # highlight selected menu
-        if key_str == sel_page:
-            if _class_bg_color == 'awp_bg_purple':
-                polygon_class = 'menu_polygon_selected_purple'
-            elif _class_bg_color == 'awp_bg_green':
-                polygon_class = 'menu_polygon_selected_green'
-            elif _class_bg_color == 'awp_bg_yellow':
-                polygon_class = 'menu_polygon_selected_yellow'
-            else:
-                polygon_class = 'menu_polygon_selected_blue'
-            text_fill = '#EDF2F8'
+        if key_str == 'page_corrector':
+            show_btn = False
+            if request.user.role == c.ROLE_016_CORR:
+                show_btn = True
+            elif request.user.role == c.ROLE_008_SCHOOL:
+                if 'auth1' in usergroup_list or 'auth2' in usergroup_list or 'auth4' in usergroup_list:
+                    show_btn = True
         else:
-            polygon_class = 'menu_polygon_unselected'
-            text_fill = '#212529'
-        #logger.debug('polygon_class: ' + str(polygon_class))
-        #logger.debug('caption: ' + str(caption))
+            show_btn = True
 
-        # add menu settings to parameter 'menu_item'
-        width = menu_item.get('width', 0)
-        indent_left = indent_none if menu_index == 0 else indent_10
-        indent_right = indent_none if menu_index == len(menu_items) - 1 else indent_10
-        points = get_svg_arrow(width, height, indent_left, indent_right)
-        pos_x = width / 2
-        menu_item_tag= {'caption': caption, 'href': h_ref_reverse,
-                   'width': str(width), 'height':  str(height), 'points': points,
-                    'class': polygon_class,
-                    'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
-        menu_item_tags.append(menu_item_tag)
+        if show_btn:
+            # lookup the href that belongs to this index in submenus_tuple
+            # function gets first href in href_string, when insp or admin it gets the second item
+            menu_href = menu_item.get('href')
+
+        # ------------ get menu ------------
+            caption = menu_item.get('caption', '-')
+            if logging_on:
+                logger.debug('caption: ' + str(caption))
+
+
+            h_ref_reverse = ''
+            if menu_href:
+               h_ref_reverse = reverse_lazy(menu_href)
+
+            # highlight selected menu
+            if key_str == sel_page:
+                if _class_bg_color == 'awp_bg_purple':
+                    polygon_class = 'menu_polygon_selected_purple'
+                elif _class_bg_color == 'awp_bg_green':
+                    polygon_class = 'menu_polygon_selected_green'
+                elif _class_bg_color == 'awp_bg_yellow':
+                    polygon_class = 'menu_polygon_selected_yellow'
+                else:
+                    polygon_class = 'menu_polygon_selected_blue'
+                text_fill = '#EDF2F8'
+            else:
+                polygon_class = 'menu_polygon_unselected'
+                text_fill = '#212529'
+
+    # add menu settings to parameter 'menu_item'
+            width = menu_item.get('width', 0)
+            indent_left = indent_none if menu_index == 0 else indent_10
+            indent_right = indent_none if menu_index == len(menu_buttons) - 1 else indent_10
+            points = get_svg_arrow(width, height, indent_left, indent_right)
+            pos_x = width / 2
+            menu_item_tag= {'caption': caption, 'href': h_ref_reverse,
+                       'width': str(width), 'height':  str(height), 'points': points,
+                        'class': polygon_class,
+                        'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
+            menu_item_tags.append(menu_item_tag)
 
     return menu_item_tags
 

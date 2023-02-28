@@ -304,8 +304,8 @@ class UserCompensation(sch_mod.AwpBaseModel):
 
     user = ForeignKey(User, related_name='+', on_delete=CASCADE)
 
-    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
     exam = ForeignKey(Exam, related_name='+', on_delete=CASCADE)
+    school = ForeignKey(School, related_name='+', on_delete=CASCADE)
 
     amount = PositiveSmallIntegerField(default=0)  # entered by corrector
     meetings = PositiveSmallIntegerField(default=0)   # entered by corrector

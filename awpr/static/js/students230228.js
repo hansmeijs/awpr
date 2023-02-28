@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const may_view_page = (!!el_loader);
 
 // ---  id of selected customer and selected order
-    // declared as global: //let selected_btn = "btn_student";
+    // declared as global: let selected_btn = null;
     ////let setting_dict = {};
     ////let permit_dict = {};
 
@@ -443,11 +443,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_fill_datamap(school_map, response.school_rows)};
 
                 if ("level_rows" in response)  {
+                    level_rows = response.level_rows;
                     b_fill_datamap(level_map, response.level_rows);
                     t_SBR_filloptions_level_sector("level", response.level_rows)
 
                 };
                 if ("sector_rows" in response) {
+                    sector_rows = response.sector_rows;
                     b_fill_datamap(sector_map, response.sector_rows);
                     t_SBR_filloptions_level_sector("sector", response.sector_rows);
                 };
@@ -2520,16 +2522,16 @@ function RefreshDataRowsAfterUpload(response) {
 
 // - get new value from el_select
         const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
-        const sel_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
+        const sel_code = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
 // - put new value in setting_dict
         const sel_pk_key_str = (mode === "sector") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
-        const sel_abbrev_key_str = (mode === "sector") ? "sel_sector_abbrev" : "sel_level_abbrev";
+        const sel_code_key_str = (mode === "sector") ? "sel_sctbase_code" : "sel_lvlbase_code";
         setting_dict[sel_pk_key_str] = sel_pk_int;
-        setting_dict[sel_abbrev_key_str] = sel_abbrev;
+        setting_dict[sel_code_key_str] = sel_code;
 
     console.log("sel_pk_key_str", sel_pk_key_str);
-    console.log("sel_abbrev_key_str", sel_abbrev_key_str);
+    console.log("sel_code_key_str", sel_code_key_str);
 
 // ---  upload new setting - not necessary, new setting will be saved in DatalistDownload
 
@@ -2560,10 +2562,10 @@ function RefreshDataRowsAfterUpload(response) {
         // don't reset setting_dict.sel_depbase_pk
 
         setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_level_abbrev = null;
+        setting_dict.sel_lvlbase_code = null;
 
         setting_dict.sel_sctbase_pk = null;
-        setting_dict.sel_sector_abbrev = null;
+        setting_dict.sel_sctbase_code = null;
 
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;

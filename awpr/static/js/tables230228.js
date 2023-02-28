@@ -164,9 +164,9 @@
             new_setting.sel_sctbase_pk = null;
             // also reset setting_dict - setting_dict must be a global variable;
             setting_dict.sel_lvlbase_pk = null;
-            setting_dict.sel_level_abbrev = null;
+            setting_dict.sel_lvlbase_code = null;
             setting_dict.sel_sctbase_pk = null;
-            setting_dict.sel_sector_abbrev = null;
+            setting_dict.sel_sctbase_code = null;
         };
         // always reset student and subject when changing dep or ey
         new_setting.sel_student_pk = null;
@@ -1562,7 +1562,7 @@
            //         setting_dict.sel_sctbase_pk = rows.base_id
            //     }
             } else {
-                //PR2022-01-08 caption_all = all_txt is necessary to skip all_txt in setting_dict.sel_sector_abbrev
+                //PR2022-01-08 caption_all = all_txt is necessary to skip all_txt in setting_dict.sel_sctbase_code
                 caption_all = all_txt;
 
                 // add row 'Alle leerwegen' / Alle profielen / Alle sectoren in first row
@@ -1588,11 +1588,11 @@
             // PR2022-12-16 dont update setting dict in this function, was confusing
             // //PR2022-01-08 dont put 'All profielen' etc in setting_dict > skip when caption_all has value
             //if (!caption_all){
-            //    const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
+            //    const sel_code = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
             //    if (tblName === "lvlbase"){
-            //        setting_dict.sel_level_abbrev = sel_abbrev;
+            //        setting_dict.sel_lvlbase_code = sel_code;
            //     } else if (tblName === "sctbase"){
-           //         setting_dict.sel_sector_abbrev = sel_abbrev;
+           //         setting_dict.sel_sctbase_code = sel_code;
            //     };
             //};
 
@@ -1632,6 +1632,38 @@
         }
         return option_text
     }  // t_FillOptionLevelSectorFromMap
+
+
+//========= t_FillOptionLevelSectorFromDatarows  ============= PR2023-02-21
+    function t_FillOptionLevelSectorFromDatarows(tblName, pk_field, data_rows, depbase_pk, selected_pk, firstoption_txt, select_text) {
+         //console.log( "===== t_FillOptionLevelSectorFromDatarows  ========= ");
+         //console.log( "data_map", data_map);
+         // used to fill SBR select level, sector from datarows instad of datamap (datamap te be deprecated)
+
+
+// add empty option on first row, put firstoption_txt in < > (placed here to escape \< and \>
+        let option_text = "";
+        if (select_text){
+            option_text += "<option value=\"\" disabled selected hidden>" + select_text + "...</option>";
+        };
+
+        if(firstoption_txt){
+            option_text += "<option value=\"0\" data-ppk=\"0\">" + firstoption_txt + "</option>";
+        }
+// --- loop through data_map, fill only items with department_pk in depbases
+        if (data_rows && data_rows.length) {
+
+// first sort data_rows on field 'sequence'
+        data_rows.sort(b_comparator_sequence);
+
+            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                if(data_dict.depbases && depbase_pk && data_dict.depbases.includes(depbase_pk)){
+                    option_text += FillOptionText(tblName, pk_field, data_dict, selected_pk);
+                }
+            }
+        };
+        return option_text
+    }  // t_FillOptionLevelSectorFromDatarows
 
 //========= FillOptionText  ============= PR2020-12-11 from tsa
     function FillOptionText(tblName, pk_field, item_dict, selected_pk) {
@@ -2192,7 +2224,7 @@
 
 //========= t_Filter_TableRow_Extended  ==================================== PR2020-07-12 PR2020-09-12 PR2021-10-28
     function t_Filter_TableRow_Extended(filter_dict, tblRow, data_inactive_field) {
-        //console.log( "===== t_Filter_TableRow_Extended  ========= ");
+        //console.log( "===== t_Filter_TableRow_Extended");
         //console.log( "filter_dict", filter_dict);
         //console.log( "data_inactive_field", data_inactive_field);
         // filter_dict = {2: ["text", "r", ""], 4: ["text", "y", ""] }
@@ -2236,17 +2268,58 @@
                         const filter_mode = filter_arr[2];
 
                         const cell = tblRow.cells[col_index];
+    //console.log(" ===> cell", cell);
                         if(cell){
                             const el = cell.children[0];
                             if (el){
                                 const cell_value = get_attr_from_el(el, "data-filter")
 
+    //console.log("     filter_tag", filter_tag)
+    //console.log("     filter_value", filter_value, typeof filter_value)
+    //console.log("     cell_value", cell_value, typeof cell_value)
+                                if (filter_tag === "grade_status"){
 
+                                    // PR2023-02-21 in page grades
+                                    // filter_values are: '0'; is show all, 1: not approved, 2: auth1 approved, 3: auth2 approved, 4: auth1+2 approved, 5: submitted,   TODO '6': tobedeleted '7': locked
+                                    // filter_array  = ['grade_status', '1']
+                                   if (filter_value === "1") {
+                                        hide_row = (cell_value && cell_value !== "diamond_0_0"); // none approved - outlined diamond
+                                    } else if (filter_value === "2") {  // filter_value === "2") ? "diamond_3_2" :  // not approved by chairperson
+                                        hide_row = !["diamond_0_0", "diamond_0_2",
+                                                    "diamond_1_0", "diamond_1_2",
+                                                    "diamond_2_0", "diamond_2_2",
+                                                    "diamond_3_0", "diamond_3_2"].includes(cell_value);
+                                    } else if (filter_value === "3") {  // filter_value === "3": not approved by secretary
+                                        hide_row = !["diamond_0_0", "diamond_0_1",
+                                                    "diamond_1_0", "diamond_1_1",
+                                                    "diamond_2_0", "diamond_2_1",
+                                                    "diamond_3_0", "diamond_3_1"].includes(cell_value);
+                                    } else if (filter_value === "4") {  // filter_value === "4": // not approved by examiner
+                                        hide_row = !["diamond_0_0", "diamond_0_1", "diamond_0_2", "diamond_0_3",
+                                                    "diamond_2_0", "diamond_2_1",  "diamond_2_2", "diamond_2_3"].includes(cell_value);
 
-                                if (filter_tag === "status"){
+                                    } else if (filter_value === "5") {  // filter_value === "5": // not approved by second corrector
+                                        hide_row = !["diamond_0_0", "diamond_0_1", "diamond_0_2", "diamond_0_3",
+                                                     "diamond_1_0", "diamond_1_1", "diamond_1_2", "diamond_1_3"].includes(cell_value);
+
+                                    } else if (filter_value === "6") {  // filter_value === "6": all approved - full black diamond
+                                        hide_row = cell_value !== "diamond_3_3";
+
+                                    } else if (filter_value === "7") {  // filter_value === "7": // submitted - full blue diamond
+                                        hide_row = cell_value !== "diamond_0_4";  // submitted - full blue diamond
+
+                                    } else if (filter_value === "8") {  // filter_value === "8": // blocked - full red diamond
+                                        hide_row = cell_value !== "diamond_1_4";
+                                    };
+
+                                } else if (filter_tag === "status"){
+                                    // PR2023-02-21 in page studsubj
+                                    // filter_values are: '0'; is show all, 1: not approved, 2: auth1 approved, 3: auth2 approved, 4: auth1+2 approved, 5: submitted,   TODO '6': tobedeleted '7': locked
 
                                     // default filter status '0'; is show all, '1' is show tickmark, '2' is show without tickmark
-                                    hide_row = (filter_value && filter_value !== Number(cell_value));
+                                    hide_row = (filter_value && Number(filter_value) !== Number(cell_value));
+
+
                                 } else if (filter_tag === "toggle"){
                                     // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                     if (filter_value === "2"){
@@ -2454,15 +2527,16 @@ const mod_MCOL_dict = {
             };
         };
         upload_dict[mod_MCOL_dict.page] = {cols_hidden: upload_colhidden_list}
-    console.log("upload_dict", upload_dict);
-    console.log("url_usersetting_upload", url_usersetting_upload);
+
+    console.log("    upload_dict", upload_dict);
+    console.log("    url_usersetting_upload", url_usersetting_upload);
 
         b_UploadSettings (upload_dict, url_usersetting_upload);
 
     // update mod_MCOL_dict.cols_hidden
         b_copy_array_noduplicates(upload_colhidden_list, mod_MCOL_dict.cols_hidden);
 
-    console.log("mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden);
+    console.log("   mod_MCOL_dict.cols_hidden", mod_MCOL_dict.cols_hidden);
         HandleBtnSelect(mod_MCOL_dict.selected_btn, true)  // true = skip_upload
 // hide modal
         // in HTML: data-dismiss="modal"
@@ -2539,54 +2613,51 @@ const mod_MCOL_dict = {
 
 // +++++++++++++++++ SBR SELECT LEVEL SECTOR ++++++++++++++++++++++++++++++++++++++++++
 
-//=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-01-11
+//=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-02-21
     function t_SBR_select_level_sector(mode, el_select, SBR_lvl_sct_response, skip_upload) {
-        console.log("===== t_SBR_select_level_sector =====");
-        console.log( "mode: ", mode) // mode = "lvlbase" or "sctbase"
-        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
+        //console.log("===== t_SBR_select_level_sector =====");
+        //console.log( "    mode: ", mode) // mode = "lvlbase" or "sctbase"
+       // console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
 
 // - clear datatable, don't delete table header
         const tblBody_datatable = document.getElementById("id_tblBody_datatable");
         if (tblBody_datatable) {tblBody_datatable.innerText = null};
 
+        if (el_select && ["lvlbase", "sctbase"].includes (mode)){
+
 // - get new value from el_select
-        const sel_pk_int = (Number(el_select.value)) ? Number(el_select.value) : null;
-        const sel_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
-        console.log( "sel_pk_int: ", sel_pk_int);
-        console.log( "sel_abbrev: ", sel_abbrev);
+            const sel_pk_int = (el_select.value && Number(el_select.value)) ? Number(el_select.value) : null;
+            console.log( "    sel_pk_int: ", sel_pk_int);
 
 // - put new value in setting_dict
-        const sel_pk_key_str = (mode === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
-        const sel_abbrev_key_str = (mode === "sctbase") ? "sel_sector_abbrev" : "sel_level_abbrev";
+            const sel_pk_key_str = (mode === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
+            const code_key_str = (mode === "sctbase") ? "sctbase_code" : "lvlbase_code";
 
-    console.log( "    sel_abbrev_key_str: ", sel_abbrev_key_str);
-    console.log( "    setting_dict[sel_pk_key_str]: ", setting_dict[sel_pk_key_str]);
+            let new_sel_pk_int = null, new_sel_code = null;
+            const data_rows = (mode === "sctbase") ? sector_rows : (mode === "lvlbase") ? level_rows : null;
+            if (data_rows && data_rows.length){
+                for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+                    if(data_dict.base_id && data_dict.base_id ===  sel_pk_int ){
+                        new_sel_pk_int = data_dict.base_id;
+                        new_sel_code = (data_dict[code_key_str]) ? data_dict[code_key_str] : "---";
+                        break;
+                    };
+                };
+            };
+            setting_dict[sel_pk_key_str] = new_sel_pk_int;
+            setting_dict["sel_" + code_key_str] = new_sel_code;
 
-        setting_dict[sel_pk_key_str] = sel_pk_int;
-        setting_dict[sel_abbrev_key_str] = sel_abbrev;
-        //console.log("setting_dict", setting_dict);
+            if (!skip_upload) {
+                const selected_pk_dict = {};
+                selected_pk_dict[sel_pk_key_str] = new_sel_pk_int
+                const upload_dict = {selected_pk: selected_pk_dict};
 
-        if (!skip_upload) {
-            let upload_dict = {};
-            if (mode === "lvlbase"){
-                setting_dict.sel_lvlbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
-                setting_dict.sel_level_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
-
-                upload_dict = {selected_pk: {sel_lvlbase_pk: setting_dict.sel_lvlbase_pk}};
-            } else if (mode === "sctbase"){
-                setting_dict.sel_sctbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
-                setting_dict.sel_sector_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
-
-                upload_dict = {selected_pk: {sel_sctbase_pk: setting_dict.sel_sctbase_pk}};
-            }
-            console.log( "upload_dict.value: ", upload_dict)
-
-    // ---  upload new setting
-            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
-            //UpdateHeaderLeft();
+        // ---  upload new setting
+                b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+            };
+            SBR_lvl_sct_response(mode, el_select);
         };
-        SBR_lvl_sct_response(mode, el_select);
-    }  // t_SBR_select_level_sector
+    };  // t_SBR_select_level_sector
 
 //=========  t_SBR_filloptions_level_sector  ================ PR2021-08-02 PR2023-01-11
     function t_SBR_filloptions_level_sector(tblName, rows) {
@@ -2640,11 +2711,11 @@ const mod_MCOL_dict = {
         t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
         // put displayed text in setting_dict
-        const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
+        const sel_code = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
         if (tblName === "level"){
-            setting_dict.sel_level_abbrev = sel_abbrev;
+            setting_dict.sel_lvlbase_code = sel_code;
         } else if (tblName === "sector"){
-            setting_dict.sel_sector_abbrev = sel_abbrev;
+            setting_dict.sel_sctbase_code = sel_code;
         }
         //console.log("el_SBR_select.parentNode", el_SBR_select.parentNode);
         add_or_remove_class(el_SBR_select.parentNode, cls_hide, !show_select_element);
@@ -2670,10 +2741,10 @@ const mod_MCOL_dict = {
         //setting_dict.sel_depbase_code = null;
 
         setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_level_abbrev = null;
+        setting_dict.sel_lvlbase_code = null;
 
         setting_dict.sel_sctbase_pk = null;
-        setting_dict.sel_sector_abbrev = null;
+        setting_dict.sel_sctbase_code = null;
 
         setting_dict.sel_subject_pk = null;
         setting_dict.sel_subject_code = null;

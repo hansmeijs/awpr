@@ -755,11 +755,11 @@ document.addEventListener('DOMContentLoaded', function() {
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
             // put displayed text in setting_dict
-            const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
+            const sel_code = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
             if (tblName === "level"){
-                setting_dict.sel_level_abbrev = sel_abbrev;
+                setting_dict.sel_lvlbase_code = sel_code;
             } else if (tblName === "sector"){
-                setting_dict.sel_sector_abbrev = sel_abbrev;
+                setting_dict.sel_sctbase_code = sel_code;
             };
         };
     };  // FillOptionsSelectLevelSector
@@ -827,8 +827,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setting_dict.sel_department_pk = null;
 
         setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_level_abbrev = null;
-        setting_dict.sel_lvlbase_pk = null;
+        setting_dict.sel_lvlbase_code = null;
 
         setting_dict.sel_subject_pk = null;
         setting_dict.sel_cluster_pk = null;

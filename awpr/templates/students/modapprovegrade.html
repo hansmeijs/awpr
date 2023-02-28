@@ -16,15 +16,11 @@
             </div>
 
             <div class="modal-body p-4">
-                <div class="border_bg_message">
-                    <div class="flex_container">
-                        <div class="flex_1 m-2">
-                             <h6 id="id_MAG_subheader" class="mx-2" ></h6>
-                        </div>
-                    </div>
+                <div id="id_MAG_select_container" class=" p-2 border_bg_message display_hide">
+
+                    <h6 id="id_MAG_subheader" class="mx-2" ></h6>
 
                     <div class="flex_container">
-
                         <div class="flex_1 m-2">
                             <label for="id_MAG_examperiod" class="mx-2 ">{% trans 'Exam period' %}:</label>
                             <div id="id_MAG_examperiod" class="form-control p-2" ></div>
@@ -62,11 +58,12 @@
                             </div>
                         </div>
 
-                        <small class="mx-4" >{% trans 'You can change the selection in de vertical grey bar on the left of the page.' %}</small>
-
+                        <small class="mx-3" >{% trans 'You can change the selection in de vertical grey bar on the left of the page.' %}</small>
                     </div>
                 </div>
 
+                <div id="id_MAG_info_container" class="mx-0 mt-2 display_hide">
+                </div>
 
                 <div id="id_MAG_loader" class="display_hide mx-4 mt-2">
                     <div class="image_container">
@@ -74,9 +71,11 @@
                     </div>
                 </div>
 
-                <div id="id_MAG_msg_container" class="mt-2 p-2 display_hide"></div>
-
-                <div id="id_MAG_info_container" class="mx-4 mt-2 display_hide"></div>
+                <div id="id_MAG_info_request_verifcode" class="mx-0 mt-2 p-2 border_bg_transparent display_hide">
+                    <p>{% trans "You need a 6 digit verification code to submit the Ex form." %}</p>
+                    <p>{% trans "Click 'Request verification code' and we will send you an email with the verification code." %}</p>
+                    <p>{% trans "The verification code expires in 30 minutes." %}</p>
+                </div>
 
                 <div class="display_hide">
                     <label for="id_MAG_input_verifcode" class="label_margin_top_m2">{% trans 'Verification code' %}:</label>

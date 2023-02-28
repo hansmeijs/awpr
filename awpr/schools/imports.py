@@ -229,11 +229,11 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                     msg_list.extend(err_list)
 
                 if logging_on:
-                    logger.debug('importtable: ' + str(importtable))
-                    logger.debug('page:        ' + str(page))
-                    logger.debug('requsr.role: ' + str(request.user.role))
-                    logger.debug('permit_list: ' + str(permit_list))
-                    logger.debug('has_permit: ' + str(has_permit))
+                    logger.debug('    importtable: ' + str(importtable))
+                    logger.debug('    page:        ' + str(page))
+                    logger.debug('    requsr.role: ' + str(request.user.role))
+                    logger.debug('    permit_list: ' + str(permit_list))
+                    logger.debug('    has_permit: ' + str(has_permit))
 
                 if not has_permit:
                     err_html = _("You don't have permission to perform this action.")
@@ -3485,7 +3485,7 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- import_studsubj_grade_from_datalist ----- ')
-        logger.debug('       examperiod: ' + str(examperiod) + ' ' + str(type(examperiod)))
+        logger.debug('       examperiod:    ' + str(examperiod) + ' ' + str(type(examperiod)))
         logger.debug('       examgradetype: ' + str(examgradetype) + ' ' + str(type(examgradetype)))
         logger.debug('       sjbase_pk_str: ' + str(sjbase_pk_str) + ' ' + str(type(sjbase_pk_str)))
         logger.debug('       grade_arr:     ' + str(grade_arr) + ' ' + str(type(grade_arr)))
@@ -3559,15 +3559,15 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
         grade_pk = saved_studsubj_dict.get('gr_id')
         studsubj_pk = saved_studsubj_dict.get('ss_id')
         if logging_on:
-            logger.debug('grade_pk: ' + str(grade_pk))
-            logger.debug('studsubj_pk: ' + str(studsubj_pk))
+            logger.debug('  grade_pk: ' + str(grade_pk))
+            logger.debug('  studsubj_pk: ' + str(studsubj_pk))
 
 # --- lookup schemitem_dict of this subject
         ss_si_id = saved_studsubj_dict.get('ss_si_id')  # studsubj.schemeitem_id
         si_dict = scheme_dict.get(ss_si_id)
         if logging_on and False:
-            logger.debug('ss_si_id: ' + str(ss_si_id))
-            logger.debug('si_dict: ' + str(si_dict))
+            logger.debug('  ss_si_id: ' + str(ss_si_id))
+            logger.debug('  si_dict: ' + str(si_dict))
 
 # - skip if this subject is not found in scheme - should not be possible, schemeitem is looked up with studsubj.schemeitem_id
         # scheme_dict = { subjectbase_pk: [schemeitem_id, subject_code] }
@@ -3583,13 +3583,16 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
 
 # - check if req_user is allowed to import this grade
             err_list = []
-# - check if school department and level are allowed
 
+# - check if school department and level are allowed
             schoolbase_pk = saved_student_dict.get('schoolbase_id')
             if not acc_prm.validate_userallowed_school(requsr_allowed_sections_dict, schoolbase_pk):
                 err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This school').lower()}))
             else:
                 depbase_pk = saved_student_dict.get('depbase_id')
+                if logging_on:
+                    logger.debug('  saved_student_dict: ' + str(saved_student_dict))
+                    logger.debug('  depbase_pk: ' + str(depbase_pk))
                 if not acc_prm.validate_userallowed_depbase(requsr_allowed_sections_dict, schoolbase_pk, depbase_pk):
                     err_list.append(str(_("You don't have permission to upload %(cpt)s.") % {'cpt': _('This department').lower()}))
                 else:

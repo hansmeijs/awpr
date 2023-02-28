@@ -1409,14 +1409,14 @@ class WolfListView(View):  # PR2022-12-16
 # - get sel_schoolbase from settings / request when role is insp, admin or system, from req_usr otherwise
         sel_examyear_instance = acc_view.get_selected_examyear_from_usersetting_short(request)
         userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear_instance)
-
+        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
         if logging_on:
-            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+            logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
 
         sel_schoolbase, sel_schoolbase_saveNIU = acc_view.get_sel_schoolbase_instance(
             request=request,
             request_item_schoolbase_pk=None,
-            allowed_sections_dict=allowed_sections_dict
+            allowed_sections_dict=userallowed_sections_dict
         )
         if logging_on:
             logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
@@ -1461,13 +1461,14 @@ class ExamListView(View):  # PR2021-04-04 PR2022-12-16
 # - get sel_schoolbase from settings / request when role is insp, admin or system, from req_usr otherwise
         sel_examyear_instance = acc_view.get_selected_examyear_from_usersetting_short(request)
         userallowed_instance = acc_prm.get_userallowed_instance(request.user, sel_examyear_instance)
+        userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
         if logging_on:
-            logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
+            logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
 
         sel_schoolbase, sel_schoolbase_saveNIU = acc_view.get_sel_schoolbase_instance(
             request=request,
             request_item_schoolbase_pk=None,
-            allowed_sections_dict=allowed_sections_dict
+            allowed_sections_dict=userallowed_sections_dict
         )
         if logging_on:
             logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
@@ -2929,8 +2930,9 @@ class ExamApproveOrSubmitGradeExamView(View):
                         if updated_grade_pk_list:
                             rows = grade_view.create_grade_with_ete_exam_rows(
                                 sel_examyear=sel_examyear,
-                                sel_schoolbase=sel_school.base,
-                                sel_depbase=sel_department.base,
+                                sel_schoolbase=sel_school.base if sel_school else None,
+                                sel_depbase=sel_department.base if sel_department else None,
+                                sel_lvlbase=sel_level.base if sel_level else None,
                                 sel_examperiod=sel_examperiod,
                                 request=request,
                                 grade_pk_list=updated_grade_pk_list
@@ -5207,12 +5209,12 @@ def create_ntermentable_rows(sel_examyear, sel_depbase, setting_dict):
 
         sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
         if sel_lvlbase_pk:
-            sel_level_abbrev = setting_dict.get('sel_level_abbrev')
-            if sel_level_abbrev == 'TKL':
+            sel_lvlbase_code = setting_dict.get('sel_lvlbase_code')
+            if sel_lvlbase_code == 'TKL':
                 sql_list.append("AND nt.leerweg = 'GL/TL'")
-            elif sel_level_abbrev == 'PKL':
+            elif sel_lvlbase_code == 'PKL':
                 sql_list.append("AND nt.leerweg = 'KB'")
-            elif sel_level_abbrev == 'PBL':
+            elif sel_lvlbase_code == 'PBL':
                 sql_list.append("AND nt.leerweg = 'BB'")
 
     sql_list.append("ORDER BY nt.id")

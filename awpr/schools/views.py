@@ -985,6 +985,7 @@ def get_users_from_db_list(recipients_dict, examyear, userlist_dict):
 
             #sql_keys = {'ey_id': examyear.pk, 'ey_code': examyear.code, 'sb_list': sb_list}
             sql_keys = {'ey_id': examyear.pk, 'ey_code': examyear.code}
+            # TODO 2023-02-24 change to userallowed usergroups
             sql_list = ["SELECT au.id, au.last_name, au.email, au.usergroups, sb.id, sch.name, sch.article",
 
                         "FROM accounts_user AS au",
@@ -1075,6 +1076,7 @@ def get_users_from_sb_list(recipients_dict, examyear, userlist_dict):
             filter_examyear = "AND ey.code = %(ey_code)s::INT"
 
             sql_keys = {'ey_code': examyear.code, 'sb_list': sb_list}
+            # TODO 2023-02-24 change to userallowed usergroups
             sql_list = ["SELECT au.id, au.last_name, au.email, au.usergroups, sb.id, sch.name, sch.article, sb.code",
 
                         "FROM accounts_user AS au",

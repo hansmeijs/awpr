@@ -139,6 +139,7 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
         # auth_dict: {'auth1': [{'pk': 120, 'name': 'jpd'}, {'pk': 116, 'name': 'Hans meijs'}], 'auth2': []}
         sql_keys = {'sb_id': request.user.schoolbase_id, 'c_id': request.user.country_id, 'role': c.ROLE_008_SCHOOL}
         sql_list = ["SELECT au.id, au.last_name,",
+                    # TODO 2023-02-24 change to userallowed usergroups
                     "(POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0) AS auth1,",
                     "(POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0) AS auth2",
 
@@ -147,6 +148,7 @@ def get_pres_secr_dict(request):  # PR2021-11-18 PR2022-06-17
                     "INNER JOIN schools_country AS c ON (c.id = au.country_id)",
 
                     "WHERE sb.id = %(sb_id)s::INT AND c.id = %(c_id)s::INT AND au.role = %(role)s::INT",
+                    # TODO 2023-02-24 change to userallowed usergroups
                     "AND ( (POSITION('" + c.USERGROUP_AUTH1_PRES + "' IN au.usergroups) > 0)",
                     "OR (POSITION('" + c.USERGROUP_AUTH2_SECR + "' IN au.usergroups) > 0 ) )"
                     "AND au.activated AND au.is_active"

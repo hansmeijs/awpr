@@ -449,11 +449,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_fill_datamap(school_map, response.school_rows)};
 
                 if ("level_rows" in response)  {
+                    level_rows = response.level_rows;
                     b_fill_datamap(level_map, response.level_rows);
                     t_SBR_filloptions_level_sector("level", response.level_rows)
 
                 };
                 if ("sector_rows" in response) {
+                    sector_rows = response.sector_rows;
                     b_fill_datamap(sector_map, response.sector_rows);
                     t_SBR_filloptions_level_sector("sector", response.sector_rows);
                 };
@@ -1973,7 +1975,7 @@ function RefreshDataRowsAfterUpload(response) {
                 const show_subj_lvl_cls_container = setting_dict.sel_dep_level_req;
                 add_or_remove_class(el_MAG_subj_lvl_cls_container, cls_hide, !show_subj_lvl_cls_container);
 
-                //const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : "<" + loc.All_levels + ">";
+                //const level_abbrev = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_code : "<" + loc.All_levels + ">";
                 //el_MAG_level_abbrev.innerText = level_abbrev;
 
 // --- get approved_by
@@ -2698,10 +2700,10 @@ function RefreshDataRowsAfterUpload(response) {
         // don't reset setting_dict.sel_depbase_pk
 
         setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_level_abbrev = null;
+        setting_dict.sel_lvlbase_code = null;
 
         setting_dict.sel_sctbase_pk = null;
-        setting_dict.sel_sector_abbrev = null;
+        setting_dict.sel_sctbase_code = null;
 
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;

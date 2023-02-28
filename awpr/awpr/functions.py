@@ -1385,6 +1385,7 @@ def convertAllowedSectionsONCEONLY(request):
         sql_keys = {'ey_pk': examyear_pk}
         sql = ' '.join(
             ["SELECT u.id, u.last_name, u.role, u.schoolbase_id, school.depbases,",
+             # TODO 2023-02-24 change to userallowed usergroups
             "u.usergroups, u.allowed_schoolbases, u.allowed_depbases, u.allowed_levelbases,",
             "u.allowed_subjectbases, u.allowed_clusterbases",
             "FROM accounts_user AS u",

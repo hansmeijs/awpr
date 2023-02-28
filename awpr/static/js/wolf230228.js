@@ -690,10 +690,10 @@ document.addEventListener("DOMContentLoaded", function() {
                     school_rows = response.school_rows;
                 };
                 if ("level_rows" in response) {
+                    level_rows = response.level_rows;
                     b_fill_datamap(level_map, response.level_rows);
                 };
                 if ("loglist_copied_ntermen" in response) {
-
                     b_fill_datamap(level_map, response.loglist_copied_ntermen);
                 };
 
@@ -963,7 +963,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("=== HandleSbrLevel");
 
         setting_dict.sel_lvlbase_pk = (Number(el_select.value)) ? Number(el_select.value) : null;
-        setting_dict.sel_level_abbrev = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
+        setting_dict.sel_lvlbase_code = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
 // ---  upload new setting
         let new_setting = {page: 'page_exams',
@@ -1050,11 +1050,11 @@ document.addEventListener("DOMContentLoaded", function() {
             t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
             // put displayed text in setting_dict
-            const sel_abbrev = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
+            const sel_code = (el_SBR_select.options[el_SBR_select.selectedIndex]) ? el_SBR_select.options[el_SBR_select.selectedIndex].innerText : null;
             if (tblName === "level"){
-                setting_dict.sel_level_abbrev = sel_abbrev;
+                setting_dict.sel_lvlbase_code = sel_code;
             } else if (tblName === "sector"){
-                setting_dict.sel_sector_abbrev = sel_abbrev;
+                setting_dict.sel_sctbase_code = sel_code;
             };
         };
     };  // FillOptionsSelectLevelSector
@@ -1064,7 +1064,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("=== HandleShowAll");
 
         setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_level_abbrev = null;
+        setting_dict.sel_lvlbase_code = null;
         setting_dict.sel_lvlbase_pk = null;
 
         setting_dict.sel_subject_pk = null;
@@ -1143,7 +1143,7 @@ document.addEventListener("DOMContentLoaded", function() {
             "- " + loc.examperiod_caption[setting_dict.sel_examperiod] : null;
 
         const depbase_code = (setting_dict && setting_dict.sel_depbase_code) ? " " + setting_dict.sel_depbase_code : "";
-        const level_abbrev = (setting_dict && setting_dict.sel_lvlbase_pk && setting_dict.sel_level_abbrev) ? " " + setting_dict.sel_level_abbrev : "";
+        const level_abbrev = (setting_dict && setting_dict.sel_lvlbase_pk && setting_dict.sel_lvlbase_code) ? " " + setting_dict.sel_lvlbase_code : "";
 
         return [depbase_code, level_abbrev, examperiod_caption].join(" ");
     };
@@ -4546,7 +4546,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // ---  disable buttons and input elements when not all required fields have value
         //console.log( "mod_MEX_dict.lvlbase_pk", mod_MEX_dict.lvlbase_pk, typeof mod_MEX_dict.lvlbase_pk);
-        //console.log( "mod_MEX_dict.sel_level_abbrev", mod_MEX_dict.sel_level_abbrev, typeof mod_MEX_dict.sel_level_abbrev);
+        //console.log( "mod_MEX_dict.sel_lvlbase_code", mod_MEX_dict.sel_lvlbase_code, typeof mod_MEX_dict.sel_lvlbase_code);
         //console.log( "el_input.options", el_input.options);
 
         MEXQ_validate_and_disable();
@@ -5624,7 +5624,7 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MDUO_examperiod.innerHTML = (!isEmpty(ep_dict)) ? ep_dict.caption : "---";
 
             add_or_remove_class(el_MDUO_level.parentNode, cls_hide, !setting_dict.sel_dep_level_req);
-            const level_txt = (setting_dict.sel_lvlbase_pk) ? (setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev : "---": "<" + loc.All_levels + ">";
+            const level_txt = (setting_dict.sel_lvlbase_pk) ? (setting_dict.sel_lvlbase_code) ? setting_dict.sel_lvlbase_code : "---": "<" + loc.All_levels + ">";
             el_MDUO_level.innerText = level_txt
 
             MDUO_FillDict();
@@ -5757,7 +5757,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         } else {
                             if (data_dict.leerweg){
                                 const leerweg_lc = data_dict.leerweg.toLowerCase();
-                                const level_abbrev_lc = (setting_dict.sel_level_abbrev) ? setting_dict.sel_level_abbrev.toLowerCase() : null;
+                                const level_abbrev_lc = (setting_dict.sel_lvlbase_code) ? setting_dict.sel_lvlbase_code.toLowerCase() : null;
                                 if (level_abbrev_lc){
                                     const lookup_array = mapped_nterm_level[level_abbrev_lc];
                                     if(lookup_array && lookup_array.length){
@@ -6818,7 +6818,7 @@ console.log("exam_dict", exam_dict);
         // ---  put text in modal form
                 let dep_lvl_str = setting_dict.sel_depbase_code;
                 if (setting_dict.sel_dep_level_req){
-                    const lvl_str = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_level_abbrev : loc.All_levels;
+                    const lvl_str = (setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_code : loc.All_levels;
                     dep_lvl_str += " - " + lvl_str;
                 }
                 const subject_name = (setting_dict.sel_subject_pk) ?

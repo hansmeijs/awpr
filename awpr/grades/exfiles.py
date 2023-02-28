@@ -26,10 +26,10 @@ from awpr import settings as awpr_settings
 from awpr import library as awpr_lib
 
 from accounts import views as acc_view
+from  accounts import permits as acc_prm
+
 from schools import models as sch_mod
 from students import functions as stud_fnc
-from subjects import models as subj_mod
-from grades import views as grd_view
 
 from os import path
 import io

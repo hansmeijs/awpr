@@ -19,11 +19,13 @@ console.log("+++++++ script 'base'")
     // PR2023-01-13  these variables are declared in base.js to make them global variables for t_MUPS_Open
     let school_rows = [];
     let level_rows = [];
+    let sector_rows = [];
     let subject_rows = [];
     //let cluster_rows = [];
 
     const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
     const cluster_dictsNEW = {}; //PR2023-01-26 new approach, dict instead of sorted list
+
 
     const manual_dict = {'test': true}
 
@@ -543,7 +545,6 @@ console.log("+++++++ script 'base'")
         };
     };  // b_get_element_by_data_value
 
-
 //========= add_or_remove_attr  =========== PR2020-05-01
     function add_or_remove_attr (el, attr_name, is_add, attr_value) {
         if(!!el){
@@ -554,7 +555,6 @@ console.log("+++++++ script 'base'")
             };
         };
     };  // add_or_remove_attr
-
 
 //========= function b_add_hover_delete_btn  =========== PR2021-10-28
     function b_add_hover_delete_btn(el, hover_class, class_1, class_0) {
@@ -780,7 +780,6 @@ console.log("+++++++ script 'base'")
         return status_array_reversed;
     };  // b_get_status_array
 
-
     function b_get_status_auth_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
         //console.log( " ==== b_get_status_auth_iconclass ====");
         //console.log("   publ", publ, "blocked", blocked)
@@ -979,7 +978,40 @@ console.log("+++++++ script 'base'")
     };  // get_status_class
 
 //#########################################################################
-// +++++++++++++++++ DATAMAP +++++++++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++ DATA DICTS PR2023-02-22 +++++++++++++++++++++++++++++++++++++++
+
+//=========  b_fill_datadicts  ===  PR2023-02-22
+    function b_fill_datadicts(tblName, fldName_pk1, fldName_pk2, data_rows, data_dicts) {
+        //console.log("=====  b_fill_datadicts ===== ");
+
+    // - clear data_dicts
+        b_clear_dict(data_dicts);
+
+        if (data_rows && data_rows.length){
+            for (let i = 0, row; row = data_rows[i]; i++) {
+                //const pk1_int = (tblName === "cluster") ? row.id : row.stud_id;
+                const pk_1int = (fldName_pk1 && fldName_pk1 in row) ? row[fldName_pk1] : 0;
+                const pk_2int = (fldName_pk2 && fldName_pk2 in row) ? row[fldName_pk2] : null;
+                const key_str = b_get_datadicts_keystr(tblName, pk_1int, pk_2int);
+                data_dicts[key_str] = row;
+            };
+        };
+        //console.log("    tblName", tblName);
+        //console.log("    data_dicts", data_dicts);
+    };  // b_fill_datadicts
+
+    function b_get_datadicts_keystr(tblName, pk_1int, pk_2int) {  // PR2023-01-05 PR2023-02-24
+
+        let key_str = tblName + "_" + ((pk_1int) ? pk_1int : 0);
+        if (pk_2int) {
+            key_str += "_" + pk_2int;
+        };
+        return key_str
+    };  // b_get_datadicts_keystr
+
+
+// +++++++++++++++++ DATAMAP to be deprecated +++++++++++++++++++++++++++++++++++++++
 
 //=========  b_fill_datamap  ================ PR2020-09-06
     function b_fill_datamap(data_map, rows) {
@@ -1053,6 +1085,15 @@ console.log("+++++++ script 'base'")
        return a - b;
     };
 
+//========= b_comparator_sequence  =========  PR2023-02-21
+// PR2020-09-01 from: https://stackoverflow.com/questions/5435228/sort-an-array-with-arrays-in-it-by-string/5435341
+// explained in https://www.javascripttutorial.net/javascript-array-sort/
+// function used in Array.sort to sort list of dicts by integer key 'sequence' PR2023-02-21
+    function b_comparator_sequence(a, b) {
+        if (a.sequence < b.sequence) return -1;
+        if (a.sequence > b.sequence) return 1;
+        return 0;
+    };  // b_comparator_sequence
 
 //#########################################################################
 // +++++++++++++++++ DATE FUNCTIONS +++++++++++++++++++++++++++++++++++++++

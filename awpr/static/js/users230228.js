@@ -114,16 +114,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "090", "090", "090", "090",  "090", "090"],
                     field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c", "c", "c", "c"]};
 
-    field_settings.btn_correctors = {
-                    field_caption: ["", "School_code", "School", "Username", "Allowed_schools", "Allowed_departments",
-                                    "Allowed_levels", "Allowed_subjects", "Allowed_clusters", "Inactive"],
-                    field_names: ["select", "sb_code", "school_abbrev", "username", "allowed_schoolbases", "allowed_depbases",
-                                    "allowed_lvlbases", "allowed_subjbases", "allowed_clusters", "is_active"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text", "inactive"],
-                    field_width:  ["032", "090", "150", "150", "180", "180", "180", "180", "180", "090"],
-                    field_align: ["c", "l", "l", "l", "l", "l",  "l", "l", "l", "c"]};
-
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
@@ -182,7 +172,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MODAL USER SET ALLOWED SECTIONS
         const el_MUPS_username = document.getElementById("id_MUPS_username");
         const el_MUPS_loader = document.getElementById("id_MUPS_loader");
-        console.log("USER PAGE el_MUPS_username", el_MUPS_username)
 
         const el_MUPS_tbody_container = document.getElementById("id_MUPS_tbody_container");
         const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
@@ -396,7 +385,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 if ("school_rows" in response)  {school_rows = response.school_rows};
 
-                if ("level_rows" in response)  {level_rows = response.level_rows};
+                if ("level_rows" in response)  {
+                    level_rows = response.level_rows
+                };
                 if ("subject_rows_page_users" in response)  {subject_rows = response.subject_rows_page_users};
                 if ("cluster_rows" in response)  {
                     FillDatadicts("cluster", response.cluster_rows);
@@ -456,10 +447,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         AddSubmenuButton(el_submenu, loc.Download_user_data, function() {ModConfirmOpen_DownloadUserdata("download_userdata_xlsx")});
 
-        if (permit_dict.requsr_role_corr){
-            AddSubmenuButton(el_submenu, loc.Calc_compensation, function() {MCOMP_Open()}, ["tab_show", "tab_btn_correctors"]);
-        };
-
         // hardcode access of system admin
         if (permit_system_admin){
             AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_userpermit"]);
@@ -481,7 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // set to default "btn_user" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
-        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_allowed", "btn_userpermit", "btn_correctors" ].includes(data_btn)) ? data_btn : "btn_user"
+        selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_allowed", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
         //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
@@ -3429,15 +3416,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // +++++++++++++++++ END OF MODAL SELECT MULTIPLE DEPS / LEVELS/ SUBJECTS / CLUSTERS  +++++++++++++++++++++++++++++++
 
 //////////////////////////////////////
-
-//=========  MODAL calculate compensation ofsecond correctors  ================ PR2023-02-19
-    function MCOMP_Open() {
-
-
-    };
-/////////////////////////////////////
-
-
 
 //========= HandleInputChange  =============== PR2021-03-20 PR2022-02-21
     function HandleInputChange(el_input){

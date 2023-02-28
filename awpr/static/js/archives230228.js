@@ -1044,10 +1044,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("===== SBR_show_all =====");
 
         setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_level_abbrev = null;
+        setting_dict.sel_lvlbase_code = null;
 
         setting_dict.sel_sctbase_pk = null;
-        setting_dict.sel_sector_abbrev = null;
+        setting_dict.sel_sctbase_code = null;
 
         setting_dict.sel_classname = null;
 

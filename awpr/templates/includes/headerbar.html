@@ -108,16 +108,16 @@
         <div id="collapsible_testbar" class="menubar_navbar navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
             <div>
                 {% if user.is_authenticated %}
-                    {% for menu_item in menu_items %}
-                        <svg height="{{menu_item.height}}" width="{{menu_item.width}}" class="svg_menu_item">
-                            <a href="{{menu_item.href}}">
-                                <polygon points="{{menu_item.points}}" class="{{menu_item.class}}"></polygon>
-                                <text x="{{menu_item.x}}"
-                                    y="{{menu_item.y}}"
-                                    fill="{{menu_item.fill}}"
+                    {% for menu_button in menu_buttons %}
+                        <svg height="{{menu_button.height}}" width="{{menu_button.width}}" class="svg_menu_button">
+                            <a href="{{menu_button.href}}">
+                                <polygon points="{{menu_button.points}}" class="{{menu_button.class}}"></polygon>
+                                <text x="{{menu_button.x}}"
+                                    y="{{menu_button.y}}"
+                                    fill="{{menu_button.fill}}"
                                     text-anchor="middle"
                                     alignment-baseline="middle">
-                                        {{menu_item.caption}}
+                                        {{menu_button.caption}}
                                 </text>
                             </a>
                         </svg>

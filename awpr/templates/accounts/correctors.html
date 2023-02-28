@@ -2,18 +2,17 @@
 {% load i18n %} {% load l10n %}
 {% load static %}
 
-{% block title %}{% trans 'Users' %}{% endblock %}
+{% block title %}{% trans 'Second correctors' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/import230220.js' %}"></script>
-    <script src="{% static 'js/users230228.js' %}"></script>
+    <script src="{% static 'js/correctors230228.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left tab_show tab_init mx-2 my-4">
-            <h5>{% trans 'Users' %}</h5>
+            <h5>{% trans 'Second correctors' %}</h5>
         </div>
         {% if not no_access %}
         {% endif %}
@@ -28,13 +27,8 @@
             {% include 'includes/message_noaccess.html' %}
         {% else %}
             {% include 'accounts/moduserallowedsection.html' %}
-            {% include 'includes/modselectexamyearordepbase.html' %}
-            {% include 'includes/modselectschoolsubjectstudent.html' %}
-            {% include 'includes/modselectmultiple.html' %}
+            {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modconfirm.html' %}
-            {% include 'accounts/moduser.html' %}
-            {% include 'accounts/modpermit.html' %}
-            {% include 'includes/modimport.html' %}
             {% include 'includes/modmessage.html' %}
 
 <!-- CONTENT HEADER - LOADER -->
@@ -68,13 +62,8 @@
 
 <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_user" class="btn btn-secondary ">{% trans 'Users' %}</button>
-                <button data-btn="btn_usergroup" class="btn btn-secondary ">{% trans 'User groups' %}</button>
-                <button data-btn="btn_allowed" class="btn btn-secondary ">{% trans 'Allowed sections' %}</button>
-
-                {% if show_btn_userpermit %}
-                    <button data-btn="btn_userpermit" class="btn btn-secondary ">{% trans 'Permissions' %}</button>
-                {% endif %}
+                <button data-btn="btn_approval" class="btn btn-secondary ">{% trans 'Approvals' %}</button>
+                <button data-btn="btn_compensation" class="btn btn-secondary ">{% trans 'Compensation' %}</button>
 
             </div>
 <!-- end BUTTON GROUP -->
@@ -99,6 +88,9 @@
                 data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"
                 data-user_download_permits_url="{% url 'user_download_permits_url' %}"
                 data-url_download_userdata_xlsx="{% url 'url_download_userdata_xlsx' %}"
+
+                data-url_usercompensation_upload="{% url 'url_usercompensation_upload' %}"
+
             >
             </div>
         {% endif %}
