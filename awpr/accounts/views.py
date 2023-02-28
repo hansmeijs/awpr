@@ -2460,7 +2460,8 @@ def create_userapproval_rows(sel_examyear, request):
                     "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
                     "WHERE school.examyear_id = " + str(sel_examyear.pk) + "::INT",
-                    "AND u.last_name ILIKE '%%jeska%%'"
+
+                    # for testimg only: "AND u.last_name ILIKE '%%jeska%%'"
 
                     ]
 
@@ -2539,7 +2540,7 @@ def calc_usercompensation_rows(sel_examyear, request):
 
                             "WHERE school.examyear_id=" + str(sel_examyear.pk) + "::INT",
 
-                            "AND u.last_name ILIKE '%%jeska%%'"
+                            # for testimg only: "AND u.last_name ILIKE '%%jeska%%'"
                             ]
 
                 sql_list.append("GROUP BY u.id, u.username, u.last_name, u.is_active, user_sb.code, exam.id,")
