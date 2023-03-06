@@ -2439,7 +2439,12 @@ def create_userapproval_rows(sel_examyear, request):
                     "uc.amount AS uc_amount,",
                     "uc.meetings AS uc_meetings,",
                     "uc.correction_amount AS uc_corr_amount,",
-                    "uc.correction_meetings AS uc_corr_meetings",
+                    "uc.correction_meetings AS uc_corr_meetings,",
+                    "uc.compensation AS uc_compensation,",
+
+                    "uc.meetingdate1 AS uc_meetingdate1,",
+                    "uc.meetingdate2 AS uc_meetingdate2,",
+                    "uc.notes AS uc_notes",
 
                     "FROM accounts_usercompensation AS uc",
                     "INNER JOIN accounts_user AS u ON (u.id = uc.user_id)",
@@ -2631,8 +2636,8 @@ def update_usercompensation(sel_examyear, request):
             "WHERE school.examyear_id=" + str(sel_examyear.pk) + "::INT",
             # "AND (POSITION('" + c.USERGROUP_AUTH4_CORR + "' IN ual.usergroups) > 0)",
 
-            # include approval of deleted stdeunst and subjects
-            # "AND NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
+            # include approval of deleted students and subjects, so dont add:
+            #   "AND NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
         ]
 
         if request.user.role < c.ROLE_016_CORR:
@@ -2648,6 +2653,7 @@ def update_usercompensation(sel_examyear, request):
             rows = cursor.fetchall()
             if rows:
                 for row in rows:
+                    # 0: user_id, 1: exam_id, 2: school_id, 3: count
                     approval_count_dict[(row[0], row[1], row[2])] = row[3]
 
         return approval_count_dict
@@ -2685,7 +2691,8 @@ def update_usercompensation(sel_examyear, request):
             rows = cursor.fetchall()
             if rows:
                 for row in rows:
-                    # usercompensation_dict value is tuple: (uc_id, uc.amount, uc.meetings, uc.correction_amount, uc.correction_meetings)
+                    # key is tuple of (user_id, exam_id, school_id)
+                    # value is tuple of (uc_id, uc.amount, uc.meetings, uc.correction_amount, uc.correction_meetings)
                     usercompensation_dict[(row[0], row[1], row[2])] = (row[3], row[4], row[5], row[6], row[7])
 
         return usercompensation_dict
@@ -2717,7 +2724,7 @@ def update_usercompensation(sel_examyear, request):
                         total_meetings = uc_meetings + uc_corr_meetings
                         if total_meetings > max_meetings:
                             total_meetings = max_meetings
-                        # TODO this is calculated for 1 school, max hours must be calculated for exam at all schools
+
                         compensation = 0
                         if total_amount >= 1:
                             compensation = first_approval_amount + (other_approval_amount * (total_amount - 1))
@@ -2734,6 +2741,9 @@ def update_usercompensation(sel_examyear, request):
                     compensation = 0
                     if count_int >= 1:
                         compensation = first_approval_amount + (other_approval_amount * (count_int - 1))
+
+                        if logging_on:
+                            logger.debug('     compensation ' + str(compensation) + '   f ' + str(first_approval_amount) + '   o ' + str(other_approval_amount))
 
                     new_tuple = key_tuple + (count_int, compensation)
 
@@ -2763,7 +2773,8 @@ def update_usercompensation(sel_examyear, request):
                     total_meetings = uc_meetings + uc_corr_meetings
                     if total_meetings > max_meetings:
                         total_meetings = max_meetings
-                    # TODO this is calculated for 1 school, max hours must be calculated for exam at all schools
+
+                    # compensation is calculated for 1 school, max meetings is counted for each school
                     compensation = 0
                     if total_amount >= 1:
                         compensation = first_approval_amount + (other_approval_amount * (total_amount - 1))
@@ -3616,10 +3627,10 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
             # or dict:        {'cols_hidden': {'scheme': ['min_mtv', 'max_mvt')}}
 
             if logging_on:
-                logger.debug('subkey: ' + str(subkey))
+                logger.debug('    subkey: ' + str(subkey))
                 # subkey: cols_hidden
                 # subkey: sel_examperiod
-                logger.debug('new_subdict_or_value: ' + str(new_subdict_or_value))
+                logger.debug('    new_subdict_or_value: ' + str(new_subdict_or_value))
                 # new_subdict_or_value: {'all': ['examnumber', 'subj_name']}
                 # new_subdict_or_value: sr
 
@@ -3691,22 +3702,22 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
 
 def replace_value_in_dict(settings_dict, key_str, new_value): # PR2021-08-19 PR2021-12-02
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- replace_value_in_dict ----- ')
-        logger.debug('settings_dict: ' + str(settings_dict))
+        logger.debug('    settings_dict: ' + str(settings_dict))
         #  settings_dict: {'sel_examyear_pk': 58, 'sel_depbase_pk': 1, 'sel_examtype': None, 'sel_examperiod': 1, 'sel_lvlbase_pk': 12, 'sel_sctbase_pk': 12}
-        logger.debug('key_str: ' + str(key_str))
+        logger.debug('    key_str: ' + str(key_str))
         # key_str: all
         # key_str: sel_examtype
-        logger.debug('new_value: ' + str(new_value))
+        logger.debug('    new_value: ' + str(new_value))
         # new_value: ['examnumber', 'sct_abbrev']
         # new_value: sr
     item_has_changed = False
 
     saved_subdict_or_value = af.get_dict_value(settings_dict, (key_str,))
     if logging_on:
-        logger.debug('saved_subdict_or_value: ' + str(saved_subdict_or_value))
+        logger.debug('    saved_subdict_or_value: ' + str(saved_subdict_or_value))
 
     if new_value is None:
         if key_str in settings_dict:
@@ -3717,8 +3728,8 @@ def replace_value_in_dict(settings_dict, key_str, new_value): # PR2021-08-19 PR2
         settings_dict[key_str] = new_value
 
     if logging_on:
-        logger.debug('item_has_changed: ' + str(item_has_changed))
-        logger.debug('settings_dict: ' + str(settings_dict))
+        logger.debug('    item_has_changed: ' + str(item_has_changed))
+        logger.debug('    settings_dict: ' + str(settings_dict))
     return item_has_changed
 
 
@@ -4592,13 +4603,12 @@ def set_userallowed_dict(user_pk, examyear_pk, usergroups_arr, allowed_clusters_
         logger.debug('---  set_userallowed_dict  ------- ')
         logger.debug('    user_pk:      ' + str(user_pk))
         logger.debug('    usergroups_arr:      ' + str(usergroups_arr))
-        logger.debug('    llowed_sections_dict: ' + str(allowed_sections_dict))
+        logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
 
     #  json.dumps converts a dict to a json object
     #  json.loads retrieves a dict (or other type) from a json object
-
+    is_added = False
     try:
-        #PR2021-07-05 debug: is_authenticated added to prevent error: 'AnonymousUser' object is not iterable
         if user_pk and examyear_pk:
             allowed_sections_str = json.dumps(allowed_sections_dict) if allowed_sections_dict else None
             usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
@@ -4626,10 +4636,10 @@ def set_userallowed_dict(user_pk, examyear_pk, usergroups_arr, allowed_clusters_
                     allowed_sections=allowed_sections_str
                 )
             row.save()
-
+        is_added = True
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
-
+    return is_added
 # - end of set_userallowed_dict
 
 
@@ -4890,7 +4900,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
                                 allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10  PR2023-01-08
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_departmentbase -------')
 
@@ -5924,7 +5934,7 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))

@@ -698,8 +698,8 @@ document.addEventListener("DOMContentLoaded", function() {
         let el_submenu = document.getElementById("id_submenu")
         // sel_btns are btn_exem btn_ep_01 btn_reex btn_reex03
         if (permit_dict.permit_approve_grade){
-            // PR2023-02-20 this one includes approve exemptions, turned off for now:
-            //AddSubmenuButton(el_submenu, (selected_btn === "btn_exem") ? loc.Approve_exemptions : loc.Approve_grades, function() {MAG_Open("approve")}, [], "id_submenu_approve");
+            // PR2023-02-20 this one includes approve exemptions, turn off for now:
+            AddSubmenuButton(el_submenu, (selected_btn === "btn_exem") ? loc.Approve_exemptions : loc.Approve_grades, function() {MAG_Open("approve")}, [], "id_submenu_approve");
             AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MAG_Open("approve")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex", "tab_btn_reex03"], "id_submenu_approve");
 
         };
@@ -707,13 +707,13 @@ document.addEventListener("DOMContentLoaded", function() {
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2, function() {ModConfirmOpen("prelim_ex2")}, ["tab_show", "tab_btn_ep_01"]);
         if (permit_dict.permit_submit_grade){
             // PR2023-02-28 turn off temporary
-            // AddSubmenuButton(el_submenu, loc.Submit_Ex2, function() {MAG_Open("submit_ex2")}, ["tab_show", "tab_btn_ep_01"]);
+             AddSubmenuButton(el_submenu, loc.Submit_Ex2, function() {MAG_Open("submit_ex2")}, ["tab_show", "tab_btn_ep_01"]);
         };
 
         AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, function() {ModConfirmOpen("prelim_ex2a")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex", "tab_btn_reex03"]);
         if (permit_dict.permit_submit_grade){
             // PR2023-02-28 turn off temporary
-            //AddSubmenuButton(el_submenu, loc.Submit_Ex2A, function() {MAG_Open("submit_ex2a")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex", "tab_btn_reex03"]);
+            AddSubmenuButton(el_submenu, loc.Submit_Ex2A, function() {MAG_Open("submit_ex2a")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex", "tab_btn_reex03"]);
         };
         if (permit_dict.requsr_same_school){
             AddSubmenuButton(el_submenu, loc.Ex3_form, function() {ModConfirmOpen("ex3")}, ["tab_show", "tab_btn_ep_01", "tab_btn_reex", "tab_btn_reex03"]);

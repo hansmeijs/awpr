@@ -794,7 +794,7 @@ class DiplomaGradelist(sch_mod.AwpBaseModel): # PR2023-02-19
 
     student = ForeignKey(Student, related_name='+', on_delete=PROTECT)
 
-    regnumber = CharField(db_index=True, max_length=c.MAX_LENGTH_IDNUMBER)
+    regnumber = CharField(db_index=True, max_length=c.MAX_LENGTH_IDNUMBER, null=True)
     name = CharField(max_length=c.MAX_LENGTH_FIRSTLASTNAME, null=True)
     filename = CharField(max_length=255, null=True)
 

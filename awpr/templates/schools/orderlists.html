@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Orderlists' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/orderlists230228.js' %}"></script>
+    <script src="{% static 'js/orderlists230306.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -128,9 +128,9 @@
                 data-url_enveloplabel_upload="{% url 'url_enveloplabel_upload' %}"
                 data-url_envelopitem_upload="{% url 'url_envelopitem_upload' %}"
 
-                data-url_envelop_print="{% url 'url_envelop_print' '-' %}"
                 data-url_envelop_print_check="{% url 'url_envelop_print_check' %}"
-
+                data-url_envelop_print="{% url 'url_envelop_print' '-' %}"
+                data-url_envelop_receipt="{% url 'url_envelop_receipt' '-' %}"
                 data-url_exam_upload="{% url 'url_exam_upload' %}"
             >
             </div>

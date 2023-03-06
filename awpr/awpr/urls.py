@@ -334,6 +334,7 @@ urlpatterns = [
 
         path('envelop_print_check', subject_orderlists.EnvelopPrintCheckView.as_view(), name='url_envelop_print_check'),
         path('envelop_print/<lst>/', subject_orderlists.EnvelopPrintView.as_view(), name='url_envelop_print'),
+        path('envelop_receipt/<lst>/', subject_orderlists.EnvelopPrintReceiptView.as_view(), name='url_envelop_receipt'),
     ])),
 
 # ===== EXAMS ========================== PR2021-04-04

@@ -1130,8 +1130,6 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
         # col_width = (25, 65, 17, 22, 22, 22, 17)  # last col is 17 mm
         # draw empty row when row is None, to draw lines till end of page
         if row is not None:
-            {'examnumber': '010', 'full_name': 'van Wamel, Chris', 'extrafacilities': False},
-
             examnumber = row.get('examnumber', '---')
             # canvas.drawString(tab_list[0], y, examnumber)
             # canvas.drawCentredString(x + pl + pb, y + pb, examnumber)

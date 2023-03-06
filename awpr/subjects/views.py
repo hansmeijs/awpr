@@ -240,7 +240,7 @@ def create_subject_rows(request, sel_examyear, sel_schoolbase, sel_depbase, sel_
     # PR2020-09-29 PR2020-10-30 PR2020-12-02 PR2022-02-07 PR2022-08-21 PR2022-12-19
     # --- create rows of all subjects of this examyear
     # skip_allowedsubjbase_filter is used in userpage: when setting 'allowed_', all subjects must be shown
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_subject_rows ============= ')
@@ -8083,7 +8083,8 @@ def create_level_dictlist(examyear_instance):  # PR2021-09-01 PR2022-10-27
 # --- end of create_level_dictlist
 
 
-def create_schoolbase_dictlist(examyear, request, schoolbase_pk_list = None):  # PR2021-08-20 PR2021-10-14 PR2022-10-31
+def create_schoolbase_dictlist(examyear, request, schoolbase_pk_list = None):
+    # PR2021-08-20 PR2021-10-14 PR2022-10-31 PR2023-03-02
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug ('----- create_schoolbase_dictlist -----')
@@ -8091,48 +8092,53 @@ def create_schoolbase_dictlist(examyear, request, schoolbase_pk_list = None):  #
     # PR2021-08-20 functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
     # - of this exam year, of all countries
 
-    # - country: when req_usr country = curacao: include all schools (inluding SXM schools)
+    # - country: when req_usr country = cur: include all schools (inluding SXM schools)
     #            when req_usr country = sxm: show only SXM schools
 
     # - skip schools of other organizations than schools
     # - also add admin organization (ETE, DOE), for extra for ETE, DOE
+
     # NOTE: use examyear.code (integer field) to filter on examyear. This way schoolbases from SXM and CUR are added to list
 
     # called by: create_orderlist_xlsx, create_orderlist_per_school_xlsx and OrderlistsPublishView
 
     if request.user.country.abbrev.lower() == 'sxm':
-        show_sxm_schools_only = "AND ey.country_id = %(requsr_country_id)s::INT"
+        show_sxm_schools_only = ''.join(("AND ey.country_id=", str(request.user.country.pk), "::INT "))
     else:
         show_sxm_schools_only = ''
 
-    sql_keys = {'ey_code_int': examyear.code, 'requsr_country_id': request.user.country.pk}
     sql_list = [
-        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.depbases, sch.otherlang AS sch_otherlang,",
-        "sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev, sbase.defaultrole",
+        "SELECT sbase.id AS sbase_id, sbase.code AS sbase_code, sch.depbases, sch.otherlang AS sch_otherlang, ",
+        "sch.article AS sch_article, sch.name AS sch_name, sch.abbrev AS sch_abbrev, sbase.defaultrole ",
 
-        "FROM schools_school AS sch",
-        "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = sch.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+        "FROM schools_school AS sch ",
+        "INNER JOIN schools_schoolbase AS sbase ON (sbase.id = sch.base_id) ",
+        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id) ",
 
-        "WHERE ey.code = %(ey_code_int)s::INT",
-        "AND (sbase.defaultrole =", str(c.ROLE_008_SCHOOL), "OR sbase.defaultrole =", str(c.ROLE_064_ADMIN), ")",
+        "WHERE ey.code=" + str(examyear.code) + "::INT ",
+        "AND (sbase.defaultrole=", str(c.ROLE_008_SCHOOL), "::INT OR sbase.defaultrole=", str(c.ROLE_064_ADMIN), "::INT) ",
         show_sxm_schools_only
         ]
 
     # - filter on parameter schoolbase_pk_list when it has value
     if schoolbase_pk_list:
-        sql_keys['sb_arr'] = schoolbase_pk_list
-        sql_list.append("AND sbase.id IN (SELECT UNNEST(%(sb_arr)s::INT[]))")
+        sql_list.append(''.join(("AND sbase.id IN (SELECT UNNEST(ARRAY", str(schoolbase_pk_list), "::INT[])) ")))
 
-    sql_list.append("ORDER BY LOWER(sbase.code)")
-    sql = ' '.join(sql_list)
+    sql_list.append("ORDER BY LOWER(sbase.code);")
+    sql = ''.join(sql_list)
+
+    if logging_on:
+        logger.debug('    sql: ' + str(sql))
 
     with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
+        cursor.execute(sql)
         dictlist = af.dictfetchall(cursor)
 
     if logging_on:
         logger.debug('schoolbase_dictlist: ' + str(dictlist))
+    # schoolbase_dictlist: [
+    #   {'sbase_id': 2, 'sbase_code': 'CUR01', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8},
+    #   {'sbase_id': 4, 'sbase_code': 'CUR03', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Juan Pablo Duarte Vsbo', 'sch_abbrev': 'JPD', 'defaultrole': 8}]
 
     return dictlist
 # --- end of create_schoolbase_dictlist

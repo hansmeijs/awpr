@@ -151,14 +151,20 @@
         } else if (tblName === "department") {
             new_setting.sel_depbase_pk = (selected_pk_int) ? selected_pk_int : null;
 
+            //'argument 'all_countries' also used to show all deps in page exam, only when used by ETE (requsr_role_admin)
+            // instead:
+            // PR2023-03-04 debug: when sel_schoolbase_pk is a vsbo school, the selected dep will go to vsbo
+            // solved by resetting sel_schoolbase_pk to null,
+            // was:
             // PR2022-04-11 debug: ETE cannot change to all deps in exam page because sel_school is set to school with 1 dep
             // therefore must set sel_school = requsr_schoolbase_pk when all_countries = true
             // make sure that ETE school has all deps
-            //'argument 'all_countries' also used to show all deps in page exam, only when used by ETE (requsr_role_admin)
+            // was: if (all_countries){new_setting.sel_schoolbase_pk = permit_dict.requsr_schoolbase_pk;};
 
-            if (all_countries){
-                new_setting.sel_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
-            };
+            new_setting.sel_schoolbase_pk = null;
+
+            // was: if (all_countries){new_setting.sel_schoolbase_pk = permit_dict.requsr_schoolbase_pk;};
+
             // PR2022-01-08 debug: set level, sector, subject and student null when changing depbase
             new_setting.sel_lvlbase_pk = null;
             new_setting.sel_sctbase_pk = null;

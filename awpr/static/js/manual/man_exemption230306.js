@@ -93,7 +93,7 @@ const man_exemption = {
              "<li>de kandidaat vorig jaar is afgewezen voor het examen;</li>",
              "<li>de kandidaat dezelfde afdeling en leerweg heeft als vorig jaar;</li>",
              "<li>de kandidaat een Bewijs van Kennis van het vak heeft.</li></ul>",
-             "<p>Reeds ingevulde vrijstelling-cijfers worden vervangen door de nieuwe vrijstelling-cijfers.</p>"
+             "<p>Reeds ingevulde vrijstelling-cijfers worden vervangen door de nieuwe vrijstelling-cijfers.</p>",
              "<p>Voor avondschool-kandidaten zijn de betreffende regels voor avondschool-kandidaten van toepassing.</p>"
         ]),
         write_image("img_stud_mod_link03_ne"),
@@ -280,7 +280,7 @@ en:  [
               "<li>the candidate has the same department and learning path as last year;</li>",
               "<li>the candidate has a Proof of Knowledge of the subject.</li></ul>",
 
-              "<p>Exemption grades, that are already entered, will be replaced by the new exemption grades.</p>"
+              "<p>Exemption grades, that are already entered, will be replaced by the new exemption grades.</p>",
 
               "<p>For evening school candidates, the applicable evening school rules apply.</p>"
          ]),

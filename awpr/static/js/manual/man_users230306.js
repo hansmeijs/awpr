@@ -12,7 +12,7 @@ const man_user = {
             "Dit is nodig omdat de beveiliging van de gegevens van groot belang is en omdat er veel verschillende soorten gebruikers zijn, ",
             "die allemaal op verschillende manieren gebruik maken van AWP-online en toegang hebben tot verschillende onderdelen van het programma.</p>",
             "<p>Het aanmaken van gebruikers accounts en toekennen van permissies gebeurt door de organisatie zelf. ",
-            "Ook de accounts voor de examinatoren en gecommitteerden worden door de school zelf aangemaakt.</p>",
+            "Alleen de accounts voor de gecommitteerden worden door het Ministerie van Onderwijs aangemaakt, met uitzondering van de gecommitteerden voor de praktijkexamens. Deze worden door de school zelf aangemaakt.</p>",
             "<p>Alleen een gebruiker die tot de gebruikersgroep 'Systeembeheerder' behoort kan gebruikers accounts aanmaken en wijzigen.</p>",
             "<p>In deze paragraaf wordt uitgelegd hoe het beheren van de gebruikers accounts en hun permissies in zijn werk gaat.</p>",
         ]),
@@ -57,7 +57,14 @@ const man_user = {
             "Vul de gebruikersnaam, volledige naam van de gebruiker en het e-mail adres in.</p>",
             "<p>De gebruikersnaam wordt gebruikt om in te loggen. De volledige naam wordt gebruikt in officiële documenten zoals het diploma, cijferlijst en Ex-formulieren. ",
             " De gebruikersnaam, volledige naam en e-mail-adres moeten uniek zijn binnen de organisatie. ",
-             "Dezelfde gebruikersnaam en e-mail adres mogen wel gebruikt worden bij een andere organisatie, bijvoorbeeld wanneer een gebruiker tevens gecommiteerde is bij een ander school.</p>",
+             "Dezelfde gebruikersnaam en e-mail adres mogen wel gebruikt worden bij een andere organisatie, bijvoorbeeld wanneer een gebruiker tevens gecommiteerde is bij een andere school.</p>",
+
+            "<p><b>Gebruikersnamen uploaden</b><br>Klik in de menubalk op <i>Gebruikersnamen uploaden</i>. Het venster <i>Gebruikersnamen uploaden</i> verschijnt. ",
+            "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>hier</a> om naar de handleiding hiervan te gaan.<br>",
+            "Wanneer je gebruikersnamen uploadt, stuurt AWP geen e-mail met een activeringscode. DIt geeft je de mogelijkheid om de gegevens eerst te controleren en aan te vullen. ",
+            "Klik in de kolom <i>Geactiveerd</i> om de e-mail met de activeringscode te versturen.</p>",
+
+            "<p><b>Gebruikers-gegevens downloaden</b><br>Klik in de menubalk op <i>Gebruikers-gegevens downloaden</i> om een Excel-bestand met de gegevens van alle gebruikers te downloaden.</p>",
 
              "<p><b>Activeringslink</b><br>Nadat je geklikt heb op <i>Gebruikersaccount aanmaken</i> verstuurt AWP een e-mail naar de gebruiker om het e-mail adres te verifiëren. ",
             "De e-mail bevat een link waarmee de nieuwe gebruiker een wachtwoord kan aanmaken en kan inloggen. ",
@@ -95,7 +102,9 @@ const man_user = {
             "<li><b>Secretaris</b>. De secretaris kan gegevens goedkeuren en diploma's, cijferlijsten en Ex-formulieren indienen.</li>",
             "<li><b>Examinator</b>. De examinator kan scores en cijfers goedkeuren.</li>",
             "<li><b>Gecommitteerde</b>. De gecommitteerde kan scores en cijfers goedkeuren.</li>",
-            "<li><b>Systeembeheerder</b>. Alleen de systeembeheerder heeft toegang tot de gebruikers pagina en kan gebruikersaccounts aanmaken, wissen en permissies instellen.</li></ul></p>",
+            "<li><b>Systeembeheerder</b>. Alleen de systeembeheerder heeft toegang tot de gebruikers pagina en kan gebruikersaccounts aanmaken, wissen en permissies instellen.</li></ul>",
+
+             "<p>Gebruikersgroepen worden <b>per examenjaar</b> ingesteld. Bij het aanmaken van een nieuw examenjaar worden de gebruikersgroepen van het vorig jaar gekopieerd naar het nieuwe examenjaar. Wijzigingen die je aanbrengt zijn alleen van toepassing op het examenjaar, waarin je nu werkt.</p>",
 
              "<p class='mb-0 pb-0'>Een gebruiker kan tot <b>meerdere gebruikersgroepen</b> behoren. ",
              "Wijs de gebruikersgroepen toe afhankelijk van de situatie op school, bijvoorbeeld: ",
@@ -114,6 +123,16 @@ const man_user = {
 
         write_paragraph_header("id_user_allowed", "Toegestane secties"),
         write_paragraph_body("",[
+             "<p>Klik in de pagina <i>Gebruikers</i> in de horizontale zwarte balk op de tab <i>Toegestane secties</i>.</p>",
+
+
+
+        ]),
+
+        write_image("img_users_tbl_allowed_ne"),
+
+        write_paragraph_body("", [
+
             "<p>Een gebruiker heeft standaard toegang tot alle gegevens van alle kandidaten. Dat is niet altijd gewenst. ",
             "In AWP is het mogelijk voor elke gebruiker beperkingen in te stellen welke informatie hij/zij kan inzien en wijzigen. ",
             "Dit gaat door middel van de 'Toegestane secties'. ",
@@ -133,14 +152,44 @@ const man_user = {
              "<li>Een gebruiker behoort alleen tot de gebruikersgroep 'Gecommitteerde' en heeft als toegestane afdeling 'Vsbo', als toegestaan vak 'Wiskunde' en als toegestane clusters de cluster 'wk -2'. ",
              "Deze gebruiker kan de gegegevens zien van het vak Wiskunde van alle Vbso-kandidaten, maar kan alleen de wiskunde-cijfers goedkeuren van de kandidaten in de cluster 'wk -2'.</li></ul>",
 
-             "<p class='mb-0 pb-0'>Het <b>instellen van toegestane secties</b> gaat als volgt: ",
+             "<p class='mb-0 pb-0'><b>Het venster <i>Toegestane scholen en vakken</i> openen:</b></p>",
              "<ul class='manual_bullet'><li>Klik in de horizontale zwarte balk op de tab <i>Toegestane secties</i>.</li>",
-             "<li>Klik in de regel van de gebruiker op gewenste kolom <i>Toegestane ...</i>. Het keuzevenster verschijnt.</li>",
-             "<li>Selecteer de items waar de gebruiker toegang toe heeft, of klik op <i>&#60Alle...&#62</i>.</li>",
-             "<li>De lijst met toegestane items verschijnt in de betreffende kolom. Als niet alle items zichtbaar zijn ga je met de muis naar het betreffende veld zonder te klikken. De items worden nu onder elkaar zichtbaar.</li>",
-             "<li>Wanneer er geen restricties zijn blijft de kolom leeg.</li></ul></p>",
+             "<li>Klik in de regel van de gebruiker op de gebruikersnaam of op een van de kolommen <i>Toegestane ...</i>.",
+             "<li>Het onderstaande venster <i>Toegestane scholen en vakken</i> verschijnt.</li></ul>",
         ]),
-        write_image("img_users_tbl_allowed_ne"),
+        write_image("img_user_allowed_sections_ne"),
+
+        write_paragraph_body("",[
+             "<p class='mb-0 pb-0'><b>Navigeren</b> in het venster Toegestane scholen en vakken</p>",
+             "<ul class='manual_bullet'><li>Als het venster opent worden alle toegestane secties weergegeven. Dit kan onoverzichtelijk zijn als de lijst lang is. <br>",
+             "<li>Klik op de knop <i>Alles inklappen</i> links onder in het scherm. Nu worden alleen de regels met de toegestane scholen weergegeven.</li>",
+             "<li>Klik op de naam van de school. De toegestane afdelingen worden nu weergegeven onder de school.</li>",
+             "<li>Klik op de naam van de afdeling. Indien van toepassing worden de toegestane leerwegen nu weergegeven, anders worden de toegestane vakken weergegeven.</li>",
+             "<li>Klik op de leerweg. De toegestane vakken van die leerweg worden nu weergegeven.</li>",
+             "<li>Als je op een school, afdeling of leerweg klikt worden alle onderliggende gegevens ingeklapt.</li>",
+             "<li>Klik op de knop <i>Alles uitklappen</i> onder in het scherm om alle gegevens weer te geven.</li></ul>",
+
+             "<p class='mb-0 pb-0'><b>Toevoegen</b> van toegestane scholen, afdelingen, leerwegen en vakken.</p>",
+             "<ul class='manual_bullet'><li>Klik op de regel <i>&lt;School toevoegen&gt;</i>, <i>&lt;Afdeling toevoegen&gt;</i>, <i>&lt;Leerweg toevoegen&gt;</i> of <i>&lt;Vak toevoegen&gt;</i>. ",
+             "Als deze regel niet zichtbaar is betekent dit, dat je geen permissie hebt om toegestane secties te wijzigen.</li>",
+             "<li>Selecteer in het venster dat verschijnt de gewenste school, afdeling, leerweg of vak. Het geselecteerde item wordt nu toegevoegd aan de lijst.</li>",
+             "<li>Klik op <i>Opslaan</i> om de wijzigingen op te slaan.</li></ul>",
+
+              "<p><b>Wissen</b> van toegestane scholen, afdelingen, leerwegen en vakken.<br>",
+             "Klik op het kruis rechts achter de naam van de school, afdeling, leerweg of vak om het item te wissen.</p>",
+
+              "<p><b>De functie van de regel 'Alle ...'</b><br>",
+              "Wanneer een docent toegang dient te hebben tot het vak 'Engels' bij alle leerwegen, kunt je eerst de leerwegen PBL, PKL en TKL toevoegen aan de afdeling Vsbo ",
+              "en vervolgens het vak 'Engels' toevoegen aan elk van de leerwegen.<br>",
+              "In plaats daarvan is het handiger om 'Alle leerwegen' toe te voegen aan de afdeling Vsbo en vervolgens het vak 'Engels' toe te voegen aan 'Alle leerwegen'.<br>",
+              "Wanneer een vak slechts bij één leerweg voorkomt, zoals 'Techniek algemeen' bij TKL, hoef je het niet toe te voegen aan TKL, maar kun je het ook toevoegen aan 'Alle leerwegen'.<br>",
+              "Je kunt 'Alle leerwegen' gebruiken in combinatie met individuele leerwegen. Bijvoorbeeld en docent die toegang heeft tot het vak 'Engels' op alle leerwegen, maar 'Wiskunde' alleen bij TKL.</p>",
+
+              "<p><b>Toegestane clusters</b>.<br>",
+             "Klik in de kolom <i>Toegestane clusters</i> op toegestane clusters toe te voegen of te wissen.<br>",
+             "Wanneer er toegestane clusters zijn ingevuld, kan de gebruiker alleen gegevens van die clusters wijzigen. Andere clusters blijven wel zichtbaar.<br>",
+             "Toegestane clusters kan worden gebruikt, wanneer er op een school meerdere gecommitteerden of examinatoren voor hetzelfde vak zijn.</p>",
+        ]),
 
         write_paragraph_header("id_user_examiners", "Examinatoren en gecommitteerden"),
         write_paragraph_body("",

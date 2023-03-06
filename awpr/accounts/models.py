@@ -1,7 +1,7 @@
 # PR2018-04-22 PR2020-09-14
 from django.db import connection
 from django.db.models import Model, ForeignKey, PROTECT, CASCADE, SET_NULL
-from django.db.models import CharField, TextField, IntegerField, PositiveSmallIntegerField, SmallIntegerField, BooleanField, DateTimeField, EmailField
+from django.db.models import CharField, TextField, IntegerField, PositiveSmallIntegerField, SmallIntegerField, BooleanField, DateField, DateTimeField, EmailField
 from django.contrib.auth.models import AbstractUser, UserManager
 
 # PR2020-12-13 Deprecation warning: django.contrib.postgres.fields import JSONField  will be removed from Django 4
@@ -68,6 +68,8 @@ class User(AbstractUser):
             'and \'/./-/_ characters.'), 'invalid'),
         ],)
     email = EmailField( _('email address'),)
+
+    idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
 
     telephone = CharField(null=True, blank=True, max_length=c.MAX_LENGTH_SCHOOLABBREV)
 
@@ -205,6 +207,8 @@ class User_log(Model):
     last_name = CharField( max_length=150, null=True)
     email = EmailField(null=True)
 
+    idnumber= CharField(db_index=True, null=True, blank=True, max_length=c.MAX_LENGTH_IDNUMBER)
+
     last_login = DateTimeField(null=True)
     is_superuser = BooleanField(default=False)
     is_staff = BooleanField(default=False)
@@ -314,6 +318,11 @@ class UserCompensation(sch_mod.AwpBaseModel):
     correction_meetings = SmallIntegerField(default=0) # entered by ministry
     compensation = IntegerField(default=0) # compensation is calculated in cents
 
+    meetingdate1 = DateField(null=True)
+    meetingdate2 = DateField(null=True)
+
+    notes = TextField(null=True)
+
     auth1by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)
     published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
@@ -338,6 +347,11 @@ class UserCompensation_log(sch_mod.AwpBaseModel):
     correction_amount = SmallIntegerField(default=0)   # entered by ministry
     correction_meetings = SmallIntegerField(default=0) # entered by ministry
     compensation = IntegerField(default=0) # compensation is calculated in cents
+
+    meetingdate1 = DateField(null=True)
+    meetingdate2 = DateField(null=True)
+
+    notes = TextField(null=True)
 
     auth1by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)
     auth2by = ForeignKey(User, null=True, related_name='+', on_delete=PROTECT)

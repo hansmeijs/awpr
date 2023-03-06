@@ -1502,7 +1502,10 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
         logger.debug('    count_dict: ' + str(count_dict))
         logger.debug('    is_test: ' + str(is_test))
 
+    studsubj_not_published = False
+    auth_missing = False
     test_is_ok = False
+
     msg_dict = {}
     msg_list = []
 
@@ -1526,11 +1529,6 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
         level_html = ''
         if sel_department and sel_level and sel_department.level_req and sel_level.abbrev:
             level_html = '<br>' + str(_('The selection contains only candidates of the learning path: %(lvl_abbrev)s.') % {'lvl_abbrev': sel_level.abbrev})
-
-        class_str = 'border_bg_transparent'
-        if studsubj_not_published or auth_missing:
-            class_str = 'border_bg_invalid'
-        msg_list = ["<div class='p-2 ", class_str, "'>"]
 
 
 # - create first line with 'The selection contains 4 candidates with 39 subjects'
@@ -1664,12 +1662,27 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
                                              '<br>',
                                               str(_("Go to the page 'Archive' to download the file."))))
 
-    msg_list.append('</div>')
 
     if logging_on:
         logger.debug('   msg_list: ' + str(msg_list))
 
-    msg_html = ''.join(msg_list)
+
+    class_str = 'border_bg_transparent'
+    if studsubj_not_published or auth_missing:
+        class_str = 'border_bg_invalid'
+    elif test_is_ok:
+        class_str = 'border_bg_valid'
+        msg_html = ''.join((
+            "<p>",
+            str(_("The %(cpt)s form can be submitted.") % {'cpt': exform_txt}),
+            '</p>'
+        ))
+
+    msg_html = ''.join((
+            "<div class='p-2 ", class_str, "'>",
+            ''.join(msg_list),
+            '</div>'
+    ))
 
     if logging_on:
         logger.debug('    msg_html: ' + str(msg_html))
@@ -1677,6 +1690,7 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
     if logging_on:
         logger.debug('msg_html: ' + str(msg_html))
         logger.debug('test_is_ok: ' + str(test_is_ok))
+
     return msg_html, test_is_ok
 # - end of create_ex2_ex2a_msg_html
 

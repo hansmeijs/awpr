@@ -11,6 +11,8 @@ from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
+from timeit import default_timer as timer
+
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
@@ -1385,7 +1387,6 @@ def convertAllowedSectionsONCEONLY(request):
         sql_keys = {'ey_pk': examyear_pk}
         sql = ' '.join(
             ["SELECT u.id, u.last_name, u.role, u.schoolbase_id, school.depbases,",
-             # TODO 2023-02-24 change to userallowed usergroups
             "u.usergroups, u.allowed_schoolbases, u.allowed_depbases, u.allowed_levelbases,",
             "u.allowed_subjectbases, u.allowed_clusterbases",
             "FROM accounts_user AS u",
@@ -1479,8 +1480,12 @@ def convertAllowedSectionsONCEONLY(request):
             logger.debug('exists: ' + str(exists))
 
         if not exists:
-            examyears = sch_mod.Examyear.objects.filter().all().order_by('country_id', 'code')
 
+            starttime = timer()
+
+            examyears = sch_mod.Examyear.objects.filter().all().order_by('country_id', 'code')
+            total_added = 0
+            total_tobe_added = 0
             for examyear in examyears:
                 examyear_pk = examyear.pk
                 examyear_code = examyear.code
@@ -1509,14 +1514,17 @@ def convertAllowedSectionsONCEONLY(request):
                         arr = user_school_depbases.split(';')
                         for pk_str in arr:
                             user_school_depbases_arr.append(int(pk_str))
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug(str(user.get('last_name')))
                         logger.debug('    .. user_schoolbase_id: ' + str(user_schoolbase_id))
                         logger.debug('    .. user_pk: ' + str(user_pk))
                         logger.debug('    .. user: ' + str(user))
 
                     allowed_depbases = user.get('allowed_depbases')
-                    allowed_subjectbases = user.get('allowed_subjectbases')
+                    # there s no 'all' [-9] in allowed_depbase_arr - maybe there is, must check
+                    allowed_depbase_arr = get_allowed_arr(allowed_depbases, 'allowed_depbases')
+                    if logging_on:
+                        logger.debug('       allowed_depbase_arr: ' + str(allowed_depbase_arr) + ' ' + str(type(allowed_depbase_arr)))
 
                 # - create arr with allowed_lvlbases
                     # set to [-9] when allowed_lvlbases is None, otherwise e.g. [1, 2 ]
@@ -1526,6 +1534,7 @@ def convertAllowedSectionsONCEONLY(request):
 
                 # - create arr with allowed_subjbases
                     # set to [] when allowed_subjbases is None
+                    allowed_subjectbases = user.get('allowed_subjectbases')
                     allowed_subjectbases_arr = get_allowed_arr(allowed_subjectbases, 'allowed_subjectbases')
                     # allowed_subjectbases_arr: [133, 155] <class 'list'>
 
@@ -1537,15 +1546,10 @@ def convertAllowedSectionsONCEONLY(request):
                     allowed_sections_dict = {}
                     allowed_school_dict = {}
                     schoolbase_pk = user.get('schoolbase_id') or 0 if user_role == c.ROLE_008_SCHOOL else -9
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('       schoolbase_pk: ' + str(schoolbase_pk) + ' ' + str(type(schoolbase_pk)))
 
                 # - loop through allowed_depbase_arr
-                    # there s no 'all' [-9] in allowed_depbase_arr
-                    allowed_depbase_arr = get_allowed_arr(allowed_depbases, 'allowed_depbases')
-                    if logging_on:
-                        logger.debug('       allowed_depbase_arr: ' + str(allowed_depbase_arr) + ' ' + str(type(allowed_depbase_arr)))
-
                     for depbase_pk in allowed_depbase_arr:
                         allowed_depbase_dict = {}
 
@@ -1553,7 +1557,7 @@ def convertAllowedSectionsONCEONLY(request):
                         lvl_req = dep_lvlreq_dict.get(depbase_pk) or False
                         if not lvl_req:
                             allowed_levelbases_arr = [-9]
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('       allowed_levelbases_arr: ' + str(allowed_levelbases_arr) + ' ' + str(type(allowed_levelbases_arr)))
 
                         # allowed_levelbases_arr: [-9] <class 'list'>
@@ -1561,7 +1565,7 @@ def convertAllowedSectionsONCEONLY(request):
 
                             allowed_subjbase_arr = create_allowed_subjbase_arr( depbase_pk, lvlbase_pk, allowed_subjectbases_arr)
                             # allowed_subjbase_arr: [117, 136] <class 'list'>
-                            if logging_on:
+                            if logging_on and False:
                                 logger.debug('       allowed_subjbase_arr: ' + str(allowed_subjbase_arr) + ' ' + str(type(allowed_subjbase_arr)))
 
                             allowed_depbase_dict[lvlbase_pk] = allowed_subjbase_arr
@@ -1574,13 +1578,13 @@ def convertAllowedSectionsONCEONLY(request):
                 # - convert  user_usergroups to array
                     user_usergroups = user.get('usergroups')
                     usergroups_arr = user_usergroups.split(';') if user_usergroups else None
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('       usergroups_arr: ' + str(usergroups_arr) + ' ' + str( type(usergroups_arr)))
 
                 # don't create in 2023 if user is corrector (auth4) and has no other usergroups
                     skip = skip_auth4_only(examyear_code, usergroups_arr)
                     if not skip:
-
+                        total_tobe_added += 1
                 # - convert allowed_clusters to array of integers
                         user_allowed_clusterbases = user.get('allowed_clusterbases')
                         allowed_clusters_arr = None
@@ -1601,14 +1605,16 @@ def convertAllowedSectionsONCEONLY(request):
                         """
                         set_userallowed_dict(user_pk, examyear_pk, usergroups_arr, allowed_clusters_arr, allowed_sections_dict)
                         """
-                        acc_view.set_userallowed_dict(
+                        is_added = acc_view.set_userallowed_dict(
                             user_pk=user_pk,
                             examyear_pk=examyear_pk,
                             usergroups_arr=usergroups_arr,
                             allowed_clusters_arr=allowed_clusters_arr,
                             allowed_sections_dict=allowed_sections_dict
                         )
-                        if logging_on:
+                        if is_added:
+                            total_added += 1
+                        if logging_on and False:
                             logger.debug('allowed_sections_dict: ' + str(allowed_sections_dict))
 
     # - add function to systemupdate, so it won't run again
@@ -1616,8 +1622,14 @@ def convertAllowedSectionsONCEONLY(request):
                 name=name
             )
             systemupdate.save(request=request)
+
+            elapsed_seconds = int(1000 * (timer() - starttime)) / 1000
+
             if logging_on:
                 logger.debug('systemupdate: ' + str(systemupdate))
+                logger.debug(' >>> total_tobe_added: ' + str(total_tobe_added))
+                logger.debug(' >>> total_added: ' + str(total_added))
+                logger.debug(' >>> elapsed_seconds: ' + str(elapsed_seconds))
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -2886,6 +2898,46 @@ def register_font_calibri():  # PR2022-09-02
 
         filepath = s.STATICFILES_FONTS_DIR + 'Calibri_Bold_Italic.ttf'
         ttfFile = TTFont('Calibri_Bold_Italic', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+
+def register_font_garamond():  # PR2023-03-02
+       # - get Garamond font
+    try:
+        filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Bold.ttf'
+        ttfFile = TTFont('Garamond_Bold', filepath)
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+    # - get Garamond font
+    try:
+        filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Regular.ttf'
+        ttfFile = TTFont('Garamond_Regular', filepath)
+        pdfmetrics.registerFont(ttfFile)
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+
+
+def register_font_palatino():  # PR2023-03-02 for enveleop receipt header
+    try:
+        filepath = s.STATICFILES_FONTS_DIR + 'palatino_linotype_regular.ttf'
+        ttfFile = TTFont('Palatino', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'palatino_linotype_bold.ttf'
+        ttfFile = TTFont('Palatino_Bold', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'palatino_linotype_italic.ttf'
+        ttfFile = TTFont('Palatino_Italic', filepath)
+        pdfmetrics.registerFont(ttfFile)
+
+        filepath = s.STATICFILES_FONTS_DIR + 'palatino_linotype_bold_italic.ttf'
+        ttfFile = TTFont('Palatino_Bold_Italic', filepath)
         pdfmetrics.registerFont(ttfFile)
 
     except Exception as e:

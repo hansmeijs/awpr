@@ -186,7 +186,7 @@ en:  [
                  "Click the <b><i>Save</i></b> button to save the changes. </p>",
 
                  "<p><b>Mark subjects to be cleared</b><br>",
-                 "If the subject you want to clear has already been submitted on an Ex1 form,"
+                 "If the subject you want to clear has already been submitted on an Ex1 form,",
                  "the subject will not be cleared immediately, but will be 'marked to be cleared'.",
                  "This is indicated by a double red line through the subject name.<br>" ,
                  "The chairman and secretary must first approve the cleared boxes",

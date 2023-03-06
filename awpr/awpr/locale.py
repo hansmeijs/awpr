@@ -1762,6 +1762,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Edit_label'] = _('Edit label')
         dict['Delete_label'] = _('Delete label')
         dict['Print_labels'] = _('Print labels')
+        dict['Print_receipt'] = _('Print receipts')
 
         dict['The_orderlist_is_published_at'] = _('The orderlist is published at ')
         dict['The_published_numbers_willbe_used'] = _('The number of exams from the published orderlist will be used.')

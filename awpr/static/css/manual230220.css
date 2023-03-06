@@ -244,21 +244,21 @@
 ----------------------------------------------------- */
 
 .img_users_tbl_users_ne, .img_users_tbl_users_en {
-    width: 1278px;
-    height: 378px;
-    background-size: 1278px 378px;
+    width: 1308px;
+    height: 320px;
+    background-size: 1308px 320px;
  }
 .img_users_tbl_users_ne {
-    background-image: url('/static/manual/users_tbl_users_ne.png');
+    background-image: url('/static/manual/users_tbl_users230301_ne.png');
 }
 .img_users_tbl_users_en {
-    background-image: url('/static/manual/users_tbl_users_en.png');
+    background-image: url('/static/manual/users_tbl_users230301_en.png');
 }
 
 .img_users_tbl_usergroups_ne, .img_users_tbl_usergroups_en {
-    width: 1278px;
-    height: 400px;
-    background-size: 1278px 400px;
+    width: 1011px;
+    height: 320px;
+    background-size: 1011px 320px;
  }
 .img_users_tbl_usergroups_ne {
     background-image: url('/static/manual/users_tbl_usergroups_ne.png');
@@ -268,9 +268,9 @@
 }
 
 .img_users_tbl_allowed_ne, .img_users_tbl_allowed_en {
-    width: 1278px;
-    height: 344px;
-    background-size: 1278px 344px;
+    width: 1022px;
+    height: 275px;
+    background-size: 1022px 275px;
  }
 .img_users_tbl_allowed_ne {
     background-image: url('/static/manual/users_tbl_allowed_ne.png');
@@ -278,6 +278,22 @@
 .img_users_tbl_allowed_en {
     background-image: url('/static/manual/users_tbl_allowed_en.png');
 }
+
+.img_user_allowed_sections_ne, .img_user_allowed_sections_en {
+    width: 800px;
+    height: 540px;
+    background-size: 800px 540px;
+ }
+.img_user_allowed_sections_ne {
+    background-image: url('/static/manual/user_allowed_sections_ne.png');
+}
+.img_user_allowed_sections_en {
+    background-image: url('/static/manual/user_allowed_sections_en.png');
+}
+
+
+
+
 
 /* ---------------------------------------------------
     IMAGES - UPLOAD CANDIDATES

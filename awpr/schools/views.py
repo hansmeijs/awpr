@@ -1984,7 +1984,7 @@ def create_examyear_instance(upload_dict, request):
         logger.debug(' ----- create_examyear_instance ----- ')
 
     examyear_instance = None
-    msg_html = None
+    err_html = None
     log_list = []
 
     req_usr_country = request.user.country
@@ -1997,7 +1997,7 @@ def create_examyear_instance(upload_dict, request):
     if last_examyear_instance is None:
         caption = _('Exam year')
         examyear_code = upload_dict.get('examyear_code') or '---'
-        msg_html = '<br>'.join((
+        err_html = '<br>'.join((
             str(_('There is no previous exam year.')),
             str(_("%(caption)s '%(val)s' could not be created.")
                 % {'caption': caption, 'val': str(examyear_code)})))
@@ -2013,20 +2013,22 @@ def create_examyear_instance(upload_dict, request):
             log_list.append(c.STRING_SPACE_05 + log_txt)
 
         if msg_err:
-            msg_html = msg_err
+            err_html = msg_err
 
         elif new_examyear_pk:
             examyear_instance = sch_mod.Examyear.objects.get_or_none(pk=new_examyear_pk)
 # - copy all tables from last examyear
-            log_lst = copy_tables_from_last_year(
+            log_lst, msg_err = copy_tables_from_last_year(
                 prev_examyear_pk=last_examyear_pk,
                 new_examyear_pk=new_examyear_pk,
                 also_copy_schools=True
             )
             if log_lst:
                 log_list.extend(log_lst)
+            if msg_err:
+                err_html = msg_err
 
-    return examyear_instance, msg_html, log_list
+    return examyear_instance, err_html, log_list
 # - end of create_examyear_instance
 
 
@@ -3396,8 +3398,9 @@ class CopySchemesFromExamyearView(View):  # PR2021-09-24
 
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def create_examyear(prev_examyear_pk, new_examyear_code_int):
-    # --- create examyear # PR2019-07-30 PR2020-10-05 PR2021-07-14 PR2021-08-21  PR2022-08-01
-    logging_on = s.LOGGING_ON
+    # --- create examyear
+    # PR2019-07-30 PR2020-10-05 PR2021-07-14 PR2021-08-21  PR2022-08-01 PR2023-03-02
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_examyear ----- ')
         logger.debug('new_examyear_code_int: ' + str(new_examyear_code_int) + ' ' + str(type(new_examyear_code_int)))
@@ -3410,7 +3413,6 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
     log_txt = None
 
     if prev_examyear_pk and new_examyear_code_int:
-
         try:
             # the following fields got value in create_examyear:
             #    code=examyear_code_int,
@@ -3418,12 +3420,13 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
             # the following fields got default value:
             #    published = False
             #    locked = False
+            #    thumbrule_allowed = False
             #    publishedat = None
             #    lockedat = None
             # the following fields get value from previous examyear::
-            field_list = ', '.join(( 'country_id',
-                      # these fields get calculated value: 'country_id', 'code', 'createdat',
-                      # these fields get default value: 'published', 'locked','publishedat', 'lockedat',
+            field_list = ', '.join((
+                      # these fields get calculated value: 'code', 'createdat',
+                      # these fields get default value: 'published', 'locked', thumbrule_allowed, 'publishedat', 'lockedat',
                       'no_practexam', 'sr_allowed', 'no_centralexam', 'no_thirdperiod',
                       'order_extra_fixed', 'order_extra_perc', 'order_round_to',
                       'order_tv2_divisor', 'order_tv2_multiplier', 'order_tv2_max',
@@ -3432,34 +3435,31 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
 
             createdat_str = str(timezone.now())
 
-            sql_keys = {'prev_ey_id': prev_examyear_pk, 'new_ey_code': new_examyear_code_int}
             sql_list = [
                 "INSERT INTO schools_examyear(",
-                    "code, createdat,",
-                    "published, locked,",
+                    "country_id, published, locked, thumbrule_allowed, code, createdat, ",
                     field_list,
-                    ")",
-                "(SELECT",
-                    "%(new_ey_code)s::INT,",
-                    "'" + createdat_str + "',",
-                    "FALSE, FALSE,",
+                ") SELECT ",
+                    "country_id, FALSE, FALSE, FALSE, ", str(new_examyear_code_int) + "::INT, '" + createdat_str + "', ",
                     field_list,
-                "FROM schools_examyear",
-                "WHERE id = %(prev_ey_id)s::INT)",
+                " FROM schools_examyear ",
+                "WHERE id=", str(prev_examyear_pk), "::INT ",
                 "RETURNING id;"
             ]
 
-            sql = ' '.join(sql_list)
+            sql = ''.join(sql_list)
+            if logging_on:
+                logger.debug('  sql ' + str(sql))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 rows = cursor.fetchall()
                 if rows:
                     row = rows[0]
                     if row:
                         new_examyear_pk = row[0]
 
-            log_txt = str(_("%(caption)s '%(val)s' has been created.") % {'caption': caption, 'val': name})
+            log_txt = str(_("%(caption)s %(val)s has been created.") % {'caption': caption, 'val': name})
 
             if logging_on:
                 logger.debug('log_txt: ' + str(log_txt))
@@ -3469,7 +3469,7 @@ def create_examyear(prev_examyear_pk, new_examyear_code_int):
             caption = _('Exam year')
             msg_err = ''.join((
                 str(_('An error occurred')), ': ', '<br>&emsp;&emsp;<i>', str(e), '</i><br>',
-                str(_("%(caption)s '%(val)s' could not be created.") % {'caption': caption, 'val': name})
+                str(_("%(caption)s %(val)s could not be created.") % {'caption': caption, 'val': name})
             ))
 
     return new_examyear_pk, msg_err, log_txt
@@ -3569,39 +3569,45 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
         logger.debug(' ------- copy_tables_from_last_year -------')
         logger.debug('prev_examyear_pk: ' + str(prev_examyear_pk))
     log_list = []
+
+    msg_err = None
     if new_examyear_pk and prev_examyear_pk:
 
-        # all fields are copied while creating newexamyear, no need to use
+        # all fields are copied while creating new examyear, no need to use
         #   sf.copy_examyear_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
         # schoolsetting and mailinglist don't have to be copied, because they are  not examyear dependent
 
-        sf.copy_exfilestext_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        # PR2023-03-01 added: copy  userallowed to new examyear
+        msg_err = sf.copy_userallowed_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        mapped_deps = sf.copy_deps_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+        if msg_err is None:
+            sf.copy_exfilestext_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        if also_copy_schools:
-            sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            mapped_deps = sf.copy_deps_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        mapped_levels = sf.copy_levels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
-        mapped_sectors = sf.copy_sectors_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            if also_copy_schools:
+                sf.copy_schools_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        mapped_schemes = sf.copy_schemes_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_sectors, log_list)
+            mapped_levels = sf.copy_levels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            mapped_sectors = sf.copy_sectors_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
-        mapped_subjects = sf.copy_subjects_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            mapped_schemes = sf.copy_schemes_from_prev_examyear(prev_examyear_pk, mapped_deps, mapped_levels, mapped_sectors, log_list)
 
-        mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
-        # TODO add copy_envelopsubject_from_prev_examyear
-        mapped_envelopbundles = sf.copy_envelopbundles_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
-        mapped_enveloplabels = sf.copy_enveloplabels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
-        mapped_envelopitems = sf.copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            mapped_subjecttypes = sf.copy_subjecttypes_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
+            mapped_subjects = sf.copy_subjects_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        sf.copy_envelopbundlelabels_from_prev_examyear(prev_examyear_pk, mapped_envelopbundles, mapped_enveloplabels, log_list)
-        sf.copy_enveloplabelitems_from_prev_examyear(prev_examyear_pk, mapped_enveloplabels, mapped_envelopitems, log_list)
+            mapped_schemeitems = sf.copy_schemeitems_from_prev_examyear(prev_examyear_pk, mapped_schemes, mapped_subjects, mapped_subjecttypes, log_list)
+            # TODO add copy_envelopsubject_from_prev_examyear
+            mapped_envelopbundles = sf.copy_envelopbundles_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            mapped_enveloplabels = sf.copy_enveloplabels_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
+            mapped_envelopitems = sf.copy_envelopitems_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list)
 
-        sf.copy_exams_from_prev_examyear(prev_examyear_pk,
-                                         mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
+            sf.copy_envelopbundlelabels_from_prev_examyear(prev_examyear_pk, mapped_envelopbundles, mapped_enveloplabels, log_list)
+            sf.copy_enveloplabelitems_from_prev_examyear(prev_examyear_pk, mapped_enveloplabels, mapped_envelopitems, log_list)
+
+            sf.copy_exams_from_prev_examyear(prev_examyear_pk,
+                                             mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
 
         if logging_on:
             logger.debug('    mapped_schemeitems: ' + str(mapped_schemeitems))
@@ -3635,7 +3641,7 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
         # Ntermentable
         # Exam
         # Cluster
-    return log_list
+    return log_list, msg_err
 # end of copy_tables_from_last_year
 
 # === School =====================================

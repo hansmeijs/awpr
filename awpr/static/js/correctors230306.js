@@ -79,22 +79,22 @@ document.addEventListener('DOMContentLoaded', function() {
     field_settings.btn_approval = {
                     field_caption: ["", "Organization", "User", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
-                                    "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines", "Inactive"],
+                                    "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines", "Compensation", "Inactive"],
                     field_names: ["select", "user_sb_code", "username", "last_name",
                                     "depbase_code", "lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
-                                     "sb_code", "school_abbrev","uc_amount", "uc_meetings", "is_active"],
+                                     "sb_code", "school_abbrev","uc_amount", "uc_meetings", "uc_compensation", "is_active"],
                     field_tags: ["div", "div", "div", "div",
                                     "div", "div", "div", "div", "div", "div",
-                                     "div", "div","div", "input", "div"],
+                                     "div", "div","div", "input", "div", "div"],
                     filter_tags: ["select", "text", "text",  "text",
                                     "text", "text",  "text",  "text", "text", "text",
-                                     "text",  "text", "text",  "toggle",  "inactive"],
+                                     "text",  "text", "text",  "text", "text", "inactive"],
                     field_width:  ["020", "090", "150",  "180",
                                     "090", "090", "090", "220", "090",  "090",
-                                    "090", "150", "150",  "150",  "090"],
+                                    "090", "150", "150",  "150", "150", "090"],
                     field_align: ["c", "l", "l", "l",
                                     "c", "c", "c", "l",  "l", "c",
-                                    "l", "l", "c",  "c",  "c"]};
+                                    "l", "l", "c",  "c", "c", "c"]};
 
     field_settings.btn_compensation = {
                     field_caption: ["", "Organization", "User", "Name",
@@ -632,16 +632,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
-        console.log("    data_dict", data_dict);
-
 // ---  lookup index where this row must be inserted
         const ob1 = (data_dict.username) ? data_dict.username : "";
         const ob2 = (data_dict.subjbase_code) ? data_dict.subjbase_code : "";
         const ob3 = (data_dict.sb_code) ? data_dict.sb_code : "";
 
-        console.log("    ob1", ob1);
-        console.log("    ob2", ob2);
-        console.log("    ob3", ob3);
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2, ob3);
 
 // --- insert tblRow into tblBody at row_index
@@ -763,7 +758,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 inner_text = (data_dict[field_name]) ? data_dict[field_name] : null;  // don't show zero's
                 filter_value = (inner_text) ? inner_text : null;
 
-            } else if (field_name === "compensation") {
+            } else if (field_name === "uc_compensation") {
                 inner_text = ( Number(data_dict[field_name])) ? Number( data_dict[field_name]) / 100 : null;
                 filter_value = (inner_text) ? inner_text : null;
 

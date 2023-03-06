@@ -224,7 +224,7 @@ class GradeDownloadShortGradelist(View):  # PR2022-06-06
                 # - get selected examyear, school and department from usersettings
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                     acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-                sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
+                sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
                 if logging_on:
                     logger.debug('sel_school: ' + str(sel_school))
                     logger.debug('sel_department: ' + str(sel_department))
@@ -335,7 +335,7 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
 # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-            sel_lvlbase_pk, sel_sctbase_pk = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
+            sel_lvlbase_pk, sel_sctbase_pk = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
             if logging_on:
                 logger.debug('     sel_school: ' + str(sel_school))
                 logger.debug('     sel_department: ' + str(sel_department))
@@ -422,6 +422,7 @@ class DownloadGradelistDiplomaView(View):  # PR2021-11-15
                 #    logger.error(getattr(e, 'message', str(e)))
 
        # - get Garamond font
+                # TODO replace by af.register_font_garamond
                 try:
                     filepath = s.STATICFILES_FONTS_DIR + 'Garamond_Bold.ttf'
                     ttfFile = TTFont('Garamond_Bold', filepath)

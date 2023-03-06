@@ -502,6 +502,12 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_examyear=sel_examyear
                     )
 
+# ----- enveloporderlist_rows
+                if datalist_request.get('enveloporderlist_rows'):
+                    datalists['enveloporderlist_rows'] = sj_ol.create_enveloporderlist_rows(
+                        sel_examyear=sel_examyear
+                    )
+
         if message_list:
             datalists['messages'] = message_list
 
@@ -526,7 +532,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ')
@@ -679,6 +685,8 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
         logger.debug('    allowed_depbases_pk_arr: ' + str(allowed_depbases_pk_arr))
 
+    # PR2023-03-04 debug: when sel_schoolbase_pk is a vsbo school, the selected dep will go to vsbo
+    # solved by resetting sel_schoolbase_pk to null in page orderlist,
     sel_depbase_instance, sel_depbase_tobesaved, sel_department_instance = \
         acc_view.get_settings_departmentbase(
             request=request,

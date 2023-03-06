@@ -15,121 +15,51 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def copy_examyear_from_prev_examyearNIU(prev_examyear, new_examyear, log_list):
-    # copy examyear fields from previous examyear PR2021-07-14 PR2022-07-31
-
-    logging_on = False  # s.LOGGING_ON
-    if logging_on:
-        logger.debug(' ----- copy_examyear_from_prev_examyear ----- ')
-        logger.debug('prev_examyear: ' + str(prev_examyear) + ' ' + str(type(prev_examyear)))
-        logger.debug('new_examyear: ' + str(new_examyear) + ' ' + str(type(new_examyear)))
-
-    # the following fields got value in create_examyear:
-    #    country=request.user.country,
-    #    code=examyear_code_int,
-    #    createdat=timezone.now()
-    # the following fields got default value:
-    #    published = False
-    #    locked = False
-    #    publishedat = None
-    #    lockedat = None
-    # the following fields get value from previous examyear::
-    fields = ('no_practexam', 'sr_allowed', 'no_centralexam', 'no_thirdperiod',
-              'order_extra_fixed', 'order_extra_perc', 'order_round_to',
-              'order_tv2_divisor', 'order_tv2_multiplier', 'order_tv2_max',
-              'order_admin_divisor', 'order_admin_multiplier', 'order_admin_max',
-              'modifiedat', 'modifiedby_id')
-    try:
-        sql_keys = {'ey_id': prev_examyear.pk}
-
-# - create select table of previous exam year
-        sub_sql_list = [
-            "SELECT",
-            ', '.join(fields),
-            "FROM schools_examyear",
-            "WHERE id = %(ey_id)s::INT"]
-        sub_sql = ' '.join(sub_sql_list)
-        if logging_on:
-            logger.debug('sub_sql: ' + str(sub_sql))
-
-        sql_fields = []
-        for field in fields:
-            sql_fields.append(''.join((field, "=prev_ey.", field)))
-        sql_fields_list = ', '.join(sql_fields)
-        if logging_on:
-            logger.debug('sql_fields_list: ' + str(sql_fields_list))
-
-        sql_list = [
-            "WITH prev_ey AS (", sub_sql, ")",
-            "UPDATE schools_examyear AS this_ey",
-            "SET",
-            sql_fields_list,
-            "FROM prev_ey",
-            "WHERE this_ey.id = %(ey_id)s::INT",
-            "RETURNING this_ey.code"
-        ]
-        sql = ' '.join(sql_list)
-        if logging_on:
-            logger.debug('sql: ' + str(sql))
-        ey_code = '---'
-        with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
-            rows = cursor.fetchall()
-            if rows:
-                first_row = rows[0]
-                if first_row:
-                    ey_code = first_row[0]
-
-        log_list.append(c.STRING_SPACE_05 + str(_("Exam year data are copied to exam year %(ey_code)s.") % {'ey_code': ey_code}))
-
-    except Exception as e:
-        logger.error(getattr(e, 'message', str(e)))
-        log_list.append(get_error_logtext(_('exam year data'), e))
-# - end of copy_examyear_from_prev_examyear
-
-
-
 def copy_userallowed_from_prev_examyear(prev_examyear_pk, new_examyear_pk, log_list):
-    # copy userallowed records from previous examyear PR2022-12-16
-    # TODO test if code is correct
+    # copy userallowed records from previous examyear PR2023-03-02
+
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- copy_userallowed_from_prev_examyear -------')
+    msg_err = None
+    try:
+        sql_list = [
+        "INSERT INTO accounts_userallowed(",
+            "user_id, examyear_id, usergroups, allowed_sections, allowed_clusters, modifiedat, modifiedby_id",
+        ") SELECT ",
+            "user_id, ", str(new_examyear_pk), "::INT, usergroups, allowed_sections, allowed_clusters, ",
+            "modifiedat, modifiedby_id ",
+        "FROM accounts_userallowed ",
+        "WHERE examyear_id=", str(prev_examyear_pk), "::INT ",
+        "RETURNING id;"
+        ]
 
-    caption = _('User permissions')
+        sql = ''.join(sql_list)
 
-# - loop through deps of prev examyear
-    prev_userallowed_rows = acc_mod.UserAllowed.objects.filter(
-        examyear_id=prev_examyear_pk
-    )
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
 
-    for prev_row in prev_userallowed_rows:
+        row_count = len(rows) if rows else 0
+        log_txt = str(_("The permissions of %(row_count)s users are copied.") % {'row_count': row_count})
+        log_list.append(c.STRING_SPACE_05 + log_txt)
+
         if logging_on:
-            logger.debug('prev_row: ' + str(prev_row))
-        try:
-            new_prev_userallowed_row = acc_mod.UserAllowed(
-                user_id=prev_row.user_id,
-                examyear_id=new_examyear_pk,
+            logger.debug('log_txt: ' + str(log_txt))
 
-                usergroups=prev_row.usergroups,
-                allowed_sections = prev_row.allowed_sections,
-                allowed_clusters = prev_row.allowed_clusters,
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
 
-                modifiedby_id=prev_row.modifiedby_id,
-                modifiedat=prev_row.modifiedat
-            )
+        msg_err = ''.join((
+            str(_('An error occurred')), ': ', '<br>&emsp;&emsp;<i>', str(e), '</i><br>',
+            str(_("%(cpt)s could not be created.") % {'cpt': _('User permissions')})
+        ))
 
-            new_prev_userallowed_row.save()
+        log_list.append(msg_err)
 
-        except Exception as e:
-            logger.error(getattr(e, 'message', str(e)))
-            log_list.append(get_error_logtext(caption, e))
-
-    row_count = len(prev_userallowed_rows) if prev_userallowed_rows else 0
-    log_txt = str(_("The permissions of %(row_count)s users are copied.") % {'row_count': row_count})
-    log_list.append(c.STRING_SPACE_05 + log_txt)
-
-
+    if logging_on:
+        logger.debug('    msg_err: ' + str(msg_err))
+    return msg_err
 # - end of copy_userallowed_from_prev_examyear
 
 
