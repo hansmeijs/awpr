@@ -57,8 +57,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 
 # once only function converts allowed deps, levels and subjects to a dict and stores it in allword_schools PR2022-11-23
-                af.convertAllowedSectionsONCEONLY(request)
-
+                # af.convertAllowedSectionsONCEONLY(request)
 
 # ----- get user_lang
                 user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -141,7 +140,6 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['userapproval_rows'] = acc_view.create_userapproval_rows(sel_examyear, request)
                     datalists['usercompensation_rows'] = acc_view.calc_usercompensation_rows(sel_examyear, request)
 
-
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
                     datalists['examyear_rows'] = school_dicts.create_examyear_rows(request.user, {})
@@ -217,9 +215,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
                         sel_examyear=sel_examyear,
                         sel_depbase=sel_depbase,
-                        append_dict={},
-                        setting_dict=new_setting_dict,
-                        exam_pk_list=None
+                        sel_lvlbase=sel_lvlbase,
+                        append_dict={}
                     )
 # ----- subjects for page subjectscheme
                 if datalist_request.get('subject_rows_page_subjects'):
@@ -286,9 +283,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         req_usr=request.user,
                         sel_examyear=sel_examyear,
                         sel_depbase=sel_depbase,
-                        append_dict={},
-                        setting_dict=new_setting_dict,
-                        exam_pk_list=None
+                        sel_lvlbase=sel_lvlbase,
+                        sel_examperiod=sel_examperiod,
+                        append_dict={}
                         )
 # ----- all exams
                 if datalist_request.get('all_exam_rows'):

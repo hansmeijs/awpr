@@ -9,92 +9,48 @@
                 <div class="modal-header tsa_bc_lightlightgrey">
                     <a href="{% url 'manual_url' 'studsubj' 'id_clusters' %}" target="_blank" title="{% trans 'Open manual' %}" aria-label="Manual"> <div class="questionmark"></div> </a>
 
-                    <h4 class="modal-title mx-2" >{% trans 'Link CVTE exams' %}</h4>
+                    <h4 id="id_MDUO_header" class="modal-title mx-2" ></h4>
                     <button class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
 
                 <div class="modal-body">
-                    <div class="flex_container px-2">
-                        <div class="flex_1 ml-2 pl-2">
-                            <label class="mx-2 my-1">{% trans 'Exam type' %}:</label>
-                            <div id="id_MDUO_examperiod" class="form-control p-2"></div>
-                        </div>
-                        <div class="flex_1 mx-2 px-2">
-                            <label class="mx-2 my-1">{% trans 'Learning path' %}:</label>
-                            <div id="id_MDUO_level" class="form-control p-2"></div>
-                        </div>
-                    </div>
-
-                    <div class="mx-4">
-                        <small class="text-muted">{% trans 'Select a subject and a CVTE exam.' %}</small>
-                        <small class="text-muted">{% trans "Then click 'Link exam to subject' to link them." %}</small>
-                    </div>
                     <div class="content_header ml-2 mr-0">
-
-                        <div class="flex_1 p-2 ">
+                        <div class="flex_3 p-2 ">
                             <h6 class="px-2">{% trans 'Subjects that are not linked' %}:</h6>
-                            <table class="tableX tsa_tbl border_bg_message tbl_h320 tbl_w320">
+                            <table class="tableX tsa_tbl border_bg_message tbl_h180 tbl_w320">
                                 <tbody id="id_MDUO_tblBody_subjects"></tbody>
                             </table>
-
-                            <div class="display_hide">
-                                <label class="label_margin_top_m2">{% trans 'Filter subjects' %}:</label>
-                                <div class="flex_container px-2">
-                                    <div class="flex_1">
-                                        <input id="id_MDUO_filter_subjects" type="text" data-field="schoolname" class="form-control"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                    </div>
-                                    <div class="flex_1">
-                                        <div class="flex_box">
-                                            <div class="flex_1">
-                                                <input id="id_MDUO_show_linked_subjects" type="checkbox" class="awp_input_checkbox tw_032 mx-2">
-                                            </div>
-                                            <div class="flex_4">
-                                                <label for="id_MDUO_show_linked_subjects">{% trans 'Show linked subjects' %}</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                          </div>
 
-                        <div class="flex_1 p-2">
+                        <div class="flex_4 p-2">
                             <h6 class="px-2">{% trans 'CVTE exams that are not linked' %}:</h6>
-                            <table class="tableX tsa_tbl border_bg_lightblue tbl_h320 tbl_w320">
-                                <tbody id="id_MDUO_tblBody_duo_exams"></tbody>
+                            <table class="tableX tsa_tbl border_bg_message tbl_h180 tbl_w420">
+                                <tbody id="id_MDUO_tblBody_ntermentable"></tbody>
                             </table>
 
-                            <div class="display_hide">
-                                <label class="label_margin_top_m2">{% trans 'Filter CVTE exams' %}:</label>
-                                <div class="flex_container px-2">
-                                    <div class="flex_1">
-                                        <input id="id_MDUO_filter_exams" type="text" data-field="schoolname" class="form-control"
-                                            autocomplete="off" ondragstart="return false;" ondrop="return false;">
-                                    </div>
-                                    <div class="flex_1">
-                                        <div class="flex_box">
-                                            <div class="flex_1">
-                                                <input id="id_MDUO_show_linked_exams" type="checkbox" class="awp_input_checkbox tw_032 mx-2">
-                                            </div>
-                                            <div class="flex_4">
-                                                <label for="id_MDUO_show_linked_exams">{% trans 'Show linked CVTE exams' %}</label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
+                    </div>
+                    <div class="content_header ml-2 mr-0">
+                        <div class="p-2">
+                            <h6 class="px-2">{% trans 'Linked CVTE exams' %}:</h6>
+                            <table class="tableX tsa_tbl border_bg_lightblue tbl_h180 tbl_w960">
+                                <tbody id="id_MDUO_tblBody_linked"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="mx-4">
+                        <div class="mx-2 mb-0"><small>{% trans "Click a subject in the left list and a corresponding CVTE exam in the right list to link them." %}</small></div>
+                        <div class="mx-2 mb-0"><small >{% trans "Click on a linked exam in the lower list to unlink it." %}</small></div>
                     </div>
                 </div>
 
                 <div class="modal-footer">
                     <div class="content_subheader_right">
                         <button class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>
-                        <button id="id_MDUO_btn_save" class="btn btn-primary">{% trans 'Link exam to subject' %}</button>
+                        <button id="id_MDUO_btn_save" class="btn btn-primary mr-3">{% trans 'Save' %}</button>
                     </div>
-
                 </div>
             </div>
         </div>

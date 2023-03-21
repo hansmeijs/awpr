@@ -779,7 +779,7 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
 
     # values of sel_layout are: "no_errata", "errata_only", "all , None
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_printlabel_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
@@ -811,10 +811,16 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
                 "INNER JOIN subjects_envelopitem AS itm ON (itm.id = lblitm.envelopitem_id)",
                 "INNER JOIN schools_examyear AS ey ON (ey.id = itm.examyear_id)",
 
-                "WHERE ey.code = %(ey_code_int)s::INT",
+                "WHERE ey.code = " + str(sel_examyear.code) + "::INT",
+
                 "GROUP BY lblitm.enveloplabel_id"
             ]
             sub_sql = ' '.join(sub_list)
+            """
+            sub_sql = [ {'enveloplabel_id': 2, 'content_nl_arr': ['Examen onderdeel A (260 min)', 'Minitoets (rood & blauw)', 'Uitwerkbijlagen (4) (digitaal)'], 'content_en_arr': ['Exam part A (260 min)', 'Mini-test (red & blue)', 'Work appendix (4) (digital)'], 'content_pa_arr': ['Èksamen sekshon A (260 min)', 'Mini-prueba (kòrá & blou)', 'Anekso di elaborashon (4) (digital)'], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None], 'content_color_arr': ['black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None], 'content_font_arr': ['Bold', None, None], 'instruction_font_arr': [None, None, None], 'sequence_arr': [42, 116, 117]},
+                        {'enveloplabel_id': 3, 'content_nl_arr': ['Examen onderdeel A (95 min)', 'Minitoets (rood & blauw)', 'Bijlage '], 'content_en_arr': ['Exam part A (95 min)', 'Mini-test (red & blue)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon A (95 min)', 'Mini-prueba (kòrá & blou)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None], 'content_color_arr': ['black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None], 'content_font_arr': ['Bold', None, None], 'instruction_font_arr': [None, None, None], 'sequence_arr': [40, 76, 161]},
+                        {'enveloplabel_id': 4, 'content_nl_arr': ['Examen onderdeel B  (80 min)', 'Minitoets (rood & blauw)', 'Bijlage '], 'content_en_arr': ['Exam part B (80 min)', 'Mini-test (red & blue)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon B (80 min)', 'Mini-prueba (kòrá & blou)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None], 'content_color_arr': ['black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None], 'content_font_arr': ['Bold', None, None], 'instruction_font_arr': [None, None, None], 'sequence_arr': [40, 75, 159]}
+            """
 
     # - this subquery counts number of exams of this subject / dep / level / examperiod
             # used for envelops, when practical exam: the number of exams must be divided by the number of exams of that subject
@@ -826,7 +832,6 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
                 "env_subj.department_id AS dep_id,"
                 "env_subj.level_id AS lvl_id,"
                 "env_subj.subject_id AS subj_id,"
-
                         
                 #"env_subj.ete_exam, env_subj.version,"
                 "env_subj.examperiod, env_subj.firstdate, env_subj.lastdate, env_subj.starttime, env_subj.endtime,"
@@ -855,22 +860,28 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
                 "INNER JOIN subjects_envelopbundle AS bnd ON (bnd.id = env_subj.envelopbundle_id)",
                 "INNER JOIN subjects_envelopbundlelabel AS bndlbl ON (bndlbl.envelopbundle_id = bnd.id)",
                 "INNER JOIN subjects_enveloplabel AS lbl ON (lbl.id = bndlbl.enveloplabel_id)",
+
                 "INNER JOIN items ON (items.enveloplabel_id = lbl.id)",
 
                 #"LEFT JOIN counts ON (counts.dep_id = dep.id AND counts.lvl_id = COALESCE(lvl.id, 0) AND",
                 #        "counts.subj_id = subj.id AND counts.examperiod = exam.examperiod)",
 
-                "WHERE ey.code = %(ey_code_int)s::INT",
+                "WHERE ey.code = " + str(sel_examyear.code) + "::INT",
             ]
 
             if envelopsubject_pk_list:
-                sql_keys['envelopsubject_pk_list'] = envelopsubject_pk_list
-                sql_list.append('AND env_subj.id IN (SELECT UNNEST( %(envelopsubject_pk_list)s::INT[]))')
-            #else:
-            #    # PR2022-09-02 debug: must skip filter examperiod when envelopsubject_pk_list has value
-            #    sql_list.append('AND exam.examperiod = %(ep)s::INT')
+                #sql_keys['envelopsubject_pk_list'] = envelopsubject_pk_list
+                #sql_list.append('AND env_subj.id IN (SELECT UNNEST( %(envelopsubject_pk_list)s::INT[]))')
+                sql_list.append(''.join(("AND env_subj.id IN (SELECT UNNEST(ARRAY", str(envelopsubject_pk_list), "::INT[])) ")))
+
+            else:
+                # PR2022-09-02 debug: must skip filter examperiod when envelopsubject_pk_list has value
+                sql_list.append(''.join(('AND exam.examperiod = ', str(sel_examperiod), '::INT')))
 
     # values of sel_layout are: "no_errata", "errata_only", "all" , None
+            # TODO remove, is for test
+            sel_layout = 'show_errata_always'
+
             if sel_layout == 'no_errata':
                 sql_list.append('AND NOT lbl.is_errata')
             elif sel_layout == 'errata_only':
@@ -886,6 +897,10 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
             sql_list.append('ORDER BY subj.name_nl, bndlbl.sequence')
 
             sql = ' '.join(sql_list)
+
+            if logging_on:
+                for sql_txt in sql_list:
+                    logger.debug('    >: ' + str(sql_txt))
 
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)

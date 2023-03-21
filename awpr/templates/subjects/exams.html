@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams230228.js' %}"></script>
+    <script src="{% static 'js/exams230321.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import230220.js' %}"></script>
 {% endblock %}
@@ -37,19 +37,6 @@
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
-            {% if is_requsr_same_school %}
-                <div class="tw_200 m-2 display_hide">
-                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
-                   <input id="id_SBR_select_cluster" type="text"
-                        class="tw_200 border_none pointer_show px-2" readonly>
-                </div>
-
-                <div class="tw_200 m-2 display_hide">
-                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
-                    <input id="id_SBR_select_student" type="text"
-                        class="tw_200 border_none pointer_show px-1" readonly>
-                </div>
-            {% endif %}
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
             </div>

@@ -1343,8 +1343,8 @@ def create_orderlist_rows(request, sel_examyear):
 # --- end of create_orderlist_rows
 
 
-def create_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None):
-    # PR2022-10-09 PR2022-10-10
+def create_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None, practex_only=None):
+    # PR2022-10-09 PR2022-10-10 PR2023-03-18
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_envelopsubject_rows ============= ')
@@ -1406,9 +1406,14 @@ def create_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None
             ]
 
             if envelopsubject_pk:
-                sql_keys['envsubj_pk'] = envelopsubject_pk
-                sql_list.append('AND env_subj.id = %(envsubj_pk)s::INT')
+                sql_list.append(''.join(('AND env_subj.id = ', str(envelopsubject_pk), '::INT')))
             else:
+                if practex_only is not None:
+                    if practex_only:
+                        sql_list.append('AND si_has_practex.subject_id IS NOT NULL')
+                    else:
+                        sql_list.append('AND si_has_practex.subject_id IS NULL')
+
                 sql_list.append('ORDER BY env_subj.id')
 
             sql = ' '.join(sql_list)
@@ -1422,7 +1427,7 @@ def create_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None
                 envelopsubject_rows = af.dictfetchall(cursor)
 
             if envelopsubject_pk and envelopsubject_rows and append_dict:
-                # when enveloplabel_pk has value there is only 1 row
+                # when envelopsubject_pk has value there is only 1 row
                 row = envelopsubject_rows[0]
                 if row:
                     for key, value in append_dict.items():
@@ -1858,11 +1863,11 @@ def create_printlabel_dict(sel_examyear, sel_examperiod, sel_layout, envelopsubj
     # PR2022-10-10
     # values of sel_layout are: "no_errata", "errata_only", "all" , None
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- create_printlabel_dict ----- ')
         logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
-        #logger.debug('    sel_examperiod: ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
+        logger.debug('    sel_examperiod: ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
         logger.debug('    sel_layout: ' + str(sel_layout) + ' ' + str(type(sel_layout)))
         logger.debug('    envelopsubject_pk_list: ' + str(envelopsubject_pk_list) + ' ' + str(type(envelopsubject_pk_list)))
 
@@ -4081,6 +4086,7 @@ class EnvelopPrintReceiptView(View):  # PR2023-03-04
             lst: {"subject_list":[12],"schoolbase_list":[2,5],"sel_layout":"none","lvlbase_pk_list":[]}
             lst: {"exam_pk_list":[34],"schoolbase_pk_list":[2],"subjbase_pk_list":[133],"sel_layout":"errata_only"}
             lst: {"envelopsubject_pk_list":[76],"sel_layout":"all"}  
+            lst: {"mode":"receipt","schoolbase_pk_list":[3],"sel_exam":"cspe"}
             """
 
     # paper size of labels is: 'Statement', Width: 21.59 cm Height: 13.97 cm or 8.5 inch x 5.5 inch or 612 x 396 points
@@ -4102,193 +4108,230 @@ class EnvelopPrintReceiptView(View):  # PR2023-03-04
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
 # - get selected examperiod from usersettings
-            sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
-            # PR2022-08-27 debug: saved sel_examperiod was 12 (deprecated, 12 was all exam periods), change it to 1
-            if sel_examperiod not in (1,2,3):
-                sel_examperiod = 1
+            # sel_exam values are: 'cspe', 'cse', 'tv02'
+            sel_exam = upload_dict.get('sel_exam')
+            practex_only = sel_exam == 'cspe'
+            sel_examperiod = 2 if sel_exam == 'tv02' else 1
+            if logging_on:
+                logger.debug(' practex_only ' + str(practex_only) + ' ' + str(type(practex_only)))
+                logger.debug(' sel_examperiod ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
 
-            if sel_examperiod:
-                # sel_layout values are: 'no_errata', 'errata_only', 'all' , None, 'show_errata_always'
-                sel_layout = upload_dict.get('sel_layout')
+            # when schoolbase_pk_list has value [-1], it means that all schools must be printed
+            # when schoolbase_pk_list has value None, it means that no schools must be printed
 
-                subjbase_pk_list = upload_dict.get('subjbase_pk_list')
+            schoolbase_pk_list = upload_dict.get('schoolbase_pk_list')
+            envelopsubject_rows = create_envelopsubject_rows(
+                sel_examyear=sel_examyear,
+                append_dict={},
+                practex_only=practex_only
+            )
+            if logging_on and False:
+                if envelopsubject_rows:
+                    logger.debug(' > envelopsubject_rows:')
+                    for row in envelopsubject_rows:
+                        logger.debug(' > ' + str(row))
 
-                envelopsubject_pk_list = upload_dict.get('envelopsubject_pk_list')
+            envelopsubject_pk_list = []
+            if envelopsubject_rows:
+                for row in envelopsubject_rows:
+                    envelopsubject_pk = row.get('id')
+                    if envelopsubject_pk:
+                        envelopsubject_pk_list.append(envelopsubject_pk)
 
-                # when schoolbase_pk_list has value [-1], it means that all schools must be printed
-                # when schoolbase_pk_list has value None, it means that no schools must be printed
+            if logging_on:
+                logger.debug('    envelopsubject_pk_list: ' + str(envelopsubject_pk_list))
 
-                schoolbase_pk_list = upload_dict.get('schoolbase_pk_list')
+            sel_layout = None
+            if schoolbase_pk_list is None:
+                sel_layout = 'show_errata_always'
 
-                if schoolbase_pk_list is None:
-                    sel_layout = 'show_errata_always'
-                elif not len(schoolbase_pk_list):
-                    sel_layout = 'show_errata_always'
-                elif schoolbase_pk_list[0] == -1:
-                    schoolbase_pk_list = None
+            elif not len(schoolbase_pk_list):
+                sel_layout = 'show_errata_always'
+            elif schoolbase_pk_list[0] == -1:
+                schoolbase_pk_list = None
 
-                if logging_on:
-                    logger.debug('    sel_examperiod: ' + str(sel_examperiod))
-                    logger.debug('    sel_layout:     ' + str(sel_layout))
-                    logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
-                    logger.debug('    envelopsubject_pk_list:   ' + str(envelopsubject_pk_list))
+            if logging_on:
+                logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('    sel_exam:     ' + str(sel_exam))
+                logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
 
 # --- get department dictlist, ordered by sequence
-                # fields are: depbase_id, depbase_code, dep_name, dep_level_req
-                department_dictlist = subj_view.create_department_dictlist(sel_examyear)
-                """
-                department_dictlist: [
-                    {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}, 
-                    {'depbase_id': 2, 'depbase_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 'dep_level_req': False}, 
-                    {'depbase_id': 3, 'depbase_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'dep_level_req': False}]
-                """
+            # fields are: depbase_id, depbase_code, dep_name, dep_level_req
+            department_dictlist = subj_view.create_department_dictlist(sel_examyear)
+            """
+            department_dictlist: [
+                {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}, 
+                {'depbase_id': 2, 'depbase_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 'dep_level_req': False}, 
+                {'depbase_id': 3, 'depbase_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'dep_level_req': False}]
+            """
 
 # --- get lvlbase dictlist, ordered by sequence
-                lvlbase_dictlist = subj_view.create_level_dictlist(sel_examyear)
-                """
-                lvlbase_dictlist: [
-                    {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}, 
-                    {'lvlbase_id': 5, 'lvlbase_code': 'PKL', 'lvl_name': 'Praktisch Kadergerichte Leerweg'}, 
-                    {'lvlbase_id': 4, 'lvlbase_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg'}, 
-                    {'lvlbase_id': 0, 'lvlbase_code': '', 'lvl_name': ''}]
-                """
+            lvlbase_dictlist = subj_view.create_level_dictlist(sel_examyear)
+            """
+            lvlbase_dictlist: [
+                {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}, 
+                {'lvlbase_id': 5, 'lvlbase_code': 'PKL', 'lvl_name': 'Praktisch Kadergerichte Leerweg'}, 
+                {'lvlbase_id': 4, 'lvlbase_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg'}, 
+                {'lvlbase_id': 0, 'lvlbase_code': '', 'lvl_name': ''}]
+            """
 
 # - get dict with schemeitem info per dep and lvl
-                # schemeitem_dict is  filtered by department.examyear_id
-                schemeitem_dict = get_schemeitem_info_per_dep_lvl(sel_examyear)
+            # schemeitem_dict is  filtered by department.examyear_id
+            schemeitem_dict = get_schemeitem_info_per_dep_lvl(sel_examyear)
 
 # - get envelop label info
-                printlabel_dict = create_printlabel_dict(
-                    sel_examyear=sel_examyear,
-                    sel_examperiod=sel_examperiod,
-                    sel_layout=sel_layout,
-                    envelopsubject_pk_list=envelopsubject_pk_list
-                )
-                if logging_on and False:
-                    logger.debug('    printlabel_dict: ' + str(printlabel_dict))
-                """
-                key '1_5_133' = 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133,
-                values: list of labels in bundle 
-                printlabel_dict: {'1_5_133': [
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 133, 'lbl_name': 'CSPE-AC-PKL-A', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel A (60 min)', 'Minitoets (rood & blauw)', 'Bijlagen (3) (digitaal)', 'Bijlage '], 'content_en_arr': ['Exam part A (60 min)', 'Mini-test (red & blue)', 'Appendix (3) (digital)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon A (60 min)', 'Mini-prueba (kòrá & blou)', 'Anekso (3) (digital)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None, None], 'content_color_arr': ['black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None, None], 'content_font_arr': ['Bold', None, None, None], 'instruction_font_arr': [None, None, None, None], 'sequence_arr': [51, 52, 53, 138]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 134, 'lbl_name': 'CSPE-AC-PKL-B', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel B (30 min)', 'Bijlage (digitaal)', 'Bijlage '], 'content_en_arr': ['Exam part B (30 min)', 'Appendix (digital)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon B (30 min)', 'Anekso (digital)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None], 'content_color_arr': ['black', 'black', 'black'], 'instruction_color_arr': ['red', None, None], 'content_font_arr': ['Bold', None, None], 'instruction_font_arr': [None, None, None], 'sequence_arr': [51, 137, 138]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 135, 'lbl_name': 'CSPE-AC-PKL-C', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel C (60 min)', 'Bijlage '], 'content_en_arr': ['Exam part C (60 min)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon C (60 min)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None], 'content_color_arr': ['black', 'black'], 'instruction_color_arr': ['red', None], 'content_font_arr': ['Bold', None], 'instruction_font_arr': [None, None], 'sequence_arr': [51, 137]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 136, 'lbl_name': 'CSPE-AC-PKL-D', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel D (90 min)', 'Minitoets (rood & blauw)', 'Bijlagen (2)', 'Uitwerkbijlagen (4) '], 'content_en_arr': ['Exam part D (90 min)', 'Mini-test (red & blue)', 'Appendix (2)', 'Work appendix (4)'], 'content_pa_arr': ['Èksamen sekshon D (90 min)', 'Mini-prueba (kòrá & blou)', 'Anekso (2)', 'Anekso di elaborashon (4)'], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None, None], 'content_color_arr': ['black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None, None], 'content_font_arr': ['Bold', None, None, None], 'instruction_font_arr': [None, None, None, None], 'sequence_arr': [51, 52, 183, 185]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 137, 'lbl_name': 'CSPE-CV-AC R&B', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 1, 'content_nl_arr': ['Correctievoorschrift (minitoets)'], 'content_en_arr': ['Scoring instruction (mini-test) '], 'content_pa_arr': ['Reglamento di korekshon (mini-prueba) '], 'instruction_nl_arr': ['NIET EERDER OPENEN, DAN NA AFLOOP VAN DE EXAMENZITTING.'], 'instruction_en_arr': ['DO NOT OPEN BEFORE THE EXAMINATION SESSION HAS ENDED.'], 'instruction_pa_arr': ['NO HABRI PROMÉ KU E SESHON DI ÈKSAMEN FINALISÁ.'], 'content_color_arr': ['red'], 'instruction_color_arr': ['red'], 'content_font_arr': [None], 'instruction_font_arr': [None], 'sequence_arr': [56]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 138, 'lbl_name': 'CSPE-CV-AC-PBL/PKL', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 1, 'content_nl_arr': ['Correctievoorschrift (praktijkexamen) ', 'Instructie examinator '], 'content_en_arr': ['Scoring instruction (practical exam) ', 'Instruction Examiner '], 'content_pa_arr': ['Reglamento di korekshon (èksamen práktiko) ', 'Instrukshon eksaminadó'], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None], 'content_color_arr': ['red', 'black'], 'instruction_color_arr': ['red', None], 'content_font_arr': [None, None], 'instruction_font_arr': [None, None], 'sequence_arr': [60, 136]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 139, 'lbl_name': 'moeder env. AC-PKL ', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 0, 'content_nl_arr': ['Examen onderdeel A, B, C, D', 'Minitoets ond. A - D (rood & blauw)', 'Bijlagen (digitaal)', 'Bijlagen', 'Uitwerkbijlagen', 'Correctievoorschrift (praktijk & minitoets) ', 'Instructie examinator '], 'content_en_arr': ['Exam part A, B, C, D', 'Mini-test part A - D (red & blue)', 'Appendix (digital)', 'Appendix', 'Work appendix', 'Scoring instruction (practical & mini-test) ', 'Instruction Examiner '], 'content_pa_arr': ['Èksamen sekshon A, B, C, D', 'Mini-prueba èks. A - D (kòrá & blou)', 'Anekso (digital)', 'Anekso', 'Anekso di elaborashon', 'Reglamento di korekshon (práktiko & mini-prueba) ', 'Instrukshon eksaminadó'], 'instruction_nl_arr': ['20 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN!', None, None, None, None, None, None], 'instruction_en_arr': ['OPEN 20 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE!', None, None, None, None, None, None], 'instruction_pa_arr': ['HABRI 20 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON!', None, None, None, None, None, None], 'content_color_arr': ['black', None, 'black', 'black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', None, None, None, None, None, None], 'content_font_arr': ['Bold', None, None, None, None, None, None], 'instruction_font_arr': [None, None, None, None, None, None, None], 'sequence_arr': [55, 88, 105, 107, 109, 185, 252]}], 
-                """
+            printlabel_dict = create_printlabel_dict(
+                sel_examyear=sel_examyear,
+                sel_examperiod=sel_examperiod,
+                sel_layout=sel_layout,
+                envelopsubject_pk_list=envelopsubject_pk_list
+            )
+            if logging_on:
+                logger.debug('    printlabel_dict: ' + str(printlabel_dict) + ': ' + str(printlabel_dict))
+                if printlabel_dict:
+                    for key, value in printlabel_dict.items():
+                        logger.debug('    printlabel_dict: ' + str(key) + ': ' + str(value))
+
+            """
+            key '1_5_133' = 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133,
+            values: list of labels in bundle 
+            printlabel_dict: {'1_5_133': [
+                    {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 133, 'lbl_name': 'CSPE-AC-PKL-A', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel A (60 min)', 'Minitoets (rood & blauw)', 'Bijlagen (3) (digitaal)', 'Bijlage '], 'content_en_arr': ['Exam part A (60 min)', 'Mini-test (red & blue)', 'Appendix (3) (digital)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon A (60 min)', 'Mini-prueba (kòrá & blou)', 'Anekso (3) (digital)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None, None], 'content_color_arr': ['black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None, None], 'content_font_arr': ['Bold', None, None, None], 'instruction_font_arr': [None, None, None, None], 'sequence_arr': [51, 52, 53, 138]}, 
+                    {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 134, 'lbl_name': 'CSPE-AC-PKL-B', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel B (30 min)', 'Bijlage (digitaal)', 'Bijlage '], 'content_en_arr': ['Exam part B (30 min)', 'Appendix (digital)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon B (30 min)', 'Anekso (digital)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None], 'content_color_arr': ['black', 'black', 'black'], 'instruction_color_arr': ['red', None, None], 'content_font_arr': ['Bold', None, None], 'instruction_font_arr': [None, None, None], 'sequence_arr': [51, 137, 138]}, 
+                    {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 135, 'lbl_name': 'CSPE-AC-PKL-C', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel C (60 min)', 'Bijlage '], 'content_en_arr': ['Exam part C (60 min)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon C (60 min)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None], 'content_color_arr': ['black', 'black'], 'instruction_color_arr': ['red', None], 'content_font_arr': ['Bold', None], 'instruction_font_arr': [None, None], 'sequence_arr': [51, 137]}, 
+                    {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 136, 'lbl_name': 'CSPE-AC-PKL-D', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel D (90 min)', 'Minitoets (rood & blauw)', 'Bijlagen (2)', 'Uitwerkbijlagen (4) '], 'content_en_arr': ['Exam part D (90 min)', 'Mini-test (red & blue)', 'Appendix (2)', 'Work appendix (4)'], 'content_pa_arr': ['Èksamen sekshon D (90 min)', 'Mini-prueba (kòrá & blou)', 'Anekso (2)', 'Anekso di elaborashon (4)'], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None, None], 'content_color_arr': ['black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None, None], 'content_font_arr': ['Bold', None, None, None], 'instruction_font_arr': [None, None, None, None], 'sequence_arr': [51, 52, 183, 185]}, 
+                    {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 137, 'lbl_name': 'CSPE-CV-AC R&B', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 1, 'content_nl_arr': ['Correctievoorschrift (minitoets)'], 'content_en_arr': ['Scoring instruction (mini-test) '], 'content_pa_arr': ['Reglamento di korekshon (mini-prueba) '], 'instruction_nl_arr': ['NIET EERDER OPENEN, DAN NA AFLOOP VAN DE EXAMENZITTING.'], 'instruction_en_arr': ['DO NOT OPEN BEFORE THE EXAMINATION SESSION HAS ENDED.'], 'instruction_pa_arr': ['NO HABRI PROMÉ KU E SESHON DI ÈKSAMEN FINALISÁ.'], 'content_color_arr': ['red'], 'instruction_color_arr': ['red'], 'content_font_arr': [None], 'instruction_font_arr': [None], 'sequence_arr': [56]}, 
+                    {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 138, 'lbl_name': 'CSPE-CV-AC-PBL/PKL', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 1, 'content_nl_arr': ['Correctievoorschrift (praktijkexamen) ', 'Instructie examinator '], 'content_en_arr': ['Scoring instruction (practical exam) ', 'Instruction Examiner '], 'content_pa_arr': ['Reglamento di korekshon (èksamen práktiko) ', 'Instrukshon eksaminadó'], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None], 'content_color_arr': ['red', 'black'], 'instruction_color_arr': ['red', None], 'content_font_arr': [None, None], 'instruction_font_arr': [None, None], 'sequence_arr': [60, 136]}, 
+                    {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 139, 'lbl_name': 'moeder env. AC-PKL ', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 0, 'content_nl_arr': ['Examen onderdeel A, B, C, D', 'Minitoets ond. A - D (rood & blauw)', 'Bijlagen (digitaal)', 'Bijlagen', 'Uitwerkbijlagen', 'Correctievoorschrift (praktijk & minitoets) ', 'Instructie examinator '], 'content_en_arr': ['Exam part A, B, C, D', 'Mini-test part A - D (red & blue)', 'Appendix (digital)', 'Appendix', 'Work appendix', 'Scoring instruction (practical & mini-test) ', 'Instruction Examiner '], 'content_pa_arr': ['Èksamen sekshon A, B, C, D', 'Mini-prueba èks. A - D (kòrá & blou)', 'Anekso (digital)', 'Anekso', 'Anekso di elaborashon', 'Reglamento di korekshon (práktiko & mini-prueba) ', 'Instrukshon eksaminadó'], 'instruction_nl_arr': ['20 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN!', None, None, None, None, None, None], 'instruction_en_arr': ['OPEN 20 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE!', None, None, None, None, None, None], 'instruction_pa_arr': ['HABRI 20 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON!', None, None, None, None, None, None], 'content_color_arr': ['black', None, 'black', 'black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', None, None, None, None, None, None], 'content_font_arr': ['Bold', None, None, None, None, None, None], 'instruction_font_arr': [None, None, None, None, None, None, None], 'sequence_arr': [55, 88, 105, 107, 109, 185, 252]}], 
+            """
 
 # - get schoolbase dictlist
-                # function creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
-                #  of this exam year of all countries (only SXM when requsr=sxm), ordered by code
-                # filtered by schoolbase_pk_list
-                schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear, request, schoolbase_pk_list)
-                if logging_on:
-                    logger.debug(' schoolbase_dictlist: ' + str(schoolbase_dictlist))
-                """
-                schoolbase_dictlist contains a list of selected schools
-                schoolbase_dictlist: [
-                    {'sbase_id': 2, 'sbase_code': 'CUR01', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8}, 
-                    {'sbase_id': 3, 'sbase_code': 'CUR02', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Skol Avansá Amador Nita', 'sch_abbrev': 'SAAN', 'defaultrole': 8}, 
+            # function creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
+            #  of this exam year of all countries (only SXM when requsr=sxm), ordered by code
+            # filtered by schoolbase_pk_list
+            schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear, request, schoolbase_pk_list)
+            if logging_on:
+                logger.debug(' schoolbase_dictlist: ' + str(schoolbase_dictlist))
+            """
+            schoolbase_dictlist contains a list of selected schools
+            schoolbase_dictlist: [
+                {'sbase_id': 2, 'sbase_code': 'CUR01', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8}, 
+                {'sbase_id': 3, 'sbase_code': 'CUR02', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Skol Avansá Amador Nita', 'sch_abbrev': 'SAAN', 'defaultrole': 8}, 
 
-                    {'sbase_id': 33, 'sbase_code': 'SXM04', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Landsexamens Sint Maarten', 'sch_abbrev': 'LEX St. Maarten', 'defaultrole': 8}, 
-                    {'sbase_id': 34, 'sbase_code': 'SXMDOE', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations', 'defaultrole': 64}]  
-               
-                schoolbase_dictlist: [
-                    {'sbase_id': 13, 'sbase_code': 'CUR13', 'depbases': '1;2;3', 'sch_otherlang': None, 'sch_article': 'het', 'sch_name': 'Abel Tasman College', 'sch_abbrev': 'ATC', 'defaultrole': 8}]
-    
-                """
+                {'sbase_id': 33, 'sbase_code': 'SXM04', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Landsexamens Sint Maarten', 'sch_abbrev': 'LEX St. Maarten', 'defaultrole': 8}, 
+                {'sbase_id': 34, 'sbase_code': 'SXMDOE', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations', 'defaultrole': 64}]  
+           
+            schoolbase_dictlist: [
+                {'sbase_id': 13, 'sbase_code': 'CUR13', 'depbases': '1;2;3', 'sch_otherlang': None, 'sch_article': 'het', 'sch_name': 'Abel Tasman College', 'sch_abbrev': 'ATC', 'defaultrole': 8}]
+
+            """
 
 # +++ get dict with number of studsubj. PR2022-10-14
-                # if orderlist is published: Enveloporderlist exists and orderdict has value
-                #   get envelop_count_per_school_dict from enveloporderlist
-                # if orderlist is not published: create envelop_count_per_school_dict
+            # if orderlist is published: Enveloporderlist exists and orderdict has value
+            #   get envelop_count_per_school_dict from enveloporderlist
+            # if orderlist is not published: create envelop_count_per_school_dict
 
 # - get existing Enveloporderlist of this examyear
-                # it contains 1 row per examyear with orderdict with amount
-                enveloporderlist = subj_mod.Enveloporderlist.objects.filter(
-                    examyear=sel_examyear
-                ).order_by('-pk').first()
-                if logging_on:
-                    logger.debug('  enveloporderlist: ' + str(enveloporderlist))
+            # it contains 1 row per examyear with orderdict with amount
+            enveloporderlist = subj_mod.Enveloporderlist.objects.filter(
+                examyear=sel_examyear
+            ).order_by('-pk').first()
+
+            if logging_on and False:
+                order_dict = getattr(enveloporderlist, 'orderdict')
+                logger.debug(' > order_dict: ' + str(order_dict))
 
 # - get envelop_count_per_school_dict from enveloporderlist.orderdict
-                envelop_count_per_school_dict = None
-                if enveloporderlist and enveloporderlist.orderdict:
-                    envelop_count_per_school_dict = json.loads(enveloporderlist.orderdict)
+            envelop_count_per_school_dict = None
+            if enveloporderlist and enveloporderlist.orderdict:
+                envelop_count_per_school_dict = json.loads(enveloporderlist.orderdict)
 
-# - remove schools that are not in schoolbase_pk_list
-                    if schoolbase_pk_list:
-                        # because of error 'dictionary changed size during iteration':
-                        # first store keys in list, then remove them
-                        keys_tobe_removed = []
-                        for envelop_sbase_pk_str in envelop_count_per_school_dict:
-            # - check if schoolbase_pk exists in schoolbase_pk_list
-                            key_exists_in_list = False
-                            for schoolbase_pk in schoolbase_pk_list:
-                                if envelop_sbase_pk_str == str(schoolbase_pk):
-                                    key_exists_in_list = True
-                                    break
-            # - add key to keys_tobe_removed list if it does not exist in schoolbase_pk_list
-                            if not key_exists_in_list:
-                                keys_tobe_removed.append(envelop_sbase_pk_str)
+                if logging_on:
+                    logger.debug(' > schoolbase_pk_list: ' + str(schoolbase_pk_list))
 
-            # - remove keys that don't exist in schoolbase_pk_list
-                        if keys_tobe_removed:
-                            for sbase_pk_str in keys_tobe_removed:
-                                envelop_count_per_school_dict.pop(sbase_pk_str, None)
-
-# ---use existing envelop_count_per_school_dict if it exists
-                if envelop_count_per_school_dict:
+                # - remove schools that are not in schoolbase_pk_list
+                if schoolbase_pk_list:
+                    # because of error 'dictionary changed size during iteration':
+                    # first store keys in list, then remove them
+                    keys_tobe_removed = []
+                    for envelop_sbase_pk_str in envelop_count_per_school_dict:
+        # - check if schoolbase_pk exists in schoolbase_pk_list
+                        key_exists_in_list = False
+                        for schoolbase_pk in schoolbase_pk_list:
+                            if envelop_sbase_pk_str == str(schoolbase_pk):
+                                key_exists_in_list = True
+                                break
+        # - add key to keys_tobe_removed list if it does not exist in schoolbase_pk_list
+                        if not key_exists_in_list:
+                            keys_tobe_removed.append(envelop_sbase_pk_str)
 
                     if logging_on and False:
-                        logger.debug('   envelop_count_per_school_dict: ' + str(envelop_count_per_school_dict))
-                    """
-                    envelop_count_per_school_dict: 
-                    {'2': {'c': '-', 
-                            '1': {'c': '-', 
-                                '4': [  {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_4_133', 'subjbase_code': 'ac', 'lang': 'nl', 'country_id': 1, 
-                                            'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 8, 'extra_count': 7, 'tv2_count': 5}, 
-                                        {'subjbase_id': 123, 'ete_exam': False, 'id_key': '1_4_123', 'subjbase_code': 'bi', 'lang': 'nl', 'country_id': 1, 
-                                            'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 52, 'extra_count': 8, 'tv2_count': 15}, 
-                                        {'subjbase_id': 155, 'ete_exam': False, 'id_key': '1_4_155', 'subjbase_code': 'ec', 'lang': 'nl', 'country_id': 1, 
+                        logger.debug(' > keys_tobe_removed: ' + str(keys_tobe_removed))
+
+        # - remove keys that don't exist in schoolbase_pk_list
+                    if keys_tobe_removed:
+                        for sbase_pk_str in keys_tobe_removed:
+                            envelop_count_per_school_dict.pop(sbase_pk_str, None)
+
+                    if logging_on :
+                        for key, value in envelop_count_per_school_dict.items():
+                            logger.debug('    envelop_count_per_school_item: ' + str(key) + ': ' + str(value))
+#?????????????????????????????????????????????????
+            if logging_on:
+                logger.debug(' ????????   printlabel_dict: ' + str(printlabel_dict))
+                for key, value in printlabel_dict.items():
+                    logger.debug(' ????????   printlabel_item: ' + str(key) + ': ' + str(value))
+
+# ---use existing envelop_count_per_school_dict if it exists
+            if envelop_count_per_school_dict:
+                """
+                envelop_count_per_school_dict: 
+                {'2': {'c': '-', 
+                        '1': {'c': '-', 
+                            '4': [  {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_4_133', 'subjbase_code': 'ac', 'lang': 'nl', 'country_id': 1, 
                                         'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 8, 'extra_count': 7, 'tv2_count': 5}, 
-                                        {'subjbase_id': 114, 'ete_exam': True, 'id_key': '1_4_114', 'subjbase_code': 'en', 'lang': 'nl', 'country_id': 1, 
-                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
-                                        {'subjbase_id': 124, 'ete_exam': True, 'id_key': '1_4_124', 'subjbase_code': 'mm2', 'lang': 'nl', 'country_id': 1, 
-                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
-                                        {'subjbase_id': 113, 'ete_exam': True, 'id_key': '1_4_113', 'subjbase_code': 'ne', 'lang': 'nl', 'country_id': 1, 
-                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
-                                        {'subjbase_id': 118, 'ete_exam': True, 'id_key': '1_4_118', 'subjbase_code': 'pa', 'lang': 'nl', 'country_id': 1,            
-                    """
+                                    {'subjbase_id': 123, 'ete_exam': False, 'id_key': '1_4_123', 'subjbase_code': 'bi', 'lang': 'nl', 'country_id': 1, 
+                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 52, 'extra_count': 8, 'tv2_count': 15}, 
+                                    {'subjbase_id': 155, 'ete_exam': False, 'id_key': '1_4_155', 'subjbase_code': 'ec', 'lang': 'nl', 'country_id': 1, 
+                                    'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 8, 'extra_count': 7, 'tv2_count': 5}, 
+                                    {'subjbase_id': 114, 'ete_exam': True, 'id_key': '1_4_114', 'subjbase_code': 'en', 'lang': 'nl', 'country_id': 1, 
+                                    'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
+                                    {'subjbase_id': 124, 'ete_exam': True, 'id_key': '1_4_124', 'subjbase_code': 'mm2', 'lang': 'nl', 'country_id': 1, 
+                                    'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
+                                    {'subjbase_id': 113, 'ete_exam': True, 'id_key': '1_4_113', 'subjbase_code': 'ne', 'lang': 'nl', 'country_id': 1, 
+                                    'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
+                                    {'subjbase_id': 118, 'ete_exam': True, 'id_key': '1_4_118', 'subjbase_code': 'pa', 'lang': 'nl', 'country_id': 1,            
+                """
 
-                else:
+            else:
 # --- or create new existing envelop_count_per_school_dict if it does not yet existexists
-                    count_dictNIU, envelop_count_per_school_dict = subj_calc.create_studsubj_count_dict(
-                        sel_examyear_instance=sel_examyear,
-                        sel_examperiod=sel_examperiod,
-                        request=request,
-                        schoolbase_pk_list=schoolbase_pk_list,
-                        subjbase_pk_list=subjbase_pk_list
-                    )
-
-# --- print receipt
-                pdf = create_envelop_receipt_pdf(
-                    sel_examyear=sel_examyear,
+                # TODO chekc this code
+                subjbase_pk_list = []
+                count_dictNIU, envelop_count_per_school_dict = subj_calc.create_studsubj_count_dict(
+                    sel_examyear_instance=sel_examyear,
                     sel_examperiod=sel_examperiod,
-                    schoolbase_dictlist=schoolbase_dictlist,
-                    department_dictlist=department_dictlist,
-                    lvlbase_dictlist=lvlbase_dictlist,
-                    schemeitem_dict=schemeitem_dict,
-                    printlabel_dict=printlabel_dict,
-                    count_per_school_dict=envelop_count_per_school_dict
+                    request=request,
+                    schoolbase_pk_list=schoolbase_pk_list,
+                    subjbase_pk_list=subjbase_pk_list
                 )
 
-                response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="Labels.pdf"'
+# --- print receipt
+            pdf = create_envelop_receipt_pdf(
+                sel_examyear=sel_examyear,
+                sel_examperiod=sel_examperiod,
+                schoolbase_dictlist=schoolbase_dictlist,
+                department_dictlist=department_dictlist,
+                lvlbase_dictlist=lvlbase_dictlist,
+                schemeitem_dict=schemeitem_dict,
+                printlabel_dict=printlabel_dict,
+                count_per_school_dict=envelop_count_per_school_dict,
+                practex_only=practex_only
+            )
 
-                response.write(pdf)
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = 'inline; filename="Labels.pdf"'
+
+            response.write(pdf)
 
         #except Exception as e:
        #     logger.error(getattr(e, 'message', str(e)))
@@ -4300,252 +4343,11 @@ class EnvelopPrintReceiptView(View):  # PR2023-03-04
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 # - end of EnvelopPrintReceiptView
-#####################################
-
-# @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-@method_decorator([login_required], name='dispatch')
-class EnvelopPrintReceiptViewOLD(View):  # PR2023-03-02
-
-    def get(self, request, lst):
-        logging_on = s.LOGGING_ON
-        if logging_on:
-            logger.debug(' ')
-            logger.debug(' ============= EnvelopPrintReceiptViewOLD ============= ')
-            logger.debug('    lst: ' + str(lst))
-            """
-            lst: {"subject_list":[12],"schoolbase_list":[2,5],"sel_layout":"none","lvlbase_pk_list":[]}
-            lst: {"exam_pk_list":[34],"schoolbase_pk_list":[2],"subjbase_pk_list":[133],"sel_layout":"errata_only"}
-            lst: {"envelopsubject_pk_list":[76],"sel_layout":"all"}  
-            """
-
-        # paper size of labels is: 'Statement', Width: 21.59 cm Height: 13.97 cm or 8.5 inch x 5.5 inch or 612 x 396 points
-        # pagesize A4 = (595.27, 841.89) points, 1 point = 1/72 inch
-
-        response = None
-
-        if request.user and request.user.country and request.user.schoolbase and lst:
-            upload_dict = json.loads(lst)
-
-            req_user = request.user
-
-            # - reset language
-            user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
-            activate(user_lang)
-
-            # - get selected examyear, school and department from usersettings
-            sel_examyear, sel_schoolNIU, sel_departmentNIU, sel_level, may_edit, msg_list = \
-                acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
-
-            # - get selected examperiod from usersettings
-            sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = acc_view.get_selected_experiod_extype_subject_from_usersetting(
-                request)
-            # PR2022-08-27 debug: saved sel_examperiod was 12 (deprecated, 12 was all exam periods), change it to 1
-            if sel_examperiod not in (1, 2, 3):
-                sel_examperiod = 1
-
-            if sel_examperiod:
-                # sel_layout values are: 'no_errata', 'errata_only', 'all' , None, 'show_errata_always'
-                sel_layout = upload_dict.get('sel_layout')
-
-                subjbase_pk_list = upload_dict.get('subjbase_pk_list')
-
-                envelopsubject_pk_list = upload_dict.get('envelopsubject_pk_list')
-
-                # when schoolbase_pk_list has value [-1], it means that all schools must be printed
-                # when schoolbase_pk_list has value None, it means that no schools must be printed
-
-                schoolbase_pk_list = upload_dict.get('schoolbase_pk_list')
-
-                if schoolbase_pk_list is None:
-                    sel_layout = 'show_errata_always'
-                elif not len(schoolbase_pk_list):
-                    sel_layout = 'show_errata_always'
-                elif schoolbase_pk_list[0] == -1:
-                    schoolbase_pk_list = None
-
-                if logging_on:
-                    logger.debug('    sel_examperiod: ' + str(sel_examperiod))
-                    logger.debug('    sel_layout:     ' + str(sel_layout))
-                    logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
-                    logger.debug('    envelopsubject_pk_list:   ' + str(envelopsubject_pk_list))
-
-                # --- get department dictlist, ordered by sequence
-                # fields are: depbase_id, depbase_code, dep_name, dep_level_req
-                department_dictlist = subj_view.create_department_dictlist(sel_examyear)
-                """
-                department_dictlist: [
-                    {'depbase_id': 1, 'depbase_code': 'Vsbo', 'dep_name': 'Voorbereidend Secundair Beroepsonderwijs', 'dep_level_req': True}, 
-                    {'depbase_id': 2, 'depbase_code': 'Havo', 'dep_name': 'Hoger Algemeen Voortgezet Onderwijs', 'dep_level_req': False}, 
-                    {'depbase_id': 3, 'depbase_code': 'Vwo', 'dep_name': 'Voorbereidend Wetenschappelijk Onderwijs', 'dep_level_req': False}]
-                """
-
-                # --- get lvlbase dictlist, ordered by sequence
-                lvlbase_dictlist = subj_view.create_level_dictlist(sel_examyear)
-
-                """
-                lvlbase_dictlist: [
-                    {'lvlbase_id': 6, 'lvlbase_code': 'PBL', 'lvl_name': 'Praktisch Basisgerichte Leerweg'}, 
-                    {'lvlbase_id': 5, 'lvlbase_code': 'PKL', 'lvl_name': 'Praktisch Kadergerichte Leerweg'}, 
-                    {'lvlbase_id': 4, 'lvlbase_code': 'TKL', 'lvl_name': 'Theoretisch Kadergerichte Leerweg'}, 
-                    {'lvlbase_id': 0, 'lvlbase_code': '', 'lvl_name': ''}]
-                """
-
-                # - get dict with schemeitem info per dep and lvl
-                # schemeitem_dict is  filtered by department.examyear_id
-                schemeitem_dict = get_schemeitem_info_per_dep_lvl(sel_examyear)
-
-                # - get envelop label info
-                printlabel_dict = create_printlabel_dict(
-                    sel_examyear=sel_examyear,
-                    sel_examperiod=sel_examperiod,
-                    sel_layout=sel_layout,
-                    envelopsubject_pk_list=envelopsubject_pk_list
-                )
-                if logging_on and False:
-                    logger.debug('    printlabel_dict: ' + str(printlabel_dict))
-                """
-                key '1_5_133' = 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133,
-                values: list of labels in bundle 
-                printlabel_dict: {'1_5_133': [
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 133, 'lbl_name': 'CSPE-AC-PKL-A', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel A (60 min)', 'Minitoets (rood & blauw)', 'Bijlagen (3) (digitaal)', 'Bijlage '], 'content_en_arr': ['Exam part A (60 min)', 'Mini-test (red & blue)', 'Appendix (3) (digital)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon A (60 min)', 'Mini-prueba (kòrá & blou)', 'Anekso (3) (digital)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None, None], 'content_color_arr': ['black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None, None], 'content_font_arr': ['Bold', None, None, None], 'instruction_font_arr': [None, None, None, None], 'sequence_arr': [51, 52, 53, 138]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 134, 'lbl_name': 'CSPE-AC-PKL-B', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel B (30 min)', 'Bijlage (digitaal)', 'Bijlage '], 'content_en_arr': ['Exam part B (30 min)', 'Appendix (digital)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon B (30 min)', 'Anekso (digital)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None], 'content_color_arr': ['black', 'black', 'black'], 'instruction_color_arr': ['red', None, None], 'content_font_arr': ['Bold', None, None], 'instruction_font_arr': [None, None, None], 'sequence_arr': [51, 137, 138]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 135, 'lbl_name': 'CSPE-AC-PKL-C', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel C (60 min)', 'Bijlage '], 'content_en_arr': ['Exam part C (60 min)', 'Appendix '], 'content_pa_arr': ['Èksamen sekshon C (60 min)', 'Anekso '], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None], 'content_color_arr': ['black', 'black'], 'instruction_color_arr': ['red', None], 'content_font_arr': ['Bold', None], 'instruction_font_arr': [None, None], 'sequence_arr': [51, 137]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 136, 'lbl_name': 'CSPE-AC-PKL-D', 'is_errata': False, 'is_variablenumber': True, 'numberofenvelops': None, 'numberinenvelop': 15, 'content_nl_arr': ['Examen onderdeel D (90 min)', 'Minitoets (rood & blauw)', 'Bijlagen (2)', 'Uitwerkbijlagen (4) '], 'content_en_arr': ['Exam part D (90 min)', 'Mini-test (red & blue)', 'Appendix (2)', 'Work appendix (4)'], 'content_pa_arr': ['Èksamen sekshon D (90 min)', 'Mini-prueba (kòrá & blou)', 'Anekso (2)', 'Anekso di elaborashon (4)'], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None, None, None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None, None, None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None, None, None], 'content_color_arr': ['black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', 'red', None, None], 'content_font_arr': ['Bold', None, None, None], 'instruction_font_arr': [None, None, None, None], 'sequence_arr': [51, 52, 183, 185]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 137, 'lbl_name': 'CSPE-CV-AC R&B', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 1, 'content_nl_arr': ['Correctievoorschrift (minitoets)'], 'content_en_arr': ['Scoring instruction (mini-test) '], 'content_pa_arr': ['Reglamento di korekshon (mini-prueba) '], 'instruction_nl_arr': ['NIET EERDER OPENEN, DAN NA AFLOOP VAN DE EXAMENZITTING.'], 'instruction_en_arr': ['DO NOT OPEN BEFORE THE EXAMINATION SESSION HAS ENDED.'], 'instruction_pa_arr': ['NO HABRI PROMÉ KU E SESHON DI ÈKSAMEN FINALISÁ.'], 'content_color_arr': ['red'], 'instruction_color_arr': ['red'], 'content_font_arr': [None], 'instruction_font_arr': [None], 'sequence_arr': [56]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 138, 'lbl_name': 'CSPE-CV-AC-PBL/PKL', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 1, 'content_nl_arr': ['Correctievoorschrift (praktijkexamen) ', 'Instructie examinator '], 'content_en_arr': ['Scoring instruction (practical exam) ', 'Instruction Examiner '], 'content_pa_arr': ['Reglamento di korekshon (èksamen práktiko) ', 'Instrukshon eksaminadó'], 'instruction_nl_arr': ['15 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN.', None], 'instruction_en_arr': ['OPEN 15 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE.', None], 'instruction_pa_arr': ['HABRI 15 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON.', None], 'content_color_arr': ['red', 'black'], 'instruction_color_arr': ['red', None], 'content_font_arr': [None, None], 'instruction_font_arr': [None, None], 'sequence_arr': [60, 136]}, 
-                        {'env_subj_id': 278, 'dep_id': 10, 'lvl_id': 11, 'subj_id': 259, 'examperiod': 1, 'firstdate': datetime.date(2023, 4, 17), 'lastdate': datetime.date(2023, 5, 5), 'starttime': '240', 'endtime': None, 'has_errata': False, 'depbase_id': 1, 'lvlbase_id': 5, 'subjbase_id': 133, 'id_key': '1_5_133', 'bnd_name': 'CSPE-AC-A t/m D-PKL ', 'bndlbl_sequence': 139, 'lbl_name': 'moeder env. AC-PKL ', 'is_errata': False, 'is_variablenumber': False, 'numberofenvelops': 1, 'numberinenvelop': 0, 'content_nl_arr': ['Examen onderdeel A, B, C, D', 'Minitoets ond. A - D (rood & blauw)', 'Bijlagen (digitaal)', 'Bijlagen', 'Uitwerkbijlagen', 'Correctievoorschrift (praktijk & minitoets) ', 'Instructie examinator '], 'content_en_arr': ['Exam part A, B, C, D', 'Mini-test part A - D (red & blue)', 'Appendix (digital)', 'Appendix', 'Work appendix', 'Scoring instruction (practical & mini-test) ', 'Instruction Examiner '], 'content_pa_arr': ['Èksamen sekshon A, B, C, D', 'Mini-prueba èks. A - D (kòrá & blou)', 'Anekso (digital)', 'Anekso', 'Anekso di elaborashon', 'Reglamento di korekshon (práktiko & mini-prueba) ', 'Instrukshon eksaminadó'], 'instruction_nl_arr': ['20 MINUTEN VOOR BEGIN VAN HET EXAMEN OPENEN EN BEOORDELINGSCHEMA VOORBEREIDEN!', None, None, None, None, None, None], 'instruction_en_arr': ['OPEN 20 MINUTES PRIOR TO THE START OF THE EXAM AND PREPAIR THE EVALUATION TABLE!', None, None, None, None, None, None], 'instruction_pa_arr': ['HABRI 20 MINÜT PROMÉ KU ÈKSAMEN KUMINSÁ I PREPARÁ E SKEMA DI EVALUASHON!', None, None, None, None, None, None], 'content_color_arr': ['black', None, 'black', 'black', 'black', 'black', 'black'], 'instruction_color_arr': ['red', None, None, None, None, None, None], 'content_font_arr': ['Bold', None, None, None, None, None, None], 'instruction_font_arr': [None, None, None, None, None, None, None], 'sequence_arr': [55, 88, 105, 107, 109, 185, 252]}], 
-                """
-
-                # - get schoolbase dictlist
-                # functions creates ordered dictlist of all schoolbase_pk, schoolbase_code and school_name
-                #  of this exam year of all countries (only SXM when requsr=sxm), ordered by code
-                # filtered by schoolbase_pk_list
-                schoolbase_dictlist = subj_view.create_schoolbase_dictlist(sel_examyear, request, schoolbase_pk_list)
-                if logging_on:
-                    logger.debug(' schoolbase_dictlist: ' + str(schoolbase_dictlist))
-                """
-                schoolbase_dictlist contains a list of selected schools
-                schoolbase_dictlist: [
-                    {'sbase_id': 2, 'sbase_code': 'CUR01', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Ancilla Domini Vsbo', 'sch_abbrev': 'Ancilla Domini', 'defaultrole': 8}, 
-                    {'sbase_id': 3, 'sbase_code': 'CUR02', 'depbases': '1', 'sch_otherlang': None, 'sch_article': 'de', 'sch_name': 'Skol Avansá Amador Nita', 'sch_abbrev': 'SAAN', 'defaultrole': 8}, 
-
-                    {'sbase_id': 33, 'sbase_code': 'SXM04', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Landsexamens Sint Maarten', 'sch_abbrev': 'LEX St. Maarten', 'defaultrole': 8}, 
-                    {'sbase_id': 34, 'sbase_code': 'SXMDOE', 'depbases': '1;2;3', 'sch_otherlang': 'en', 'sch_article': 'de', 'sch_name': 'Division of Examinations', 'sch_abbrev': 'Division of Examinations', 'defaultrole': 64}]  
-
-                schoolbase_dictlist: [
-                    {'sbase_id': 13, 'sbase_code': 'CUR13', 'depbases': '1;2;3', 'sch_otherlang': None, 'sch_article': 'het', 'sch_name': 'Abel Tasman College', 'sch_abbrev': 'ATC', 'defaultrole': 8}]
-
-                """
-
-                # +++ get dict with number of studsubj. PR2022-10-14
-                # if orderlist is published: Enveloporderlist exists and orderdict has value
-                #   get envelop_count_per_school_dict from enveloporderlist
-                # if orderlist is not published: create envelop_count_per_school_dict
-
-                # - get existing Enveloporderlist of this examyear
-                # it contains 1 row per examyear with orderdict with amount
-                enveloporderlist = subj_mod.Enveloporderlist.objects.filter(
-                    examyear=sel_examyear
-                ).order_by('-pk').first()
-                if logging_on:
-                    logger.debug('  enveloporderlist: ' + str(enveloporderlist))
-
-                # - get envelop_count_per_school_dict from enveloporderlist.orderdict
-                envelop_count_per_school_dict = None
-                if enveloporderlist and enveloporderlist.orderdict:
-                    envelop_count_per_school_dict = json.loads(enveloporderlist.orderdict)
-
-                    # - remove schools that are not in schoolbase_pk_list
-                    if schoolbase_pk_list:
-                        # because of error 'dictionary changed size during iteration':
-                        # first store keys in list, then remove them
-                        keys_tobe_removed = []
-                        for envelop_sbase_pk_str in envelop_count_per_school_dict:
-                            # - check if schoolbase_pk exists in schoolbase_pk_list
-                            key_exists_in_list = False
-                            for schoolbase_pk in schoolbase_pk_list:
-                                if envelop_sbase_pk_str == str(schoolbase_pk):
-                                    key_exists_in_list = True
-                                    break
-                            # - add key to keys_tobe_removed list if it does not exist in schoolbase_pk_list
-                            if not key_exists_in_list:
-                                keys_tobe_removed.append(envelop_sbase_pk_str)
-
-                        # - remove keys that don't exist in schoolbase_pk_list
-                        if keys_tobe_removed:
-                            for sbase_pk_str in keys_tobe_removed:
-                                envelop_count_per_school_dict.pop(sbase_pk_str, None)
-
-                # ---use existing envelop_count_per_school_dict if it exists
-                if envelop_count_per_school_dict:
-
-                    if logging_on and False:
-                        logger.debug('   envelop_count_per_school_dict: ' + str(envelop_count_per_school_dict))
-                    """
-                    envelop_count_per_school_dict: 
-                    {'2': {'c': '-', 
-                            '1': {'c': '-', 
-                                '4': [  {'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_4_133', 'subjbase_code': 'ac', 'lang': 'nl', 'country_id': 1, 
-                                            'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 8, 'extra_count': 7, 'tv2_count': 5}, 
-                                        {'subjbase_id': 123, 'ete_exam': False, 'id_key': '1_4_123', 'subjbase_code': 'bi', 'lang': 'nl', 'country_id': 1, 
-                                            'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 52, 'extra_count': 8, 'tv2_count': 15}, 
-                                        {'subjbase_id': 155, 'ete_exam': False, 'id_key': '1_4_155', 'subjbase_code': 'ec', 'lang': 'nl', 'country_id': 1, 
-                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 8, 'extra_count': 7, 'tv2_count': 5}, 
-                                        {'subjbase_id': 114, 'ete_exam': True, 'id_key': '1_4_114', 'subjbase_code': 'en', 'lang': 'nl', 'country_id': 1, 
-                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
-                                        {'subjbase_id': 124, 'ete_exam': True, 'id_key': '1_4_124', 'subjbase_code': 'mm2', 'lang': 'nl', 'country_id': 1, 
-                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
-                                        {'subjbase_id': 113, 'ete_exam': True, 'id_key': '1_4_113', 'subjbase_code': 'ne', 'lang': 'nl', 'country_id': 1, 
-                                        'schoolbase_id': 2, 'depbase_id': 1, 'lvlbase_id': 4, 'subj_count': 60, 'extra_count': 5, 'tv2_count': 15}, 
-                                        {'subjbase_id': 118, 'ete_exam': True, 'id_key': '1_4_118', 'subjbase_code': 'pa', 'lang': 'nl', 'country_id': 1,            
-                    """
-
-                else:
-                    # --- or create new existing envelop_count_per_school_dict if it does not yet existexists
-                    count_dictNIU, envelop_count_per_school_dict = subj_calc.create_studsubj_count_dict(
-                        sel_examyear_instance=sel_examyear,
-                        sel_examperiod=sel_examperiod,
-                        request=request,
-                        schoolbase_pk_list=schoolbase_pk_list,
-                        subjbase_pk_list=subjbase_pk_list
-                    )
-
-                # --- print labels
-                pdf = create_envelop_receipt_pdf(
-                    sel_examyear=sel_examyear,
-                    sel_examperiod=sel_examperiod,
-                    schoolbase_dictlist=schoolbase_dictlist,
-                    department_dictlist=department_dictlist,
-                    lvlbase_dictlist=lvlbase_dictlist,
-                    schemeitem_dict=schemeitem_dict,
-                    printlabel_dict=printlabel_dict,
-                    count_per_school_dict=envelop_count_per_school_dict
-                )
-
-                response = HttpResponse(content_type='application/pdf')
-                response['Content-Disposition'] = 'inline; filename="Labels.pdf"'
-
-                response.write(pdf)
-
-        # except Exception as e:
-        #     logger.error(getattr(e, 'message', str(e)))
-        #     raise Http404("Error creating Ex2A file")
-
-        if response:
-            return response
-        else:
-            logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
-            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
-
-
-# - end of EnvelopPrintReceiptViewOLD
-#####################################
 
 
 def create_envelop_receipt_pdf(sel_examyear, sel_examperiod, schoolbase_dictlist, department_dictlist,
                                         lvlbase_dictlist,
-                                        schemeitem_dict, printlabel_dict, count_per_school_dict):
+                                        schemeitem_dict, printlabel_dict, count_per_school_dict, practex_only):
     # PR2023-03-03
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -4557,9 +4359,9 @@ def create_envelop_receipt_pdf(sel_examyear, sel_examperiod, schoolbase_dictlist
     ###########################
     def create_page_ranges():
 
-        max_rows_one_page = 14
-        max_rows_first_last_page = 18
-        max_rows_middle_page = 24
+        max_rows_one_page = 16 # PR2023-03-16 was: 14
+        max_rows_first_last_page = 20  # PR2023-03-16 was: 18
+        max_rows_middle_page = 26  # PR2023-03-16 was: 24
 
         row_count = len(receipt_examlabel_dictlist)
         page_ranges = []
@@ -4799,6 +4601,7 @@ def create_envelop_receipt_pdf(sel_examyear, sel_examperiod, schoolbase_dictlist
                                              school_article=school_article,
                                              dep_name=dep_name,
                                              lvl_name=lvl_name,
+                                             practex_only=practex_only,
                                              school_lang=school_lang,
                                              receipt_examlabel_dictlist=receipt_examlabel_dictlist,
                                              page_index=page_index,
@@ -4816,7 +4619,7 @@ def create_envelop_receipt_pdf(sel_examyear, sel_examperiod, schoolbase_dictlist
 
 
 #######################################################################
-def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_article, dep_name, lvl_name,
+def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_article, dep_name, lvl_name, practex_only,
                  school_lang, receipt_examlabel_dictlist,
                     page_index, total_pages, page_range, total_number_of_envelops):
     # PR2023-03-04
@@ -4937,7 +4740,8 @@ def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_artic
             line_y_top = y_top_index_2 if index == 1 else y_top
             canvas.line(line_x, line_y_top, line_x, y_bottom)
 
-        caption = ' '.join(('Centraal Schriftelijke Examens ETE', examyear_txt, '-', examperiod_txt))
+        cse_cspe_txt = 'Centraal Schriftelijke Praktijk Examens ETE' if practex_only else 'Centraal Schriftelijke Examens ETE'
+        caption = ' '.join((cse_cspe_txt, examyear_txt, '-', examperiod_txt))
         txt_list = [
             {'txt': caption, 'font': 'Calibri_Bold', 'size': 12, 'padding': 2, 'x': x + col_tab_list[0] * mm},
             {},
@@ -4947,8 +4751,8 @@ def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_artic
         draw_receipt_one_line(canvas, coord, col_tab_list, line_height, 1.5, False, False, txt_list)
 
         txt_list = [
-            {'txt': 'Vak', 'font': 'Calibri', 'size': 11, 'padding': 2, 'x': x + col_tab_list[0] * mm},
-            {'txt': 'Inhoud', 'font': 'Calibri', 'size': 11, 'padding': 2, 'x': x + col_tab_list[1] * mm},
+            {'txt': 'Vak', 'font': 'Calibri_Bold', 'size': 12, 'padding': 2, 'x': x + col_tab_list[0] * mm},
+            {'txt': 'Inhoud', 'font': 'Calibri_Bold', 'size': 12, 'padding': 2, 'x': x + col_tab_list[1] * mm},
             {'txt': 'exemplaren', 'font': 'Calibri', 'size': 11, 'align': 'c', 'x': x + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
             {'txt': 'enveloppen', 'font': 'Calibri', 'size': 11, 'align': 'c', 'x': x + (col_tab_list[3] + col_tab_list[4]) / 2 * mm},
         ]
@@ -4962,23 +4766,26 @@ def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_artic
             last_index_plus_one = len(receipt_examlabel_dictlist)
         else:
             last_index_plus_one = page_range[1]
+        row_font = 'Calibri'
+        row_size = 12
         for row_index in range(page_range[0],last_index_plus_one):  # range(start_value, end_value, step), end_value is not included!
             row = receipt_examlabel_dictlist[row_index]
             if row:
 
                 subj_name = row.get('subj_name') or '-'
                 content_txt = row.get('content_txt') or '-'
-                total_items = row.get('total_items') or 0
+                total_items = row.get('total_items') or ''
                 total_envelops = row.get('total_envelops') or 0
                 total_envelops_on_page += total_envelops
-
+                # print master_envelop bold. Is master envelop when total_items = 0
+                row_font = 'Calibri' if total_items else 'Calibri_Bold'
     # - draw exam label line
                 txt_list = [
-                    {'txt': subj_name, 'padding': 2, 'x': coord[0] + col_tab_list[0] * mm},
-                    {'txt': content_txt, 'padding': 2, 'x': coord[0] + col_tab_list[1] * mm},
-                    {'txt': str(total_items), 'align': 'c',
+                    {'txt': subj_name, 'font': row_font, 'size': row_size, 'padding': 2, 'x': coord[0] + col_tab_list[0] * mm},
+                    {'txt': content_txt, 'font': row_font, 'size': row_size, 'padding': 2, 'x': coord[0] + col_tab_list[1] * mm},
+                    {'txt': str(total_items), 'font': row_font, 'size': row_size, 'align': 'c',
                      'x': coord[0] + (col_tab_list[2] + col_tab_list[3]) / 2 * mm},
-                    {'txt': str(total_envelops), 'align': 'c',
+                    {'txt': str(total_envelops), 'font': row_font, 'size': row_size, 'align': 'c',
                      'x': coord[0] + (col_tab_list[3] + col_tab_list[4]) / 2 * mm},
                 ]
 
@@ -5024,43 +4831,45 @@ def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_artic
 # - end of draw_receipt_table_footer
 
     def draw_receipt_CVTE_header():
-        line_height = 6 * mm
-        # y_top = margin_bottom + inch * 3
-        y_top = coord[1] - line_height
-        y_middle = y_top - line_height
-        y_bottom = y_middle - line_height
-        x_middle = pos_x_margin_left + col_tab_list[1] * mm
+        # skip when printing receipt of practex
+        if not practex_only:
+            line_height = 6 * mm
+            # y_top = margin_bottom + inch * 3
+            y_top = coord[1] - line_height
+            y_middle = y_top - line_height
+            y_bottom = y_middle - line_height
+            x_middle = pos_x_margin_left + col_tab_list[1] * mm
 
-        # - draw horizontal lines above and below column header
-        col_last_index = len(col_tab_list) - 1
-        x_left = coord[0] + col_tab_list[0] * mm
-        x_right = coord[0] + col_tab_list[col_last_index] * mm
-        canvas.line(x_left, y_top, x_right, y_top)
+            # - draw horizontal lines above and below column header
+            col_last_index = len(col_tab_list) - 1
+            x_left = coord[0] + col_tab_list[0] * mm
+            x_right = coord[0] + col_tab_list[col_last_index] * mm
+            canvas.line(x_left, y_top, x_right, y_top)
 
-        canvas.line(x_left, y_bottom, x_right, y_bottom)
+            canvas.line(x_left, y_bottom, x_right, y_bottom)
 
-        # - draw horizontal lines above and below column header
-        # canvas.setStrokeColorRGB(0, 0, 0)
-        canvas.line(x_left, y_top, x_right, y_top)
-        canvas.line(x_left, y_middle, x_right, y_middle)
-        canvas.line(x_left, y_bottom, x_right, y_bottom)
+            # - draw horizontal lines above and below column header
+            # canvas.setStrokeColorRGB(0, 0, 0)
+            canvas.line(x_left, y_top, x_right, y_top)
+            canvas.line(x_left, y_middle, x_right, y_middle)
+            canvas.line(x_left, y_bottom, x_right, y_bottom)
 
-        # - draw vertical lines
-        canvas.line(x_left, y_top, x_left, y_bottom)
-        canvas.line(x_middle, y_middle, x_middle, y_bottom)
-        canvas.line(x_right, y_top, x_right, y_bottom)
+            # - draw vertical lines
+            canvas.line(x_left, y_top, x_left, y_bottom)
+            canvas.line(x_middle, y_middle, x_middle, y_bottom)
+            canvas.line(x_right, y_top, x_right, y_bottom)
 
-        # - draw text 'Examens CVTE'
-        caption = ' '.join(('Centraal Schriftelijke Examens CVTE', examyear_txt, '-', examperiod_txt))
-        txt_list = [{'txt': caption, 'font': 'Calibri_Bold', 'size': 12, 'padding': 2, 'x': x_left}]
-        draw_receipt_one_line(canvas, [x_left, y_top], col_tab_list, line_height, 1.5, False, False, txt_list)
+            # - draw text 'Examens CVTE'
+            caption = ' '.join(('Centraal Schriftelijke Examens CVTE', examyear_txt, '-', examperiod_txt))
+            txt_list = [{'txt': caption, 'font': 'Calibri_Bold', 'size': 12, 'padding': 2, 'x': x_left}]
+            draw_receipt_one_line(canvas, [x_left, y_top], col_tab_list, line_height, 1.5, False, False, txt_list)
 
-        # - draw text 'Aantal dozen'
-        txt_list = [{'txt': 'Aantal dozen', 'font': 'Calibri', 'size': 11, 'padding': 2, 'x': x_left}]
-        draw_receipt_one_line(canvas, [x_left, y_top - line_height], col_tab_list, line_height, 1.5, False, False,
-                              txt_list)
+            # - draw text 'Aantal dozen'
+            txt_list = [{'txt': 'Aantal dozen', 'font': 'Calibri', 'size': 11, 'padding': 2, 'x': x_left}]
+            draw_receipt_one_line(canvas, [x_left, y_top - line_height], col_tab_list, line_height, 1.5, False, False,
+                                  txt_list)
 
-        coord[1] = y_bottom
+            coord[1] = y_bottom
     # - end of draw_receipt_CVTE_header
 
     def draw_line_signature(coord):
@@ -5087,7 +4896,8 @@ def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_artic
 
     def draw_page_footer(coord):
         pos_x = coord[0]
-        pos_y = margin_bottom + inch
+        #pos_y = margin_bottom + inch
+        pos_y = margin_bottom + 15 * mm # PR2023-03-16 request drukteam 'De header moet hoger zijn'
 
         canvas.setFont('Calibri', 12)
         canvas.setFillColor(colors.HexColor("#000000"))
@@ -5125,7 +4935,8 @@ def draw_receipt(canvas, examyear_txt, examperiod_txt, school_name, school_artic
     pos_x_margin_right = 7.45 * inch
     pos_x_center = (pos_x_margin_left + pos_x_margin_right) / 2
 
-    pos_y = 10.75 * inch  # A4 is 11.69 x 8.27 inch
+    # pos_y = 10.75 * inch  # A4 is 11.69 x 8.27 inch
+    pos_y = 282 * mm  #  A4 is 11.69 x 8.27 inch # PR2023-03-16 request drukteam 'De header moet hoger zijn'
 
     coord = [pos_x_margin_left, pos_y]
 
@@ -5293,7 +5104,7 @@ def create_receipt_examlabel_dictlist(sel_examyear, sel_examperiod, schemeitem_d
                                 content_arr = lbl_dict.get(content_key) or []
                                 content_txt = content_arr[0] if content_arr else '-'
                                 if len(content_arr) > 1:
-                                    content_txt += ' etc.'
+                                    content_txt += '...'
 
                                 is_variablenumber = lbl_dict.get('is_variablenumber') or False
                                 numberofenvelops = lbl_dict.get('numberofenvelops') or 0

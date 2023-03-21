@@ -525,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 schoolsetting: {setting_key: "import_studsubj"},
                 locale: {page: ["page_studsubj", "page_subject", "page_student", "upload"]},
                 examyear_rows: {get: true},
-                school_rows: {skip_allowed_filter: true},
+                school_rows: {get: true},
 
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
@@ -664,7 +664,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     subject_rows = response.subject_rows;
                 };
                 if ("cluster_rows" in response) {
-                    //FillDatadicts("cluster", response.cluster_rows);
                     b_fill_datadicts("cluster",  "id", null, response.cluster_rows, cluster_dictsNEW);
                 };
                 if ("studentsubject_rows" in response) {
@@ -1819,9 +1818,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         ResponseValidationAll(response.validate_studsubj_list)
                     };
                     if ("updated_studsubj_approve_rows" in response) {
-
-                    console.log("  @@@@@@@@@@@@@@ updated_studsubj_approve_rows", response.updated_studsubj_approve_rows);
-
                         RefreshDataDictNEW("studsubj", response.updated_studsubj_approve_rows, studsubj_dictsNEW)
                     };
 
@@ -3941,9 +3937,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function SBR_show_all_response() {
         //console.log("===== SBR_show_all_response =====");
         // this is response of t_SBR_show_all
-        // ResetFilterRows contains FillTblRows and Filter_TableRows PR2023-01-08
-        //  FillTblRows();
-        //  Filter_TableRows();
+
 // ---  upload new setting and refresh page
         const datalist_request = {
                 setting: {page: "page_studsubj"},
@@ -4092,7 +4086,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  loop through id_MEX3_select_level and collect selected lvlbase_pk's
         const sel_lvlbase_pk_list = MEX3_get_sel_lvlbase_pk_list();
-        console.log("mod_MEX3_dict.sel_lvlbase_pk_list", mod_MEX3_dict.sel_lvlbase_pk_list)
 
 // ---  get de selected value of
         const selected_layout_value = (el_MEX3_select_layout.value) ? el_MEX3_select_layout.value : "none";
@@ -4102,7 +4095,10 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0, subj_row; subj_row = mod_MEX3_dict.subject_rows[i]; i++) {
             if(subj_row.selected){
                 let add_row = false;
-                if (mod_MEX3_dict.lvlbase_pk_list && mod_MEX3_dict.lvlbase_pk_list.length){
+                // PR2023-03-17 debug: ATC Richard Westerink could not print Havo Ex3 because level TKL was still selected
+                // solved bij adding if sel_dep_level_req and also changing MEX3_get_sel_lvlbase_pk_list
+
+                if (setting_dict.sel_dep_level_req && mod_MEX3_dict.lvlbase_pk_list && mod_MEX3_dict.lvlbase_pk_list.length){
                     if (subj_row.lvlbase_id_arr && subj_row.lvlbase_id_arr.length){
                          for (let x = 0, lvlbase_id; lvlbase_id = subj_row.lvlbase_id_arr[x]; x++) {
                             if (mod_MEX3_dict.lvlbase_pk_list.includes(lvlbase_id)){
@@ -4129,12 +4125,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const upload_str = JSON.stringify(upload_dict);
             const href_str = urls.url_ex3_download.replace("-", upload_str);
 
-        console.log("href_str", href_str)
+        console.log("    href_str", href_str)
 
             const el_MEX3_save_link = document.getElementById("id_MEX3_save_link");
             el_MEX3_save_link.href = href_str;
 
-        console.log("el_MEX3_save_link", el_MEX3_save_link)
+        console.log("    el_MEX3_save_link", el_MEX3_save_link)
 
             el_MEX3_save_link.click();
         };
@@ -4257,8 +4253,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MEX3_CreateSelectRow  ============= PR2021-10-07
     function MEX3_CreateSelectRow(row_dict) {
-        console.log("===== MEX3_CreateSelectRow ===== ");
-        console.log("    row_dict", row_dict);
+        //console.log("===== MEX3_CreateSelectRow ===== ");
+        //console.log("    row_dict", row_dict);
 
         let has_selected_subjects = false;
 
@@ -4310,8 +4306,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MEX3_AddRemoveSubject  ============= PR2020-11-18 PR2021-08-31
     function MEX3_AddRemoveSubject(tblRow) {
-        console.log("  =====  MEX3_AddRemoveSubject  =====");
-        console.log("tblRow", tblRow);
+        //console.log("  =====  MEX3_AddRemoveSubject  =====");
+        //console.log("tblRow", tblRow);
 
         const sel_subject_pk = (Number(tblRow.id)) ? Number(tblRow.id) : null;
         let has_changed = false;
@@ -4323,8 +4319,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 row_dict.selected = new_selected
                 row_dict.just_selected = true;
                 has_changed = true;
-        console.log("new_selected", new_selected);
-        console.log("row_dict", row_dict);
+        //console.log("new_selected", new_selected);
+        //console.log("row_dict", row_dict);
                 break;
             }
         };
@@ -4337,31 +4333,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MEX3_AddRemoveSubject
 
-    function MEX3_get_sel_lvlbase_pk_list(){  // PR2021-10-09
+    function MEX3_get_sel_lvlbase_pk_list(){  // PR2021-10-09 PR2023-03-17
     // ---  loop through id_MEX3_select_level and collect selected lvlbase_pk's
         //console.log("  =====  MEX3_get_sel_lvlbase_pk_list  =====");
+        //console.log("    setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req);
+
+    // PR2023-03-17 debug: ATC Richard Westerink could not print Havo Ex3 because level TKL was still selected
+    // solved bij adding if sel_dep_level_req here and in in MEX3_save
+
         let sel_lvlbase_pk_list = [];
-        if(el_MEX3_select_level){
-            const level_options = Array.from(el_MEX3_select_level.options);
-            console.log("level_options", level_options);
-            if(level_options && level_options.length){
-                for (let i = 0, level_option; level_option = level_options[i]; i++) {
-                    if (level_option.selected){
-            console.log("level_option.selected", level_option);
-                        if (level_option.value === "0"){
-                            sel_lvlbase_pk_list = [];
-                            break;
-                        } else {
-                            const lvlbase_pk = Number(level_option.value);
-                            if (lvlbase_pk){
-                                sel_lvlbase_pk_list.push(lvlbase_pk);
-        }}}}}};
+        if (setting_dict.sel_dep_level_req){
+            if(el_MEX3_select_level){
+                const level_options = Array.from(el_MEX3_select_level.options);
+                console.log("level_options", level_options);
+                if(level_options && level_options.length){
+                    for (let i = 0, level_option; level_option = level_options[i]; i++) {
+                        if (level_option.selected){
+                            if (level_option.value === "0"){
+                                sel_lvlbase_pk_list = [];
+                                break;
+                            } else {
+                                const lvlbase_pk = Number(level_option.value);
+                                if (lvlbase_pk){
+                                    sel_lvlbase_pk_list.push(lvlbase_pk);
+            }}}}}};
+        };
         //console.log("sel_lvlbase_pk_list", sel_lvlbase_pk_list);
         return sel_lvlbase_pk_list;
-    }
+    };
 
     function MEX3_reset_layout_options(){  // PR2021-10-10
-    // ---  remove 'se';lected' from layout options
+    // ---  remove 'selected' from layout options
         //console.log("  =====  MEX3_reset_layout_options  =====");
         if(el_MEX3_select_layout){
             const layout_options = Array.from(el_MEX3_select_layout.options);
@@ -5097,8 +5099,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tblName !== "cluster"){
             Filter_TableRows();
         };
-
-    }  //  RefreshDataDictNEW
+    };  //  RefreshDataDictNEW
 
 //=========  RefreshDatadictItemNEW  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-05
     function RefreshDatadictItemNEW(tblName, field_setting, update_dict, data_dictsNEW, pk_fldName) {

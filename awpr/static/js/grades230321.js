@@ -524,7 +524,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //========= DatalistDownload  ===================== PR2020-07-31
     function DatalistDownload(datalist_request, keep_loader_hidden) {
         console.log( "=== DatalistDownload ")
-        console.log("request: ", datalist_request)
+        console.log("    request: ", datalist_request)
 
 // ---  Get today's date and time - for elapsed time
         let startime = new Date().getTime();
@@ -735,8 +735,8 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2020-11-14 PR2021-03-15
     function HandleBtnSelect(data_btn, skip_upload) {
         console.log( "===== HandleBtnSelect ========= ", data_btn);
-        // function is called by HandleShowAll, MSSSS_Response, select_btn.click, t_MCOL_Save, DatalistDownload after response.setting_dict
-        // skip_upload = true when called by DatalistDownload, MSSSS_Response, HandleShowAll
+        // function is called by MSSSS_Response, select_btn.click, t_MCOL_Save, DatalistDownload after response.setting_dict
+        // skip_upload = true when called by DatalistDownload, MSSSS_Response
         //  PR2021-09-07 debug: gave error because old btn name was still in saved setting
 
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
@@ -2302,70 +2302,13 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++++++++++
 
-    function SBR_show_all_response() {  // PR2023-02-06
+    function SBR_show_all_response() {  // PR2023-03-21
         console.log("===== SBR_show_all_response =====");
         // this is response of t_SBR_show_all
-        // ResetFilterRows contains :
-        //      b_clear_dict(filter_dict);
-        //      t_Filter_TableRows
-        //      FillTblRows();
-        ResetFilterRows()
-    };  // SBR_show_all_response
-
-
-//=========  HandleShowAll  ================ PR2020-12-17
-    function HandleShowAll() {
-        console.log("=== HandleShowAll");
-
-        //t_SBR_show_all(FillTblRows);
-
-        setting_dict.sel_lvlbase_pk = null;
-        setting_dict.sel_lvlbase_code = null;
-
-        setting_dict.sel_sctbase_pk = null;
-        setting_dict.sel_sctbase_code = null;
-
-        setting_dict.sel_subject_pk = null;
-        setting_dict.sel_subject_code = null;
-        setting_dict.sel_subject_name = null;
-
-        setting_dict.sel_cluster_pk = null;
-        setting_dict.sel_cluster_name = null;
-
-        setting_dict.sel_student_pk = null;
-        setting_dict.sel_student_name = null;
-
-        el_SBR_select_level.value = "0";
-        el_SBR_select_sector.value = "0";
-
-        t_MSSSS_display_in_sbr("subject", null);
-        t_MSSSS_display_in_sbr_NEW("cluster", null);
-        t_MSSSS_display_in_sbr("student", null);
-
-        ResetFilterRows();
-
-/*
-// ---  upload new setting
-        const selected_pk_dict = {sel_lvlbase_pk: null, sel_sctbase_pk: null, sel_subject_pk: null, sel_student_pk: null};
-        const page_grade_dict = {sel_btn: "grade_by_all"}
-        const upload_dict = {selected_pk: selected_pk_dict, page_grade: page_grade_dict};
-        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
-
-        HandleBtnSelect("grade_by_all", true) // true = skip_upload
-        // also calls: FillTblRows(), UpdateHeader()
-*/
 
 // ---  upload new setting and refresh page
         const datalist_request = {
-                setting: {
-                    page: "page_grade",
-                    sel_lvlbase_pk: null,
-                    sel_sctbase_pk: null,
-                    sel_subject_pk: null,
-                    sel_cluster_pk: null,
-                    sel_cluster_name: null,
-                    sel_student_pk: null
-                },
+                setting: {page: "page_grade"},
 
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true},
@@ -2378,12 +2321,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 all_exam_rows: {get: true}
             };
-
             DatalistDownload(datalist_request);
-    };  // HandleShowAll
-
-
-
+    };  // SBR_show_all_response
 
 //=========  SBR_display_subject_cluster_student  ================ PR2022-03-03 PR2023-01-25
     function SBR_display_subject_cluster_student() {
@@ -2396,8 +2335,6 @@ document.addEventListener("DOMContentLoaded", function() {
         t_MSSSS_display_in_sbr_NEW("cluster", setting_dict.sel_cluster_pk);
 
     };  // SBR_display_subject_cluster_student
-
-
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2020-08-03 PR2022-02-17 PR2022-04-17

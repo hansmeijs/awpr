@@ -5921,6 +5921,104 @@ def get_sel_schoolbase_instance(request, request_item_schoolbase_pk, allowed_sec
 # --- end of get_sel_schoolbase_instance
 
 
+def get_sel_depbase_instance___ISN(sel_school_instance, page, request, request_item_depbase_pk, allowed_schoolbase_dict):
+    # PR2020-12-26 PR2021-05-07 PR2021-08-13 PR2022-10-19 PR2022-03-16
+    #  code works ok: it returns
+    #  - combination of allowed_depbases from user and school and
+    #  - request_item_depbase_pk or saved depbase_pk or first allowed depbase_pk
+
+    # PR2022-10-19 TODO
+    # code to switch selected depbase is not perfect yet. To be improved, take in account:
+    # depbase can be changed in 2 ways:
+    # - in the menubar. Then there is no 'all deps' possible, use saved or default if necessary
+    # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
+    # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' -----  get_sel_depbase_instance  -----')
+        logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
+        logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+
+    """
+    # userallowed_sections_dict:  {"28": {"1": {"-9": [116]}, "2": {"-9": [116]}, "3": {"-9": [116]}}}
+    # userallowed_schoolbase_dict:       {"1": {"-9": [116]}, "2": {"-9": [116]}, "3": {"-9": [116]}}}
+    # allowed_depbases_pk_arr:           [1, 2, 3] <class 'list'>
+    """
+
+    def get_saved_depbase_instance():
+        saved_depbase_instance = None
+        selected_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+        if selected_dict:
+            sel_depbase_pk = selected_dict.get(c.KEY_SEL_DEPBASE_PK)
+            if sel_depbase_pk:
+                saved_depbase_instance = sch_mod.Departmentbase.objects.get_or_none(pk=sel_depbase_pk)
+        return saved_depbase_instance
+
+    def get_school_allowed_depbases_list():
+        # - get list of allowed_depbases of selected school
+        school_allowed_depbases_list = []
+        if sel_school_instance and sel_school_instance.depbases:
+            school_allowed_depbases_list = list(map(int, sel_school_instance.depbases.split(';')))
+        return school_allowed_depbases_list
+
+    def get_user_allowed_depbases_list():
+        user_allowed_depbases_list = []
+        # - create array of allowed depbases: userallowed_depbases_list
+        # - must be in sel_school_allowed_depbases_list
+        # - and in allowed_schoolbase_dict, unless allowed_schoolbase_dict is empty
+        """
+        allowed_schoolbase_dict: {'-9': {'1': []}, '2': {'2': [], '3': []} }
+        """
+
+        logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+        logger.debug('    sel_school_instance: ' + str(sel_school_instance))
+        if allowed_schoolbase_dict:
+            # check for sel_school and 'all schools'
+            schoolbase_pk_arr = ['-9']
+            if sel_school_instance:
+                schoolbase_pk_arr.append(str(sel_school_instance.base.pk))
+
+            for schoolbase_pk_str in schoolbase_pk_arr:
+                if schoolbase_pk_str in allowed_schoolbase_dict:
+                    allowed_depbase_dict = allowed_schoolbase_dict[schoolbase_pk_str]
+
+                    for depbase_pk_str in allowed_depbase_dict.keys():
+                        depbase_pk_int = int(depbase_pk_str)
+                        if depbase_pk_int not in userallowed_depbases_list:
+                            userallowed_depbases_list.append(depbase_pk_int)
+        return user_allowed_depbases_list
+
+    sel_depbase_instance = None
+    sel_depbase_tobesaved = False
+    multiple_depbases_exist = False
+    allowed_depbases_list = []
+    userallowed_depbases_list = []
+
+    if request.user and request.user.country:
+        req_usr = request.user
+
+        # PR2022-10-16 debug: when setting depbase_pk in orderlist, 'Havo' switched back to 'Vsbo when refreshing page.
+        # cause: ETE user had Vsbo school selected, since it doesn't have Havo, it changed dp to Vsbo
+        # solution: skip this check when page = orderlist
+        skip_school_allowed_depbases = (page in ('page_subject', 'page_orderlist'))
+
+# +++++ get allowed_depbases_list
+    # - get list of allowed_depbases of selected school
+        school_allowed_depbases_list = get_school_allowed_depbases_list()
+        if logging_on:
+            logger.debug('    school_allowed_depbases_list: ' + str(school_allowed_depbases_list))
+
+        user_allowed_depbases_list = get_user_allowed_depbases_list()
+        if logging_on:
+            logger.debug('    userallowed_depbases_list: ' + str(userallowed_depbases_list))
+    # combine both lists
+        allowed_depbases_list = []
+
+    return sel_depbase_instance, sel_depbase_tobesaved, allowed_schoolbase_dict, allowed_depbases_list
+# --- end of get_sel_depbase_instance
+
+
 def get_sel_depbase_instance(sel_school_instance, page, request, request_item_depbase_pk, allowed_schoolbase_dict):
     # PR2020-12-26 PR2021-05-07 PR2021-08-13 PR2022-10-19 PR2022-03-16
     #  code works ok: it returns
@@ -6076,6 +6174,8 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
 
     return sel_depbase_instance, sel_depbase_tobesaved, allowed_schoolbase_dict, allowed_depbases_list
 # --- end of get_sel_depbase_instance
+
+
 
 
 def get_sel_lvlbase_instance(sel_department, request, request_item_lvlbase_pk, allowed_depbase_dict):

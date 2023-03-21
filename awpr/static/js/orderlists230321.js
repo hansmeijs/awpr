@@ -295,6 +295,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MENVPR_header = document.getElementById("id_MENVPR_header");
         const el_MENVPR_loader = document.getElementById("id_MENVPR_loader");
         const el_MENVPR_select_errata = document.getElementById("id_MENVPR_select_errata");
+            el_MENVPR_select_errata.addEventListener("change", function() {MENVPR_SelectHasChanged("errata")}, false )
+
+        const el_MENVPR_select_exam = document.getElementById("id_MENVPR_select_exam");
+            el_MENVPR_select_exam.addEventListener("change", function() {MENVPR_SelectHasChanged("exam")}, false )
+
         const el_MENVPR_layout_option_level = document.getElementById("id_MENVPR_layout_option_level");
 
         const el_MENVPR_tblBody_school = document.getElementById("id_MENVPR_tblBody_school");
@@ -2786,15 +2791,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // MENVIT_SetMsgElements
 
-// +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20 PR2022-10-22
+// +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20 PR2022-10-22 PR2023-03-16
     function MENVPR_Open(mode){
         console.log(" -----  MENVPR_Open   ----")
         console.log("    setting_dict.sel_examperiod", setting_dict.sel_examperiod)
 
         b_clear_dict(mod_MENV_dict);
 
-        mod_MENV_dict.print_receipt = (mode === "receipt");
-        console.log("    mod_MENV_dict.print_receipt", mod_MENV_dict.print_receipt)
+        mod_MENV_dict.mode = mode;
 
 // ---  reset tblBody available and selected
         el_MENVPR_tblBody_school.innerHTML = null;
@@ -2802,16 +2806,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
         mod_MENV_dict.envelopsubject_rows = envelopsubject_rows;
 
-        if (![1,2,3].includes(setting_dict.sel_examperiod)){
+        if (mod_MENV_dict.mode !== "receipt" && ![1,2,3].includes(setting_dict.sel_examperiod)){
         // function b_show_mod_message_html(msg_html, header_text, ModMessageClose){
             b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_examperiod_sbr + "</div>", loc.Download_envelop_labels);
 
         } else {
             mod_MENV_dict.sel_examperiod = setting_dict.sel_examperiod;
-            el_MENVPR_header.innerText = loc.Download_envelop_labels + ( (mod_MENV_dict.sel_examperiod) ? " - " + loc.examperiod_caption[mod_MENV_dict.sel_examperiod] : "" ) ;
+            let sel_department = null;
+            if (selected.depbase_pk){
+                for (let i = 0, row; row = department_rows[i]; i++) {
+                    if(row.base_id === selected.depbase_pk){
+                        sel_department = row.base_code;
+                        break;
+            }}};
+
+            let header_txt = null;
+            if (mod_MENV_dict.mode === "receipt"){
+                header_txt = loc.Download_receipts;
+                if (sel_department){header_txt += " - " + sel_department};
+            } else if (mod_MENV_dict.mode === "label"){
+                const examperiod_txt = (mod_MENV_dict.sel_examperiod) ? loc.examperiod_caption[mod_MENV_dict.sel_examperiod] : null;
+                header_txt = loc.Download_envelop_labels
+                if (sel_department){header_txt += " - " + sel_department};
+                if (examperiod_txt){header_txt += " - " + examperiod_txt};
+
+
+                 + ( (mod_MENV_dict.sel_examperiod) ? " - " + loc.examperiod_caption[mod_MENV_dict.sel_examperiod] : "" ) ; ;
+            };
+            el_MENVPR_header.innerText = header_txt;
 
     // ---  reset layout options
             el_MENVPR_select_errata.value = "no_errata";
+            el_MENVPR_select_exam.value = null;
             el_MENVPR_msg_modified.innerText = null;
 
     // ---  disable save btn
@@ -2819,6 +2845,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---  get info from server
             MENVPR_getinfo_from_server();
+
+    // ---  show only element for label or receipt
+            const el_mod_envelop_print = document.getElementById("id_mod_envelop_print")
+            const show_class = "mod_" + mod_MENV_dict.mode;
+            b_show_hide_selected_elements_byClass("mod_show", show_class, el_mod_envelop_print);
 
     // ---  show modal
             $("#id_mod_envelop_print").modal({backdrop: true});
@@ -2834,8 +2865,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  get de selected value of
         const selected_layout_value = (el_MENVPR_select_errata.value) ? el_MENVPR_select_errata.value : null;
-
     console.log("    selected_layout_value", selected_layout_value);
+
+        const upload_dict = {mode: mod_MENV_dict.mode};
 
 // ---  loop through mod_MENV_dict.school_rows and collect selected subject_pk's
         // PR2021-10-09 debug: also filter lvlbase_pk, because they stay selected when unselecting level
@@ -2848,46 +2880,41 @@ document.addEventListener('DOMContentLoaded', function() {
                         schoolbase_pk_list.push(school_row.sbase_id);
             }}};
         };
+        upload_dict.schoolbase_pk_list = schoolbase_pk_list;
 
-// ---  loop through mod_MENV_dict.envelopsubject_rows and collect selected subject_pk's
-        // PR2021-10-09 debug: also filter lvlbase_pk, because they stay selected when unselecting level
-        if (mod_MENV_dict.envelopsubject_rows && mod_MENV_dict.envelopsubject_rows.length){
-            if (mod_MENV_dict.all_exams_selected) {
-                envelopsubject_pk_list.push(-1);
-            } else {
-                for (let i = 0, exam_row; exam_row = mod_MENV_dict.envelopsubject_rows[i]; i++) {
-                    if(exam_row.selected){
-                        envelopsubject_pk_list.push(exam_row.id);
-           }}};
+        if (mod_MENV_dict.mode === "receipt"){
+            upload_dict.sel_exam = el_MENVPR_select_exam.value;
+        } else {
+
+    // ---  loop through mod_MENV_dict.envelopsubject_rows and collect selected subject_pk's
+            // PR2021-10-09 debug: also filter lvlbase_pk, because they stay selected when unselecting level
+
+            // envelopsubject_pk_list stays empty when all_exams_selected
+            if (!mod_MENV_dict.all_exams_selected) {
+                if (mod_MENV_dict.envelopsubject_rows && mod_MENV_dict.envelopsubject_rows.length){
+                        for (let i = 0, exam_row; exam_row = mod_MENV_dict.envelopsubject_rows[i]; i++) {
+                            if(exam_row.selected){
+                                envelopsubject_pk_list.push(exam_row.id);
+            }}}};
+            upload_dict.envelopsubject_pk_list = envelopsubject_pk_list;
+            upload_dict.sel_layout = selected_layout_value;
         };
-    console.log("    envelopsubject_pk_list: ", envelopsubject_pk_list);
 
-        if(envelopsubject_pk_list.length){
-            if (envelopsubject_pk_list.includes(-1)){
-                b_clear_array(envelopsubject_pk_list);
-            };
-            const upload_dict = {
-                envelopsubject_pk_list: envelopsubject_pk_list,
-                schoolbase_pk_list: schoolbase_pk_list,
-                sel_layout: selected_layout_value
-            };
+        const url_str = (mod_MENV_dict.mode === "receipt") ? urls.url_envelop_receipt :
+                        (mod_MENV_dict.mode === "label") ? urls.url_envelop_print : null;
 
-    console.log("upload_dict", upload_dict)
-        // convert dict to json and add as parameter in link
-            const upload_str = JSON.stringify(upload_dict);
-            const href_str = (mod_MENV_dict.print_receipt) ? urls.url_envelop_receipt.replace("-", upload_str) : urls.url_envelop_print.replace("-", upload_str);
-    console.log("   XXXXXXXXXXXXX href_str", href_str)
+    // convert dict to json and add as parameter in link
+        const upload_str = JSON.stringify(upload_dict);
+        const href_str = url_str.replace("-", upload_str);
 
-            const el_MENVPR_save_link = document.getElementById("id_MENVPR_save_link");
-            el_MENVPR_save_link.href = href_str;
-    console.log("el_MENVPR_save_link", el_MENVPR_save_link)
+        const el_MENVPR_save_link = document.getElementById("id_MENVPR_save_link");
+        el_MENVPR_save_link.href = href_str;
 
-            el_MENVPR_save_link.click();
-        };
+        el_MENVPR_save_link.click();
 
 // ---  hide modal
-        //$("#id_mod_selectex3").modal("hide");
-    }  // MENVPR_Save
+        //$("#id_mod_envelop_print").modal("hide");
+    };  // MENVPR_Save
 
 //========= MENVPR_getinfo_from_server  ============= PR2021-10-06
     function MENVPR_getinfo_from_server() {
@@ -2908,6 +2935,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //mod_MENV_dict.exam_rows = (response.updated_envelop_exam_rows) ? response.updated_envelop_exam_rows : [];
         mod_MENV_dict.school_rows = (response.updated_envelop_school_rows) ? response.updated_envelop_school_rows : [];
 
+        console.log("mod_MENV_dict.school_rows", mod_MENV_dict.school_rows)
         // = (response.sel_examperiod) ? response.sel_examperiod : null;
         //mod_MENV_dict.emod_MENV_dict.sel_examperiodxamperiod_caption = (response.examperiod_caption) ? response.examperiod_caption : "---";
 
@@ -2930,17 +2958,48 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         el_MENVPR_msg_modified.innerText = modified_text;
 
-
-// ---  enable save btn TODO: when there are schools or subejcts selected
-       el_MENVPR_btn_save.disabled = false;
+// ---  enable save btn
+        MENVPR_EnableBtnSave();
 
     }  // MENVPR_UpdateFromResponse
 
-//========= MENVPR_SelectLevelHasChanged  ============= PR2021-10-09
-    function MENVPR_SelectLevelHasChanged() {
-        mod_MENV_dict.lvlbase_pk_list = MENVPR_get_sel_lvlbase_pk_list();
-        MENVPR_FillTblExams();
-    }  // MENVPR_SelectLevelHasChanged
+//========= MENVPR_EnableBtnSave  ============= PR2023-03-16
+    function MENVPR_EnableBtnSave() {
+
+
+        const selected_school_rows = get_elements_by_classname_with_qsAll(el_MENVPR_tblBody_school, ".bg_selected_blue");
+        const has_selected_school_rows = (selected_school_rows && selected_school_rows.length);
+
+        console.log(">>>>>>> el_MENVPR_tblBody_school", el_MENVPR_tblBody_school, typeof el_MENVPR_tblBody_school);
+        console.log(">>>>>>> selected_school_rows", selected_school_rows, typeof selected_school_rows);
+        console.log(">>>>>>> has_selected_school_rows", has_selected_school_rows, typeof has_selected_school_rows);
+// ---  enable save btn
+        let btn_save_disabled = true;
+        if (has_selected_school_rows){
+            if (mod_MENV_dict.mode === "receipt"){
+                if (el_MENVPR_select_exam.value){
+                    btn_save_disabled = false;
+                };
+            } else {
+                const selected_subject_rows = get_elements_by_classname_with_qsAll(el_MENVPR_tblBody_exam, ".bg_selected_blue");
+                const has_selected_subject_rows = (selected_subject_rows && selected_subject_rows.length);
+
+                if (has_selected_subject_rows){
+                    if (el_MENVPR_select_errata.value){
+                        btn_save_disabled = false;
+                    };
+                };
+            };
+        };
+
+       el_MENVPR_btn_save.disabled = btn_save_disabled;
+    }  // MENVPR_EnableBtnSave
+
+
+//========= MENVPR_SelectHasChanged  ============= PR2023-03-16
+    function MENVPR_SelectHasChanged(mode) {
+        MENVPR_EnableBtnSave();
+    }  // MENVPR_SelectHasChanged
 
 //========= MENVPR_FillTblSchool  ============= PR2022-08-19
     function MENVPR_FillTblSchool() {
@@ -3149,6 +3208,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             };
         };
+        MENVPR_EnableBtnSave();
     };  // MENVPR_SelectDeselectRow
 
 

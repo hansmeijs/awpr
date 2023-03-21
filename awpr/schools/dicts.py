@@ -689,7 +689,7 @@ def create_school_rows(request, examyear, append_dict, skip_allowed_filter=False
     # --- create rows of all schools of this examyear / country
     # PR2020-09-18 PR2021-04-23 PR2022-03-13 PR2022-08-07 PR2022-12-05 PR2023-02-16
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_school_rows ============= ')

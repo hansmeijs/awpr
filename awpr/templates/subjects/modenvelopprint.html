@@ -23,14 +23,23 @@
                     </div>
 
 
-                    <div class="content_header">
-                        <div class="flex_1 p-2">
-                            <h6 class="px-2">{% trans 'Make e selection of the labels you want to download.' %}</h6>
+                    <div class="content_header ">
+                        <div class="flex_1 p-2 mod_show mod_label">
+                            <h6 class="px-2">{% trans 'Select the labels you want to download' %}:</h6>
                             <select id="id_MENVPR_select_errata" size="3" class="form-control tbl_hide_scrollbar"
                                  autocomplete="off" ondragstart="return false;" ondrop="return false;">
                                  <option value="no_errata">{% trans "Don't download errata labels" %}</option>
                                  <option value="errata_only">{% trans 'Download errata labels only' %}</option>
                                  <option value="all">{% trans 'Download all labels' %}</option>
+                            </select>
+                        </div>
+                        <div class="flex_1 p-2 mod_show mod_receipt">
+                            <h6 class="px-2">{% trans 'Select the exams you want to download' %}:</h6>
+                            <select id="id_MENVPR_select_exam" size="3" class="form-control tbl_hide_scrollbar"
+                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                 <option value="cspe">{% trans "CSPE exams" %}</option>
+                                 <option value="cse">{% trans 'CSE exams first period' %}</option>
+                                 <option value="tv02">{% trans 'CSE exams second period' %}</option>
                             </select>
                         </div>
                     </div>
@@ -42,7 +51,7 @@
                                 <tbody id="id_MENVPR_tblBody_school"></tbody>
                              </table>
                          </div>
-                         <div class="flex_2 p-2">
+                         <div class="flex_2 p-2 mod_show mod_label">
                              <h6 class="px-2">{% trans 'Select one or more subjects' %}:</h6>
                               <table class="tableX tsa_tbl border_bg_lightblue tbl_h240_w_auto">
                                 <tbody id="id_MENVPR_tblBody_exam"></tbody>

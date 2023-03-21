@@ -242,7 +242,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (el_hdrbar_department){
             el_hdrbar_department.addEventListener("click", function() {
                 // true = 'all_counties = true', used to let ETE select all deps, schools must only be able to select their deps
-                const all_countries = permit_dict.requsr_role_admin;
+                const all_countries = false;
                 t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response, all_countries)}, false );
         };
         const el_hdrbar_school = document.getElementById("id_hdrbar_school");
@@ -292,19 +292,19 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if (el_SBR_select_subject){
             el_SBR_select_subject.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "subject", subject_rows, add_all, false, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "subject", subject_rows, add_all, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
 
         // el_SBR_select_cluster only exists when is_requsr_same_school
         const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         if (el_SBR_select_cluster){
             el_SBR_select_cluster.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "cluster", cluster_rows, add_all, false, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+                function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, add_all, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
 
         // el_SBR_select_student only exists when is_requsr_same_school
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if (el_SBR_select_student){
             el_SBR_select_student.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "student", student_rows, add_all, false, setting_dict, permit_dict, MSSSubjStud_Response)}, false)};
+                function() {t_MSSSS_Open(loc, "student", student_rows, add_all, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
 
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if (el_SBR_select_showall){
@@ -320,7 +320,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
         }
         if (el_MSSSS_btn_save){
-            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSubjStud_Response)}, false );
+            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
         }
 
 // ---  MSELEX MOD SELECT EXAM ------------------------------
@@ -480,7 +480,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const el_MDUO_level = document.getElementById("id_MDUO_level");
 
         const el_MDUO_tblBody_subjects = document.getElementById("id_MDUO_tblBody_subjects");
-        const el_MDUO_tblBody_duo_exams = document.getElementById("id_MDUO_tblBody_duo_exams");
+        const el_MDUO_tblBody_duo_exams = document.getElementById("id_MDUO_tblBody_ntermentable");
 
         const el_MDUO_filter_subjects = document.getElementById("id_MDUO_filter_subjects");
         const el_MDUO_filter_exams = document.getElementById("id_MDUO_filter_exams");
@@ -717,8 +717,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 if ("subject_rows" in response) {subject_rows = response.subject_rows};
                 t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
 
-                if ("cluster_rows" in response) {cluster_rows = response.cluster_rows};
-
+                if ("cluster_rows" in response) {
+                    b_fill_datadicts("cluster",  "id", null, response.cluster_rows, cluster_dictsNEW);
+                };
                 if ("ete_exam_rows" in response) {ete_exam_rows = response.ete_exam_rows};
                 if ("duo_subject_rows" in response) {duo_subject_rows = response.duo_subject_rows};
                 if ("duo_exam_rows" in response) {duo_exam_rows = response.duo_exam_rows};
@@ -745,26 +746,8 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
         let el_submenu = document.getElementById("id_submenu")
-        // PR2022-05-19 Only CUR admin can add exams!!! It will get messed-up if SXM starts enetering stuff here
-        // PR2022-06-02 sp DUO must be added by SXM, anble SXM to enter exams.
-        // was: if (permit_dict.requsr_role_admin && permit_dict.requsr_country_pk === 1){
-        if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
-            AddSubmenuButton(el_submenu, loc.Add_exam, function() {MEXQ_Open()}, ["tab_show", "tab_btn_ete_exams"]);
-            AddSubmenuButton(el_submenu, loc.Delete_exam, function() {ModConfirmOpen("ete_exam", "delete")}, ["tab_show", "tab_btn_ete_exams"]);
-            AddSubmenuButton(el_submenu, loc.Copy_exam, function() {ModConfirmOpen("ete_exam", "copy")}, ["tab_show", "tab_btn_ete_exams"]);
-            AddSubmenuButton(el_submenu, loc.Add_CVTE_exam, function() {MDEC_Open()}, ["tab_show", "tab_btn_duo_exams"]);
-            AddSubmenuButton(el_submenu, loc.Link_CVTE_exams, function() {MDUO_Open()}, ["tab_show", "tab_btn_duo_exams"]);
-            AddSubmenuButton(el_submenu, loc.Link_exam_to_grades, function() {ModConfirm_link_exam_to_grades_Open()}, ["tab_show", "tab_btn_ete_exams", "tab_btn_duo_exams"]);
-         }
-        if (permit_dict.requsr_role_admin){
-            if (permit_dict.permit_approve_exam ){
-                AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_admin")}, ["tab_show", "tab_btn_ete_exams"]);
-            };
-            if (permit_dict.permit_publish_exam ){
-                AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit_admin")}, ["tab_show", "tab_btn_ete_exams"]);
-                AddSubmenuButton(el_submenu, loc.Undo_published, function() {ModConfirmOpen("ete_exam", "undo_published")}, ["tab_show", "tab_btn_ete_exams"]);
-            };
-        } else if (permit_dict.requsr_role_school){
+
+         if (permit_dict.requsr_role_school){
             if (permit_dict.permit_approve_exam ){
                 AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
             };
@@ -774,25 +757,11 @@ document.addEventListener("DOMContentLoaded", function() {
             };
         };
 
-        if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
-            AddSubmenuButton(el_submenu, loc.Upload_ntermen, function() {MDNT_Open()}, ["tab_show", "tab_btn_ntermen"], "id_submenu_upload_dnt");
-            AddSubmenuButton(el_submenu, loc.Copy_ntermen_to_exams, function() {ModConfirmOpen("results", "copy_ntermen")}, ["tab_show", "tab_btn_ntermen"]);
-
-            AddSubmenuButton(el_submenu, loc.Download_JSON, function() {ModConfirmOpen("ete_exam", "json")}, ["tab_show", "tab_btn_results"]);
-        };
-
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_exams")}, [], "id_submenu_columns")
 
-        //AddSubmenuButton(el_submenu, loc.Preliminary_Ex2A, null, "id_submenu_download_ex2a", urls.url_grade_download_ex2a, true);  // true = download
-        //if (permit.approve_grade){
-        //    AddSubmenuButton(el_submenu, loc.Approve_grades, function() {MASE_Open("approve")});
-        //}
-        //if (permit.submit_grade){
-        //    AddSubmenuButton(el_submenu, loc.Submit_Ex_form, function() {MASE_Open("submit")});
-        //};
         el_submenu.classList.remove(cls_hide);
 
-    };//function CreateSubmenu
+    };  // CreateSubmenu
 
 //###########################################################################
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
@@ -814,31 +783,13 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!data_btn) {data_btn = selected_btn};
 
 // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
-        if (!permit_dict.requsr_role_admin){
-            const btns_allowed = ["btn_ep_01", "btn_reex", "btn_results"];
-            if (data_btn && btns_allowed.includes(data_btn)) {
-                selected_btn = data_btn;
-            } else {
-                selected_btn = btns_allowed[0];
-            };
-
+        const btns_allowed = ["btn_ep_01", "btn_reex", "btn_results"];
+        if (data_btn && btns_allowed.includes(data_btn)) {
+            selected_btn = data_btn;
         } else {
-            const btns_allowed = ["btn_ete_exams", "btn_duo_exams", "btn_ntermen", "btn_results"];
-            if (data_btn && btns_allowed.includes(data_btn)) {
-                selected_btn = data_btn;
-            } else if (btns_allowed.length) {
-                selected_btn = btns_allowed[0];
-            } else {
-                selected_btn = null;
-            };
+            selected_btn = btns_allowed[0];
         };
-
-    //console.log( "btns_allowed", btns_allowed);
-    //console.log( "data_btn", data_btn);
-    //console.log( "selected_btn", selected_btn);
         setting_dict.sel_btn = selected_btn;
-
-    //console.log( "selected_btn", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
@@ -3131,7 +3082,7 @@ document.addEventListener("DOMContentLoaded", function() {
             el_MDEC_select_level.innerHTML = null;
             if (setting_dict.sel_dep_level_req){
                 t_FillSelectOptions(el_MDEC_select_level, level_map, "base_id", "abbrev", false,
-                    mod_MEX_dict.lvlbase_pk, null, loc.No_leerwegen_found, loc.Select_level)
+                    mod_MEX_dict.lvlbase_pk, null, loc.No_learningpaths_found, loc.Select_level)
             };
         };
     } // MDEC_FillSelectTableLevel
@@ -4195,7 +4146,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if (setting_dict.sel_dep_level_req && mod_MEX_dict.subject_pk){
                 //el_MEXQ_select_level.value = null;
                 t_FillSelectOptions(el_MEXQ_select_level, level_map, "base_id", "abbrev", false,
-                    mod_MEX_dict.lvlbase_pk, null, loc.No_leerwegen_found, loc.Select_level)
+                    mod_MEX_dict.lvlbase_pk, null, loc.No_learningpaths_found, loc.Select_level)
             };
         };
     } // MEXQ_FillSelectTableLevel
@@ -5630,6 +5581,7 @@ document.addEventListener("DOMContentLoaded", function() {
             MDUO_FillDict();
             MDUO_FillSelectTables();
             el_MDUO_btn_save.disabled = true;
+
     // ---  show modal
             $("#id_mod_duoexams").modal({backdrop: true});
         } ; //  if(is_permit_admin)
@@ -5639,6 +5591,7 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  MDUO_FillDict  ================ PR2022-02-28
     function MDUO_FillDict() {
         console.log("===== MDUO_FillDict =====");
+    console.log("    subject_rows", subject_rows);
 
         b_clear_dict(mod_MDUO_dict);
         mod_MDUO_dict.duo_subject_list = [];
@@ -5659,10 +5612,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     depbase_code: data_dict.depbase_code
                 };
                 mod_MDUO_dict.duo_subject_list.push(dict);
+    console.log("    dict", dict);
             };
             console.log("mod_MDUO_dict.duo_subject_list", mod_MDUO_dict.duo_subject_list);
         };
 
+    console.log("    ntermentable_rows", ntermentable_rows);
         mod_MDUO_dict.nterm_list = [];
         if(ntermentable_rows && ntermentable_rows.length){
             for (let i = 0, data_dict; data_dict = ntermentable_rows[i]; i++) {
@@ -5679,6 +5634,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 mod_MDUO_dict.nterm_list.push(dict);
             };
         };
+
+    console.log("    duo_exam_rows", duo_exam_rows);
 
         mod_MDUO_dict.duo_exam_list = [];
         if(duo_exam_rows && duo_exam_rows.length){
@@ -7351,9 +7308,9 @@ console.log("exam_dict", exam_dict);
     };  // MSSSS_Response
 
 
-//=========  MSSSubjStud_Response  ================ PR2022-02-01
-    function MSSSubjStud_Response(mode, selected_dict, sel_pk_int) {
-        console.log( "===== MSSSubjStud_Response ========= ");
+//=========  MSSSS_Response  ================ PR2022-02-01
+    function MSSSS_Response(mode, selected_dict, sel_pk_int) {
+        console.log( "===== MSSSS_Response ========= ");
         console.log( "sel_pk_int", sel_pk_int, typeof sel_pk_int);
         console.log( "selected_dict", selected_dict);
         console.log( "mode", mode);
@@ -7453,7 +7410,7 @@ console.log("exam_dict", exam_dict);
 
             FillTblRows();
         };
-    };  // MSSSubjStud_Response
+    };  // MSSSS_Response
 
 //========= MSSSS_display_in_sbr_reset  ====================================
     function MSSSS_display_in_sbr_reset() {

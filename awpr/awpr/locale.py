@@ -1028,6 +1028,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Select_examperiod'] = TXT_Select_examperiod
         dict['No_examperiods_found'] = TXT_No_examperiods_found
+        dict['No_learningpaths_found'] = _("No learning paths found")
+
+
+        dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical grey bar at the left.')
 
         dict['ETE_exams'] = _("ETE exams")
         dict['CVTE_exams'] = _("CVTE exams")
@@ -1070,9 +1074,14 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_exam'] = _("Delete exam")
         dict['Copy_exam'] = _("Copy exam")
 
+        dict['CVTE_exam'] = _("CVTE exam")
+        dict['ETE_exam'] = _("ETE exam")
         dict['Add_CVTE_exam'] = _("Add CVTE exam")
         dict['Link_CVTE_exams'] = _("Link CVTE exams")
         dict['Delete_CVTE_exam'] = _("Delete CVTE exam")
+        dict['Delete_ETE_exam'] = _("Delete ETE exam")
+
+        dict['No_linked_CVTE_exams'] = _("There are no linked CVTE exams")
 
         dict['Publish_exams'] = _("Publish exams")
         dict['Submit_exams'] = _("Submit exams")
@@ -1782,6 +1791,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Please_select_label'] = _('Please select a label first.')
         dict['Please_select_label_item'] = _('Please select a label text first.')
         dict['Download_envelop_labels'] = _('Download envelop labels')
+        dict['Download_receipts'] = _('Download receipts')
 
         dict['Click_to_move_item_up'] = _('Click to move this item up.')
         dict['Click_to_move_item_down'] = _('Click to move this item down.')

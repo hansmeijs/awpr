@@ -1,7 +1,5 @@
     "use strict";
 
-console.log("+++++++ script 'base'")
-
 // ========= GLOBAL VARIABLES=================== PR2022-07-21
     // these variables are used in all pages
 
@@ -40,11 +38,12 @@ console.log("+++++++ script 'base'")
     const cls_error = "tsa_tr_error";
 
     const cls_bc_transparent = "tsa_bc_transparent";
+
 // ============================
     // add csrftoken to ajax header to prevent error 403 Forbidden PR2018-12-03
     // from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
     const csrftoken = Cookies.get('csrftoken');
-
+    // PR2023-03-13 Sentry error: $ is not defined
     $.ajaxSetup({
         beforeSend: function(xhr, settings) {
             if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
@@ -477,11 +476,11 @@ console.log("+++++++ script 'base'")
 // ++++++++++++++++ ADD REMOVE CLASS / ATTRIBUTE  +++++++++++++++
 
 //========= add_or_remove_class_with_qsAll  ====================================
-    function add_or_remove_class_with_qsAll(el_container, classname, is_add, filter_class){
+    function add_or_remove_class_with_qsAll(el_container, class_name, is_add, filter_class, default_class){
         // add or remove selected cls_hide from all elements with class 'filter_class' PR2020-04-29
-//console.log(" --- add_or_remove_class_with_qsAll --- ")
-//console.log("is_add: ", is_add)
-//console.log("filter_class: ", filter_class)
+console.log(" --- add_or_remove_class_with_qsAll --- ")
+console.log("    is_add: ", is_add)
+console.log("    filter_class: ", filter_class)
         // from https://stackoverflow.com/questions/34001917/queryselectorall-with-multiple-conditions
         // document.querySelectorAll("form, p, legend") means filter: class = (form OR p OR legend)
         // document.querySelectorAll("form.p.legend") means filter: class = (form AND p AND legend)
@@ -489,31 +488,37 @@ console.log("+++++++ script 'base'")
          // multipe filter: document.querySelectorAll(".filter1.filter2")
         //let elements =  document.querySelectorAll("." + filter_class)
         let elements = el_container.querySelectorAll(filter_class);
-        for (let i = 0, len = elements.length; i < len; i++) {
-            add_or_remove_class (elements[i], classname, is_add);
-//console.log(elements[i])
+console.log("    elements", elements)
+        for (let i = 0, el; el = elements[i]; i++) {
+            add_or_remove_class (el, class_name, is_add, default_class);
+console.log(el)
         };
-//console.log(" --- end of add_or_remove_class_with_qsAll --- ")
+console.log(" --- end of add_or_remove_class_with_qsAll --- ")
     };
 
 
 //========= add_or_remove_class_by_id  ========================  PR2022-04-23
-    function add_or_remove_class_by_id (id, classname, is_add, default_class) {
+    function add_or_remove_class_by_id (id, class_name, is_add, default_class) {
         const el = document.getElementById(id);
-        add_or_remove_class (el, classname, is_add, default_class);
+        add_or_remove_class (el, class_name, is_add, default_class);
     };
 
-//========= add_or_remove_class  ========================  PR2020-06-20
-    function add_or_remove_class (el, classname, is_add, default_class) {
-        if(el && classname){
+//========= add_or_remove_class  ========================  PR2020-06-20 PR2023-03-19
+    function add_or_remove_class (el, class_name, is_add, default_class) {
+        if(el && class_name){
             if (is_add){
                 if (default_class){el.classList.remove(default_class)};
-                el.classList.add(classname);
+                // dont add class if it already exists PR2023-03-19
+                if(!el.classList.contains(class_name)){
+                    el.classList.add(class_name);
+                };
             } else {
-                el.classList.remove(classname);
-                if (default_class){el.classList.add(default_class)};
-            };
-        };
+                el.classList.remove(class_name);
+                if (default_class){
+                    // dont add class if it already exists PR2023-03-19
+                    if(!el.classList.contains(default_class)){
+                        el.classList.add(default_class);
+        }}}};
     };
 
 //========= add_or_remove_attr_with_qsAll  ======== PR2020-05-01
@@ -555,6 +560,29 @@ console.log("+++++++ script 'base'")
             };
         };
     };  // add_or_remove_attr
+
+
+
+//========= get_elements_by_classname_with_qsAll  ====================================
+    function get_elements_by_classname_with_qsAll(el_container, class_name){
+        // count elements that have classname PR2023-03-17, for now only used in orderlist.js MENVPR
+//console.log(" --- count_elements_with_qsAll --- ")
+//console.log("is_add: ", is_add)
+//console.log("filter_class: ", filter_class)
+
+        // from https://stackoverflow.com/questions/34001917/queryselectorall-with-multiple-conditions
+        // document.querySelectorAll("form, p, legend") means filter: class = (form OR p OR legend)
+        // document.querySelectorAll("form.p.legend") means filter: class = (form AND p AND legend)
+
+         // multipe filter: document.querySelectorAll(".filter1.filter2")
+        //let elements =  document.querySelectorAll("." + filter_class)
+        return el_container.querySelectorAll(class_name);
+
+    };  // get_elements_by_classname_with_qsAll
+
+
+
+
 
 //========= function b_add_hover_delete_btn  =========== PR2021-10-28
     function b_add_hover_delete_btn(el, hover_class, class_1, class_0) {

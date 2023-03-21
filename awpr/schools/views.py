@@ -3609,9 +3609,6 @@ def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_scho
             sf.copy_exams_from_prev_examyear(prev_examyear_pk,
                                              mapped_deps, mapped_levels, mapped_subjects, mapped_envelopbundles, log_list)
 
-        if logging_on:
-            logger.debug('    mapped_schemeitems: ' + str(mapped_schemeitems))
-
         # Not in use
         #mapped_packages = sf.copy_packages_from_prev_examyear(prev_examyear_pk, mapped_schemes, log_list)
         #sf.copy_packageitems_from_prev_examyear(prev_examyear_pk, mapped_packages, mapped_schemeitems, log_list)

@@ -400,13 +400,12 @@ def get_usersetting_dict(key_str, request):  # PR2019-03-09 PR2021-01-25
 #+++++++++++ SQL CLAUSE ALLOWED++++++++++++
 
 def get_sqlclause_allowed_schoolbase_from_request(request, schoolbase_pk=None, skip_allowed_filter=False, table=None):
-    # 12-04 PR2023-02-02
+    # PR2023-02-02
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- get_sqlclause_allowed_schoolbase_from_request ----- ')
-
 
 # - get allowed_sections_dict
     userallowed_sections_dict = get_userallowed_sections_dict_from_request(request)
@@ -414,7 +413,7 @@ def get_sqlclause_allowed_schoolbase_from_request(request, schoolbase_pk=None, s
         logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
 
     return get_sqlclause_allowed_schoolbase_from_allowed_sections(
-        userallowed_sections_dict,
+        userallowed_sections_dict=userallowed_sections_dict,
         schoolbase_pk=schoolbase_pk,
         skip_allowed_filter=skip_allowed_filter,
         table=table)
@@ -422,7 +421,7 @@ def get_sqlclause_allowed_schoolbase_from_request(request, schoolbase_pk=None, s
 
 
 def get_sqlclause_allowed_schoolbase_from_allowed_sections(userallowed_sections_dict, schoolbase_pk=None, skip_allowed_filter=False, table=None):
-    # PR2022-03-13 PR2022-12-04 PR2023-01-25
+    # PR2022-03-13 PR2022-12-04 PR2023-01-25 PR2023-01-20
     #  if schoolbase_pk has value:
     #       if userallowed_schoolbase_pk_arr exists and not skip_allowed_filter:
     #           --> filter on schoolbase_pk_pk, only when schoolbase_pk_pk in arr, otherwise: return FALSE
@@ -464,10 +463,12 @@ def get_sqlclause_allowed_schoolbase_from_allowed_sections(userallowed_sections_
             filter_none = True
 
     elif userallowed_schoolbase_pk_int_arr and not skip_allowed_filter:
-        if len(userallowed_schoolbase_pk_int_arr) == 1:
-            filter_single_pk = userallowed_schoolbase_pk_int_arr[0]
-        else:
-            filter_pk_arr = userallowed_schoolbase_pk_int_arr
+        # no filter when -9 ('all schools') in userallowed_schoolbase_pk_int_arr
+        if -9 not in userallowed_schoolbase_pk_int_arr:
+            if len(userallowed_schoolbase_pk_int_arr) == 1:
+                filter_single_pk = userallowed_schoolbase_pk_int_arr[0]
+            else:
+                filter_pk_arr = userallowed_schoolbase_pk_int_arr
 
     if logging_on:
         logger.debug('    filter_single_pk: ' + str(filter_single_pk) + ' ' + str(type(filter_single_pk)))
@@ -1468,7 +1469,7 @@ def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, pa
 def get_permit_of_this_page(page, permit, request):
     # --- get permit for this page # PR2021-07-18 PR2021-09-05 PR2022-07-05 PR2023-01-13
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_permit_of_this_page  -------')
 
@@ -1530,5 +1531,42 @@ def is_role_insp_or_system_and_group_admin(req_usr):
                 has_permit = is_usergroup_admin(req_usr)
 
     return has_permit
+
+
+def err_html_no_permit():  # PR2023-03-20
+    return ''.join((
+        "<p class='border_bg_invalid p-2'>",
+        str(_("You don't have permission to perform this action.")),
+        "</p>"))
+
+
+def err_html_error_occurred(err_txt, msg_txt):  # PR2023-03-20
+    msg_list = ["<p class='border_bg_invalid p-2'>",
+                str(_('An error occurred'))]
+    if err_txt:
+        msg_list.extend(['<br>&emsp;<i>', str(err_txt), '</i>'])
+    if msg_txt:
+        msg_list.extend(['<br>', str(msg_txt)])
+    msg_list.append("</p>")
+
+    return ''.join((msg_list))
+
+def err_html_from_err_list(err_list):  # PR2023-03-20
+    msg_list = []
+    if err_list:
+        msg_list.append("<p class='border_bg_invalid p-2'>")
+
+        # loop is necessary to convert err_txt to string
+        for index, err_txt in enumerate(err_list):
+            if index:
+                msg_list.append("<br>")
+            msg_list.append(str(err_txt))
+
+        msg_list.append("</p>")
+
+    return ''.join((msg_list))
+
+
+
 
 

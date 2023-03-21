@@ -194,6 +194,9 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
         }
 
+// ---  SUBMENU ------------------------------------
+        const el_submenu_delete_candidate = document.getElementById("id_submenu_delete_candidate");
+
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
         if(el_MCOL_btn_save){
@@ -550,9 +553,11 @@ document.addEventListener('DOMContentLoaded', function() {
         selected.student_pk = (data_dict) ? data_dict.id : null
 
 // --- change caption of submenubutton delete_candidate
-        const caption = (data_dict && (data_dict.tobedeleted || data_dict.deleted)) ? loc.Restore_candidate : loc.Delete_candidate;
-        document.getElementById("id_submenu_delete_candidate").innerText = caption;
-
+        // PR2023-03-13 Sentry error: TypeError Cannot set properties of null (setting 'innerText')
+        if (el_submenu_delete_candidate){
+            const caption = (data_dict && (data_dict.tobedeleted || data_dict.deleted)) ? loc.Restore_candidate : loc.Delete_candidate;
+            el_submenu_delete_candidate.innerText = caption;
+        };
     }  // HandleTblRowClicked
 
 //========= UpdateHeaderText  ================== PR2020-07-31
@@ -1087,11 +1092,12 @@ function RefreshDataRowsAfterUpload(response) {
                         if (update_dict.tobedeleted || update_dict.restored){
                             updated_columns.push("tobedeleted_or_restored")
 
-// --- change caption of submenubutton delete_candidate
-                            const caption = (update_dict.tobedeleted) ? loc.Restore_candidate : loc.Delete_candidate;
-                            document.getElementById("id_submenu_delete_candidate").innerText = caption;
-
-
+        // --- change caption of submenubutton delete_candidate
+                            // PR2023-03-13 Sentry error: TypeError Cannot set properties of null (setting 'innerText')
+                            if (el_submenu_delete_candidate){
+                                const caption = (update_dict.tobedeleted) ? loc.Restore_candidate : loc.Delete_candidate;
+                                el_submenu_delete_candidate.innerText = caption;
+                            };
 
                         } else {
                             // skip first column (is margin)

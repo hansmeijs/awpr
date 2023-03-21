@@ -32,7 +32,7 @@ MENUS_BUTTONS = {
                         'page_studsubj', 'page_exams', 'page_wolf', 'page_grade',
                       'page_result', 'page_corrector', 'page_archive'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
-                       'page_studsubj', 'page_exams', 'page_wolf', 'page_grade',
+                       'page_studsubj', 'page_exams', 'page_grade',
                      'page_result', 'page_corrector', 'page_archive'],  #, 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
                       'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],

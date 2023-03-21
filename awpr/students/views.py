@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
+from django.utils.translation import activate, gettext, pgettext_lazy, gettext_lazy as _
 from django.views.generic import View
 
 from accounts import views as acc_view
@@ -816,8 +816,6 @@ class ValidateCompositionView(View):  # PR2022-08-25
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_schoolbase,
                         sel_depbase=sel_depbase,
-                        sel_lvlbase=None,
-                        requsr_same_school=False,
                         append_dict={},
                         request=request,
                         student_pk=student_instance.pk
@@ -832,9 +830,13 @@ class ValidateCompositionView(View):  # PR2022-08-25
 
 # - addd messages to update_wrap
         if msg_list:
-            header_txt = str(_('Validate subject composition')),
-            update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': header_txt,
-                                        'msg_html': '<br>'.join(msg_list)}]
+            header_txt = gettext("Validate subject composition")
+            msg_html = '<br>'.join(msg_list)
+
+            if logging_on:
+                logger.debug('    header_txt:   ' + str(header_txt))
+                logger.debug('    msg_html:   ' + str(msg_html))
+            update_wrap['messages'] = [{'class': "border_bg_invalid", 'header': header_txt, 'msg_html': msg_html}]
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -1247,10 +1249,9 @@ class ClusterUploadView(View):  # PR2022-01-06
                             sel_examyear=sel_examyear,
                             sel_schoolbase=sel_schoolbase,
                             sel_depbase=sel_depbase,
-                            sel_lvlbase=None,
-                            requsr_same_school=True,  # check for same_school is included in may_edit
                             append_dict=append_dict,
                             request=request,
+                            requsr_same_school=True,  # check for same_school is included in may_edit
                             studsubj_pk_list=updated_studsubj_pk_list,
                             cluster_pk_list=updated_cluster_pk_arr
                         )
@@ -3411,10 +3412,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                         sel_examyear=sel_examyear,
                                         sel_schoolbase=sel_school.base if sel_school else None,
                                         sel_depbase=sel_department.base if sel_department else None,
-                                        sel_lvlbase=None,
-                                        requsr_same_school=True, # when requsr_same_school=True, it includes students without studsubjects
                                         append_dict={},
                                         request=request,
+                                        requsr_same_school=True, # when requsr_same_school=True, it includes students without studsubjects
                                         studsubj_pk_list=saved_studsubj_pk_list
                                     )
 
@@ -4220,16 +4220,14 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
                                     logger.debug('studsubj.pk: ' + str(studsubj.pk))
                                 studsubj_pk_list = [studsubj.pk] if studsubj.pk else None
 
-                                # TODO PR2022-12-22 give value to sel_lvlbase
-                                sel_lvlbase = None
                                 rows = create_studentsubject_rows(
                                     sel_examyear=sel_examyear,
                                     sel_schoolbase=sel_school.base if sel_school else None,
                                     sel_depbase=sel_department.base if sel_department else None,
-                                    sel_lvlbase=sel_level.base if sel_level else None,
-                                    requsr_same_school=True,  # check for same_school is included in may_edit
                                     append_dict=append_dict,
                                     request=request,
+                                    sel_lvlbase=sel_level.base if sel_level else None,
+                                    requsr_same_school=True,  # check for same_school is included in may_edit
                                     student_pk=student.pk,
                                     studsubj_pk_list=studsubj_pk_list
                                 )
@@ -5057,16 +5055,16 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                         messages.append({'class': "border_bg_invalid", 'msg_html': msg_html})
 
 # - add update_dict to update_wrap
-                    # must update all studsubjects from this student, because the exclamation sign must be updated
+
+# must update all studsubjects from this student, because the exclamation sign must be updated
                     # in all sudsubjects, not only the updeted ones
                     updated_rows = create_studentsubject_rows(
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_school.base if sel_school else None,
                         sel_depbase=sel_department.base if sel_department else None,
-                        sel_lvlbase=None,
-                        requsr_same_school=True,  # check for same_school is included in may_edit
                         append_dict= updated_rows_append_dict,
                         request=request,
+                        requsr_same_school=True,  # check for same_school is included in may_edit
                         student_pk=student_instance.pk
                     )
                     #PR2023-01-07 added to update composistion tickmark in all studsubjects of this student
@@ -5426,15 +5424,14 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                             logger.debug(' ####   append_dict: ' + str(append_dict))
 
                         # TODO PR2022-12-22 check if sel_lvlbase must get value
-                        sel_lvlbase = None
+
                         studsubj_rows = create_studentsubject_rows(
                             sel_examyear=sel_examyear,
                             sel_schoolbase=sel_school.base if sel_school else None,
                             sel_depbase=sel_department.base if sel_department else None,
-                            sel_lvlbase=sel_lvlbase,
-                            requsr_same_school=True,  # check for same_school is included in may_edit
                             append_dict=append_dict,
                             request=request,
+                            requsr_same_school=True,  # check for same_school is included in may_edit
                             student_pk=student_instance.pk,
                             studsubj_pk_list=studsubj_pk_list
                         )
@@ -7918,8 +7915,9 @@ def create_studsubj(student, schemeitem, messages, error_list, request, skip_sav
 
 #/////////////////////////////////////////////////////////////////
 
-def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, requsr_same_school,
-                               append_dict, request, student_pk=None, studsubj_pk_list=None, cluster_pk_list=None):
+def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append_dict, request,
+                               requsr_same_school=False, sel_lvlbase=None, student_pk=None,
+                               studsubj_pk_list=None, cluster_pk_list=None):
     # --- create rows of all students of this examyear / school / dep PR2020-10-27 PR2022-01-10 studsubj_pk_list added
     # PR2022-02-15 show only not tobeleted students and studentsubjects
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername

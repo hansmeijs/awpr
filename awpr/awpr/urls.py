@@ -360,7 +360,7 @@ urlpatterns = [
 
 # ===== WOLF ========================== PR2022-12-16
     path('wolf/', include([
-        path('exam', subject_views.WolfListView.as_view(), name='wolf_url'),
+        path('wolf', subject_views.WolfListView.as_view(), name='wolf_url'),
 
     ])),
 # ===== IMPORT ==========================

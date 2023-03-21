@@ -1,10 +1,9 @@
 
     let mod_MSESD_dict = {};
-    let  mod_MUPS_dict = {};  // PR2022-10-23
+    let mod_MUPS_dict = {};  // PR2022-10-23
+    const mod_MSSSS_dict = {};  // PR2023-03-20
 // ++++++++++++  TABLE  +++++++++++++++++++++++++++++++++++++++
     "use strict";
-
-    console.log("+++++++ script 'tables'")
 
 // ++++++++++++  MODAL SELECT DEPARTMENT from rows  PR2022-11-05
 
@@ -80,7 +79,6 @@
     }  // t_MSED_CreateDepRow
 
 // ++++++++++++  MODAL SELECT EXAMYEAR OR DEPARTMENT   +++++++++++++++++++++++++++++++++++++++
-
 
 //=========  t_MSED_Open  ================ PR2020-10-27 PR2020-12-25 PR2021-04-23  PR2021-05-10 PR2022-04-08 PR2023-01-08
     function t_MSED_Open(loc, tblName, data_map, setting_dict, permit_dict, MSED_Response, all_countries) {
@@ -352,8 +350,9 @@
 // +++++++++++++++++ MODAL SELECT CLUSTER ++++++++++++++++++++++++++++++++
 //PR2023-01-05 new approach: use data_dicts instead of data_rows
 
-//========= t_MSSSS_Open_NEW ====================================  PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13 PR2023-01-05
+//========= t_MSSSS_Open_NEW ====================================
     function t_MSSSS_Open_NEW (loc, tblName, data_dicts, add_all, show_delete_btn, setting_dict, permit_dict, MSSSS_Response) {
+//PR2020-12-17 PR2021-01-23 PR2021-04-23 PR2021-07-23 PR2022-08-13 PR2023-01-05 PR2023-03-20
         console.log(" ===  t_MSSSS_Open_NEW  =====", tblName) ;
         //console.log( "setting_dict", setting_dict);
         //console.log( "permit_dict", permit_dict);
@@ -362,16 +361,20 @@
         // tblNames are: 'cluster", "school", "subject", "student", "envelopbundle
         // table "school", "student" use base_id as selected_pk
 
+        // PR2023-03-20 mod_MSSSS_dict added to store data_dicts, to return selected data_dict on save
+        b_clear_dict(mod_MSSSS_dict);
+        mod_MSSSS_dict.data_dicts = data_dicts;
+
         // PR2021-04-27 debug: opening modal before loc and setting_dict are loaded gives 'NaN' on modal.
         // allow opening only when loc has value
-
         if(!isEmpty(permit_dict)){
             const may_select = (tblName === "school") ? !!permit_dict.may_select_school : true;
     console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (tblName === "cluster") ? setting_dict.sel_cluster_pk :
                                    (tblName === "school") ? setting_dict.sel_school_pk :
-                                   (tblName === "subject") ? setting_dict.sel_subject_pk :
+                                   (["subject", "duosubject"].includes(tblName)) ? setting_dict.sel_subject_pk :
+
                                    (tblName === "student") ? setting_dict.sel_studbase_pk :
                                    (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
     console.log( "setting_dict", setting_dict );
@@ -435,28 +438,9 @@
                     break;
             }};
         } else {
-            const data_dicts = (tblName === "cluster") ? cluster_dictsNEW :
-                           // (tblName === "subject") ? subject_rows :
-                           // (tblName === "student") ? student_rows :
-                           // (tblName === "envelopbundle") ? envelopbundle_rows :
-                            [];
-            //const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", selected_pk_int);
-    //console.log("    data_rows", data_rows);
-    //console.log("    selected_pk_int", selected_pk_int, typeof selected_pk_int);
-    //console.log( "    found_dict", found_dict);
-            //selected_dict = (!isEmpty(found_dict)) ? found_dict : null;
-            selected_dict = (!isEmpty(data_dicts[map_id])) ? data_dicts[map_id] : null;
-
+            selected_dict = (!isEmpty(mod_MSSSS_dict.data_dicts) && map_id in mod_MSSSS_dict.data_dicts ) ? mod_MSSSS_dict.data_dicts[map_id] : null;
         };
-/*
-    console.log("    selected_pk_int", selected_pk_int);
-    console.log("    selected_code", selected_code);
-    console.log("    selected_name", selected_name);
-    console.log( "    selected_dict", selected_dict);
-    console.log( "    tblName", tblName);
-    console.log( "    cluster_dictsNEW", cluster_dictsNEW);
-    console.log( "    subject_rows", subject_rows);
-*/
+
         t_MSSSS_display_in_sbr_NEW(tblName, selected_pk_int);
 
         // reset other select elements
@@ -486,14 +470,14 @@
         const label_text = loc.Select + ((tblName === "cluster") ?  loc.a_cluster :
                                     (tblName === "school") ?  loc.a_school :
                                     (tblName === "student") ?  loc.a_candidate :
-                                    (tblName === "subject") ?  loc.a_subject :
+                                    (["subject", "duosubject"].includes(tblName)) ?  loc.a_subject :
                                     (tblName === "envelopbundle") ?  loc.a_label_bundle : ""
                                   );
 
         const item = (tblName === "cluster") ?  loc.a_cluster :
                      (tblName === "school") ? loc.a_school :
                      (tblName === "student") ? loc.a_candidate :
-                     (tblName === "subject") ? loc.a_subject :
+                     (["subject", "duosubject"].includes(tblName)) ? loc.a_subject :
                      (tblName === "cluster") ?  loc.a_cluster :
                      (tblName === "envelopbundle") ? loc.a_label_bundle : "";
         const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list;
@@ -522,9 +506,9 @@
 //========= t_MSSSS_Create_SelectRow_NEW  ============= PR2020-12-18 PR2020-07-14 PR2023-01-04
     function t_MSSSS_Create_SelectRow_NEW(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
          console.log("===== t_MSSSS_Create_SelectRow_NEW ===== ");
-        //console.log("    ..........tblName", tblName);
-        //console.log("    map_dict", map_dict);
-        //console.log("    map_dict.name_nl", map_dict.name_nl);
+        console.log("    ..........tblName", tblName);
+        console.log("    map_dict", map_dict);
+        console.log("    map_dict.name_nl", map_dict.name_nl);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
@@ -532,11 +516,14 @@
 
         const code = (tblName === "school") ? map_dict.sb_code :
                     (tblName === "subject") ? map_dict.code :
+                    (tblName === "duosubject") ? map_dict.subjbase_code :
                     (tblName === "cluster") ? map_dict.subj_code :
                     (tblName === "student") ? map_dict.name_first_init : "";
 
         const name =  (tblName === "school") ? map_dict.name : // map_dict.abbrev
                     (tblName === "subject") ? map_dict.name_nl :
+                    (tblName === "duosubject") ? map_dict.subj_name_nl
+ :
                     (tblName === "cluster") ? map_dict.name :
                     (tblName === "student") ? map_dict.fullname  :
                     (tblName === "envelopbundle") ? map_dict.name : "";
@@ -549,7 +536,7 @@
             if (map_dict.lastname) { ob1 = map_dict.lastname.toLowerCase()};
             if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
-        } else if(tblName === "subject"){
+        } else if(["subject", "duosubject"].includes(tblName)){
             if (code) { ob1 = code.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
         } else if(tblName === "cluster"){
@@ -1689,9 +1676,10 @@
 //========= t_FillSelectOptions  =======  // PR2020-09-30 PR2021-05-12
     function t_FillSelectOptions(el_select, data_map, id_field, display_field, hide_none,
                 selected_pk, selectall_text, select_text_none, select_text) {
-        //console.log( "===== t_FillSelectOptions  ===== ");
+        console.log( "===== t_FillSelectOptions  ===== ");
         // called by page exam MEXQ_FillSelectTableLevel  and page_subject SBR_Select_scheme
-        //console.log( "selected_pk", selected_pk, typeof selected_pk);
+        console.log( "    selected_pk", selected_pk, typeof selected_pk);
+        console.log( "    data_map", data_map);
 
 // ---  fill options of select box
         let option_text = "";

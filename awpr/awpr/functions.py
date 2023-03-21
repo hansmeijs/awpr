@@ -155,6 +155,7 @@ def create_verificationcode(formname, request):  # PR2022-02-04
 
 
 def check_verificationcode(upload_dict, formname, request ):  # PR2021-09-8
+    # only called by OrderlistsPublishView
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ----- check_verificationcode -----')

@@ -3550,7 +3550,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                         "stud.id AS student_id, stud.lastname, stud.firstname, stud.prefix,",
                         "depbase.code AS depbase_code,",
                         "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
-                        "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name_nl AS subj_name,",
+                        "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name_nl AS subj_name_nl,",
                         "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
                         "grd.examperiod, grd.pescore, grd.cescore,",
 
@@ -3828,7 +3828,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
                 "SELECT exam.id AS exam_id, ",
                 "school.id AS school_id, schoolbase.code AS schoolbase_code, school.name AS school_name,",
                 "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
-                "subjbase.code AS subj_code, subj.name_nl AS subj_name,",
+                "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl,",
                 "exam.version, exam.examperiod,",
 
                 "CONCAT(subj.name_nl,",

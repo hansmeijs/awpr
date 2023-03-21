@@ -475,8 +475,124 @@ select.form-control:not([size]):not([multiple]) {
   list-style: none;
   cursor: pointer;
  }
-
 /* end of used in userpage */
+
+
+/* used in page exam modduoexam PR2023-03-19 */
+
+.awp_mod_exam { /* PR2023-03-19 */
+    color: #212529; /* color: #212529;  /* dark dark grey blue  */
+    background-color: #f5f5f5;  /* licht licht licht grijs 245 245 245 */
+
+    transition: background-color 250ms ease;
+     -webkit-transition: background-color 250ms ease;
+     -o-transition: background-color 250ms ease;
+     -moz-transition: background-color 250ms ease;
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+.awp_mod_exam:hover {
+  background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+.awp_mod_exam_selected { /* PR2023-03-19 */
+    background-color: #376191;  /*  FooterBackColor Default Schema Blauw medium blauw  RGB 55,97,145)  */
+    color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+
+    transition: background-color 250ms ease;
+     -webkit-transition: background-color 250ms ease;
+     -o-transition: background-color 250ms ease;
+     -moz-transition: background-color 250ms ease;
+
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+.awp_mod_exam_selected:hover {
+  background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+///////////////
+
+.awp_mod_exam_linked { /* PR2023-03-19 */
+    color: #212529; /* color: #212529;  /* dark dark grey blue  */
+    background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+
+    transition: background-color 250ms ease;
+     -webkit-transition: background-color 250ms ease;
+     -o-transition: background-color 250ms ease;
+     -moz-transition: background-color 250ms ease;
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+.awp_mod_exam_linked:hover {
+    /*background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+    /* background-color: #376191;  /*  FooterBackColor Default Schema Blauw medium blauw  RGB 55,97,145)  */
+
+    background-color: #4c74a7; /* #4c74a7 rgba: 76-116-167-1 medium blue*/
+    color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+.awp_mod_exam_linked_selected { /* PR2023-03-19 */
+    background-color: #376191;  /*  FooterBackColor Default Schema Blauw medium blauw  RGB 55,97,145)  */
+    color: #ffffff; /* #ffffff is white; #edf2f8; is light light blue*/
+
+    transition: background-color 250ms ease;
+     -webkit-transition: background-color 250ms ease;
+     -o-transition: background-color 250ms ease;
+     -moz-transition: background-color 250ms ease;
+
+
+/* PR2020-11-09 prevents selecting text. From https://stackoverflow.com/questions/826782/how-to-disable-text-selection-highlighting */
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+.awp_mod_exam_linked_selected:hover {
+  background-color: #B8CCE4; /* 'TextboxBackColor Default Schema Blauw lichtblauw */
+  text-decoration: none;
+  list-style: none;
+  cursor: pointer;
+ }
+
+
+////////////
+
+/* end of used in exam page */
 
 z_index_1070 {
     z-index: 1090;
