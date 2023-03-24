@@ -1566,7 +1566,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 const auth4_must_sign = (!data_dict.secret_exam && data_dict.examperiod !== 4
                                             && ["pe_status", "ce_status"].includes(field_name));
 
-                className = b_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
+                className = f_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
                 filter_value = className;
 
                 let formatted_publ_modat = "";
@@ -2186,7 +2186,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const auth4_must_sign = (!data_dict.secret_exam && data_dict.examperiod !== 4
                                         && ["pe_status", "ce_status"].includes(fldName));
 
-            //const new_class_str = b_get_status_auth_iconclass(is_published, is_blocked,
+            //const new_class_str = f_get_status_auth_iconclass(is_published, is_blocked,
             //                        auth_dict[1], auth_dict[2],
             //                        auth3_must_sign, auth_dict[3],
             //                        auth4_must_sign, auth_dict[4]);

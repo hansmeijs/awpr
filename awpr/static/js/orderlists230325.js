@@ -2825,6 +2825,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                 };
             };
+
             let header_txt = null;
             if (mod_MENV_dict.mode === "receipt"){
                 header_txt = loc.Download_receipts;
@@ -2846,8 +2847,12 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MENVPR_select_exam.value = null;
             el_MENVPR_msg_modified.innerText = null;
 
-    // set focus to el_MENVPR_select_errata
-            set_focus_on_el_with_timeout(el_MENVPR_select_errata)
+    // set focus to select element
+            if (mod_MENV_dict.mode === "receipt"){
+                set_focus_on_el_with_timeout(el_MENVPR_select_exam);
+            } else if (mod_MENV_dict.mode === "label"){
+                set_focus_on_el_with_timeout(el_MENVPR_select_errata);
+            };
 
     // ---  disable save btn
             el_MENVPR_btn_save.disabled = true;
@@ -2937,16 +2942,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVPR_UpdateFromResponse  ============= PR2022-08-19
     function MENVPR_UpdateFromResponse(response) {
-        console.log("  =====  MENVPR_UpdateFromResponse  =====");
-        console.log("response", response)
+        //console.log("  =====  MENVPR_UpdateFromResponse  =====");
+        //console.log("response", response)
 
         el_MENVPR_loader.classList.add(cls_hide);
 
         mod_MENV_dict.envelopsubject_rows = (response.checked_envelopsubject_rows) ? response.checked_envelopsubject_rows : [];
         mod_MENV_dict.school_rows = (response.checked_envelop_school_rows) ? response.checked_envelop_school_rows : [];
 
-        console.log("    mod_MENV_dict.school_rows", mod_MENV_dict.school_rows)
-        console.log("    mod_MENV_dict.envelopsubject_rows", mod_MENV_dict.envelopsubject_rows)
+        //console.log("    mod_MENV_dict.school_rows", mod_MENV_dict.school_rows)
+        //console.log("    mod_MENV_dict.envelopsubject_rows", mod_MENV_dict.envelopsubject_rows)
         // = (response.sel_examperiod) ? response.sel_examperiod : null;
         //mod_MENV_dict.emod_MENV_dict.sel_examperiodxamperiod_caption = (response.examperiod_caption) ? response.examperiod_caption : "---";
 
@@ -3005,19 +3010,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVPR_SelectHasChanged  ============= PR2023-03-16
     function MENVPR_SelectHasChanged(mode) {
-        if (mode === "errata"){
+        //console.log("===== MENVPR_FillTblSchool ===== ");
+
     // ---  get info from server when errata_only is checked
-            const mode = (el_MENVPR_select_errata.value === "errata_only") ? "errata_only" : "check";
-            MENVPR_getinfo_from_server(mode);
-        };
+            const mode2 = (el_MENVPR_select_errata.value === "errata_only") ? "errata_only" : "check";
+            MENVPR_getinfo_from_server(mode2);
 
         MENVPR_EnableBtnSave();
     }  // MENVPR_SelectHasChanged
 
-//========= MENVPR_FillTblSchool  ============= PR2022-08-19
+//========= MENVPR_FillTblSchool  ============= PR2022-08-19 PR2023-03-24
     function MENVPR_FillTblSchool() {
         //console.log("===== MENVPR_FillTblSchool ===== ");
-        //console.log("mod_MENV_dict.school_rows", mod_MENV_dict.school_rows)
+        //console.log(" >>>>>>> mod_MENV_dict", mod_MENV_dict)
 
         const tblBody = el_MENVPR_tblBody_school
 // ---  reset tblBody available and selected
@@ -3036,8 +3041,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 MENVPR_CreateSelectRow("schools", tblBody, all_row);
             }
             for (let i = 0, school_row; school_row = mod_MENV_dict.school_rows[i]; i++) {
-                const depbases_list = (school_row.depbases) ? school_row.depbases.split(";") : []
-                const show_row = (!selected.depbase_pk || depbases_list.includes(selected.depbase_pk.toString()));
+                const depbases_list = (school_row.depbases) ? school_row.depbases.split(";") : [];
+                const show_row =  (mod_MENV_dict.mode ==="receipt" && el_MENVPR_select_exam.value === "cspe") ?
+                    //TODO change '1' to better code
+                    (depbases_list.includes("1")) :
+                    (!selected.depbase_pk || depbases_list.includes(selected.depbase_pk.toString()));
                 if (show_row){
                     const has_selected_schools = MENVPR_CreateSelectRow("schools", tblBody, school_row);
                     if(has_selected_schools) {has_selected_school_rows = true };
@@ -3563,10 +3571,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "    selected.subject_pk", selected.subject_pk, typeof selected.subject_pk);
         console.log( "    envelopsubject_dict", envelopsubject_dict);
 */
-        if (envelopsubject_dict.examperiod > 1){
-            console.log( "  >>>>>>>  envelopsubject_dict.examperiod", envelopsubject_dict.examperiod, typeof envelopsubject_dict.examperiod);
 
-        };
         let hide_row = false;
 
     //console.log( "    envelopsubject_dict.examperiod", envelopsubject_dict.examperiod, typeof envelopsubject_dict.examperiod);
@@ -3586,7 +3591,6 @@ document.addEventListener('DOMContentLoaded', function() {
     //console.log( "hide_row", hide_row, typeof hide_row);
        return !hide_row
     }; // ShowTableRow
-
 
 //========= Filter_TableRows  ==================================== PR2021-07-08
     function Filter_TableRows() {

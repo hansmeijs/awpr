@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_user_upload = get_attr_from_el(el_data, "data-user_upload_url");
 
     urls.url_usercompensation_upload = get_attr_from_el(el_data, "data-url_usercompensation_upload");
-    urls.usercomp_approve_single = get_attr_from_el(el_data, "data-usercomp_approve_single");
+    urls.url_usercomp_approve_single = get_attr_from_el(el_data, "data-url_usercomp_approve_single");
     urls.url_usercomp_approve_submit = get_attr_from_el(el_data, "data-url_usercomp_approve_submit");
 
     mod_MCOL_dict.columns.all = {
@@ -727,8 +727,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }}};
 
             } else if (field_name.includes("allowed")){
-
-
                 const field_value = (data_dict[field_name]) ? data_dict[field_name] : null;
                 inner_text = (field_value) ? field_value : "&nbsp";
                 if (field_name === "allowed_schoolbases") {
@@ -775,7 +773,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 filter_value = (permit_bool) ? "1" : "0";
                 el_div.className = (permit_bool) ? "tickmark_2_2" : "tickmark_0_0" ;
 
+            } else if (field_name === "status"){
+                const [status_className, status_title_text, filter_val] = f_format_status_subject("uc", data_dict)
+                filter_value = filter_val;
+                el_div.className = status_className;
+                title_text = status_title_text;
             };
+
 // ---  put value in innerText and title
             if (el_div.tagName === "INPUT"){
                 el_div.value = inner_text;
@@ -913,7 +917,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             auth_dict[requsr_auth_index] = new_requsr_auth_bool
 
         // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
-                            el_input.className = b_get_status_auth12_iconclass(is_published, false, auth_dict[1], auth_dict[2]);
+                            el_input.className = f_get_status_auth12_iconclass(is_published, false, auth_dict[1], auth_dict[2]);
 
 /*
                 mode = upload_dict.get('mode')
@@ -936,7 +940,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 usercompensation_list: [usercompensation_dict]
                             };
 
-                            UploadChanges(upload_dict, urls.usercomp_approve_single);
+                            UploadChanges(upload_dict, urls.url_usercomp_approve_single);
 
                         };  // if (examtype && auth_index)
                     };  //if (is_published)
@@ -1630,9 +1634,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  'status' fields are not in data_row
                     if (col_field === "status"){
-                        const [old_status_className, old_status_title] = UpdateFieldStatus(col_field, data_dict);
-                        const [new_status_className, new_status_title] = UpdateFieldStatus(col_field, update_dict);
-                        if (old_status_className !== new_status_className || old_status_title !== new_status_title ) {
+                        const old_status_className = f_get_status_auth12_iconclass(data_dict.uc_published_id, false, data_dict.uc_auth1by_id, data_dict.uc_auth2by_id);
+                        const new_status_className = f_get_status_auth12_iconclass(update_dict.uc_published_id, false, update_dict.uc_auth1by_id, update_dict.uc_auth2by_id);
+                        if (old_status_className !== new_status_className) {
                             updated_columns.push(col_field)
                         };
                     } else if (col_field in data_dict && col_field in update_dict){

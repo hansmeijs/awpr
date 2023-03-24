@@ -1648,7 +1648,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 auth_dict[requsr_auth_index] = new_requsr_auth_bool
 
             // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
-                                el_input.className = b_get_status_auth12_iconclass(is_published, is_blocked, auth_dict[1], auth_dict[2]);
+                                el_input.className = f_get_status_auth12_iconclass(is_published, is_blocked, auth_dict[1], auth_dict[2]);
 
                 // ---  upload changes
                                 const studsubj_dict = {
