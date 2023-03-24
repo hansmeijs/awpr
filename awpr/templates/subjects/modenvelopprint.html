@@ -16,13 +16,6 @@
                 </div>
 
                 <div class="modal-body px-4">
-                    <div id="id_MENVPR_loader" class="display_hide mx-4 mt-2 ">
-                        <div class="image_container">
-                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
-                        </div>
-                    </div>
-
-
                     <div class="content_header ">
                         <div class="flex_1 p-2 mod_show mod_label">
                             <h6 class="px-2">{% trans 'Select the labels you want to download' %}:</h6>
@@ -43,7 +36,11 @@
                             </select>
                         </div>
                     </div>
-
+                    <div id="id_MENVPR_loader" class="display_hide mx-4 mt-2 ">
+                        <div class="image_container">
+                            <img src="{% static 'img/loader.gif' %}" class="icon_24">
+                        </div>
+                    </div>
                     <div class="content_header">
                          <div class="flex_1 p-2 ">
                              <h6 class="px-2">{% trans 'Select one or more schools' %}:</h6>

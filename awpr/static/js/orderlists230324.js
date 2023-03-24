@@ -1319,8 +1319,8 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= UploadChanges  ============= PR2020-08-03
     function UploadChanges(upload_dict, url_str) {
         console.log("=== UploadChanges");
-        console.log("url_str: ", url_str);
-        console.log("upload_dict: ", upload_dict);
+        console.log("    url_str: ", url_str);
+        console.log("    upload_dict: ", upload_dict);
 
         if(!isEmpty(upload_dict)) {
             const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -1374,7 +1374,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("publish_orderlist_msg_html" in response) {
                         MPUBORD_UpdateFromResponse(response);
                     };
-                    if ("updated_envelop_school_rows" in response) {
+
+                    if ("checked_envelopsubject_rows" in response  || "checked_envelop_school_rows" in response) {
                         MENVPR_UpdateFromResponse(response);
                     };
 
@@ -2797,29 +2798,33 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("    setting_dict.sel_examperiod", setting_dict.sel_examperiod)
 
         b_clear_dict(mod_MENV_dict);
-
         mod_MENV_dict.mode = mode;
 
 // ---  reset tblBody available and selected
-        el_MENVPR_tblBody_school.innerHTML = null;
-        el_MENVPR_tblBody_exam.innerHTML = null;
-
-        mod_MENV_dict.envelopsubject_rows = envelopsubject_rows;
-
         if (mod_MENV_dict.mode !== "receipt" && ![1,2,3].includes(setting_dict.sel_examperiod)){
         // function b_show_mod_message_html(msg_html, header_text, ModMessageClose){
             b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_examperiod_sbr + "</div>", loc.Download_envelop_labels);
 
         } else {
             mod_MENV_dict.sel_examperiod = setting_dict.sel_examperiod;
-            let sel_department = null;
+            let sel_department = null, sel_dep_lvl_req = false, sel_level = null;
             if (selected.depbase_pk){
                 for (let i = 0, row; row = department_rows[i]; i++) {
                     if(row.base_id === selected.depbase_pk){
                         sel_department = row.base_code;
+                        sel_dep_lvl_req = row.lvl_req;
                         break;
             }}};
-
+            if (sel_dep_lvl_req){
+                if (selected.lvlbase_pk && level_rows){
+                    for (let i = 0, row; row = level_rows[i]; i++) {
+                        if(row.base_id === selected.lvlbase_pk){
+                            sel_level = row.lvlbase_code;
+                            break;
+                        }
+                    };
+                };
+            };
             let header_txt = null;
             if (mod_MENV_dict.mode === "receipt"){
                 header_txt = loc.Download_receipts;
@@ -2828,23 +2833,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 const examperiod_txt = (mod_MENV_dict.sel_examperiod) ? loc.examperiod_caption[mod_MENV_dict.sel_examperiod] : null;
                 header_txt = loc.Download_envelop_labels
                 if (sel_department){header_txt += " - " + sel_department};
-                if (examperiod_txt){header_txt += " - " + examperiod_txt};
+                if (sel_level){header_txt += " " + sel_level};
 
-
-                 + ( (mod_MENV_dict.sel_examperiod) ? " - " + loc.examperiod_caption[mod_MENV_dict.sel_examperiod] : "" ) ; ;
+                if (examperiod_txt){header_txt += " - " + examperiod_txt};;
             };
             el_MENVPR_header.innerText = header_txt;
 
-    // ---  reset layout options
-            el_MENVPR_select_errata.value = "no_errata";
+    // ---  reset tblBody and layout options
+            el_MENVPR_tblBody_school.innerHTML = null;
+            el_MENVPR_tblBody_exam.innerHTML = null;
+            el_MENVPR_select_errata.value = null;
             el_MENVPR_select_exam.value = null;
             el_MENVPR_msg_modified.innerText = null;
 
+    // set focus to el_MENVPR_select_errata
+            set_focus_on_el_with_timeout(el_MENVPR_select_errata)
+
     // ---  disable save btn
             el_MENVPR_btn_save.disabled = true;
-
-    // ---  get info from server
-            MENVPR_getinfo_from_server();
 
     // ---  show only element for label or receipt
             const el_mod_envelop_print = document.getElementById("id_mod_envelop_print")
@@ -2889,8 +2895,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  loop through mod_MENV_dict.envelopsubject_rows and collect selected subject_pk's
             // PR2021-10-09 debug: also filter lvlbase_pk, because they stay selected when unselecting level
 
-            // envelopsubject_pk_list stays empty when all_exams_selected
-            if (!mod_MENV_dict.all_exams_selected) {
+            // envelopsubject_pk_list stays empty when all_envelopsubjects_selected
+            if (!mod_MENV_dict.all_envelopsubjects_selected) {
                 if (mod_MENV_dict.envelopsubject_rows && mod_MENV_dict.envelopsubject_rows.length){
                         for (let i = 0, exam_row; exam_row = mod_MENV_dict.envelopsubject_rows[i]; i++) {
                             if(exam_row.selected){
@@ -2916,13 +2922,17 @@ document.addEventListener('DOMContentLoaded', function() {
         //$("#id_mod_envelop_print").modal("hide");
     };  // MENVPR_Save
 
-//========= MENVPR_getinfo_from_server  ============= PR2021-10-06
-    function MENVPR_getinfo_from_server() {
-        //console.log("  =====  MENVPR_getinfo_from_server  =====");
+//========= MENVPR_getinfo_from_server  ============= PR2021-10-06 PR2023-03-24
+    function MENVPR_getinfo_from_server(mode) {
+        console.log("  =====  MENVPR_getinfo_from_server  =====");
+
+        el_MENVPR_tblBody_school.innerHTML = null;
+        el_MENVPR_tblBody_exam.innerHTML = null;
+
         el_MENVPR_loader.classList.remove(cls_hide);
         el_MENVPR_btn_save.disabled = true;
 
-        UploadChanges({check: true}, urls.url_envelop_print_check);
+        UploadChanges({mode: mode}, urls.url_envelop_print_check);
     }  // MENVPR_getinfo_from_server
 
 //========= MENVPR_UpdateFromResponse  ============= PR2022-08-19
@@ -2932,10 +2942,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         el_MENVPR_loader.classList.add(cls_hide);
 
-        //mod_MENV_dict.exam_rows = (response.updated_envelop_exam_rows) ? response.updated_envelop_exam_rows : [];
-        mod_MENV_dict.school_rows = (response.updated_envelop_school_rows) ? response.updated_envelop_school_rows : [];
+        mod_MENV_dict.envelopsubject_rows = (response.checked_envelopsubject_rows) ? response.checked_envelopsubject_rows : [];
+        mod_MENV_dict.school_rows = (response.checked_envelop_school_rows) ? response.checked_envelop_school_rows : [];
 
-        console.log("mod_MENV_dict.school_rows", mod_MENV_dict.school_rows)
+        console.log("    mod_MENV_dict.school_rows", mod_MENV_dict.school_rows)
+        console.log("    mod_MENV_dict.envelopsubject_rows", mod_MENV_dict.envelopsubject_rows)
         // = (response.sel_examperiod) ? response.sel_examperiod : null;
         //mod_MENV_dict.emod_MENV_dict.sel_examperiodxamperiod_caption = (response.examperiod_caption) ? response.examperiod_caption : "---";
 
@@ -2966,13 +2977,9 @@ document.addEventListener('DOMContentLoaded', function() {
 //========= MENVPR_EnableBtnSave  ============= PR2023-03-16
     function MENVPR_EnableBtnSave() {
 
-
         const selected_school_rows = get_elements_by_classname_with_qsAll(el_MENVPR_tblBody_school, ".bg_selected_blue");
         const has_selected_school_rows = (selected_school_rows && selected_school_rows.length);
 
-        console.log(">>>>>>> el_MENVPR_tblBody_school", el_MENVPR_tblBody_school, typeof el_MENVPR_tblBody_school);
-        console.log(">>>>>>> selected_school_rows", selected_school_rows, typeof selected_school_rows);
-        console.log(">>>>>>> has_selected_school_rows", has_selected_school_rows, typeof has_selected_school_rows);
 // ---  enable save btn
         let btn_save_disabled = true;
         if (has_selected_school_rows){
@@ -2998,6 +3005,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVPR_SelectHasChanged  ============= PR2023-03-16
     function MENVPR_SelectHasChanged(mode) {
+        if (mode === "errata"){
+    // ---  get info from server when errata_only is checked
+            const mode = (el_MENVPR_select_errata.value === "errata_only") ? "errata_only" : "check";
+            MENVPR_getinfo_from_server(mode);
+        };
+
         MENVPR_EnableBtnSave();
     }  // MENVPR_SelectHasChanged
 
@@ -3035,13 +3048,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= MENVPR_FillTblExams  ============= PR2022-08-23
     function MENVPR_FillTblExams() {
-    /*
+/*
         console.log("===== MENVPR_FillTblExams ===== ");
-        console.log("mod_MENV_dict.envelopsubject_rows", mod_MENV_dict.envelopsubject_rows);
-        console.log("mod_MENV_dict.sel_examperiod", mod_MENV_dict.sel_examperiod);
-        console.log("selected.depbase_pk", selected.depbase_pk);
-        console.log("selected.lvlbase_pk", selected.lvlbase_pk);
-    */
+        console.log("    mod_MENV_dict.envelopsubject_rows", mod_MENV_dict.envelopsubject_rows);
+        console.log("    mod_MENV_dict.sel_examperiod", mod_MENV_dict.sel_examperiod);
+        console.log("    selected.depbase_pk", selected.depbase_pk);
+        console.log("    selected.lvlbase_pk", selected.lvlbase_pk);
+*/
         const tblBody = el_MENVPR_tblBody_exam;
 
 // ---  reset tblBody available and selected
@@ -3053,7 +3066,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const all_row = {
                     id: -1,
                     depbase_code: " ",
-                    subj_name_nl: "<" + loc.All_ + loc.Exams.toLowerCase() + ">",
+                    subj_name_nl: "<" + loc.All_ + loc.Subjects.toLowerCase() + ">",
                     version: "",
                     examperiod: ""
                 };
@@ -3166,7 +3179,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (is_schools) {
                 mod_MENV_dict.all_schools_selected = new_selected;
             } else {
-                mod_MENV_dict.all_exams_selected = new_selected;
+                mod_MENV_dict.all_envelopsubjects_selected = new_selected;
             };
 
             for (let i = 0, row_dict; row_dict = data_rows[i]; i++) {
@@ -3194,7 +3207,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (is_schools) {
                             mod_MENV_dict.all_schools_selected = false;
                         } else {
-                            mod_MENV_dict.all_exams_selected = false;
+                            mod_MENV_dict.all_envelopsubjects_selected = false;
                         };
                         const first_row = tblBody.rows[0];
                         if (first_row){
@@ -3550,6 +3563,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "    selected.subject_pk", selected.subject_pk, typeof selected.subject_pk);
         console.log( "    envelopsubject_dict", envelopsubject_dict);
 */
+        if (envelopsubject_dict.examperiod > 1){
+            console.log( "  >>>>>>>  envelopsubject_dict.examperiod", envelopsubject_dict.examperiod, typeof envelopsubject_dict.examperiod);
+
+        };
         let hide_row = false;
 
     //console.log( "    envelopsubject_dict.examperiod", envelopsubject_dict.examperiod, typeof envelopsubject_dict.examperiod);

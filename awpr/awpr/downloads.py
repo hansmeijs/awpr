@@ -12,6 +12,7 @@ from timeit import default_timer as timer
 
 from accounts import views as acc_view
 from accounts import permits as acc_prm
+from accounts import correctors as acc_corr
 
 from awpr import constants as c
 from awpr import settings as s
@@ -132,13 +133,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get correctors
                 if datalist_request.get('corrector_rows'):
-                    datalists['corrector_rows'] = acc_view.create_corrector_rows(sel_examyear, request)
+                    datalists['corrector_rows'] = acc_corr.create_corrector_rows(sel_examyear, request)
 
 # ----- get UserCompensation
-                if datalist_request.get('userapproval_rows'):
-                    acc_view.update_usercompensation(sel_examyear, request)
-                    datalists['userapproval_rows'] = acc_view.create_userapproval_rows(sel_examyear, request)
-                    datalists['usercompensation_rows'] = acc_view.calc_usercompensation_rows(sel_examyear, request)
+                if datalist_request.get('usercompensation_rows'):
+                    acc_corr.update_usercompensation(sel_examyear, request)
+                    datalists['usercompensation_rows'] = acc_corr.create_usercompensation_rows(sel_examyear, request)
+                    datalists['usercomp_agg_rows'] = acc_corr.create_usercomp_agg_rows(sel_examyear, request)
 
 # ----- examyears
                 if datalist_request.get('examyear_rows'):
@@ -464,7 +465,11 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- envelopsubject_rows
                 if datalist_request.get('envelopsubject_rows'):
-                    datalists['envelopsubject_rows'] = sj_ol.create_envelopsubject_rows(
+                    sj_ol.check_envelopsubject_rows(
+                        sel_examyear=sel_examyear,
+                        request=request
+                    )
+                    datalists['envelopsubject_rows'] = sj_ol.get_envelopsubject_rows(
                         sel_examyear=sel_examyear,
                         append_dict={}
                     )

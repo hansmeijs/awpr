@@ -1177,6 +1177,13 @@ aXX:hover{
     transition: background-color 5000ms ease;
 }
 
+
+/* PR2023-03-24 to set hove on select element. see https://stackoverflow.com/questions/10484053/change-select-list-option-background-colour-on-hover*/
+option:hover {
+  background-color: #e0e0e0; /* light grey; tsa_tr_selected*/
+  /*background-color: #f2f2f2;  /* light light grey 242 242 242 100%
+}
+
 .msg_bullet {
     margin-bottom: 0px;
     padding-left: 16px;

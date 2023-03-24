@@ -1614,8 +1614,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const auth_index = (is_auth1 && !is_auth2) ? 1 :
                                            (!is_auth1 && is_auth2) ? 2 : null;
                         if (examtype && auth_index){
-
-
                             const model_field = prefix + "_auth" +  auth_index + "by";
                             const field_auth_id = model_field + "_id";
                             // field_auth_id = 'subj_auth1by_id'
@@ -1673,8 +1671,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };  //  if(requsr_auth_index)
         }; //   if(permit_dict.permit_approve_subject)
     };  // UploadToggleStatus
-
-
 
 
 //========= UploadToggleThumbrule  ============= PR2022-06-07

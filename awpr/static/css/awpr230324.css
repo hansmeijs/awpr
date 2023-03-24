@@ -65,7 +65,6 @@ a:hover {
   cursor: pointer;
  }
 
-
 .navbar-item-default {
   background-color: transparent; /* #233d5c; /* #2d4e77; */
   color: #edf2f8; /*95% #233d5c */
@@ -675,6 +674,7 @@ z_index_1070 {
   animation-direction: reverse;
 }
 /* end of CSS loader */
+
 
 /* modal import */
 

@@ -3,7 +3,7 @@
 // ========= GLOBAL VARIABLES=================== PR2022-07-21
     // these variables are used in all pages
 
-    //console.log("GLOBAL VARIABLES")
+    console.log("GLOBAL VARIABLES")
 
     // selected_btn is also used in t_MCOL_Open
     let selected_btn = null;
@@ -23,7 +23,6 @@
 
     const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
     const cluster_dictsNEW = {}; //PR2023-01-26 new approach, dict instead of sorted list
-
 
     const manual_dict = {'test': true}
 
@@ -109,9 +108,9 @@
 
 //========= b_UploadSettings  ============= PR2019-10-09
     function b_UploadSettings (upload_dict, url_str) {
-        console.log("=== b_UploadSettings ===");
-        console.log("    url_str", url_str);
-        console.log("    upload_dict", upload_dict);
+        //console.log("=== b_UploadSettings ===");
+        //console.log("    url_str", url_str);
+        //console.log("    upload_dict", upload_dict);
 
         if(!!upload_dict) {
             const parameters = {"upload": JSON.stringify (upload_dict)}

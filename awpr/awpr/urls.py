@@ -21,6 +21,7 @@ from django.urls import include, path
 from django.views.generic import RedirectView
 
 from accounts import views as account_views
+from accounts import correctors as acc_corr
 
 from awpr import downloads as awpr_downloads, excel as grade_excel
 from awpr import menus as awpr_menus
@@ -162,8 +163,10 @@ urlpatterns = [
         path('download_userdata_xlsx', account_views.UserdataDownloadXlsxView.as_view(), name='url_download_userdata_xlsx'),
 
         path('corrector', account_views.CorrectorListView.as_view(), name='url_corrector'),
-        path('usercompensation_upload', account_views.UserCompensationUploadView.as_view(), name='url_usercompensation_upload'),
+        path('usercomp_upload', acc_corr.UserCompensationUploadView.as_view(), name='url_usercompensation_upload'),
+        path('usercomp_approve_submit', acc_corr.UserCompensationApproveSubmitView.as_view(), name='url_usercomp_approve_submit'),
 
+        path('usercomp_approve_single', acc_corr.UserCompensationApproveSingleView.as_view(), name='url_usercomp_approve_single'),
     ])),
 
     url(r'session_security/', include('session_security.urls')),

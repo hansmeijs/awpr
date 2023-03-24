@@ -370,6 +370,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
     if 'page_corrector' in page_list:
 
+
+        dict['Corrector'] = TXT_Corrector
+        dict['Second_corrector'] = _('Second corrector')
+
         dict['Subjectcode_2lines'] = _('Subject\ncode')
         dict['Subject_code'] = _('Subject code')
         dict['Number_approvals'] = _('Number of approvals')
@@ -380,6 +384,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Version'] = _('Version')
         dict['Exam_period'] = _('Exam period')
 
+        dict['This_approval'] = _('This approval')
+        dict['is_already_published'] = TXT_is_already_published
+        dict['You_cannot_change_approval'] = TXT_You_cannot_change_approval
+
+        dict['Meetings'] = _('Meetings')
         dict['Abbrev'] = _('Abbrev.')
         dict['is_an_invalid_number'] = _(' is an invalid number.')
         dict['is_not_valid'] = _(' is not valid.')
@@ -955,8 +964,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['This_reexamination_3rd_period'] = _('This re-examination 3rd exam period')
         dict['This_proof_of_knowledge'] = _('This proof of knowledge')
         dict['This_item'] = _('This item')
-        dict['is_already_published'] = _('is already published.')
-        dict['You_cannot_change_approval'] = _('You cannot change the approval.')
+        dict['is_already_published'] = TXT_is_already_published
+        dict['You_cannot_change_approval'] = TXT_You_cannot_change_approval
 
         dict['This_candidate_ismarked_fordeletion'] = _('This candidate is marked for deletion.')
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
@@ -1222,7 +1231,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'This_exam_is_submitted': _('This exam is submitted.'),
             'This_exam_is_published': _('This exam is published.'),
             'This_exam_is_approved': _('This exam is approved.'),
-            'You_cannot_change_approval': _('You cannot change the approval.'),
+            'You_cannot_change_approval': TXT_You_cannot_change_approval,
             'You_cannot_make_changes': _('You cannot make changes.'),
             'You_cannot_change_exam': _('You cannot change the exam.'),
 
@@ -1554,7 +1563,7 @@ def get_locale_dict(table_dict, user_lang, request):
                                'cannot_approve': _('You cannot approve grades.'),
                                'cannot_submit': _('You cannot submit grades.'),
                                'This_grade_is_submitted': _('This grade is submitted.'),
-                               'You_cannot_change_approval': _('You cannot change the approval.'),
+                               'You_cannot_change_approval': TXT_You_cannot_change_approval,
                                'This_grade_has_no_value': _('This grade has no value.'),
                                'You_cannot_approve': _('You cannot approve this grade.'),
                                'No_cluster_permission': _("You don't have permission to approve grades of this cluster."),
@@ -1891,6 +1900,10 @@ TXT_Submitted_at = _('Submitted at ')
 TXT_Published_at = _('Published at ')
 
 TXT_Request_verifcode = _('Request verificationcode')
+
+TXT_This_approval = _('This approval')
+TXT_is_already_published = _('is already published.')
+TXT_You_cannot_change_approval = _('You cannot change the approval.')
 
 TXT__and_ = _(' and ')
 TXT__or_ = _(" or ")

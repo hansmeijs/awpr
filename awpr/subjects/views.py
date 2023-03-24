@@ -1536,7 +1536,7 @@ class ExamUploadView(View):
                     logger.debug('    has_permit: ' + str(has_permit))
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit()
+                msg_html = acc_prm.err_html_no_permit('to perform this action')
             else:
                 append_dict = {}
                 deleted_row = None
@@ -2286,7 +2286,7 @@ class ExamUploadDuoExamView(View):
                     logger.debug('    has_permit: ' + str(has_permit))
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit()
+                msg_html = acc_prm.err_html_no_permit('to perform this action')
             else:
 
                 append_dict = {}
@@ -2575,7 +2575,7 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
 # - when mode = submit_submit: check verificationcode.
                     verification_is_ok = True
                     if is_submit and not is_test:
-                        verification_is_ok, verif_msg_html = check_verifcode_local(upload_dict, request)
+                        verification_is_ok, verif_msg_html = af.check_verifcode_local(upload_dict, request)
                         if verif_msg_html:
                             msg_html = verif_msg_html
                         if verification_is_ok:
@@ -7976,74 +7976,6 @@ def get_level_abbrevs(exam_instance, examyear):
     return level_names
 
 
-def check_verifcode_local(upload_dict, request ):
-    # called by StudentsubjectApproveOrSubmitEx1Ex4View, GradeSubmitEx2Ex2aView, GradeSubmitEx5View, ExamApproveOrPublishExamView
-    logging_on = s.LOGGING_ON
-    if logging_on:
-        logger.debug('  ----- check_verifcode_local -----')
-
-    form_name = upload_dict.get('form')
-    verif_key = upload_dict.get('verificationkey')
-    verif_code = upload_dict.get('verificationcode')
-    if logging_on:
-        logger.debug('upload_dict form_name:  ' + str(form_name))
-        logger.debug('upload_dict verif_key:  ' + str(verif_key))
-        logger.debug('upload_dict verif_code: ' + str(verif_code))
-
-    is_ok, is_expired = False, False
-    msg_html, msg_txt = None, None
-
-    if form_name and verif_key and verif_code:
-        key_code = '_'.join((verif_key, verif_code))
-    # - get saved key_code
-        saved_dict = acc_prm.get_usersetting_dict(c.KEY_VERIFICATIONCODE, request)
-        if logging_on:
-            logger.debug('saved_dict: ' + str(saved_dict))
-
-        if saved_dict:
-    # - check if code is expired:
-            saved_expirationtime = saved_dict.get('expirationtime')
-
-            # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
-            now_iso = datetime.now().isoformat()
-            if logging_on:
-                logger.debug('saved_expirationtime: ' + str(saved_expirationtime))
-                logger.debug('now_iso: ' + str(now_iso))
-
-            if now_iso > saved_expirationtime:
-                is_expired = True
-                msg_txt = _("The verificationcode has expired.")
-
-            else:
-    # - check if code is correct:
-                saved_form = saved_dict.get('form')
-                saved_key_code = saved_dict.get('key_code')
-                if logging_on:
-                    logger.debug('saved_form: ' + str(saved_form))
-                    logger.debug('saved_key_code: ' + str(saved_key_code))
-
-                if saved_form == form_name and key_code == saved_key_code:
-                    is_ok = True
-                else:
-                    msg_txt = _("The verificationcode you have entered is not correct.")
-
-    # - delete setting when expired or ok
-            if is_ok or is_expired:
-                acc_view.set_usersetting_dict(c.KEY_VERIFICATIONCODE, None, request)
-
-    if logging_on:
-        logger.debug('is_ok:      ' + str(is_ok))
-        logger.debug('is_expired: ' + str(is_expired))
-        logger.debug('msg_txt:    ' + str(msg_txt))
-    if msg_txt:
-        msg_html = ''.join(("<div class='p-2 border_bg_invalid'>",
-                            "<p class='pb-2'>",
-                            str(msg_txt),
-                            '</p>'))
-
-    return is_ok, msg_html
-# - end of check_verifcode_local
-##########################################################
 
 def create_department_dictlist(examyear_instance):  # PR2021-09-01 PR2022-10-27
     logging_on = False  # s.LOGGING_ON

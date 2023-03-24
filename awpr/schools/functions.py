@@ -7,7 +7,6 @@ from django.utils.translation import gettext_lazy as _
 from awpr import constants as c
 from awpr import settings as s
 
-from accounts import models as acc_mod
 from schools import models as sch_mod
 from subjects import models as subj_mod
 

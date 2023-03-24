@@ -4,6 +4,7 @@ from django.db import connection
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 from django.views import View
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
@@ -1119,7 +1120,7 @@ class EnvelopSubjectUploadView(View):  # PR2022-10-10
                         if error_dict:
                             append_dict['error'] = error_dict
 
-                        updated_rows = create_envelopsubject_rows(
+                        updated_rows = get_envelopsubject_rows(
                             sel_examyear=sel_examyear,
                             append_dict=append_dict,
                             envelopsubject_pk=envelopsubject_instance.pk)
@@ -1343,87 +1344,161 @@ def create_orderlist_rows(request, sel_examyear):
 # --- end of create_orderlist_rows
 
 
-def create_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None, practex_only=None):
-    # PR2022-10-09 PR2022-10-10 PR2023-03-18
-    logging_on = False  # s.LOGGING_ON
+def check_envelopsubject_rows(sel_examyear, request):
+    # PR2023-03-23
+    # function cheks if every subject / dep /level combination has an envelopsubject in all 3 examperiods
+    # and creates new envelopsubject if it does not exist
+    logging_on = s.LOGGING_ON
+
     if logging_on:
-        logger.debug(' =============== create_envelopsubject_rows ============= ')
-        logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug(' =============== check_envelopsubject_rows ============= ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+
+    def get_si_sql_subj():
+        # - loop through schemitems, grouped by subj / dep / lvl, filter by this exanmyear (ete only??)
+        # COALESCE  level_id=NULL to level_id=0 is necessary, otherwise link will not work and subjects without level_id will be omitted
+        return ' '.join(
+            ["SELECT si.subject_id  AS subj_id, scheme.department_id AS dep_id, scheme.level_id AS lvl_id, ",
+             "COALESCE(scheme.level_id, 0) AS lvl_id_nz",
+             "FROM subjects_schemeitem AS si",
+             "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
+             "INNER JOIN schools_department AS dep ON (dep.id = scheme.department_id)",
+             "WHERE si.ete_exam AND dep.examyear_id=", str(sel_examyear.pk),
+             "GROUP BY si.subject_id, scheme.department_id, scheme.level_id"
+             ])
+
+    def get_envsubj_sql_sub(exam_period):
+        return  ' '.join(("SELECT env_subj.subject_id AS subj_id, ",
+                                     "env_subj.department_id AS dep_id, ",
+                                    "COALESCE(env_subj.level_id, 0) AS lvl_id_nz, env_subj.examperiod",
+                            "FROM subjects_envelopsubject AS env_subj",
+                            "INNER JOIN subjects_subject AS subj ON (subj.id = env_subj.subject_id)",
+                            "WHERE subj.examyear_id=", str(sel_examyear.pk),
+                            "AND env_subj.examperiod=", str(exam_period)
+                            ))
+
+    try:
+        for examperiod in (1,2,3):
+            if logging_on:
+                logger.debug('    examperiod: ' + str(examperiod) + ' ' + str(type(examperiod)))
+
+            #sql_sub = ' '.join(("WITH si_subj AS (", get_si_sql_subj(), "), ",
+                        #"env_subj AS (", get_envsubj_sql_sub(examperiod), ") ",
+
+            sql_sub = ' '.join(("SELECT si_subj.subj_id, si_subj.dep_id, si_subj.lvl_id",
+                        "FROM (", get_si_sql_subj(), ") AS si_subj",
+                        "LEFT JOIN (", get_envsubj_sql_sub(examperiod), ") AS env_subj ON (env_subj.subj_id=si_subj.subj_id AND env_subj.dep_id=si_subj.dep_id AND env_subj.lvl_id_nz=si_subj.lvl_id_nz)",
+                        "WHERE env_subj.subj_id IS NULL"
+                        ))
+
+            sql = ''.join(("INSERT INTO subjects_envelopsubject(",
+                "subject_id, department_id, level_id, examperiod, envelopbundle_id, ",
+                "firstdate, lastdate, starttime, endtime, has_errata, modifiedat, modifiedby_id) ",
+                "SELECT sql_sub.subj_id, sql_sub.dep_id, sql_sub.lvl_id,", str(examperiod), "::INT, NULL, ",
+                "NULL, NULL, NULL, NULL, FALSE, '", str(timezone.now()), "', ", str(request.user.pk),
+                " FROM (" ,sql_sub , ") AS sql_sub ",
+                "RETURNING id;"))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = af.dictfetchall(cursor)
+
+                if logging_on:
+                    logger.debug('    row count: ' + str(len(rows)))
+                    if rows:
+                        for row in rows:
+                            logger.debug('    row: ' + str(row) + ' ' + str(type(row)))
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# --- end of check_envelopsubject_rows
+
+
+def get_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None, practex_only=None, errata_only=False):
+    # PR2022-10-09 PR2022-10-10 PR2023-03-24
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' =============== get_envelopsubject_rows ============= ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+        logger.debug('    errata_only: ' + str(errata_only))
 
     envelopsubject_rows = []
     if sel_examyear:
         try:
-            sql_keys = {'ey_id': sel_examyear.pk}
-
-            si_has_practex_sql = ' '.join(["SELECT si.subject_id, scheme.department_id, scheme.level_id",
-                           "FROM subjects_schemeitem AS si",
-                           "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
-                           "WHERE si.has_practexam",
+            si_has_practex_sql = ''.join(["SELECT si.subject_id, scheme.department_id, scheme.level_id ",
+                           "FROM subjects_schemeitem AS si ",
+                           "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id) ",
+                           "WHERE si.has_practexam ",
                            "GROUP BY si.subject_id, scheme.department_id, scheme.level_id"
                            ])
 
-            si_ete_exam_sql = ' '.join(["SELECT si.subject_id, scheme.department_id, scheme.level_id",
-                           "FROM subjects_schemeitem AS si",
-                           "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id)",
-                           "WHERE si.ete_exam",
+            si_ete_exam_sql = ''.join(["SELECT si.subject_id, scheme.department_id, scheme.level_id ",
+                           "FROM subjects_schemeitem AS si ",
+                           "INNER JOIN subjects_scheme AS scheme ON (scheme.id = si.scheme_id) ",
+                           "WHERE si.ete_exam ",
                            "GROUP BY si.subject_id, scheme.department_id, scheme.level_id"
                            ])
 
-            sql_list = ["WITH si_has_practex AS (", si_has_practex_sql, "),  si_ete_exam AS (", si_ete_exam_sql, ")",
+            sql_list = ["WITH si_has_practex AS (", si_has_practex_sql, "),  si_ete_exam AS (", si_ete_exam_sql, ") ",
 
-                "SELECT env_subj.id, subj.examyear_id AS subj_examyear_id,",
-                "CONCAT('envelopsubject_', env_subj.id::TEXT) AS mapid,",
+                "SELECT env_subj.id, subj.examyear_id AS subj_examyear_id, ",
+                "CONCAT('envelopsubject_', env_subj.id::TEXT) AS mapid, ",
 
-                "env_subj.subject_id, env_subj.department_id, env_subj.level_id,",
-                "dep.base_id AS depbase_id, depbase.code AS depbase_code,",
-                "lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id,",
-                "env_subj.examperiod,",
-                "env_subj.envelopbundle_id, bndl.name AS bundle_name,",
-                "subjbase.code AS subjbase_code, subj.name_nl AS subj_name_nl,"
-                "env_subj.firstdate, env_subj.lastdate, env_subj.starttime, env_subj.endtime, env_subj.has_errata,",
+                "env_subj.subject_id, env_subj.department_id, env_subj.level_id, ",
+                "dep.base_id AS depbase_id, depbase.code AS depbase_code, ",
+                "lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id, ",
+                "env_subj.examperiod, ",
+                "env_subj.envelopbundle_id, bndl.name AS bundle_name, ",
+                "subjbase.code AS subjbase_code, subj.name_nl AS subj_name_nl, "
+                "env_subj.firstdate, env_subj.lastdate, env_subj.starttime, env_subj.endtime, env_subj.has_errata, ",
 
                 # because of WHERE si.has_practexam in sub_sql, sub_sql.si.subject_id has only value when has_practexam
-                "si_has_practex.subject_id IS NOT NULL AS has_practexam,"
-                "si_ete_exam.subject_id IS NOT NULL AS ete_exam,"
+                "si_has_practex.subject_id IS NOT NULL AS has_practexam, "
+                "si_ete_exam.subject_id IS NOT NULL AS ete_exam, "
                 
-                "env_subj.modifiedat, au.last_name AS modby_username",
+                "env_subj.modifiedat, au.last_name AS modby_username ",
 
-                "FROM subjects_envelopsubject AS env_subj",
-                "INNER JOIN subjects_subject AS subj ON (subj.id = env_subj.subject_id)",
-                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-                "INNER JOIN schools_department AS dep ON (dep.id = env_subj.department_id)",
-                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                "FROM subjects_envelopsubject AS env_subj ",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = env_subj.subject_id) ",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id) ",
+                "INNER JOIN schools_department AS dep ON (dep.id = env_subj.department_id) ",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id) ",
 
-                "LEFT JOIN subjects_level AS lvl ON (lvl.id = env_subj.level_id)",
-                "LEFT JOIN subjects_envelopbundle AS bndl ON (bndl.id = env_subj.envelopbundle_id)",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = env_subj.level_id) ",
+                "LEFT JOIN subjects_envelopbundle AS bndl ON (bndl.id = env_subj.envelopbundle_id) ",
 
-                "LEFT JOIN si_has_practex ON (si_has_practex.subject_id = env_subj.subject_id AND si_has_practex.department_id = env_subj.department_id AND si_has_practex.level_id = env_subj.level_id)",
-                "LEFT JOIN si_ete_exam ON (si_ete_exam.subject_id = env_subj.subject_id AND si_ete_exam.department_id = env_subj.department_id AND si_ete_exam.level_id = env_subj.level_id)",
+                "LEFT JOIN si_has_practex ON (si_has_practex.subject_id = env_subj.subject_id AND si_has_practex.department_id = env_subj.department_id AND si_has_practex.level_id = env_subj.level_id) ",
 
-                "LEFT JOIN accounts_user AS au ON (au.id = env_subj.modifiedby_id)",
+                "LEFT JOIN si_ete_exam ON (si_ete_exam.subject_id = env_subj.subject_id AND si_ete_exam.department_id = env_subj.department_id AND si_ete_exam.level_id = env_subj.level_id) ",
 
-                "WHERE dep.examyear_id = %(ey_id)s::INT",
+                "LEFT JOIN accounts_user AS au ON (au.id = env_subj.modifiedby_id) ",
+
+                "WHERE dep.examyear_id=" + str(sel_examyear.pk) + "::INT ",
+                # this filter on ETE exam doesnt work, dont know why PR2023-03-24:
+                    #"AND si_ete_exam.subject_id IS NOT NULL "
             ]
 
+            if errata_only:
+                sql_list.append("AND env_subj.has_errata ")
+
             if envelopsubject_pk:
-                sql_list.append(''.join(('AND env_subj.id = ', str(envelopsubject_pk), '::INT')))
+                sql_list.append("AND env_subj.id=" + str(envelopsubject_pk) + "::INT")
             else:
                 if practex_only is not None:
                     if practex_only:
-                        sql_list.append('AND si_has_practex.subject_id IS NOT NULL')
+                        sql_list.append("AND si_has_practex.subject_id IS NOT NULL")
                     else:
-                        sql_list.append('AND si_has_practex.subject_id IS NULL')
+                        sql_list.append("AND si_has_practex.subject_id IS NULL")
 
-                sql_list.append('ORDER BY env_subj.id')
+                sql_list.append("ORDER BY env_subj.id")
 
-            sql = ' '.join(sql_list)
+            sql = ''.join(sql_list)
 
             if logging_on:
-                logger.debug('sql_keys: ' + str(sql_keys))
-                logger.debug('sql: ' + str(sql))
+                for sql_txt in sql_list:
+                    logger.debug(' > ' + str(sql_txt))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 envelopsubject_rows = af.dictfetchall(cursor)
 
             if envelopsubject_pk and envelopsubject_rows and append_dict:
@@ -1452,7 +1527,7 @@ def create_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None
             'modifiedat': datetime.datetime(2022, 10, 14, 20, 1, 39, 221621, tzinfo=<UTC>), 'modby_username': 'drukteam'}
     """
     return envelopsubject_rows
-# --- end of create_envelopsubject_rows
+# --- end of get_envelopsubject_rows
 
 
 def create_envelopbundle_rows(sel_examyear, append_dict, envelopbundle_pk=None):
@@ -1968,8 +2043,6 @@ def create_exam_count_dictNIU(sel_examyear, exam_pk_list=None):
 # - end of create_exam_count_dict
 
 
-
-
 @method_decorator([login_required], name='dispatch')
 class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
 
@@ -1979,7 +2052,6 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
             logger.debug('')
             logger.debug(' ============= EnvelopPrintCheckView ============= ')
 
-        error_dict = {}
         update_wrap = {}
         messages = []
 
@@ -1988,14 +2060,19 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
         if upload_json:
             upload_dict = json.loads(upload_json)
             mode = upload_dict.get('mode')
+            errata_only = mode == 'errata_only'
+
+            # - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
 
 # - get permit
             page_name = 'page_orderlist'
             has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if logging_on:
-                logger.debug('has_permit: ' + str(has_permit))
-                logger.debug('upload_dict: ' + str(upload_dict))
+                logger.debug('    has_permit: ' + str(has_permit))
+                logger.debug('    upload_dict: ' + str(upload_dict))
             """
             upload_dict: {'table': 'envelopitem', 'mode': 'create', 'content_nl': 'aa', 'content_color': 'blue'}
             upload_dict: {'table': 'envelopitem', 'mode': 'delete', 'envelopitem_pk': 2, 'map_id': 'envelopitem_2'}
@@ -2003,10 +2080,6 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
             """
 
             if has_permit:
-
-# - reset language
-                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                activate(user_lang)
 
 # ----- get selected examyear from usersettings
                 sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
@@ -2047,13 +2120,18 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
                         'tv2_count': 5}
                     """
 
-                    envelopsubject_rows = create_envelopsubject_rows(
+                    envelopsubject_rows = get_envelopsubject_rows(
                         sel_examyear=sel_examyear,
-                        append_dict={}
+                        append_dict={},
+                        errata_only=errata_only
                     )
 
-                    update_wrap['updated_envelopsubject_rows'] = envelopsubject_rows
-                    update_wrap['updated_envelop_school_rows'] = schoolbase_dictlist
+                    if logging_on:
+                        for row in envelopsubject_rows:
+                            logger.debug('  #########  envelopsubject_row: ' + str(row))
+
+                    update_wrap['checked_envelopsubject_rows'] = envelopsubject_rows
+                    update_wrap['checked_envelop_school_rows'] = schoolbase_dictlist
 
 
             # - check if Enveloporderlist of this examyear exists, return modifiedat if exists
@@ -2251,7 +2329,7 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
                     if envelop_count_per_school_dict:
                         if logging_on:
                             logger.debug(' >>>>>>>> published envelop_count_per_school_dict is used')
-                            logger.debug('envelop_count_per_school_dict: ' + str(envelop_count_per_school_dict))
+                            #logger.debug('envelop_count_per_school_dict: ' + str(envelop_count_per_school_dict))
                         """
                         envelop_count_per_school_dict: {
                             '34': {'c': '-', 
@@ -2311,6 +2389,7 @@ class EnvelopPrintView(View):  # PR2022-08-19 PR2022-10-10
        #     raise Http404("Error creating Ex2A file")
 
         if response:
+
             return response
         else:
             logger.debug('HTTP_REFERER: ' + str(request.META.get('HTTP_REFERER')))
@@ -2395,20 +2474,9 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
             logger.debug('    school_lang: ' + str(school_lang))
 
         schoolbase_count_dict = count_per_school_dict.get(sbase_id)
-        if logging_on:
+        if logging_on and False:
             logger.debug('    schoolbase_count_dict: ' + str(schoolbase_count_dict))
         """
-        was: 
-        schoolbase_count_dict: {'sb_code': 'CUR01', 'school_name': 'Ancilla Domini Vsbo', 
-            1: {'depbase_code': 'Vsbo', 'school_name': 'Ancilla Domini Vsbo', 
-                6: [{'subjbase_id': 133, 'ete_exam': True, 'id_key': '1_6_133', 'lang': 'nl', 'country_id': 1, 
-                        'sb_code': 'CUR01', 'lvl_abbrev': 'PBL', 'depbase_code': 'Vsbo', 'subj_name': 'Administratie & Commercie', 
-                        'schoolbase_id': 2, 'school_name': 'Ancilla Domini Vsbo', 'depbase_id': 1, 'lvlbase_id': 6, 
-                        'subj_count': 17, 'dep_sequence': 1, 'lvl_sequence': 1, 
-                        'subjbase_code': 'ac', 
-                        'extra_count': 3, 'tv2_count': 5}, 
-                    {'subjbase_id': 123,  
-
         schoolbase_count_dict: {'sb_code': '-', 'school_name': '-', 
             1: {'depbase_code': '-', 'school_name': '-', 
                 6: [{'subjbase_id': 131, 'ete_exam': True, 'id_key': '1_6_131', 'lang': 'nl', 'country_id': 1, 
@@ -2500,7 +2568,7 @@ def create_enveloplabel_pdf_with_school(sel_examyear, sel_examperiod, schoolbase
                                 logger.debug(' --- loop through lvlbase_count_list  -----')
 
                             for lvlbase_count_row in lvlbase_count_list:
-                                if logging_on:
+                                if logging_on and False:
                                     logger.debug('.. lvlbase_count_row: ' + str(lvlbase_count_row))
                                 """                         
                                 lvlbase_count_row: {'subjbase_id': 131, 'ete_exam': True, 'id_key': '1_6_131', 'lang': 'nl', 
@@ -4120,7 +4188,7 @@ class EnvelopPrintReceiptView(View):  # PR2023-03-04
             # when schoolbase_pk_list has value None, it means that no schools must be printed
 
             schoolbase_pk_list = upload_dict.get('schoolbase_pk_list')
-            envelopsubject_rows = create_envelopsubject_rows(
+            envelopsubject_rows = get_envelopsubject_rows(
                 sel_examyear=sel_examyear,
                 append_dict={},
                 practex_only=practex_only

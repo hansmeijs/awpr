@@ -89,8 +89,7 @@
         //console.log( "all_countries", all_countries);
         // PR2021-09-24 all_countries is added for copy subjects to other examyear/ country
 
-        //console.log( "examyear_rows", examyear_rows);
-        //console.log( "tblName", tblName);
+        //console.log( "    tblName", tblName);
 
         let may_open_modal = false, selected_pk = null;
         if (tblName === "examyear") {
@@ -107,6 +106,7 @@
             may_open_modal = permit_dict.may_select_department;
             selected_pk = setting_dict.sel_depbase_pk;
          };
+        //console.log( "    may_open_modal", may_open_modal);
 
         //PR2020-10-28 debug: modal gives 'NaN' and 'undefined' when  loc not back from server yet
         if (may_open_modal) {
@@ -199,13 +199,14 @@
         //console.log( "tblName", tblName);
         //console.log( "all_countries", all_countries);
         //console.log( "permit_dict", permit_dict);
-        //console.log( "data_rows", data_rows);
 
         const tblBody_select = document.getElementById("id_MSED_tblBody_select");
+        console.log( "tblBody_select", tblBody_select);
         if (tblBody_select){
             tblBody_select.innerText = null;
             const data_rows = (tblName === "examyear") ? examyear_rows :
                               (tblName === "department") ? department_rows : null;
+            console.log( "    data_rows", data_rows);
     // --- loop through data_rows
             if(data_rows && data_rows.length){
                 // PR2022-04-19 Sentry Error: Expected identifier

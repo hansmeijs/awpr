@@ -1154,7 +1154,7 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
     # - when mode = submit_submit: check verificationcode.
                             verification_is_ok = True
                             if not is_test:
-                                verification_is_ok, verif_msg_html = subj_vw.check_verifcode_local(upload_dict, request)
+                                verification_is_ok, verif_msg_html = af.check_verifcode_local(upload_dict, request)
                                 if verif_msg_html:
                                     msg_html = verif_msg_html
                                 if verification_is_ok:
@@ -1405,7 +1405,7 @@ class GradeSubmitEx5View(View):  # PR2022-06-12
     # - when mode = submit_submit: check verificationcode.
                             verification_is_ok = True
                             if not is_test:
-                                verification_is_ok, verif_msg_html = subj_vw.check_verifcode_local(upload_dict, request)
+                                verification_is_ok, verif_msg_html = af.check_verifcode_local(upload_dict, request)
                                 if verif_msg_html:
                                     msg_html = verif_msg_html
                                 if verification_is_ok:

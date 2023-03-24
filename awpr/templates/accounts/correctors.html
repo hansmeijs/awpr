@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Second correctors' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/correctors230306.js' %}"></script>
+    <script src="{% static 'js/correctors230324.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -26,7 +26,10 @@
         {% if no_access %}
             {% include 'includes/message_noaccess.html' %}
         {% else %}
+            {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'accounts/moduserallowedsection.html' %}
+            {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'accounts/modcompensationhours.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modconfirm.html' %}
             {% include 'includes/modmessage.html' %}
@@ -82,15 +85,9 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
-                data-url_user_allowedsections_upload="{% url 'url_user_allowedsections_upload' %}"
-
-                data-user_upload_url="{% url 'user_upload_url' %}"
-                data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"
-                data-user_download_permits_url="{% url 'user_download_permits_url' %}"
-                data-url_download_userdata_xlsx="{% url 'url_download_userdata_xlsx' %}"
-
                 data-url_usercompensation_upload="{% url 'url_usercompensation_upload' %}"
-
+                data-usercomp_approve_single="{% url 'usercomp_approve_single' %}"
+                data-url_usercomp_approve_submit="{% url 'url_usercomp_approve_submit' %}"
             >
             </div>
         {% endif %}

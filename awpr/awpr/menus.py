@@ -441,6 +441,22 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
         logger.debug('===== set_menu_buttons ===== ')
         logger.debug('sel_page: ' + str(sel_page))
 
+    def show_page_btn(key_str):
+        # PR2023-02-24 show menu button 'Second correctors' only when:
+        # - role is corrector or admin
+        #  - or if role c.ROLE_008_SCHOOL and user has usergroup chairperson, secretary or corrector (auth1, auth2, auth4)
+
+        if key_str == 'page_corrector':
+            show_btn = False
+            if request.user.role == c.ROLE_016_CORR or request.user.role == c.ROLE_064_ADMIN:
+                show_btn = True
+            elif request.user.role == c.ROLE_008_SCHOOL:
+                if 'auth1' in usergroup_list or 'auth2' in usergroup_list or 'auth4' in usergroup_list:
+                    show_btn = True
+        else:
+            show_btn = True
+        return show_btn
+
 # - reset language
     user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
     activate(user_lang)
@@ -459,21 +475,8 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
     for menu_index, key_str in enumerate(menu_buttons):
         menu_item = MENUS_DICT[key_str]
 
-        # PR2023-02-24 show menu button 'Second correctors' only when:
-        # - role is corrector or admin
-        #  - or if role c.ROLE_008_SCHOOL and user has usergroup chairperson, secretary or corrector (auth1, auth2, auth4)
-
-        if key_str == 'page_corrector':
-            show_btn = False
-            if request.user.role == c.ROLE_016_CORR:
-                show_btn = True
-            elif request.user.role == c.ROLE_008_SCHOOL:
-                if 'auth1' in usergroup_list or 'auth2' in usergroup_list or 'auth4' in usergroup_list:
-                    show_btn = True
-        else:
-            show_btn = True
-
-        if show_btn:
+    # - hide page button 'Second correctors' when user has not proper role / usergroup:
+        if show_page_btn(key_str):
             # lookup the href that belongs to this index in submenus_tuple
             # function gets first href in href_string, when insp or admin it gets the second item
             menu_href = menu_item.get('href')

@@ -876,12 +876,9 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
 
             else:
                 # PR2022-09-02 debug: must skip filter examperiod when envelopsubject_pk_list has value
-                sql_list.append(''.join(('AND exam.examperiod = ', str(sel_examperiod), '::INT')))
+                sql_list.append(''.join(('AND env_subj.examperiod = ', str(sel_examperiod), '::INT')))
 
     # values of sel_layout are: "no_errata", "errata_only", "all" , None
-            # TODO remove, is for test
-            sel_layout = 'show_errata_always'
-
             if sel_layout == 'no_errata':
                 sql_list.append('AND NOT lbl.is_errata')
             elif sel_layout == 'errata_only':

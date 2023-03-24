@@ -441,11 +441,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const permit_role_admin = (permit_dict.requsr_role_admin && permit_dict.usergroup_list.includes("admin"));
 
         if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool) {
-            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, []);
-            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, []);
-            AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, null, "id_submenu_import");
+            AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
+            AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
+            AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"], "id_submenu_import");
         };
-        AddSubmenuButton(el_submenu, loc.Download_user_data, function() {ModConfirmOpen_DownloadUserdata("download_userdata_xlsx")});
+        AddSubmenuButton(el_submenu, loc.Download_user_data, function() {ModConfirmOpen_DownloadUserdata("download_userdata_xlsx")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
 
         // hardcode access of system admin
         if (permit_system_admin){

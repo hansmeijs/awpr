@@ -720,11 +720,16 @@ class ValidateCompositionView(View):  # PR2022-08-25
         update_wrap = {}
         msg_list = []
 
+        # - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
 # - get permit, only inspectorate kan set validation
         has_permit = request.user.role == c.ROLE_032_INSP and acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
 
         if not has_permit:
-            msg_list.append(str(_("You don't have permission to validate the composition of subjects.")))
+            msg_txt = gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to validate the composition of subjects')}
+            msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", msg_txt, "</div>"))
         else:
 
 # - reset language
@@ -3143,7 +3148,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                     verification_is_ok = True
                     if is_submit and not is_test:
                         upload_dict['form'] = form_name
-                        verification_is_ok, verif_msg_html = subj_vw.check_verifcode_local(upload_dict, request)
+                        verification_is_ok, verif_msg_html = af.check_verifcode_local(upload_dict, request)
                         if verif_msg_html:
                             msg_html = verif_msg_html
                         if verification_is_ok:

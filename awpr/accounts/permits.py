@@ -8,7 +8,7 @@ from django.db import connection
 from django.db.models import Q
 from django.template.loader import render_to_string
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from django.utils import timezone
 
 from reportlab.pdfbase import pdfmetrics
@@ -1533,11 +1533,10 @@ def is_role_insp_or_system_and_group_admin(req_usr):
     return has_permit
 
 
-def err_html_no_permit():  # PR2023-03-20
-    return ''.join((
-        "<p class='border_bg_invalid p-2'>",
-        str(_("You don't have permission to perform this action.")),
-        "</p>"))
+def err_html_no_permit(action_txt):  # PR2023-03-20
+    return ''.join(("<div class='p-2 border_bg_invalid'>",
+                    gettext("You don't have permission %(cpt)s.") % {'cpt': gettext(action_txt)},
+                    "</div>"))
 
 
 def err_html_error_occurred(err_txt, msg_txt):  # PR2023-03-20
