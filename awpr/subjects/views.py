@@ -478,7 +478,7 @@ def create_subjectrows_for_page_users(sel_examyear):
 def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
                         cur_dep_only, allowed_only=False, cluster_pk_list=None):
     # --- create rows of all clusters of this examyear this department  PR2022-01-06 PR2022-12-25 PR2023-02-09
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_cluster_rows ============= ')

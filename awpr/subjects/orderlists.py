@@ -1481,13 +1481,13 @@ def get_envelopsubject_rows(sel_examyear, append_dict, envelopsubject_pk=None, p
                 sql_list.append("AND env_subj.has_errata ")
 
             if envelopsubject_pk:
-                sql_list.append("AND env_subj.id=" + str(envelopsubject_pk) + "::INT")
+                sql_list.append("AND env_subj.id=" + str(envelopsubject_pk) + "::INT ")
             else:
                 if practex_only is not None:
                     if practex_only:
-                        sql_list.append("AND si_has_practex.subject_id IS NOT NULL")
+                        sql_list.append("AND si_has_practex.subject_id IS NOT NULL ")
                     else:
-                        sql_list.append("AND si_has_practex.subject_id IS NULL")
+                        sql_list.append("AND si_has_practex.subject_id IS NULL ")
 
                 sql_list.append("ORDER BY env_subj.id")
 
