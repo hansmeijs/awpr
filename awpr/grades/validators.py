@@ -1,6 +1,6 @@
 # PR2021-01-18
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, gettext
 
 from django.db import connection
 
@@ -16,6 +16,34 @@ from students import models as stud_mod
 import logging
 logger = logging.getLogger(__name__)
 
+def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requsr_auth, grade_row, req_usr):
+    # PR2023-03-26
+    is_allowed = True
+    err_html = None
+
+    # PR2023-03-25 remove approval can only be done by the same auth or by the chairperson and secretary
+    if is_reset:
+        # skip when chairperson or secretary, they may remove approval
+        if auth_index > 2:
+            # check if approved by same user
+            auth_id = grade_row.get(requsr_auth + 'by_id')
+
+            if auth_id != req_usr.pk:
+                is_allowed = False
+
+                cpt = _('This score') if is_score else _('This grade')
+                auth = _('Corrector') if auth_index == 4 else _('Examiner')
+
+                err_html = ''.join((
+                    "<div class='p-2 border_bg_invalid'><p>",
+                    str(_("%(cpt)s is approved by a different %(auth)s.") % {'cpt': cpt, 'auth': auth.lower()}),
+                    "</p><p>",
+                    str(_("Only the %(auth)s who has approved %(cpt)s, ") % {'cpt': cpt.lower(),'auth': auth.lower()}),
+                    gettext("or the chairperson or secretary can remove this approval."),
+                    "</p></div>"
+                ))
+
+    return is_allowed, err_html
 
 def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, userallowed_cluster_pk_list,
                 schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted,
@@ -34,8 +62,8 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, u
     # PR2023-02-14 not allowed when subject is tobedeleted
     if studsubj_tobedeleted:
         not_allowed = True
-        msg_list.append(str(_("This subject is marked for deletion.")))
-        msg_list.append(str(_("You cannot make changes.")))
+        msg_list.append(gettext("This subject is marked for deletion."))
+        msg_list.append(gettext("You cannot make changes."))
     else:
 
         if caption and not acc_prm.validate_userallowed_school(userallowed_sections_dict, schoolbase_pk):
@@ -61,7 +89,7 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, u
 
         if caption:
             not_allowed = True
-            msg_list.append(str(_("This subject does not belong to %(cpt)s.") % {'cpt': caption}))
+            msg_list.append(gettext("This subject does not belong to %(cpt)s.") % {'cpt': caption})
             edit_txt = _('to approve') if is_approve else _('to edit')
             score_txt = str(_('This exam') if is_grade_exam else _('This score') if is_score else _('This grade')).lower()
             msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))

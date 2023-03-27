@@ -133,7 +133,12 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get correctors
                 if datalist_request.get('corrector_rows'):
-                    datalists['corrector_rows'] = acc_corr.create_corrector_rows(sel_examyear, request)
+                    datalists['corrector_rows'] = acc_corr.create_corrector_rows(
+                        sel_examyear=sel_examyear,
+                        sel_schoolbase=sel_schoolbase,
+                        sel_depbase=sel_depbase,
+                        sel_lvlbase=sel_lvlbase,
+                        request=request)
 
 # ----- get UserCompensation
                 if datalist_request.get('usercompensation_rows'):
@@ -162,6 +167,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['department_rows'] = school_dicts.create_department_rows(
                         examyear=sel_examyear,
                         sel_schoolbase=sel_schoolbase,
+                        sel_school=sel_school,
                         skip_allowed_filter=skip_allowed_filter,
                         request=request)
 
@@ -534,7 +540,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ')

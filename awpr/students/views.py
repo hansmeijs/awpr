@@ -8170,16 +8170,13 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
 
         else:
     # --- filter on usersetting and allowed
-            # sql_clause = acc_view.get_userfilter_allowed_school_dep_lvl_subj_sct_cluster(request, 'studsubj')
-            #sql_clause = acc_view.get_userallowed_for_subjects_studsubj(
-            #    sel_examyear=sel_examyear,
-            #    sel_schoolbase=sel_schoolbase,
-            #    sel_depbase=sel_depbase,
-            #    sel_lvlbase=sel_lvlbase,
-            #    request=request,
-            #    skip_allowedsubjbase_filter=True,
-            #    table='studsubj'
-            #)
+
+            requsr_corrector = (request.user.role == c.ROLE_016_CORR)
+
+            # PR2023-03-27
+            # when a corrector has no allowed subjects, must return None.
+            # when an examiner has no allowed subjects, must return all subjects.
+            return_false_when_no_allowedsubjects = requsr_corrector
 
             sql_clause = acc_prm.get_sqlclause_allowed_NEW(
                 table='studsubj',
@@ -8187,7 +8184,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
                 sel_depbase_pk=sel_depbase_pk,
                 sel_lvlbase_pk=sel_lvlbase_pk,
                 userallowed_sections_dict=userallowed_sections_dict,
-                selected_pk_dict=selected_pk_dict
+                return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
             )
             if sql_clause:
                 sql_list.append(sql_clause)

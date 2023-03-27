@@ -161,8 +161,12 @@ urlpatterns = [
         #url(r'^users/(?P<pk>\d+)/log$', account_views.UserLogView.as_view(), name='user_log_url'),
 
         path('download_userdata_xlsx', account_views.UserdataDownloadXlsxView.as_view(), name='url_download_userdata_xlsx'),
-
+        path('usercomp_approve_single', acc_corr.UserCompensationApproveSingleView.as_view(),
+             name='url_usercomp_approve_single'),
+    ])),
+    path('correctors/', include([
         path('corrector', account_views.CorrectorListView.as_view(), name='url_corrector'),
+        path('userallowedcluster_upload', acc_corr.UserAllowedClusterUploadView.as_view(), name='url_userallowedcluster_upload'),
         path('usercomp_upload', acc_corr.UserCompensationUploadView.as_view(), name='url_usercompensation_upload'),
         path('usercomp_approve_submit', acc_corr.UserCompensationApproveSubmitView.as_view(), name='url_usercomp_approve_submit'),
 

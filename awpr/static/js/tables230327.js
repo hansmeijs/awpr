@@ -2160,7 +2160,6 @@
         t_set_sbr_itemcount_txt(loc, selected.item_count, count_unit_sing, count_unit_plur, setting_dict.user_lang);
     }; // t_Filter_TableRows
 
-
 //========= t_reset_filterrow  ==================================== PR2020-08-17  PR2021-08-10  PR2023-02-06
     function t_reset_filterrow(tblHead_datatable) {
         //console.log( "===== t_reset_filterrow  ========= ");
@@ -2608,49 +2607,54 @@ const mod_MCOL_dict = {
 
 // +++++++++++++++++ SBR SELECT LEVEL SECTOR ++++++++++++++++++++++++++++++++++++++++++
 
-//=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-02-21
-    function t_SBR_select_level_sector(mode, el_select, SBR_lvl_sct_response, skip_upload) {
+//=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-03-26
+    function t_SBR_select_level_sector(tblName, el_select, SBR_lvl_sct_response, skip_upload) {
         //console.log("===== t_SBR_select_level_sector =====");
-        //console.log( "    mode: ", mode) // mode = "lvlbase" or "sctbase"
-       // console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
+        //console.log( "    tblName: ", tblName) // tblName = "lvlbase" or "sctbase"
+        //console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
 
 // - clear datatable, don't delete table header
         const tblBody_datatable = document.getElementById("id_tblBody_datatable");
         if (tblBody_datatable) {tblBody_datatable.innerText = null};
 
-        if (el_select && ["lvlbase", "sctbase"].includes (mode)){
+        if (el_select && ["lvlbase", "sctbase"].includes (tblName)){
+            const is_sctbase = (tblName === "sctbase");
 
 // - get new value from el_select
             const sel_pk_int = (el_select.value && Number(el_select.value)) ? Number(el_select.value) : null;
-            console.log( "    sel_pk_int: ", sel_pk_int);
 
 // - put new value in setting_dict
-            const sel_pk_key_str = (mode === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
-            const code_key_str = (mode === "sctbase") ? "sctbase_code" : "lvlbase_code";
+            const sel_pk_key_str = (is_sctbase) ? "sel_sctbase_pk" : "sel_lvlbase_pk";
+            const code_key_str = (is_sctbase) ? "name" : "lvlbase_code";
 
-            let new_sel_pk_int = null, new_sel_code = null;
-            const data_rows = (mode === "sctbase") ? sector_rows : (mode === "lvlbase") ? level_rows : null;
+            const data_rows = (is_sctbase) ? sector_rows : level_rows;
+
+            let selected_dict = null;
             if (data_rows && data_rows.length){
                 for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-                    if(data_dict.base_id && data_dict.base_id ===  sel_pk_int ){
-                        new_sel_pk_int = data_dict.base_id;
-                        new_sel_code = (data_dict[code_key_str]) ? data_dict[code_key_str] : "---";
+                    if(data_dict.base_id && data_dict.base_id === sel_pk_int ){
+                        selected_dict = data_dict;
                         break;
-                    };
-                };
+            }}};
+
+            const selected_pk_int = (selected_dict) ? selected_dict.base_id : null;
+            const new_sel_code = (selected_dict && selected_dict[code_key_str]) ? selected_dict[code_key_str] : "---";
+            setting_dict[sel_pk_key_str] = selected_pk_int;
+            if (is_sctbase) {
+                setting_dict["sel_sector_name"] = new_sel_code;
+            } else {
+                setting_dict["sel_lvlbase_code"] = new_sel_code;
             };
-            setting_dict[sel_pk_key_str] = new_sel_pk_int;
-            setting_dict["sel_" + code_key_str] = new_sel_code;
 
             if (!skip_upload) {
                 const selected_pk_dict = {};
-                selected_pk_dict[sel_pk_key_str] = new_sel_pk_int
+                selected_pk_dict[sel_pk_key_str] = selected_pk_int
                 const upload_dict = {selected_pk: selected_pk_dict};
 
         // ---  upload new setting
                 b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             };
-            SBR_lvl_sct_response(mode, el_select);
+            SBR_lvl_sct_response(tblName, selected_dict, selected_pk_int);
         };
     };  // t_SBR_select_level_sector
 
@@ -2689,9 +2693,9 @@ const mod_MCOL_dict = {
                 display_rows.push({
                 value: row.base_id,
                 caption: (tblName === "sector") ? row.name : row.abbrev
-                })
-            }
-        }  // if (!has_items)
+                });
+            };
+        };  // if (!has_items)
 
     //console.log("display_rows", display_rows);
 
@@ -2702,7 +2706,7 @@ const mod_MCOL_dict = {
 
         const id_str = (tblName === "level") ? "id_SBR_select_level" :
                         (tblName === "sector") ? "id_SBR_select_sector" : null;
-        const el_SBR_select = document.getElementById(id_str)
+        const el_SBR_select = document.getElementById(id_str);
         t_FillOptionsFromList(el_SBR_select, display_rows, "value", "caption", null, null, selected_pk);
 
         // put displayed text in setting_dict
@@ -2711,7 +2715,7 @@ const mod_MCOL_dict = {
             setting_dict.sel_lvlbase_code = sel_code;
         } else if (tblName === "sector"){
             setting_dict.sel_sctbase_code = sel_code;
-        }
+        };
         //console.log("el_SBR_select.parentNode", el_SBR_select.parentNode);
         add_or_remove_class(el_SBR_select.parentNode, cls_hide, !show_select_element);
 
@@ -2728,7 +2732,7 @@ const mod_MCOL_dict = {
 
 //=========  t_SBR_show_all  ================ PR2021-08-02 PR2022-03-03 PR2022-12-06 PR2023-01-11
     function t_SBR_show_all(SBR_show_all_response) {
-        console.log("===== t_SBR_show_all =====");
+        //console.log("===== t_SBR_show_all =====");
         //console.log("    SBR_show_all_response", SBR_show_all_response);
 
         // PR2022-06-15 dont reset department

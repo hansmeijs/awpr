@@ -6,16 +6,22 @@
 
 {% block script %}
     <script src="{% static 'js/import230220.js' %}"></script>
-    <script src="{% static 'js/users230324.js' %}"></script>
+    <script src="{% static 'js/users230327.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
-        <div class="content_subheader_left tab_show tab_init mx-2 my-4">
-            <h5>{% trans 'Users' %}</h5>
+        <div class="content_subheader_left mx-2 my-4">
+            <h3>{% trans 'Users' %}</h3>
         </div>
+
         {% if not no_access %}
+
+            <div class="tw_200 m-2">
+                <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
+            </div>
+
         {% endif %}
     </nav>
 {% endblock %}

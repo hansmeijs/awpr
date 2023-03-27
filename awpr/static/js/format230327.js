@@ -313,9 +313,9 @@
 
 //=========  f_format_status_subject  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24
     function f_format_status_subject(prefix, data_dict) {
-        console.log("=========  f_format_status_subject =========");
-        console.log("    prefix", prefix);
-        console.log("    data_dict", data_dict);
+        //console.log("=========  f_format_status_subject =========");
+        //console.log("    prefix", prefix);
+        //console.log("    data_dict", data_dict);
 
         // field_name = "uc_auth1by_id", "uc_auth2by_id", "uc_published_id"
         let className = "diamond_3_4";  // diamond_3_4 is blank img

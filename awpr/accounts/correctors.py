@@ -42,6 +42,100 @@ logger = logging.getLogger(__name__)
 
 
 ########################################################################
+# === UserAllowedClusterUploadView ===================================== PR2023-02-26
+@method_decorator([login_required], name='dispatch')
+class UserAllowedClusterUploadView(View):
+    # used in page correctors when schools set allowedcluster in user with role corrector
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserAllowedClusterUploadView ===============')
+
+        msg_html = None
+        update_wrap = {}
+        data_has_changed = False
+
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
+            mode = upload_dict.get('mode')
+            # upload_dict: {'user_pk': 1472, 'mode': 'update', 'allowed_clusters': [1740, 1743]}
+
+# - reset language
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
+# - get permit
+            page_name = 'page_corrector'
+            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
+
+            if not has_permit:
+                msg_html = acc_prm.err_html_no_permit('to perform this action')
+            else:
+
+# - get variables
+                user_pk = upload_dict.get('user_pk')
+                ual_pk = upload_dict.get('ual_pk')
+
+                updated_rows = []
+                error_list = []
+
+                append_dict = {}
+
+# - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
+                userallowed_instance = acc_mod.UserAllowed.objects.get_or_none(
+                    pk=ual_pk,
+                    user_id=user_pk
+                )
+                if logging_on:
+                    logger.debug('    userallowed_instance:' + str(userallowed_instance))
+
+                if userallowed_instance:
+                    new_allowed_clusters_str = None
+                    new_allowed_clusters_list = upload_dict.get('allowed_clusters')
+                    if new_allowed_clusters_list:
+                        new_allowed_clusters_list.sort()
+                        new_allowed_clusters_str = json.dumps(new_allowed_clusters_list)
+
+                    if logging_on:
+                        logger.debug('    new_allowed_clusters_list:' + str(new_allowed_clusters_list) + ' ' + str(
+                            type(new_allowed_clusters_list)))
+                        logger.debug('    new_allowed_clusters_str:' + str(new_allowed_clusters_str) + ' ' + str(
+                            type(new_allowed_clusters_str)))
+
+                    saved_allowed_clusters_str = getattr(userallowed_instance, 'allowed_clusters')
+
+                    if logging_on:
+                        logger.debug('    new_allowed_clusters_str: ' + str(new_allowed_clusters_str))
+                        logger.debug('    saved_allowed_clusters_str: ' + str(saved_allowed_clusters_str))
+
+                    if new_allowed_clusters_str != saved_allowed_clusters_str:
+                        setattr(userallowed_instance, 'allowed_clusters', new_allowed_clusters_str)
+                        userallowed_instance.save()
+
+
+                        updated_corrector_rows = acc_view.create_user_rowsNEW(
+                            sel_examyear=userallowed_instance.examyear,
+                            request=request,
+                            user_pk=user_pk
+                        )
+
+                        if logging_on:
+                            logger.debug('    updated_corrector_rows: ' + str(updated_corrector_rows))
+                        if updated_corrector_rows:
+                            update_wrap['updated_corrector_rows'] = updated_corrector_rows
+
+# - addd msg_html to update_wrap
+        if msg_html:
+            update_wrap['msg_html'] = msg_html
+
+# - return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
+# - ens of UserAllowedClusterUploadView
+
+########################################################################
 # === UserUploadView ===================================== PR2023-02-25
 @method_decorator([login_required], name='dispatch')
 class UserCompensationUploadView(View):
@@ -1304,200 +1398,161 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
 ##################################################################################
 
 
-
-
-def create_corrector_rows(sel_examyear, request):
-    # --- create list of all correctors,with approved  or  PR2023-02-23
+def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, request):
+    # --- create list of users with role = corrector and usergroup auth4
+    # - filter on allowed school and allowed dep
     logging_on = False  # s.LOGGING_ON
     if logging_on:
+        logger.debug(' ')
         logger.debug(' =============== create_corrector_rows ============= ')
 
-    # ROLE_008_SCHOOL = 8
-    # ROLE_032_INSP = 32
-    # ROLE_064_ADMIN = 64
-    # ROLE_128_SYSTEM = 128
+    corrector_rows = []
+    if request.user.country and sel_schoolbase and sel_examyear:
 
-    # <PERMIT> PR2020-10-12
-    # PR2018-05-27 list of users in UserListView:
-    # - only perm_system and perm_admin can create corrector_list
-    # - role teacher, student have no access
-    # - dont show users with higher role
-    # - when role is inspection or school: show only users of request.user.schoolbase
-    # - when user_pk has value the school of user_pk can be different from the school of request user (in case of admin(ETE) )
+        corrector_rows = acc_view.create_user_rowsNEW(
+            sel_examyear=sel_examyear,
+            request=request,
+            school_correctors_only=True
+        )
 
-    corrector_list = []
-    if request.user.country and request.user.schoolbase and sel_examyear:
-        if request.user.role >= c.ROLE_008_SCHOOL:
+           # userallowed_sections_dict = json.loads(allowed_sections_str)
+           # logger.debug(' userallowed_sections_dict ' + str(userallowed_sections_dict))
+           # if str(sel_schoolbase.pk) in userallowed_sections_dict:
+           #     logger.debug('>>  sel_schoolbase.pk ' + str(sel_schoolbase.pk))
+           #     userallowed_school_dict = userallowed_sections_dict.get(str(sel_schoolbase.pk))
+           #     logger.debug('>>  userallowed_school_dict ' + str(userallowed_school_dict))
 
-            try:
-                sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
+        if logging_on:
+            if corrector_rows:
+                for row in corrector_rows:
+                    logger.debug(' row ' + str(row))
 
-                sql_grades_list = [
-                    "SELECT u.id AS user_id,",
-                    "grd.examperiod,",
-                    "subjbase.code AS subjbase_code,",
-                    "depbase.code AS depbase_code,",
-                    "schoolbase.code AS schoolbasee_code,",
-
-                    "count(*) AS count ",
-
-                    "FROM students_grade AS grd",
-                    "INNER JOIN accounts_user AS u ON (u.id = grd.ce_auth4by_id)",
-
-                    "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                    "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-                    "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
-
-                    "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                    "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                    "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                    "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
-                    "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
-                    "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
-
-                    "WHERE school.examyear_id=" + str(sel_examyear.pk) + "::INT",
-                    "AND NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
-
-                    "GROUP BY u.id, exam.id, stud.school_id, stud.department_id,",
-                    "grd.examperiod, subjbase.code, depbase.code, schoolbase.code"
-                ]
-                sql_grades = ' '.join(sql_grades_list)
-
-                sql_list = ["WITH grades AS (", sql_grades, ")",
-                            "SELECT u.id, u.schoolbase_id,",
-                            "CONCAT('user_', u.id) AS mapid,",
-                            "SUBSTRING(u.username, 7) AS username,",
-                            "u.last_name, u.email, u.role,",
-
-                            "grades.examperiod,",
-                            "grades.subjbase_code,",
-                            "grades.depbase_code,",
-                            "grades.schoolbasee_code,",
-                            "grades.count",
-
-                            "FROM accounts_user AS u",
-                            "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
-                            "LEFT JOIN grades ON (grades.user_id = u.id)",
-
-                            ''.join(("WHERE ual.examyear_id=", str(sel_examyear.pk), "::INT")),
-                            # "AND u.role = %(role)s::INT",
-                            ''.join(("AND (POSITION('", c.USERGROUP_AUTH4_CORR, "' IN ual.usergroups) > 0)"))
-                            ]
-
-                if request.user.role < c.ROLE_016_CORR:
-                    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
-                    sql_list.append(''.join(('AND u.schoolbase_id=', str(schoolbase_pk), '::INT')))
-
-                sql_list.append('ORDER BY u.last_name')
-
-                sql = ' '.join(sql_list)
-
-                if logging_on:
-                    for txt in sql_list:
-                        logger.debug(' > ' + str(txt))
-
-                with connection.cursor() as cursor:
-                    cursor.execute(sql)
-                    corrector_list = af.dictfetchall(cursor)
-
-                if logging_on:
-                    logger.debug(' len(corrector_list ' + str(len(corrector_list)))
-
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
-
-    if logging_on:
-        logger.debug('    corrector_list: ' + str(corrector_list))
-
-    return corrector_list
+    return corrector_rows
 
 
 def create_usercompensation_rows(sel_examyear, request):
     # --- create list of all correctors of this school, or  PR2023-02-19
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_usercompensation_rows ============= ')
+        logger.debug('    request.user.role: ' + str(request.user.role))
+        logger.debug('    request.user.schoolbase.pk: ' + str(request.user.schoolbase.pk))
 
     userapproval_rows = []
-    if request.user.country and request.user.schoolbase:
-        if request.user.role >= c.ROLE_008_SCHOOL:
+    if sel_examyear:
+        try:
 
-            try:
-                sql_keys = {'country_id': request.user.country.pk, 'role': c.ROLE_016_CORR,
-                            'usergroup': c.USERGROUP_AUTH4_CORR}
+            sql_sub_list = ["SELECT uc.id,",
+                        "CONCAT('usercomp_', uc.id::TEXT) AS mapid,",
 
-                # sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
-                sql_list = ["SELECT uc.id,",
-                            "CONCAT('usercomp_', uc.id::TEXT) AS mapid,",
+                        "SUBSTRING(u.username, 7) AS username, u.last_name, u.is_active,",
+                        "user_sb.code AS user_sb_code,",
 
-                            "SUBSTRING(u.username, 7) AS username, u.last_name, u.is_active,",
-                            "user_sb.code AS user_sb_code,",
+                        "school.abbrev AS school_abbrev,",
+                        "schoolbase.code AS sb_code,",
+                        "depbase.code AS depbase_code,",
+                        "lvlbase.code AS lvlbase_code,",
+                        "exam.version AS exam_version,",
+                        "exam.examperiod AS examperiod,",
 
-                            "school.abbrev AS school_abbrev,",
-                            "schoolbase.code AS sb_code,",
-                            "depbase.code AS depbase_code,",
-                            "lvlbase.code AS lvlbase_code,",
-                            "exam.version AS exam_version,",
-                            "exam.examperiod AS examperiod,",
+                        "subj.name_nl AS subj_name_nl,",
+                        "subjbase.code AS subjbase_code,",
 
-                            "subj.name_nl AS subj_name_nl,",
-                            "subjbase.code AS subjbase_code,",
+                        "uc.amount AS uc_amount,",
+                        "uc.meetings AS uc_meetings,",
+                        "uc.correction_amount AS uc_corr_amount,",
+                        "uc.correction_meetings AS uc_corr_meetings,",
+                        "uc.compensation AS uc_compensation,",
 
-                            "uc.amount AS uc_amount,",
-                            "uc.meetings AS uc_meetings,",
-                            "uc.correction_amount AS uc_corr_amount,",
-                            "uc.correction_meetings AS uc_corr_meetings,",
-                            "uc.compensation AS uc_compensation,",
+                        "uc.meetingdate1 AS uc_meetingdate1,",
+                        "uc.meetingdate2 AS uc_meetingdate2,",
 
-                            "uc.meetingdate1 AS uc_meetingdate1,",
-                            "uc.meetingdate2 AS uc_meetingdate2,",
+                        "uc.auth1by_id AS uc_auth1by_id,",
+                        "uc.auth2by_id AS uc_auth2by_id,",
+                        "uc.published_id AS uc_published_id,",
 
-                            "uc.auth1by_id AS uc_auth1by_id,",
-                            "uc.auth2by_id AS uc_auth2by_id,",
-                            "uc.published_id AS uc_published_id,",
+                        "uc.notes AS uc_notes",
+##########################
 
-                            "uc.notes AS uc_notes",
+                        "FROM accounts_usercompensation AS uc",
 
-                            "FROM accounts_usercompensation AS uc",
+                        "INNER JOIN accounts_user AS u ON (u.id = uc.user_id)",
+                        "LEFT JOIN schools_schoolbase AS user_sb ON (user_sb.id = u.schoolbase_id)",
 
-                            "INNER JOIN accounts_user AS u ON (u.id = uc.user_id)",
-                            "LEFT JOIN schools_schoolbase AS user_sb ON (user_sb.id = u.schoolbase_id)",
+                        "INNER JOIN subjects_exam AS exam ON (exam.id = uc.exam_id)",
 
-                            "INNER JOIN subjects_exam AS exam ON (exam.id = uc.exam_id)",
+                        "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
+                        "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                            "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-                            "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                        "INNER JOIN schools_school AS school ON (school.id = uc.school_id)",
+                        "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
 
-                            "INNER JOIN schools_school AS school ON (school.id = uc.school_id)",
-                            "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
+                        "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
+                        "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
-                            "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
-                            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                        "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
+                        "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
-                            "INNER JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
-                            "INNER JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
+                        ''.join(("WHERE school.examyear_id=", str(sel_examyear.pk), "::INT"))
+                        ]
 
-                            "WHERE school.examyear_id = " + str(sel_examyear.pk) + "::INT",
+            sql_list = ["SELECT ",  # uc.id,",
+                        "SUBSTRING(u.username, 7) AS username, u.last_name, u.is_active,",
 
-                            # for testimg only: "AND u.last_name ILIKE '%%jeska%%'"
+                        "ual.examyear_id, ual.allowed_sections",
 
-                            ]
+                        #"school.abbrev AS school_abbrev,",
+                        #"schoolbase.code AS sb_code,",
+                        #"depbase.code AS depbase_code,",
+                       # "lvlbase.code AS lvlbase_code,",
+                       # "exam.version AS exam_version,",
+                       # "exam.examperiod AS examperiod,",
 
-                if request.user.role < c.ROLE_016_CORR:
-                    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
-                    sql_list.append("AND u.schoolbase_id=" + str(schoolbase_pk) + "::INT")
+                      #  "subj.name_nl AS subj_name_nl,",
+                      #  "subjbase.code AS subjbase_code,",
 
-                sql = ' '.join(sql_list)
+                       # "uc.amount AS uc_amount,",
+                       # "uc.meetings AS uc_meetings,",
+                       # "uc.correction_amount AS uc_corr_amount,",
+                       # "uc.correction_meetings AS uc_corr_meetings,",
+                      #  "uc.compensation AS uc_compensation,",
 
-                if logging_on:
-                    logger.debug('sql: ' + str(sql))
+                    #    "uc.meetingdate1 AS uc_meetingdate1,",
+                    #    "uc.meetingdate2 AS uc_meetingdate2,",
 
-                with connection.cursor() as cursor:
-                    cursor.execute(sql, sql_keys)
-                    userapproval_rows = af.dictfetchall(cursor)
+                   #     "uc.auth1by_id AS uc_auth1by_id,",
+                    #    "uc.auth2by_id AS uc_auth2by_id,",
+                   #     "uc.published_id AS uc_published_id,",
 
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
+                    #    "uc.notes AS uc_notes",
+
+                        "FROM accounts_user AS u",
+                        "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
+                        "LEFT JOIN accounts_usercompensation AS uc ON (uc.user_id = u.id)",
+
+                        ''.join(("WHERE ual.examyear_id=", str(sel_examyear.pk), "::INT")),
+                        ''.join(("AND (POSITION('", c.USERGROUP_AUTH4_CORR, "' IN ual.usergroups) > 0)")),
+
+                        ''.join(("AND u.is_active AND u.role=", str(c.ROLE_016_CORR), "::INT")),
+                        ]
+
+            #if request.user.role < c.ROLE_016_CORR:
+            #    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+           #     sql_list.append(''.join(("AND u.schoolbase_id=", str(schoolbase_pk), "::INT")))
+
+            sql = ' '.join(sql_list)
+
+            if logging_on:
+                if sql_list:
+                    for sql_txt in sql_list:
+                        logger.debug(' > ' + str(sql_txt))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                userapproval_rows = af.dictfetchall(cursor)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
         logger.debug('  len  userapproval_rows: ' + str(len(userapproval_rows)))
@@ -1507,7 +1562,7 @@ def create_usercompensation_rows(sel_examyear, request):
 
 def create_usercomp_agg_rows(sel_examyear, request):
     # --- create list of all approvals per correctors per exam and calcultae total compensation PR2023-02-25
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_usercomp_agg_rows ============= ')
 
@@ -1623,7 +1678,7 @@ def calc_compensation(amount_sum, meetings_sum, corr_amount_sum, corr_meetings_s
 
 def update_usercompensation(sel_examyear, request):
     # --- create list of all correctors,pprovals and return dict with key (eser_pk, exam_pk, school_pk) and count PR2023-02-24
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== update_usercompensation ============= ')
 
@@ -1670,7 +1725,6 @@ def update_usercompensation(sel_examyear, request):
                     approval_count_dict[(row[0], row[1], row[2])] = row[3]
 
         return approval_count_dict
-
     # - end of get_approval_count_dict
 
     def get_usercompensation_dict():
@@ -1710,13 +1764,12 @@ def update_usercompensation(sel_examyear, request):
                     usercompensation_dict[(row[0], row[1], row[2])] = (row[3], row[4], row[5], row[6], row[7])
 
         return usercompensation_dict
-
     # - end of get_usercompensation
 
     def create_tobe_lists():
         tobe_updated_list, tobe_added_list = [], []
 
-        # +++++ loop through approval_count_dict +++++
+ # +++++ loop through approval_count_dict +++++
         if approval_count_dict:
             for key_tuple, count_int in approval_count_dict.items():
 
@@ -1804,11 +1857,10 @@ def update_usercompensation(sel_examyear, request):
         if logging_on:
             logger.debug('     len tobe_updated_list ' + str(len(tobe_updated_list)))
         return tobe_updated_list, tobe_added_list
-
     # - end of create_tobe_lists
 
     def update_usercompensation_batch(tobe_updated_list):  # PR2023-02-24
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('----------------- save_studsubj_batch  --------------------')
             logger.debug('tobe_updated_list: ' + str(tobe_updated_list))
@@ -1823,35 +1875,37 @@ def update_usercompensation(sel_examyear, request):
                 (0::bigint, -99999::int), 
                 (1, 100) ;
             """
+            try:
+                sql_list = ["DROP TABLE IF EXISTS tmp; CREATE TEMP TABLE tmp (",
+                            "uc_id, am, comp) AS",
+                            "VALUES (0::INT, 0::INT, 0::INT)"]
 
-            sql_list = ["DROP TABLE IF EXISTS tmp; CREATE TEMP TABLE tmp (",
-                        "uc_id, am, comp) AS",
-                        "VALUES (0::INT, 0::INT)"]
+                for row in tobe_updated_list:
+                    sql_item = ', '.join((str(row[0]), str(row[1]), str(row[2])))
+                    sql_list.append(''.join((", (", sql_item, ")")))
 
-            for row in tobe_updated_list:
-                sql_item = ', '.join((row[0], row[1], row[2]))
-                sql_list.append(''.join((", (", sql_item, ")")))
+                sql_list.extend((
+                    "; UPDATE accounts_usercompensation AS uc",
+                    "SET amount = tmp.am, compensation = tmp.comp",
+                    "FROM tmp",
+                    "WHERE uc.id = tmp.uc_id",
+                    "RETURNING uc.id, uc.amount, uc.compensation;"
+                ))
 
-            sql_list.extend((
-                "; UPDATE accounts_usercompensation AS uc",
-                "SET amount = tmp.am, compensation = tmp.comp",
-                "FROM tmp",
-                "WHERE uc.id = tmp.uc_id",
-                "RETURNING uc.id, uc.amount;"
-            ))
+                sql = ' '.join(sql_list)
 
-            sql = ' '.join(sql_list)
+                with connection.cursor() as cursor:
+                    cursor.execute(sql)
+                    rows = cursor.fetchall()
 
-            with connection.cursor() as cursor:
-                cursor.execute(sql)
-                rows = cursor.fetchall()
+                if logging_on:
+                    if rows:
+                        logger.debug('............................................')
+                        for row in rows:
+                            logger.debug('row: ' + str(row))
 
-            if logging_on:
-                if rows:
-                    logger.debug('............................................')
-                    for row in rows:
-                        logger.debug('row: ' + str(row))
-
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
     # - end of update_usercompensation
 
     def insert_usercompensation_batch(tobe_added_list):

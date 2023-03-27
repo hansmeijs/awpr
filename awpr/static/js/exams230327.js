@@ -704,7 +704,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 if ("duo_subject_rows" in response) {duo_subject_rows = response.duo_subject_rows};
 
                 if ("duo_subject_rows" in response) {
-                    //FillDatadicts("cluster", response.cluster_rows);
                     b_fill_datadicts("duosubject", "id", null, response.duo_subject_rows, duo_subject_dicts);
                     console.log ("   duo_subject_dicts", duo_subject_dicts)
                 };
@@ -712,7 +711,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if ("duo_exam_rows" in response) {duo_exam_rows = response.duo_exam_rows};
                 if ("duo_exam_rows" in response) {
-                    //FillDatadicts("cluster", response.cluster_rows);
                     b_fill_datadicts("duoexam", "id", null, response.duo_exam_rows, duo_exam_dicts);
                     console.log ("   duo_exam_dicts", duo_exam_dicts)
                 };
@@ -723,7 +721,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
                 if ("ntermentable_rows" in response) {ntermentable_rows = response.ntermentable_rows};
                 if ("ntermentable_rows" in response) {
-                    //FillDatadicts("cluster", response.cluster_rows);
                     b_fill_datadicts("ntermentable", "id", null, response.ntermentable_rows, ntermentable_dicts);
                     console.log ("   ntermentable_dicts", ntermentable_dicts)
                 };

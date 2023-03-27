@@ -174,7 +174,7 @@
             //        all_depbases += data_dict.base_id.toString();
             //    }};
 
-        console.log("    mod_MUPS_dict.user_role ", mod_MUPS_dict.user_role);
+        //console.log("    mod_MUPS_dict.user_role ", mod_MUPS_dict.user_role);
             // Add 'All Schools' if req_usr is Inspectorate or Admin has multiple departments PR2023-01-26
             if (permit_dict.requsr_role >= 32 && mod_MUPS_dict.user_role >= 32) {  // ROLE_032_INSP}
                 const depbases_arr = [];
@@ -183,12 +183,13 @@
                 };
                 const depbases = (depbases_arr.length) ? depbases_arr.join(";") : null
 
-                mod_MUPS_dict.sorted_school_list.push({
-                    base_id: -9,
-                    sb_code: (setting_dict.sel_country_is_sxm) ? "SXM00" : "CUR00",
-                    name: loc.All_schools,
-                    depbases: depbases
-                });
+                // PR2023-03-26 'All schools' -9 is not in use
+                //mod_MUPS_dict.sorted_school_list.push({
+                //    base_id: -9,
+                //    sb_code: (setting_dict.sel_country_is_sxm) ? "SXM00" : "CUR00",
+                //    name: loc.All_schools,
+                //    depbases: depbases
+                //});
             };
 
             for (let i = 0, data_dict; data_dict = school_rows[i]; i++) {

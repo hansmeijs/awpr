@@ -103,8 +103,10 @@ class CorrectorListView(View):
         activate(user_lang)
 
     # get_headerbar_param(request, page, param=None):
+        # display school and department in header only when role = school
+        display_school = request.user.role == c.ROLE_008_SCHOOL
         page = 'page_corrector'
-        param = { 'display_school': True, 'display_department': False }
+        param = { 'display_school': display_school, 'display_department': False }
         headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
         if logging_on:
             logger.debug("headerbar_param: " + str(headerbar_param))
@@ -1001,7 +1003,7 @@ def update_grouppermit(userpermit_instance, upload_dict, msg_dict, request): # P
 class UserSettingsUploadView(UpdateView):  # PR2019-10-09
 
     def post(self, request, *args, **kwargs):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
         update_wrap = {}
         if request.user is not None and request.user.country is not None:
@@ -1740,7 +1742,8 @@ class UserModMessageHideView(View):
 # end of UserModMessageHideView
 
 
-def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR2022-12-02
+def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_only=False):
+    # PR2020-07-31 PR2022-12-02 PR2023-03-26
     # --- create list of all users of this school, or 1 user with user_pk
     # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
     logging_on = False  # s.LOGGING_ON
@@ -1749,11 +1752,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR
         logger.debug(' =============== create_user_rowsNEW ============= ')
         logger.debug('    user_pk: ' + str(user_pk))
         logger.debug('    sel_examyear: ' + str(sel_examyear))
-
-    #ROLE_008_SCHOOL = 8
-    #ROLE_032_INSP = 32
-    #ROLE_064_ADMIN = 64
-    #ROLE_128_SYSTEM = 128
+        logger.debug('    school_correctors_only: ' + str(school_correctors_only))
 
     # <PERMIT> PR2020-10-12
     # PR2018-05-27 list of users in UserListView:
@@ -1770,17 +1769,17 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR
 
         if schoolbase_pk_arr:
             try:
+                # PR2023-03-26 'All schools' -9 is not in use
                 # add 'All schools' when -9 in list
                 if -9 in schoolbase_pk_arr:
-                    is_sxm = sel_examyear.country.abbrev.lower() == 'sxm'
-                    code = 'SXM00' if is_sxm else 'CUR00'
-                    name = str(_('All schools'))
-                    code_name = ' '.join((code, name))
-
-                    schoolbase_code_list.append(code)
-                    schoolbase_name_list.append(code_name)
-
                     schoolbase_pk_arr.remove(-9)
+                #    is_sxm = sel_examyear.country.abbrev.lower() == 'sxm'
+                #    code = 'SXM00' if is_sxm else 'CUR00'
+                #    name = str(_('All schools'))
+                #    code_name = ' '.join((code, name))
+
+                #    schoolbase_code_list.append(code)
+                #    schoolbase_name_list.append(code_name)
 
                 sql_keys = {'ey_pk': sel_examyear.pk, 'sb_arr': schoolbase_pk_arr}
                 sql = ' '.join(("SELECT sb.code, sch.name",
@@ -1974,7 +1973,6 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR
 
         return all_clusters_dict
 
-
     def get_allowed_clusters(cluster_pk_arr, all_clusters_dict):
         cluster_pk_list = []
         cluster_name_list = []
@@ -1996,63 +1994,90 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR
 ###############
 
     user_list = []
-    if request.user.country and request.user.schoolbase:
-        if request.user.role >= c.ROLE_008_SCHOOL:
+    if request.user.country and sel_examyear:
 
-            all_depbases_rows = get_all_depbases_rows()
-            all_lvlbases_rows = get_all_lvlbases_rows()
-            all_subjbases_dict = get_all_subjbases_dict()
-            all_clusters_dict = get_all_clusters_dict()
+        all_depbases_rows = get_all_depbases_rows()
+        all_lvlbases_rows = get_all_lvlbases_rows()
+        all_subjbases_dict = get_all_subjbases_dict()
+        all_clusters_dict = get_all_clusters_dict()
 
-            try:
-                sql_keys = {'ey_pk': sel_examyear.pk, 'max_role': request.user.role}
+        try:
 
-                sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
-                sql_list = ["WITH mod_user AS (", sql_moduser, ")",
-                    "SELECT u.id, u.schoolbase_id,",
-                    "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
-                    "SUBSTRING(u.username, 7) AS username,",
-                    "u.last_name, u.email, u.role,",
+            sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
+            sql_list = ["WITH mod_user AS (", sql_moduser, ")",
+                "SELECT u.id, u.schoolbase_id,",
+                "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
+                "SUBSTRING(u.username, 7) AS username,",
+                "u.last_name, u.email, u.role,",
 
-                    "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
-                    "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
+                "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
+                "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
 
-                    "ual.usergroups AS ual_usergroups, ual.allowed_sections, ual.allowed_clusters, ual.examyear_id,"
-                    "u.lang, u.modified_at AS modifiedat, mod_user.modby_username",
+                "ual.usergroups AS ual_usergroups, ual.allowed_sections, ual.allowed_clusters, ual.examyear_id, ual.id AS ual_id, "
+                "u.lang, u.modified_at AS modifiedat, mod_user.modby_username",
 
-                    "FROM accounts_user AS u",
-                    "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
-                    "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
-                    "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+                "FROM accounts_user AS u",
+                "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
+                "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
 
-                    "LEFT JOIN mod_user ON (mod_user.id = u.modified_by_id)",
+                "LEFT JOIN mod_user ON (mod_user.id = u.modified_by_id)",
 
-                    "WHERE ual.examyear_id = %(ey_pk)s::INT",
-                    "AND role <= %(max_role)s::INT"]
-                if user_pk:
-                    sql_keys['u_id'] = user_pk
-                    sql_list.append('AND u.id = %(u_id)s::INT')
-                elif request.user.role < c.ROLE_064_ADMIN:
-                    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
-                    sql_keys['sb_id'] = schoolbase_pk
-                    sql_list.append('AND u.schoolbase_id = %(sb_id)s::INT')
+                ''.join(("WHERE ual.examyear_id=", str(sel_examyear.pk), "::INT"))
+                ]
 
-                # sql_list.append('ORDER BY LOWER(sb.code), LOWER(u.username)')
-                sql_list.append('ORDER BY u.id')
+            if user_pk:
+                sql_list.append(''.join(("AND u.id=", str(user_pk), "::INT")))
 
-                sql = ' '.join(sql_list)
+            else:
+                if school_correctors_only:
+                    # PR2023-03-26 when page correctors is called by school,
+                    # only the users from role=correctors and usergroup = auth4 are retrieved
+                    # and then filtered by allowed school
 
-                with connection.cursor() as cursor:
-                    cursor.execute(sql, sql_keys)
-                    user_list = af.dictfetchall(cursor)
+                    sql_list.append(''.join(("AND u.role=", str(c.ROLE_016_CORR), "::INT ",
+                                            "AND (POSITION('", c.USERGROUP_AUTH4_CORR, "' IN ual.usergroups) > 0)")))
+                else:
+                    # user role can never be greater than request.user.role, except when school retrieves correctors
+                    sql_list.append(''.join(("AND u.role=", str(request.user.role), "::INT")))
 
-                    # convert string allowed_schoolbases to dict, remove string PR2022-11-22
-                    if user_list:
-                        for user_dict in user_list:
+                    if request.user.role < c.ROLE_064_ADMIN:
+                        schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+                        sql_list.append(''.join(("AND u.schoolbase_id=", str(schoolbase_pk), "::INT")))
 
-                            if logging_on:
-                                logger.debug('  ====>  user_dict: ' + str(user_dict))
+            # sql_list.append('ORDER BY LOWER(sb.code), LOWER(u.username)')
+            sql_list.append('ORDER BY u.id')
+            sql = ' '.join(sql_list)
 
+            if logging_on:
+                for sql_txt in sql_list:
+                    logger.debug(' > ' + str(sql_txt))
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                rows = af.dictfetchall(cursor)
+
+                # convert string allowed_schoolbases to dict, remove string PR2022-11-22
+                if rows:
+                    for user_dict in rows:
+                        if logging_on:
+                            logger.debug('  ====>  user_dict: ' + str(user_dict))
+
+                        allowed_sections_str = user_dict.get('allowed_sections')
+                        allowed_sections_dict = json.loads(allowed_sections_str) if allowed_sections_str else None
+
+                        if logging_on:
+                            logger.debug('  ====>  allowed_sections_dict: ' + str(allowed_sections_dict))
+                            logger.debug('  ====>  request.user.schoolbase.pk) not in allowed_sections_dict: ' + str(str(request.user.schoolbase.pk) not in allowed_sections_dict))
+
+                        # PR2023-03-26 when school downolads corrector users: add only when school is in allowed schools of corrector user
+                        skip_add_to_list = False
+                        if school_correctors_only:
+                           if str(request.user.schoolbase.pk) not in allowed_sections_dict:
+                               skip_add_to_list = True
+
+                        if not skip_add_to_list:
+                            user_dict
                             usergroups_str = user_dict.get('ual_usergroups')
                             user_dict['usergroups'] = json.loads(usergroups_str) if usergroups_str else None
                             # del user_dict['ual_usergroups']
@@ -2061,8 +2086,6 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR
                             allowed_cluster_pk_arr = json.loads(allowed_clusters_str) if allowed_clusters_str else None
                             del user_dict['allowed_clusters']
 
-                            allowed_sections_str = user_dict.get('allowed_sections')
-                            allowed_sections_dict = json.loads(allowed_sections_str) if allowed_sections_str else None
 
                             user_dict['allowed_sections_dict'] = allowed_sections_dict if allowed_sections_dict else None
 
@@ -2133,8 +2156,9 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None):  # PR2020-07-31 PR
                                 user_dict['allowed_clusters_pk'] = cluster_pk_list
                                 user_dict['allowed_clusters'] = cluster_name_list
 
-            except Exception as e:
-                logger.error(getattr(e, 'message', str(e)))
+                            user_list.append (user_dict)
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
 
     return user_list
 # - end of create_user_rowsNEW
@@ -2931,7 +2955,7 @@ def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # 
 
 def replace_value_in_dict(settings_dict, key_str, new_value): # PR2021-08-19 PR2021-12-02
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- replace_value_in_dict ----- ')
         logger.debug('    settings_dict: ' + str(settings_dict))
@@ -4129,7 +4153,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
                                 allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10  PR2023-01-08
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_departmentbase -------')
 
@@ -5261,7 +5285,7 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))

@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Second correctors' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/correctors230325.js' %}"></script>
+    <script src="{% static 'js/correctors230327.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -29,6 +29,7 @@
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'accounts/moduserallowedsection.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'includes/modselectmultiple.html' %}
             {% include 'accounts/modcompensationhours.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modconfirm.html' %}
@@ -65,6 +66,7 @@
 
 <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
+                <button id="id_btn_correctors" data-btn="btn_correctors" class="btn btn-secondary display_hidexx">{% trans 'Second correctors' %}</button>
                 <button data-btn="btn_approval" class="btn btn-secondary ">{% trans 'Approvals' %}</button>
                 <button data-btn="btn_compensation" class="btn btn-secondary ">{% trans 'Compensation' %}</button>
 
@@ -85,6 +87,8 @@
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
+                data-url_userallowedcluster_upload="{% url 'url_userallowedcluster_upload' %}"
+
                 data-url_usercompensation_upload="{% url 'url_usercompensation_upload' %}"
                 data-url_usercomp_approve_single="{% url 'url_usercomp_approve_single' %}"
                 data-url_usercomp_approve_submit="{% url 'url_usercomp_approve_submit' %}"

@@ -494,14 +494,13 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
 # --- end of create_examyear_rows
 
 
-def create_department_rows(examyear, sel_schoolbase, skip_allowed_filter, request):
+def create_department_rows(examyear, sel_school, sel_schoolbase, skip_allowed_filter, request):
     # --- create rows of all departments of this examyear / country PR2020-09-30 PR2022-08-03 PR2023-01-09
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_department_rows ============= ')
         logger.debug('    examyear: ' + str(examyear))
         logger.debug('    sel_schoolbase: ' + str(sel_schoolbase))
-
 
     sql_keys = {'ey_id': examyear.pk}
 
@@ -517,6 +516,12 @@ def create_department_rows(examyear, sel_schoolbase, skip_allowed_filter, reques
 
         "WHERE ey.id = %(ey_id)s::INT"
     ]
+
+    # PR2023-03-25 always add school_dep filter when role is school
+    if request.user.role == c.ROLE_008_SCHOOL:
+        if sel_school.depbases:
+            school_depbases_list = list(map(int, sel_school.depbases.split(';')))
+            sql_list.append(''.join(("AND dep.base_id IN (SELECT UNNEST(ARRAY", str(school_depbases_list), "::INT[]))")))
 
     allowed_depbase_sql_clause, allowed_depbase_sql_key_dict = acc_prm.get_sqlclause_allowed_depbase_from_request(
         request=request,
@@ -689,7 +694,7 @@ def create_school_rows(request, examyear, append_dict, skip_allowed_filter=False
     # --- create rows of all schools of this examyear / country
     # PR2020-09-18 PR2021-04-23 PR2022-03-13 PR2022-08-07 PR2022-12-05 PR2023-02-16
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_school_rows ============= ')

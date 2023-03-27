@@ -264,6 +264,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Permissions'] = _('Permissions')
         dict['Set_permissions'] = _('Set permissions')
         dict['User'] = _('User')
+        dict['Users'] = _('Users')
         dict['Read_only'] = _('Read only')
         dict['Read_only_2lines'] =  pgettext_lazy('2 lines', 'Read\nonly')
         dict['Edit'] = _('Edit')
@@ -369,7 +370,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Yes_send_email'] = _('Yes, send email')
 
     if 'page_corrector' in page_list:
-
 
         dict['Corrector'] = TXT_Corrector
         dict['Second_corrector'] = _('Second corrector')
@@ -1292,7 +1292,6 @@ def get_locale_dict(table_dict, user_lang, request):
         #dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
         dict['Please_select_examperiod_first'] = _('Please select an exam period in the vertical grey bar at the left first.')
         dict['Please_select_examperiod'] = _('Please select one exam period in the vertical grey bar at the left.')
-
 
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
         dict['You_cannot_make_changes'] = _('You cannot make changes.')

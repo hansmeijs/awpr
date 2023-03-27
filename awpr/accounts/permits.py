@@ -633,23 +633,24 @@ def allowedsections_has_subjbases(userallowed_sections_dict):
     return has_subjbases
 
 
-def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, userallowed_sections_dict, selected_pk_dict):
+def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, userallowed_sections_dict, return_false_when_no_allowedsubjects):
     # PR2023-02-15
     # This function  gives sql clause of all allowed schools, deps, levels and subjects.
     # It does not filter on sel_schoolpk etc.
 
     def get_add_to_list(sel_base_pk, base_pk_str):
         # add_to_list = True if:
-        # - when sel_base_pk has no value or
         # - when base_pk_str = '-9' or
-        # - when base_pk_str = sel_base_pk
+        # - when base_pk_str = sel_base_pk or
+        # - when sel_base_pk is None
 
         add_to_list = False
-        if sel_base_pk:
-            if base_pk_str in ('-9', str(sel_base_pk)):
+        if base_pk_str:
+            if sel_base_pk:
+                if base_pk_str in ('-9', str(sel_base_pk)):
+                    add_to_list = True
+            else:
                 add_to_list = True
-        else:
-            add_to_list = True
 
         return add_to_list
 
@@ -676,14 +677,13 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         return or_joined
 
     def get_base_clause(field_name, base_pk_str):
-        # PR2023-02-09 all deps '-9' not in use (maybe tobe used for inspectorate)
         if base_pk_str == '-9':
             base_clause = None
         else:
             base_clause = ''.join((field_name, "=", base_pk_str, "::INT"))
         return base_clause
 
-    def get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list):
+    def get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects):
 
     # - create lvlbase_clause
         lvlbase_clause = get_base_clause('lvl.base_id', lvlbase_pk_str)
@@ -697,9 +697,9 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                 subjbase_clause = ''.join(
                     (subjbase_id_fld, " IN (SELECT UNNEST(ARRAY", str(allowed_subjbase_list), "::INT[]))"))
         else:
-            # TODO when there are no allowedsubjbases: filter none or all
-            pass
-
+            # when user is inspectorate: 'all subjects' is not possible
+            if return_false_when_no_allowedsubjects:
+                subjbase_clause = 'FALSE'
     # - join lvlbase_clause AND subjbase_clause
         lvl_subjbase_clause = get_AND_joined(lvlbase_clause, subjbase_clause, has_subjbases)
 
@@ -739,20 +739,19 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 # +++++ loop through schools
         sch_dep_lvl_subjbase_clause_arr = []
         for schoolbase_pk_str, userallowed_schoolbase_dict in userallowed_sections_dict.items():
+            # add_to_list when schoolbase_pk_str = sel_schoolbase_pk or = -9
+            # - sel_schoolbase_pk has always a value
+            add_to_list = get_add_to_list(sel_schoolbase_pk, schoolbase_pk_str)
             if logging_on:
                 logger.debug('    ----- ')
                 logger.debug('      schoolbase_pk_str: ' + str(schoolbase_pk_str))
-                logger.debug('      userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
-
-            add_to_list = get_add_to_list(sel_schoolbase_pk, schoolbase_pk_str)
-            if logging_on:
                 logger.debug('      add_to_list: ' + str(add_to_list))
 
             if add_to_list:
-
         # - create schoolbase_clause
                 schoolbase_clause = get_base_clause('school.base_id', schoolbase_pk_str)
                 if logging_on:
+                    logger.debug('      userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
                     logger.debug('      > schoolbase_clause: ' + str(schoolbase_clause))
 
     # ===== loop through departments
@@ -763,23 +762,15 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                     # if allowed_depbase_dict is empty and  sel_depbase_pk has value: add sel_depbase_pk to allowed_depbase_dict
                     userallowed_schoolbase_dict[str(sel_depbase_pk)] = {}
 
-                if logging_on:
-                    logger.debug('      > userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
-
                 dep_lvl_subjbase_clause_arr = []
                 for depbase_pk_str, allowed_depbase_dict in userallowed_schoolbase_dict.items():
+                    # add_to_list when depbase_pk_str = sel_depbase_pk or = -9
+                    # - sel_depbase_pk has always a value
+                    add_to_list = get_add_to_list(sel_depbase_pk, depbase_pk_str)
+
                     if logging_on:
                         logger.debug('      ----- ')
                         logger.debug('        depbase_pk_str ' + str(depbase_pk_str))
-                        logger.debug('        allowed_depbase_dict ' + str(allowed_depbase_dict))
-
-                    # add_to_list = True if:
-                    # - sel_base_pk has no value or
-                    # - base_pk_str = '-9' or
-                    # - base_pk_str = sel_base_pk
-
-                    add_to_list = get_add_to_list(sel_depbase_pk, depbase_pk_str)
-                    if logging_on:
                         logger.debug('        add_to_list: ' + str(add_to_list))
 
                     if add_to_list:
@@ -788,6 +779,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                         # PR2023-02-09 all deps '-9' not in use (maybe tobe used for inspectorate)
                         depbase_clause = get_base_clause('dep.base_id', depbase_pk_str)
                         if logging_on:
+                            logger.debug('        allowed_depbase_dict ' + str(allowed_depbase_dict))
                             logger.debug('        > depbase_clause: ' + str(depbase_clause))
 
                         # PR2023-02-27: debug: must handle sqlclause,
@@ -797,10 +789,6 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                             # if allowed_depbase_dict is empty and  sel_depbase_pk has value: add sel_depbase_pk to allowed_depbase_dict
                             allowed_depbase_dict[str(sel_lvlbase_pk)] = {}
 
-                        if logging_on:
-                            logger.debug('        allowed_depbase_dict ' + str(allowed_depbase_dict))
-
-
         # ----- loop through levels
                         lvl_subjbase_clause_arr = []
                         for lvlbase_pk_str, allowed_subjbase_list in allowed_depbase_dict.items():
@@ -808,7 +796,6 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
                             if logging_on:
                                 logger.debug('        ----- ')
                                 logger.debug('          lvlbase_pk_str ' + str(lvlbase_pk_str))
-                                logger.debug('          allowed_subjbase_list ' + str(allowed_subjbase_list))
 
                             add_to_list = get_add_to_list(sel_lvlbase_pk, lvlbase_pk_str)
                             if logging_on:
@@ -816,9 +803,10 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
                             if add_to_list:
 
-                                lvl_subjbase_clause = get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list)
+                                lvl_subjbase_clause = get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects)
                                 if logging_on:
-                                    logger.debug('          lvl_subjbase_clauset: ' + str(lvl_subjbase_clause))
+                                    logger.debug('          allowed_subjbase_list ' + str(allowed_subjbase_list))
+                                    logger.debug('          > lvl_subjbase_clause: ' + str(lvl_subjbase_clause))
 
                                 if lvl_subjbase_clause:
                                     lvl_subjbase_clause_arr.append(''.join(('(', lvl_subjbase_clause, ')')))
@@ -858,7 +846,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         # - join sch_dep_lvl_subjbase_clause_arr with OR
             sch_dep_lvl_subjbase_clause_joined = get_OR_joined(sch_dep_lvl_subjbase_clause_arr)
             if logging_on:
-                logger.debug('===> ' + str(sch_dep_lvl_subjbase_clause_joined))
+                logger.debug(' ===> sch_dep_lvl_subjbase_clause_joined: ' + str(sch_dep_lvl_subjbase_clause_joined))
 
     else:
         # add sqlclause when sel_schoolbase_pk etc has value and allowed_sections = None
@@ -883,7 +871,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         logger.debug('   sql_clause: ' + str(sql_clause))
 
     return sql_clause
-
+# - end of get_sqlclause_allowed_NEW
 
 ###########################
 
@@ -1549,6 +1537,7 @@ def err_html_error_occurred(err_txt, msg_txt):  # PR2023-03-20
     msg_list.append("</p>")
 
     return ''.join((msg_list))
+
 
 def err_html_from_err_list(err_list):  # PR2023-03-20
     msg_list = []

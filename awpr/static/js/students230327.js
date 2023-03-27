@@ -162,15 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
-        //if (el_SBR_select_level) {
-        //    el_SBR_select_level.addEventListener("change", function() {SBR_select_lvlbase_sctbase("lvlbase", el_SBR_select_level)}, false);
-        //};
         if(el_SBR_select_level){
-            el_SBR_select_level.addEventListener("change", function() {t_SBR_select_level_sector("lvlbase", el_SBR_select_level, SBR_lvl_sct_response, true)}, false)}  // true: skip_upload
-
+            el_SBR_select_level.addEventListener("change", function() {t_SBR_select_level_sector("lvlbase", el_SBR_select_level, SBR_lvl_sct_response, true)}, false); // true: skip_upload
+        };
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
         if (el_SBR_select_sector) {
-            el_SBR_select_sector.addEventListener("change",function() {SBR_select_lvlbase_sctbase("sctbase", el_SBR_select_sector)}, false);
+            el_SBR_select_sector.addEventListener("change", function() {t_SBR_select_level_sector("sctbase", el_SBR_select_sector, SBR_lvl_sct_response, true)}, false);  // true: skip_upload
         };
        //const el_SBR_select_class = document.getElementById("id_SBR_select_class");
         //if(el_SBR_select_class){
@@ -2479,21 +2476,22 @@ function RefreshDataRowsAfterUpload(response) {
 
 // +++++++++++++++++ MODAL SIDEBAR SELECT ++++++++++++++++++++++++++++++++++
 
-//=========  SBR_lvl_sct_response  ================ PR2023-01-11
-    function SBR_lvl_sct_response(mode, el_select) {
-        console.log("=== SBR_select_Level_Sector");
-        console.log( "el_select.value: ", el_select.value, typeof el_select.value)
-        // mode = "level" or "sector"
+//=========  SBR_lvl_sct_response  ================ PR2023-03-26
+    function SBR_lvl_sct_response(tblName, selected_dict, selected_pk_int) {
+        console.log("===== SBR_lvl_sct_response =====");
+        console.log( "   tblName: ", tblName)
+        console.log( "   selected_pk_int: ", selected_pk_int, typeof selected_pk_int)
+        console.log( "   selected_dict: ", selected_dict)
+        // tblName = "lvlbase" or "sctbase"
 
 // ---  using function UploadChanges not necessary, uploading new_setting_dict is part of DatalistDownload
 
 // ---  upload new setting and download datarows
 
-        const sel_pk_key_str = (mode === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
-        const sel_pk_int = (el_select && Number(el_select.value)) ? Number(el_select.value) : null;
+        const sel_pk_key_str = (tblName === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
 
         const new_setting_dict = {page: "page_student"}
-        new_setting_dict[sel_pk_key_str] = sel_pk_int;
+        new_setting_dict[sel_pk_key_str] = selected_pk_int;
 
         console.log("new_setting_dict", new_setting_dict);
 
@@ -2507,14 +2505,11 @@ function RefreshDataRowsAfterUpload(response) {
 
         console.log("    datalist_request", datalist_request);
         DatalistDownload(datalist_request);
-
-
-
     };
 
 
 //=========  SBR_select_lvlbase_sctbase  ================ PR2022-12-07
-    function SBR_select_lvlbase_sctbase(mode, el_select) {
+    function SBR_select_lvlbase_sctbaseXXXXXXXXXXX(mode, el_select) {
         console.log("=== SBR_select_Level_Sector");
         //console.log( "el_select.value: ", el_select.value, typeof el_select.value)
         // mode = "level" or "sector"

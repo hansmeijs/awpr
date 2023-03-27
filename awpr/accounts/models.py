@@ -295,7 +295,7 @@ class UserAllowed(sch_mod.AwpBaseModel):
     usergroups = TextField(null=True)
     allowed_sections = TextField(null=True)
 
-    # PR2023-01-07 allowed_clusterbases was used in table User, cahnged to allowed_clusters in table accounts_userallowed
+    # PR2023-01-07 allowed_clusterbases was used in table User, changed to allowed_clusters in table accounts_userallowed
     allowed_clusters = TextField(null=True)
 
     # PR2021-01-25 don't use ArrayField, JSONField, because they are not compatible with MSSQL
