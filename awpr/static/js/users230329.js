@@ -17,8 +17,6 @@ let permit_rows = [];
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
 
-    console.log("+++++++ DOMContentLoaded 'user page'")
-
     let el_loader = document.getElementById("id_loader");
 
 // ---  get permits

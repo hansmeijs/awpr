@@ -133,6 +133,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get correctors
                 if datalist_request.get('corrector_rows'):
+                    logger.debug('    datalist_request corrector_rows ')
                     datalists['corrector_rows'] = acc_corr.create_corrector_rows(
                         sel_examyear=sel_examyear,
                         sel_schoolbase=sel_schoolbase,

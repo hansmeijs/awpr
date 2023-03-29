@@ -1154,10 +1154,12 @@ def system_updates(examyear, request):
     #if request.user.role == c.ROLE_128_SYSTEM:
     awpr_lib.update_library(examyear, request)
 
-    transfer_grade_tobedeleted_to_deletedONCEONLY(request)
+    remove_dots_in_username_correctorsONCEONLY(request)
+
+    #transfer_grade_tobedeleted_to_deletedONCEONLY(request)
 
 # functions calcultes POK of all failed students and stors it in StudentSubjects PR2023-01-21
-    calcPok2022AndSaveInStudsubjONCEONLY(request)
+    #calcPok2022AndSaveInStudsubjONCEONLY(request)
 
 
 # once only function converts allowed deps, levels and subjects to a dict and stores it in allword_schools PR2022-11-23
@@ -1270,6 +1272,56 @@ def reset_show_msg(request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
+
+
+def remove_dots_in_username_correctorsONCEONLY(request):  # PR2023-03-27
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- remove_dots_in_username_correctorsONCEONLY -------')
+
+    try:
+        name = 'remove_dots_in_username'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+
+        if not exists:
+            users = acc_mod.User.objects.filter(
+                role=c.ROLE_016_CORR
+            )
+            for usr in users:
+                old_username = getattr(usr, 'username')
+                if logging_on:
+                    logger.debug('old_username: ' + str(old_username))
+
+                username = old_username
+                if '.' in username:
+                    username = username.replace('.', '')
+                if '__' in username:
+                    username = username.replace('__', '_')
+                # remove '_' at the end
+                if username[-1] == '_':
+                    username = username[:-1]
+                if username != old_username:
+                    setattr(usr, 'username', username)
+                    if logging_on:
+                        logger.debug('username: ' + str(old_username[6:]) + ' >  ' + str(username[6:]))
+
+            # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('    systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+
+
+# end of transfer_grade_tobedeleted_to_deletedONCEONLY
 
 
 def transfer_grade_tobedeleted_to_deletedONCEONLY(request):

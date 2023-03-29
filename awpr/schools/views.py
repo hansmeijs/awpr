@@ -3561,6 +3561,7 @@ def update_examyear(instance, upload_dict, msg_list, request):
     return updated
 # - end of update_examyear
 
+
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 def copy_tables_from_last_year(prev_examyear_pk, new_examyear_pk, also_copy_schools):
     # --- copy_tables_from_last_year # PR2019-07-30 PR2020-10-05 PR2021-04-25 PR2021-08-06 PR2022-08-23

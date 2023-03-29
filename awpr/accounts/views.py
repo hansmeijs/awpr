@@ -1746,13 +1746,13 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
     # PR2020-07-31 PR2022-12-02 PR2023-03-26
     # --- create list of all users of this school, or 1 user with user_pk
     # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_user_rowsNEW ============= ')
         logger.debug('    user_pk: ' + str(user_pk))
         logger.debug('    sel_examyear: ' + str(sel_examyear))
-        logger.debug('    school_correctors_only: ' + str(school_correctors_only))
+        logger.debug('    school_correctors_only: ' + str(school_correctors_only) + ' ' + str(type(school_correctors_only)))
 
     # <PERMIT> PR2020-10-12
     # PR2018-05-27 list of users in UserListView:
@@ -1769,7 +1769,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
 
         if schoolbase_pk_arr:
             try:
-                # PR2023-03-26 'All schools' -9 is not in use
+                # PR2023-03-26 'All schools' -9 is not in use (yet)
                 # add 'All schools' when -9 in list
                 if -9 in schoolbase_pk_arr:
                     schoolbase_pk_arr.remove(-9)
@@ -1812,7 +1812,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
         if schoolbase_name_list:
             schoolbases_name = '\n'.join(schoolbase_name_list)
 
-        return schoolbases_code,  schoolbases_name
+        return schoolbases_code, schoolbases_name
 
     def get_all_depbases_rows():
         all_depbases_rows = []
@@ -2038,10 +2038,12 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
                     sql_list.append(''.join(("AND u.role=", str(c.ROLE_016_CORR), "::INT ",
                                             "AND (POSITION('", c.USERGROUP_AUTH4_CORR, "' IN ual.usergroups) > 0)")))
                 else:
+                    if request.user.role >= c.ROLE_064_ADMIN:
+                        sql_list.append(''.join(("AND u.role<=", str(request.user.role), "::INT")))
+                    else:
                     # user role can never be greater than request.user.role, except when school retrieves correctors
-                    sql_list.append(''.join(("AND u.role=", str(request.user.role), "::INT")))
+                        sql_list.append(''.join(("AND u.role=", str(request.user.role), "::INT")))
 
-                    if request.user.role < c.ROLE_064_ADMIN:
                         schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
                         sql_list.append(''.join(("AND u.schoolbase_id=", str(schoolbase_pk), "::INT")))
 
@@ -2077,7 +2079,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
                                skip_add_to_list = True
 
                         if not skip_add_to_list:
-                            user_dict
+
                             usergroups_str = user_dict.get('ual_usergroups')
                             user_dict['usergroups'] = json.loads(usergroups_str) if usergroups_str else None
                             # del user_dict['ual_usergroups']
@@ -2085,7 +2087,6 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
                             allowed_clusters_str = user_dict.get('allowed_clusters')
                             allowed_cluster_pk_arr = json.loads(allowed_clusters_str) if allowed_clusters_str else None
                             del user_dict['allowed_clusters']
-
 
                             user_dict['allowed_sections_dict'] = allowed_sections_dict if allowed_sections_dict else None
 

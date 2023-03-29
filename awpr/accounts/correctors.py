@@ -115,7 +115,6 @@ class UserAllowedClusterUploadView(View):
                         setattr(userallowed_instance, 'allowed_clusters', new_allowed_clusters_str)
                         userallowed_instance.save()
 
-
                         updated_corrector_rows = acc_view.create_user_rowsNEW(
                             sel_examyear=userallowed_instance.examyear,
                             request=request,
@@ -1396,7 +1395,6 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of UserCompensationApproveSingleView
 ##################################################################################
-
 
 def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, request):
     # --- create list of users with role = corrector and usergroup auth4

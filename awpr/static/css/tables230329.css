@@ -830,6 +830,7 @@ aXX:hover{
 .tw_420 { width: 420px; }
 .tw_390 { width: 390px; }
 .tw_360 { width: 360px; }
+.tw_320 { width: 320px; }
 .tw_300 { width: 300px; }
 .tw_280 { width: 280px; }
 .tw_240 { width: 240px; }
@@ -868,13 +869,17 @@ aXX:hover{
     overflow-x: hidden;
     width: 200px;
 }
-.tbl_w320 {
+.tbl_w280 {
     overflow-x: hidden;
-    width: 320px;
+    width: 280px;
 }
 .tbl_w360 {
     overflow-x: hidden;
     width: 360px;
+}
+.tbl_w420 {
+    overflow-x: hidden;
+    width: 420px;
 }
 }.tbl_w960 {
     overflow-x: hidden;

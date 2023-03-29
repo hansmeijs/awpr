@@ -2824,7 +2824,7 @@ console.log("    mimp.import_table", mimp.import_table);
         el_filedialog.click();
     };
 
-//=========   MDNT_HandleFiledialog   ====================== PR2022-02-26
+//=========   MDNT_HandleFiledialog   ====================== PR2022-02-26  PR2023-03-29
     function MDNT_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
         console.log(" ========== MDNT_HandleFiledialog ===========");
 
@@ -2848,7 +2848,8 @@ console.log("    mimp.import_table", mimp.import_table);
 
         let curFiles = el_filedialog.files; //This one doesn't work in Firefox: let curFiles = event.target.files;
 
-        console.log("curFiles", curFiles);
+        console.log("    curFiles", curFiles);
+
 // ---  validate selected file
         let curFile = null, msg_err = null
         if(curFiles.length === 0) {
@@ -2860,12 +2861,10 @@ console.log("    mimp.import_table", mimp.import_table);
         }
         mimp.sel_file = curFile;
         mimp.sel_filename = (curFile) ? curFile.name : null;
-    console.log("mimp_loc: ", mimp_loc);
-    console.log("mimp.sel_filename: ", mimp.sel_filename);
-    console.log("curFile", curFile);
-    console.log("msg_err", msg_err);
+    console.log("    mimp.sel_filename: ", mimp.sel_filename);
+    console.log("    msg_err", msg_err);
 
-// ---  display sel_filename in elid_MDNT_filename, make btn 'outline' when filename existst
+// ---  display sel_filename in elid_MDNT_filename, make btn 'outline' when filename exists
         const el_MDNT_filename = document.getElementById("id_MDNT_filename");
         if(el_MDNT_filename && mimp.sel_filename){el_MDNT_filename.innerText = mimp.sel_filename};
         const el_MDNT_btn_filedialog = document.getElementById("id_MDNT_btn_filedialog");
@@ -2876,11 +2875,14 @@ console.log("    mimp.import_table", mimp.import_table);
         if (el_msg_err){
             el_msg_err.innerText = msg_err;
             show_hide_element(el_msg_err, (!!msg_err));
+        }
+        if (mimp.sel_filename){
+             const el_MDNT_btn_save = document.getElementById("id_MDNT_btn_save");
+             el_MDNT_btn_save.disabled = false;
         };
+    };  // MDNT_HandleFiledialog
 
-    }  // MDNT_HandleFiledialog
-
-//=========   MDNT_Save   ====================== PR2022-02-26
+//=========   MDNT_Save   ====================== PR2022-02-26 PR2023-03-29
     function MDNT_Save(RefreshDataRowsAfterUpload, setting_dict){
         console.log(" ========== MDNT_Save ===========");
 
@@ -2900,7 +2902,7 @@ console.log("    mimp.import_table", mimp.import_table);
                             dnt_arr.push(cols);
                         };
                     };
-                console.log(dnt_arr);
+                console.log("  dnt_arr", dnt_arr);
             // --- Upload Data
                     const el_data = document.getElementById("id_MDNT_data");
                     const url_str = get_attr_from_el(el_data, "data-url_importdnt_upload");
@@ -2913,7 +2915,7 @@ console.log("    mimp.import_table", mimp.import_table);
                         data_list: dnt_arr
                     };
 
-                console.log("upload_dict", upload_dict);
+                console.log("    upload_dict", upload_dict);
                     UploadData(url_str, upload_dict, RefreshDataRowsAfterUpload);
                 };
             };

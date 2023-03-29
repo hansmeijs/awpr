@@ -2372,9 +2372,9 @@ class ExamUploadDuoExamView(View):
                 # - create list of updated exams
                             updated_duo_exam_rows = create_duo_exam_rows(
                                 req_usr=request.user,
-                                sel_examyear=department_instance.examyear,
-                                sel_depbase=department_instance.base,
-                                sel_lvlbase=level_instance.base,
+                                sel_examyear=department_instance.examyear if department_instance else None,
+                                sel_depbase=department_instance.base if department_instance else None,
+                                sel_lvlbase=level_instance.base if level_instance else None,
                                 sel_examperiod=sel_examperiod,
                                 append_dict=append_dict,
                                 exam_pk_list=updated_exam_pk_list
@@ -5016,7 +5016,7 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
 def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, sel_lvlbase, sel_examperiod, append_dict, exam_pk_list=None):
     # PR2022-04-06 PR2022-06-02
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear))
