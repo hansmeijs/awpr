@@ -150,8 +150,8 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['Inactive'] = _('Inactive')
     dict['Last_modified_on'] = _('Last modified on ')
     dict['Last_modified'] = _('Last modified ')
-    dict['on'] = _('on ')
-    dict['by'] = _(' by ')
+    dict['_on_'] = _(' on ')
+    dict['_by_'] = _(' by ')
 
     dict['School_exam'] = _('School exam')
     dict['School_exam_2lines'] = _('School\nexam')
@@ -340,6 +340,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Make_user_inactive'] = _('Make user inactive')
         dict['Make_user_active'] = _('Make user active')
         dict['This_user_is_inactive'] = _('This user is inactive.')
+
+        dict['Account_is_created'] = _('Account is created')
+
 
         dict['role_caption'] = c.ROLE_DICT
 
@@ -1315,6 +1318,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_exam'] = _("Select exam")
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
+
+        dict['No_clusters'] = _("There are no clusters created yet.")
+        dict['Goto_subjects_to_create'] = _("Go to the page <i>Subjects</i> and click the menu button <i>Clusters</i> to create them.")
 
         dict['Download_conv_table_2lines'] = pgettext_lazy('2lines', 'Download conversion table')
         dict['Download_conv_table'] =_('Download conversion table')

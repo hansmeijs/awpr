@@ -1893,7 +1893,7 @@ class ExamCopyNtermenView(View):
                 if logging_on:
                     logger.debug('upload_dict' + str(upload_dict))
 
-                log_list = ['Copy N-termentabel', ' ']
+                log_list = [str(_('Copy N-termentabel')), ' ']
 
 # - get variables from upload_dict
                 # upload_dict{'table': 'exam', 'mode': 'update', 'field': 'authby', 'auth_index': 2, 'auth_bool_at_index': True, 'exam_pk': 138}
@@ -1949,25 +1949,35 @@ class ExamCopyNtermenView(View):
 
                                     ntermentable = exam.ntermentable
                                     if not ntermentable:
-                                        log_list.append('    This exam is nit linked to a CVTE exam')
+                                        log_list.append(''.join(('    ', str(_('This exam is not linked to a CVTE exam.')))))
                                         log_list.append(' ')
                                     else:
-                                        log_list.append('    CVTE exam: ' + ntermentable.omschrijving)
+                                        log_list.append(''.join(('    ', str(_('CVTE exam')), ': ', ntermentable.omschrijving)))
 
         # - loop through DUO exams
                                         old_scalelength = getattr(exam, 'scalelength')
                                         old_nterm = getattr(exam, 'nterm')
                                         new_scalelength = getattr(ntermentable, 'schaallengte')
                                         new_nterm = getattr(ntermentable, 'n_term')
+
                                         if new_scalelength == old_scalelength and new_nterm == old_nterm:
-                                            log_list.append('    no changes')
+                                            log_list.append(' '.join(('    ', str(_('no changes')))))
                                         else:
+                                            not_entered_txt = str(_('Not entered')).lower()
                                             if new_scalelength != old_scalelength:
                                                 setattr(exam, 'scalelength', new_scalelength)
-                                                log_list.append(' '.join(( '    scalelength:', str(old_scalelength), '>', str(new_scalelength))))
+
+                                                old_scalelength_txt = old_scalelength if old_scalelength else not_entered_txt
+                                                new_scalelength_txt = new_scalelength if new_scalelength else not_entered_txt
+                                                log_list.append(' '.join(('    ', str(_('Scale length')).lower(), ': ', str(old_scalelength_txt), '>', str(new_scalelength_txt))))
+
                                             if new_nterm != old_nterm:
                                                 setattr(exam, 'nterm', new_nterm)
-                                                log_list.append(' '.join(( '    nterm:      ', str(old_nterm), '>', str(new_nterm))))
+
+                                                old_nterm_txt = old_nterm if old_nterm else not_entered_txt
+                                                new_nterm_txt = new_nterm if new_nterm else not_entered_txt
+                                                log_list.append(' '.join(( '    ', str(_('n-term')), ':    ', str(old_nterm_txt), '>', str(new_nterm_txt))))
+
                                             exam.save(request=request)
 
                 update_wrap['loglist_copied_ntermen'] = log_list

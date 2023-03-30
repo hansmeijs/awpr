@@ -190,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
-        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
@@ -859,6 +858,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.className = (permit_bool) ? "tickmark_2_2" : "tickmark_0_0" ;
 
             } else if ( field_name === "activated") {
+                console.log("    map_dict", map_dict);
                 const is_activated = (map_dict[field_name]) ? map_dict[field_name] : false;
                 let is_expired = false;
                 if(!is_activated) {
@@ -870,8 +870,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 add_or_remove_class(el_div, "pointer_show", !is_activated)
 
 // ---  add title
-                title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Send_activationlink : null
+                if (is_expired)  {
+                    title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Send_activationlink : null
+                //} else {
+                // TODO give info activationlink sent, date activated
+                   //title_text = f_format_last_modified_txt(loc.Account_is_created, map_dict.date_joined);
 
+                };
             } else if (field_name === "is_active") {
                 const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
                 // give value '0' when inactive, '1' when active
@@ -1110,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_header.innerText = header_text;
 
 // ---  set text last modified
-            el_MUA_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc, modifiedat, modby_username) : null;
+            el_MUA_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc.Last_modified, modifiedat, modby_username) : null;
 
     // ---  fill selecttable
             if(permit_dict.permit_crud_otherschool){

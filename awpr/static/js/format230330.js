@@ -145,19 +145,19 @@
         return time_formatted
     }  // format_datetime_from_datetimeJS
 
-//========= f_format_last_modified ======== PR2021-08-21
-    function f_format_last_modified_txt(loc, modifiedat, modified_by) {
-
+//========= f_format_last_modified ======== PR2021-08-21 PR223-03-30
+    function f_format_last_modified_txt(prefix_txt, modifiedat, modified_by) {
         let display_txt = null;
         if (modifiedat || modified_by ) {
-            display_txt = loc.Last_modified;
+            if (prefix_txt) { display_txt = prefix_txt };
             if (modifiedat){
+                if (prefix_txt) { display_txt += loc._on_ };
                 const modified_dateJS = parse_dateJS_from_dateISO(modifiedat);
-                const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
-                display_txt += (loc.on + modified_date_formatted)
+                display_txt += format_datetime_from_datetimeJS(loc, modified_dateJS);
             };
             if (modified_by){
-                display_txt += loc.by + modified_by;
+                if (prefix_txt) { display_txt += loc._by_ };
+                display_txt += modified_by;
             };
         };
         return display_txt;

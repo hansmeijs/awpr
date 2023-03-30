@@ -174,7 +174,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
                     messages.append(msg_dict)
                 else:
 
-                    sel_lvlbase_pk, sel_sctbase_pkNIU = dl.get_selected_lvlbase_sctbase_from_usersetting(request)
+                    sel_lvlbase_pk, sel_sctbase_pkNIU = acc_view.get_selected_lvlbase_sctbase_from_usersetting(request)
                     student_pk_list = upload_dict.get('student_pk_list')
 
 # +++++ calc_batch_student_result ++++++++++++++++++++

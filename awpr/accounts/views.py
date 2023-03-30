@@ -1885,10 +1885,10 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
             # loop through all_lvlbases_rows to display levels in right sequence
             for lvlbase_dict in all_lvlbases_rows:
                 lvlbase_pk = lvlbase_dict.get('base_id')
-                if logging_on:
-                    logger.debug(' WWW   lvlbase_dict: ' + str(lvlbase_dict))
-                    logger.debug('    lvlbase_pk: ' + str(lvlbase_pk))
-                    logger.debug('    lvlbase_pk_arr: ' + str(lvlbase_pk_arr))
+                #if logging_on:
+                #    logger.debug('    lvlbase_dict: ' + str(lvlbase_dict))
+                #    logger.debug('    lvlbase_pk: ' + str(lvlbase_pk))
+                #    logger.debug('    lvlbase_pk_arr: ' + str(lvlbase_pk_arr))
                 if lvlbase_pk and lvlbase_pk in lvlbase_pk_arr:
                     code = lvlbase_dict.get('code')
                     if code and code not in lvlbase_code_list:
@@ -2068,15 +2068,19 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
                         allowed_sections_str = user_dict.get('allowed_sections')
                         allowed_sections_dict = json.loads(allowed_sections_str) if allowed_sections_str else None
 
-                        if logging_on:
-                            logger.debug('  ====>  allowed_sections_dict: ' + str(allowed_sections_dict))
-                            logger.debug('  ====>  request.user.schoolbase.pk) not in allowed_sections_dict: ' + str(str(request.user.schoolbase.pk) not in allowed_sections_dict))
+                        #if logging_on:
+                        #    logger.debug('  ====>  allowed_sections_dict: ' + str(allowed_sections_dict))
+                        #    logger.debug('  ====>  request.user.schoolbase.pk) not in allowed_sections_dict: ' + str(str(request.user.schoolbase.pk) not in allowed_sections_dict))
 
                         # PR2023-03-26 when school downolads corrector users: add only when school is in allowed schools of corrector user
                         skip_add_to_list = False
                         if school_correctors_only:
                            if str(request.user.schoolbase.pk) not in allowed_sections_dict:
                                skip_add_to_list = True
+
+                        if logging_on:
+                            logger.debug('  ====>  skip_add_to_list: ' + str(skip_add_to_list))
+                            logger.debug('  ====>  allowed_sections_dict: ' + str(allowed_sections_dict))
 
                         if not skip_add_to_list:
 
@@ -2094,8 +2098,8 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
                             if allowed_sections_dict:
                                 # allowed_sections_dict: {'5': {'1': {'5': [118, 132, 154], '6': [118, 132, 154]}}} <class 'dict'>
 
-                                if logging_on:
-                                    logger.debug('  @@@@@@   allowed_sections_dict: ' + str(allowed_sections_dict))
+                                #if logging_on:
+                                #    logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
 
                                 r_allowed_sections = {}
                                 schoolbase_pk_arr, r_depbase_pk_arr, lvlbase_pk_arr, r_subjbase_pk_arr = [], [], [], []

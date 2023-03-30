@@ -808,7 +808,7 @@ updated_examyear_rows: [{…}]
             const modified_dateJS = parse_dateJS_from_dateISO(mod_MCREY_dict.modifiedat);
             const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
             const modified_by = (mod_MCREY_dict.modby_username) ? mod_MCREY_dict.modby_username : "-";
-            modified_text = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+            modified_text = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by
         }
         document.getElementById("id_MCREY_msg_modified").innerText = modified_text;
 
@@ -1005,7 +1005,7 @@ updated_examyear_rows: [{…}]
             const modified_dateJS = parse_dateJS_from_dateISO(mod_MCREY_dict.modifiedat);
             const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
             const modified_by = (mod_MCREY_dict.modby_username) ? mod_MCREY_dict.modby_username : "-";
-            modified_text = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+            modified_text = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by
         };
         document.getElementById("id_MODEY_modified").innerText = modified_text;
 

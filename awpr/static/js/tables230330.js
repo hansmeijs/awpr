@@ -387,7 +387,10 @@
                 // PR2022-05-25 is confusing when modal doesn't open, > 1 removed
                 //if (data_rows && data_rows.length > 1){
 
-                if (!isEmpty(data_dicts)){
+                if (isEmpty(data_dicts)){
+                    const msg_html = ["<p>", loc.No_clusters, "</p><p>", loc.Goto_subjects_to_create, "</p>"].join("");
+                    b_show_mod_message_html(msg_html);
+                } else {
         // --- fill select table
     console.log( "    fill select table" );
                     t_MSSSS_Fill_SelectTable_NEW(loc, tblName, data_dicts, setting_dict, el_MSSSS_input, MSSSS_Response, selected_pk, add_all)
@@ -411,7 +414,7 @@
 
 //=========  t_MSSSS_Save_NEW  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26 PR2023-01-05
     function t_MSSSS_Save_NEW(el_input, MSSSS_Response) {
-        console.log("===  t_MSSSS_Save_NEW =========");
+        //console.log("===  t_MSSSS_Save_NEW =========");
         //console.log("el_input", el_input);
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
 
@@ -425,9 +428,9 @@
 
         const map_id = tblName + "_" + selected_pk_int;
 
-        console.log("    map_id", map_id);
-        console.log("    selected_code", selected_code);
-        console.log("    selected_name", selected_name);
+    //console.log("    map_id", map_id);
+    //console.log("    selected_code", selected_code);
+    //console.log("    selected_name", selected_name);
 
 // +++ get existing map_dict from data_rows
         // when tblName = school: pk_int = base_pk, therefore can't use b_recursive_integer_lookup PR2022-10-26
@@ -506,10 +509,10 @@
 
 //========= t_MSSSS_Create_SelectRow_NEW  ============= PR2020-12-18 PR2020-07-14 PR2023-01-04
     function t_MSSSS_Create_SelectRow_NEW(loc, tblName, tblBody_select, map_dict, selected_pk, el_input, MSSSS_Response) {
-         console.log("===== t_MSSSS_Create_SelectRow_NEW ===== ");
-        console.log("    ..........tblName", tblName);
-        console.log("    map_dict", map_dict);
-        console.log("    map_dict.name_nl", map_dict.name_nl);
+         //console.log("===== t_MSSSS_Create_SelectRow_NEW ===== ");
+    //console.log("    ..........tblName", tblName);
+    //console.log("    map_dict", map_dict);
+    //console.log("    map_dict.name_nl", map_dict.name_nl);
 
 //--- get info from map_dict
         // when tblName = school: pk_int = schoolbase_pk
@@ -612,8 +615,8 @@
 
 //=========  t_MSSSS_SelectItem_NEW  ================ PR2020-12-17 PR2023-01-05
     function t_MSSSS_SelectItem_NEW(MSSSS_Response, tblRow, el_input) {
-        console.log( "===== t_MSSSS_SelectItem ========= ");
-        console.log( tblRow);
+        //console.log( "===== t_MSSSS_SelectItem ========= ");
+    //console.log( tblRow);
         // all data attributes are now in tblRow, not in el_select = tblRow.cells[0].children[0];
         // after selecting row, values are stored in input box
 
@@ -750,9 +753,17 @@
 
 //=========  t_MSSSS_Save  ================ PR2020-01-29 PR2021-01-23 PR2022-02-26 PR2022-10-26
     function t_MSSSS_Save(el_input, MSSSS_Response) {
-        //console.log("===  t_MSSSS_Save =========");
-        //console.log("el_input", el_input);
+        //console.log("=====  t_MSSSS_Save =========");
+        //console.log("    el_input", el_input);
+        //console.log("    MSSSS_Response", MSSSS_Response);
+
+        // PR2023-03-29 function is only called by t_MSSSS_SelectItem
+        // argument MSSS_Response gets value in - for instance - addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, add_all, false, setting_dict, permit_dict, MSSSubjStud_Response)}, false);
+
+
+
     // --- put tblName, sel_pk and value in MSSSS_Response, MSSSS_Response handles uploading
+    // function
 
         const tblName = get_attr_from_el(el_input, "data-table");
 
@@ -1037,12 +1048,8 @@
                 el_input.setAttribute("data-pk", selected_pk);
                 el_input.setAttribute("data-code", data_code);
                 el_input.setAttribute("data-name", data_name);
-
-// ---  Set focus to btn_save
-                const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save")
-                set_focus_on_el_with_timeout(el_MSSSS_btn_save, 50);
-            }  //  if (!!selected_pk) {
-        }
+            };  //  if (!!selected_pk) {
+        };
     }; // t_MSSSS_InputKeyup
 
 //========= t_MSSSS_display_in_sbr  ====================================
@@ -2609,7 +2616,7 @@ const mod_MCOL_dict = {
 
 //=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-03-26
     function t_SBR_select_level_sector(tblName, el_select, SBR_lvl_sct_response, skip_upload) {
-        //console.log("===== t_SBR_select_level_sector =====");
+        console.log("===== t_SBR_select_level_sector =====");
         //console.log( "    tblName: ", tblName) // tblName = "lvlbase" or "sctbase"
         //console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
 
@@ -2654,13 +2661,15 @@ const mod_MCOL_dict = {
         // ---  upload new setting
                 b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             };
+        console.log("    selected_pk_int", selected_pk_int);
+        console.log("    selected_dict", selected_dict);
             SBR_lvl_sct_response(tblName, selected_dict, selected_pk_int);
         };
     };  // t_SBR_select_level_sector
 
 //=========  t_SBR_filloptions_level_sector  ================ PR2021-08-02 PR2023-01-11
     function t_SBR_filloptions_level_sector(tblName, rows) {
-        //console.log("=== t_SBR_filloptions_level_sector");
+        console.log("=== t_SBR_filloptions_level_sector");
         //console.log("tblName", tblName);
         //console.log("rows", rows);
 

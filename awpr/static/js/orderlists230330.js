@@ -2040,7 +2040,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
-                modified_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                modified_txt = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by;
             };
             el_MENVIT_msg_modified.innerText = modified_txt;
 
@@ -2609,7 +2609,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MENV_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MENV_dict.modby_username) ? mod_MENV_dict.modby_username : "-";
-                modified_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                modified_txt = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by;
             };
             el_MENVIT_msg_modified.innerText = modified_txt;
 

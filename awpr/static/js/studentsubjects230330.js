@@ -244,24 +244,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_allowed_sections.addEventListener("click", function() {t_MUPS_Open()}, false );
         };
 
-// ---  MODAL USER SET ALLOWED SECTIONS
-        const el_MUPS_username = document.getElementById("id_MUPS_username");
-        console.log("DOMContentLoaded TABLE.js el_MUPS_username", el_MUPS_username);
-        const el_MUPS_loader = document.getElementById("id_MUPS_loader");
-
-        const el_MUPS_tbody_container = document.getElementById("id_MUPS_tbody_container");
-        const el_MUPS_tbody_select = document.getElementById("id_MUPS_tbody_select");
-
-        const el_MUPS_btn_expand_all = document.getElementById("id_MUPS_btn_expand_all");
-        if (el_MUPS_btn_expand_all){
-            el_MUPS_btn_expand_all.addEventListener("click", function() {MUPS_ExpandCollapse_all()}, false);
-        };
-        const el_MUPS_btn_save = document.getElementById("id_MUPS_btn_save");
-        if (el_MUPS_btn_save){
-            el_MUPS_btn_save.addEventListener("click", function() {MUPS_Save("save")}, false);
-        };
-        const el_MUPS_btn_cancel = document.getElementById("id_MUPS_btn_cancel");
-
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         if(el_SBR_select_level){
@@ -275,8 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         if (el_SBR_select_cluster){
-            el_SBR_select_cluster.addEventListener("click",
-                function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+            el_SBR_select_cluster.addEventListener("click", function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if(el_SBR_select_student){
@@ -290,13 +271,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
-        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
-        }
-        if (el_MSSSS_btn_save){
-            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save_NEW(el_MSSSS_input, MSSSS_Response)}, false );
         }
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
@@ -835,8 +812,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const sel_pk_key_str = (tblName === "sctbase") ? "sel_sctbase_pk" : "sel_lvlbase_pk";
 
-        const new_setting_dict = {page: "page_student"}
+        const new_setting_dict = {page: "page_studsubj"}
         new_setting_dict[sel_pk_key_str] = selected_pk_int;
+
+        // reset student and  cluster filter
+        new_setting_dict.sel_student_pk = null;
+        new_setting_dict.sel_cluster_pk = null;
 
         const datalist_request = {
                 setting: new_setting_dict,
@@ -1820,8 +1801,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     //el_header_left.classList.remove(cls_hide)
                     //el_header_right.classList.remove(cls_hide)
 
-                    console.log( "response");
-                    console.log( response);
+                    console.log( "    response", response);
 
                     if ("msg_html" in response) {
                         b_show_mod_message_html(response.msg_html)
@@ -1936,7 +1916,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // ---  remove value from el_mod_employee_input
                     //MSTUD_SetElements();  // true = also_remove_values
 
-                    //document.getElementById("id_MSTUDSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+                    //document.getElementById("id_MSTUDSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by
 
                     const has_studsubj_rows = MSTUDSUBJ_FillDicts();
                     MSTUDSUBJ_FillTbls();
@@ -5666,7 +5646,7 @@ console.log( "......filter_dict", filter_dict);
             // only when modal is open
             const el_modal = document.getElementById("id_mod_cluster");
             const modal_MCL_is_open = (!!el_modal && el_modal.classList.contains("show"));
-        console.log( "modal_MCL_is_open", modal_MCL_is_open);
+        console.log( "    modal_MCL_is_open", modal_MCL_is_open);
             if(modal_MCL_is_open){
                 MCL_SaveSubject_in_MCL_dict(selected.subject_pk);
 
@@ -5725,7 +5705,7 @@ console.log( "......filter_dict", filter_dict);
             UpdateHeaderText();
 
     // ---  fill datatable
-       console.log("function MSSSS_Response");
+       console.log("    function MSSSS_Response");
             FillTblRows()
 
             //MSSSS_display_in_sbr()
@@ -5920,7 +5900,7 @@ console.log( "......filter_dict", filter_dict);
                 const datalist_request = { setting: {page: "page_studsubj"},
                                 studentsubject_rows: {cur_dep_only: true},
                                 published_rows: {get: true}
-                                }
+                                };
 
         console.log("......................datalist_request", datalist_request) ;
                 //DatalistDownload(datalist_request);

@@ -302,13 +302,9 @@ document.addEventListener("DOMContentLoaded", function() {
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
-        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
-        }
-        if (el_MSSSS_btn_save){
-            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSubjStud_Response)}, false );
         }
 
 // ---  MSELEX MOD SELECT EXAM ------------------------------
@@ -3239,8 +3235,7 @@ document.addEventListener("DOMContentLoaded", function() {
             MEXQ_FillTablePartex();
 
 // ---  set text last modified
-            //el_MEXQ_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc, ete_exam_dict.modifiedat, ete_exam_dict.modby_username) : null;
-            el_MEXQ_msg_modified.innerText = f_format_last_modified_txt(loc, ete_exam_dict.modifiedat, ete_exam_dict.modby_username);
+            el_MEXQ_msg_modified.innerText = f_format_last_modified_txt(loc.Last_modified, ete_exam_dict.modifiedat, ete_exam_dict.modby_username);
 
             // update text in select subject div ( not when entering answers)
             // set input subject readOnly when existing exam

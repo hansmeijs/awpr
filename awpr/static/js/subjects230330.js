@@ -2684,7 +2684,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSJTBASE_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSJTBASE_dict.modby_username) ? mod_MSJTBASE_dict.modby_username : "-";
-                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                const display_txt = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by;
                 document.getElementById("id_MSJTBASE_msg_modified").innerText = display_txt;
             }
 
@@ -2706,7 +2706,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSJTBASE_dict.modby_username) ? mod_MSJTBASE_dict.modby_username : "-";
 
-                document.getElementById("id_MSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+                document.getElementById("id_MSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by
             }
 
   // put value of etenorm  as "1" or "0" in data-value
@@ -2824,7 +2824,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSUBJ_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSUBJ_dict.modby_username) ? mod_MSUBJ_dict.modby_username : "-";
-                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                const display_txt = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by;
                 document.getElementById("id_MSUBJ_msg_modified").innerText = display_txt;
             };
 
@@ -2848,7 +2848,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSUBJ_dict.modby_username) ? mod_MSUBJ_dict.modby_username : "-";
 
-                document.getElementById("id_MSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+                document.getElementById("id_MSUBJ_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by
             }
 
   // put value of etenorm  as "1" or "0" in data-value
@@ -3375,7 +3375,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---  remove value from el_mod_employee_input
             //MSTUD_SetElements();  // true = also_remove_values
 
-            //document.getElementById("id_MSI_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+            //document.getElementById("id_MSI_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by
 
             //console.log("mod_MSI_dict.department_pk", mod_MSI_dict.department_pk)
             //console.log("mod_MSI_dict.lvl_pk", mod_MSI_dict.lvl_pk)

@@ -103,13 +103,9 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MSSS MOD SELECT SCHOOL / SUBJECT / STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
-        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});
-        }
-        if (el_MSSSS_btn_save){
-            el_MSSSS_btn_save.addEventListener("click", function() {t_MSSSS_Save(el_MSSSS_input, MSSSS_Response)}, false );
         }
 
 // ---  MOD SELECT EXAM YEAR ------------------------------------
@@ -899,7 +895,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSCH_dict.modby_username) ? mod_MSCH_dict.modby_username : "-";
 
-                document.getElementById("id_MSCH_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by
+                document.getElementById("id_MSCH_msg_modified").innerText = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by
             }
 
             MSCH_FillSelectTableDepartment();

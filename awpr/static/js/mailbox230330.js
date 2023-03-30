@@ -132,7 +132,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  MSSS MOD SELECT SCHOOL SUBJECT STUDENT ------------------------------
         const el_MSSSS_input = document.getElementById("id_MSSSS_input");
         const el_MSSSS_tblBody = document.getElementById("id_MSSSS_tbody_select");
-        const el_MSSSS_btn_save = document.getElementById("id_MSSSS_btn_save");
         if (el_MSSSS_input){
             el_MSSSS_input.addEventListener("keyup", function(event){
                 setTimeout(function() {t_MSSSS_InputKeyup(el_MSSSS_input)}, 50)});

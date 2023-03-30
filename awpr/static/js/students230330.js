@@ -1233,7 +1233,7 @@ function RefreshDataRowsAfterUpload(response) {
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSTUD_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSTUD_dict.modby_username) ? mod_MSTUD_dict.modby_username : "-";
-                const display_txt = loc.Last_modified_on + modified_date_formatted + loc.by + modified_by;
+                const display_txt = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by;
                 document.getElementById("id_MSTUD_msg_modified").innerText = display_txt;
             };
 
