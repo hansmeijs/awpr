@@ -87,6 +87,8 @@ class User(AbstractUser):
 
     activated = BooleanField(default=False)
     activated_at = DateTimeField(null=True)
+    activationlink_sent = DateTimeField(null=True)   # PR2023-03-31 added
+
     # country and schoolbase get their value when user is created - value can never change PR2020-11-17
     # insp and admin selected school is stored in usersettings
     country = ForeignKey(Country, null=True, blank=True, related_name='+', on_delete=PROTECT)
@@ -220,6 +222,7 @@ class User_log(Model):
 
     activated = BooleanField(default=False)
     activated_at = DateTimeField(null=True)
+    activationlink_sent = DateTimeField(null=True)   # PR2023-03-31 added
 
     country = ForeignKey(Country, null=True, related_name='+', on_delete=PROTECT)
     schoolbase = ForeignKey(Schoolbase, null=True, related_name='+', on_delete=PROTECT)

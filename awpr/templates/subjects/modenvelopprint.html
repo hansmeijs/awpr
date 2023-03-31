@@ -35,6 +35,14 @@
                                  <option value="tv02">{% trans 'CSE exams second period' %}</option>
                             </select>
                         </div>
+                        <div class="flex_1 p-2">
+                            <h6 class="px-2">{% trans 'Select designated exams' %}:</h6>
+                            <select id="id_MENVPR_select_secret" size="3" class="form-control tbl_hide_scrollbar"
+                                 autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                                 <option value="exclude">{% trans "Download without designated exams" %}</option>
+                                 <option value="only">{% trans 'Download designated exams only' %}</option>
+                            </select>
+                        </div>
                     </div>
                     <div id="id_MENVPR_loader" class="display_hide mx-4 mt-2 ">
                         <div class="image_container">

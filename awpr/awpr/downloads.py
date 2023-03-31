@@ -478,7 +478,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     )
                     datalists['envelopsubject_rows'] = sj_ol.get_envelopsubject_rows(
                         sel_examyear=sel_examyear,
-                        append_dict={}
+                        append_dict={},
+                        practex_only=None,  # values are None (all), True (only), False (excluded)
+                        errata_only=False,
+                        secret_only=None  # values are None (all), True (only), False (excluded)
                     )
 
 # ----- envelopbundle_rows

@@ -253,15 +253,15 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_select_sector.addEventListener("change", function() {t_SBR_select_level_sector("sctbase", el_SBR_select_sector, SBR_lvl_sct_response)}, false)};
         const el_SBR_select_subject = document.getElementById("id_SBR_select_subject");
         if(el_SBR_select_subject){
-            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+            el_SBR_select_subject.addEventListener("click", function() {t_MSSSS_Open(loc, "subject", subject_rows, true, false, setting_dict, permit_dict, MSSSS_subject_response)}, false)};
 
         const el_SBR_select_cluster = document.getElementById("id_SBR_select_cluster");
         if (el_SBR_select_cluster){
-            el_SBR_select_cluster.addEventListener("click", function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+            el_SBR_select_cluster.addEventListener("click", function() {t_MSSSS_Open_NEW(loc, "cluster", cluster_dictsNEW, true, false, setting_dict, permit_dict, MSSSS_cluster_response)}, false)};
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
         if(el_SBR_select_student){
-            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_Response)}, false)};
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, MSSSS_student_response)}, false)};
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
         if(el_SBR_select_showall){
             el_SBR_select_showall.addEventListener("click", function() {t_SBR_show_all(SBR_show_all_response)}, false);
@@ -5550,6 +5550,7 @@ console.log( "......filter_dict", filter_dict);
         //console.log( "===== Filter_TableRows  ========= ");
         //console.log( "filter_dict", filter_dict);
         t_Filter_TableRows(tblBody_datatable, filter_dict, selected, loc.Subject, loc.Subjects);
+
     }; // Filter_TableRows
 
 //========= ResetFilterRows  ====================================
@@ -5603,7 +5604,162 @@ console.log( "......filter_dict", filter_dict);
 
     }  // MSED_Response
 
+//=========  MSSSS_school_response  ================ PR2023-03-29
+    function MSSSS_school_response(tblName, selected_dict, sel_schoolbase_pk) {
+        console.log( "===== MSSSS_school_response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "sel_schoolbase_pk", sel_schoolbase_pk, typeof sel_schoolbase_pk);
+        console.log( "selected_dict", selected_dict);
+        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+
+// reset text dep and school in headerbar
+        el_hdrbar_department.innerText = null;
+        el_hdrbar_school.innerText = null;
+
+// reset cluster and student
+        setting_dict.sel_cluster_pk = null;
+        setting_dict.sel_student_pk = null;
+
+        SBR_display_subject_cluster_student();
+
+// ---  upload new setting and refresh page
+        const datalist_request = {
+                setting: {page: "page_grade",
+                        sel_schoolbase_pk: sel_schoolbase_pk,
+                        sel_cluster_pk: null,
+                        sel_student_pk: null
+                        },
+                school_rows: {get: true},
+                department_rows: {get: true},
+                level_rows: {cur_dep_only: true},
+                sector_rows: {cur_dep_only: true},
+                subject_rows: {get: true},
+                cluster_rows: {cur_dep_only: true},
+
+                student_rows: {get: true},
+                studentsubject_rows: {get: true},
+                grade_rows: {get: true},
+
+                all_exam_rows: {get: true}
+            };
+            DatalistDownload(datalist_request);
+
+    };  // MSSSS_school_response
+
+//=========  MSSSS_subject_response  ================ PR2023-03-30
+    function MSSSS_subject_response(tblName, selected_dict, sel_subject_pk) {
+        console.log( "===== MSSSS_subject_response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "sel_subject_pk", sel_subject_pk, typeof sel_subject_pk);
+        console.log( "selected_dict", selected_dict);
+        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // when changing subject, only update settings, dont use DatalistDownload but filter on page
+
+        // 'all subjects' has value -1
+        if(sel_subject_pk === -1) { sel_subject_pk = null};
+
+        setting_dict.sel_subject_pk = sel_subject_pk;
+        setting_dict.sel_subject_name = (selected_dict && selected_dict.name_nl) ? selected_dict.name_nl : null;
+
+// when selecting cluster: also set subject to the subject of this cluster
+        setting_dict.sel_cluster_pk = null;
+        setting_dict.sel_cluster_name = null;
+        setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
+
+// ---  upload new setting
+        const upload_dict = {selected_pk: {
+                                sel_subject_pk: sel_subject_pk,
+                                sel_cluster_pk: null,
+                                sel_student_pk: null
+                            }};
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+        SBR_display_subject_cluster_student();
+
+        FillTblRows();
+        //HandleBtnSelect(null, true)  // true = skip_upload
+        // also calls: FillTblRows(), UpdateHeader()
+
+    };  // MSSSS_subject_response
+
+//=========  MSSSS_cluster_response  ================ PR2023-03-30
+    function MSSSS_cluster_response(tblName, selected_dict, sel_cluster_pk) {
+        console.log( "===== MSSSS_cluster_response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "sel_cluster_pk", sel_cluster_pk, typeof sel_cluster_pk);
+        console.log( "selected_dict", selected_dict);
+        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // when changing cluster, only update settings, dont use DatalistDownload but filter on page
+
+        // 'all clusters' has value -1
+        if(sel_cluster_pk === -1) { sel_cluster_pk = null};
+
+        setting_dict.sel_cluster_pk = sel_cluster_pk;
+        setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
+
+// when selecting cluster: also set subject to the subject of this cluster
+        // dont reset subject when subject of selected cluster is the same as selected subject PR2023-03-30
+        if (!selected_dict || selected_dict.subject_id !== setting_dict.sel_subject_pk){
+            setting_dict.sel_subject_pk = null;
+            setting_dict.sel_subject_name = null;
+        };
+        setting_dict.sel_student_pk = null;
+        setting_dict.sel_student_name = null;
+
+// ---  upload new setting
+        const upload_dict = {selected_pk: {
+                                sel_cluster_pk: sel_cluster_pk,
+                                sel_subject_pk: null,
+                                sel_student_pk: null
+                            }};
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+        SBR_display_subject_cluster_student();
+
+        FillTblRows();
+
+    };  // MSSSS_cluster_response
+
+//=========  MSSSS_student_response  ================ PR2023-03-30
+    function MSSSS_student_response(tblName, selected_dict, sel_student_pk) {
+        console.log( "===== MSSSS_student_response ========= ");
+        console.log( "tblName", tblName);
+        console.log( "sel_student_pk", sel_student_pk, typeof sel_student_pk);
+        console.log( "selected_dict", selected_dict);
+        // arguments of MSSSS_response are set in t_MSSSS_Save or t_MSSSS_Save_NEW
+        // when changing student, only update settings, dont use DatalistDownload but filter on page
+
+        // 'all clusters' has value -1
+        if(sel_student_pk === -1) { sel_student_pk = null};
+
+        setting_dict.sel_student_pk = sel_student_pk;
+        setting_dict.sel_student_name = (selected_dict && selected_dict.fullname) ? selected_dict.fullname : null;
+
+// when selecting cluster: also set subject to the subject of this cluster
+        setting_dict.sel_subject_pk = null;
+        setting_dict.sel_subject_name = null;
+        setting_dict.sel_cluster_pk = null;
+        setting_dict.sel_cluster_name = null;
+
+// ---  upload new setting
+        const upload_dict = {selected_pk: {
+                                sel_student_pk: sel_student_pk,
+                                sel_subject_pk: null,
+                                sel_cluster_pk: null
+                            }};
+        b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
+        SBR_display_subject_cluster_student();
+
+        FillTblRows();
+
+    };  // MSSSS_student_response
+
+
 //###########################################################################
+
+
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-07-26 PR2023-03-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");

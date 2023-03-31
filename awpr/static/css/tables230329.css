@@ -1289,7 +1289,7 @@ option:hover {
 .tickmark_1_0, .tickmark_1_1, .tickmark_1_2,
 .tickmark_2_0, .tickmark_2_1, .tickmark_2_2,
 
-.questionmark,
+/*.questionmark,*/
 
 .mail_0_0, .mail_0_1, .mail_0_2,
 
@@ -1513,6 +1513,15 @@ option:hover {
     cursor: pointer;
 }
 
+.etelogo {
+    background-image: url('/static/img/etelogo.png');
+    background-size: 32px 32px;
+    background-repeat: no-repeat;
+    height: 32px;
+    width: 32px;
+    margin: 4px 4px 4px 4px;
+    cursor: pointer;
+}
 .envelope_0_0, .envelope_0_1, .envelope_0_2 {
     background-image: url('/static/img/envelope211027.png');
     background-size: 96px 32px;

@@ -772,7 +772,7 @@ def create_studsubj_count_rows(sel_examyear_instance, sel_examperiod, request, s
 
 ##############################
 
-def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubject_pk_list=None):
+def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, secret_only, envelopsubject_pk_list=None):
     # PR2022-08-12 PR2022-10-10
     # function creates list of labels with labelitem info in ARRAY_AGG
     # NIU function includes subquery that counts number of exams of this subject / dep / level / examperiod
@@ -872,10 +872,14 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
             if envelopsubject_pk_list:
                 #sql_keys['envelopsubject_pk_list'] = envelopsubject_pk_list
                 #sql_list.append('AND env_subj.id IN (SELECT UNNEST( %(envelopsubject_pk_list)s::INT[]))')
-                sql_list.append(''.join(("AND env_subj.id IN (SELECT UNNEST(ARRAY", str(envelopsubject_pk_list), "::INT[])) ")))
+                if len(envelopsubject_pk_list) == 1:
+                    sql_list.append(''.join(("AND env_subj.id=", str(envelopsubject_pk_list[0]), "::INT ")))
+                else:
+                    sql_list.append(''.join(("AND env_subj.id IN (SELECT UNNEST(ARRAY", str(envelopsubject_pk_list), "::INT[])) ")))
 
             else:
                 # PR2022-09-02 debug: must skip filter examperiod when envelopsubject_pk_list has value
+                # table envelopsubject has a field examperiod
                 sql_list.append(''.join(('AND env_subj.examperiod = ', str(sel_examperiod), '::INT')))
 
     # values of sel_layout are: "no_errata", "errata_only", "all" , None
@@ -890,6 +894,15 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
                 # skip iserrata when not env_subj.has_errata
                 sql_list.append('AND ((lbl.is_errata AND env_subj.has_errata) OR (NOT lbl.is_errata))')
 
+    # - filter rows with or without sceret exams
+            # values of secret_only are: None (all), True (only) and False (excluded)
+            if secret_only is not None:
+                if secret_only:
+                    sql_list.append("AND env_subj.secret_exam ")
+                else:
+                    sql_list.append("AND NOT env_subj.secret_exam ")
+
+
             #sql_list.append('ORDER BY subj.name_nl, exam.version, bndlbl.sequence')
             sql_list.append('ORDER BY subj.name_nl, bndlbl.sequence')
 
@@ -903,7 +916,7 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, envelopsubj
                 cursor.execute(sql, sql_keys)
                 printlabel_rows = af.dictfetchall(cursor)
 
-            if logging_on:
+            if logging_on and False:
                 if printlabel_rows:
                     for printlabel_row in printlabel_rows:
                         logger.debug('    printlabel_row: ' + str(printlabel_row) )

@@ -469,7 +469,7 @@
         console.log("===== t_MSSSS_Fill_SelectTable_NEW ===== ", tblName);
         console.log("    data_dicts", data_dicts, typeof data_dicts);
         console.log("    tblName", tblName, typeof tblName);
-
+        // this function iterates over dicts dictionary instead of over a dictlist
 // set header text
         const label_text = loc.Select + ((tblName === "cluster") ?  loc.a_cluster :
                                     (tblName === "school") ?  loc.a_school :
@@ -503,7 +503,14 @@
         //PR 2021-07-23 was: for (const [map_id, map_dict] of data_map.entries()) {
         //PR 2023-01-05 was: for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
         for (const data_dict of Object.values(data_dicts)) {
-            t_MSSSS_Create_SelectRow_NEW(loc, tblName, tblBody_select, data_dict, selected_pk, el_input, MSSSS_Response);
+            // when filling clusters and a subject is selected: only show clusters of this subject;: PR2023-03-30
+            let add_to_list = true;
+            if (setting_dict.sel_subject_pk){
+                add_to_list = (data_dict.subject_id === setting_dict.sel_subject_pk);
+            };
+            if (add_to_list){
+                t_MSSSS_Create_SelectRow_NEW(loc, tblName, tblBody_select, data_dict, selected_pk, el_input, MSSSS_Response);
+            };
         };
     } // t_MSSSS_Fill_SelectTable_NEW
 
@@ -2197,9 +2204,6 @@
        };
 
     }; // t_reset_filterrow
-
-
-
 
 //========= t_set_sbr_itemcount_txt  ==================================== PR2021-12-20
     function t_set_sbr_itemcount_txt(loc, item_count, count_unit_sing, count_unit_plur, user_lang) {

@@ -519,7 +519,7 @@ class Envelopsubject(sch_mod.AwpBaseModel):  # PR2022-10-09
 
     # labels can be printed with errata labels, without errata labels of errata labels only
     has_errata = BooleanField(default=False)
-
+    secret_exam = BooleanField(default=False)  # PR2023-03-31 added
 
 class Enveloplabelbase(Model):  # PR2022-08-03
     objects = AwpModelManager()
@@ -688,7 +688,7 @@ class Exam(sch_mod.AwpBaseModel):  # PR2021-03-04
     eindtijd = CharField(max_length=c.MAX_LENGTH_SCHOOLCODE, null=True)
 
     # PR2022-05-14 'Geheim examen': school gets grade from ETE.
-    # when  secret_exam = True: school can enter grade instead of scores.
+    # PR2023-03-31 when  secret_exam = True: only ETE can enter scores. school doesn't have to approve
     # All 3rd periodexams are secret, part of 2nd period exams are secret
     secret_exam = BooleanField(default=False)
 

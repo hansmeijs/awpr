@@ -85,6 +85,9 @@
                         </a>
                     </li>
                 {% endif %}
+                <li class="display_hide">
+                    <a href="{% url 'manual_url' 'home' 'intro' %}" target="_blank"> <div title= "{% trans 'Exam paper' %}" class="etelogo"></div> </a>
+                </li>
                 <li>
                      <!-- <a href="{% url 'manual_url' 'intro' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>-->
                     {% if page and paragraph %}

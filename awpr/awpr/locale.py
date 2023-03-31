@@ -1734,7 +1734,6 @@ def get_locale_dict(table_dict, user_lang, request):
 # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
 
-
         dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical grey bar at the left.')
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_123ONLY
 
@@ -1786,6 +1785,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_label'] = _('Delete label')
         dict['Print_labels'] = _('Print labels')
         dict['Print_receipt'] = _('Print receipts')
+        dict['Item'] = _('Item')
+        dict['Items'] = _('Items')
 
         dict['The_orderlist_is_published_at'] = _('The orderlist is published at ')
         dict['The_published_numbers_willbe_used'] = _('The number of exams from the published orderlist will be used.')

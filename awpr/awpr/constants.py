@@ -145,11 +145,12 @@ GRADE_IN_LETTERS = {
 
 
 
-# PR2019-02-15 PR2020-12-14
+# PR2019-02-15 PR2020-12-14 PR2023-03-31
 EXAMPERIOD_FIRST = 1
 EXAMPERIOD_SECOND = 2
 EXAMPERIOD_THIRD = 3
 EXAMPERIOD_EXEMPTION = 4
+EXAMPERIOD_ALL = -1
 EXAMPERIOD_FIRST_PLUS_SECOND = 12
 
 EXAMPERIOD_CAPTION = {
@@ -157,6 +158,7 @@ EXAMPERIOD_CAPTION = {
     EXAMPERIOD_SECOND: _('Second exam period'),
     EXAMPERIOD_THIRD: _('Third exam period'),
     EXAMPERIOD_EXEMPTION: _('Exemption'),
+    EXAMPERIOD_ALL: _('All exam periods'),
     EXAMPERIOD_FIRST_PLUS_SECOND: ' / '.join((str(_('First exam period')), str(_('Second exam period')) ))
 }
 EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
@@ -164,7 +166,7 @@ EXAMPERIOD_OPTIONS = [{'value': EXAMPERIOD_FIRST, 'caption': _('First exam perio
                         {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')},
                         {'value': EXAMPERIOD_EXEMPTION, 'caption': _('Exemption')}]
 
-EXAMPERIOD_OPTIONS_123ONLY = [{'value': 12, 'caption': ''.join(('&#60', str(_('All exam periods')), '&#62'))},
+EXAMPERIOD_OPTIONS_123ONLY = [{'value': EXAMPERIOD_ALL, 'caption': ''.join(('&#60', str(_('All exam periods')), '&#62'))},
                              {'value': EXAMPERIOD_FIRST, 'caption': _('First exam period')},
                             {'value': EXAMPERIOD_SECOND, 'caption': _('Second exam period')},
                             {'value': EXAMPERIOD_THIRD, 'caption': _('Third exam period')}]

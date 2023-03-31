@@ -4321,8 +4321,11 @@ console.log( "......filter_value", filter_value);
         setting_dict.sel_cluster_name = (selected_dict && selected_dict.name) ? selected_dict.name : null;
 
 // when selecting cluster: also set subject to the subject of this cluster
-        setting_dict.sel_subject_pk = null;
-        setting_dict.sel_subject_name = null;
+        // dont reset subject when subject of selected cluster is the same as selected subject PR2023-03-30
+        if (!selected_dict || selected_dict.subject_id !== setting_dict.sel_subject_pk){
+            setting_dict.sel_subject_pk = null;
+            setting_dict.sel_subject_name = null;
+        };
         setting_dict.sel_student_pk = null;
         setting_dict.sel_student_name = null;
 
