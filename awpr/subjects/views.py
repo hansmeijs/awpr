@@ -2239,7 +2239,7 @@ class ExamUploadDuoExamView(View):
                         err_txt = _('There is 1 candidate with this exam.')
                     else:
                         err_txt = _('There are %(count)s candidates with this exam.') % {'count': str(count_grades)}
-                    err_html = acc_prm.err_html_from_err_list((err_txt, _('This CVTE exam can not be deleted.')))
+                    err_html = acc_prm.msghtml_from_msglist_with_border((err_txt, _('This CVTE exam can not be deleted.')))
                 else:
 
                     try:
@@ -5026,7 +5026,7 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
 def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, sel_lvlbase, sel_examperiod, append_dict, exam_pk_list=None):
     # PR2022-04-06 PR2022-06-02
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear))
@@ -5097,8 +5097,11 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, sel_lvlbase, sel_ex
             "LEFT JOIN accounts_user AS au ON (au.id = exam.modifiedby_id)",
 
             "WHERE NOT exam.ete_exam AND depbase.id = " + str(sel_depbase.pk) + "::INT",
-            "AND (exam.examperiod = ", str(sel_examperiod), "::INT)"
         ]
+
+        # show all when sel_examperiod = -1 or None PR2023-04-02
+        if sel_examperiod in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+            sql_list.append(''.join(("AND exam.examperiod=", str(sel_examperiod), "::INT")))
 
         if req_usr.role == c.ROLE_008_SCHOOL:
             sql_list.append(''.join(("AND ey.code = ", str(sel_examyear.code), "::INT")))
@@ -5150,7 +5153,7 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, sel_lvlbase, sel_ex
 # --- end of create_duo_exam_rows
 
 
-def create_duo_subject_rows(sel_examyear, sel_depbase, sel_lvlbase, append_dict):
+def create_duo_subject_rows(sel_examyear, sel_depbase, sel_lvlbase):
     # PR2022-02-23 PR2022-06-23 PR2023-03-18
     # --- create rows with subjects that:
     # - are not si.ete_exam (set in schemeitem, can be different in Cur and Sxm)
@@ -5159,18 +5162,20 @@ def create_duo_subject_rows(sel_examyear, sel_depbase, sel_lvlbase, append_dict)
     # - this department
     # - sel_lvlbase, if sel_lvlbase has value
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_subject_rows ============= ')
+        logger.debug('    sel_examyear: ' + str(sel_examyear))
+        logger.debug('    sel_depbase: ' + str(sel_depbase))
+        logger.debug('    sel_lvlbase: ' + str(sel_lvlbase))
 
     duo_subject_rows=[]
 
     if sel_examyear and sel_depbase:
-        sql_keys = {'ey_id': sel_examyear.pk, 'depbase_id': sel_depbase.pk}
         sql_list = [
             "SELECT subj.id, subj.base_id AS subjbase_id,",
             "sb.code AS subjbase_code, subj.name_nl AS subj_name_nl,",
-            "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id, ",
+            "lvl.id AS lvl_id, lvl.abbrev AS lvl_abbrev, lvl.base_id AS lvlbase_id,",
             "dep.id AS dep_id, depbase.id AS depbase_id, depbase.code AS depbase_code",
 
             "FROM subjects_schemeitem AS si",
@@ -5183,15 +5188,15 @@ def create_duo_subject_rows(sel_examyear, sel_depbase, sel_lvlbase, append_dict)
             "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
             "LEFT JOIN subjects_level AS lvl ON (lvl.id = scheme.level_id)",
 
-            "WHERE ey.id=" + str(sel_examyear.pk) + "::INT",
-            "AND depbase.id=" + str(sel_depbase.pk) + "::INT",
+            # PR2022-05-19 added: AND si.weight_ce > 0", because subjects without CE were showing
+            "WHERE NOT si.ete_exam AND si.weight_ce > 0",
 
-            #PR2022-05-19 added: AND si.weight_ce > 0", because subjects without CE were showing
-            "AND NOT si.ete_exam AND si.weight_ce > 0"
+            ''.join(("AND ey.id=", str(sel_examyear.pk), "::INT")),
+            ''.join(("AND depbase.id=", str(sel_depbase.pk), "::INT"))
         ]
 
         if sel_lvlbase:
-            sql_list.append("AND lvl.base_id=" + str(sel_lvlbase.pk) + "::INT")
+            sql_list.append(''.join(("AND lvl.base_id=", str(sel_lvlbase.pk), "::INT")))
 
         sql_list.append("GROUP BY subj.id, subj.base_id, sb.code, subj.name_nl, lvl.id, lvl.abbrev, dep.id, depbase.id, depbase.code")
 
@@ -5202,7 +5207,7 @@ def create_duo_subject_rows(sel_examyear, sel_depbase, sel_lvlbase, append_dict)
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
-            cursor.execute(sql, sql_keys)
+            cursor.execute(sql)
             duo_subject_rows = af.dictfetchall(cursor)
 
         if logging_on:

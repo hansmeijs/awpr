@@ -34,7 +34,7 @@ from django.utils.encoding import force_bytes, force_text
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, gettext_lazy as _
+from django.utils.translation import activate, gettext, gettext_lazy as _
 from django.views.generic import ListView, View, UpdateView, DeleteView, FormView
 
 from django.contrib.auth.forms import SetPasswordForm # PR2018-10-14
@@ -1385,7 +1385,12 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
             # user.date_joined = now_utc
 
             now_utc = timezone.now()
-            user.date_joined = now_utc  # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+            # PR2023-04-04 use field activationlink_sent, because date_joined cannot be null
+            # date_joined is necessary because Django uses it to check if link is expired
+            # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+            user.date_joined = now_utc
+            user.activationlink_sent = now_utc
+
             user.modifiedby = request.user
             user.modifiedat = now_utc
 
@@ -1746,7 +1751,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
     # PR2020-07-31 PR2022-12-02 PR2023-03-26
     # --- create list of all users of this school, or 1 user with user_pk
     # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_user_rowsNEW ============= ')
@@ -2003,18 +2008,20 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
 
         try:
 
-            sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username FROM accounts_user AS mod_au"
+            # sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username, modby_username FROM accounts_user AS mod_au"
+            sql_moduser = "SELECT mod_au.id, mod_au.last_name AS modby_name FROM accounts_user AS mod_au"
+
             sql_list = ["WITH mod_user AS (", sql_moduser, ")",
                 "SELECT u.id, u.schoolbase_id,",
                 "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
                 "SUBSTRING(u.username, 7) AS username,",
                 "u.last_name, u.email, u.role,",
 
-                "u.activated, u.activated_at, u.is_active, u.last_login, u.date_joined,",
+                "u.activated, u.activated_at, u.activationlink_sent, u.is_active, u.last_login, u.date_joined,",
                 "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
 
                 "ual.usergroups AS ual_usergroups, ual.allowed_sections, ual.allowed_clusters, ual.examyear_id, ual.id AS ual_id, "
-                "u.lang, u.modified_at AS modifiedat, mod_user.modby_username",
+                "u.lang, u.modified_at AS modifiedat, mod_user.modby_name",
 
                 "FROM accounts_user AS u",
                 "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
@@ -2201,7 +2208,7 @@ def create_permit_list(permit_pk=None):
 
 
 ########################################################################
-# === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01 PR2022-012-07
+# === create_or_validate_user_instance ========= PR2020-08-16 PR2021-01-01 PR2022-012-07 PR2023-04-04
 
 def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, usergroups_arr, is_validate_only,
                                      user_lang, sel_examyear, request):
@@ -2368,6 +2375,16 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
                 # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                 mails_sent = send_mail(subject, message, from_email, [new_user.email], fail_silently=False)
                 #logger.debug('mails sent: ' + str(mails_sent))
+
+                if mails_sent:
+                    now_utc = timezone.now()
+                    # PR2023-04-04 use field activationlink_sent, because date_joined cannot be null
+                    # date_joined is necessary because Django uses it to check if link is expired
+                    # timezone.now() is timezone aware, based on the USE_TZ setting; datetime.now() is timezone naive. PR2018-06-07
+                    new_user.date_joined = now_utc
+                    new_user.activationlink_sent = now_utc
+                    new_user.save()
+
                 # - return message 'We have sent an email to user'
                 msg01 = _("User '%(usr)s' is registered successfully at %(school)s.") % {'usr': new_user.username_sliced, 'school': usr_schoolname_with_article}
                 msg02 = _("We have sent an email to the email address '%(email)s'.") % {'email': new_user.email}
@@ -2549,10 +2566,20 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                 now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
 
                 try:
-                    user_instance.modifiedby = request.user
-                    user_instance.modifiedat = now_utc
-                    user_instance.save()
+
+                    if logging_on:
+                        logger.debug(' request.user.pk: ' + str(request.user.pk))
+
+                    #user_instance.modifiedby_id = request.user.pk
+                    #user_instance.modifiedat = now_utc
+                    #user_instance.save()
+                    user_instance.save(request=request)
+
                     ok_dict = {'msg01':  _("The changes have been saved successfully.")}
+
+                    if logging_on:
+                        logger.debug(' user_instance.modified_by_id: ' + str(user_instance.modified_by_id))
+
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
                     msg_html = ''.join((
@@ -4750,7 +4777,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-
 
 
 def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_clause=False, page=None):
-    # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18
+    # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
@@ -4769,7 +4796,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
     sel_examyear_instance, sel_school_instance, sel_department_instance, sel_level_instance = None, None, None, None
 
     def get_sel_examyear_instance():
-        err_list = []
+        err_html = None
 
     # - get selected exam year
         selected_pk = selected_pk_dict.get(c.KEY_SEL_EXAMYEAR_PK)
@@ -4781,33 +4808,30 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
             # not when role is admin PR2022-08-09
             if not sel_examyear_instance.published:
                 if request.user.role < c.ROLE_064_ADMIN:
-                    err_list.append({'msg_html': [
-                        '<br>'.join((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
+                    err_html = '<br>'.join((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
                                          {'admin': _('The Division of Examinations'),
                                           'exyr': str(sel_examyear_instance.code)}),
                                      str(_('You cannot enter data.'))))
-                    ], 'class': 'border_bg_warning'})
 
     # - add message when examyear is locked PR22021-12-04
             # not when page_examyear PR2022-08-09
             if request.user.role != c.ROLE_064_ADMIN or page != 'page_examyear':
                 if sel_examyear_instance.locked:
-                    err_list.append({'msg_html': [
-                        '<br>'.join(
-                            (str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
-                             str(_('You cannot make changes.'))))
-                    ], 'class': 'border_bg_warning'})
-        else:
-            err_list.append({'msg_html': [str(_('Exam year is not found.'))], 'class': 'border_bg_invalid'})
+                    err_html = '<br>'.join(
+                        (str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
+                         str(_('You cannot make changes.'))))
 
-        return sel_examyear_instance, err_list
+        else:
+            err_html = gettext('Exam year is not found.')
+
+        return sel_examyear_instance, err_html
 # - end of get_sel_examyear_instance
 
     def get_school_instance(request, sel_examyear_instance, allowed_sections_dict, selected_pk_dict):
         # PR2022-12-18  PR2023-02-21
 
         sel_schoolbase_instance = None
-        msg_list = []
+        err_html = None
 
         req_usr = request.user
 
@@ -4848,12 +4872,11 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
     # - add message when school is locked PR2021-12-04
         if sel_school_instance:
             if sel_school_instance.locked:
-                msg_list.append({'msg_html': [
-                    '<br>'.join((str(_('Exam year %(exyr)s of this school is locked.') % {
+                err_html = '<br>'.join(( str(_('Exam year %(exyr)s of this school is locked.') % {
                         'exyr': str(sel_school_instance.examyear.code)}),
-                                 str(_('You cannot make changes.'))))], 'class': 'border_bg_warning'})
+                                 str(_('You cannot make changes.'))))
 
-        return sel_school_instance, requsr_same_school, msg_list
+        return sel_school_instance, requsr_same_school, err_html
 # - end of get_school_instance
 
     def get_department_instance(sel_examyear_instance, sel_school_instance,
@@ -4978,6 +5001,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
 #######################################
     msg_list = []
+    err_html = None
     req_usr = request.user
 
     try:
@@ -4987,11 +5011,11 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
     # - get country from req_usr
         if req_usr.country is None:
-            msg_list.append(str(_('User has no country.')))
+            err_html = gettext('User has no country.')
         else:
             requsr_country = req_usr.country
             if requsr_country.locked:
-                msg_list.append(str(_('This country is locked.')))
+                err_html = '<br>'.join((gettext('This country is locked.'), gettext('You cannot make changes.')))
 
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
 
@@ -4999,9 +5023,9 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                 logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
 
     # - get selected examyear
-            sel_examyear_instance, msg_lst = get_sel_examyear_instance()
-            if msg_lst:
-                msg_list.extend(msg_lst)
+            sel_examyear_instance, err_html = get_sel_examyear_instance()
+            if err_html:
+                msg_list.append(err_html)
 
             if logging_on:
                 logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
@@ -5013,15 +5037,15 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                 logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
 
     # - get sel_school_instance
-            sel_school_instance, requsr_same_school, msg_lst = \
+            sel_school_instance, requsr_same_school, err_html = \
                 get_school_instance(
                     request=request,
                     sel_examyear_instance=sel_examyear_instance,
                     allowed_sections_dict=allowed_sections_dict,
                     selected_pk_dict=selected_pk_dict
                 )
-            if msg_lst:
-                msg_list.extend(msg_lst)
+            if err_html:
+                msg_list.append(err_html)
 
             if logging_on:
                 logger.debug('    sel_school_instance: ' + str(sel_school_instance))
@@ -5086,9 +5110,8 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
-        msg_txt = ''.join((str(_('An error occurred')), ':<br><i>', str(e), '</i>'))
-        msg_html = ''.join(("<div class='p-2 border_bg_invalid'>", msg_txt, "</div>"))
-        msg_list.append(msg_html)
+        msg_list.append(acc_prm.err_html_error_occurred(e))
+
 
     may_edit = len(msg_list) == 0
 

@@ -188,7 +188,7 @@ class UserCompensationUploadView(View):
                     logger.debug('    upload_dict:       ' + str(upload_dict))
 
                 if sel_msg_list:
-                    msg_html = acc_prm.err_html_from_err_list(sel_msg_list)
+                    msg_html = acc_prm.msghtml_from_msglist_with_border(sel_msg_list)
 
                 else:
 

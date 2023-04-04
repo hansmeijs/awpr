@@ -343,7 +343,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Account_is_created'] = _('Account is created')
 
-
         dict['role_caption'] = c.ROLE_DICT
 
         dict['Calc_compensation'] = _('Calculate compensation')
@@ -363,8 +362,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['We_will_send_an_email_to_the_new_user'] = _('We will send an email to the new user, with a link to create a password and activate the account.')
 
         dict['Activationlink_expired'] = _('The link to active the account is valid for 7 days and has expired.')
-        dict['We_will_send_an_email_to_user'] = _('We will email an activation link to user')
+        dict['We_will_send_an_email_to'] = _('We will email an activation link to')
+
         dict['Activation_email_not_sent'] = _('The activation email has not been sent.')
+
+        dict['Activation_email_sent'] = _('The activation email is sent')
+
 
         dict['Send_activationlink'] = _('Click to send an email with an activation link.')
         dict['Activated'] = _('Activated')
@@ -974,6 +977,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
         dict['You_must_submit_additional_ex1form'] = _('You must submit an additional Ex1 form to delete this subject.')
 
+        dict['No_cluster_change_permission'] = _("You don't have permission %(cpt)s.") % {
+            'cpt': _('to make changes in subjects of this cluster')}
+        dict['No_cluster_approve_permission'] = _("You don't have permission %(cpt)s.") % {
+            'cpt': _('to approve subjects of this cluster')}
 
         dict['ATTENTION'] = _('ATTENTION')
         dict['Only_the_learningpath'] = _('Only the learning path ')
@@ -1585,12 +1592,13 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
                                'Corrector_cannot_approve_exem': _("As a corrector you don't have to approve exemptions."),
                                'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
-                               'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),
-                                        str(_("The examiner and corrector don't have to approve designated exams."))))
+                               'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),  str(_("Designated exams don't have to be approved.")))),
+                               'Secret_exam_dont_enter_score': '<br>'.join((str(_('This is a designated exam.')),  str(_("You don't have to enter the score of designated exams."))))
         }
 
         dict['No_cluster_block_permission'] =  _("You don't have permission to block grades of this cluster.")
         dict['No_cluster_unblock_permission'] =  _("You don't have permission to unblock grades of this cluster.")
+
 
 # ====== PAGE RESULTS ========================= PR2021-11-15
     if 'page_result' in page_list:
@@ -1614,7 +1622,6 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Preliminary_gradelist'] = _('Preliminary grade list')
         dict['Final_gradelist'] = _('Final grade list')
-        dict['Download_diploma'] = _('Download diploma')
 
         dict['Diploma_number'] = _('Diploma number')
         dict['Gradelist_number'] = _('Gradelist number')
@@ -1687,7 +1694,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['The_final_gradelist_of'] = _('The final grade list of')
         dict['The_diploma_of'] = _('The diploma of')
         dict['The_diplomas_of'] = _('The diplomas of')
-        dict['The_diploma_of'] = _('The diploma of')
+        dict['Diplomas'] = _('Diplomas')
 
         dict['The_pok_of'] = _('The proof of knowledge of')
         dict['Print_date'] = _('Print date')
@@ -1709,6 +1716,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Calculate_results'] = _('Calculate results')
         dict['Log_result_calculation'] = _('Log result calculation')
 
+        dict['Calculate_reex'] = _('Calculate re-examinations')
 
         dict['mgl_error_noauth'] = _('The name of the chairperson and secretary and the print date must be entered.')
         dict['mgl_error_noauth_pok'] = _('The name of the chairperson and the print date must be entered.')

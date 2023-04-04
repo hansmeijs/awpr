@@ -10,9 +10,12 @@
 const field_settings = {};
 
 let user_list = [];
-let user_rows = [];
+//let user_rows = [];
 let corrector_rows = [];
-let permit_rows = [];
+//let permit_rows = [];
+
+const user_dicts = {};
+const permit_dicts = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -36,7 +39,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  id of selected customer and selected order
     let selected_user_pk = null;
-    let selected_user_dict = null;
 
     let selected_userpermit_pk = null;
     let selected_period = {};
@@ -365,16 +367,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_fill_datamap(examyear_map, response.examyear_rows);
                 };
                 if ("user_rows" in response) {
-                    user_rows = response.user_rows;
+                    //user_rows = response.user_rows;
+                    b_fill_datadicts("user", "id", null, response.user_rows, user_dicts);
+console.log("user_dicts",user_dicts)
                 };
 
                 if ("corrector_rows" in response) {
                     corrector_rows = response.corrector_rows;
                 };
                 if ("permit_rows" in response) {
-                    permit_rows = response.permit_rows
-                    refresh_permit_map(response.permit_rows) };
+                    b_fill_datadicts("userpermit",  "id", null, response.permit_rows, permit_dicts);
 
+console.log("permit_dicts",permit_dicts)
+                };
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows) ;
@@ -424,7 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         AddSubmenuButton(el_submenu, loc.Download_user_data, function() {ModConfirmOpen_DownloadUserdata("download_userdata_xlsx")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
 
-        // hardcode access of system admin
+        // hardcode access of system admin`
         if (permit_system_admin){
             AddSubmenuButton(el_submenu, loc.Add_permission, function() {MUPM_Open("addnew")}, ["tab_show", "tab_btn_userpermit"]);
             AddSubmenuButton(el_submenu, loc.Delete_permission, function() {ModConfirmOpen("userpermit","delete")}, ["tab_show", "tab_btn_userpermit"]);
@@ -465,50 +470,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // HandleBtnSelect
 
-//=========  HandleTblRowClicked  ================ PR2020-08-03 PR2021-08-01
-    function HandleTblRowClicked(tr_clicked) {
-        //console.log("=== HandleTblRowClicked");
-        //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
-        //console.log( "tr_clicked.id: ", tr_clicked, typeof tr_clicked.id);
+//=========  HandleTblRowClicked  ================ PR2020-08-03 PR2021-08-01 PR2023-04-04
+    function HandleTblRowClicked(tblRow) {
+// ---  deselect all highlighted rows, select clicked row
+        t_td_selected_toggle(tblRow, true);  // select_single = True
 
-        selected_user_dict = get_datadict_from_mapid(tr_clicked.id);
-        //console.log( "selected_user_dict: ", selected_user_dict);
+// get data_dict from data_rows
+        const data_dict = get_datadict_from_tblRow(tblRow);
+        console.log( "data_dict", data_dict);
 
-        selected_userpermit_pk = null;
 
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        DeselectHighlightedRows(tr_clicked, cls_selected);
-        tr_clicked.classList.add(cls_selected)
+// ---  update selected studsubj_dict / student_pk / subject pk
+        selected.data_dict = (data_dict) ? data_dict : null;
 
-// --- get existing data_dict from data_rows
-        //console.log( "tr_clicked.id: ", tr_clicked.id);
-        const data_dict = get_datadict_from_mapid(tr_clicked.id)
-        //console.log( "data_dict: ", data_dict);
-
-// ---  update selected_user_pk
-        const tblName = get_tblName_from_mapid(data_dict.mapid);
-        if(tblName === "userpermit"){
-            selected_userpermit_pk = data_dict.id;
-        } else {
-            selected_user_pk = data_dict.id;
-        }
-        //console.log( "selected_userpermit_pk: ", selected_userpermit_pk, typeof selected_userpermit_pk);
-        //console.log( "selected_user_pk: ", selected_user_pk, typeof selected_user_pk);
-    }  // HandleTblRowClicked
+        console.log( "   selected", selected);
+    };  // HandleTblRowClicked
 
 //========= FillTblRows  =================== PR2021-08-01 PR2022-02-28
     function FillTblRows(skip_upload) {
         //console.log( "===== FillTblRows  === ");
         const tblName = get_tblName_from_selectedBtn();
+        const data_dicts = get_data_dicts(tblName);
 
         const field_setting = field_settings[selected_btn];
-        const data_rows = get_datarows_from_selectedBtn();
-/*
-        console.log( "selected_btn", selected_btn);
-        console.log( "tblName", tblName);
-        console.log( "data_rows", data_rows);
-        console.log( "field_setting", field_setting);
-*/
+
+        console.log( "    selected_btn", selected_btn);
+        console.log( "    tblName", tblName);
+        console.log( "    data_dicts", data_dicts);
+        console.log( "    field_setting", field_setting);
 
 // --- show columns
         set_columns_hidden();
@@ -521,10 +510,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- create table header and filter row
         CreateTblHeader(field_setting);
 
-// --- loop through data_rows
-        if(data_rows && data_rows.length){
-            for (let i = 0, map_dict; map_dict = data_rows[i]; i++) {
-                let tblRow = CreateTblRow(tblName, field_setting, map_dict);
+// --- loop through data_dicts
+        if(data_dicts){
+            for (const data_dict of Object.values(data_dicts)) {
+                let tblRow = CreateTblRow(tblName, field_setting, data_dict);
             };
         };
 
@@ -634,10 +623,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }  // for (let j = 0; j < column_count; j++)
     };  //  CreateTblHeader
 
-//=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01
-    function CreateTblRow(tblName, field_setting, map_dict) {
+//=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-04-04
+    function CreateTblRow(tblName, field_setting, data_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
-    //console.log("    map_dict", map_dict);
+    //console.log("    data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -646,11 +635,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const field_width = field_setting.field_width;
         const column_count = field_names.length;
 
-        const map_id = (map_dict.mapid) ? map_dict.mapid : null;
+        const map_id = (data_dict.mapid) ? data_dict.mapid : null;
 
 // ---  lookup index where this row must be inserted
-        const ob1 = (map_dict.sb_code) ? map_dict.sb_code : "";
-        const ob2 = (map_dict.username) ? map_dict.username : "";
+        const ob1 = (data_dict.sb_code) ? data_dict.sb_code : "";
+        const ob2 = (data_dict.username) ? data_dict.username : "";
 
         const row_index = b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2);
 
@@ -659,8 +648,8 @@ document.addEventListener('DOMContentLoaded', function() {
         tblRow.id = map_id
 
 // --- add data attributes to tblRow
-        tblRow.setAttribute("data-pk", map_dict.id);
-        if (!map_dict.is_active){
+        tblRow.setAttribute("data-pk", data_dict.id);
+        if (!data_dict.is_active){
             tblRow.setAttribute("data-inactive", "1");
         };
 
@@ -758,7 +747,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
 // --- put value in field
-                UpdateField(el, map_dict)
+                UpdateField(el, data_dict)
 
             }  // if (!columns_hidden.includes(field_name))
         }  // for (let j = 0; j < 8; j++)
@@ -767,19 +756,19 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // CreateTblRow
 
 //=========  UpdateTblRow  ================ PR2020-08-01
-    function UpdateTblRow(tblRow, tblName, map_dict) {
+    function UpdateTblRow(tblRow, tblName, data_dict) {
         //console.log("=========  UpdateTblRow =========");
         if (tblRow && tblRow.cells){
             for (let i = 0, td; td = tblRow.cells[i]; i++) {
-                UpdateField(td.children[0], map_dict);
+                UpdateField(td.children[0], data_dict);
             };
         };
     };  // UpdateTblRow
 
-//=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01
-    function UpdateField(el_div, map_dict) {
+//=========  UpdateField  ================ PR2020-08-16 PR2021-03-23 PR2021-08-01 PR2023-04-04
+    function UpdateField(el_div, data_dict) {
         //console.log("=========  UpdateField =========");
-        //console.log("map_dict", map_dict);
+        //console.log("data_dict", data_dict);
 
         const field_name = get_attr_from_el(el_div, "data-field");
 
@@ -789,15 +778,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // TODO add select multiple users option PR2020-08-18
 
             } else if (["sb_code", "username", "last_name", "email", "page"].includes(field_name)){
-                inner_text = map_dict[field_name];
+                inner_text = data_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
 
             } else if (field_name === "school_abbrev") {
                 // schoolname cannot be put in user table, because it has no examyear PR2021-07-05
                 // lookup schoolname in school_rows instead
-                if (map_dict.schoolbase_id){
+                if (data_dict.schoolbase_id){
                     for (let i = 0, dict; dict = school_rows[i]; i++){
-                        if(dict.base_id && dict.base_id === map_dict.schoolbase_id) {
+                        if(dict.base_id && dict.base_id === data_dict.schoolbase_id) {
                             inner_text = (dict.abbrev)  ? dict.abbrev : "---";
                             filter_value = (inner_text) ? inner_text.toLowerCase() : null;
                             break;
@@ -805,21 +794,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
             } else if (field_name.includes("allowed")){
 
-    //console.log( "map_dict", map_dict);
+    //console.log( "data_dict", data_dict);
     //console.log( "field_name", field_name);
-    //console.log( "map_dict[field_name]", map_dict[field_name]);
+    //console.log( "data_dict[field_name]", data_dict[field_name]);
     //console.log( "display", display);
     //console.log( "title", title);
 
-                const field_value = (map_dict[field_name]) ? map_dict[field_name] : null;
+                const field_value = (data_dict[field_name]) ? data_dict[field_name] : null;
                 inner_text = (field_value) ? field_value : "&nbsp";
                 if (field_name === "allowed_schoolbases") {
                     inner_text = (field_value) ? field_value : "&nbsp";
-                    title_text = (map_dict.allowed_schoolbases_title) ? map_dict.allowed_schoolbases_title : null;
+                    title_text = (data_dict.allowed_schoolbases_title) ? data_dict.allowed_schoolbases_title : null;
                     filter_value = (field_value) ? field_value.toLowerCase() : null;
                 } else if (field_name === "allowed_subjbases") {
                     inner_text = (field_value) ? field_value : "&nbsp";
-                    title_text = (map_dict.allowed_subjbases_title) ? map_dict.allowed_subjbases_title : null;
+                    title_text = (data_dict.allowed_subjbases_title) ? data_dict.allowed_subjbases_title : null;
                     filter_value = (field_value) ? field_value.toLowerCase() : null;
                 } else  if (field_name === "allowed_clusters") {
                     inner_text = (field_value && field_value.length) ? field_value.join(", ") : "&nbsp";
@@ -831,54 +820,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
             } else if (field_name === "role") {
-                const role = map_dict[field_name];
+                const role = data_dict[field_name];
                 inner_text = (loc.role_caption && loc.role_caption[role])  ? loc.role_caption[role] : role;
                 filter_value = inner_text;
 
             } else if (field_name === "action"){
-                el_div.value = map_dict[field_name];
-                filter_value = map_dict[field_name];
+                el_div.value = data_dict[field_name];
+                filter_value = data_dict[field_name];
 
             } else if (field_name.slice(0, 5) === "group") {
                 //  field_name is "group_read", "group_edit",  "group_auth1", "group_auth2", etc
 
-                // map_dict[field_name] example: perm_system: true
+                // data_dict[field_name] example: perm_system: true
                 const db_field = field_name.slice(6);
                 //  db_field is "read", "edit",  "auth1", "auth2", etc
 
-                // const permit_bool = (map_dict[field_name]) ? map_dict[field_name] : false;
-                const permit_bool = (map_dict.usergroups) ? map_dict.usergroups.includes(db_field) : false;
+                // const permit_bool = (data_dict[field_name]) ? data_dict[field_name] : false;
+                const permit_bool = (data_dict.usergroups) ? data_dict.usergroups.includes(db_field) : false;
 
     //console.log("    field_name", field_name);
     //console.log("    db_field", db_field);
-    //console.log("    map_dict.usergroups", map_dict.usergroups);
+    //console.log("    data_dict.usergroups", data_dict.usergroups);
     //console.log("    permit_bool", permit_bool);
 
                 filter_value = (permit_bool) ? "1" : "0";
                 el_div.className = (permit_bool) ? "tickmark_2_2" : "tickmark_0_0" ;
 
             } else if ( field_name === "activated") {
-                console.log("    map_dict", map_dict);
-                const is_activated = (map_dict[field_name]) ? map_dict[field_name] : false;
+                const is_activated = (data_dict[field_name]) ? data_dict[field_name] : false;
                 let is_expired = false;
                 if(!is_activated) {
-                    is_expired = activationlink_is_expired(map_dict.date_joined);
+                    is_expired = activationlink_is_expired(data_dict.activationlink_sent);
+
+// ---  add title when not activated
+                    if (is_expired)  {
+                        title_text = [f_format_last_modified_txt(loc.Activation_email_sent, data_dict.activationlink_sent),
+                            loc.Activationlink_expired, loc.Send_activationlink].join("\n");
+                    } else if(data_dict.activationlink_sent){
+                        title_text = f_format_last_modified_txt(loc.Activation_email_sent, data_dict.activationlink_sent);
+                    } else {
+                        title_text = loc.Send_activationlink;
+                    };
                 }
                 filter_value = (is_expired) ? "2" : (is_activated) ? "1" : "0"
                 el_div.className = (is_activated) ? "tickmark_2_2" : (is_expired) ? "exclamation_0_2" : "tickmark_0_0" ;
 // ---  add pointer when not is_activatd
                 add_or_remove_class(el_div, "pointer_show", !is_activated)
 
-// ---  add title
-                if (is_expired)  {
-                    title_text = (is_expired) ? loc.Activationlink_expired + "\n" + loc.Send_activationlink : null
-                //} else {
-                // TODO give info activationlink sent, date activated
-                   //title_text = f_format_last_modified_txt(loc.Account_is_created, map_dict.date_joined);
-
-                };
             } else if (field_name === "is_active") {
-                const is_inactive = !( (map_dict[field_name]) ? map_dict[field_name] : false );
+                const is_inactive = !( (data_dict[field_name]) ? data_dict[field_name] : false );
                 // give value '0' when inactive, '1' when active
                 filter_value = (is_inactive) ? "0" : "1";
 
@@ -888,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 title_text = (is_inactive) ? loc.This_user_is_inactive : null;
 
             } else if ( field_name === "last_login") {
-                const datetimeUTCiso = map_dict[field_name]
+                const datetimeUTCiso = data_dict[field_name]
                 const datetimeLocalJS = (datetimeUTCiso) ? new Date(datetimeUTCiso) : null;
                 inner_text = format_datetime_from_datetimeJS(loc, datetimeLocalJS);
                 filter_value = inner_text;
@@ -933,51 +923,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(has_permit){
             const tblRow = t_get_tablerow_selected(el_input);
-            if(tblRow){
-                const tblName = get_tblName_from_mapid(tblRow.id);
-                const data_dict = get_datadict_from_mapid(tblRow.id)
-    console.log( "tblName", tblName);
-    console.log( "data_dict", data_dict);
+            const tblName = get_tblName_from_mapid(tblRow.id);
+            const data_dict = get_datadict_from_tblRow(tblRow);
 
-                if(!isEmpty(data_dict)){
-                    const fldName = get_attr_from_el(el_input, "data-field");
-                    let permit_bool = (get_attr_from_el(el_input, "data-filter") === "1");
+console.log( "tblName", tblName);
+console.log( "data_dict", data_dict);
 
-    // show message when sysadmin tries to delete sysadmin permit
-                    // TODO remove requsr_pk from client
-                    const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id);
-                    if(fldName === "group_admin" && is_request_user && permit_bool ){
-                        ModConfirmOpen("usergroup", "permission_admin", el_input)
+            if(!isEmpty(data_dict)){
+                const fldName = get_attr_from_el(el_input, "data-field");
+                let permit_bool = (get_attr_from_el(el_input, "data-filter") === "1");
+
+// show message when sysadmin tries to delete sysadmin permit
+                // TODO remove requsr_pk from client
+                const is_request_user = (permit_dict.requsr_pk && permit_dict.requsr_pk === data_dict.id);
+                if(fldName === "group_admin" && is_request_user && permit_bool ){
+                    ModConfirmOpen("usergroup", "permission_admin", el_input)
+                } else {
+
+        // ---  toggle permission el_input
+                    permit_bool = (!permit_bool);
+
+        // ---  put new permission in el_input
+                    el_input.setAttribute("data-filter", (permit_bool) ? "1" : "0")
+       // ---  change icon, before uploading
+                    el_input.className = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
+
+                    const url_str = (tblName === "userpermit") ? urls.url_userpermit_upload : urls.url_user_upload;
+                    const upload_dict = {mode: "update", mapid: data_dict.mapid};
+                    if (tblName === "userpermit"){
+                        upload_dict.userpermit_pk = data_dict.id;
                     } else {
+                        // use this both for table 'user' and 'usergroup'
+                        upload_dict.user_pk = data_dict.id,
+                        upload_dict.schoolbase_pk = data_dict.schoolbase_id;
+                    }
+                    const usergroupname = fldName.substr(6);
+                    upload_dict.usergroups = {}
+                    upload_dict.usergroups[usergroupname] = permit_bool;
+console.log( "upload_dict", upload_dict);
 
-            // ---  toggle permission el_input
-                        permit_bool = (!permit_bool);
-    console.log( "new permit_bool", permit_bool);
-            // ---  put new permission in el_input
-                        el_input.setAttribute("data-filter", (permit_bool) ? "1" : "0")
-           // ---  change icon, before uploading
-                        el_input.className = (permit_bool) ? "tickmark_1_2" : "tickmark_0_0";
+                    UploadChanges(upload_dict, url_str);
+                }  // if(fldName === "group_admin" && is_request_user && permit_bool ){
+            }  //  if(!isEmpty(data_dict)){
 
-    console.log( "tblName", tblName);
-    console.log( "fldName", fldName);
-                        const url_str = (tblName === "userpermit") ? urls.url_userpermit_upload : urls.url_user_upload;
-                        const upload_dict = {mode: "update", mapid: data_dict.mapid};
-                        if (tblName === "userpermit"){
-                            upload_dict.userpermit_pk = data_dict.id;
-                        } else {
-                            // use this both for table 'user' and 'usergroup'
-                            upload_dict.user_pk = data_dict.id,
-                            upload_dict.schoolbase_pk = data_dict.schoolbase_id;
-                        }
-                        const usergroupname = fldName.substr(6);
-                        upload_dict.usergroups = {}
-                        upload_dict.usergroups[usergroupname] = permit_bool;
-    console.log( "upload_dict", upload_dict);
-
-                        UploadChanges(upload_dict, url_str);
-                    }  // if(fldName === "group_admin" && is_request_user && permit_bool ){
-                }  //  if(!isEmpty(data_dict)){
-            }  //   if(!!tblRow)
         }  // if(permit_dict.usergroup_system)
     }  // UploadToggle
 
@@ -1018,10 +1006,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("updated_user_rows" in response) {
                         // must get  tblName from selectedBtn, to get 'usergroup' instead of 'user'
                         const tblName = get_tblName_from_selectedBtn();
-                        RefreshDataRows(tblName, response.updated_user_rows, user_rows, true)  // true = update
+                        RefreshDataRows(tblName, response.updated_user_rows, user_dicts, true)  // true = update
                     };
                     if ("updated_permit_rows" in response){
-                        RefreshDataRows("userpermit", response.updated_permit_rows, permit_rows, true)  // true = is_update
+                        RefreshDataRows("userpermit", response.updated_permit_rows, permit_dicts, true)  // true = is_update
                     };
 
                 },  // success: function (response) {
@@ -1047,26 +1035,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool){
             let data_dict = {}, user_pk = null;
-            let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
+            let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null, user_name = null,
+            user_lastname = null, user_email = null;
 
-            let modifiedat = null, modby_username = null;
+            let modifiedat = null, modby_name = null;
             const fldName = get_attr_from_el(el_input, "data-field");
             const is_addnew = (mode === "addnew");
 
         //console.log("fldName: ", fldName)
             if(el_input){
                 const tblRow = t_get_tablerow_selected(el_input);
-                user_mapid = tblRow.id;
-
+                const data_dict = get_datadict_from_tblRow(tblRow);
 // --- get existing data_dict from data_rows
-                data_dict = get_datadict_from_mapid(tblRow.id);
+
     //console.log("data_dict", data_dict)
                 if(!isEmpty(data_dict)){
+                    user_mapid = data_dict.mapid;
                     user_pk = data_dict.id;
+                    user_name = data_dict.username;
+                    user_lastname = data_dict.last_name;
+                    user_email = data_dict.email;
                     user_schoolbase_pk = data_dict.schoolbase_id;
                     user_schoolbase_code = data_dict.sb_code;
                     modifiedat= data_dict.modifiedat;
-                    modby_username = data_dict.modby_username;
+                    modby_name = data_dict.modby_name;
                 };
 
         // when el_input is not defined: function is mode 'addnew'
@@ -1098,16 +1090,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 user_schoolbase_code: user_schoolbase_code,
                 user_schoolname: user_schoolname,
                 user_mapid: user_mapid,
-                username: (data_dict.username) ? data_dict.username : null,
-                last_name: (data_dict.last_name) ? data_dict.last_name : null,
-                email: (data_dict.email) ? data_dict.email : null
+                username: user_name,
+                last_name: user_lastname,
+                email: user_email
                 };
             //console.log("mod_MUA_dict: ", mod_MUA_dict)
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
-            let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "tab_addnew_may_select_school" : "tab_addnew_noschool" : "tab_update";
-            b_show_hide_selected_elements_byClass("tab_show", tab_str, container_element)
+            let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "mua_addnew_may_select_school" : "mua_addnew_noschool" : "mua_update";
+            b_show_hide_selected_elements_byClass("mua_show", tab_str, container_element)
 
     // ---  set header text
             const header_text = (is_addnew) ? loc.Add_user : loc.User + ":  " + mod_MUA_dict.username;
@@ -1115,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_header.innerText = header_text;
 
 // ---  set text last modified
-            el_MUA_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc.Last_modified, modifiedat, modby_username) : null;
+            el_MUA_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc.Last_modified, modifiedat, modby_name) : null;
 
     // ---  fill selecttable
             if(permit_dict.permit_crud_otherschool){
@@ -1173,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
    }  // MUA_DisableBtnSave
 
-//========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30
+//========= MUA_Save  ============= PR2020-08-02 PR2020-08-15 PR2021-06-30 PR2023-04-04
    function MUA_Save(mode) {
         console.log("=== MUA_Save === ");
         //console.log("mode: ", mode);
@@ -1210,11 +1202,11 @@ document.addEventListener('DOMContentLoaded', function() {
    // ---  create mod_dict
             let upload_dict = {}
             if (upload_mode === "send_activation_email" ){
-                upload_dict = { user_pk: map_dict.id,
-                               schoolbase_pk: map_dict.schoolbase_pk,
+                upload_dict = { user_pk: data_dict.id,
+                               schoolbase_pk: data_dict.schoolbase_pk,
                                mode: upload_mode,
-                               mapid: "user_" + map_dict.id,
-                                username: {value: map_dict.username}
+                               mapid: "user_" + data_dict.id,
+                                username: {value: data_dict.username}
                               };
             } else if (upload_mode === "update" ){
                 upload_dict = { schoolbase_pk: mod_MUA_dict.user_schoolbase_pk,
@@ -1239,6 +1231,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // show loader, hide msg_info
             el_MUA_loader.classList.remove(cls_hide);
             el_MUA_footer_container.classList.add(cls_hide);
+            // remove modified text
+            el_MUA_msg_modified.innerText = null;
 
             const parameters = {"upload": JSON.stringify (upload_dict)}
             let response = "";
@@ -1259,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("updated_user_rows" in response) {
                         // must get  tblName from selectedBtn, to get 'usergroup' instead of 'user'
                         const tblName = get_tblName_from_selectedBtn();
-                        RefreshDataRows(tblName, response.updated_user_rows, user_rows, true)  // true = update
+                        RefreshDataRows(tblName, response.updated_user_rows, user_dicts, true)  // true = update
                     };
 
                     if ("validation_ok" in response){
@@ -1323,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("updated_user_rows" in response) {
                         // must get  tblName from selectedBtn, to get 'usergroup' instead of 'user'
                         const tblName = get_tblName_from_selectedBtn();
-                        RefreshDataRows(tblName, response.updated_user_rows, user_rows, true)  // true = update
+                        RefreshDataRows(tblName, response.updated_user_rows, user_dicts, true)  // true = update
                     };
 
                 },  // success: function (response) {
@@ -1472,7 +1466,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_msg_container.classList.remove("border_bg_invalid");
                 el_msg_container.classList.add("border_bg_valid");
     // ---  show only the elements that are used in this tab
-                b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
+                b_show_hide_selected_elements_byClass("mua_show", "mua_ok");
 
             } else {
                 // --- loop through input elements
@@ -1491,7 +1485,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     el_msg_container.classList.remove("border_bg_valid");
                     el_msg_container.classList.add("border_bg_invalid");
     // ---  show only the elements that are used in this tab
-                    b_show_hide_selected_elements_byClass("tab_show", "tab_ok");
+                    b_show_hide_selected_elements_byClass("mua_show", "mua_ok");
 
                 } else {
                     const fields = ["username", "last_name", "email"]
@@ -1679,7 +1673,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let data_dict = {}, user_pk = null, user_role = null;
         let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null;
         let user_allowed_sections = {};
-        let modifiedat = null, modby_username = null;
+        let modifiedat = null, modby_name = null;
 
         if(el_input){
             const tblRow = t_get_tablerow_selected(el_input);
@@ -1695,12 +1689,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 user_allowed_sections = (data_dict.allowed_sections) ? data_dict.allowed_sections : {};
 
                 modifiedat= data_dict.modifiedat;
-                modby_username = data_dict.modby_username;
+                modby_name = data_dict.modby_name;
             };
 
         console.log("  data_dict: ", data_dict);
-
-
 
             selected_user_pk = user_pk;
 
@@ -2932,14 +2924,14 @@ document.addEventListener('DOMContentLoaded', function() {
         let userpermit_pk = null, role = null, permit_page = null, permit_action = null, permit_sequence = null;
         if(el_input){
             const tblRow = t_get_tablerow_selected(el_input);
-            const map_dict = get_mapdict_from_datamap_by_id(permit_map, tblRow.id);
-        //console.log("map_dict", map_dict)
-            if(!isEmpty(map_dict)){
-                userpermit_pk = map_dict.id;
-                role = map_dict.role;
-                permit_page = map_dict.page;
-                permit_action = map_dict.action;
-                permit_sequence = map_dict.sequence;
+            const data_dict = get_datadict_from_tblRow(tblRow);
+        //console.log("data_dict", data_dict)
+            if(!isEmpty(data_dict)){
+                userpermit_pk = data_dict.id;
+                role = data_dict.role;
+                permit_page = data_dict.page;
+                permit_action = data_dict.action;
+                permit_sequence = data_dict.sequence;
             }
         }
         mod_MUPM_dict.userpermit_pk = userpermit_pk;
@@ -3163,16 +3155,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         b_clear_dict(mod_MSM_dict)
 
-        const tblRow = t_get_tablerow_selected(el_input);
         const has_permit = (permit_dict.permit_crud && permit_dict.requsr_same_school);
-        if(tblRow && has_permit){
 
-// --- get existing data_dict from data_rows
-            const pk_int = get_attr_from_el_int(tblRow, "data-pk")
-            const [index, found_dict, compare] = b_recursive_integer_lookup(user_rows, "id", pk_int);
-            const data_dict = (!isEmpty(found_dict)) ? found_dict : {};
+        const tblRow = t_get_tablerow_selected(el_input);
+        const data_dict = user_dicts[tblRow.id];
     console.log("    data_dict", data_dict)
 
+        if(data_dict && has_permit){
+
+// --- get existing data_dict from data_rows
             // fldName = allowed_clusters
 
             mod_MSM_dict.user_pk = data_dict.id;
@@ -3188,8 +3179,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById("id_MSM_hdr_multiple").innerText = header_text;
 
             const hide_msg = (get_attr_from_el(el_input, "data-field") === "allowed_clusters");
-        console.log("hide_msg", hide_msg) ;
-        console.log("hide_msg", hide_msg) ;
+
             add_or_remove_class_by_id ("id_MSM_message_container", cls_hide, hide_msg);
 
             el_MSM_input.value = null;
@@ -3511,17 +3501,9 @@ document.addEventListener('DOMContentLoaded', function() {
         let selected_pk = null;
         // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
         const tblRow = t_get_tablerow_selected(el_input);
-        if(tblRow){
-            selected_pk = get_attr_from_el_int(tblRow, "data-pk")
-        } else {
-            selected_pk = (tblName === "userpermit") ? selected_userpermit_pk : selected_user_pk;
-        }
-        console.log("    tblRow", tblRow )
-        console.log("    selected_pk", selected_pk )
-
-// --- get data_dict from tblName and selected_pk
-        const data_dict = get_datadict_from_pk(tblName, selected_pk)
-        console.log("data_dict", data_dict);
+        const data_dict = (tblRow) ? get_datadict_from_tblRow(tblRow) : selected.data_dict;
+        console.log("   tblRow", tblRow);
+        console.log("   data_dict", data_dict);
 
 // ---  get info from data_dict
         // TODO remove requsr_pk from client
@@ -3609,16 +3591,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         msg_list.push("<p>" + loc.Sysadm_cannot_remove_sysadm_perm + "</p>");
                     }
                 } else if (is_mode_send_activation_email) {
-                    const is_expired = activationlink_is_expired(data_dict.date_joined);
+                    const is_expired = activationlink_is_expired(data_dict.activationlink_sent);
                     dont_show_modal = (data_dict.activated);
                     if(!dont_show_modal){
                         if(is_expired) {msg_list.push("<p>" + loc.Activationlink_expired + "</p>");};
-                        msg_list.push("<p>" + loc.We_will_send_an_email_to_user + " '" + username + "'.</p>");
-                        msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
-                    }
-                }
-            }
-        }
+                        msg_list.push(["<p>", loc.We_will_send_an_email_to, ":<br>&emsp;",loc.User, ":&emsp;&emsp;", username,
+                        "<br>&emsp;", loc.Email_address, ":&emsp;", data_dict.email, "</p><p>", loc.Do_you_want_to_continue, "</p>"].join(""));
+                    };
+                };
+            };
+        };
         if(!dont_show_modal){
             el_confirm_header.innerText = header_text;
             el_confirm_loader.classList.add(cls_visible_hide)
@@ -3790,46 +3772,20 @@ function RefreshDataRowsAfterUpload(response) {
     //console.log("response:", response);
     const is_test = (!!response && !!response.is_test) ;
     if(!is_test && response && "updated_user_rows" in response) {
-        RefreshDataRows("user", response.updated_user_rows, user_rows, true)  // true = update
+        RefreshDataRows("user", response.updated_user_rows, user_dicts, true)  // true = update
     }
 
 }  // RefreshDataRowsAfterUpload
 
-//=========  RefreshDataRowsPermitsAfterUpload  ================ PR2021-07-20
-    function RefreshDataRowsPermitsAfterUpload(response) {
-        //console.log(" --- RefreshDataRowsPermitsAfterUpload  ---");
-        //console.log( "response", response);
-
-        const is_test = (response && response.is_test);
-        //console.log( "is_test", is_test);
-        if (response && "updated_user_rows" in response) {
-            const updated_user_rows = response.updated_user_rows;
-        }
-
-    }  //  RefreshDataRowsPermitsAfterUpload
-
-// +++++++++++++++++ REFRESH PERMIT MAP ++++++++++++++++++++++++++++++++++++++++++++++++++
-//=========  refresh_permit_map  ================ PR2021-03-18
-    function refresh_permit_map(updated_permitlist) {
-        //console.log(" --- refresh_permit_map  ---");
-        //console.log( "updated_permitlist", updated_permitlist);
-        if (updated_permitlist) {
-            for (let i = 0, update_dict; update_dict = updated_permitlist[i]; i++) {
-               // refresh_usermap_item(permit_map, update_dict);
-               //RefreshDatarowItem(tblName, field_setting, update_dict, data_rows)
-            }
-        }
-    }  //  refresh_permit_map
-
 
 // +++++++++++++++++ REFRESH DATA ROWS ++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataRows  ================ PR2021-08-01
-    function RefreshDataRows(page_tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
+//=========  RefreshDataRows  ================ PR2021-08-01 PR2023-04-04
+    function RefreshDataRows(page_tblName, update_rows, data_dicts, is_update) {
+        console.log(" --- RefreshDataRows  ---");
         //console.log("page_tblName", page_tblName);
         //console.log("update_rows", update_rows);
-        //console.log("data_rows", data_rows);
+        //console.log("data_dicts", data_dicts);
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
 
         if (update_rows && update_rows.length ) {
@@ -3838,27 +3794,26 @@ function RefreshDataRowsAfterUpload(response) {
             const field_setting = field_settings[selected_btn];
             //console.log("field_setting", field_setting);
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows);
+                RefreshDatarowItem(page_tblName, field_setting, update_dict, data_dicts);
             }
         } else if (!is_update) {
-            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
-            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
-           data_rows = [];
+            // empty the data_dicts when update_rows is empty PR2021-01-13 debug forgot to empty data_dicts
+            // PR2021-03-13 debug. Don't empty de data_dicts when is update. Returns [] when no changes made
+           b_clear_dict(data_dicts);
         }
     }  //  RefreshDataRows
 
 
 //=========  RefreshDatarowItem  ================ PR2021-08-01
-    function RefreshDatarowItem(page_tblName, field_setting, update_dict, data_rows) {
-        //console.log(" --- RefreshDatarowItem  ---");
-        //console.log("page_tblName", page_tblName);
-        //console.log("update_dict", update_dict);
+    function RefreshDatarowItem(page_tblName, field_setting, update_dict, data_dicts) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("    page_tblName", page_tblName);
+        console.log("    update_dict", update_dict);
         //console.log("field_setting", field_setting);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
 
-            const pk_int = update_dict.id;
             const is_deleted = (!!update_dict.deleted);
             const is_created = (!!update_dict.created);
             //console.log("is_created", is_created);
@@ -3866,7 +3821,7 @@ function RefreshDataRowsAfterUpload(response) {
             // field_error_list is not in use (yet)
             let field_error_list = [];
             const error_list = get_dict_value(update_dict, ["error"], []);
-            //console.log("error_list", error_list);
+    console.log("    error_list", error_list);
 
             if(error_list && error_list.length){
     // - show modal messages
@@ -3894,14 +3849,8 @@ function RefreshDataRowsAfterUpload(response) {
     // ---  first remove key 'created' from update_dict
                 delete update_dict.created;
 
-    // --- lookup index where new row must be inserted in data_rows
-                // not necessary:
-                // rows are sorted by id int. new row always has a bigger int, therefore new dict can go at the end
-                // was: insert new row in data_rows. Splice inserts row at index, 0 means deleting zero rows
-                //      data_rows.splice(map_index, 0, update_dict);
-
-    // ---  insert new item at end
-                data_rows.push(update_dict)
+    // ---  add new item to data_dicts
+                data_dicts[update_dict.mapid] = update_dict;
 
     // ---  create row in table., insert in alphabetical order
                 const new_tblRow = CreateTblRow(page_tblName, field_setting, update_dict)
@@ -3916,89 +3865,92 @@ function RefreshDataRowsAfterUpload(response) {
             } else {
 
 // --- get existing data_dict
-                const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-                const data_dict = found_dict;
-                const datarow_index = index;
-;
-// ++++ deleted ++++
-                if(is_deleted){
-                    // delete row from data_rows. Splice returns array of deleted rows
-                    const deleted_row_arr = data_rows.splice(datarow_index, 1)
-                    const deleted_row_dict = deleted_row_arr[0];
+                const map_id = update_dict.mapid;
+                const data_dict = data_dicts[map_id];
+    console.log("   data_dict", data_dict);
 
-        //--- delete tblRow
-                    if(deleted_row_dict && deleted_row_dict.mapid){
-                        const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
+                if(data_dict){
+    // ++++ deleted ++++
+                    if(is_deleted){
+        console.log("   is_deleted", is_deleted);
+            // delete row from data_dicts
+                        delete data_dicts[map_id];
+            //--- delete tblRow
+
+                        const tblRow_tobe_deleted = document.getElementById(map_id);
         //console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
                         if (tblRow_tobe_deleted ){tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted)};
-                    }
-                } else {
 
-// +++++++++++ updated row +++++++++++
-    // ---  check which fields are updated, add to list 'updated_columns'
-                    if(!isEmpty(data_dict) && field_names){
-                        let updated_columns = [];
+                    } else {
 
-                        // skip first column (is margin)
-                        // col_field is the name of the column on page, not the db_field
-                        for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
-                            let has_changed = false;
-                            if (col_field.slice(0, 5) === "group") {
-                            // data_dict.usergroups example: "anlz;auth1;auth2;auth3;auth4;edit;read"
-                                const usergroup = col_field.slice(6);
-                                // usergroup_in_data_dict and usergroup_in_update_dict are necessary to catch empty usergroup field
-                                const usergroup_in_data_dict = (!!data_dict.usergroups && data_dict.usergroups.includes(usergroup));
-                                const usergroup_in_update_dict = (!!update_dict.usergroups && update_dict.usergroups.includes(usergroup));
-                                has_changed = usergroup_in_data_dict != usergroup_in_update_dict;
+        console.log("   updated");
+    // +++++++++++ updated row +++++++++++
+        // ---  check which fields are updated, add to list 'updated_columns'
+                        if(field_names){
+                            let updated_columns = [];
 
-                            } else if (col_field in data_dict && col_field in update_dict){
-                                has_changed = (data_dict[col_field] !== update_dict[col_field] );
+                            // skip first column (is margin)
+                            // col_field is the name of the column on page, not the db_field
+                            for (let i = 1, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+
+                                let has_changed = false;
+                                if (col_field.slice(0, 5) === "group") {
+                                // data_dict.usergroups example: "anlz;auth1;auth2;auth3;auth4;edit;read"
+                                    const usergroup = col_field.slice(6);
+                                    // usergroup_in_data_dict and usergroup_in_update_dict are necessary to catch empty usergroup field
+                                    const usergroup_in_data_dict = (!!data_dict.usergroups && data_dict.usergroups.includes(usergroup));
+                                    const usergroup_in_update_dict = (!!update_dict.usergroups && update_dict.usergroups.includes(usergroup));
+                                    has_changed = usergroup_in_data_dict != usergroup_in_update_dict;
+                                } else {
+                                    has_changed = (data_dict[col_field] !== update_dict[col_field] );
+                                };
+
+                                if (has_changed){
+            // ---  add field to updated_columns list
+                                    updated_columns.push(col_field)
+                                };
                             };
-                            if (has_changed){
-        // ---  add field to updated_columns list
-                                updated_columns.push(col_field)
-                            };
-                        };
-// ---  update fields in data_row
-                        for (const [key, new_value] of Object.entries(update_dict)) {
-                            if (key in data_dict){
-                                if (new_value !== data_dict[key]) {
-                                    data_dict[key] = new_value;
-                        }}};
+    // ---  update fields in data_row
+                            for (const [key, new_value] of Object.entries(update_dict)) {
+                                if (key in data_dict){
+                                    if (new_value !== data_dict[key]) {
+                                        data_dict[key] = new_value;
+                            }}};
 
-        // ---  update field in tblRow
-                        // note: when updated_columns is empty, then updated_columns is still true.
-                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
-                        if(updated_columns.length || field_error_list.length){
+            // ---  update field in tblRow
+                            // note: when updated_columns is empty, then updated_columns is still true.
+                            // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+                            if(updated_columns.length || field_error_list.length){
 
-// --- get existing tblRow
-                            let tblRow = document.getElementById(data_dict.mapid);
-                            if(tblRow){
-                                // to make it perfect: move row when username have changed
-                                if (updated_columns.includes("username")){
-                                //--- delete current tblRow
-                                    tblRow.parentNode.removeChild(tblRow);
-                                //--- insert row new at new position
-                                    tblRow = CreateTblRow(page_tblName, field_setting, update_dict)
-                                }
+    // --- get existing tblRow
+                                let tblRow = document.getElementById(data_dict.mapid);
+                                if(tblRow){
+                                    // to make it perfect: move row when username have changed
+                                    if (updated_columns.includes("username")){
+                                    //--- delete current tblRow
+                                        tblRow.parentNode.removeChild(tblRow);
+                                    //--- insert row new at new position
+                                        tblRow = CreateTblRow(page_tblName, field_setting, update_dict)
+                                    }
 
-                // loop through cells of row
-                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
-                                    el = td.children[0];
-                                    if (el){
-                                        el_fldName = get_attr_from_el(el, "data-field")
-                                        UpdateField(el, update_dict);
+                    // loop through cells of row
+                                    for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
+                                        el = td.children[0];
+                                        if (el){
+                                            el_fldName = get_attr_from_el(el, "data-field")
+                                            UpdateField(el, update_dict);
 
-                // make field green when field name is in updated_columns
-                                        if(updated_columns.includes(el_fldName)){
-                                            ShowOkElement(el);
+                    // make field green when field name is in updated_columns
+                                            if(updated_columns.includes(el_fldName)){
+                                                ShowOkElement(el);
+                                            };
                                         };
-                                    };
-                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
-                            };  // if(tblRow){
-                        }; //  if(updated_columns.length){
-                    };  //  if(!isEmpty(data_dict) && field_names){
-                };  // if(is_deleted){
+                                    };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++) {
+                                };  // if(tblRow){
+                            }; //  if(updated_columns.length){
+                        };  //  if(!isEmpty(data_dict) && field_names){
+                    };  // if(is_deleted){
+                };
             };  // if(is_created)
         };  // if(!isEmpty(update_dict)){
     };  // RefreshDatarowItem
@@ -4288,6 +4240,31 @@ function RefreshDataRowsAfterUpload(response) {
 
 //###########################################################################
 
+//========= get_datadict_from_tblRow ============= PR2023-04-04
+    function get_datadict_from_tblRow(tblRow) {
+        console.log( " ==== get_datadict_from_tblRow ====");
+        console.log( "tblRow", tblRow);
+
+        const map_id = (tblRow && tblRow.id) ? tblRow.id : null;
+        const tblName = get_tblName_from_mapid(map_id);
+        const data_dicts = get_data_dicts(tblName);
+        const data_dict = (data_dicts) ? data_dicts[map_id] : null;
+        return data_dict;
+    };
+
+//========= get_datadict_from_tblRow ============= PR2021-08-01 PR2023-04-04
+    function get_data_dicts(tblName) {
+        return (tblName === "userpermit") ? permit_dicts :
+                (tblName === "usergroup") ? user_dicts :
+                (tblName === "user") ? user_dicts : null;
+    };
+
+//========= get_tblName_from_mapid ============= PR2021-08-01
+    function get_tblName_from_mapid(map_id) {
+        const arr = (map_id) ? map_id.split("_") : null;
+        return (arr) ? arr[0] : null;
+    };
+//////////////////////
 
 //========= get_datadict_from_mapid  ====== PR2021-08-01
     function get_datadict_from_mapid(map_id) {
@@ -4307,7 +4284,7 @@ function RefreshDataRowsAfterUpload(response) {
         //console.log( "pk_int", pk_int, typeof pk_int );
         let data_dict = null;
         if(tblName && pk_int){
-            const data_rows = get_data_rows(tblName) ;
+            const data_rows = get_data_dicts(tblName) ;
     //console.log( "data_rows", data_rows, typeof data_rows );
             const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
             if (!isEmpty(found_dict)) {data_dict = found_dict};
@@ -4324,29 +4301,18 @@ function RefreshDataRowsAfterUpload(response) {
                 (selected_btn === "btn_allowed") ? "tbl_allowed" : null;
     };
 
-    function get_data_rows(tblName) {  //PR2021-08-01
-        //console.log( "  ----- get_data_rows -----");
-        //console.log( "tblName", tblName);
-        return (tblName === "userpermit") ? permit_rows :
-                (tblName === "usergroup") ? user_rows :
-                (tblName === "user") ? user_rows : null;
-    };
 
-//========= get_datarows_from_selectedBtn  ======== // PR2022-01-25
-    function get_datarows_from_selectedBtn() {
-        //console.log( " ----- get_datarows_from_selectedBtn  -----");
+//========= get_datadicts_from_selectedBtn  ======== // PR2022-01-25 PR2023-04-04
+    function get_datadicts_from_selectedBtn() {
+        //console.log( " ----- get_datadicts_from_selectedBtn  -----");
         //console.log( "selected_btn", selected_btn);
-        return  (selected_btn === "btn_user") ? user_rows :
-                (selected_btn === "btn_usergroup") ? user_rows :
-                (selected_btn === "btn_userpermit") ? permit_rows :
-                (selected_btn === "btn_allowed") ? user_rows : null;
+        return  (selected_btn === "btn_user") ? user_dicts :
+                (selected_btn === "btn_usergroup") ? user_dicts :
+                (selected_btn === "btn_userpermit") ? permit_dicts :
+                (selected_btn === "btn_allowed") ? user_dicts : null;
     };
 
 
-    function get_tblName_from_mapid(map_id) {  //PR2021-08-01
-        const arr = (map_id) ? map_id.split("_") : null;
-        return (arr) ? arr[0] : null;
-    };
 
     function get_tblName_pk_from_mapid(map_id) {  //PR2021-08-01
         const arr = (map_id) ? map_id.split("_") : null;

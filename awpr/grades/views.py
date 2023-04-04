@@ -46,6 +46,19 @@ logger = logging.getLogger(__name__)
 # PR2019-01-04 from https://stackoverflow.com/questions/19734724/django-is-not-json-serializable-when-using-ugettext-lazy
 
 
+# ========  GRADES SECRET EXAMS =====================================
+@method_decorator([login_required], name='dispatch')
+class GradeSecretExamListView(View):  # PR2023-04-03
+
+    def get(self, request):
+
+# - set headerbar parameters
+        page = 'page_gradesecretexam'
+        param = {'display_school': False, 'display_department': True}
+        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+
+        return render(request, 'gradesecretexam.html', headerbar_param)
+
 # ========  GRADES  =====================================
 
 @method_decorator([login_required], name='dispatch')
@@ -443,6 +456,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                                     subjbase_pk=grade_row.get('subjbase_id'),
                                                     cluster_pk=grade_row.get('cluster_id'),
                                                     studsubj_tobedeleted=grade_row.get('studsubj_tobedeleted'),
+                                                    is_secret_exam=grade_row.get('secret_exam'),
 
                                                     msg_list=msg_list,
                                                     is_approve=True, # only used for msg text
@@ -773,7 +787,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
     # PR2023-02-22 must filter on allowed schoo, dep and level, but not on subject and clster
     apply_allowed_filter = not include_grades
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_grade_approve_rows -----')
@@ -1938,7 +1952,7 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
         published_id = grade_row.get('published_id')
         is_blocked = grade_row.get('blocked')
         if logging_on:
-            logger.debug('published_id:    ' + str(published_id))
+            logger.debug('   published_id:    ' + str(published_id))
 
         if published_id:
             af.add_one_to_count_dict(count_dict, 'already_published')
@@ -1954,10 +1968,10 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
 
             if logging_on:
                 logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
-                logger.debug('auth1by_id:      ' + str(auth1by_id))
-                logger.debug('auth2by_id:      ' + str(auth2by_id))
-                logger.debug('auth3by_id:      ' + str(auth3by_id))
-                logger.debug('auth4by_id:      ' + str(auth4by_id))
+                logger.debug('    auth1by_id:      ' + str(auth1by_id))
+                logger.debug('    auth2by_id:      ' + str(auth2by_id))
+                logger.debug('    auth3by_id:      ' + str(auth3by_id))
+                logger.debug('    auth4by_id:      ' + str(auth4by_id))
 
             double_approved = False
             save_changes = False
@@ -2000,10 +2014,9 @@ def approve_grade_row(grade_row, tobe_updated_list, sel_examtype, requsr_auth, a
                     else:
                         is_secret_exam = grade_row.get('secret_exam') or False
 
-    # skip if this is a secret_exam and authindex = examiner or commissioner
+    # skip if this is a secret_exam, is ce and requsr is not admin
                         # or when se / sr and authindex = commissioner
-                        if (is_secret_exam and requsr_auth in ('auth3', 'auth4')) or \
-                                (sel_examtype in ('se', 'sr') and requsr_auth == 'auth4'):
+                        if is_secret_exam and sel_examtype == 'ce' and request.user.role != c.ROLE_064_ADMIN:
                             af.add_one_to_count_dict(count_dict, 'no_approval_needed')
                         else:
 
@@ -2459,10 +2472,12 @@ class GradeUploadView(View):
                             lvlbase_pk=lvlbase_pk,
                             subjbase_pk=grade.studentsubject.schemeitem.subject.base_id,
                             cluster_pk=grade.studentsubject.cluster_id,
+                            studsubj_tobedeleted=studsubj_tobedeleted,
+                            is_secret_exam=grade.ce_exam.secret_exam if grade.ce_exam else False,
+
                             msg_list=msg_list,
                             is_score=is_score,
-                            is_grade_exam=return_grades_with_exam,
-                            studsubj_tobedeleted=studsubj_tobedeleted
+                            is_grade_exam=return_grades_with_exam
                         )
 
                         if logging_on:
@@ -2530,8 +2545,7 @@ class GradeUploadView(View):
                                 request=request,
                                 append_dict=append_dict,
                                 grade_pk_list=[grade.pk],
-                                remove_note_status=True,
-                                skip_allowed_filter=True
+                                remove_note_status=True
                             )
                         if logging_on:
                             logger.debug('    rows: ' + str(rows))
@@ -2858,36 +2872,41 @@ def recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_v
 
 def update_studsubj_and_recalc_student_result(sel_examyear, sel_school, sel_department, student):
     # PR2022-01-01
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_studsubj_and_recalc_student_result -------')
 
-# - get_scheme_dict
-    scheme_dict = calc_res.get_scheme_dict(sel_examyear, sel_department)
+    sql_studsubj_list, sql_student_list, log_list = [], [], []
 
-# - get_schemeitems_dict
-    schemeitems_dict = calc_res.get_schemeitems_dict(sel_examyear, sel_department)
+    if student:
+        # - get_scheme_dict
+        scheme_dict = calc_res.get_scheme_dict(sel_examyear, sel_department)
 
-# - get student_dict
-    student_pk_list = [student.pk]
-    student_dictlist = calc_res.get_students_with_grades_dictlist(
-        examyear = sel_examyear,
-        school = sel_school,
-        department = sel_department,
-        student_pk_list = student_pk_list
-    )
+        # - get_schemeitems_dict
+        schemeitems_dict = calc_res.get_schemeitems_dict(sel_examyear, sel_department)
+        student_dict = {}
 
-    student_dict = student_dictlist[0]
+    # - get student_dict
+        student_pk_list = [student.pk]
+        student_dictlist = calc_res.get_students_with_grades_dictlist(
+            examyear = sel_examyear,
+            school = sel_school,
+            department = sel_department,
+            student_pk_list = student_pk_list
+        )
 
-    log_list = []
-    sql_studsubj_list = []
-    sql_student_list = []
-    calc_res.calc_student_result(sel_examyear, sel_department, student_dict, scheme_dict, schemeitems_dict,
-                                 log_list, sql_studsubj_list, sql_student_list)
+        student_dict = student_dictlist[0] if student_dictlist else {}
 
+        calc_res.calc_student_result(sel_examyear, sel_department, student_dict, scheme_dict, schemeitems_dict,
+                                     log_list, sql_studsubj_list, sql_student_list)
     if logging_on:
-        logger.debug('sql_studsubj_list: ' + str(sql_studsubj_list))
-        logger.debug('sql_student_list: ' + str(sql_student_list))
+        logger.debug('    sql_studsubj_list: ' + str(sql_studsubj_list))
+        logger.debug('    sql_studsubj_list: ' + str(sql_studsubj_list))
+        if log_list:
+            for line in log_list:
+                logger.debug(' .. ' + str(line))
+        logger.debug(' -- end of update_studsubj_and_recalc_student_result')
+
     return sql_studsubj_list, sql_student_list
 # - end of update_studsubj_and_recalc_student_result
 

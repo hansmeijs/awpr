@@ -111,11 +111,11 @@ class StudsubjDownloadEx4View(View):  # PR2022-05-27
         if request.user and request.user.country and request.user.schoolbase:
             req_user = request.user
 
-            # - reset language
+    # - reset language
             user_lang = req_user.lang if req_user.lang else c.LANG_DEFAULT
             activate(user_lang)
 
-            # - get selected examyear, school and department from usersettings
+    # - get selected examyear, school and department from usersettings
             sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                 acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
@@ -558,7 +558,7 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
 #//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, sel_level,
                     examperiod, prefix, save_to_disk, request, user_lang):  # PR2021-02-13 PR2021-08-14
-    # called by StudsubjDownloadEx4View
+    # called by StudentsubjectApproveOrSubmitEx1Ex4View and StudsubjDownloadEx4View
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_ex4_xlsx -----')
@@ -573,9 +573,9 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
         create_ex1_Ex4_mapped_subject_rows(examyear, sel_school, sel_department, True)  # is_reex=True
 
     if logging_on:
-        logger.debug('subject_row_count: ' + str(subject_row_count))
-        logger.debug('subject_pk_list: ' + str(subject_pk_list))
-        logger.debug('subject_code_list: ' + str(subject_code_list))
+        logger.debug('    subject_row_count: ' + str(subject_row_count))
+        logger.debug('     subject_pk_list:  ' + str(subject_pk_list))
+        logger.debug('    subject_code_list: ' + str(subject_code_list))
 
 # +++ get dict of students with list of studsubj_pk, grouped by level_pk, with totals
     ex4_rows_dict = create_ex1_ex4_rows_dict(
@@ -645,9 +645,9 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
             file_name = published_instance.name
 
             if logging_on:
-                logger.debug('file_dir: ' + str(file_dir))
-                logger.debug('file_name: ' + str(file_name))
-                logger.debug('filepath: ' + str(file_path))
+                logger.debug('    file_dir: ' + str(file_dir))
+                logger.debug('    file_name: ' + str(file_name))
+                logger.debug('    filepath: ' + str(file_path))
 
 # ---  create file Name and worksheet Name
         today_dte = af.get_today_dateobj()
@@ -682,7 +682,8 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
         th_merge_bold = ex4_formats.get('th_merge_bold')
         th_merge_normal = ex4_formats.get('th_merge_normal')
         th_exists = ex4_formats.get('th_exists')
-        th_prelim  = ex4_formats.get('th_prelim')
+        row_align_center_blue = ex4_formats['row_align_center_blue']
+        th_prelim = ex4_formats.get('th_prelim')
         totalrow_merge = ex4_formats.get('totalrow_merge')
         col_count = len(ex4_formats['field_width'])
         first_subject_column =  ex4_formats.get('first_subject_column', 0)
@@ -704,6 +705,7 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
         'Regel 8:
         'Regel 9:  "Examen Nr"
         """
+
 # --- title row
         # was: sheet.write(0, 0, str(_('Report')) + ':', bold)
         title_str =  settings['ex4_title_reex03'] if examperiod == 3 else settings['ex4_title']
@@ -765,21 +767,28 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                 for i, field_caption in enumerate(ex4_formats['field_captions']):
                      sheet.write(row_index, i, field_caption, ex4_formats['header_formats'][i])
 
+# +----  iterate through stud_list
                 if len(stud_list):
-                    for row in stud_list:
 
-# ---  student rows
+                    for row in stud_list:
+                        if logging_on:
+                            logger.debug('    row: ' + str(row))
+
+# ---  iterate through fields of student row
                         # row: {'idnr': '2004101103', 'exnr': '21024', 'name': 'Balentien, Rayviendall',
-                        # 'lvl': 'PBL', 'sct': 'tech', 'class': '4BH', 'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
+                        #          'lvl': 'PBL', 'sct': 'tech', 'class': '4BH',
+                        #          'subj': [1047, 1048, 1049, 1050, 1051, 1052, 1055, 1056, 1060, 1070]}
                         row_index += 1
                         for i, field_name in enumerate(ex4_formats['field_names']):
                             exc_format = ex4_formats['row_formats'][i]
                             value = ''
                             if isinstance(field_name, int):
                                 # in subject column 'field_name' is subject_id
-                                #subj_id_list = row.get('subj', [])
-                                #if subj_id_list and field_name in subj_id_list:
-                                #    value = 'x'
+                                subj_id_list = row.get('subj', [])
+                                if subj_id_list and field_name in subj_id_list:
+                                    value = 'x'
+                                    value = u"\u2B24"  # large solid circle
+                                    exc_format = row_align_center_blue
 
                                 subj_nondel_list = row.get('subj_nondel', [])
                                 if subj_nondel_list and field_name in subj_nondel_list:
@@ -792,6 +801,10 @@ def create_ex4_xlsx(published_instance, examyear, sel_school, sel_department, se
                                 #    exc_format = ex4_formats['row_align_center_red']
                             else:
                                 value = row.get(field_name, '')
+
+                            if logging_on:
+                                logger.debug('    field_name: ' + str(field_name) + ' value: ' + str(value))
+
                             sheet.write(row_index, i, value, exc_format)
 
 # ---  level subtotal row
@@ -1114,7 +1127,7 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
     level_req = sel_department.level_req
 
 # students without subjects must only be shown in preliminary Ex1 form
-    include_students_without_subjects = not save_to_disk  # and examperiod == 1
+    include_students_without_subjects = not save_to_disk and examperiod == 1
     inner_or_left_join_studsubj = "LEFT JOIN" if include_students_without_subjects else "INNER JOIN"
 
 # PR2021-08-10 dont include null in  ARRAY_AGG
@@ -1123,7 +1136,7 @@ def create_ex1_ex4_rows_dict(examyear, sel_school, sel_department, sel_level,
     # don't filter on published or approved subject when printing preliminary Ex1 (in that case save_to_disk = False)
 
     # PR2022-12-29 new approach submitting Ex1 form:
-    # - exclude subjects that are already deleted
+    # - exclude subjects that are deleted
     # - include previously submitted subjects (color them black)
     # - include newly submitted subjects (color them blue, bold)
     # - include tobedeleted subjects (color them red)

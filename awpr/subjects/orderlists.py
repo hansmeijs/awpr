@@ -1420,7 +1420,7 @@ def check_envelopsubject_rows(sel_examyear, request):
 
 def get_envelopsubject_rows(sel_examyear, append_dict, practex_only, errata_only, secret_only, envelopsubject_pk=None):
     # PR2022-10-09 PR2022-10-10 PR2023-03-24
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== get_envelopsubject_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
@@ -1951,7 +1951,7 @@ def create_printlabel_dict(sel_examyear, sel_examperiod, sel_layout, secret_only
     # PR2022-10-10
     # values of sel_layout are: "no_errata", "errata_only", "all" , None
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- create_printlabel_dict ----- ')
         logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
@@ -4155,9 +4155,8 @@ class EnvelopPrintReceiptView(View):  # PR2023-03-04
                             logger.debug('    envelop_count_per_school_item: ' + str(key) + ': ' + str(value))
 #?????????????????????????????????????????????????
             if logging_on:
-                logger.debug(' ????????   printlabel_dict: ' + str(printlabel_dict))
                 for key, value in printlabel_dict.items():
-                    logger.debug(' ????????   printlabel_item: ' + str(key) + ': ' + str(value))
+                    logger.debug(' >>>   printlabel_item: ' + str(key) + ': ' + str(value))
 
 # ---use existing envelop_count_per_school_dict if it exists
             if envelop_count_per_school_dict:
@@ -4236,9 +4235,9 @@ def create_envelop_receipt_pdf(sel_examyear, sel_examperiod, schoolbase_dictlist
     ###########################
     def create_page_ranges():
 
-        max_rows_one_page = 16 # PR2023-03-16 was: 14
-        max_rows_first_last_page = 20  # PR2023-03-16 was: 18
-        max_rows_middle_page = 26  # PR2023-03-16 was: 24
+        max_rows_one_page = 19
+        max_rows_first_last_page = 22
+        max_rows_middle_page = 28
 
         row_count = len(receipt_examlabel_dictlist)
         page_ranges = []

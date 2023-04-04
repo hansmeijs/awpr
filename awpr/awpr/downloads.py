@@ -223,8 +223,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
                         sel_examyear=sel_examyear,
                         sel_depbase=sel_depbase,
-                        sel_lvlbase=sel_lvlbase,
-                        append_dict={}
+                        sel_lvlbase=sel_lvlbase
                     )
 # ----- subjects for page subjectscheme
                 if datalist_request.get('subject_rows_page_subjects'):

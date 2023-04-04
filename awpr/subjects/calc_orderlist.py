@@ -789,9 +789,8 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, secret_only
         logger.debug('    sel_examperiod: ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
 
     printlabel_rows = []
-    if sel_examyear :
+    if sel_examyear and sel_examperiod :
         try:
-            sql_keys = {'ey_code_int': sel_examyear.code, 'ep': sel_examperiod}
 
             sub_list = [
                 "SELECT lblitm.enveloplabel_id,",
@@ -867,20 +866,14 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, secret_only
                 #        "counts.subj_id = subj.id AND counts.examperiod = exam.examperiod)",
 
                 "WHERE ey.code = " + str(sel_examyear.code) + "::INT",
+                ''.join(('AND env_subj.examperiod = ', str(sel_examperiod), '::INT'))
             ]
 
             if envelopsubject_pk_list:
-                #sql_keys['envelopsubject_pk_list'] = envelopsubject_pk_list
-                #sql_list.append('AND env_subj.id IN (SELECT UNNEST( %(envelopsubject_pk_list)s::INT[]))')
                 if len(envelopsubject_pk_list) == 1:
                     sql_list.append(''.join(("AND env_subj.id=", str(envelopsubject_pk_list[0]), "::INT ")))
                 else:
                     sql_list.append(''.join(("AND env_subj.id IN (SELECT UNNEST(ARRAY", str(envelopsubject_pk_list), "::INT[])) ")))
-
-            else:
-                # PR2022-09-02 debug: must skip filter examperiod when envelopsubject_pk_list has value
-                # table envelopsubject has a field examperiod
-                sql_list.append(''.join(('AND env_subj.examperiod = ', str(sel_examperiod), '::INT')))
 
     # values of sel_layout are: "no_errata", "errata_only", "all" , None
             if sel_layout == 'no_errata':
@@ -913,7 +906,7 @@ def create_printlabel_rows(sel_examyear, sel_examperiod, sel_layout, secret_only
                     logger.debug('    >: ' + str(sql_txt))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 printlabel_rows = af.dictfetchall(cursor)
 
             if logging_on and False:

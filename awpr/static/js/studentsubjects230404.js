@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "l", "l", "c"]},
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
+
         btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
@@ -156,14 +157,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120","120"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
 
-        btn_sr:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Re_exam_schoolexam_2lns", "", ],
-                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name_nl", "has_sr", "sr_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
         btn_reex:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_examination", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
@@ -172,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
                     field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
                     field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+
         btn_reex03:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
                                 "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
                     field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
@@ -586,10 +580,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     selected.student_name = (setting_dict.sel_student_name) ? setting_dict.sel_student_name : null;
 
 // ---  check for multiple occurrences when btn = exemption, only once
-                    if(!setting_dict.skip_download_multiple_occurrences){
-                        setting_dict.skip_download_multiple_occurrences = true;
-                        DownloadMultipleOccurrences();
-                    };
+                    // TODO PR2023-03-31 niu in use here, is done in page grade. To be moved to this page
+                    //if(!setting_dict.skip_download_multiple_occurrences){
+                    //    setting_dict.skip_download_multiple_occurrences = true;
+                    //    DownloadMultipleOccurrences();
+                    //};
 
                     must_update_headerbar = true;
                 };
@@ -775,8 +770,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= UpdateHeaderText  ================== PR2020-07-31 PR2021-07-23 PR2020-01-06 PR2022-01-08
     function UpdateHeaderText(reset_header){
-        console.log(" --- UpdateHeaderText ---" )
-        console.log("    selected.subject_name", selected.subject_name )
+        //console.log(" --- UpdateHeaderText ---" )
+        //console.log("    selected.subject_name", selected.subject_name )
 
         let header_txt_left = "";
         let header_txt_right = "";
@@ -1154,12 +1149,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 } else if (field_name === "is_thumbrule"){
                     if(permit_dict.permit_crud && permit_dict.requsr_same_school){
-                        td.addEventListener("click", function() {UploadToggleThumbrule(el)}, false)
+                        td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     };
-                } else if (["is_thumbrule", "is_extra_nocount", "is_extra_counts"].includes(field_name)){
+                } else if (["is_extra_nocount", "is_extra_counts"].includes(field_name)){
                     if(permit_dict.permit_crud && permit_dict.requsr_same_school){
-                        td.addEventListener("click", function() {UploadToggleExtraNocountCounts(el)}, false)
+                        td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     };
 
@@ -1546,7 +1541,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     };  // HandleInputChange
 
-//========= UploadToggleStatus  ============= PR2020-07-31 PR2021-12-28
+//========= UploadToggleStatus  ============= PR2020-07-31 PR2021-12-28 PR20233-04-02
     function UploadToggleStatus(el_input) {
         console.log( " ==== UploadToggleStatus ====");
         //console.log( "permit_dict", permit_dict);
@@ -1554,7 +1549,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (permit_dict.permit_approve_subject){
 
-            const tblRow = t_get_tablerow_selected(el_input);
 
 // - get statusindex of requsr ( statusindex = 1 when auth1 etc
             // auth_index : 0 = None, 1 = auth1, 2 = auth2, 3 = auth3, 4 = auth4
@@ -1562,223 +1556,171 @@ document.addEventListener('DOMContentLoaded', function() {
             // this function gives err message when multiple found. (uses b_show_mod_message_html)
             // const requsr_auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
 
-            // PR2022-05-30 debug: don't use b_get_auth_index_of_requsr, goes wrong when selected_auth = examinator
+            // PR2022-05-30 debug: don't use b_get_auth_index_of_requsr, goes wrong when selected_auth = examiner
             const is_chairperson = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1"))
             const is_secretary = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2"))
             const requsr_auth_index = (is_chairperson && !is_secretary) ? 1 :
                                       (!is_chairperson && is_secretary) ? 2 : null;
 
-// usergroup_list: (5) ['admin', 'auth1', 'auth3', 'edit', 'read']
+// usergroup_list:  ['admin', 'auth1', 'auth3', 'edit', 'read']
             if(requsr_auth_index){
-                const data_dict = get_datadict_from_tblRow(tblRow);
-                if(!isEmpty(data_dict)){
-                    const fldName = get_attr_from_el(el_input, "data-field");
-                    // examtype = 'subj', 'exem', 'sr', 'reex', 'reex03', 'pok'
-                    const examtype = fldName.replace("_status", "");
-                    // model_field = 'subj_auth1by'
-                    //PR2022-07-08 debug: Roxanne Wederfoort CAL: cannot approve reex03
-                    // db fields are: reex3_auth1by, reex3_auth2by, reex3_published, NOT reex03_
-                    const prefix = (examtype === "reex03") ? "reex3" : examtype;
 
-// - get auth info
-                    const is_published = (!!data_dict[examtype + "_published_id"]);
-                    const is_blocked = (!!data_dict[examtype + "_blocked"]);
+                const tblRow = t_get_tablerow_selected(el_input);
+                const data_dict = studsubj_dictsNEW[tblRow.id];
+                if(data_dict){
 
         // check if cluster is allowed
-                    const is_allowed_cluster = get_is_allowed_cluster(data_dict.cluster_id);
-
-                    if (!is_allowed_cluster){
-                        const msg_html = ["<div class='p-2 border_bg_invalid'>", loc.No_cluster_permission, "</div>"].join("");
-
-                        b_show_mod_message_html(msg_html);
-
-
-// give message and exit when examtype is published
-                    } else if (is_published){
-                        const caption = [ ((examtype === "subj") ? loc.This_subject :
-                                        (examtype === "exem") ? loc.This_exemption :
-                                        (examtype === "sr") ? loc.This_reex_schoolexam :
-                                        (examtype === "reex") ? loc.This_reexamination :
-                                        (examtype === "reex03") ? loc.This_reexamination_3rd_period :
-                                        (examtype === "pok") ? loc.This_proof_of_knowledge : loc.This_item),
-                                        loc.is_already_published
-                                        ].join(" ");
-                        const msg_html = caption + "<br>" + loc.You_cannot_change_approval;
+                    const is_allowed = get_is_allowed_cluster(data_dict.cluster_id);
+                    if (!is_allowed){
+                        const msg_html = ["<div class='p-2 border_bg_invalid'>", loc.No_cluster_approve_permission, "</div>"].join("");
                         b_show_mod_message_html(msg_html);
                     } else {
 
-// get auth index of requsr, null when multiple found
+                        const fldName = get_attr_from_el(el_input, "data-field");
+                        // examtype = 'subj', 'exem', 'sr', 'reex', 'reex03', 'pok'
+                        const examtype = fldName.replace("_status", "");
+                        // model_field = 'subj_auth1by'
+                        //PR2022-07-08 debug: Roxanne Wederfoort CAL: cannot approve reex03
+                        // db fields are: reex3_auth1by, reex3_auth2by, reex3_published, NOT reex03_
+                        const prefix = (examtype === "reex03") ? "reex3" : examtype;
 
-                        const usergroup_list = (permit_dict.usergroup_list) ? permit_dict.usergroup_list : [];
-                        const is_auth1 = usergroup_list.includes("auth1");
-                        const is_auth2 = usergroup_list.includes("auth2");
-                        const auth_index = (is_auth1 && !is_auth2) ? 1 :
-                                           (!is_auth1 && is_auth2) ? 2 : null;
-                        if (examtype && auth_index){
-                            const model_field = prefix + "_auth" +  auth_index + "by";
-                            const field_auth_id = model_field + "_id";
-                            // field_auth_id = 'subj_auth1by_id'
-                            const auth_id = (data_dict[field_auth_id]) ? data_dict[field_auth_id] : null;
-                            // field_auth_id = 47
-                            const auth_dict = {};
-                            let requsr_auth_bool = false;
-                            for (let i = 1, key_str; i < 3; i++) {
-                                key_str = examtype + "_auth" + i + "by_id";
-                                if (data_dict[key_str]){
-                                    if (requsr_auth_index === i) {
-                                        requsr_auth_bool = true;
+    // - get auth info
+                        const is_published = (!!data_dict[examtype + "_published_id"]);
+                        const is_blocked = (!!data_dict[examtype + "_blocked"]);
+
+    // give message and exit when examtype is published
+                        if (is_published){
+                            const caption = [ ((examtype === "subj") ? loc.This_subject :
+                                            (examtype === "exem") ? loc.This_exemption :
+                                            (examtype === "sr") ? loc.This_reex_schoolexam :
+                                            (examtype === "reex") ? loc.This_reexamination :
+                                            (examtype === "reex03") ? loc.This_reexamination_3rd_period :
+                                            (examtype === "pok") ? loc.This_proof_of_knowledge : loc.This_item),
+                                            loc.is_already_published
+                                            ].join(" ");
+                            const msg_html = caption + "<br>" + loc.You_cannot_change_approval;
+                            b_show_mod_message_html(msg_html);
+                        } else {
+
+    // get auth index of requsr, null when multiple found
+
+                            const usergroup_list = (permit_dict.usergroup_list) ? permit_dict.usergroup_list : [];
+                            const is_auth1 = usergroup_list.includes("auth1");
+                            const is_auth2 = usergroup_list.includes("auth2");
+                            const auth_index = (is_auth1 && !is_auth2) ? 1 :
+                                               (!is_auth1 && is_auth2) ? 2 : null;
+                            if (examtype && auth_index){
+                                const model_field = prefix + "_auth" +  auth_index + "by";
+                                const field_auth_id = model_field + "_id";
+                                // field_auth_id = 'subj_auth1by_id'
+                                const auth_id = (data_dict[field_auth_id]) ? data_dict[field_auth_id] : null;
+                                // field_auth_id = 47
+                                const auth_dict = {};
+                                let requsr_auth_bool = false;
+                                for (let i = 1, key_str; i < 3; i++) {
+                                    key_str = examtype + "_auth" + i + "by_id";
+                                    if (data_dict[key_str]){
+                                        if (requsr_auth_index === i) {
+                                            requsr_auth_bool = true;
+                                        };
+                                        // only 2 auths are used, show icon with left or right part black
+                                        auth_dict[i] = (!!data_dict[key_str]);
                                     };
-                                    // only 2 auths are used, show icon with left or right part black
-                                    auth_dict[i] = (!!data_dict[key_str]);
                                 };
-                            };
-``
-// ---  toggle value of requsr_auth_bool
-                            // - get new_requsr_auth_bool - set false if already filled in
-                            // use 'true' instead of requsr_pk
-                            const new_requsr_auth_bool = !requsr_auth_bool;
+    ``
+    // ---  toggle value of requsr_auth_bool
+                                // - get new_requsr_auth_bool - set false if already filled in
+                                // use 'true' instead of requsr_pk
+                                const new_requsr_auth_bool = !requsr_auth_bool;
 
-// check if subject has reex etc, cannot approve when there is no reex ( true when subj, exemption has no approval)
-                            const has_sr_reex_ree03 = (examtype === "sr") ? !!data_dict.has_sr :
-                                                      (examtype === "reex") ? !!data_dict.has_reex :
-                                                      (examtype === "reex03") ? !!data_dict.has_reex03 : true;
+    // check if subject has reex etc, cannot approve when there is no reex ( true when subj, exemption has no approval)
+                                const has_sr_reex_ree03 = (examtype === "sr") ? !!data_dict.has_sr :
+                                                          (examtype === "reex") ? !!data_dict.has_reex :
+                                                          (examtype === "reex03") ? !!data_dict.has_reex03 : true;
 
-// cannot set approval when not has_sr_reex_ree03, but must be able to remove it, just in case
-                            if(!new_requsr_auth_bool || has_sr_reex_ree03) {
-   // also update value in auth_dict;
-                                auth_dict[requsr_auth_index] = new_requsr_auth_bool
+    // cannot set approval when not has_sr_reex_ree03, but must be able to remove it, just in case
+                                if(!new_requsr_auth_bool || has_sr_reex_ree03) {
+       // also update value in auth_dict;
+                                    auth_dict[requsr_auth_index] = new_requsr_auth_bool
 
-            // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
-                                el_input.className = f_get_status_auth12_iconclass(is_published, is_blocked, auth_dict[1], auth_dict[2]);
+                // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
+                                    el_input.className = f_get_status_auth12_iconclass(is_published, is_blocked, auth_dict[1], auth_dict[2]);
 
-                // ---  upload changes
-                                const studsubj_dict = {
-                                    student_pk: data_dict.stud_id,
-                                    studsubj_pk: data_dict.studsubj_id
-                                };
-                                studsubj_dict[model_field] = new_requsr_auth_bool;
+                    // ---  upload changes
+                                    const studsubj_dict = {
+                                        student_pk: data_dict.stud_id,
+                                        studsubj_pk: data_dict.studsubj_id
+                                    };
+                                    studsubj_dict[model_field] = new_requsr_auth_bool;
 
-                                const upload_dict = {
-                                    table: "studsubj",
-                                    studsubj_list: [studsubj_dict]
-                                };
+                                    const upload_dict = {
+                                        table: "studsubj",
+                                        studsubj_list: [studsubj_dict]
+                                    };
 
-                                UploadChanges(upload_dict, urls.url_studsubj_approve);
+                                    UploadChanges(upload_dict, urls.url_studsubj_approve);
 
-                            }  //  if(!new_requsr_auth_bool || has_sr_reex_ree03)
-                        };  // if (examtype && auth_index)
-                    };  //if (is_published)
-                };  //  if(!isEmpty(data_dict))
+                                };  //  if(!new_requsr_auth_bool || has_sr_reex_ree03)
+                            };  // if (examtype && auth_index)
+                        };  //if (is_published)
+                    };   // if (!is_allowed){
+                };  //  if(!data_dict)
             };  //  if(requsr_auth_index)
         }; //   if(permit_dict.permit_approve_subject)
     };  // UploadToggleStatus
 
 
-//========= UploadToggleThumbrule  ============= PR2022-06-07
-    function UploadToggleThumbrule(el_input) {
-        console.log( " ==== UploadToggleThumbrule ====");
-        console.log( "el_input", el_input);
-
-        if (permit_dict.permit_crud && permit_dict.requsr_same_school){
-
-            const tblRow = t_get_tablerow_selected(el_input);
-            const stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
-            const studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
-
-            const fldName = get_attr_from_el(el_input, "data-field");
-            const old_value = get_attr_from_el_int(el_input, "data-value");
-
-            const new_value = (!old_value);
-            // TODO message
-            if(new_value && false){
-                ModConfirmOpen(fldName, el_input);
-            } else {
-     // ---  change icon, before uploading
-                // when validation on server side fails, the old value is reset by RefreshDataRowItem PR2022-05-27
-                // updated_studsubj_rows must contain ie err_fields: ['has_reex']
-                add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
-
-    // ---  upload changes
-                const upload_dict = {
-                    student_pk: stud_pk,
-                    studsubj_pk: studsubj_pk
-                };
-                upload_dict[fldName] = new_value;
-                UploadChanges(upload_dict, urls.url_studsubj_single_update);
-            };
-
-        }; //   if(permit_dict.permit_approve_subject)
-    }  // UploadToggleThumbrule
-
-
-
-
-//========= UploadToggleExtraNocountCounts  ============= PR2022-06-08
-    function UploadToggleExtraNocountCounts(el_input) {
-        console.log( " ==== UploadToggleExtraNocountCounts ====");
-        console.log( "el_input", el_input);
-
-        if (permit_dict.permit_crud && permit_dict.requsr_same_school){
-
-            const tblRow = t_get_tablerow_selected(el_input);
-            const stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
-            const studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
-
-            const fldName = get_attr_from_el(el_input, "data-field");
-            const old_value = get_attr_from_el_int(el_input, "data-value");
-
-            const new_value = (!old_value);
-
-     // ---  change icon, before uploading
-            add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
-
-// ---  upload changes
-            const upload_dict = {
-                student_pk: stud_pk,
-                studsubj_pk: studsubj_pk
-            };
-            upload_dict[fldName] = new_value;
-            UploadChanges(upload_dict, urls.url_studsubj_single_update);
-
-
-        }; //   if(permit_dict.permit_approve_subject)
-    }  // UploadToggleExtraNocountCounts
-
-//========= UploadToggle  ============= PR2020-07-31 PR2021-09-18
+//========= UploadToggle  ============= PR2020-07-31 PR2021-09-18 PR2023-04-02
     function UploadToggle(el_input) {
         console.log( " ==== UploadToggle ====");
         console.log( "el_input", el_input);
-        // (still) only called in brn Exemptions
+        //  called in fields "has_exemption", "has_reex", "has_reex03", "is_extra_nocount", "is_extra_counts"
+
+        // data-value is not in use any more, get old value from data_dict instead PR2023-04-02
+        // was: const old_value = get_attr_from_el_int(el_input, "data-value");
+
         if (permit_dict.permit_crud && permit_dict.requsr_same_school){
 
             const tblRow = t_get_tablerow_selected(el_input);
-            const stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
-            const studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
+            const data_dict = studsubj_dictsNEW[tblRow.id];
+            if (data_dict){
+                console.log("   data_dict", data_dict);
 
-            const fldName = get_attr_from_el(el_input, "data-field");
-            const old_value = get_attr_from_el_int(el_input, "data-value");
+        // check if cluster is allowed
+                // get_allowed_cluster_with_err_msg shows message when cluster is not allowed PR2023-04-02
+                if (get_allowed_cluster_with_err_msg(data_dict.cluster_id)){
+                    const fldName = get_attr_from_el(el_input, "data-field");
 
-            const new_value = (!old_value);
-            if(new_value){
+                    // dont get values from el.data-value etc any more, get old value from data_dict instead PR2023-04-02
+                    // was: const old_value = get_attr_from_el_int(el_input, "data-value");
+                    //      const stud_pk = get_attr_from_el_int(tblRow, "data-stud_pk");
+                    //      const studsubj_pk = get_attr_from_el_int(tblRow, "data-studsubj_pk");
 
-     // ---  change icon, before uploading
-                // when validation on server side fails, the old value is reset by RefreshDataRowItem PR2022-05-27
-                // updated_studsubj_rows must contain ie err_fields: ['has_reex']
-                add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+                    const old_value = data_dict[fldName];
+                    const new_value = (!old_value);
+                    // dont open modconfirm when setting checked = true or when removing checked from is_extra_nocount, is_extra_counts or is_thumbrule
+                    // note: is_extra_counts and is_thumbrule are not in use
+                    if(new_value || ["is_extra_nocount", "is_extra_counts", "is_thumbrule"].includes(fldName)){
 
-    // ---  upload changes
-                const upload_dict = {
-                    student_pk: stud_pk,
-                    studsubj_pk: studsubj_pk
+             // ---  change icon, before uploading
+                        // when validation on server side fails, the old value is reset by RefreshDataRowItem PR2022-05-27
+                        // updated_studsubj_rows must contain ie err_fields: ['has_reex']
+                        add_or_remove_class(el_input, "tickmark_1_2", new_value, "tickmark_0_0");
+
+            // ---  upload changes
+                        const upload_dict = {
+                            student_pk: data_dict.stud_id,
+                            studsubj_pk: data_dict.studsubj_id
+                        };
+                        upload_dict[fldName] = new_value;
+                        UploadChanges(upload_dict, urls.url_studsubj_single_update);
+                    } else {
+            // open mod confirm when deleting exemption, reex, reex3
+                        ModConfirmOpen(fldName, el_input);
+                    };
                 };
-                upload_dict[fldName] = new_value;
-                UploadChanges(upload_dict, urls.url_studsubj_single_update);
-            } else {
-    // open mod confirm when deleting exemption, reex, reex3
-                ModConfirmOpen(fldName, el_input);
             };
-
-        }; //   if(permit_dict.permit_approve_subject)
+        };
     }  // UploadToggle
 
 //========= UploadChanges  ============= PR2020-08-03 PR2021-07-26
@@ -6336,6 +6278,15 @@ console.log( "......filter_dict", filter_dict);
 
     };  // get_datadict_by_studpk_studsubjpk
 
+//========= get_allowed_cluster_with_err_msg  ======== // PR2023-04-02
+    function get_allowed_cluster_with_err_msg(cluster_id) {
+        const is_allowed = get_is_allowed_cluster(cluster_id);
+        if (!is_allowed){
+            const msg_html = ["<div class='p-2 border_bg_invalid'>", loc.No_cluster_change_permission, "</div>"].join("");
+            b_show_mod_message_html(msg_html);
+        };
+        return is_allowed;
+    };  // get_allowed_cluster_with_err_msg
 
 //========= get_is_allowed_cluster  ======== // PR2022-05-01
     function get_is_allowed_cluster(cluster_id) {

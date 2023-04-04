@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Results' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/results230228.js' %}"></script>
+    <script src="{% static 'js/results230404.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -110,6 +110,8 @@
 
                 data-url_download_gradelist="{% url 'url_download_gradelist' '-' %}"
                 data-url_calc_results="{% url 'url_calc_results' '-' %}"
+                data-url_calc_reex="{% url 'url_calc_reex' '-' %}"
+
                 data-url_download_pok="{% url 'url_download_pok' '-' %}"
 
                 data-url_get_auth="{% url 'url_get_auth' %}"

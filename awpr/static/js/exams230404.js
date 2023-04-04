@@ -1212,8 +1212,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 };
             };
         };
-    // ---  show total in sidebar
-        t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Exam, loc.Exams, setting_dict.user_lang);
+
+        Filter_TableRows();
     };  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-12-03 PR2020-12-18 PR2021-01-22
@@ -1264,7 +1264,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // --- add data-field Attribute.
                     el_filter.setAttribute("data-field", field_name);
                     el_filter.setAttribute("data-filtertag", filter_tag);
-                    el_filter.setAttribute("data-colindex", j);
+                    //el_filter.setAttribute("data-colindex", j);
         // --- add EventListener to el_filter
                     if (["text", "number"].includes(filter_tag)) {
                         el_filter.addEventListener("keyup", function(event){HandleFilterKeyup(el_filter, event)});
@@ -1275,6 +1275,11 @@ document.addEventListener("DOMContentLoaded", function() {
                         th_filter.classList.add("pointer_show");
                         el_filter.classList.add("diamond_3_4");  //  diamond_3_4 is blank img
                         add_hover(th_filter);
+
+                } else if (filter_tag === "toggle") {
+                    // add EventListener for icon to th_filter, not el_filter
+                    th_filter.addEventListener("click", function(event){HandleFilterToggle(el_filter)});
+                    th_filter.classList.add("pointer_show");
                     };
         // --- add other attributes
                     if (filter_tag === "text") {
@@ -2632,15 +2637,51 @@ document.addEventListener("DOMContentLoaded", function() {
         //console.log( "col_index", col_index, "event.key", event.key);
 
         const skip_filter = t_SetExtendedFilterDict(el, col_index, filter_dict, event.key);
-        //console.log( "filter_dict", filter_dict);
-
         if (!skip_filter) {
-            Filter_TableRows(tblBody_datatable);
-        }
+            Filter_TableRows();
+        };
     }; // function HandleFilterKeyup
 
-//========= HandleFilterStatus  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
+//========= HandleFilterToggle  =============== PR2023-03-31
+    function HandleFilterToggle(el_input) {
+        console.log( "===== HandleFilterToggle  ========= ");
 
+    // - get col_index and filter_tag from  el_input
+        // PR2021-05-30 debug: use cellIndex instead of attribute data-colindex,
+        // because data-colindex goes wrong with hidden columns
+        // was:  const col_index = get_attr_from_el(el_input, "data-colindex")
+        const col_index = el_input.parentNode.cellIndex;
+
+    // - get filter_tag from  el_input
+        const filter_tag = get_attr_from_el(el_input, "data-filtertag")
+        const field_name = get_attr_from_el(el_input, "data-field")
+    console.log( "    col_index", col_index);
+    console.log( "    filter_tag", filter_tag);
+    console.log( "    field_name", field_name);
+    console.log( "    filter_dict", filter_dict);
+
+    // - get current value of filter from filter_dict, set to '0' if filter doesn't exist yet
+        const filter_array = (col_index in filter_dict) ? filter_dict[col_index] : [];
+        const filter_value = (filter_array[1]) ? filter_array[1] : "0";
+    console.log( "    filter_array", filter_array);
+
+
+        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+        // - toggle filter value
+        const new_value = (filter_value === "2") ? "0" : (filter_value === "1") ? "2" : "1";
+        // - get new icon_class
+        const icon_class =  (new_value === "2") ? "tickmark_2_1" : (new_value === "1") ? "tickmark_2_2" : "tickmark_0_0";
+        // default filter triple '0'; is show all, '1' is show tickmark, '2' is show without tickmark
+
+    // - put new filter value in filter_dict
+        filter_dict[col_index] = [filter_tag, new_value]
+
+        el_input.className = icon_class;
+
+        Filter_TableRows();
+    };  // HandleFilterToggle
+
+//========= HandleFilterStatus  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23
     function HandleFilterStatus(el_input) {
         //console.log( "===== HandleFilterStatus  ========= ");
 
@@ -2670,7 +2711,7 @@ document.addEventListener("DOMContentLoaded", function() {
         filter_dict[col_index] = [filter_tag, new_value]
         console.log( "filter_dict", filter_dict);
         el_input.className = icon_class;
-        Filter_TableRows(tblBody_datatable);
+        Filter_TableRows();
 
     };  // HandleFilterStatus
 

@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_download_pok = get_attr_from_el(el_data, "data-url_download_pok");
 
     urls.url_calc_results = get_attr_from_el(el_data, "data-url_calc_results");
+    urls.url_calc_reex = get_attr_from_el(el_data, "data-url_calc_reex");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_get_auth = get_attr_from_el(el_data, "data-url_get_auth");
     urls.url_result_download_ex5 = get_attr_from_el(el_data, "data-url_result_download_ex5");
@@ -223,21 +224,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  SIDEBAR ------------------------------------
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
-        el_SBR_select_level.addEventListener("change",function() {SBR_select_lvlbase_sctbase("lvlbase", el_SBR_select_level)}, false);
-
+        if (el_SBR_select_level){
+            el_SBR_select_level.addEventListener("change",function() {SBR_select_lvlbase_sctbase("lvlbase", el_SBR_select_level)}, false);
+        };
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");
-        el_SBR_select_sector.addEventListener("change",function() {SBR_select_lvlbase_sctbase("sctbase", el_SBR_select_sector)}, false);
-
+        if (el_SBR_select_sector){
+            el_SBR_select_sector.addEventListener("change",function() {SBR_select_lvlbase_sctbase("sctbase", el_SBR_select_sector)}, false);
+        };
         //const el_SBR_select_class = document.getElementById("id_SBR_select_class");
         //if(el_SBR_select_class){
         //    el_SBR_select_class.addEventListener("click", function() {t_MSSSS_Open(loc, "class", classname_rows, true, false, setting_dict, permit_dict, SBR_MSSSS_Response)}, false)};
 
         const el_SBR_select_student = document.getElementById("id_SBR_select_student");
-        el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, SBR_MSSSS_Response)}, false);
-
+        if (el_SBR_select_student){
+            el_SBR_select_student.addEventListener("click", function() {t_MSSSS_Open(loc, "student", student_rows, true, false, setting_dict, permit_dict, SBR_MSSSS_Response)}, false);
+        };
         const el_SBR_select_showall = document.getElementById("id_SBR_select_showall");
-        el_SBR_select_showall.addEventListener("click", function() {SBR_show_all(FillTblRows)}, false);
-        add_hover(el_SBR_select_showall);
+        if (el_SBR_select_showall){
+            el_SBR_select_showall.addEventListener("click", function() {SBR_show_all(FillTblRows)}, false);
+            add_hover(el_SBR_select_showall);
+        };
 
         const el_SBR_item_count = document.getElementById("id_SBR_item_count")
 
@@ -495,6 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.permit_calc_results){
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
+            //AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
         };
         if(permit_dict.requsr_same_school){
             AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
@@ -510,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.requsr_same_school && permit_dict.permit_submit_gl_dipl){
             AddSubmenuButton(el_submenu, loc.Final_gradelist, function() {MGL_Open("final")}, ["tab_show", "tab_btn_result"]);
-            AddSubmenuButton(el_submenu, loc.Download_diploma, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
+            AddSubmenuButton(el_submenu, loc.Diplomas, function() {MGL_Open("diploma")}, ["tab_show", "tab_btn_result"]);
             AddSubmenuButton(el_submenu, loc.Ex6_pok, function() {MGL_Open("pok")}, ["tab_show", "tab_btn_result"]);
         };
 
@@ -1037,6 +1044,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: parameters,
                 dataType:'json',
                 success: function (response) {
+
     // ---  hide loader
                     el_loader.classList.add(cls_visible_hide)
                     console.log( "response");
@@ -1306,6 +1314,7 @@ function RefreshDataRowsAfterUpload(response) {
                                     (mode === "final") ? loc.Download_gradelist :
                                     (mode === "diploma") ? loc.Download_diploma :
                                     (mode === "pok") ? loc.Download_Ex6_pok :
+                                    (mode === "calc_reex") ? loc.Calculate_reex :
                                     null;
 
         el_MGL_printdate_label.innerText = (
@@ -1314,7 +1323,7 @@ function RefreshDataRowsAfterUpload(response) {
         ) + ":" ;
 
 // hide options
-        add_or_remove_class(el_MGL_select_container, cls_hide, ["calc_results"].includes(mode))
+        add_or_remove_class(el_MGL_select_container, cls_hide, ["calc_results", "calc_reex"].includes(mode))
         add_or_remove_class(el_MGL_print_reex_container, cls_hide, mode !== "prelim")
 
         let msg_html = null;
@@ -1375,7 +1384,6 @@ function RefreshDataRowsAfterUpload(response) {
         };
 
 // --- if all students of student_rows are in student_pk_list: set print_all = true, so you dont have to filter database on student_pk_list
-
         const student_rows_length = (student_rows) ? student_rows.length : 0;
         const student_pk_list_length = student_pk_list.length;
         if (student_pk_list_length === student_rows_length){
@@ -1393,6 +1401,8 @@ function RefreshDataRowsAfterUpload(response) {
 
         const msg01_txt = (mode === "calc_results") ?
             loc.The_result_of
+        : (mode === "calc_reex") ?
+            loc.Calc_reex
         : (mode === "prelim") ?
             loc.The_preliminary_gradelist_of
         : (mode === "final") ?
@@ -1420,10 +1430,16 @@ function RefreshDataRowsAfterUpload(response) {
                         "</p><p class='mt-2'>", loc.Logfile_with_details_willbe_downloaded, "</p></div>"
                         ].join("");
 
+        } else  if (mode === "calc_reex"){
+            msg_html = ["<div class='m-2'><p>", msg01_txt, "</p><ul class='mb-0'><li>", msg02_txt, "</li></ul><p>", loc.will_be_calculated,
+                        "</p><p class='mt-2'>", loc.Logfile_with_details_willbe_downloaded, "</p></div>"
+                        ].join("");
+
         } else  if (mode === "pok"){
             msg_html = ["<p>",
                             msg01_txt, " ",  msg02_txt, " ", loc.will_be_downloaded_sing , "</p>"
                           ].join("");
+
         } else {
             msg_html = ["<p>",
                             msg01_txt, " ",  msg02_txt, " ",
@@ -1487,8 +1503,8 @@ function RefreshDataRowsAfterUpload(response) {
         console.log(" -----  MGL_Save   ----")
         const el_MGL_link = document.getElementById("id_MGL_link");
 
-        if (mod_dict.mode === "calc_results"){
-            Calc_result()
+        if (["calc_results", "calc_reex"].includes(mod_dict.mode)){
+            Calc_result(mod_dict.mode)
             $("#id_mod_gradelist").modal("hide");
 
         } else {
@@ -1535,7 +1551,7 @@ function RefreshDataRowsAfterUpload(response) {
     };  // MGL_Input
 
 //=========  Calc_result  ================ PR2019-11-19
-    function Calc_result(){
+    function Calc_result(mode){
         console.log(" --- Calc_result --- ");
 
         const student_count = student_rows.length;
@@ -1584,7 +1600,7 @@ function RefreshDataRowsAfterUpload(response) {
         console.log("upload_dict", upload_dict);
 
     // ---  Upload Changes
-        let url_str = urls.url_calc_results;
+        let url_str = (mode === "calc_reex") ? urls.url_calc_reex : urls.url_calc_results;
         UploadChanges(upload_dict, url_str);
 
     };  // Calc_result

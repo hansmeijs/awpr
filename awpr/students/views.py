@@ -84,7 +84,7 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25
 class StudentsubjectListView(View): # PR2020-09-29 PR2021-03-25 PR2022-07-05
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(" =====  StudentsubjectListView  =====")
 
@@ -2339,8 +2339,7 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
                                     request=request,
                                     append_dict=append_dict,
                                     grade_pk_list=updated_grade_pk_list,
-                                    remove_note_status=True,
-                                    skip_allowed_filter=True
+                                    remove_note_status=True
                                 )
                                 if grade_rows:
                                     update_wrap['updated_grade_rows'] = grade_rows
@@ -2577,7 +2576,7 @@ class NoteAttachmentDownloadView(View): # PR2021-03-17
 class StudentsubjectValidateAllView(View):  # PR2021-07-24
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= StudentsubjectValidateAllView ============= ')
@@ -2632,8 +2631,6 @@ class StudentsubjectValidateAllView(View):  # PR2021-07-24
 
                     # validate_studentsubjects_no_msg returns True when there is an error PR2022-08-25
                     no_error = not stud_val.validate_studentsubjects_no_msg(student, 'nl')
-                    if logging_on:
-                        logger.debug('    no_error: ' + str(no_error))
 
                     if (not student.subj_composition_checked) or \
                             (student.subj_composition_checked and student.subj_composition_ok != no_error):
@@ -3495,7 +3492,6 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         return saved_studsubj_pk_list, err_html
 # - end of save_approved_in_studsubj
 
-
     def set_student_deleted(self, student_pk_list, request):
         # PR2023-01-12
 
@@ -3603,9 +3599,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
 
         return saved_studsubj_pk_list, err_html
-
     # - end of save_published_in_studsubj
-
 
     def delete_tobedeleted_from_studsubj(self, published_instance, sel_examyear, sel_school, sel_department, request):
         # PR2021-09-30
@@ -3629,7 +3623,6 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                 if logging_on:
                     logger.debug('deleted _studsubj: ' + str(studsubj))
 # - end of  delete_tobedeleted_from_studsubj
-
 
     def create_ex1_ex4_msg_list(self, sel_department, sel_level, count_dict, requsr_auth, is_approve, is_test, examperiod, published_instance_filename, student_composition_error_namelist):
         # PR2022-08-25 PR2023-01-15
@@ -4189,8 +4182,7 @@ class StudentsubjectApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
                                         may_edit = True
                                     else:
                                         msg_list.append(
-                                            str(_("This subject does not belong to %(cpt)s.") % {'cpt': _('the allowed clusters')}))
-                                        msg_list.append(str(_("You cannot approve this subject.")))
+                                            gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to approve subjects of this cluster')})
 
 # +++ update studsubj
                             if may_edit:
@@ -5277,7 +5269,7 @@ def delete_studentsubject_grades(studsubj_instance, this_txt, request):
 ####################################################
 
 @method_decorator([login_required], name='dispatch')
-class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
+class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -5287,10 +5279,11 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
 
         # function updates single studentsubject record
         update_wrap = {}
-        #TODO choose which one must be used: messages or msg_list
-        messages = []
+
+        msg_html = None
         msg_list = []
         err_fields = []
+        border_class = None
 
 # - reset language
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -5301,11 +5294,12 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
         req_usr = request.user
         if req_usr and req_usr.country and req_usr.schoolbase:
             has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
-            if logging_on:
-                logger.debug('    has_permit: ' + str(has_permit))
+        if logging_on:
+            logger.debug('    has_permit: ' + str(has_permit))
 
         if not has_permit:
-            msg_list.append(str(_("You don't have permission to perform this action.")))
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
         else:
 
 # - get upload_dict from request.POST
@@ -5321,6 +5315,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                 #  - examyear is not found, not published or locked
                 #  - school is not found, not same_school, not activated, or locked
                 #  - department is not found, not in user allowed depbase or not in school_depbase
+                #  TODO student is tobedeleted or studsubj is tobedeleted
 
                 # check requsr_same_school is part of get_selected_ey_school_dep_lvl_from_usersetting
                 sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
@@ -5328,6 +5323,7 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                 if err_list:
                     err_list.append(str(_('You cannot make changes.')))
                     msg_list.extend(err_list)
+                    border_class = c.HTMLCLASS_border_bg_invalid
                 else:
                     if logging_on:
                         logger.debug('    upload_dict:    ' + str(upload_dict))
@@ -5342,113 +5338,121 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18
                         school=sel_school,
                         department=sel_department
                     )
-                    if logging_on:
-                        logger.debug('    msg_list: ' + str(msg_list))
-                        logger.debug('    may_edit: ' + str(may_edit))
-                        logger.debug('    student_instance: ' + str(student_instance))
-
-# - get studentsubject from upload_dict
-                    studsubj_pk = upload_dict.get('studsubj_pk')
-                    studsubj = stud_mod.Studentsubject.objects.get_or_none(
-                        id=studsubj_pk,
-                        student=student_instance
-                    )
-                    if studsubj:
-                        studsubj_pk_list = [studsubj.pk]
-
+                    if student_instance.deleted:
+                        msg_list.append(gettext("This candidate is deleted."))
+                        border_class = c.HTMLCLASS_border_bg_invalid
+                    elif student_instance.tobedeleted:
+                        msg_list.extend([gettext("This candidate is marked for deletion."), gettext("You cannot make changes.")])
+                        border_class = c.HTMLCLASS_border_bg_invalid
+                    else:
                         if logging_on:
-                            logger.debug('    studsubj: ' + str(studsubj))
+                            logger.debug('    msg_list: ' + str(msg_list))
+                            logger.debug('    may_edit: ' + str(may_edit))
+                            logger.debug('    student_instance: ' + str(student_instance))
 
-# - validate if requsr has allowed_cluster to change this subject - validate allowed levl / subjects not necessary, because only allowed subjects are shown
-                        cluster_pk = studsubj.cluster_id
-                        userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
-                        is_allowed = acc_prm.validate_userallowed_cluster(userallowed_cluster_pk_list, cluster_pk)
-                        if not is_allowed:
-                            msg_list.append(str(_("You don't have permission to change the subject of this cluster.")))
-                            # return err_fields, to restore old value on client
-                            for fld_name in upload_dict:
-                                if fld_name in ('cluster_pk', 'pws_title', 'pws_subjects', 'exemption_year', 'is_thumbrule',
-                                             'is_extra_nocount', 'is_extra_countsNIU', 'has_exemption', 'has_reex', 'has_reex03', '_auth'):
-                                    err_fields.append(fld_name)
-
-                            if logging_on:
-                                logger.debug(' ####   err_fields: ' + str(err_fields))
-                        else:
-
-# - get schemitem_info, separately, instead of getting from grade_instance, should be faster
-                            si_pk = studsubj.schemeitem_id
-                            if logging_on:
-                                logger.debug('si_pk: ' + str(si_pk))
-
-                            schemeitems_dict = subj_vw.get_scheme_si_dict(
-                                    examyear_pk=sel_examyear.pk,
-                                    depbase_pk=sel_department.base_id,
-                                    schemeitem_pk=si_pk
-                                )
-                            si_dict = schemeitems_dict.get(si_pk)
-
-# +++++  update studentsubject
-                            updated_pk_list, recalc_subj_comp = update_studsubj(
-                                studsubj_instance=studsubj,
-                                upload_dict=upload_dict,
-                                si_dict=si_dict,
-                                sel_examyear=sel_examyear,
-                                sel_school=sel_school,
-                                sel_department=sel_department,
-                                msg_list=msg_list,
-                                err_fields=err_fields,
-                                request=request
-                            )
-                            if updated_pk_list:
-                                studsubj_pk_list.extend(updated_pk_list)
-
-                            if logging_on:
-                                logger.debug('updated_pk_list: ' + str(updated_pk_list))
-
-                            if recalc_subj_comp:
-                                update_student_subj_composition(student_instance)
-
-                        if msg_list:
-                            update_wrap['msg_list'] = msg_list
-
-                        if len(msg_list):
-                            msg_html = '<br>'.join(msg_list)
-                            messages.append({'class': "border_bg_invalid", 'msg_html': msg_html})
-
-
-# - add update_dict to update_wrap
-                        # TODO check value of msg_dict
-                        #  msg_dict['err_' + field] = str(_("Title and subjects only allowed in subjects with character 'Werkstuk'."))
-                        #  msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
-                        append_dict = {}
-                        if err_fields:
-                            # PR2023-02-18 note: append_dict has key with studsubj_pk
-                            #append_dict['err_fields'] = err_fields
-                            append_dict[studsubj.pk] = {'err_fields': err_fields}
-                        if logging_on:
-                            logger.debug(' ####   append_dict: ' + str(append_dict))
-
-                        # TODO PR2022-12-22 check if sel_lvlbase must get value
-
-                        studsubj_rows = create_studentsubject_rows(
-                            sel_examyear=sel_examyear,
-                            sel_schoolbase=sel_school.base if sel_school else None,
-                            sel_depbase=sel_department.base if sel_department else None,
-                            append_dict=append_dict,
-                            request=request,
-                            requsr_same_school=True,  # check for same_school is included in may_edit
-                            student_pk=student_instance.pk,
-                            studsubj_pk_list=studsubj_pk_list
+    # - get studentsubject from upload_dict
+                        studsubj_pk = upload_dict.get('studsubj_pk')
+                        studsubj = stud_mod.Studentsubject.objects.get_or_none(
+                            id=studsubj_pk,
+                            student=student_instance
                         )
-                        if studsubj_rows:
-                            update_wrap['updated_studsubj_rows'] = studsubj_rows
+                        if studsubj:
+                            if studsubj.deleted:
+                                msg_list.append(gettext("This subject is deleted."))
+                                border_class = c.HTMLCLASS_border_bg_invalid
+                            elif studsubj.tobedeleted:
+                                msg_list.extend([gettext("This subject is marked for deletion."),
+                                                 gettext("You cannot make changes.")])
+                                border_class = c.HTMLCLASS_border_bg_invalid
+                            else:
+
+                                studsubj_pk_list = [studsubj.pk]
+
+                                if logging_on:
+                                    logger.debug('    studsubj: ' + str(studsubj))
+
+        # - validate if requsr has allowed_cluster to change this subject - validate allowed levl / subjects not necessary, because only allowed subjects are shown
+                                cluster_pk = studsubj.cluster_id
+                                userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list_from_request(request)
+                                is_allowed = acc_prm.validate_userallowed_cluster(userallowed_cluster_pk_list, cluster_pk)
+                                if not is_allowed:
+                                    msg_list.append(gettext("You don't have permission %(cpt)s.") % {
+                                        'cpt': gettext('to make changes in subjects of this cluster')})
+
+                                    # return err_fields, to restore old value on client
+                                    for fld_name in upload_dict:
+                                        if fld_name in ('cluster_pk', 'pws_title', 'pws_subjects', 'exemption_year', 'is_thumbrule',
+                                                     'is_extra_nocount', 'is_extra_countsNIU', 'has_exemption', 'has_reex', 'has_reex03', '_auth'):
+                                            err_fields.append(fld_name)
+
+                                    if logging_on:
+                                        logger.debug('    err_fields: ' + str(err_fields))
+                                else:
+
+        # - get schemitem_info, separately, instead of getting from grade_instance, should be faster
+                                    si_pk = studsubj.schemeitem_id
+                                    if logging_on:
+                                        logger.debug('si_pk: ' + str(si_pk))
+
+                                    schemeitems_dict = subj_vw.get_scheme_si_dict(
+                                            examyear_pk=sel_examyear.pk,
+                                            depbase_pk=sel_department.base_id,
+                                            schemeitem_pk=si_pk
+                                        )
+                                    si_dict = schemeitems_dict.get(si_pk)
+
+        # +++++  update studentsubject
+                                    updated_pk_list, recalc_subj_comp = update_studsubj(
+                                        studsubj_instance=studsubj,
+                                        upload_dict=upload_dict,
+                                        si_dict=si_dict,
+                                        sel_examyear=sel_examyear,
+                                        sel_school=sel_school,
+                                        sel_department=sel_department,
+                                        msg_list=msg_list,
+                                        err_fields=err_fields,
+                                        request=request
+                                    )
+                                    if updated_pk_list:
+                                        studsubj_pk_list.extend(updated_pk_list)
+
+                                    if logging_on:
+                                        logger.debug('updated_pk_list: ' + str(updated_pk_list))
+
+                                    if recalc_subj_comp:
+                                        update_student_subj_composition(student_instance)
+
+            # - add update_dict to update_wrap
+                                # TODO check value of msg_dict
+                                #  msg_dict['err_' + field] = str(_("Title and subjects only allowed in subjects with character 'Werkstuk'."))
+                                #  msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
+                                append_dict = {}
+                                if err_fields:
+                                    # PR2023-02-18 note: append_dict has key with studsubj_pk
+                                    append_dict[studsubj.pk] = {'err_fields': err_fields}
+                                    border_class = c.HTMLCLASS_border_bg_invalid
+
+                                if logging_on:
+                                    logger.debug('    append_dict: ' + str(append_dict))
+
+                                # TODO PR2022-12-22 check if sel_lvlbase must get value
+
+                                studsubj_rows = create_studentsubject_rows(
+                                    sel_examyear=sel_examyear,
+                                    sel_schoolbase=sel_school.base if sel_school else None,
+                                    sel_depbase=sel_department.base if sel_department else None,
+                                    append_dict=append_dict,
+                                    request=request,
+                                    requsr_same_school=True,  # check for same_school is included in may_edit
+                                    student_pk=student_instance.pk,
+                                    studsubj_pk_list=studsubj_pk_list
+                                )
+                                if studsubj_rows:
+                                    update_wrap['updated_studsubj_rows'] = studsubj_rows
 
         if msg_list:
-            msg_html = '<br>'.join(msg_list)
-            update_wrap['msg_html'] = msg_html
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 
-        if len(messages):
-            update_wrap['messages'] = messages
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of StudentsubjectSingleUpdateView
@@ -5767,7 +5771,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         recalc_finalgrade = True
                         must_add_delete_exem_reex_reex03 = True
                         if logging_on:
-                            logger.debug(' removed reex, field: ' + str(field) + ' ' + str(new_value))
+                            logger.debug(' removed reex, field: ' + str(field) + ' new_value: ' + str(new_value))
 
         # - when deleting exemption: also delete exemption_year PR2022-04-15
                         if field == 'has_exemption':
@@ -5848,29 +5852,61 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         except Exception as e:
             recalc_subj_composition = False
             logger.error(getattr(e, 'message', str(e)))
-            msg_list.append(str(_('An error occurred. The changes have not been saved.')))
+            msg_list.append(acc_prm.err_html_error_occurred(e, _('The changes have not been saved.')))
         else:
+
+            if logging_on:
+                logger.debug('    recalc_finalgrade: ' + str(recalc_finalgrade))
+                logger.debug('    studsubj_instance: ' + str(studsubj_instance))
 
             if recalc_finalgrade:
                 grades = stud_mod.Grade.objects.filter(
                     studentsubject=studsubj_instance,
                     tobedeleted=False
                 )
+                if logging_on:
+                    logger.debug('grades: ' + str(grades))
+
                 for grade_instance in grades:
+                    if logging_on:
+                        logger.debug('grade_instance: ' + str(grade_instance))
+                        logger.debug('grade_instance.examperiod: ' + str(grade_instance.examperiod))
                 # - recalculate gl_sesr, gl_pece, gl_final, gl_use_exem in studsubj record
-                    if grade_instance.examperiod == c.EXAMPERIOD_FIRST:
+                    if grade_instance and grade_instance.examperiod == c.EXAMPERIOD_FIRST:
                         # when first examperiod: also update and save grades in reex, reex03, if exist
                         grd_view.recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
 
-                sql_studsubj_list, sql_student_list = \
-                    grd_view.update_studsubj_and_recalc_student_result(
-                        sel_examyear, sel_school, sel_department, studsubj_instance.student)
-                if sql_studsubj_list:
-                    calc_res.save_studsubj_batch(sql_studsubj_list)
+                try:
+                    student = studsubj_instance.student
+                    if logging_on:
+                        logger.debug('student: ' + str(student))
 
+                    sql_studsubj_list, sql_student_list = grd_view.update_studsubj_and_recalc_student_result(
+                            sel_examyear=sel_examyear,
+                            sel_school=sel_school,
+                            sel_department=sel_department,
+                            student=studsubj_instance.student
+                        )
+                    if logging_on:
+                        logger.debug('sql_studsubj_list: ' + str(sql_studsubj_list))
+                        logger.debug('sql_student_list: ' + str(sql_student_list))
+
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+
+                try:
+                    if sql_studsubj_list:
+                        calc_res.save_studsubj_batch(sql_studsubj_list)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
+
+                try:
                     # save calculated fields in student
-                if sql_student_list:
-                    calc_res.save_student_batch(sql_student_list)
+                    if sql_student_list:
+                        calc_res.save_student_batch(sql_student_list)
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
         logger.debug('msg_list: ' + str(msg_list))
@@ -5991,12 +6027,12 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
                 save_changes = True
 
                 if logging_on:
-                    logger.debug('     set grade deleted: ' + str(grade.deleted))
+                    logger.debug('     set grade deleted and tobedeleted : ' + str(grade.deleted))
 
         if save_changes:
             grade.save(request=request)
             if logging_on:
-                logger.debug('     saved_changes: ')
+                logger.debug('    changes in grade are saved ')
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
@@ -6796,7 +6832,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     idnumber_nodots_stripped_lower, msg_err_list, birthdate_dteobj = stud_val.get_idnumber_nodots_stripped_lower(new_value)
                     if msg_err_list:
                         err_txt = ' '.join(msg_err_list)
-                        class_txt = "border_bg_invalid"
+                        class_txt = c.HTMLCLASS_border_bg_invalid
 
                     if err_txt is None:
             # check idnumber_already_exists
@@ -7927,7 +7963,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
     # PR2022-02-15 show only not tobeleted students and studentsubjects
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
     # PR2022-12-16 allowed filter renewed
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' =============== create_studentsubject_rows ============= ')
@@ -8193,7 +8229,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
                 logger.debug('sql_clause: ' + str(sql_clause))
 
         sql_list.append('ORDER BY st.id, studsubj.studsubj_id NULLS FIRST;')
-        if logging_on:
+        if logging_on and False:
             for sql_str in sql_list:
                 logger.debug('  > ' + str(sql_str))
 
@@ -8226,7 +8262,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
                     for key, value in studsubj_append_dict.items():
                         row[key] = value
 
-            if logging_on and False:
+            if logging_on:
                 logger.debug('row: ' + str(row))
 
     except Exception as e:

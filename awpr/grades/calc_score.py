@@ -725,7 +725,7 @@ def batch_update_finalgrade(department_instance, exam_instance=None, grade_pk_li
 
         if rows:
 
-# - get_schemeitems_dict - of CUR and SXM
+# - get_schemeitems_dict - of CUR and SXM - therefore filter by examyear.code intsead of examyear.pk
             schemeitems_dict = calc_result.get_schemeitems_dict(department_instance.examyear, department_instance)
 
             try:

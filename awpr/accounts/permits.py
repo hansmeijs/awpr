@@ -1539,10 +1539,13 @@ def err_html_error_occurred(err_txt, msg_txt):  # PR2023-03-20
     return ''.join((msg_list))
 
 
-def err_html_from_err_list(err_list):  # PR2023-03-20
+def msghtml_from_msglist_with_border(err_list, border_class=None):  # PR2023-04-02
     msg_list = []
     if err_list:
-        msg_list.append("<p class='border_bg_invalid p-2'>")
+        if border_class is None:
+            border_class = ""
+
+        msg_list.extend(["<p class='", border_class, " p-2'>"])
 
         # loop is necessary to convert err_txt to string
         for index, err_txt in enumerate(err_list):
@@ -1552,7 +1555,20 @@ def err_html_from_err_list(err_list):  # PR2023-03-20
 
         msg_list.append("</p>")
 
-    return ''.join((msg_list))
+    return ''.join(msg_list)
+
+
+def msghtml_from_msgtxt_with_border(msg_text, border_class=None):  # PR2023-04-01
+    msg_html = None
+    if msg_text:
+        if border_class is None:
+            border_class = "border_bg_transparent"
+        msg_html = ''.join((
+            "<p class='", border_class, " p-2'>",
+            str(msg_text),
+            "</p>"
+        ))
+    return msg_html
 
 
 

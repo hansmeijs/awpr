@@ -706,6 +706,12 @@ LABEL_TEXT = {
     }
 }
 
+# HTML classes
+HTMLCLASS_border_bg_invalid = 'border_bg_invalid'
+HTMLCLASS_border_bg_valid = 'border_bg_valid'
+HTMLCLASS_border_bg_warning = 'border_bg_warning'
+HTMLCLASS_border_bg_transparent = 'border_bg_transparent'
+
 # XLSWRITER FORMATS
 
 XF_BOLD = {'bold': True}

@@ -293,6 +293,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         'a. exit if no student_id >> done in getting students
         'b. exit if locked >> done by may_edit in CalcResultsView.
         'c. exit if no scheme  >> done in this function
+        TODO exit if student is tobedeleted
     """
     skip_student = False
 
@@ -301,7 +302,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         log_list_student_header(student_dict, full_name, log_list)
 
 # - A.3c. skip when scheme not found, put err_msg in loglist
-    # PR2022-06-18 debug: msut give result 'no result, teherefpre don't skip student
+    # PR2022-06-18 debug: msut give result 'no result, therefore don't skip student
     if not skip_student and scheme_error:
         skip_student = True
         if log_list is not None:
@@ -310,7 +311,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 # - studsubj_aggr_dict calculates totals, used in calculate result
 
-    # Note" tel k_CountCijfers(OnvoldoendesInSectordeelProfieldeel,Tv01) telt aantal onvoldoendes in vakType Profieldeel,
+    # Note: k_CountCijfers(OnvoldoendesInSectordeelProfieldeel,Tv01) telt aantal onvoldoendes in vakType Profieldeel,
     # werd alleen gebruikt bij PassFailedHavoVwo Oude Stijl PR2015-04-08
 
     # Count Eindcijfers: tel hoe vaak eindcijfers voorkomen (niet voor combinatievakken (> apart voor combi))
@@ -360,8 +361,8 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
         if log_list is not None:
             log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thumbrule_count, thumbrule_combi, log_list)
 
+# - create dict per examperiod, not for exemption,
         for examperiod in ep_list:
-            # - create dict per examperiod, not for exemption,
             if examperiod != c.EXAMPERIOD_EXEMPTION:
                 student_dict['ep' + str(examperiod)] = {'ep': examperiod, 'final': {}, 'combi': {}, 'pece': {}, 'count': {}}
 
@@ -385,6 +386,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
                 if si_pk:
                     si_dict = schemeitems_dict.get(si_pk)
 
+# - calc studsubj result
                 calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam, no_centralexam,
                                      studsubj_pk, studsubj_dict, si_dict, ep_list, log_list, sql_studsubj_list)
 
@@ -3664,7 +3666,7 @@ def log_list_student_header(student_dict, full_name, log_list):  # PR2021-12-19
     depbase_code = student_dict.get('depbase_code') or ''
     lvlbase_code = student_dict.get('lvlbase_code') or ''
     sct_name = student_dict.get('sct_name') or ''
-    log_list.append( ('').join((c.STRING_SPACE_05, depbase_code, ' ', lvlbase_code, ' ', sct_name )))
+    log_list.append( ''.join((c.STRING_SPACE_05, depbase_code, ' ', lvlbase_code, ' ', sct_name )))
 
 
 def log_list_add_scheme_notfound(dep_level_req, log_list):  # PR2021-12-19

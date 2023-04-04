@@ -46,7 +46,7 @@ def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requs
     return is_allowed, err_html
 
 def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, userallowed_cluster_pk_list,
-                schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted,
+                schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted, is_secret_exam,
                 msg_list, is_approve=False, is_score=False, is_grade_exam=False):
     # PR2022-03-20 PR2023-02-18
     # called by GradeUploadView and by GradeApproveView
@@ -65,34 +65,44 @@ def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, u
         msg_list.append(gettext("This subject is marked for deletion."))
         msg_list.append(gettext("You cannot make changes."))
     else:
-
-        if caption and not acc_prm.validate_userallowed_school(userallowed_sections_dict, schoolbase_pk):
-                caption = _('the allowed schools')
-
-        if caption and not acc_prm.validate_userallowed_depbase(userallowed_sections_dict, schoolbase_pk, depbase_pk):
-            caption = _('the allowed departments')
-
-        if caption and not acc_prm.validate_userallowed_lvlbase(userallowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk):
-                caption = _('the allowed learning paths')
-
-        if caption and not acc_prm.validate_userallowed_subjbase(userallowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk,subjbase_pk):
-                caption = _('the allowed subjects')
-
-        # PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
-        # must be able to approve all subjects as chairperson.
-        # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
-
-        if requsr_auth not in ('auth1', 'auth2'):
-            if userallowed_cluster_pk_list:
-                if not cluster_pk or cluster_pk not in userallowed_cluster_pk_list:
-                    caption = _('the allowed clusters')
-
-        if caption:
+        # sceret exams are only allowed by admin
+        if is_score and request.user.role != c.ROLE_064_ADMIN and is_secret_exam:
             not_allowed = True
-            msg_list.append(gettext("This subject does not belong to %(cpt)s.") % {'cpt': caption})
-            edit_txt = _('to approve') if is_approve else _('to edit')
-            score_txt = str(_('This exam') if is_grade_exam else _('This score') if is_score else _('This grade')).lower()
-            msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
+            msg_list.append(gettext("This is a designated exam."))
+            if is_approve:
+                msg_list.append(gettext("You don't have to approve designated exams."))
+            else:
+                msg_list.append(gettext("You don't have to enter the score of designated exams."))
+
+        else:
+
+            if caption and not acc_prm.validate_userallowed_school(userallowed_sections_dict, schoolbase_pk):
+                    caption = _('the allowed schools')
+
+            if caption and not acc_prm.validate_userallowed_depbase(userallowed_sections_dict, schoolbase_pk, depbase_pk):
+                caption = _('the allowed departments')
+
+            if caption and not acc_prm.validate_userallowed_lvlbase(userallowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk):
+                    caption = _('the allowed learning paths')
+
+            if caption and not acc_prm.validate_userallowed_subjbase(userallowed_sections_dict, schoolbase_pk, depbase_pk, lvlbase_pk,subjbase_pk):
+                    caption = _('the allowed subjects')
+
+            # PR2022-04-20 tel Bruno New Song: chairperson is also examiner.
+            # must be able to approve all subjects as chairperson.
+            # therefore: don't filter on allowed clusters when requsr is chairperson or secretary
+
+            if requsr_auth not in ('auth1', 'auth2'):
+                if userallowed_cluster_pk_list:
+                    if not cluster_pk or cluster_pk not in userallowed_cluster_pk_list:
+                        caption = _('the allowed clusters')
+
+            if caption:
+                not_allowed = True
+                msg_list.append(gettext("This subject does not belong to %(cpt)s.") % {'cpt': caption})
+                edit_txt = _('to approve') if is_approve else _('to edit')
+                score_txt = str(_('This exam') if is_grade_exam else _('This score') if is_score else _('This grade')).lower()
+                msg_list.append(str(_("You don't have permission %(edit)s %(score)s.") % {'edit': edit_txt, 'score': score_txt}))
 
     if logging_on:
         logger.debug('     msg_list: ' + str(msg_list))

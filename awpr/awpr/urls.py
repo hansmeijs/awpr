@@ -35,6 +35,7 @@ from subjects import orderlists as subject_orderlists
 from grades import views as grade_views
 from grades import exfiles as grade_exfiles
 from grades import calc_results as grade_calc_res
+from grades import calc_reex as grade_calc_reex
 
 from reports import views as report_views
 from upload import views as upload_views
@@ -286,6 +287,8 @@ urlpatterns = [
 
 # ===== GRADES ========================== PR2018-09-02 PR2018-11-19 PR2020-12-16
     path('grades/', include([
+
+        path('gradesecretexam', grade_views.GradeSecretExamListView.as_view(), name='gradesecretexam_url'),
         path('grade', grade_views.GradeListView.as_view(), name='grades_url'),
         path('upload', grade_views.GradeUploadView.as_view(), name='url_grade_upload'),
 
@@ -306,6 +309,7 @@ urlpatterns = [
 
         path('get_auth', student_results.GetGradelistDiplomaAuthView.as_view(), name='url_get_auth'),
         path('calc_results/<list>/', grade_calc_res.CalcResultsView.as_view(), name='url_calc_results'),
+        path('calc_reex/<list>/', grade_calc_reex.CalcReexView.as_view(), name='url_calc_reex'),
         path('download_gradelist/<lst>/', student_results.DownloadGradelistDiplomaView.as_view(), name='url_download_gradelist'),
         path('download_pok/<lst>/', student_results.DownloadPokView.as_view(), name='url_download_pok'),
 
