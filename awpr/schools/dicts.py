@@ -313,7 +313,7 @@ def create_mailattachment_rows(examyear, request, mailattachment_pk=None):
 ###########################
 
 def create_mailbox_user_rows(examyear, request):
-    # --- create list of all users , for mailbox recipients PR2021-10-11 PR2021-10-23
+    # --- create list of all users , for mailbox recipients PR2021-10-11 PR2021-10-23 PR2023-04-05
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_mailbox_user_rows ============= ')
@@ -327,36 +327,47 @@ def create_mailbox_user_rows(examyear, request):
             # do filter on user activated and is_active
 
             # filter on examyear.code instead of examyear.pk, to get als users of other countries
-
-            sql_keys = {'country_id': request.user.country.pk, 'ey_code': examyear.code}
+            # PR2023-04-05 filter only users with usergroup 'msgreceive'
 
             sql_list = ["SELECT u.id, u.last_name AS username, u.email, ",
-                        "sb.code AS code, school.abbrev, c.id AS country_pk, c.abbrev AS country",
+                        "sb.code AS code, school.abbrev, c.id AS country_pk, c.abbrev AS country, ual.id AS ual_id, ual.examyear_id",
 
                 "FROM accounts_user AS u",
+
+                "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
+
                 "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
                 "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
-                "INNER JOIN schools_school AS school ON (school.base_id = sb.id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
 
-                # domnt filter on country. was: "WHERE u.country_id = %(country_id)s::INT",
-                "WHERE ey.code = %(ey_code)s::INT",
-                "AND u.activated AND u.is_active",
+                # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
+                "INNER JOIN schools_school AS school ON (school.base_id = sb.id AND school.examyear_id = ual.examyear_id)",
+                "WHERE u.activated AND u.is_active",
+                # dont filter on country. was: "WHERE u.country_id = %(country_id)s::INT",
+                ''.join(("AND ey.code=", str(examyear.code), "::INT")),
+
+                # add only users to list when they have usergroup 'receive messages'
+                ''.join(("AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0)")),
+                # PR 2023-0405 this one works but may be slower:
+                # ''.join(("AND ual.usergroups LIKE '%", c.USERGROUP_MSGRECEIVE, "%'")),
+
                 "ORDER BY u.id"
             ]
             sql = ' '.join(sql_list)
 
             if logging_on:
-                logger.debug('sql: ' + str(sql))
+                for sql_txt in sql_list:
+                    logger.debug(' > ' + str(sql_txt))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 mailbox_user_list = af.dictfetchall(cursor)
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
 
     if logging_on:
-        logger.debug('mailbox_user_list: ' + str(mailbox_user_list))
+        for mailbox_user in mailbox_user_list:
+            logger.debug('mailbox_user: ' + str(mailbox_user))
 
     return mailbox_user_list
 # - end of create_mailbox_user_rows
@@ -410,7 +421,7 @@ def create_mailbox_usergroup_rows():
         logger.debug('create_mailbox_usergroup_rows')
 
     mailbox_usergroup_list = []
-    for key, value in c.USERGROUP_CAPTION.items():
+    for key, value in c.MAILBOX_USERGROUPS.items():
         mailbox_usergroup_list.append({'id': key, 'name': value})
 
     return mailbox_usergroup_list
@@ -496,7 +507,7 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
 
 def create_department_rows(examyear, sel_school, sel_schoolbase, skip_allowed_filter, request):
     # --- create rows of all departments of this examyear / country PR2020-09-30 PR2022-08-03 PR2023-01-09
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_department_rows ============= ')
         logger.debug('    examyear: ' + str(examyear))

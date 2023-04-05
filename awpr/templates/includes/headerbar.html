@@ -78,7 +78,7 @@
                 {% endif %}
             </ul>
             <ul class="navbar-nav">
-                {% if user.is_authenticated %}
+                {% if user.is_authenticated and msgreceive %}
                     <li>
                         <a href="{% url 'page_mailbox_url' %}">
                             <div id="id_hdrbar_has_mail" class="{{class_has_mail}}"></div>

@@ -615,6 +615,7 @@ def download_setting(request_item_setting, user_lang, request):
 
     if permit_list:
         for prm in permit_list:
+            # PR2023-04-05 'write_message' is not in use any more, use usergroup msgsend instead
             if prm:
                 permit_dict[prm] = True
 

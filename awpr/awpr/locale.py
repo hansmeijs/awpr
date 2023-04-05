@@ -303,6 +303,11 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Analyze'] = _('Analyze')
         dict['Download'] = _('Download')
         dict['Archive'] = _('Archive')
+
+        dict['Receive_messages'] = _('Receive messages')
+        dict['Send_messages'] = _('Send messages')
+        dict['Access_to_archive'] = _('Access to archive')
+
         dict['System_administrator'] = _('System administrator')
         dict['System_administrator_2lines'] = pgettext_lazy('2 lines', 'System\nadministrator')
 

@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Messages' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/mailbox230330.js' %}"></script>
+    <script src="{% static 'js/mailbox230405.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -61,9 +61,9 @@
 <!-- BUTTON GROUP -->
                 <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
                     <button data-btn="btn_received" class="btn btn-secondary ">{% trans 'Received messages' %}</button>
-                    <button data-btn="btn_sent" class="btn btn-secondary ">{% trans 'Sent messages' %}</button>
-                    <button data-btn="btn_draft" class="btn btn-secondary ">{% trans 'Draft messages' %}</button>
-                    <button data-btn="btn_mailinglist" class="btn btn-secondary">{% trans 'Mailing lists' %}</button>
+                    <button data-btn="btn_sent" class="btn btn-secondary display_hide ">{% trans 'Sent messages' %}</button>
+                    <button data-btn="btn_draft" class="btn btn-secondary display_hide">{% trans 'Draft messages' %}</button>
+                    <button data-btn="btn_mailinglist" class="btn btn-secondary display_hide">{% trans 'Mailing lists' %}</button>
 
                 </div>
 <!-- end BUTTON GROUP -->

@@ -1154,13 +1154,16 @@ def system_updates(examyear, request):
     #if request.user.role == c.ROLE_128_SYSTEM:
     awpr_lib.update_library(examyear, request)
 
+# function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
+    add_usergroup_msgsend_msgreceive_ONCEONLY(request)
+
+# function removes dots, double underscores and underscore at the end in username of role corrector
     remove_dots_in_username_correctorsONCEONLY(request)
 
     #transfer_grade_tobedeleted_to_deletedONCEONLY(request)
 
 # functions calcultes POK of all failed students and stors it in StudentSubjects PR2023-01-21
     #calcPok2022AndSaveInStudsubjONCEONLY(request)
-
 
 # once only function converts allowed deps, levels and subjects to a dict and stores it in allword_schools PR2022-11-23
     #convertAllowedSectionsONCEONLY(request)
@@ -1274,7 +1277,63 @@ def reset_show_msg(request):
 # -end of reset_show_msg
 
 
+def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
+    # function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- add_usergroup_msgsend_msgreceive_ONCEONLY -------')
+
+    try:
+        name = 'add_msgsend_msgreceive'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('      exists: ' + str(name))
+
+        if not exists:
+            userallowed_rows = acc_mod.UserAllowed.objects.all()
+            for userallowed_row in userallowed_rows:
+                usergroup_list = acc_prm.get_usergroup_list(userallowed_row)
+                if usergroup_list:
+                    if 'auth1' in usergroup_list or 'auth2' in usergroup_list:
+                        if logging_on:
+                            logger.debug('    usergroup_list: ' + str(usergroup_list))
+                        has_changed = False
+                        if 'msgsend' not in usergroup_list:
+                            usergroup_list.append('msgsend')
+                            has_changed = True
+                        if 'msgreceive' not in usergroup_list:
+                            usergroup_list.append('msgreceive')
+                            has_changed = True
+                        if 'archive' not in usergroup_list:
+                            usergroup_list.append('archive')
+                            has_changed = True
+
+                        if has_changed:
+                            usergroup_list.sort()
+                            if logging_on:
+                                logger.debug('          new : ' + str(usergroup_list))
+
+                            usergroups_str = json.dumps(usergroup_list)
+                            setattr(userallowed_row, 'usergroup', usergroups_str)
+                            userallowed_row.save()
+
+    # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('    systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# end of add_usergroup_msgsend_msgreceive_ONCEONLY
+
+
 def remove_dots_in_username_correctorsONCEONLY(request):  # PR2023-03-27
+    # function removes dots, double underscores and underscore at the end in username of role corrector
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- remove_dots_in_username_correctorsONCEONLY -------')
@@ -1285,29 +1344,35 @@ def remove_dots_in_username_correctorsONCEONLY(request):  # PR2023-03-27
             name=name
         ).exists()
         if logging_on:
-            logger.debug('exists: ' + str(exists))
+            logger.debug('      exists: ' + str(name))
 
         if not exists:
             users = acc_mod.User.objects.filter(
                 role=c.ROLE_016_CORR
             )
             for usr in users:
-                old_username = getattr(usr, 'username')
-                if logging_on:
-                    logger.debug('old_username: ' + str(old_username))
+                # new username may already be present.
+                # Gives error when duplicate: duplicate key value violates unique constraint "accounts_user_username_key"
+                try:
+                    old_username = getattr(usr, 'username')
 
-                username = old_username
-                if '.' in username:
-                    username = username.replace('.', '')
-                if '__' in username:
-                    username = username.replace('__', '_')
-                # remove '_' at the end
-                if username[-1] == '_':
-                    username = username[:-1]
-                if username != old_username:
-                    setattr(usr, 'username', username)
-                    if logging_on:
-                        logger.debug('username: ' + str(old_username[6:]) + ' >  ' + str(username[6:]))
+                    username = old_username
+                    if '.' in username:
+                        username = username.replace('.', '')
+                    if '__' in username:
+                        username = username.replace('__', '_')
+                    # remove '_' at the end
+                    if username[-1] == '_':
+                        username = username[:-1]
+                    if username != old_username:
+                        setattr(usr, 'username', username)
+                        if logging_on:
+                            logger.debug('    username: ' + str(old_username[6:]) + ' >  ' + str(username[6:]))
+
+                    usr.save()
+
+                except Exception as e:
+                    logger.error(getattr(e, 'message', str(e)))
 
             # - add function to systemupdate, so it won't run again
             systemupdate = sch_mod.Systemupdate(
@@ -1319,9 +1384,7 @@ def remove_dots_in_username_correctorsONCEONLY(request):  # PR2023-03-27
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
-
-
-# end of transfer_grade_tobedeleted_to_deletedONCEONLY
+# end of remove_dots_in_username_correctorsONCEONLY
 
 
 def transfer_grade_tobedeleted_to_deletedONCEONLY(request):

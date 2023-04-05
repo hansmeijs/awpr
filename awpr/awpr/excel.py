@@ -5137,8 +5137,8 @@ def create_userdata_xlsx(sel_examyear, req_usr_school, req_usr_role, mapped_depc
 
         field_captions = [str(school_code), str(school_name),
                           str(_('Username')), str(_('Name')), str(_('Email address')), str(_('Telephone')),
-                          str(_('schoolbase')), str(_('Activated')),
-                          str(_('usergroups')), str(_('allowed_sections')), str(_('allowed_clusters')),
+                          str(_('School')), str(_('Activated')),
+                          str(_('User groups')), str(_('Allowed sections')), str(_('Allowed clusters')),
                           str(_('Last modified on ')), str(_('Last modified by'))]
 
         field_width = [12, 25,

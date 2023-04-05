@@ -172,16 +172,25 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
             logger.debug('')
             logger.debug(' ============= MailmessageUploadView ============= ')
 
+        msg_html = None
         messages = []
         update_wrap = {}
 
-# - get permit 'write_message'
-        has_permit = 'permit_write_message' in request.user.permit_list('page_mailbox') if request.user.permit_list else False
-        if has_permit:
-
 # - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get permit 'write_message'
+        # PR2023-04-05 write_message does not use permitlist but usergroup 'msgsend' instead
+        #   was: # has_permit = 'permit_write_message' in request.user.permit_list('page_mailbox') if request.user.permit_list else False
+
+        # PR2023-02-03 was: was: requsr_usergroup_list = req_usr.usergroup_list
+        requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
+        has_permit = requsr_usergroup_list and 'msgsend' in requsr_usergroup_list
+
+        if not has_permit:
+            msg_html = acc_prm.err_html_no_permit('to send messages')
+        else:
 
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
@@ -331,6 +340,9 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
 
                 # attachments are stored in spaces awpmedia/awpmedia/media/private
 
+        # - addd msg_html to update_wrap
+        if msg_html:
+            update_wrap['msg_html'] = msg_html
 # 9. return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
 # - ens of MailmessageUploadView
@@ -874,14 +886,14 @@ def get_users_from_ml_list(recipients_dict, examyear, userlist_dict):
 
 
 def get_users_from_us_list(recipients_dict, examyear, userlist_dict):
-    # --- create dict with users per schoolbase from us_list PR2021-10-29
+    # --- create dict with users per schoolbase from us_list PR2021-10-29 PR2023-04-05
 
     # get all users of us_list that are
     # - activated
     #  - not inactive
     # - with an existing school this examyear (regardless if school is activated or locked)
-    #  - recipients_dict may include users from other countries, theerfore filter on examyear.code, not on examyear.pk
-
+    #  - recipients_dict may include users from other countries, therefore filter on examyear.code, not on examyear.pk
+    # PR2023-04-05: and with usergroup 'msgreceive
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -892,19 +904,28 @@ def get_users_from_us_list(recipients_dict, examyear, userlist_dict):
         logger.debug('us_list: ' + str(us_list))
 
     if us_list:
-        # - filter on us_list with ANY clause
+        # - filter on us_list with ANY clause, https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-any/
         try:
             sql_keys = {'ey_code': examyear.code, 'us_list': us_list}
-            sql_list = ["SELECT au.id, au.last_name, au.email, sb.id, sch.name, sch.article, sb.code",
+            sql_list = ["SELECT u.id, u.last_name, u.email, sb.id, sch.name, sch.article, sb.code",
 
-                        "FROM accounts_user AS au",
-                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)",
-                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id)",
-                        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
+                        "FROM accounts_user AS u",
+                        "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
+                        "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
 
-                        "WHERE ey.code = %(ey_code)s::INT",
-                        "AND au.activated AND au.is_active",
-                        "AND au.id = ANY(%(us_list)s::INT[])"
+                        #"INNER JOIN schools_country AS c ON (c.id = u.country_id)",
+                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+
+                        # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
+                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id AND sch.examyear_id = ual.examyear_id)",
+
+                        "WHERE u.activated AND u.is_active",
+                        "AND ey.code = %(ey_code)s::INT",
+
+                        # add only users to list when they have usergroup 'receive messages'
+                        ''.join(("AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0)")),
+
+                        "AND u.id = ANY(%(us_list)s::INT[])"
                         ]
             sql = ' '.join(sql_list)
 
@@ -944,12 +965,13 @@ def get_users_from_us_list(recipients_dict, examyear, userlist_dict):
 
 
 def get_users_from_db_list(recipients_dict, examyear, userlist_dict):
-    # --- create dict with users per departmentbase from us_list PR2021-10-29
+    # --- create dict with users per departmentbase from us_list PR2021-10-29 PR2023-04-05
     # TODO NOT IN USE YET
     # get all users of schools with departments in db_list that are
     # - activated
     #  - not inactive
     # - with an existing school this examyear (regardless if school is activated or locked)
+    # PR2023-04-05: and with usergroup 'msgreceive
 
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -985,17 +1007,27 @@ def get_users_from_db_list(recipients_dict, examyear, userlist_dict):
 
             #sql_keys = {'ey_id': examyear.pk, 'ey_code': examyear.code, 'sb_list': sb_list}
             sql_keys = {'ey_id': examyear.pk, 'ey_code': examyear.code}
-            # TODO 2023-02-24 change to userallowed usergroups
-            sql_list = ["SELECT au.id, au.last_name, au.email, au.usergroups, sb.id, sch.name, sch.article",
+
+            sql_list = ["SELECT u.id, u.last_name, u.email, u.usergroups, sb.id, sch.name, sch.article",
 
                         "FROM accounts_user AS au",
-                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)",
-                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id)",
+                        "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
+                        "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
+
+                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+
+                        # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
+                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id AND sch.examyear_id = ual.examyear_id)",
+
                         "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
 
-                        "WHERE au.activated AND au.is_active",
+                        "WHERE u.activated AND u.is_active",
                         filter_examyear,
                         filter_depbases,
+
+                        # add only users to list when they have usergroup 'receive messages'
+                        ''.join(("AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0)")),
+
                         "AND sb.id = ANY(%(sb_list)s::INT[])"
                         ]
             sql = ' '.join(sql_list)
@@ -1053,13 +1085,13 @@ def get_users_from_db_list(recipients_dict, examyear, userlist_dict):
 
 
 def get_users_from_sb_list(recipients_dict, examyear, userlist_dict):
-    # --- create dict with users per schoolbase from us_list PR2021-10-29
+    # --- create dict with users per schoolbase from us_list PR2021-10-29 PR2023-04-05
 
     # get all users of schools in sb_list that are
     # - activated
     #  - not inactive
     # - with an existing school this examyear (regardless if school is activated or locked)
-
+    # PR2023-04-05: and with usergroup 'msgreceive
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -1076,16 +1108,26 @@ def get_users_from_sb_list(recipients_dict, examyear, userlist_dict):
             filter_examyear = "AND ey.code = %(ey_code)s::INT"
 
             sql_keys = {'ey_code': examyear.code, 'sb_list': sb_list}
-            # TODO 2023-02-24 change to userallowed usergroups
-            sql_list = ["SELECT au.id, au.last_name, au.email, au.usergroups, sb.id, sch.name, sch.article, sb.code",
+
+            sql_list = ["SELECT u.id, u.last_name, u.email, u.usergroups, sb.id, sch.name, sch.article, sb.code",
 
                         "FROM accounts_user AS au",
-                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = au.schoolbase_id)",
-                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id)",
+                        "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
+                        "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
+
+                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+
+                        # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
+                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id AND sch.examyear_id = ual.examyear_id)",
+
                         "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
 
-                        "WHERE au.activated AND au.is_active",
+                        "WHERE u.activated AND u.is_active",
                         "AND ey.code = %(ey_code)s::INT",
+
+                        # add only users to list when they have usergroup 'receive messages'
+                        ''.join(("AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0)")),
+
                         "AND sb.id = ANY(%(sb_list)s::INT[])"
                         ]
             sql = ' '.join(sql_list)
@@ -4184,7 +4226,7 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
 class ArchivesListView(View):  # PR2022-03-09
 
     def get(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' =====  ArchivesListView ===== ')
 

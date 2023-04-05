@@ -306,7 +306,6 @@ def get_userallowed_subjbase_arr(allowed_depbase_dict, sel_lvlbase_pk):
 # - end of get_userallowed_subjbase_arr
 
 
-
 def get_usergroup_list(userallowed_instance):  # PR2023-01-14
     usergroup_list = []
     if userallowed_instance:
@@ -1442,6 +1441,9 @@ def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, pa
             with connection.cursor() as cursor:
                 cursor.execute(sql, sql_keys)
                 for row in cursor.fetchall():
+
+                    # PR2023-04-05 permit 'write_message' is not in use any more, use usergroup msgsend instead
+
                     if row[0]:
                         permit = 'permit_' + row[0]
                         if permit not in permit_list:

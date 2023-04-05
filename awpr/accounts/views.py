@@ -897,8 +897,8 @@ class UserpermitUploadView(View):
 # +++ update existing userpermit - also when userpermit is created - userpermit is None when deleted
                     if userpermit_instance and mode in ('create', 'update'):
                         sel_examyear = get_selected_examyear_from_usersetting_short(request)
-                    if logging_on :
-                        logger.debug('    sel_examyear: ' + str(sel_examyear))
+                        if logging_on :
+                            logger.debug('    sel_examyear: ' + str(sel_examyear))
 
                         update_grouppermit(userpermit_instance, upload_dict, error_dict, request)
                     if logging_on :
@@ -911,9 +911,9 @@ class UserpermitUploadView(View):
 
                # - add update_dict to update_wrap
                         if userpermit_instance.pk:
-                            permit_row = create_permit_list(userpermit_instance.pk)
-                            if permit_row:
-                                updated_permit_rows.append(permit_row)
+                            permit_rows = create_permit_list(userpermit_instance.pk)
+                            if permit_rows:
+                                updated_permit_rows.extend(permit_rows)
 
                     update_wrap['updated_permit_rows'] = updated_permit_rows
 
@@ -1323,7 +1323,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
 # -  send email 'Activate your account'
         if not has_error:
             try:
-                subject = 'Activate your AWP-online account'
+                subject = _('Activate your AWP-online account')
                 from_email = 'AWP-online <noreply@awponline.net>'
                 message = render_to_string('signup_activation_email.html', {
                     'user': user,

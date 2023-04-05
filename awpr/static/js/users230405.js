@@ -9,10 +9,7 @@
 
 const field_settings = {};
 
-let user_list = [];
-//let user_rows = [];
 let corrector_rows = [];
-//let permit_rows = [];
 
 const user_dicts = {};
 const permit_dicts = {};
@@ -37,15 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const mod_MSM_dict = {};
     let time_stamp = null; // used in mod add user
 
-// ---  id of selected customer and selected order
-    let selected_user_pk = null;
-
-    let selected_userpermit_pk = null;
-    let selected_period = {};
-
     let examyear_map = new Map();
     let department_map = new Map();
-    let permit_map = new Map();
 
     //let filter_dict = {};
     let filter_mod_employee = false;
@@ -77,17 +67,19 @@ document.addEventListener('DOMContentLoaded', function() {
     field_settings.btn_usergroup = {
                     field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
                                     "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
+                                    "Receive_messages", "Send_messages", "Access_to_archive",
                                     "System_administrator_2lines"],
                                     //"Download", "Archive", "System_administrator_2lines"],
                     field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4",
+                                    "group_msgreceive", "group_msgsend", "group_archive",
                                     "group_admin"],
                                     //"group_download", "group_archive", "group_admin"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "toggle", "toggle", "toggle",
+                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+                    filter_tags: ["select", "text", "text", "text", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle",
                                     "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
-                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c"]};
+                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090"],
+                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c","c", "c", "c"]};
 
     field_settings.btn_allowed = {
                     field_caption: ["", "School_code", "School", "Username", "Allowed_schools", "Allowed_departments",
@@ -102,17 +94,19 @@ document.addEventListener('DOMContentLoaded', function() {
     field_settings.btn_userpermit = {
                     field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
                                     "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
+                                    "Receive_messages", "Send_messages", "Access_to_archive",
                                     "Analyze", "System_administrator_2lines"],
                     field_names: ["select", "role", "page", "action", "group_read", "group_edit",
                                     "group_auth1", "group_auth2", "group_auth3", "group_auth4",
+                                    "group_msgreceive", "group_msgsend", "group_archive",
                                      "group_anlz", "group_admin"],
                     field_tags: ["div", "div", "div", "input", "div", "div",
-                                    "div", "div", "div", "div", "div", "div"],
+                                    "div", "div", "div", "div", "div", "div", "div", "div", "div"],
                     filter_tags: ["select", "text", "text", "text", "toggle","toggle",
-                                    "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
+                                    "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
                     field_width:  ["020", "090", "120","150", "075", "075",
-                                    "090", "090", "090", "090",  "090", "090"],
-                    field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c", "c", "c", "c"]};
+                                    "075", "075", "090", "075", "090", "075", "075", "090", "075"],
+                    field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c",  "c", "c", "c", "c", "c", "c"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -233,12 +227,16 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MUA_btn_submit.addEventListener("click", function() {MUA_Save("validate")}, false);
         };
 
-// ---  MODAL GROUP PERMISSION
+// ---  MODAL USER PERMIT
+        const el_MUPM_role = document.getElementById("id_MUPM_role");
+        const el_MUPM_page = document.getElementById("id_MUPM_page");
+        const el_MUPM_action = document.getElementById("id_MUPM_action");
+
         const el_MUPM_btn_delete = document.getElementById("id_MUPM_btn_delete");
-        const el_MUPM_btn_submit = document.getElementById("id_MUPM_btn_submit");
         if (el_MUPM_btn_delete){
             el_MUPM_btn_delete.addEventListener("click", function() {MUPM_Save("delete")}, false);
         };
+        const el_MUPM_btn_submit = document.getElementById("id_MUPM_btn_submit");
         if (el_MUPM_btn_submit){
             el_MUPM_btn_submit.addEventListener("click", function() {MUPM_Save("save")}, false);
         };
@@ -377,8 +375,6 @@ console.log("user_dicts",user_dicts)
                 };
                 if ("permit_rows" in response) {
                     b_fill_datadicts("userpermit",  "id", null, response.permit_rows, permit_dicts);
-
-console.log("permit_dicts",permit_dicts)
                 };
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
@@ -387,8 +383,9 @@ console.log("permit_dicts",permit_dicts)
                 if ("department_rows" in response){
                     department_rows = response.department_rows
                 };
-                if ("school_rows" in response)  {school_rows = response.school_rows};
-
+                if ("school_rows" in response)  {
+                    school_rows = response.school_rows;
+                };
                 if ("level_rows" in response)  {
                     level_rows = response.level_rows
                 };
@@ -437,13 +434,13 @@ console.log("permit_dicts",permit_dicts)
             AddSubmenuButton(el_submenu, loc.Upload_permissions, function() {MIMP_Open(loc, "import_permit")}, ["tab_show", "tab_btn_userpermit"], "id_submenu_import");
         };
         el_submenu.classList.remove(cls_hide);
-    };//function CreateSubmenu
+    };  //function CreateSubmenu
 
 //###########################################################################
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        //console.log( "===== HandleBtnSelect ========= ");
+        console.log( "===== HandleBtnSelect ========= ");
         //console.log( "skip_upload", skip_upload);
 
 // ---  get  selected_btn
@@ -451,7 +448,7 @@ console.log("permit_dicts",permit_dicts)
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
         selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_allowed", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
-        //console.log( "selected_btn: ", selected_btn);
+    console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
@@ -479,16 +476,16 @@ console.log("permit_dicts",permit_dicts)
         const data_dict = get_datadict_from_tblRow(tblRow);
         console.log( "data_dict", data_dict);
 
-
 // ---  update selected studsubj_dict / student_pk / subject pk
         selected.data_dict = (data_dict) ? data_dict : null;
 
         console.log( "   selected", selected);
     };  // HandleTblRowClicked
 
-//========= FillTblRows  =================== PR2021-08-01 PR2022-02-28
+//========= FillTblRows  =================== PR2021-08-01 PR2022-02-28 PR2023-04-04
     function FillTblRows(skip_upload) {
-        //console.log( "===== FillTblRows  === ");
+        console.log( "===== FillTblRows  === ");
+
         const tblName = get_tblName_from_selectedBtn();
         const data_dicts = get_data_dicts(tblName);
 
@@ -702,7 +699,7 @@ console.log("permit_dicts",permit_dicts)
                     if (field_name === "select") {
                         // TODO add select multiple users option PR2020-08-18
                     } else if (field_name === "username"){
-                        if(tblName ==="tbl_allowed"){
+                        if(tblName ==="userallowed"){
                             el.addEventListener("click", function() {MUPS_Open(el)}, false)
                         } else {
                             el.addEventListener("click", function() {MUA_Open("update", el)}, false)
@@ -718,8 +715,10 @@ console.log("permit_dicts",permit_dicts)
                         el.addEventListener("click", function() {MUPM_Open("update", el)}, false)
                         el.classList.add("pointer_show");
                         add_hover(el);
+
                     } else if (["role", "page", "action", "sequence"].includes(field_name)){
                         el.addEventListener("change", function(){HandleInputChange(el)});
+
                     } else if (field_name.slice(0, 5) === "group") {
                         // attach eventlistener and hover to td, not to el. No need to add icon_class here
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
@@ -919,7 +918,7 @@ console.log("permit_dicts",permit_dicts)
         const has_permit = (permit_dict.permit_crud_otherschool) ||
                             (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
 
-        console.log( "has_permit", has_permit);
+    console.log( "has_permit", has_permit);
 
         if(has_permit){
             const tblRow = t_get_tablerow_selected(el_input);
@@ -1067,8 +1066,6 @@ console.log( "upload_dict", upload_dict);
                 user_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
                 user_schoolbase_code = permit_dict.requsr_schoolbase_code;
             }
-
-            selected_user_pk = user_pk
 
             let user_schoolname = null;
             if(user_schoolbase_pk){
@@ -1675,12 +1672,13 @@ console.log( "upload_dict", upload_dict);
         let user_allowed_sections = {};
         let modifiedat = null, modby_name = null;
 
-        if(el_input){
-            const tblRow = t_get_tablerow_selected(el_input);
+        const tblRow = t_get_tablerow_selected(el_input);
+
+        if(tblRow){
             user_mapid = tblRow.id;
 
 // --- get existing data_dict from data_rows
-            data_dict = get_datadict_from_mapid(tblRow.id);
+            data_dict = get_datadict_from_tblRow(tblRow);
             if(!isEmpty(data_dict)){
                 user_pk = data_dict.id;
                 user_role = data_dict.role;
@@ -1693,8 +1691,6 @@ console.log( "upload_dict", upload_dict);
             };
 
         console.log("  data_dict: ", data_dict);
-
-            selected_user_pk = user_pk;
 
             let user_schoolname = null;
             if(user_schoolbase_pk){
@@ -2913,7 +2909,7 @@ console.log( "upload_dict", upload_dict);
 
 // +++++++++ MOD GROUP PERMIT ++++++++++++++++ PR2021-03-19
     function MUPM_Open(mode, el_input){
-        //console.log(" -----  MUPM_Open   ---- mode: ", mode)  // modes are: addnew, update
+        console.log(" -----  MUPM_Open   ---- mode: ", mode)  // modes are: addnew, update
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
@@ -2925,7 +2921,7 @@ console.log( "upload_dict", upload_dict);
         if(el_input){
             const tblRow = t_get_tablerow_selected(el_input);
             const data_dict = get_datadict_from_tblRow(tblRow);
-        //console.log("data_dict", data_dict)
+        console.log("data_dict", data_dict)
             if(!isEmpty(data_dict)){
                 userpermit_pk = data_dict.id;
                 role = data_dict.role;
@@ -2935,8 +2931,9 @@ console.log( "upload_dict", upload_dict);
             }
         }
         mod_MUPM_dict.userpermit_pk = userpermit_pk;
-
-        document.getElementById("id_MUPM_action").value = permit_action;
+        if (el_MUPM_page) {el_MUPM_page.value = permit_page};
+        if (el_MUPM_role) {el_MUPM_role.value = role};
+        if (el_MUPM_action) {el_MUPM_action.value = permit_action};
 
     // ---  show modal
         $("#id_mod_userpermit").modal({backdrop: true});
@@ -2948,20 +2945,18 @@ console.log( "upload_dict", upload_dict);
         const upload_mode = (mode === "delete") ? "delete" :
                             (mod_MUPM_dict.mode === "addnew") ? "create" : "update";
 
-        const el_MUPM_role = document.getElementById("id_MUPM_role")
-        const role = (el_MUPM_role && el_MUPM_role.value) ? el_MUPM_role.value : null;
-        const permit_page = document.getElementById("id_MUPM_page").value;
-        const permit_action = document.getElementById("id_MUPM_action").value;
-        const sequence_value = true; //document.getElementById("id_MUPM_sequence").value;
-        const permit_sequence_int = 0; //(Number(sequence_value)) ? Number(sequence_value) : 1;
+        //const sequence_value = true; //document.getElementById("id_MUPM_sequence").value;
+        //const permit_sequence_int = 0; //(Number(sequence_value)) ? Number(sequence_value) : 1;
+
 // ---  create mod_dict
         const url_str = urls.url_userpermit_upload;
         const upload_dict = {mode: upload_mode,
                             userpermit_pk: mod_MUPM_dict.userpermit_pk,
-                            role: role,
-                            page: permit_page,
-                            action: permit_action,
-                            sequence: permit_sequence_int};
+                            role: (el_MUPM_role && el_MUPM_role.value) ? el_MUPM_role.value : null,
+                            page: (el_MUPM_page && el_MUPM_page.value) ? el_MUPM_page.value : null,
+                            action: (el_MUPM_action && el_MUPM_action.value) ? el_MUPM_action.value : null,
+                            sequence: 0
+                            };
         //console.log("upload_dict: ", upload_dict);
 
         const parameters = {"upload": JSON.stringify (upload_dict)}
@@ -2972,17 +2967,16 @@ console.log( "upload_dict", upload_dict);
             data: parameters,
             dataType:'json',
             success: function (response) {
-                //console.log( "response");
-                //console.log( response);
+                console.log( "response");
+                console.log( response);
 
                 // hide loader
                 el_MUA_loader.classList.add(cls_hide);
 
-                if ("updated_list" in response){
-                    for (let i = 0, updated_dict; updated_dict = response.updated_list[i]; i++) {
-                        refresh_permitmap_item(updated_dict);
-                    }
-                }
+                if ("updated_permit_rows" in response){
+                    RefreshDataRows("userpermit", response.updated_permit_rows, permit_dicts, true)  // true = is_update
+                };
+
             },  // success: function (response) {
             error: function (xhr, msg) {
                 console.log(msg + '\n' + xhr.responseText);
@@ -3329,7 +3323,7 @@ console.log( "upload_dict", upload_dict);
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_select.insertRow(row_index);
-        tblRow.id = map_id
+        tblRow.id = map_id;
 
         tblRow.setAttribute("data-pk", pk_int);
         tblRow.setAttribute("data-selected", (row_is_selected) ? "1" : "0")
@@ -3496,6 +3490,7 @@ console.log( "upload_dict", upload_dict);
         // ModConfirmOpen(null, "user_without_userallowed", null, response.user_without_userallowed);
         console.log("    mode", mode )
         console.log("    tblName", tblName )
+        console.log("    el_input", el_input )
 
 // ---  get selected_pk
         let selected_pk = null;
@@ -3516,7 +3511,7 @@ console.log( "upload_dict", upload_dict);
         if(has_selected_item){
             mod_dict.mapid = data_dict.mapid;
             if (tblName === "userpermit"){
-                mod_dict.userpermit_pk = selected_userpermit_pk
+                mod_dict.userpermit_pk = data_dict.id
             } else {
                 mod_dict.user_pk = data_dict.id;
                 mod_dict.user_ppk = data_dict.schoolbase_id;
@@ -3785,7 +3780,7 @@ function RefreshDataRowsAfterUpload(response) {
         console.log(" --- RefreshDataRows  ---");
         //console.log("page_tblName", page_tblName);
         //console.log("update_rows", update_rows);
-        //console.log("data_dicts", data_dicts);
+        console.log("data_dicts", data_dicts);
         // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
 
         if (update_rows && update_rows.length ) {
@@ -3867,7 +3862,6 @@ function RefreshDataRowsAfterUpload(response) {
 // --- get existing data_dict
                 const map_id = update_dict.mapid;
                 const data_dict = data_dicts[map_id];
-    console.log("   data_dict", data_dict);
 
                 if(data_dict){
     // ++++ deleted ++++
@@ -4141,8 +4135,6 @@ function RefreshDataRowsAfterUpload(response) {
     function ResetFilterRows() {  // PR2019-10-26 PR2020-06-20
        //console.log( "===== ResetFilterRows  ========= ");
 
-        selected_user_pk = null;
-
         filter_dict = {};
         filter_mod_employee = false;
 
@@ -4242,21 +4234,15 @@ function RefreshDataRowsAfterUpload(response) {
 
 //========= get_datadict_from_tblRow ============= PR2023-04-04
     function get_datadict_from_tblRow(tblRow) {
-        console.log( " ==== get_datadict_from_tblRow ====");
-        console.log( "tblRow", tblRow);
-
         const map_id = (tblRow && tblRow.id) ? tblRow.id : null;
         const tblName = get_tblName_from_mapid(map_id);
         const data_dicts = get_data_dicts(tblName);
-        const data_dict = (data_dicts) ? data_dicts[map_id] : null;
-        return data_dict;
+        return (data_dicts) ? data_dicts[map_id] : null;;
     };
 
 //========= get_datadict_from_tblRow ============= PR2021-08-01 PR2023-04-04
     function get_data_dicts(tblName) {
-        return (tblName === "userpermit") ? permit_dicts :
-                (tblName === "usergroup") ? user_dicts :
-                (tblName === "user") ? user_dicts : null;
+        return (tblName === "userpermit") ? permit_dicts : user_dicts;
     };
 
 //========= get_tblName_from_mapid ============= PR2021-08-01
@@ -4266,17 +4252,6 @@ function RefreshDataRowsAfterUpload(response) {
     };
 //////////////////////
 
-//========= get_datadict_from_mapid  ====== PR2021-08-01
-    function get_datadict_from_mapid(map_id) {
-        //console.log( "===== get_datadict_from_mapid  === ");
-        let data_dict = null;
-        if(map_id){
-            const arr = get_tblName_pk_from_mapid(map_id);
-        //console.log( "arr", arr);
-            data_dict = get_datadict_from_pk(arr[0], arr[1]);
-        };
-        return data_dict;
-    };  // get_datadict_from_mapid
 
     function get_datadict_from_pk(tblName, pk_int) {
         //console.log( "===== get_datadict_from_pk  === ");
@@ -4298,29 +4273,7 @@ function RefreshDataRowsAfterUpload(response) {
         return  (selected_btn === "btn_user") ? "user" :
                 (selected_btn === "btn_usergroup") ? "usergroup" :
                 (selected_btn === "btn_userpermit") ? "userpermit" :
-                (selected_btn === "btn_allowed") ? "tbl_allowed" : null;
+                (selected_btn === "btn_allowed") ? "userallowed" : null;
     };
 
-
-//========= get_datadicts_from_selectedBtn  ======== // PR2022-01-25 PR2023-04-04
-    function get_datadicts_from_selectedBtn() {
-        //console.log( " ----- get_datadicts_from_selectedBtn  -----");
-        //console.log( "selected_btn", selected_btn);
-        return  (selected_btn === "btn_user") ? user_dicts :
-                (selected_btn === "btn_usergroup") ? user_dicts :
-                (selected_btn === "btn_userpermit") ? permit_dicts :
-                (selected_btn === "btn_allowed") ? user_dicts : null;
-    };
-
-
-
-    function get_tblName_pk_from_mapid(map_id) {  //PR2021-08-01
-        const arr = (map_id) ? map_id.split("_") : null;
-        let tblName = null, pk_int = null;
-        if(arr && arr.length){
-            tblName = arr[0];
-            pk_int = (arr[1] && Number(arr[1])) ? Number(arr[1]) : null;
-        };
-        return [tblName, pk_int]
-    };  // get_tblName_pk_from_mapid
 })  // document.addEventListener('DOMContentLoaded', function()

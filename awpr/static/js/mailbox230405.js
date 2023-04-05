@@ -354,14 +354,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     permit_dict = response.permit_dict;
                     // get_permits must come before CreateSubmenu and FiLLTbl
                     isloaded_permits = true;
-                }
+
+                };
+                if (isloaded_permits){
+
+                    // hide btn "btn_sent" "btn_draft" "btn_mailinglist when no usergroup msgsend
+                    if (el_btn_container){
+                        const btns = el_btn_container.children;
+                        for (let i = 0, btn; btn = btns[i]; i++) {
+                            const data_btn = get_attr_from_el(btn,"data-btn");
+                            const hide_btn = (["btn_sent", "btn_draft", "btn_mailinglist"].includes(data_btn)) &&
+                                        (!permit_dict.usergroup_list || !permit_dict.usergroup_list.includes("msgsend"))
+                            add_or_remove_class(btn, cls_hide, hide_btn);
+                        };
+                    };
+                };
 
                 if(isloaded_loc && isloaded_settings){CreateSubmenu()};
                 if(isloaded_settings || isloaded_permits){b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);};
 
                 if ("messages" in response) {
                     b_show_mod_message_dictlist(response.messages);
-                }
+                };
 
                 if ("mailmessage_draft_rows" in response) {mailmessage_draft_rows = response.mailmessage_draft_rows};
                 if ("mailmessage_received_rows" in response) {mailmessage_received_rows = response.mailmessage_received_rows};
@@ -391,12 +405,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const permit_system_admin = (permit_dict.requsr_role_system && permit_dict.usergroup_list.includes("admin"));
         const permit_role_admin = (permit_dict.requsr_role_admin && permit_dict.usergroup_list.includes("admin"));
 
-        if (permit_dict.permit_crud) {
+        // # PR2023-04-05 write_message does not use permitlist but usergroup 'msgsend' instead
+        if (permit_dict && permit_dict.usergroup_list && permit_dict.usergroup_list.includes("msgsend")){
             AddSubmenuButton(el_submenu, loc.Create_new_message, function() {MMM_Open()}, null, "id_submenu_new_message");
-        }
-        if (permit_dict.permit_crud) {
             AddSubmenuButton(el_submenu, loc.Create_new_mailing_list, function() {MML_Open()}, null, "id_submenu_new_mailinglist");
-        }
+        };
 
          //el_submenu.classList.remove(cls_hide);
     };//function CreateSubmenu
@@ -756,7 +769,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
-//========= UploadChanges  ============= PR2020-08-03
+//========= UploadChanges  ============= PR2020-08-03 PR2023-04-05
     function UploadChanges(upload_dict, url_str) {
         console.log("=== UploadChanges");
         console.log("url_str: ", url_str);
@@ -819,6 +832,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             el_hdrbar_has_mail.className = response.class_has_mail;
                          }
                     }
+                    if("msg_html" in response){
+                        b_show_mod_message_html(response.msg_html);
+                    };
 
                     if(refresh_page){
                         // refresh the whole page when a message is sent.
@@ -1991,7 +2007,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     } // MMM_FillSelectTables
 
-//========= MMM_CreateSelectRow  ============= PR2020-12-18 PR2020-07-14
+//========= MMM_CreateSelectRow  ============= PR2020-12-18 PR2020-07-14 PR2023-04-05
     function MMM_CreateSelectRow(form_name, tblBody_select, key, data_dict, selected_pk) {
         //console.log("===== MMM_CreateSelectRow ===== ");
         //console.log("form_name", form_name);
@@ -2047,6 +2063,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- add first td to tblRow.
         //let inner_txt = (["ml", "ug"].includes(key)) ? data_dict.name : data_dict.code;
+
         let inner_txt = (key === "ml") ? data_dict.name :(["sb", "us"].includes(key)) ? data_dict.code : null;
         let td_width = (key === "ml") ? "tw_360" : "tw_060";
         let td = tblRow.insertCell(-1);
@@ -2055,7 +2072,9 @@ document.addEventListener('DOMContentLoaded', function() {
             el_div.innerText = inner_txt;
             el_div.classList.add(td_width)
             td.appendChild(el_div);
-        td.classList.add(cls_bc_transparent)
+        td.classList.add(cls_bc_transparent);
+
+        let title = inner_txt;
 
 // --- add second td to tblRow.
         if (["sb", "us", "ug"].includes(key)) {    // --- add third td to tblRow.
@@ -2063,6 +2082,7 @@ document.addEventListener('DOMContentLoaded', function() {
             inner_txt = (key === "sb") ? data_dict.name :
                         (key === "us") ? data_dict.abbrev :
                         (key === "ug") ? data_dict.name : null;
+            if (inner_txt ) { title += " - " + inner_txt};
             let td_width = (key === "us") ? "tw_120" : "tw_360";
             el_div = document.createElement("div");
                 el_div.classList.add("pointer_show")
@@ -2079,8 +2099,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 el_div.classList.add("tw_220")
                 td.appendChild(el_div);
             td.classList.add(cls_bc_transparent)
-        }
 
+            if (user_name ) { title += " - " + user_name};
+        }
+        tblRow.title = (title) ? title : null;
 //--------- add addEventListener
         // in form "MMM" EventListener is attached to el_MMM_tblBody_organization_table
         if (form_name === "MMMselect"){
@@ -2482,6 +2504,8 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         };
     } // MMMselect_FillSelectTable
+
+
 
 //=========  MMMselect_TblRowClicked  ================ PR2020-12-17
     function MMMselect_TblRowClicked(tblRow, data_dict) {

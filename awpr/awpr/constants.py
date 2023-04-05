@@ -512,10 +512,12 @@ USERGROUP_AUTH1_PRES = 'auth1'
 USERGROUP_AUTH2_SECR = 'auth2'
 USERGROUP_AUTH3_EXAM = 'auth3'
 USERGROUP_AUTH4_CORR = 'auth4'
-USERGROUP_DOWNLOAD = 'download'
-USERGROUP_ARCHIVE = 'archive'
 USERGROUP_ANALYZE = 'anlz'
 USERGROUP_ADMIN = 'admin'
+USERGROUP_MSGWRITE = 'msgsend'
+USERGROUP_MSGRECEIVE = 'msgreceive'
+USERGROUP_ARCHIVE = 'archive'
+USERGROUP_DOWNLOAD = 'download'
 
 USERGROUP_TUPLE = (
     USERGROUP_READ,
@@ -527,6 +529,8 @@ USERGROUP_TUPLE = (
     USERGROUP_AUTH4_CORR,
     USERGROUP_DOWNLOAD,
     USERGROUP_ARCHIVE,
+    USERGROUP_MSGWRITE,
+    USERGROUP_MSGRECEIVE,
     USERGROUP_ANALYZE,
     USERGROUP_ADMIN
 )
@@ -540,22 +544,21 @@ USERGROUP_CAPTION = {
     USERGROUP_AUTH3_EXAM: _('Examiner'),
     USERGROUP_AUTH4_CORR: _('Corrector'),
     USERGROUP_DOWNLOAD: _('Download'),
-    USERGROUP_ARCHIVE: _('Archive'),
+    USERGROUP_ARCHIVE: _('Access to archive'),
+    USERGROUP_MSGWRITE: _('Send messages'),
+    USERGROUP_MSGRECEIVE: _('Receive messages'),
     USERGROUP_ANALYZE: _('Analyze'),
     USERGROUP_ADMIN: _('System administrator')
 }
-# NIU I think
-PAGE_LIST = {
-    'users': _('Users'),
-    'examyears': _('Exam years'),
-    'subjects': _('Subjects'),
-    'schools': _('Schools'),
-    'students': _('Students'),
-    'studentsubjects': _('Subjects of students'),
-    'orderlist': _('Order list'),
-    'grades': _('Grades'),
-    'archive': _('Archive')
+
+MAILBOX_USERGROUPS = {
+    USERGROUP_AUTH1_PRES: _('Chairperson'),
+    USERGROUP_AUTH2_SECR: _('Secretary'),
+    USERGROUP_AUTH3_EXAM: _('Examiner'),
+    USERGROUP_AUTH4_CORR: _('Corrector'),
+    USERGROUP_ADMIN: _('System administrator')
 }
+
 
 COLOR_LIST = [
     ['black', ' '],
