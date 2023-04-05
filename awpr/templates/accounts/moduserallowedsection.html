@@ -31,14 +31,6 @@
                                 <img id="id_MUPS_loader" src="{% static 'img/loader.gif' %}" height="24" width="24">
                             </div>
                             <div id="id_MUPS_tbody_container" class="content_subheader_left mx-1 my-2">
-                                 <div id="id_MUPS_footer_container" class="display_hide">
-                                    <div class="content_header mx-2 mt-2">
-                                        <div class="content_subheader_left mx-1">
-                                            <small id="id_MUPS_footer01" >{% trans "Click the submit button to register the new user." %}</small>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <h6 class="mx-2 my-0">{% trans 'Allowed schools and subjects' %}</h6>
                                  <!-- this div is necessary to get standard structure for FilterTableRows -->
                                 <!-- <div style="overflow-x:hidden;overflow-y:auto;height:400px;width:220px"> -->
@@ -47,6 +39,9 @@
                                         <tbody id="id_MUPS_tbody_select">
                                         </tbody>
                                     </table>
+                                </div>
+                                <div class="mx-2 mt-2">
+                                    <small id="id_MUPS_msg_modified"></small>
                                 </div>
                             </div>
                         </div>

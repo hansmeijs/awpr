@@ -2763,7 +2763,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     };  // MENVIT_SetMsgElements
 
-// +++++++++ MOD ENVELOP PRINT FORM++++++++++++++++ PR2022-08-20 PR2022-10-22 PR2023-03-16
+// +++++++++ MOD ENVELOP PRINT FORM ++++++++++++++++ PR2022-08-20 PR2022-10-22 PR2023-03-16
     function MENVPR_Open(mode){
         console.log(" -----  MENVPR_Open   ----")
         console.log("    mode", mode)

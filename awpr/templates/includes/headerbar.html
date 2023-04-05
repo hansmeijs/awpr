@@ -85,11 +85,10 @@
                         </a>
                     </li>
                 {% endif %}
-                <li class="display_hide">
-                    <a href="{% url 'manual_url' 'home' 'intro' %}" target="_blank"> <div title= "{% trans 'Exam paper' %}" class="etelogo"></div> </a>
+                <li>
+                    <a href="#"> <div title="{% trans 'Exam papers' %}" class="etelogo"></div> </a>
                 </li>
                 <li>
-                     <!-- <a href="{% url 'manual_url' 'intro' 'intro' %}" target="_blank"> <div class="questionmark"></div> </a>-->
                     {% if page and paragraph %}
                          <a id="id_hdrbar_manual" href="{% url 'manual_url' page paragraph %}" target="_blank"> <div class="questionmark"></div> </a>
                     {% else %}

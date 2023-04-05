@@ -512,11 +512,6 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
         indent_left = indent_none if menu_index == 0 else indent_10
         indent_right = indent_none if menu_index == last_index else indent_10
 
-        logger.debug('    caption: ' + str(caption))
-        logger.debug('    menu_index: ' + str(menu_index))
-        logger.debug('    last_index: ' + str(last_index))
-        logger.debug('    indent_right: ' + str(indent_right))
-
         points = get_svg_arrow(width, height, indent_left, indent_right)
         pos_x = width / 2
         menu_item_tag= {'caption': caption, 'href': h_ref_reverse,

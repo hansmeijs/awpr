@@ -3978,15 +3978,16 @@ class EnvelopPrintReceiptView(View):  # PR2023-03-04
 
 # - get selected examperiod from usersettings
             # sel_exam values are: 'cspe', 'cse', 'tv02'
-            sel_exam = upload_dict.get('sel_exam')
-            practex_only = sel_exam == 'cspe'
-            sel_examperiod = 2 if sel_exam == 'tv02' else 1
+            sel_exam = upload_dict.get('sel_exam') or '-'
+            practex_only = 'cspe' in sel_exam
+            sel_examperiod = 2 if 'tv02' in sel_exam else 1
 
             # secret_only: True ('only'), False ('exclude) or None (show all) PR2023-03-31
             secret = upload_dict.get('secret')
             secret_only = True if secret == 'only' else False if secret == 'exclude' else None
 
             if logging_on:
+                logger.debug(' sel_examperiod ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
                 logger.debug(' practex_only ' + str(practex_only) + ' ' + str(type(practex_only)))
                 logger.debug(' secret_only ' + str(secret_only) + ' ' + str(type(secret_only)))
 
@@ -4027,8 +4028,6 @@ class EnvelopPrintReceiptView(View):  # PR2023-03-04
                 schoolbase_pk_list = None
 
             if logging_on:
-                logger.debug('    sel_examperiod: ' + str(sel_examperiod))
-                logger.debug('    sel_exam:     ' + str(sel_exam))
                 logger.debug('    schoolbase_pk_list: ' + str(schoolbase_pk_list))
 
 # --- get department dictlist, ordered by sequence

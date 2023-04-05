@@ -1279,7 +1279,7 @@ def reset_show_msg(request):
 
 def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
     # function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_usergroup_msgsend_msgreceive_ONCEONLY -------')
 
@@ -1316,9 +1316,13 @@ def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
                                 logger.debug('          new : ' + str(usergroup_list))
 
                             usergroups_str = json.dumps(usergroup_list)
-                            setattr(userallowed_row, 'usergroup', usergroups_str)
+                            if logging_on:
+                                logger.debug('          usergroups_str : ' + str(usergroups_str))
+                            setattr(userallowed_row, 'usergroups', usergroups_str)
                             userallowed_row.save()
 
+                            if logging_on:
+                                logger.debug('          usergroups_str : ' + str(userallowed_row.usergroups))
     # - add function to systemupdate, so it won't run again
             systemupdate = sch_mod.Systemupdate(
                 name=name
