@@ -155,8 +155,11 @@ def get_cur_stud_dict(idnumber_lower, sel_examyear, sel_schoolbase, sel_depbase)
     student_dict = None
     if idnumber_lower:
         # get student with this idnumber of this school and dep
-        sql_keys = {'idnumber': idnumber_lower, 'ey_pk': sel_examyear.pk,
-                    'sbase_id': sel_schoolbase.pk, 'depbase_id': sel_depbase.pk}
+        sql_keys = {'idnumber': idnumber_lower,
+                    'ey_pk': sel_examyear.pk if sel_examyear else None,
+                    'sbase_id': sel_schoolbase.pk if sel_schoolbase else None,
+                    'depbase_id': sel_depbase.pk if sel_depbase else None
+                    }
         sql_list = [
             "SELECT st.id AS student_id, st.base_id, st.idnumber, st.lastname, st.firstname, st.linked, st.notlinked,",
             "CONCAT_WS (' ', st.prefix, CONCAT(st.lastname, ','), st.firstname) AS fullname,",
@@ -258,9 +261,9 @@ def get_idnumbers_with_multiple_occurrence(sel_examyear, sel_schoolbase, sel_dep
 
     # create a sorted list of idnumbers, filter out different department
                     if idnumber_list:
-                        sql_keys = {'sbase_id': sel_schoolbase.pk,
-                                    'depbase_id': sel_depbase.pk,
-                                    'ey_id': sel_examyear.pk,
+                        sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
+                                    'sbase_id': sel_schoolbase.pk if sel_schoolbase else None,
+                                    'depbase_id': sel_depbase.pk if sel_depbase else None,
                                     'idnumber_arr': idnumber_list
                                     }
                         sql_list = ["SELECT st.idnumber",

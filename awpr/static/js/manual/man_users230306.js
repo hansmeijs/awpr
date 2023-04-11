@@ -102,6 +102,9 @@ const man_user = {
             "<li><b>Secretaris</b>. De secretaris kan gegevens goedkeuren en diploma's, cijferlijsten en Ex-formulieren indienen.</li>",
             "<li><b>Examinator</b>. De examinator kan scores en cijfers goedkeuren.</li>",
             "<li><b>Gecommitteerde</b>. De gecommitteerde kan scores en cijfers goedkeuren.</li>",
+            "<li><b>Berichten ontvangen</b>. Deze gebruikersgroep kan de berichtenservice openen en berichten ontvangen.</li>",
+            "<li><b>Berichten versturen</b>. Deze gebruikersgroep kan de berichten van de berichtenservice versturen.</li>",
+            "<li><b>Toegang tot archief</b>. Deze gebruikersgroep kan de pagina <i>Archief</i> openen.</li>",
             "<li><b>Systeembeheerder</b>. Alleen de systeembeheerder heeft toegang tot de gebruikers pagina en kan gebruikersaccounts aanmaken, wissen en permissies instellen.</li></ul>",
 
              "<p>Gebruikersgroepen worden <b>per examenjaar</b> ingesteld. Bij het aanmaken van een nieuw examenjaar worden de gebruikersgroepen van het vorig jaar gekopieerd naar het nieuwe examenjaar. Wijzigingen die je aanbrengt zijn alleen van toepassing op het examenjaar, waarin je nu werkt.</p>",
@@ -356,6 +359,9 @@ const man_user = {
             "<li><b>Secretary</b>. The secretary can approve data and submit diplomas, lists of marks and Ex forms.</li>",
             "<li><b>Examiner</b>. The examiner can approve scores and grades.</li>",
             "<li><b>Corrector</b>. The corrector can approve scores and grades.</li>",
+            "<li><b>Receive messages</b>. This user group can access the messaging service and receive messages.</li>",
+             "<li><b>Send messages</b>. This user group can send messages of the messaging service.</li>",
+             "<li><b>Access Archive</b>. This user group can access the <i>Archive</i> page.</li>",
             "<li><b>System Administrator</b>. Only the System Administrator has access to the Users page and can create, delete and set permissions for user accounts.</li></ul></p>",
 
              "<p class='mb-0 pb-0'>A user can belong to <b>multiple user groups</b>. ",

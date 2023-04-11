@@ -531,7 +531,7 @@ def get_sqlclause_allowed_depbase_from_allowed_sections(userallowed_sections_dic
     #       else:
     #           --> no filter
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- get_sqlclause_allowed_depbase_from_allowed_sections ----- ')
@@ -562,7 +562,10 @@ def get_sqlclause_allowed_depbase_from_allowed_sections(userallowed_sections_dic
             filter_none = True
 
     elif userallowed_depbases_pk_int_arr and not skip_allowed_filter:
-        if len(userallowed_depbases_pk_int_arr) == 1:
+        if -9 in userallowed_depbases_pk_int_arr:
+            # all deps are allowed when '-9' in userallowed_depbases_pk_int_arr
+            pass
+        elif len(userallowed_depbases_pk_int_arr) == 1:
             filter_single_pk = userallowed_depbases_pk_int_arr[0]
         else:
             filter_pk_arr = userallowed_depbases_pk_int_arr
@@ -633,9 +636,11 @@ def allowedsections_has_subjbases(userallowed_sections_dict):
 
 
 def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, userallowed_sections_dict, return_false_when_no_allowedsubjects):
-    # PR2023-02-15
+    # PR2023-02-15 PR2023-04-10
     # This function  gives sql clause of all allowed schools, deps, levels and subjects.
     # It does not filter on sel_schoolpk etc.
+
+    # called by create_studentsubject_rows, create_grade_rows,  create_grade_with_ete_exam_rows
 
     def get_add_to_list(sel_base_pk, base_pk_str):
         # add_to_list = True if:
@@ -686,22 +691,27 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
     # - create lvlbase_clause
         lvlbase_clause = get_base_clause('lvl.base_id', lvlbase_pk_str)
+        logger.debug('    lvlbase_clause: ' + str(lvlbase_clause))
 
     # - create subjbase_clause
         subjbase_clause = None
         if allowed_subjbase_list:
+            logger.debug('    allowed_subjbase_list: ' + str(allowed_subjbase_list))
             if len(allowed_subjbase_list) == 1:
                 subjbase_clause = ''.join((subjbase_id_fld, "=", str(allowed_subjbase_list[0]), "::INT"))
             else:
                 subjbase_clause = ''.join(
                     (subjbase_id_fld, " IN (SELECT UNNEST(ARRAY", str(allowed_subjbase_list), "::INT[]))"))
+            logger.debug('    subjbase_clause: ' + str(subjbase_clause))
         else:
+            logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
             # when user is inspectorate: 'all subjects' is not possible
             if return_false_when_no_allowedsubjects:
                 subjbase_clause = 'FALSE'
     # - join lvlbase_clause AND subjbase_clause
         lvl_subjbase_clause = get_AND_joined(lvlbase_clause, subjbase_clause, has_subjbases)
 
+        logger.debug('    lvl_subjbase_clause: ' + str(lvl_subjbase_clause))
         return lvl_subjbase_clause
 
 #############################################
@@ -709,11 +719,12 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug(' ----- get_sqlclause_allowed_NEW -----')
+        logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')
         logger.debug('    allowed_sections_dict: ' + str(userallowed_sections_dict))
         logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
         logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk))
         logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
+        logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
         logger.debug(' ----------')
 
     if table == 'studsubj':
@@ -735,132 +746,143 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
         if logging_on:
             logger.debug('    has_subjbases: ' + str(has_subjbases))
 
-# +++++ loop through schools
-        sch_dep_lvl_subjbase_clause_arr = []
-        for schoolbase_pk_str, userallowed_schoolbase_dict in userallowed_sections_dict.items():
-            # add_to_list when schoolbase_pk_str = sel_schoolbase_pk or = -9
-            # - sel_schoolbase_pk has always a value
-            add_to_list = get_add_to_list(sel_schoolbase_pk, schoolbase_pk_str)
+# - don't return grades when corrector has no allowed subjects PR2023-04-10
+        if return_false_when_no_allowedsubjects and not has_subjbases:
+            sch_dep_lvl_subjbase_clause_joined = 'FALSE'
             if logging_on:
-                logger.debug('    ----- ')
-                logger.debug('      schoolbase_pk_str: ' + str(schoolbase_pk_str))
-                logger.debug('      add_to_list: ' + str(add_to_list))
+                logger.debug('   return_false_when_no_allowedsubjects > has_subjbases = False')
+        else:
 
-            if add_to_list:
-        # - create schoolbase_clause
-                schoolbase_clause = get_base_clause('school.base_id', schoolbase_pk_str)
+# +++++ loop through schools
+            sch_dep_lvl_subjbase_clause_arr = []
+            for schoolbase_pk_str, userallowed_schoolbase_dict in userallowed_sections_dict.items():
+                # add_to_list when schoolbase_pk_str = sel_schoolbase_pk or = -9
+                # - sel_schoolbase_pk has always a value
+                add_to_list = get_add_to_list(sel_schoolbase_pk, schoolbase_pk_str)
                 if logging_on:
-                    logger.debug('      userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
-                    logger.debug('      > schoolbase_clause: ' + str(schoolbase_clause))
+                    logger.debug('    ----- ')
+                    logger.debug('      schoolbase_pk_str: ' + str(schoolbase_pk_str))
+                    logger.debug('      add_to_list: ' + str(add_to_list))
 
-    # ===== loop through departments
-                # PR2023-02-27: debug: must handle sqlclause,
-                # also when userallowed_schoolbase_dict is empty
-                # for instance: allowed_sections_dict: {'13': {} }
-                if sel_depbase_pk and not userallowed_schoolbase_dict:
-                    # if allowed_depbase_dict is empty and  sel_depbase_pk has value: add sel_depbase_pk to allowed_depbase_dict
-                    userallowed_schoolbase_dict[str(sel_depbase_pk)] = {}
-
-                dep_lvl_subjbase_clause_arr = []
-                for depbase_pk_str, allowed_depbase_dict in userallowed_schoolbase_dict.items():
-                    # add_to_list when depbase_pk_str = sel_depbase_pk or = -9
-                    # - sel_depbase_pk has always a value
-                    add_to_list = get_add_to_list(sel_depbase_pk, depbase_pk_str)
-
+                if add_to_list:
+            # - create schoolbase_clause
+                    schoolbase_clause = get_base_clause('school.base_id', schoolbase_pk_str)
                     if logging_on:
-                        logger.debug('      ----- ')
-                        logger.debug('        depbase_pk_str ' + str(depbase_pk_str))
-                        logger.debug('        add_to_list: ' + str(add_to_list))
+                        logger.debug('      userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
+                        logger.debug('      > schoolbase_clause: ' + str(schoolbase_clause))
 
-                    if add_to_list:
+# ===== loop through departments
+                    # PR2023-02-27: debug: must handle sqlclause,
+                    # also when userallowed_schoolbase_dict is empty
+                    # for instance: allowed_sections_dict: {'13': {} }
+                    if sel_depbase_pk and not userallowed_schoolbase_dict:
+                        # if allowed_depbase_dict is empty and  sel_depbase_pk has value: add sel_depbase_pk to allowed_depbase_dict
+                        userallowed_schoolbase_dict[str(sel_depbase_pk)] = {}
 
-            # - create depbase_clause
-                        # PR2023-02-09 all deps '-9' not in use (maybe tobe used for inspectorate)
-                        depbase_clause = get_base_clause('dep.base_id', depbase_pk_str)
+                    dep_lvl_subjbase_clause_arr = []
+                    for depbase_pk_str, allowed_depbase_dict in userallowed_schoolbase_dict.items():
+                        # add_to_list when depbase_pk_str = sel_depbase_pk or = -9
+                        # - sel_depbase_pk has always a value
+                        add_to_list = get_add_to_list(sel_depbase_pk, depbase_pk_str)
+
                         if logging_on:
-                            logger.debug('        allowed_depbase_dict ' + str(allowed_depbase_dict))
-                            logger.debug('        > depbase_clause: ' + str(depbase_clause))
+                            logger.debug('      ----- ')
+                            logger.debug('        depbase_pk_str ' + str(depbase_pk_str))
+                            logger.debug('        add_to_list: ' + str(add_to_list))
 
-                        # PR2023-02-27: debug: must handle sqlclause,
-                        # also when allowed_depbase_dict is empty
-                        # for instance: allowed_depbase_dict: {'1': {} }
-                        if sel_lvlbase_pk and not allowed_depbase_dict:
-                            # if allowed_depbase_dict is empty and  sel_depbase_pk has value: add sel_depbase_pk to allowed_depbase_dict
-                            allowed_depbase_dict[str(sel_lvlbase_pk)] = {}
+                        if add_to_list:
 
-        # ----- loop through levels
-                        lvl_subjbase_clause_arr = []
-                        for lvlbase_pk_str, allowed_subjbase_list in allowed_depbase_dict.items():
-
+                # - create depbase_clause
+                            # PR2023-02-09 all deps '-9' not in use (maybe tobe used for inspectorate)
+                            depbase_clause = get_base_clause('dep.base_id', depbase_pk_str)
                             if logging_on:
-                                logger.debug('        ----- ')
-                                logger.debug('          lvlbase_pk_str ' + str(lvlbase_pk_str))
+                                logger.debug('        allowed_depbase_dict ' + str(allowed_depbase_dict))
+                                logger.debug('        > depbase_clause: ' + str(depbase_clause))
 
-                            add_to_list = get_add_to_list(sel_lvlbase_pk, lvlbase_pk_str)
-                            if logging_on:
-                                logger.debug('          add_to_list: ' + str(add_to_list))
+                            # PR2023-02-27: debug: must handle sqlclause,
+                            # also when allowed_depbase_dict is empty
+                            # for instance: allowed_depbase_dict: {'1': {} }
+                            if sel_lvlbase_pk and not allowed_depbase_dict:
+                                # if allowed_depbase_dict is empty and  sel_depbase_pk has value: add sel_depbase_pk to allowed_depbase_dict
+                                allowed_depbase_dict[str(sel_lvlbase_pk)] = {}
 
-                            if add_to_list:
+            # ----- loop through levels
+                            lvl_subjbase_clause_arr = []
+                            for lvlbase_pk_str, allowed_subjbase_list in allowed_depbase_dict.items():
 
-                                lvl_subjbase_clause = get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects)
                                 if logging_on:
-                                    logger.debug('          allowed_subjbase_list ' + str(allowed_subjbase_list))
-                                    logger.debug('          > lvl_subjbase_clause: ' + str(lvl_subjbase_clause))
+                                    logger.debug('        ----- ')
+                                    logger.debug('          lvlbase_pk_str ' + str(lvlbase_pk_str))
 
-                                if lvl_subjbase_clause:
-                                    lvl_subjbase_clause_arr.append(''.join(('(', lvl_subjbase_clause, ')')))
+                                add_to_list = get_add_to_list(sel_lvlbase_pk, lvlbase_pk_str)
+                                if logging_on:
+                                    logger.debug('          add_to_list: ' + str(add_to_list))
 
-        # ----- end of loop through levels
+                                if add_to_list:
 
-                # - join lvl_subjbase_clause_arr with OR
-                        lvl_subjbase_clause_joined = get_OR_joined(lvl_subjbase_clause_arr)
+                                    lvl_subjbase_clause = get_lvl_subjbase_clause(lvlbase_pk_str, allowed_subjbase_list, return_false_when_no_allowedsubjects)
+                                    if logging_on:
+                                        logger.debug('          allowed_subjbase_list ' + str(allowed_subjbase_list))
+                                        logger.debug('          > lvl_subjbase_clause: ' + str(lvl_subjbase_clause))
 
-                # - join depbase_clause and lvl_subjbase_clause_arr with AND
-                        dep_lvl_subjbase_clause = get_AND_joined(depbase_clause, lvl_subjbase_clause_joined, has_subjbases)
-                        if logging_on:
-                            logger.debug('            > dep_lvl_subjbase_clause: ' + str(dep_lvl_subjbase_clause))
+                                    if lvl_subjbase_clause:
+                                        lvl_subjbase_clause_arr.append(''.join(('(', lvl_subjbase_clause, ')')))
 
-                # - add clause to dep_lvl_subjbase_clause_arr
-                        if dep_lvl_subjbase_clause:
-                            dep_lvl_subjbase_clause_arr.append(''.join(('(', dep_lvl_subjbase_clause, ')')))
+            # ----- end of loop through levels
+
+                    # - join lvl_subjbase_clause_arr with OR
+                            lvl_subjbase_clause_joined = get_OR_joined(lvl_subjbase_clause_arr)
+
+                    # - join depbase_clause and lvl_subjbase_clause_arr with AND
+                            dep_lvl_subjbase_clause = get_AND_joined(depbase_clause, lvl_subjbase_clause_joined, has_subjbases)
                             if logging_on:
-                                logger.debug('   ---> ' + str(dep_lvl_subjbase_clause))
-    # ===== end of loop through departments
+                                logger.debug('            > dep_lvl_subjbase_clause: ' + str(dep_lvl_subjbase_clause))
 
-            # - join dep_lvl_subjbase_clause_arr with OR
-                dep_lvl_subjbase_clause_joined = get_OR_joined(dep_lvl_subjbase_clause_arr)
-                if logging_on:
-                    logger.debug('  > dep_lvl_subjbase_clause_joined: ' + str(dep_lvl_subjbase_clause_joined))
+                    # - add clause to dep_lvl_subjbase_clause_arr
+                            if dep_lvl_subjbase_clause:
+                                dep_lvl_subjbase_clause_arr.append(''.join(('(', dep_lvl_subjbase_clause, ')')))
+                                if logging_on:
+                                    logger.debug('   ---> ' + str(dep_lvl_subjbase_clause))
+# ===== end of loop through departments
 
-            # - join schoolbase_clause and dep_lvl_subjbase_clause_joined with AND
-                    sch_dep_lvl_subjbase_clause = get_AND_joined(schoolbase_clause, dep_lvl_subjbase_clause_joined, has_subjbases)
+                # - join dep_lvl_subjbase_clause_arr with OR
+                    dep_lvl_subjbase_clause_joined = get_OR_joined(dep_lvl_subjbase_clause_arr)
                     if logging_on:
-                        logger.debug('    > sch_dep_lvl_subjbase_clause: ' + str(sch_dep_lvl_subjbase_clause))
+                        logger.debug('  > dep_lvl_subjbase_clause_joined: ' + str(dep_lvl_subjbase_clause_joined))
 
-            # - add clause to sch_dep_lvl_subjbase_clause_arr
-                    if sch_dep_lvl_subjbase_clause:
-                        sch_dep_lvl_subjbase_clause_arr.append(''.join(('(', sch_dep_lvl_subjbase_clause, ')')))
+                # - join schoolbase_clause and dep_lvl_subjbase_clause_joined with AND
+                        sch_dep_lvl_subjbase_clause = get_AND_joined(schoolbase_clause, dep_lvl_subjbase_clause_joined, has_subjbases)
+                        if logging_on:
+                            logger.debug('    > sch_dep_lvl_subjbase_clause: ' + str(sch_dep_lvl_subjbase_clause))
+
+                # - add clause to sch_dep_lvl_subjbase_clause_arr
+                        if sch_dep_lvl_subjbase_clause:
+                            sch_dep_lvl_subjbase_clause_arr.append(''.join(('(', sch_dep_lvl_subjbase_clause, ')')))
 
 # +++++ end of loop through schools
-        # - join sch_dep_lvl_subjbase_clause_arr with OR
-            sch_dep_lvl_subjbase_clause_joined = get_OR_joined(sch_dep_lvl_subjbase_clause_arr)
-            if logging_on:
-                logger.debug(' ===> sch_dep_lvl_subjbase_clause_joined: ' + str(sch_dep_lvl_subjbase_clause_joined))
+            # - join sch_dep_lvl_subjbase_clause_arr with OR
+                sch_dep_lvl_subjbase_clause_joined = get_OR_joined(sch_dep_lvl_subjbase_clause_arr)
+                if logging_on:
+                    logger.debug(' ===> sch_dep_lvl_subjbase_clause_joined: ' + str(sch_dep_lvl_subjbase_clause_joined))
 
+# - if userallowed_sections_dict is None:
     else:
-        # add sqlclause when sel_schoolbase_pk etc has value and allowed_sections = None
-        sql_clause_arr = []
-        if sel_schoolbase_pk:
-            sql_clause_arr.append(get_base_clause('school.base_id', str(sel_schoolbase_pk)))
-        if sel_depbase_pk:
-            sql_clause_arr.append(get_base_clause('dep.base_id', str(sel_depbase_pk)))
-        if sel_lvlbase_pk:
-            sql_clause_arr.append(get_base_clause('lvl.base_id', str(sel_lvlbase_pk)))
-        if sql_clause_arr:
-            sch_dep_lvl_subjbase_clause_joined = ' AND '.join(sql_clause_arr)
-
-    if logging_on:
-        logger.debug('===> ' + str(sch_dep_lvl_subjbase_clause_joined))
+        # don't return grades when corrector has no allowed subjects PR2023-04-10
+        if return_false_when_no_allowedsubjects:
+            sch_dep_lvl_subjbase_clause_joined = 'FALSE'
+            if logging_on:
+                logger.debug('   return_false_when_no_allowedsubjects > userallowed_sections_dict is None')
+        else:
+            # add sqlclause when sel_schoolbase_pk etc has value and allowed_sections = None
+            sql_clause_arr = []
+            if sel_schoolbase_pk:
+                sql_clause_arr.append(get_base_clause('school.base_id', str(sel_schoolbase_pk)))
+            if sel_depbase_pk:
+                sql_clause_arr.append(get_base_clause('dep.base_id', str(sel_depbase_pk)))
+            if sel_lvlbase_pk:
+                sql_clause_arr.append(get_base_clause('lvl.base_id', str(sel_lvlbase_pk)))
+            if sql_clause_arr:
+                sch_dep_lvl_subjbase_clause_joined = ' AND '.join(sql_clause_arr)
 
     sql_clause = ''
     if sch_dep_lvl_subjbase_clause_joined:
@@ -1523,13 +1545,15 @@ def is_role_insp_or_system_and_group_admin(req_usr):
     return has_permit
 
 
-def err_html_no_permit(action_txt):  # PR2023-03-20
+def err_html_no_permit(action_txt=None):  # PR2023-03-20
+    if not action_txt:
+        action_txt = _('to perform this action')
     return ''.join(("<div class='p-2 border_bg_invalid'>",
-                    gettext("You don't have permission %(cpt)s.") % {'cpt': gettext(action_txt)},
+                    gettext("You don't have permission %(cpt)s.") % {'cpt': str(action_txt)},
                     "</div>"))
 
 
-def err_html_error_occurred(err_txt, msg_txt):  # PR2023-03-20
+def err_html_error_occurred(err_txt, msg_txt=None):  # PR2023-03-20
     msg_list = ["<p class='border_bg_invalid p-2'>",
                 str(_('An error occurred'))]
     if err_txt:

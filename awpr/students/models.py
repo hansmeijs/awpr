@@ -173,6 +173,11 @@ class Student(sch_mod.AwpBaseModel):# PR2018-06-06, 2018-09-05
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
 
+    # TODO create these fields PR2023-04-08
+    # only when result is approved by inspection, gradelist and diploma can be printed PR2023-04-08
+    #resultapproved = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    #resultapproved_at = DateTimeField(null=True)
+
     tobedeleted = BooleanField(default=False)
     deleted = BooleanField(default=False)
 
@@ -320,6 +325,10 @@ class Student_log(sch_mod.AwpBaseModel):
     result = PositiveSmallIntegerField(db_index=True, default=0)
     result_status = CharField(max_length=c.MAX_LENGTH_KEY, null=True, blank=True)
     result_info = CharField(max_length=2048, null=True, blank=True)
+
+    # TODO create these fields PR2023-04-08
+    #resultapproved = ForeignKey(AUTH_USER_MODEL, null=True, related_name='+', on_delete=SET_NULL)
+    #resultapproved_at = DateTimeField(null=True)
 
     tobedeleted = BooleanField(default=False)
     deleted = BooleanField(default=False)

@@ -1795,7 +1795,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // when clicked on 'Request_verificationcode'
             // tekst: 'AWP is sending an email with the verification code'
             // show textbox with 'You need a 6 digit verification code to submit the Ex form'
-            msg_info_txt = loc.MPUBORD_info.requesting_verifcode + "...";
+            msg_info_txt = loc.MPUBORD_info.sending_verifcode;
             disable_save_btn = true;
             save_btn_txt = loc.Request_verifcode;
 

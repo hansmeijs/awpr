@@ -242,6 +242,7 @@ class UserUploadView(View):
                         new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT)
                     else:
                         new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_DOWNLOAD,
+                                              c.USERGROUP_MSGRECEIVE, c.USERGROUP_MSGWRITE,
                                               c.USERGROUP_ARCHIVE, c.USERGROUP_ADMIN)
 
                     # <PERMIT> PR2021-04-23
@@ -4185,7 +4186,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
                                 allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10  PR2023-01-08
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_departmentbase -------')
 
@@ -4777,8 +4778,9 @@ def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-
 
 
 def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_clause=False, page=None):
-    # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31
-    logging_on = False  # s.LOGGING_ON
+    # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31 PR2023-04-10
+    # called by not has_subjbases
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
         logger.debug(' +++++ get_selected_ey_school_dep_lvl_from_usersetting +++++ ' )
@@ -4793,6 +4795,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
         # - not sel_examyear.published,
         # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
 
+    # PR2023-04-10 # message 'You cannot make changes' must be created outside this function, text depends on situation
     sel_examyear_instance, sel_school_instance, sel_department_instance, sel_level_instance = None, None, None, None
 
     def get_sel_examyear_instance():
@@ -4808,18 +4811,15 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
             # not when role is admin PR2022-08-09
             if not sel_examyear_instance.published:
                 if request.user.role < c.ROLE_064_ADMIN:
-                    err_html = '<br>'.join((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
+                    err_html = gettext("%(admin)s has not yet published examyear %(exyr)s.") % \
                                          {'admin': _('The Division of Examinations'),
-                                          'exyr': str(sel_examyear_instance.code)}),
-                                     str(_('You cannot enter data.'))))
+                                          'exyr': str(sel_examyear_instance.code)}
 
     # - add message when examyear is locked PR22021-12-04
             # not when page_examyear PR2022-08-09
             if request.user.role != c.ROLE_064_ADMIN or page != 'page_examyear':
                 if sel_examyear_instance.locked:
-                    err_html = '<br>'.join(
-                        (str(_('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}),
-                         str(_('You cannot make changes.'))))
+                    err_html = gettext('Exam year %(exyr)s is locked.') % {'exyr': str(sel_examyear_instance.code)}
 
         else:
             err_html = gettext('Exam year is not found.')
@@ -4828,36 +4828,39 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 # - end of get_sel_examyear_instance
 
     def get_school_instance(request, sel_examyear_instance, allowed_sections_dict, selected_pk_dict):
-        # PR2022-12-18  PR2023-02-21
+        # PR2022-12-18  PR2023-04-10
 
-        sel_schoolbase_instance = None
-        err_html = None
-
-        req_usr = request.user
+        sel_schoolbase_instance, sel_school_instance, err_html = None, None, None
 
     # - get req_usr.schoolbase if role = school
         if req_usr.role == c.ROLE_008_SCHOOL:
             sel_schoolbase_instance = req_usr.schoolbase
         else:
 
-    # - otherwise: get saved_schoolbase_pk from Usersetting, check if saved_schoolbase exists
-            saved_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+    # - otherwise: get saved depbase_pk from Usersetting
+            saved_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK) if selected_pk_dict else None
 
     # - check if saved_schoolbase exists
-            saved_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
-                pk=saved_schoolbase_pk,
-                country=req_usr.country
-            )
-            if saved_schoolbase:
+            if saved_schoolbase_pk:
+                saved_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+                    pk=saved_schoolbase_pk,
+                    country=req_usr.country
+                )
 
-    # - check if saved_schoolbase is in allowed_sections
-                # schoolbase is allowed when allowed_sections_dict is empty,
-                #  or when 'all schools' (-9) in allowed_sections_dict
-                #  or when  saved_schoolbase.pk in allowed_sections_dict
-                if (not allowed_sections_dict) or \
-                        ('-9' in allowed_sections_dict) or \
-                        ( str(saved_schoolbase.pk) in allowed_sections_dict):
-                    sel_schoolbase_instance = saved_schoolbase
+                if saved_schoolbase:
+
+    # - check if saved_schoolbase_pk is in allowed_sections
+                    # schoolbase is allowed when allowed_sections_dict is empty,
+                    #  or when 'all schools' (-9) in allowed_sections_dict
+                    #  or when  saved_schoolbase.pk in allowed_sections_dict
+                    if (not allowed_sections_dict) or \
+                            ('-9' in allowed_sections_dict) or \
+                            ( str(saved_schoolbase_pk) in allowed_sections_dict):
+                        sel_schoolbase_instance = saved_schoolbase
+                    else:
+                        caption = ' '.join(( gettext('School'), saved_schoolbase.code ))
+                        msg_list.append(gettext("%(cpt)s is not in your list of allowed %(cpt2)s.") % {'cpt': caption,
+                                                                                       'cpt2': gettext('schools')})
 
         # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
         # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
@@ -4865,30 +4868,26 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                               sel_schoolbase_instance and request.user.schoolbase and request.user.schoolbase.pk == sel_schoolbase_instance.pk)
 
     # - get school from sel_schoolbase and sel_examyear_instance
-        sel_school_instance = sch_mod.School.objects.get_or_none(
-            base=sel_schoolbase_instance,
-            examyear=sel_examyear_instance)
+        if sel_schoolbase_instance:
+            sel_school_instance = sch_mod.School.objects.get_or_none(
+                base=sel_schoolbase_instance,
+                examyear=sel_examyear_instance)
 
     # - add message when school is locked PR2021-12-04
         if sel_school_instance:
             if sel_school_instance.locked:
-                err_html = '<br>'.join(( str(_('Exam year %(exyr)s of this school is locked.') % {
-                        'exyr': str(sel_school_instance.examyear.code)}),
-                                 str(_('You cannot make changes.'))))
+                err_html = gettext('Exam year %(exyr)s of this school is locked.') % {
+                        'exyr': str(sel_school_instance.examyear.code)}
 
         return sel_school_instance, requsr_same_school, err_html
 # - end of get_school_instance
 
     def get_department_instance(sel_examyear_instance, sel_school_instance,
                                           allowed_schoolbase_dict, selected_pk_dict):
-        # PR2022-12-19 PR2023-01-08  PR2023-02-21
-        logging_on = False  # s.LOGGING_ON
+        # PR2022-12-19 PR2023-01-08 PR2023-04-10
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ------- get_department_instance -------')
-
-        sel_department_instance = None
-
-        sel_depbase_pk = None
 
 # - get list of allowed_depbases of selected school
         sel_school_allowed_depbases_list = []
@@ -4899,43 +4898,33 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
             logger.debug('    sel_school_allowed_depbases_list: ' + str(sel_school_allowed_depbases_list))
             # sel_school_allowed_depbases_list: [1, 2, 3]
 
-    # - if there is only 1 allowed_depbase: select that one
-        if len(sel_school_allowed_depbases_list) == 1:
-            sel_depbase_pk = sel_school_allowed_depbases_list[0]
-            if logging_on:
-                logger.debug('    there is only 1 sel_school_allowed_depbase: ' + str(sel_depbase_pk))
-
     # - create array of allowed depbases: allowed_depbases_list
         # - must be in sel_school_allowed_depbases_list
         # - and also in allowed_depbases_dict, unless allowed_depbases_dict is empty
 
+        # allowed_depbases_list: [1, 3]
         allowed_depbases_list = []
         for depbase_pk_int in sel_school_allowed_depbases_list:
             if not allowed_schoolbase_dict or str(depbase_pk_int) in allowed_schoolbase_dict:
                 allowed_depbases_list.append(depbase_pk_int)
-        if logging_on:
-            logger.debug('    allowed_depbases_list: ' + str(allowed_depbases_list))
-            # allowed_depbases_list: [1, 3]
 
-    # - get saved depbase if sel_depbase_pk is empty :
-        if not sel_depbase_pk:
-            #  - get saved_depbase_pk from Usersetting
-            if selected_pk_dict:
-                saved_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK)
-                if logging_on:
-                    logger.debug('    saved_depbase_pk: ' + str(saved_depbase_pk))
-                if saved_depbase_pk and saved_depbase_pk in allowed_depbases_list:
-                    sel_depbase_pk = saved_depbase_pk
+    # - get saved depbase_pk from Usersetting
+        sel_department_instance = None
 
-    # - get sel_department_instance
-        if sel_depbase_pk:
+        saved_depbase_pk = selected_pk_dict.get(c.KEY_SEL_DEPBASE_PK) if selected_pk_dict else None
+
+        if saved_depbase_pk is None:
+            msg_list.append(gettext("There is no %(cpt)s selected.") % {'cpt': _('department')})
+
+        elif saved_depbase_pk not in allowed_depbases_list:
+            msg_list.append(gettext("%(cpt)s is not in your list of allowed %(cpt2)s.") % {'cpt': _('This department'), 'cpt2':  _('departments')})
+
+        else:
+# - get sel_department_instance
             sel_department_instance = sch_mod.Department.objects.get_or_none(
-                base_id=sel_depbase_pk,
+                base_id=saved_depbase_pk,
                 examyear=sel_examyear_instance
             )
-        if logging_on:
-            logger.debug('    sel_depbase_pk: ' + str(sel_depbase_pk))
-            logger.debug('    sel_department_instance: ' + str(sel_department_instance))
 
         return sel_department_instance
     # - end of get_department_instance
@@ -5001,7 +4990,6 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
 #######################################
     msg_list = []
-    err_html = None
     req_usr = request.user
 
     try:
@@ -5011,14 +4999,14 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
     # - get country from req_usr
         if req_usr.country is None:
-            err_html = gettext('User has no country.')
+            msg_list.append(gettext('User has no country.'))
+
         else:
             requsr_country = req_usr.country
             if requsr_country.locked:
-                err_html = '<br>'.join((gettext('This country is locked.'), gettext('You cannot make changes.')))
+                msg_list.append(gettext('This country is locked.'))
 
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-
             if logging_on:
                 logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
 
@@ -5313,7 +5301,7 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
@@ -5369,7 +5357,9 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
         if sel_depbase_instance is None:
             if allowed_schoolbase_dict:
                 for depbase_pk_int in sel_school_allowed_depbases_list:
-                    if str(depbase_pk_int) in allowed_schoolbase_dict or not allowed_schoolbase_dict:
+                    if str(depbase_pk_int) in allowed_schoolbase_dict \
+                            or '-9' in allowed_schoolbase_dict \
+                            or not allowed_schoolbase_dict:
                         allowed_depbases_list.append(depbase_pk_int)
             else:
                 allowed_depbases_list = sel_school_allowed_depbases_list

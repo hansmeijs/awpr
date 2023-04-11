@@ -6076,7 +6076,7 @@ console.log( "......filter_dict", filter_dict);
                     // clicked on 'Request_verificationcode'
                     // tekst: 'AWP is sending an email with the verification code'
                     // show textbox with 'You need a 6 digit verification code to submit the Ex form'
-                    msg_info_txt = loc.MASS_info.requesting_verifcode;
+                    msg_info_txt = loc.MASS_info.sending_verifcode;
                     show_loader = true;
                 } else if (mod_MASS_dict.step === 3) {
                     // response 'email sent'

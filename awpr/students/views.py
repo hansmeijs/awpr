@@ -60,10 +60,12 @@ class LazyEncoder(DjangoJSONEncoder):
 # ========  Student  =====================================
 
 @method_decorator([login_required], name='dispatch')
-class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25
+class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25 PR2023-04-05
 
     def get(self, request):
-        #logger.debug('  =====  StudentListView ===== ')
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug(" =====  StudentListView  =====")
 
 # -  get user_lang
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -72,9 +74,11 @@ class StudentListView(View):  # PR2018-09-02 PR2020-10-27 PR2021-03-25
 # - get headerbar parameters
         page = 'page_student'
         params = awpr_menu.get_headerbar_param(request, page)
+        if logging_on:
+            logger.debug(" params: " + str(params))
 
 # - save this page in Usersetting, so at next login this page will open. Used in LoggedIn
-        #         # PR2021-06-22 moved to get_headerbar_param
+        # PR2021-06-22 moved to get_headerbar_param
 
         return render(request, 'students.html', params)
 
@@ -140,7 +144,7 @@ class OrderlistsListView(View): # PR2021-07-04
 def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, append_dict, show_deleted=False, student_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15  PR2023-01-11
     # - show only students that are not tobedeleted
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_student_rows -----')
@@ -149,7 +153,9 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
         logger.debug('    sel_depbase:    ' + str(sel_depbase))
         logger.debug('    show_deleted:    ' + str(show_deleted))
 
-    sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
+    sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
+                'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
+                'db_id': sel_depbase.pk if sel_depbase else None}
     sql_clause_arr = []
 
     #  sel_schoolbase is already checked on allowed schoolbases in function download_setting / get_settings_schoolbase / get_sel_schoolbase_instance
@@ -185,7 +191,7 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
 # - get allowed_depbase_dict from allowed_schoolbase_dict
     allowed_depbase_dict, allowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(
         allowed_schoolbase_dict=allowed_schoolbase_dict,
-        sel_depbase_pk=sel_depbase.pk
+        sel_depbase_pk=sel_depbase.pk if sel_depbase else None
     )
     # allowed_depbase_dict:    {'-9': []}
 
@@ -247,7 +253,7 @@ def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, appe
 
     #allowed_depbase_dict = acc_view.get_requsr_allowed_lvlbases_dict(
     #    allowed_depbases_dict=allowed_depbases_dict,
-    #    sel_depbase_pk=sel_depbase.pk
+    #    sel_depbase_pk=sel_depbase.pk if sel_depbase else None
     #)
 
     # - get selected sctbase_pk of req_usr
@@ -395,7 +401,11 @@ def create_check_birthcountry_rows(sel_examyear, sel_schoolbase, sel_depbase):
                 logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
                 logger.debug('sel_depbase: ' + str(sel_depbase))
 
-            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk, 'regex': birthcountry_regex}
+            sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
+                        'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
+                        'db_id': sel_depbase.pk if sel_depbase else None,
+                        'regex': birthcountry_regex
+                        }
             sql_list = ["SELECT st.lastname, st.firstname, st.prefix,",
                 "st.birthcountry, COALESCE(st.birthcity, '-') AS birthcity, st.birthdate",
                 "FROM students_student AS st",
@@ -487,7 +497,11 @@ def change_birthcountry(sel_examyear, sel_schoolbase, sel_depbase, request):
                 logger.debug('sel_schoolbase: ' + str(sel_schoolbase))
                 logger.debug('sel_depbase: ' + str(sel_depbase))
 
-            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk, 'regex': birthcountry_regex}
+            sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
+                        'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
+                        'db_id': sel_depbase.pk if sel_depbase else None,
+                        'regex': birthcountry_regex
+                        }
 
     # - select students with country 'Sint Maarten' or 'Curacao'
             sub_sql_list = ["SELECT st.id AS stud_id",
@@ -2797,9 +2811,9 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                     logger.debug('permit_list: ' + str(permit_list))
 
             if logging_on:
-                logger.debug('mode: ' + str(mode))
-                logger.debug('sel_page: ' + str(sel_page))
-                logger.debug('has_permit: ' + str(has_permit))
+                logger.debug('    mode: ' + str(mode))
+                logger.debug('    sel_page: ' + str(sel_page))
+                logger.debug('    has_permit: ' + str(has_permit))
 
             if has_permit:
                 if mode == 'publish_exam':
@@ -2816,11 +2830,16 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                         acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
                 if may_edit:
-                    #try:
-                    if True:
+                    try:
             # create _verificationcode and key, store in usersetting, send key to client, set expiration to 30 minutes
                         verif_key, verif_code = af.create_verificationcode(formname, request)
                         update_wrap['verificationkey'] = verif_key
+
+
+                        if logging_on:
+                            logger.debug('    verif_key: ' + str(verif_key))
+                            logger.debug('    verif_code: ' + str(verif_code))
+
 
                         subject = str(_('AWP-online verificationcode'))
                         from_email = 'AWP-online <noreply@awponline.net>'
@@ -2858,7 +2877,6 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
 
                         # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                         mail_count = send_mail(subject, message, from_email, [req_usr.email], fail_silently=False)
-
                         if logging_on:
                             logger.debug('mail_count: ' + str(mail_count))
 
@@ -2873,7 +2891,7 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                             if mode == 'publish_exam':
                                 msg_txt = str(_('Enter the verification code and click the ENTER key to publish the exams.'))
                             else:
-                                msg_txt = str(_('Enter the verification code and click the ENTER key to submit the Ex form.'))
+                                msg_txt = str(_("Enter the verification code and click 'Submit Ex form' or the ENTER key to submit the Ex form."))
 
                             msg_list += ("<p class='pb-0'>",
                                          str(_("We have sent an email with a 6 digit verification code to the email address:")), '</p>',
@@ -2882,11 +2900,11 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                                          msg_txt,
                                          '</p>')
 
-                    #except Exception as e:
-                    #    class_str = 'border_bg_invalid'
-                    #    msg_list += ("<p class='pb-2'>",
-                    #                       str(_('An error occurred')),':<br><i>', str(e), '</i><br>',
-                    #                        str(_('The email has not been sent.')),'</p>')
+                    except Exception as e:
+                        class_str = 'border_bg_invalid'
+                        msg_list += ("<p class='pb-2'>",
+                                           str(_('An error occurred')),':<br><i>', str(e), '</i><br>',
+                                            str(_('The email has not been sent.')),'</p>')
 
                 if msg_list:
                     msg_wrap_start = ["<div class='p-2 ", class_str, "'>"]
@@ -7986,8 +8004,10 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
         sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
         sel_depbase_pk = sel_depbase.pk if sel_depbase else None
         sel_lvlbase_pk = sel_lvlbase.pk if sel_lvlbase else None
+
     # - get selected sctbase_pk of req_usr
         selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
+        sel_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK) if selected_pk_dict else None
 
     # - get allowed_sections_dict from request
         userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
@@ -8166,12 +8186,11 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
             "AND NOT st.deleted"
             ]
 
-        #if sel_lvlbase_pk:
-        #    sql_list.append('AND lvl.base_id = %(lvlbase_id)s::INT')
-        #    sql_keys['lvlbase_id'] = sel_lvlbase_pk
-        #if sel_sctbase_pk:
-        #    sql_list.append('AND sct.base_id = %(sctbase_id)s::INT')
-        #    sql_keys['sctbase_id'] = sel_sctbase_pk
+        if sel_lvlbase_pk:
+            sql_list.append("".join(("AND lvl.base_id=", str(sel_lvlbase_pk), "::INT")))
+
+        if sel_sctbase_pk:
+            sql_list.append("".join(("AND sct.base_id=", str(sel_sctbase_pk), "::INT")))
 
         # filter on sel_student_pk
         if student_pk:

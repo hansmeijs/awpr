@@ -1464,7 +1464,7 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
                     save_to_disk = False
                     # just to prevent PyCharm warning on published_instance=published_instance
                     published_instance = sch_mod.School.objects.get_or_none(pk=None)
-                    response = create_ex2_ex2a_xlsx(
+                    response, saved_to_disk = create_ex2_ex2a_xlsx(
                         published_instance=published_instance,
                         examyear=sel_examyear,
                         school=sel_school,
@@ -1536,7 +1536,7 @@ class GradeDownloadEx2aView(View):  # PR2022-02-17 PR2022-05-09
                     save_to_disk = False
                     # just to prevent PyCharm warning on published_instance=published_instance
                     published_instance = sch_mod.School.objects.get_or_none(pk=None)
-                    response = create_ex2_ex2a_xlsx(
+                    response, saved_to_disk = create_ex2_ex2a_xlsx(
                         published_instance=published_instance,
                         examyear=sel_examyear,
                         school=sel_school,
@@ -1749,6 +1749,7 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
     """
 
     response = None
+    saved_to_disk = False
 
     if library and ex2_rows_dict:
 
@@ -2124,7 +2125,7 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
 
             # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
             published_instance.save(request=request)
-
+            saved_to_disk = True
             logger.debug('file_path: ' + str(file_path))
             # file_path: media/private/published/Ex2A CUR13 ATC Vsbo SE-tv1 cav 2021-04-29 10u11.pdf
             # stored in dir:
@@ -2142,7 +2143,7 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
             response['Content-Disposition'] = 'attachment; filename=%s' % file_name
     # response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     # response['Content-Disposition'] = "attachment; filename=" + file_name
-    return response
+    return response, saved_to_disk
 # --- end of create_ex2_xlsx
 
 

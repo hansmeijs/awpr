@@ -17,33 +17,35 @@ import logging
 logger = logging.getLogger(__name__)
 
 def validate_grade_approval_remove_allowed(is_reset, is_score, auth_index, requsr_auth, grade_row, req_usr):
-    # PR2023-03-26
-    is_allowed = True
+    # PR2023-04-10
     err_html = None
 
     # PR2023-03-25 remove approval can only be done by the same auth or by the chairperson and secretary
     if is_reset:
-        # skip when chairperson or secretary, they may remove approval
-        if auth_index > 2:
-            # check if approved by same user
-            auth_id = grade_row.get(requsr_auth + 'by_id')
+        # PR2023-04-10: approvals can only be reste by same user
+        # was:
+            # skip when chairperson or secretary, they may remove approval
+            #   if auth_index > 2:
+        # check if approved by same user
+        auth_id = grade_row.get(requsr_auth + 'by_id')
 
-            if auth_id != req_usr.pk:
-                is_allowed = False
+        if auth_id != req_usr.pk:
 
-                cpt = _('This score') if is_score else _('This grade')
-                auth = _('Corrector') if auth_index == 4 else _('Examiner')
+            cpt = _('This score') if is_score else _('This grade')
+            auth = _('Corrector') if auth_index == 4 else _('Examiner')
 
-                err_html = ''.join((
-                    "<div class='p-2 border_bg_invalid'><p>",
-                    str(_("%(cpt)s is approved by a different %(auth)s.") % {'cpt': cpt, 'auth': auth.lower()}),
-                    "</p><p>",
-                    str(_("Only the %(auth)s who has approved %(cpt)s, ") % {'cpt': cpt.lower(),'auth': auth.lower()}),
-                    gettext("or the chairperson or secretary can remove this approval."),
-                    "</p></div>"
-                ))
+            err_html = ''.join((
+                "<div class='p-2 border_bg_invalid'><p>",
+                gettext("%(cpt)s is approved by a different %(auth)s.") % {'cpt': cpt, 'auth': auth.lower()},
+                "</p><p>",
+                gettext("Only the %(auth)s who has approved %(cpt)s can remove this approval.") % \
+                    {'cpt': cpt.lower(),'auth': auth.lower()},
+                "</p><p>",
+                gettext("Contact the Inpectorate if you need to remove this approval."),
+                "</p></div>"
+            ))
 
-    return is_allowed, err_html
+    return err_html
 
 def validate_grade_is_allowed(request, requsr_auth, userallowed_sections_dict, userallowed_cluster_pk_list,
                 schoolbase_pk, depbase_pk, lvlbase_pk, subjbase_pk, cluster_pk, studsubj_tobedeleted, is_secret_exam,

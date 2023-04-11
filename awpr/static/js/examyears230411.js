@@ -252,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
 // ---  deselect all highlighted rows, select clicked row
-        t_td_selected_clear(tr_clicked.parentNode);
-        t_td_selected_set(tr_clicked);
+        t_tbody_selected_clear(tr_clicked.parentNode);
+        t_tr_selected_set(tr_clicked);
 
 // ---  update selected.examyear_pk
         const pk_int = get_attr_from_el_int(tr_clicked, "data-pk");
@@ -1448,7 +1448,7 @@ updated_examyear_rows: [{…}]
         selected.examyear_pk = null;
 
 // ---  deselect all highlighted rows
-        t_td_selected_clear(tblBody_datatable);
+        t_tbody_selected_clear(tblBody_datatable);
 
     };  // function ResetFilterRows
 

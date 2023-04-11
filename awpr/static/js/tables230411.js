@@ -1371,29 +1371,34 @@
         return row_index
     }  // t_get_rowindex_by_sortby
 
-//=========  t_td_selected_clear  ================ PR2021-11-18  PR2022-08-07
-    function t_td_selected_clear(tableBody) {
-        //console.log("=========  t_clear_td_selected =========");
-        //console.log("cls_selected", cls_selected);
+//=========  t_tbody_selected_clear  ================ PR2021-11-18  PR2022-08-07 PR2023-04-09
+    function t_tbody_selected_clear(tableBody) {
         if(tableBody){
-            let tblrows = tableBody.getElementsByClassName(cls_selected);
-            for (let i = 0, tblRow; tblRow = tblrows[i]; i++) {
-                tblRow.classList.remove(cls_selected)
-                const td_01 = tblRow.cells[0];
-                if(td_01){
-                    const el_select = td_01.children[0];
-                    if(el_select){
-                        el_select.innerHTML = null;
-                    };
+            for (let i = 0, tblRow; tblRow = tableBody.rows[i]; i++) {
+                if (tblRow.classList.contains(cls_selected)){
+                    tblRow.classList.remove(cls_selected);
                 };
+                t_td_selected_arroe_remove(tblRow.cells[0]);
             };
         };
-    };  // t_td_selected_clear
+    };  // t_tbody_selected_clear
 
-//=========  t_td_selected_set  ================ PR2021-11-18 PR2022-08-07
-    function t_td_selected_set(tblRow) {
-        //console.log("=========  t_td_selected_set =========");
-        tblRow.classList.add(cls_selected);
+//=========  t_td_selected_arroe_remove  ================ PR2023-04-09
+    function t_td_selected_arroe_remove(td) {
+        if(td){
+            const el_select = td.children[0];
+            if(el_select && el_select.innerHTML){
+                el_select.innerHTML = null;
+            };
+        };
+    };  // t_td_selected_arroe_remove
+
+//=========  t_tr_selected_set  ================ PR2021-11-18 PR2022-08-07
+    function t_tr_selected_set(tblRow) {
+        //console.log("=========  t_tr_selected_set =========");
+        if (!tblRow.classList.contains(cls_selected)) {
+            tblRow.classList.add(cls_selected);
+        };
         const td_01 = tblRow.cells[0];
         if(td_01){
             const el_select = td_01.children[0];
@@ -1402,7 +1407,23 @@
             };
         //console.log("el_select", el_select);
         };
-    };  // t_td_selected_set
+    };  // t_tr_selected_set
+
+//=========  t_tr_selected_remove  ================ PR2023-04-09
+    function t_tr_selected_remove(tblRow) {
+        //console.log("=========  t_tr_selected_remove =========");
+        if (tblRow.classList.contains(cls_selected)) {
+            tblRow.classList.remove(cls_selected);
+        };
+        const td_01 = tblRow.cells[0];
+        if(td_01){
+            const el_select = td_01.children[0];
+            if(el_select && el_select.innerHTML){
+                el_select.innerHTML = null;  // black pointer right
+            };
+        //console.log("el_select", el_select);
+        };
+    };  // t_tr_selected_remove
 
 //=========  t_td_selected_toggle  ================ PR2021-11-18 PR2022-04-13
     function t_td_selected_toggle(tblRow, select_single) {
@@ -1411,7 +1432,7 @@
         if(tblRow){
 // deselect all selected rows when select_single = True
             if (select_single){
-                t_td_selected_clear(tblRow.parentNode);
+                t_tbody_selected_clear(tblRow.parentNode);
             };
             const new_is_selected = !tblRow.classList.contains(cls_selected);
             if (new_is_selected) {
@@ -2174,7 +2195,7 @@
         t_set_sbr_itemcount_txt(loc, selected.item_count, count_unit_sing, count_unit_plur, setting_dict.user_lang);
     }; // t_Filter_TableRows
 
-//========= t_reset_filterrow  ==================================== PR2020-08-17  PR2021-08-10  PR2023-02-06
+//========= t_reset_filterrow  ==================================== PR2020-08-17  PR2021-08-10  PR2023-03-09
     function t_reset_filterrow(tblHead_datatable) {
         //console.log( "===== t_reset_filterrow  ========= ");
         //console.log( "filter_dict", filter_dict);
@@ -2186,8 +2207,11 @@
                     el = cell.children[0];
                     if(el){
                         const filter_tag = get_attr_from_el(el, "data-filtertag")
-                        if(el.tagName === "INPUT"){
-                            el.value = null
+                        if (el.tagName === "INPUT"){
+                            el.value = null;
+                        } else if (filter_tag === "select"){
+                            // remove arrow  PR2023-04-09
+                            el.innerHTML = null;
                         } else {
                             const el_icon = el.children[0];
                             if(el_icon){

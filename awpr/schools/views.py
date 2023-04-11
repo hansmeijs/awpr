@@ -189,7 +189,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
         has_permit = requsr_usergroup_list and 'msgsend' in requsr_usergroup_list
 
         if not has_permit:
-            msg_html = acc_prm.err_html_no_permit('to send messages')
+            msg_html = acc_prm.err_html_no_permit(_('to send messages'))
         else:
 
 # - get upload_dict from request.POST

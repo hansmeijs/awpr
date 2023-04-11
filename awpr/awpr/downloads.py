@@ -399,9 +399,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('grade_note_icons'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['grade_note_icons'] = gr_vw.create_grade_note_icon_rows(
-                            sel_examyear_pk=sel_examyear.pk,
-                            sel_schoolbase_pk=sel_schoolbase.pk,
-                            sel_depbase_pk=sel_depbase.pk,
+                            sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
+                            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+                            sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
                             sel_examperiod=sel_examperiod,
                             studsubj_pk=None,
                             request=request
@@ -423,9 +423,9 @@ class DatalistDownloadView(View):  # PR2019-05-23
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['published_rows'] = gr_vw.create_published_rows(
                             request=request,
-                            sel_examyear_pk=sel_examyear.pk,
-                            sel_schoolbase_pk=sel_schoolbase.pk,
-                            sel_depbase_pk=sel_depbase.pk
+                            sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
+                            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+                            sel_depbase_pk=sel_depbase.pk if sel_depbase else None
                         )
 # ----- mailbox
                 if datalist_request.get('mailmessage_rows'):
@@ -543,7 +543,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ')
@@ -611,7 +611,8 @@ def download_setting(request_item_setting, user_lang, request):
     if requsr_allowed_cluster_list:
         permit_dict['allowed_clusters'] = requsr_allowed_cluster_list
 
-    permit_list, requsr_usergroups_arrXX, requsr_allowed_sections_dictXX, requsr_allowed_clusters_arrXX = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
+    permit_list, requsr_usergroups_arrXX, requsr_allowed_sections_dictXX, requsr_allowed_clusters_arrXX = \
+        acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
 
     if permit_list:
         for prm in permit_list:

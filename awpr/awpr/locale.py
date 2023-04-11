@@ -11,7 +11,7 @@ from: https://stackoverflow.com/questions/65361621/cant-find-msguniq-make-sure-y
 """
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import pgettext_lazy, gettext_lazy as _
+from django.utils.translation import gettext, pgettext_lazy, gettext_lazy as _
 from awpr import constants as c
 
 import logging
@@ -1010,7 +1010,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'checking_studsubj_ex4': _('AWP is checking the re-examinations of the candidates'),
             'approving_studsubj_ex1': _('AWP is approving the subjects of the candidates'),
             'approving_studsubj_ex4': _('AWP is approving re-examinations of the candidates'),
-            'requesting_verifcode': _('AWP is sending an email with the verification code'),
+            'sending_verifcode': TXT_Sending_verifcode,
             #'creating_Ex1_form': _("AWP is creating the %(ex)s form") % {'ex': 'Ex1'},
             #'submit_ok_01': _("The Ex2A form is succesfully created."),
         }
@@ -1042,7 +1042,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Then_you_can_change_it'] = _("Then you can change it.")
         dict['Then_you_can_change_it'] = _("Then you can change it.")
         dict['Exemption_submitted'] = _("This exemption has already been submitted.")
-        dict['need_permission_inspection'] = _("You can only change it with permission of the Inspectorate.")
+        dict['need_permission_inspection'] = _("You need permission of the Inspectorate to change it.")
 
         dict['Examyear_not_valid'] = _("This exam year is not valid.")
         dict['Exemption_year'] = _("Exemption year")
@@ -1290,7 +1290,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'to_publish_exams': _("to publish the exams."),
             'to_submit_exams': _("to submit the exams."),
 
-            'requesting_verifcode': _('AWP is sending an email with the verification code'),
+            'sending_verifcode': TXT_Sending_verifcode,
             'submitting_exams': _("AWP is submitting the exams"),
             'submitting_exams_ok': _("The exams are succesfully submitted."),
         }
@@ -1318,6 +1318,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['reex03_msg_01'] = _("Only the subjects of the re-examination in the third period will be shown.")
         dict['reex03_msg_02'] = _("Go to the page 'Subjects', click on the tab 'Third exam period',")
         dict['reex03_msg_03'] = _("and tick off 'Re-examination third period' to add a re-examination subject.")
+
+        dict['no_allowed_subj_msg_01'] = _("You don't have any allowed subjects.")
+        dict['no_allowed_subj_msg_02'] = _("Second correctors may only view subjects")
+        dict['no_allowed_subj_msg_03'] = _("that are in their allowed subjects list.")
 
         dict['Ex_nr'] = _('Ex.#')
         dict['Examnumber'] = TXT_Examnumber
@@ -1364,15 +1368,25 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['examtype_caption'] = c.EXAMTYPE_CAPTION
         dict['Exemption_year'] = _('Exemption year')
 
+        dict['Submit_Ex_form'] = _('Submit Ex form')
         dict['Submit_Ex2_form'] = _('Submit Ex2 form')
         dict['Submit_Ex2A_form'] = _('Submit Ex2A form')
         dict['Submit_Ex2'] = _('Submit Ex2')
         dict['Submit_Ex2A'] = _('Submit Ex2A')
 
+        dict['Approve_scores'] = _('Approve scores')
+        dict['Approving_scores'] = _('AWP is approving scores...')
+
         dict['Approve_grade'] = _('Approve grade')
         dict['Approve_grades'] = _('Approve grades')
-        dict['Block_grade'] = _('Block grade')
-        dict['Unblock_grade'] = _('Unblock grade')
+        dict['Approving_grades'] = _('AWP is approving grades...')
+
+        dict['Unlock_grades'] = _('Unlock grades')  # PR2023-04-07 change term 'Block' to 'Unlock'
+        dict['Remove_unlocking_grades'] = _('Remove unlocking of grades') # PR2023-04-07 change term 'Unblock' to 'Remove unlocking of grades'
+        dict['Unlock_se_grades'] = _('Unlock SE grades')  # PR2023-04-07 change term 'Block' to 'Unlock'
+        dict['Remove_unlocking_se_grades'] = _('Remove unlocking of SE grades') # PR2023-04-07 change term 'Unblock' to 'Remove unlocking'
+        dict['Unlock_scores'] = _('Unlock scores')  # PR2023-04-07 change term 'Block' to 'Unlock'
+        dict['Remove_unlocking_scores'] = _('Remove unlocking of scores') # PR2023-04-07 change term 'Unblock' to 'Remove unlocking of scores'
 
         dict['Approve_exemptions'] = _('Approve exemptions')
 
@@ -1383,9 +1397,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Check_grades'] = _('Check grades')
 
         dict['Request_verifcode'] = TXT_Request_verifcode
-
         dict['Submitted_by'] = TXT_Submitted_by
-
         dict['Submit'] = TXT_Submit
 
         dict['grade_status'] = {
@@ -1396,12 +1408,12 @@ def get_locale_dict(table_dict, user_lang, request):
             '5': _('Only the grades, that are not approved by the second corrector, are shown.'),
             '6': _('Only the grades, that are fully approved, are shown.'),
             '7': _('Only the grades, that are submitted, are shown.'),
-            '8': _('Only the grades, that are blocked by the Inspectorate, are shown.')
+            '8': _('Only the grades, that are unlocked by the Inspectorate, are shown.')
         }
 
         dict['MAG_info'] = {
-            'awp_is_checking_grades': _('AWP is checking the %(sc_gr)s of the candidates') % {'sc_gr': _('grades')},
-            'awp_is_checking_scores': _('AWP is checking the %(sc_gr)s of the candidates') % {'sc_gr': _('scores')},
+            'awp_is_checking_grades': _('AWP is checking the %(sc_gr)s of the candidates...') % {'sc_gr': _('grades')},
+            'awp_is_checking_scores': _('AWP is checking the %(sc_gr)s of the candidates...') % {'sc_gr': _('scores')},
 
             'subheader_approve': _('The following grades will be approved:'),
             'subheader_approve_exem': _('The following exemptions will be approved:'),
@@ -1417,31 +1429,41 @@ def get_locale_dict(table_dict, user_lang, request):
             'subheader_submit_ex2a_2': _('<b>ATTENTION:</b> From now on, the Ex2A form contains the scores of all subjects.'),
             'subheader_submit_ex2a_3': _('Instead of submitting an Ex2A form per subject, you can submit it once at the end of each exam period.'),
 
-            'corrector_cannot_approve_exem': _("As a corrector you don't have to approve %(et)s grades.") \
+            'corrector_cannot_approve_exem': _("As corrector you don't have to approve %(et)s grades.") \
                                                 % {'et': str(_('Exemption')).lower()},
-            'corrector_cannot_approve_se': _("As a corrector you don't have to approve %(et)s grades.") \
-                                              % {'et': str(_('School exam')).lower()},
+
             'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
             'submit_1': _("If the check is OK, click 'Request verification code' to submit the selected grades."),
             'submit_2': _("After the grades are submitted, you can only change them with permission of the Inpsection."),
 
-            'submit_ok_01_ex2': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2'},
-            'submit_ok_01_ex2a': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2A'},
+            'creating_ex2_form': _("AWP is creating %(ex)s...") % {'ex': gettext('The Ex2 form').lower()},
+            'creating_ex2a_form': _("AWP is creating %(ex)s...") % {'ex': gettext('The Ex2A form').lower()},
+            'submit_ok_ex2': _("%(ex)s is succesfully created.") % {'ex': _('The Ex2 form')},
+            'submit_ok_ex2a': _("%(ex)s is succesfully created.") % {'ex': _('The Ex2A form')},
 
-            'block_01': _("You are about to block this grade."),
-            'block_02': _("The diploma and final grade list can not be printed when a grade is blocked."),
-            'block_03': _("The school has to change the grade and approve and submit it again."),
-            'block_04': _("Then you can unblock the grade by clicking this icon again."),
-            'block_05': _("Please add a note with an explanation and include the grade in the note."),
-            'block_06': _("After blocking the grade, the value of the grade will no longer be visible for you."),
+            'unlock_multiple_01': _("You are about to unlock "),
+            'unlock_multiple_02':  pgettext_lazy('to unlock...', '.'),
 
-            'unblock_01': _("You are about to unblock this grade."),
+            'unlock_01': _("You are about to unlock this grade."),
+            'unlock_02': _("The diploma and final grade list can not be printed when a grade is unlocked."),
+            'unlock_03': _("The school has to change the grade and approve and submit it again."),
+            'unlock_04': _("Then you can remove the unlocking of the grade by clicking this icon again."),
+            'unlock_05': _("Please add a note with an explanation and include the grade in the note."),
+            'unlock_06': _("After unlocking the grade, the value of the grade will no longer be visible for you."),
+
+            'remove_unlock_01': _("You are about to remove the unlocking of this grade."),
+            'remove_unlock_multiple_01': _("You are about to remove the unlocking of "),
+            'remove_unlock_multiple_02': pgettext_lazy('about to remove the unlocking of ...', "."),
 
             'verif_01': _("You need a 6 digit verification code to submit the Ex form."),
             'verif_02': _("Click 'Request verification code' and we will send you an email with the verification code."),
             'verif_03': _("The verification code expires in 30 minutes."),
 
+            'sending_verifcode': TXT_Sending_verifcode,
         }
+
+        dict['Yes_remove'] = _('Yes, remove')
+        dict['Yes_unlock'] = _('Yes, unlock')
 
         dict['Ex3_btn_info_01'] = _("The Ex3 form 'Proces-verbaal van Toezicht' can be downloaded in the page <b>Subjects</b>.")
         dict['Ex3_btn_info_02'] = _("Open that page and click in the menu bar on the button <b>Ex3 Proces Verbaal</b> and <b>Ex3 back page</b>.")
@@ -1453,7 +1475,9 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['PE_score'] = _('PE score')
         dict['CE_score'] = _('CE score')
+        dict['CE_scores'] = _('CE scores')
         dict['SE_grade'] = _('SE grade')
+        dict['SE_grades'] = _('SE grades')
         dict['PE_grade'] = _('PE grade')
         dict['CE_grade'] = _('CE grade')
         dict['PECE_grade'] = _('PE-CE grade')
@@ -1496,7 +1520,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Select_examtype'] = TXT_Select_examtype
         dict['No_examtypes_found'] = TXT_No_examtypes_found
 
-
         dict['Designated_exam'] = _('Designated exam')
 
         dict['Attachment'] = _('Attachment')
@@ -1513,13 +1536,13 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approved_by'] = TXT_Approved_by
         dict['Submitted_at'] = TXT_Submitted_at
 
-        dict['blocked_01'] = _('This grade has been blocked by the Inspectorate.')
-        dict['blocked_02'] = _('Make corrections and approve and submit this grade again.')
-        dict['blocked_03'] = _("Click the icon in the column 'Notes' to view the explanation.")
+        dict['unlocked_01'] = _('The Inspectorate has unlocked this grade.')
+        dict['unlocked_02'] = _('Make corrections and approve and submit this grade again.')
+        dict['unlocked_03'] = _("Click the icon in the column 'Notes' to view the explanation.")
 
-        dict['blocked_11'] = _('This grade has been blocked by the Inspectorate.')
-        dict['blocked_12'] = _('It has been submitted again at ')
-        dict['blocked_13'] = _("The Inspectorate has not unblocked the grade yet.")
+        dict['unlocked_11'] = _('The Inspectorate has unlocked this grade.')
+        dict['unlocked_12'] = _('It has been submitted again at ')
+        dict['unlocked_13'] = _("The Inspectorate has not removed the unlocking of the grade yet.")
 
         dict['exemption_approved_01'] = _("This exemption is imported from a previous exam year.")
         dict['exemption_approved_02'] = _("The chairperson and secretary don't have to approve it.")
@@ -1572,7 +1595,10 @@ def get_locale_dict(table_dict, user_lang, request):
             'needs_approvals_removed': _('You have to remove the approvals first.'),
             'Then_you_can_change_it': _('Then you can change it.'),
             'grade_submitted': _('This grade has already been submitted.'),
-            'need_permission_inspection': _('You can only change it with permission of the Inspectorate.')
+            'need_permission_inspection': _('You can only change it with permission of the Inspectorate.'),
+
+            'blocked_and_submitted01': _('This grade is unlocked by the Inspectorate and you have submitted it again.'),
+            'blocked_and_submitted02': _('The Inspectorate will review it and remove the unlocking if approved.')
         }
 
         dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
@@ -1594,15 +1620,15 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Dont_haveto_approve_blank_scores': _("You don't have to approve blank scores."),
                                'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
-                               'Corrector_cannot_approve_se': _("As a corrector you don't have to approve school exam grades."),
-                               'Corrector_cannot_approve_exem': _("As a corrector you don't have to approve exemptions."),
+                               'Corrector_cannot_approve_se': _("As corrector you don't have to approve school exam grades."),
+                               'Corrector_cannot_approve_exem': _("As corrector you don't have to approve exemptions."),
                                'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
                                'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),  str(_("Designated exams don't have to be approved.")))),
                                'Secret_exam_dont_enter_score': '<br>'.join((str(_('This is a designated exam.')),  str(_("You don't have to enter the score of designated exams."))))
         }
 
-        dict['No_cluster_block_permission'] =  _("You don't have permission to block grades of this cluster.")
-        dict['No_cluster_unblock_permission'] =  _("You don't have permission to unblock grades of this cluster.")
+        dict['No_cluster_unlock_permission'] =  _("You don't have permission to unlock grades of this cluster.")
+        dict['No_cluster_remove_unlocking_permission'] =  _("You don't have permission to remove unlocking of grades of this cluster.")
 
 
 # ====== PAGE RESULTS ========================= PR2021-11-15
@@ -1668,17 +1694,16 @@ def get_locale_dict(table_dict, user_lang, request):
             'submit_0': _("Click 'Check grades' to check the grades before submitting the Ex5 form."),
             'submit_1': _("If the check is OK, click 'Request verification code' to submit the Ex5 form."),
 
-            'submit_ok_01_ex2': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2'},
-            'submit_ok_01_ex2a': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex2A'},
+            'submit_ok_ex5': _("The %(ex)s form is succesfully created.") % {'ex': 'Ex5'},
 
-            'block_01': _("You are about to block this grade."),
-            'block_02': _("The diploma and final grade list can not be printed when a grade is blocked."),
-            'block_03': _("The school has to change the grade and approve and submit it again."),
-            'block_04': _("Then you can unblock the grade by clicking this icon again."),
-            'block_05': _("Please add a note with an explanation and include the grade in the note."),
-            'block_06': _("After blocking the grade, the value of the grade will no longer be visible for you."),
+            'unlock_01': _("You are about to block this grade."),
+            'unlock_02': _("The diploma and final grade list can not be printed when a grade is unlocked."),
+            'unlock_03': _("The school has to change the grade and approve and submit it again."),
+            'unlock_04': _("Then you can remove the unlocking of the grade by clicking this icon again."),
+            'unlock_05': _("Please add a note with an explanation and include the grade in the note."),
+            'unlock_06': _("After blocking the grade, the value of the grade will no longer be visible for you."),
 
-            'unblock_01': _("You are about to unblock this grade."),
+            'remove_unlock_01': _("You are about to remove the unlocking of this grade."),
 
             'verif_01': _("You need a 6 digit verification code to submit the Ex form."),
             'verif_02': _("Click 'Request verification code' and we will send you an email with the verification code."),
@@ -1722,6 +1747,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Log_result_calculation'] = _('Log result calculation')
 
         dict['Calculate_reex'] = _('Calculate re-examinations')
+        dict['The_reexaminations'] = _('The re-examinations')
 
         dict['mgl_error_noauth'] = _('The name of the chairperson and secretary and the print date must be entered.')
         dict['mgl_error_noauth_pok'] = _('The name of the chairperson and the print date must be entered.')
@@ -1864,7 +1890,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'request_verifcode_04': _("You need a 6 digit verification code to publish the orderlist."),
             'request_verifcode_05': _("Click 'Request verification code' and we will send you an email with the verification code."),
             'request_verifcode_06': _("The verification code expires in 30 minutes."),
-            'requesting_verifcode': _('AWP is sending an email with the verification code'),
+            'sending_verifcode': TXT_Sending_verifcode,
             'Publish_orderlist': _("Publish orderlist"),
             'Publishing_orderlist': _("AWP is publishing the orderlist"),
             'publish_ok': _("The orderlist is published succesfully."),
@@ -1919,6 +1945,7 @@ TXT_Submitted_at = _('Submitted at ')
 TXT_Published_at = _('Published at ')
 
 TXT_Request_verifcode = _('Request verificationcode')
+TXT_Sending_verifcode = _('AWP is sending an email with the verification code...')
 
 TXT_This_approval = _('This approval')
 TXT_is_already_published = _('is already published.')

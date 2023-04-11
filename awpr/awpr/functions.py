@@ -1279,7 +1279,7 @@ def reset_show_msg(request):
 
 def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
     # function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_usergroup_msgsend_msgreceive_ONCEONLY -------')
 
@@ -1338,7 +1338,7 @@ def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
 
 def remove_dots_in_username_correctorsONCEONLY(request):  # PR2023-03-27
     # function removes dots, double underscores and underscore at the end in username of role corrector
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- remove_dots_in_username_correctorsONCEONLY -------')
 

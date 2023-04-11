@@ -3047,7 +3047,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
 
                 "LEFT JOIN subjects_cluster AS cl ON (cl.id = studsubj.cluster_id)",
 
-                "WHERE NOT studsubj.tobedeleted AND NOT grd.tobedeleted AND NOT grd.deleted",
+                "WHERE NOT studsubj.tobedeleted AND NOT studsubj.deleted AND NOT grd.tobedeleted AND NOT grd.deleted",
                 "ORDER BY subjbase.code"
                 ]
 
@@ -3100,7 +3100,7 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
                 "LEFT JOIN studsubj ON (studsubj.student_id = stud.id)",
 
                 "WHERE ey.id = %(ey_id)s::INT AND school.id = %(sch_id)s::INT AND dep.id = %(dep_id)s::INT",
-                "AND NOT stud.tobedeleted"
+                "AND NOT stud.tobedeleted AND NOT stud.deleted"
                 ]
 
     if student_pk_list:

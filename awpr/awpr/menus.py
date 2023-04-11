@@ -118,7 +118,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
     headerbar_param = {}
     _class_bg_color = 'awp_bg_blue'
     _class_has_mail = 'envelope_0_0'
-
+    no_access = False
     req_usr = request.user
     if req_usr.is_authenticated and req_usr.country and req_usr.schoolbase:
 
@@ -193,8 +193,11 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
             sel_examyear_code = sel_examyear_instance.code
             sel_examyear_str = str(_('Exam year')) + ' ' + str(sel_examyear_instance)
             sel_country_name = sel_examyear_instance.country.name
+
 # +++ do not display pages when country is locked,
             country_locked = sel_examyear_instance.country.locked
+            if country_locked:
+                no_access = True
 # +++ do not display pages when examyear is not published yet,
             examyear_not_published = not sel_examyear_instance.published
             examyear_locked = sel_examyear_instance.locked
@@ -206,7 +209,11 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
 
         if logging_on:
             logger.debug(' -- sel_examyear_instance: ' + str(sel_examyear_instance))
-        if logging_on:
+
+            logger.debug('    country_locked:   ' + str(country_locked))
+            logger.debug('    examyear_not_published:   ' + str(examyear_not_published))
+            logger.debug('    examyear_locked:   ' + str(examyear_locked))
+
             logger.debug('    no_practexam:   ' + str(no_practexam))
             logger.debug('    sr_allowed:     ' + str(sr_allowed))
             logger.debug('    no_centralexam: ' + str(no_centralexam))
@@ -325,7 +332,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
 #  PR2022-06-06 back to previous one, to be able to block acces to result page when user is not chairperson of secretary
         # was: no_access = (not permit_list)
         may_receive_messages = 'msgreceive' in usergroup_list  # PR2023-04-05
-        no_access = False
+
         if not ('permit_view' in permit_list or 'permit_crud' in permit_list):
             no_access = True
         elif sel_page == 'page_archive' and 'archive' not in usergroup_list:
@@ -342,7 +349,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
             messages.append(no_access_message)
 
         elif country_locked:
-            no_access_message = _("%(country)s has no license to use AWP-online.") % \
+            no_access_message = _("%(country)s has no license yet to use AWP-online.") % \
                                                  {'country': sel_country_name}
             messages.append(no_access_message)
 

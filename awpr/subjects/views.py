@@ -492,7 +492,10 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
     if sel_examyear and sel_schoolbase and sel_depbase:
         try:
 
-            sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'db_id': sel_depbase.pk}
+            sql_keys = {'ey_id': sel_examyear.pk if sel_examyear else None,
+                        'sb_id': sel_schoolbase.pk if sel_schoolbase else None,
+                        'db_id': sel_depbase.pk if sel_depbase else None
+                        }
             sql_list = ["SELECT cluster.id, cluster.name, subj.id AS subject_id, subjbase.id AS subjbase_id,",
                         "dep.base_id AS depbase_id, depbase.code AS depbase_code, dep.sequence AS dep_sequence,",
                         "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl",
@@ -1536,7 +1539,7 @@ class ExamUploadView(View):
                     logger.debug('    has_permit: ' + str(has_permit))
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit('to perform this action')
+                msg_html = acc_prm.err_html_no_permit(_('to perform this action'))
             else:
                 append_dict = {}
                 deleted_row = None
@@ -2296,7 +2299,7 @@ class ExamUploadDuoExamView(View):
                     logger.debug('    has_permit: ' + str(has_permit))
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit('to perform this action')
+                msg_html = acc_prm.err_html_no_permit(_('to perform this action'))
             else:
 
                 append_dict = {}
@@ -4755,8 +4758,11 @@ def create_all_exam_rows(req_usr, sel_examyear, sel_depbase, sel_examperiod, app
 
     try:
         # when school: only ETE published exams (DUO exams are not published)
-        sel_depbase_pk = sel_depbase.pk if sel_depbase else None
-        sql_keys = {'depbase_id': sel_depbase_pk, 'ep': sel_examperiod, 'ey_code': sel_examyear.code, 'ey_pk': sel_examyear.pk}
+        sql_keys = {'depbase_id': sel_depbase.pk if sel_depbase else None,
+                    'ep': sel_examperiod,
+                    'ey_code': sel_examyear.code if sel_examyear else None,
+                    'ey_pk': sel_examyear.pk if sel_examyear else None
+                    }
 
         duo_exams_sql_list = [
             "SELECT sb.id",

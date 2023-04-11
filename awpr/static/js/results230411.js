@@ -501,7 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.permit_calc_results){
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
-            //AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
+            AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
         };
         if(permit_dict.requsr_same_school){
             AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
@@ -577,8 +577,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ---  deselect all highlighted rows, select clicked row
-       // t_td_selected_clear(tr_clicked.parentNode);
-       // t_td_selected_set(tr_clicked);
+       // t_tbody_selected_clear(tr_clicked.parentNode);
+       // t_tr_selected_set(tr_clicked);
         t_td_selected_toggle(tr_clicked);
 
     }  // HandleTblRowClicked
@@ -1062,16 +1062,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if("messages" in response){
                         b_show_mod_message_dictlist(response.messages);
-                    }
+                    }  ;
+                    if("msg_html" in response){
+                        b_show_mod_message_html(response.msg_html);
+                    };
                     if ("validate_scheme_response" in response) {
                         ValidateScheme_Response(response.validate_scheme_response)
-                    }
+                    };
                     if ("pres_secr_dict" in response) {
                         MGL_ResponseAuth(response.pres_secr_dict)
-                    }
+                    };
                     if ("log_list" in response) {
                         OpenLogfile("log_list", response.log_list, response.log_student_name);
-                    }
+                    };
                     if ("approve_msg_dict" in response) {
                         MAG_UpdateFromResponse (response);
                     };
@@ -1399,19 +1402,14 @@ function RefreshDataRowsAfterUpload(response) {
 
         console.log("mod_dict", mod_dict);
 
-        const msg01_txt = (mode === "calc_results") ?
-            loc.The_result_of
-        : (mode === "calc_reex") ?
-            loc.Calc_reex
-        : (mode === "prelim") ?
-            loc.The_preliminary_gradelist_of
-        : (mode === "final") ?
-            loc.The_final_gradelist_of
-        : (mode === "diploma") ?
-            (student_pk_list_length > 1) ? loc.The_diplomas_of : loc.The_diploma_of
-        : (mode === "pok") ?
-            loc.The_pok_of
-        : null;
+        const msg01_txt = (mode === "calc_results") ? loc.The_result_of :
+                            (mode === "calc_reex") ? loc.The_reexaminations + loc._of_ :
+                            (mode === "prelim") ? loc.The_preliminary_gradelist_of :
+                            (mode === "final") ? loc.The_final_gradelist_of :
+                            (mode === "diploma") ?
+                                (student_pk_list_length > 1) ? loc.The_diplomas_of : loc.The_diploma_of :
+                            (mode === "pok") ? loc.The_pok_of :
+                            null;
 
         console.log("msg01_txt", msg01_txt);
         let msg02_txt = '';
@@ -1453,15 +1451,15 @@ function RefreshDataRowsAfterUpload(response) {
 // hide autrh2 when pok
         add_or_remove_class(document.getElementById("id_MGL_auth2_container"), cls_hide, ["pok"].includes(mode))
 
-        if (!["calc_results"].includes(mode)){
+        if (!["calc_results", "calc_reex"].includes(mode)){
 // ---  get auth and printdate info from server
             UploadChanges({ get: true}, urls.url_get_auth);
         };
 // ---  disable save button
-        el_MGL_btn_save.disabled = !["calc_results"].includes(mode);
+        el_MGL_btn_save.disabled = !["calc_results", "calc_reex"].includes(mode);
 
 // show loader
-        add_or_remove_class(el_MGL_loader, cls_hide, ["calc_results"].includes(mode) )
+        add_or_remove_class(el_MGL_loader, cls_hide, ["calc_results", "calc_reex"].includes(mode) )
 
 // ---  show msg_info when printing final gardelist or diploma
         add_or_remove_class(el_MGL_msg_info, cls_hide, !["final", "diploma"].includes(mod_dict.mode));

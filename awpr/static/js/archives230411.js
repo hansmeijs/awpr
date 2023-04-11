@@ -308,8 +308,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ---  deselect all highlighted rows, select clicked row
-        t_td_selected_clear(tr_clicked.parentNode);
-        t_td_selected_set(tr_clicked);
+        t_tbody_selected_clear(tr_clicked.parentNode);
+        t_tr_selected_set(tr_clicked);
         //t_td_selected_toggle(tr_clicked);
 
     }  // HandleTblRowClicked

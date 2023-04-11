@@ -507,7 +507,7 @@ def create_examyear_rows(req_usr, append_dict, examyear_pk=None):
 
 def create_department_rows(examyear, sel_school, sel_schoolbase, skip_allowed_filter, request):
     # --- create rows of all departments of this examyear / country PR2020-09-30 PR2022-08-03 PR2023-01-09
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_department_rows ============= ')
         logger.debug('    examyear: ' + str(examyear))

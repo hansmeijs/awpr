@@ -1595,7 +1595,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // ---  deselect all highlighted row
-        t_td_selected_clear(tblBody_datatable);
+        t_tbody_selected_clear(tblBody_datatable);
 
         Filter_TableRows(tblBody_datatable);
 

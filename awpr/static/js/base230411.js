@@ -133,8 +133,8 @@
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02 PR2023-01-08
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
         //console.log(" --- UpdateHeaderbar ---" )
-        //console.log("setting_dict", setting_dict )
-        //console.log("permit_dict", permit_dict )
+        //console.log("    setting_dict", setting_dict )
+        //console.log("    permit_dict", permit_dict )
 
 // --- EXAM YEAR
         if(el_hdrbar_examyear) {
@@ -155,11 +155,12 @@
         if(el_hdrbar_department) {
             const display_department = (!!permit_dict.display_department);
 
-        //console.log("display_department", display_department )
+        console.log("display_department", display_department )
+        console.log("permit_dict.allowed_depbases", permit_dict.allowed_depbases )
             const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
             const may_select_department = (display_department && allowed_depbases_count > 1);
 
-        //console.log("allowed_depbases_count", allowed_depbases_count )
+        console.log("allowed_depbases_count", allowed_depbases_count )
         //console.log("may_select_department", may_select_department )
             add_or_remove_class(el_hdrbar_department, cls_hide, !display_department)
             // add pointer on hover when tehere are multiple departments
@@ -1747,9 +1748,13 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
 //#########################################################################
 // +++++++++++++++++ MESSAGES +++++++++++++++++++++++++++++++++++++++
-    function b_show_mod_message_html(msg_html, header_text, ModMessageClose){
+    function b_show_mod_message_html(msg_html, header_text, max_size, ModMessageClose){
     // PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
+
+        console.log( " -----b_show_mod_message_html -----");
+        console.log( "    header_text", header_text);
+        console.log( "    max_size", max_size);
 
         const el_msg_header = document.getElementById("id_mod_message_header");
         if(el_msg_header){el_msg_header.innerText = (header_text) ? header_text : null};
@@ -1766,6 +1771,12 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         add_or_remove_class(el_mod_message_btn_hide, cls_hide, true);
 
         $("#id_mod_message").modal({backdrop: true});
+
+        const el_mod_message_size = document.getElementById("id_mod_message_size");
+        const size_class = (max_size === "xl") ?  "modal-xl" : (max_size === "lg") ? "modal-lg" : "modal-md";
+        console.log( "    size_class", size_class);
+        add_or_remove_class(el_mod_message_size, size_class, (["xl", "lg"].includes(max_size)), "modal-md");
+        console.log( "    el_mod_message_size", el_mod_message_size);
 
         /*
         'hide.bs.modal' executes when the .modal (modal window) gets closed.

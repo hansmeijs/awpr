@@ -81,12 +81,15 @@
                     <label for="id_MAG_input_verifcode" class="label_margin_top_m2">{% trans 'Verification code' %}:</label>
                     <input id="id_MAG_input_verifcode" type="text" data-field="verificationcode" class="form-control"
                         autocomplete="off" ondragstart="return false;" ondrop="return false;">
+                    <div class="content_subheader_left mx-2">
+                          <small id="id_MAG_err_verifcode" class="text-danger awp_msg_err">{% trans "The verification code must contain 6 digits." %}</small>
+                    </div>
                 </div>
             </div>
 
             <div class="modal-footer">
                 <div class="content_subheader_left mx-1">
-                    <button id="id_MAG_btn_delete" data-dismiss="modal" class="btn btn-outline-danger">{% trans 'Remove approvals' %}</button>
+                    <button id="id_MAG_btn_delete" class="btn btn-outline-danger">{% trans 'Remove approvals' %}</button>
                 </div>
                 <div class="content_subheader_right">
                     <button id="id_MAG_btn_cancel" class="btn btn-secondary" data-dismiss="modal">{% trans 'Cancel' %}</button>

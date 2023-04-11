@@ -1601,7 +1601,7 @@ class UploadImportUsernameView(View):  # PR2021-08-04
 # - end of UploadImportUsernameView
 
 
-# ========  upload_username_from_datalist  ======= # PR2021-08-04 PR2022-03-19 PR2023-01-29
+# ========  upload_username_from_datalist  ======= # PR2021-08-04 PR2022-03-19 PR2023-01-29 PR2023-04-06
 def upload_username_from_datalist(sel_examyear_instance, data_dict, double_username_list, double_email_list, log_list, is_test, user_lang, request):
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1628,9 +1628,9 @@ def upload_username_from_datalist(sel_examyear_instance, data_dict, double_usern
 
     if function_first_letter_lc:
         if function_first_letter_lc in ('v', 'p'): # 'Voorzitter', 'Chairperson'
-            usergroups_list.extend(['archive', 'auth1', 'download'])
+            usergroups_list.extend(['archive', 'auth1', 'download', 'msgreceive', 'msgsend'])
         elif function_first_letter_lc == 's': # 'Secretaris', 'Secretary'
-            usergroups_list.extend(['archive', 'auth2', 'download'])
+            usergroups_list.extend(['archive', 'auth2', 'download', 'msgreceive', 'msgsend'])
         elif function_first_letter_lc == 'e':  # 'Examiner'
             usergroups_list.append('auth3')
         elif function_first_letter_lc == 'g': # 'Gecommitteerde',
@@ -1639,7 +1639,7 @@ def upload_username_from_datalist(sel_examyear_instance, data_dict, double_usern
             if len(function_str) > 1:
                 function_second_letter_lc = function_str[1].lower()
                 if function_second_letter_lc == 'h':  # 'Chairperson'
-                    usergroups_list.append('auth1')
+                    usergroups_list.extend(['archive', 'auth1', 'download', 'msgreceive', 'msgsend'])
                 elif function_second_letter_lc == 'o':  # 'Corrector'
                     usergroups_list.append('auth4')
 
