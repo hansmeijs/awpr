@@ -3223,7 +3223,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
                     if(setting_dict.sel_cluster_pk){
-                        const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
+                        const cluster = cluster_dictsNEW["cluster_" + setting_dict.sel_cluster_pk];
                         if (cluster && cluster.subjbase_id === setting_dict.sel_cluster_pk) {
                    // check if sel_subsel_cluster_pkjbase_pk is in allowed_clusters
                             const is_allowed_cluster = (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) ?
@@ -3277,7 +3277,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
                     if(setting_dict.sel_cluster_pk){
                 console.log(" +++ setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
-                        const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
+                        const cluster = cluster_dictsNEW["cluster_" + setting_dict.sel_cluster_pk];
                 console.log("    cluster", cluster);
                         if (cluster && cluster.subjbase_id === setting_dict.sel_cluster_pk) {
                 // check if sel_subsel_cluster_pkjbase_pk is in allowed_clusters

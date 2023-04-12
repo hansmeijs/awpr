@@ -2281,7 +2281,10 @@
                 const is_inactive = !!get_attr_from_el_int(tblRow, data_inactive_field);
 
                 hide_row = (filter_showinactive === 1) ? (is_inactive) :
-                           (filter_showinactive === 2) ? (!is_inactive) : false
+                           (filter_showinactive === 2) ? (!is_inactive) : false;
+    //console.log("     filter_showinactive", filter_showinactive)
+    //console.log("     is_inactive", is_inactive)
+    //console.log("   >>>  hide_row", hide_row)
             };
 
             if (!hide_row && !isEmpty(filter_dict)){
@@ -2348,7 +2351,6 @@
                                     // default filter status '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                     hide_row = (filter_value && Number(filter_value) !== Number(cell_value));
 
-
                                 } else if (filter_tag === "toggle"){
                                     // default filter toggle '0'; is show all, '1' is show tickmark, '2' is show without tickmark
                                     if (filter_value === "2"){
@@ -2357,7 +2359,7 @@
                                     } else if (filter_value === "1"){
                                         // only show rows with tickmark
                                          if (cell_value !== "1") { hide_row = true };
-                                    }
+                                    };
 /*
     console.log("filter_tag", filter_tag);
     console.log("filter_value", filter_value, typeof filter_value);
@@ -2378,7 +2380,7 @@
                                         if (!cell_value.includes(filter_value)) { hide_row = true };
                                      } else {
                                         hide_row = true;
-                                     }
+                                     };
                                 } else if( filter_tag === "number") {
                                     // numeric columns: make blank cells zero
 /*

@@ -2912,7 +2912,7 @@ console.log("is_blocked", is_blocked)
         mod_MAG_dict.verification_is_ok = (response && response.verification_is_ok) ? true : false;
         mod_MAG_dict.verificationkey = (response && response.verificationkey) ? response.verificationkey : null;
 
-    console.log("    is_response: ", is_response) ;
+    //console.log("    is_response: ", is_response) ;
     //console.log("    test_is_ok", mod_MAG_dict.test_is_ok) ;
     //console.log("    verification_is_ok", mod_MAG_dict.verification_is_ok) ;
     //console.log("    verificationkey", mod_MAG_dict.verificationkey) ;
@@ -2965,15 +2965,15 @@ console.log("is_blocked", is_blocked)
 
 
 
-    console.log(" @@@@@@@@@@@@@@@   response.test_is_ok", response.test_is_ok) ;
-    console.log("       response.approve_msg_html", response.approve_msg_html) ;
+    //console.log(" @@@@@@@@@@@@@@@   response.test_is_ok", response.test_is_ok) ;
+    //console.log("       response.approve_msg_html", response.approve_msg_html) ;
 
                 if(is_response){
                     if (response.test_is_ok){
-    console.log(" ????????????  response.test_is_ok", response.test_is_ok) ;
+    //console.log(" ????????????  response.test_is_ok", response.test_is_ok) ;
                         $("#id_mod_approve_grade").modal("hide");
                     } else {
-    console.log(" !!!!!!!!!!!!!!!!!  response.test_is_ok", response.test_is_ok) ;
+    //console.log(" !!!!!!!!!!!!!!!!!  response.test_is_ok", response.test_is_ok) ;
                         msg_info_html = (response.approve_msg_html) ? response.approve_msg_html : null;
                     };
                 };
@@ -3346,7 +3346,7 @@ console.log("is_blocked", is_blocked)
 
     // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
                     if(setting_dict.sel_cluster_pk){
-                        const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
+                        const cluster = cluster_dictsNEW["cluster_" + setting_dict.sel_cluster_pk];
                         if (cluster && cluster.subjbase_id === setting_dict.sel_cluster_pk) {
                    // check if sel_subsel_cluster_pkjbase_pk is in allowed_clusters
                             const is_allowed_cluster = (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) ?
@@ -3400,9 +3400,9 @@ console.log("is_blocked", is_blocked)
 
     // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
                     if(setting_dict.sel_cluster_pk){
-                console.log(" +++ setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
-                        const cluster = cluster_dictsNEW["cluster_" + cluster_pk];
-                console.log("    cluster", cluster);
+    //console.log(" +++ setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
+                        const cluster = cluster_dictsNEW["cluster_" + setting_dict.sel_cluster_pk];
+    //console.log("    cluster", cluster);
                         if (cluster && cluster.subjbase_id === setting_dict.sel_cluster_pk) {
                 // check if sel_subsel_cluster_pkjbase_pk is in allowed_clusters
                             const is_allowed_cluster = (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) ?
@@ -3411,7 +3411,7 @@ console.log("is_blocked", is_blocked)
                                 has_allowed_cluster = true;
                                 allowed_subjectname_nl_arr.push(cluster.name)
                                 allowed_clustername_arr.push(sel_subject_name_nl)
-                console.log("    has_allowed_cluster", has_allowed_cluster);
+    //console.log("    has_allowed_cluster", has_allowed_cluster);
                             };
                         };
 
@@ -3436,11 +3436,8 @@ console.log("is_blocked", is_blocked)
                             allowed_subjectname_nl_arr.push(sel_subject_name_nl);
                         };
                     };
-
                 };
             };
-
-
 
 // +++ end of if there are allowed_subjbases
 
@@ -3449,7 +3446,7 @@ console.log("is_blocked", is_blocked)
 
     // +++++++++ if there is a sel_cluster_pk +++++++++++++++++++++++++++
             if(setting_dict.sel_cluster_pk){
-                console.log(" +++ setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
+    //console.log(" +++ setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
 
     // +++++++++ if there are allowed_clusters +++++++++++++++++++++++++++
             } else if (permit_dict.allowed_clusters && permit_dict.allowed_clusters.length) {
@@ -4069,7 +4066,6 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         }
     }; // function HandleFilterKeyup
 
-
 //========= HandleFilterSelect  =============== PR2022-03-09
     function HandleFilterSelect(el_input) {
         console.log( "===== HandleFilterSelect  ========= ");
@@ -4095,7 +4091,6 @@ console.log( "new_value", new_value);
         filter_dict[col_index] = [filter_tag, new_value]
     console.log( "filter_dict", filter_dict);
 
-
         // select or deselect all visible rows of tblrow
         // ---  loop through tblBody.rows
         for (let i = 0, tblRow, show_row; tblRow = tblBody_datatable.rows[i]; i++) {
@@ -4107,8 +4102,8 @@ console.log( "new_value", new_value);
                 };
             };
         };
-
     };  // HandleFilterSelect
+
 //========= HandleFilterToggle  =============== PR2020-07-21 PR2020-09-14 PR2021-03-23 PR2022-03-09
     function HandleFilterToggle(el_input) {
         console.log( "===== HandleFilterToggle  ========= ");

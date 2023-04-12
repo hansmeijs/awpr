@@ -323,6 +323,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Activated_on'] = _('Activated on')
         dict['Last_loggedin'] = _('Last logged in')
         dict['Add_user'] = _('Add user')
+        dict['Add_users_from_prev_year'] = _('Add users from previous exam years')
         dict['Add_user_to'] = _('Add user to ')
         dict['Delete_user'] = _('Delete user')
         dict['This_user'] = _('This user')
@@ -330,6 +331,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Submit'] = TXT_Submit
         dict['Create_user_account'] = _('Create user account')
         dict['Inactive'] = TXT_Inactive
+        dict['Exam_years'] = _('Exam years')
 
         dict['Sequence'] = TXT_Sequence
         dict['Sequence_2lines'] = TXT_Sequence_2lines
@@ -351,6 +353,20 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['role_caption'] = c.ROLE_DICT
 
         dict['Calc_compensation'] = _('Calculate compensation')
+
+        dict['There_are_no_users_of_prev_ey'] = _('There are no users of previous exam years selected.')
+        dict['Click_show_all_users'] = _("Click 'Show users of all exam years' in the vertical grey bar on the left ")
+        dict['to_show_users_of_prev_years'] = _("to show the users of previous exam years.")
+        dict['There_is_1_user_selected'] = _('There is 1 user of previous exam years selected.')
+        dict['There_are'] = _('There are ')
+        dict['users_of_prev_years_selected'] = _(' users of previous exam years selected.')
+        dict['Those_users'] = _('Those users ')
+        dict['That_user'] = _('That user ')
+        dict['willbe_added_to_this_examyear_sing'] = pgettext_lazy('singular', 'will be added to this exam year.')
+        dict['willbe_added_to_this_examyear_plur'] = pgettext_lazy('plural', 'will be added to this exam year.')
+
+        dict['There_are_no'] = _('There are no')
+        dict['users_selected_not_activated'] = _(' users selected, whose accounts are not acivated.')
 
 
         dict['msg_user_info'] = [

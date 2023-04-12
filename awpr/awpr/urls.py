@@ -150,7 +150,8 @@ urlpatterns = [
     # PR2018-04-21 debug: don't forget the .as_view() with brackets in the urlpattern!!!
     path('users/', include([
         path('user', account_views.UserListView.as_view(), name='users_url'),
-        path('user_upload', account_views.UserUploadView.as_view(), name='user_upload_url'),
+        path('user_upload', account_views.UserUploadView.as_view(), name='url_user_upload'),
+        path('user_multiple', account_views.UserUploadMultipleView.as_view(), name='url_user_upload_multiple'),
 
         path('allowedsections_upload', account_views.UserAllowedSectionsUploadView.as_view(), name='url_user_allowedsections_upload'),
 

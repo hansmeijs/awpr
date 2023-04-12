@@ -116,7 +116,7 @@ class UserAllowedClusterUploadView(View):
                         userallowed_instance.save()
 
                         updated_corrector_rows = acc_view.create_user_rowsNEW(
-                            sel_examyear=userallowed_instance.examyear,
+                            sel_examyear=userallowed_instance.examyear if userallowed_instance else None,
                             request=request,
                             user_pk=user_pk
                         )
@@ -1408,7 +1408,7 @@ def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase
     if request.user.country and sel_schoolbase and sel_examyear:
 
         corrector_rows = acc_view.create_user_rowsNEW(
-            sel_examyear=sel_examyear,
+            sel_examyear=sel_examyear if sel_examyear else None,
             request=request,
             school_correctors_only=True
         )

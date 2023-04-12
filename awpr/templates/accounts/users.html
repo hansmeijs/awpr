@@ -6,7 +6,7 @@
 
 {% block script %}
     <script src="{% static 'js/import230329.js' %}"></script>
-    <script src="{% static 'js/users230405.js' %}"></script>
+    <script src="{% static 'js/users230412.js' %}"></script>
 {% endblock %}
 
 <!-- SIDE BAR -->
@@ -17,7 +17,9 @@
         </div>
 
         {% if not no_access %}
-
+            <div id="id_SBR_container_showall" class="tw_200 m-2 display_hidexx">
+                <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show users of all exam years' %}</h6>
+            </div>
             <div class="tw_200 m-2">
                 <p id="id_SBR_item_count" class="tw_200 line_height_normal py-1"></p>
             </div>
@@ -101,7 +103,8 @@
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
                 data-url_user_allowedsections_upload="{% url 'url_user_allowedsections_upload' %}"
 
-                data-user_upload_url="{% url 'user_upload_url' %}"
+                data-url_user_upload="{% url 'url_user_upload' %}"
+                data-url_user_upload_multiple="{% url 'url_user_upload_multiple' %}"
                 data-userpermit_upload_url="{% url 'userpermit_upload_url' %}"
                 data-user_download_permits_url="{% url 'user_download_permits_url' %}"
                 data-url_download_userdata_xlsx="{% url 'url_download_userdata_xlsx' %}"

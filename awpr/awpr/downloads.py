@@ -128,8 +128,18 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get users
                 if datalist_request.get('user_rows'):
-                    datalists['user_rows'] = acc_view.create_user_rowsNEW(sel_examyear, request)
-                    datalists['permit_rows'] = acc_view.create_permit_list()
+                    all_users = af.get_dict_value(datalist_request, ('user_rows', 'get_all_users'), False)
+                    if all_users:
+                        datalists['user_rows'] = acc_view.create_all_user_rows(
+                            sel_examyear=sel_examyear if sel_examyear else None,
+                            request=request
+                        )
+                    else:
+                        datalists['user_rows'] = acc_view.create_user_rowsNEW(
+                            sel_examyear=sel_examyear if sel_examyear else None,
+                            request=request
+                        )
+                        datalists['permit_rows'] = acc_view.create_permit_list()
 
 # ----- get correctors
                 if datalist_request.get('corrector_rows'):

@@ -324,7 +324,11 @@ class UserUploadView(View):
                                         new_user_allowed.save()
 
                                         if new_user_allowed:
-                                            created_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
+                                            created_instance_list = create_user_rowsNEW(
+                                                sel_examyear=sel_examyear if sel_examyear else None,
+                                                request=request,
+                                                user_pk=user_instance.pk if user_instance else None
+                                            )
                                             if created_instance_list:
                                                 updated_dict = created_instance_list[0]
                                                 updated_dict['created'] = True
@@ -332,7 +336,11 @@ class UserUploadView(View):
                                     elif mode == 'delete':
 
 # ++++  delete user ++++++++++++
-                                        deleted_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
+                                        deleted_instance_list = create_user_rowsNEW(
+                                            sel_examyear=sel_examyear if sel_examyear else None,
+                                            request=request,
+                                            user_pk=user_instance.pk if user_instance else None
+                                        )
 
                                         if logging_on:
                                             logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
@@ -406,7 +414,11 @@ class UserUploadView(View):
                             # - new_user_pk has only value when new user is created, not when is_validate_only
                             # - create_user_rows returns list of only 1 user
                             if new_user_pk:
-                                created_instance_list = create_user_rowsNEW(sel_examyear, request, new_user_pk)
+                                created_instance_list = create_user_rowsNEW(
+                                    sel_examyear=sel_examyear,
+                                    request=request,
+                                    user_pk=new_user_pk
+                                )
                                 if created_instance_list:
                                     updated_dict = created_instance_list[0]
                                     updated_dict['created'] = True
@@ -435,7 +447,11 @@ class UserUploadView(View):
                                     update_wrap['msg_ok'] = ok_dict
 
         # - create_user_rows returns list of only 1 user
-                                updated_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
+                                updated_instance_list = create_user_rowsNEW(
+                                    sel_examyear=sel_examyear,
+                                    request=request,
+                                    user_pk=user_instance.pk if user_instance else None
+                                )
                                 updated_dict = updated_instance_list[0] if updated_instance_list else {}
                                 updated_dict['updated'] = True
                                 updated_dict['mapid'] = 'user_' + str(user_instance.pk)
@@ -460,6 +476,147 @@ class UserUploadView(View):
         update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
         return HttpResponse(update_wrap_json)
 # === end of UserUploadView =====================================
+
+
+
+# === UserUploadMultipleView ===================================== PR2023-04-12
+@method_decorator([login_required], name='dispatch')
+class UserUploadMultipleView(View):
+    #  UserUploadMultipleView is called from userpage when clicked on Add_users_from_prev_year or send verifcode
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('  ')
+            logger.debug(' ========== UserUploadMultipleView ===============')
+
+        def add_from_prev_examyears(user_pk_list):
+            updated_user_pk_list = []
+            if user_pk_list:
+                for user_pk in user_pk_list:
+                    user_instance = acc_mod.User.objects.get_or_none(
+                        id=user_pk,
+                        country=req_usr.country
+                    )
+                    if logging_on:
+                        logger.debug('    user_instance: ' + str(user_instance))
+
+                    if user_instance:
+                        # usergroups in userallowed = auth3;download;read
+                        # usergroups in userallowed = ["auth3", "download", "read"]
+                        usergroups = getattr(user_instance, 'usergroups')
+                        usergroups_arr = usergroups.split(';') if usergroups else None
+                        usergroups_str = json.dumps(usergroups_arr) if usergroups_arr else None
+                        # check if userallowed exists
+                        ual_exists = acc_mod.UserAllowed.objects.filter(
+                            user=user_instance,
+                            examyear=sel_examyear
+                        ).exists()
+
+                        if logging_on:
+                            logger.debug('    ual_exists: ' + str(ual_exists))
+                        if not ual_exists:
+                            new_userallowed = acc_mod.UserAllowed(
+                                user=user_instance,
+                                examyear=sel_examyear,
+                                usergroups=usergroups_str
+                            )
+                            new_userallowed.save()
+                            if new_userallowed:
+                                user_id = getattr(new_userallowed, 'user_id')
+                                updated_user_pk_list.append(user_id)
+            return updated_user_pk_list
+
+        def send_multiple_activation_emails(user_pk_list):
+            updated_user_pk_list = []
+            err_dict = {}
+            if user_pk_list:
+                for user_pk in user_pk_list:
+                    send_activation_email(user_pk, update_wrap, err_dict, request)
+
+            return updated_user_pk_list
+
+########################
+        update_wrap = {}
+        msg_list = []
+        border_class = ''
+
+# - reset language
+        # PR2019-03-15 Debug: language gets lost, get req_usr.lang again
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get permit
+        has_permit_same_school = False
+        req_usr = request.user
+
+        if req_usr and req_usr.country and req_usr.schoolbase:
+
+            requsr_permit_list = acc_prm.get_permit_list('page_user', req_usr)
+            has_permit_same_school = requsr_permit_list and 'permit_crud_sameschool' in requsr_permit_list
+
+            if logging_on:
+                logger.debug('    requsr_permit_list: ' + str(requsr_permit_list))
+                logger.debug('    has_permit_same_school: ' + str(has_permit_same_school))
+
+        if not has_permit_same_school:
+            border_class = 'border_bg_invalid'
+            msg_list.append(str(_("You don't have permission to perform this action.")))
+        else:
+
+            sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                get_selected_ey_school_dep_lvl_from_usersetting(request)
+            if err_list:
+                border_class = 'border_bg_invalid'
+                err_list.extend(('<br>', gettext('You cannot make changes.')))
+                msg_list.extend(err_list)
+            else:
+
+        # - get upload_dict from request.POST
+                upload_json = request.POST.get('upload', None)
+                if upload_json:
+                    upload_dict = json.loads(upload_json)
+                    if logging_on:
+                        logger.debug('upload_dict: ' + str(upload_dict))
+
+        # - get info from upload_dict
+                    mode = upload_dict.get('mode')
+                    user_pk_list = upload_dict.get('user_pk_list')
+
+                    if logging_on:
+                        logger.debug('    mode: ' + str(mode))
+                        logger.debug('    user_pk_list: ' + str(user_pk_list))
+
+        # - create_user_rows
+                    updated_user_pk_list = []
+                    if mode == 'add_from_prev_examyears':
+                        updated_user_pk_list = add_from_prev_examyears(user_pk_list)
+                    elif mode == 'send_activation_email':
+                        updated_user_pk_list = send_multiple_activation_emails(user_pk_list)
+
+                    if logging_on:
+                        logger.debug('    updated_user_pk_list: ' + str(updated_user_pk_list))
+
+                    if updated_user_pk_list:
+                        updated_rows = create_user_rowsNEW(
+                            sel_examyear=sel_examyear,
+                            request=request,
+                            user_pk_list=updated_user_pk_list
+                        )
+                        update_wrap['updated_user_rows'] = updated_rows
+
+        if msg_list:
+            update_wrap['msg_html'] = ''.join((
+                "<div class='p-2 ", border_class, "'>",
+                ''.join(msg_list),
+                "</div>"))
+            if logging_on:
+                logger.debug('msg_list:    ' + str(msg_list))
+
+# - return update_wrap
+        update_wrap_json = json.dumps(update_wrap, cls=af.LazyEncoder)
+        return HttpResponse(update_wrap_json)
+# === end of UserUploadMultipleView =====================================
 
 
 ########################################################################
@@ -568,7 +725,11 @@ class UserAllowedSectionsUploadView(View):
                 update_wrap['allowed_sections'] = allowed_sections_dict
 
         # - create_user_rows returns list of only 1 user
-                updated_instance_list = create_user_rowsNEW(sel_examyear, request, user_instance.pk)
+                updated_instance_list = create_user_rowsNEW(
+                    sel_examyear=sel_examyear,
+                    request=request,
+                    user_pk=user_instance.pk if user_instance else None
+                )
                 updated_dict = updated_instance_list[0] if updated_instance_list else {}
                 #updated_dict['updated'] = True
                 if updated_dict:
@@ -661,7 +822,10 @@ class UserdataDownloadXlsxView(View):  # PR2023-01-31
                     )
 
                     # --- create rows of all users of this examyear / school  / department PR2020-10-27 PR2022-01-03 PR2022-05-18 PR2023-01-30
-                    user_rows = create_user_rowsNEW(sel_examyear, request)
+                    user_rows = create_user_rowsNEW(
+                        sel_examyear=sel_examyear,
+                        request=request
+                    )
                     mapped_depcodes = get_mapped_depcodes()
                     mapped_lvlcodes = get_mapped_lvlcodes()
                     mapped_schoolcodes = get_mapped_schoolcodes()
@@ -1297,7 +1461,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
     #  send_activation_email is called from table Users, field 'activated' when the activation link has expired.
     #  it sends an email to the user
     #  it returns a HttpResponse, with ok_msg or err-msg
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('  ')
         logger.debug(' ========== send_activation_email ===============')
@@ -1748,10 +1912,11 @@ class UserModMessageHideView(View):
 # end of UserModMessageHideView
 
 
-def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_only=False):
+def create_user_rowsNEW(sel_examyear, request, user_pk=None, user_pk_list=None, school_correctors_only=False):
     # PR2020-07-31 PR2022-12-02 PR2023-03-26
     # --- create list of all users of this school, or 1 user with user_pk
     # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
+
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -2008,15 +2173,23 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
         all_clusters_dict = get_all_clusters_dict()
 
         try:
-
             # sql_moduser = "SELECT mod_au.id, SUBSTRING(mod_au.username, 7) AS modby_username, modby_username FROM accounts_user AS mod_au"
             sql_moduser = "SELECT mod_au.id, mod_au.last_name AS modby_name FROM accounts_user AS mod_au"
 
-            sql_list = ["WITH mod_user AS (", sql_moduser, ")",
+            ual_subsql_list = [
+                "SELECT ual.user_id,",
+                "ARRAY_AGG(ey.code ORDER BY ey.code DESC) AS ey_arr",
+                "FROM accounts_userallowed AS ual",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
+                "GROUP BY  ual.user_id"
+                ]
+            sql_ual_sub = ' '.join(ual_subsql_list)
+
+            sql_list = ["WITH all_ual AS (", sql_ual_sub, "), mod_user AS (", sql_moduser, ")",
                 "SELECT u.id, u.schoolbase_id,",
                 "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
                 "SUBSTRING(u.username, 7) AS username,",
-                "u.last_name, u.email, u.role,",
+                "u.last_name, u.email, u.role, all_ual.ey_arr,",
 
                 "u.activated, u.activated_at, u.activationlink_sent, u.is_active, u.last_login, u.date_joined,",
                 "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
@@ -2030,13 +2203,15 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
                 "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
 
                 "LEFT JOIN mod_user ON (mod_user.id = u.modified_by_id)",
+                "LEFT JOIN all_ual ON (all_ual.user_id = u.id)",
 
                 ''.join(("WHERE ual.examyear_id=", str(sel_examyear.pk), "::INT"))
                 ]
 
             if user_pk:
                 sql_list.append(''.join(("AND u.id=", str(user_pk), "::INT")))
-
+            elif user_pk_list:
+                sql_list.append(''.join(("AND u.id IN (SELECT UNNEST(ARRAY", str(user_pk_list), "::INT[])) ")))
             else:
                 if school_correctors_only:
                     # PR2023-03-26 when page correctors is called by school,
@@ -2070,7 +2245,7 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
                 # convert string allowed_schoolbases to dict, remove string PR2022-11-22
                 if rows:
                     for user_dict in rows:
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('  ====>  user_dict: ' + str(user_dict))
 
                         allowed_sections_str = user_dict.get('allowed_sections')
@@ -2175,6 +2350,78 @@ def create_user_rowsNEW(sel_examyear, request, user_pk=None, school_correctors_o
 
     return user_list
 # - end of create_user_rowsNEW
+
+#######################################################################
+
+def create_all_user_rows(request, sel_examyear):
+    # PR2020-07-31 PR2022-12-02 PR2023-04-11
+    # --- create list of all users of this school, including users of previous years
+    # PR2022-12-02 added: join with userallowed, to retrieve only users of this examyear
+
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' =============== create_all_user_rows ============= ')
+
+    user_list = []
+    if request.user:
+
+        try:
+            subsql_list = [
+                "SELECT ual.user_id,",
+                "ARRAY_AGG(ey.code ORDER BY ey.code DESC) AS ey_arr",
+                "FROM accounts_userallowed AS ual",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
+                "GROUP BY  ual.user_id"
+                ]
+            sub_sql = ' '.join(subsql_list)
+
+            sql_list = ["WITH user_sub AS (", sub_sql, ")",
+                "SELECT u.id,",
+                "CONCAT('user_', u.id) AS mapid, 'user' AS table,",
+                "SUBSTRING(u.username, 7) AS username,",
+                "u.last_name, u.email, u.role,",
+                "user_sub.ey_arr,",
+                "u.activated, u.activated_at, u.activationlink_sent, u.is_active, u.last_login, u.date_joined,",
+
+                "u.country_id, c.abbrev AS c_abbrev, sb.code AS sb_code, u.schoolbase_id,",
+                "sb.code AS sb_code",
+
+                "FROM accounts_user AS u",
+                "LEFT JOIN user_sub ON (user_sub.user_id = u.id)",
+                "INNER JOIN schools_country AS c ON (c.id = u.country_id)",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+            ]
+
+            if request.user.role >= c.ROLE_064_ADMIN:
+                sql_list.append(''.join(("WHERE u.role<=", str(request.user.role), "::INT")))
+            else:
+                sql_list.append(''.join(("WHERE u.role=", str(request.user.role), "::INT")))
+
+                schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase else 0
+                sql_list.append(''.join(("AND u.schoolbase_id=", str(schoolbase_pk), "::INT")))
+
+            sql = ' '.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                user_list = af.dictfetchall(cursor)
+
+                # convert string allowed_schoolbases to dict, remove string PR2022-11-22
+                if user_list:
+                    for user_dict in user_list:
+                        ey_arr = user_dict.get('ey_arr')
+                        user_dict['ey_other'] = sel_examyear.code not in ey_arr if sel_examyear and ey_arr else True
+                        if logging_on :
+                            logger.debug('ey_code_arr: ' + str(ey_arr) + str(type(ey_arr)))
+                            logger.debug('  ====>  user_dict: ' + str(user_dict))
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+
+    return user_list
+# - end of create_all_user_rows
+
 
 
 ########################################################################
@@ -4186,7 +4433,7 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
 def get_settings_departmentbase(request, request_item_setting, sel_examyear_instance, sel_schoolbase_instance, sel_school_instance,
                                 allowed_schoolbase_dict, page, permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10  PR2023-01-08
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_departmentbase -------')
 
@@ -4780,7 +5027,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-
 def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_clause=False, page=None):
     # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31 PR2023-04-10
     # called by not has_subjbases
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
         logger.debug(' +++++ get_selected_ey_school_dep_lvl_from_usersetting +++++ ' )
@@ -4885,7 +5132,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
     def get_department_instance(sel_examyear_instance, sel_school_instance,
                                           allowed_schoolbase_dict, selected_pk_dict):
         # PR2022-12-19 PR2023-01-08 PR2023-04-10
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ------- get_department_instance -------')
 
