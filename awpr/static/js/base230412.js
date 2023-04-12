@@ -151,6 +151,14 @@
             // PR2023-01-08 user may have only one allowed_examyear,
             add_or_remove_class(el_hdrbar_examyear, "awp_navbaritem_may_select", permit_dict.may_select_examyear, "awp_navbar_item" );
         };
+        // PR2023-04-12 show / hide padlock in headerbar
+        const el_hdrbar_examyear_locked = document.getElementById("id_hdrbar_examyear_locked");
+        if (el_hdrbar_examyear_locked){
+            add_or_remove_class(el_hdrbar_examyear_locked.children[0], "stat_0_6", setting_dict.sel_examyear_locked,"stat_0_0" );
+        };
+
+
+
 // --- DEPARTMENT
         if(el_hdrbar_department) {
             const display_department = (!!permit_dict.display_department);

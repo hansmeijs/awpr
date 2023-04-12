@@ -95,11 +95,11 @@ class ManualListView(View):
         return render(request, 'manual.html', param)
 
 
-def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-01-08
+def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-01-08 PR2023-04-12
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('===== get_headerbar_param ===== ')
@@ -194,12 +194,10 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
             sel_examyear_str = str(_('Exam year')) + ' ' + str(sel_examyear_instance)
             sel_country_name = sel_examyear_instance.country.name
 
-# +++ do not display pages when country is locked,
-            country_locked = sel_examyear_instance.country.locked
-            if country_locked:
-                no_access = True
 # +++ do not display pages when examyear is not published yet,
             examyear_not_published = not sel_examyear_instance.published
+
+    # - show padlock in headerbar when examyear_locked
             examyear_locked = sel_examyear_instance.locked
     # - used in page grades: set tab buttons practexam, sr_allowed, centralexam, thirdperiod
             no_practexam = sel_examyear_instance.no_practexam
@@ -333,12 +331,28 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
         # was: no_access = (not permit_list)
         may_receive_messages = 'msgreceive' in usergroup_list  # PR2023-04-05
 
-        if not ('permit_view' in permit_list or 'permit_crud' in permit_list):
-            no_access = True
+        # PR2023-04-11 debug. Friedeman Sg Otrobanda: user cannot access page 'No permit to viw page.
+        # cause: had no permit 'view'
+        # better turn off permit 'View'. User can be made inactive to block him
+        # was:
+        #if not ('permit_view' in permit_list or 'permit_crud' in permit_list):
+        #    no_access = True
+        no_access = False
+
+# +++ do not display pages when country is locked,
+        country_locked = sel_examyear_instance.country.locked if sel_examyear_instance else True
+        if country_locked:
+            pass
+            #no_access = True
         elif sel_page == 'page_archive' and 'archive' not in usergroup_list:
             no_access = True
         elif sel_page == 'page_mailbox' and not may_receive_messages:
             no_access = True
+
+        if logging_on:
+            logger.debug('  ..sel_page: ' + str(sel_page))
+            logger.debug('  ..permit_list: ' + str(permit_list))
+            logger.debug('  ..no_access: ' + str(no_access))
 
 # ------- set message -------- PR2021-03-25
         # messages block access to the page.
@@ -353,10 +367,12 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
                                                  {'country': sel_country_name}
             messages.append(no_access_message)
 
-       # elif examyear_locked:
-            # this is a warning, dont block access when examyear_locked
-            #no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear_instance.code)}
-            #messages.append(no_access_message)
+        # PR2023-04-11 debug. when examyear is locked user must be able to view pages. Give message in downlaod instead
+        #elif examyear_locked:
+        #    # this is a warning, dont block access when examyear_locked
+        #    no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear_instance.code)}
+        #    messages.append(no_access_message)
+
         elif examyear_not_published:
             # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd
             school_admin = sch_mod.School.objects.filter(
@@ -374,6 +390,10 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
             no_access_message = _("%(admin)s has not yet published examyear %(exyr)s. You cannot enter data yet.") % \
                                                  {'admin': admin_name, 'exyr': str(sel_examyear_code)}
             messages.append(no_access_message)
+
+            if logging_on:
+                logger.debug('  ..messages: ' + str(messages))
+
 
 # - sentr_src contains link for Sentry awp_js PR2021-09-19
         sentry_src = s.SENTRY_SRC

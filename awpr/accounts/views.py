@@ -4298,6 +4298,7 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
 
         setting_dict['sel_examyear_code'] = sel_examyear_instance.code if sel_examyear_instance.code else None
         setting_dict['sel_examyear_thumbrule_allowed'] = sel_examyear_instance.thumbrule_allowed
+
         if not sel_examyear_instance.published:
             permit_dict['examyear_not_published'] = True
 
@@ -4312,6 +4313,7 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
 
         if sel_examyear_instance.locked:
             permit_dict['examyear_locked'] = True
+            setting_dict['sel_examyear_locked'] = True
 
 # - add message when examyear is locked PR22021-12-04
             # not when page_examyear PR2022-08-09

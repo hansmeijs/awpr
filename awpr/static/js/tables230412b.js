@@ -217,7 +217,7 @@
                                    (tblName === "department") ? data_dict.base_id : null;
 
         // permit_dict.requsr_country_pk
-                    const is_locked = (data_dict.locked) ? data_dict.locked : false;
+                    const is_locked = (data_dict) ? data_dict.examyear_locked : false;
                     const code_value = (tblName === "examyear") ? (data_dict.examyear_code) ? data_dict.examyear_code : "---" :
                                     (tblName === "department") ? (data_dict.base_code) ? data_dict.base_code : "---" : "---";
 
@@ -247,7 +247,6 @@
             if(!row_count){
                 const caption_none = (tblName === "examyear") ? loc.No_examyears :
                                      (tblName === "department") ? loc.No_departments : null;
-                //t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk)
                 t_MSED_CreateSelectRowNew(tblName, tblBody_select, null, caption_none, false, MSED_Response, null)
             };
         };
@@ -255,9 +254,9 @@
 
 //=========  t_MSED_CreateSelectRowNew  ================ PR2020-10-27 PR2020-12-18 PR2021-05-10 PR2021-09-24 PR2022-08-02
     function t_MSED_CreateSelectRowNew(tblName, tblBody_select, pk_int, code_value, is_locked, MSED_Response, selected_pk) {
-        console.log( "===== t_MSED_CreateSelectRowNew ========= ");
-        console.log( "code_value", code_value);
-        console.log( "is_locked", is_locked);
+        //console.log( "===== t_MSED_CreateSelectRowNew ========= ");
+        //console.log( "code_value", code_value);
+        //console.log( "is_locked", is_locked);
 
         const is_selected_pk = (selected_pk != null && pk_int === selected_pk)
 
@@ -266,7 +265,6 @@
         tblRow.setAttribute("data-table", tblName)
         tblRow.setAttribute("data-pk", pk_int);
 
-        console.log( "pk_int", pk_int);
 // ---  add EventListener to tblRow
         if(pk_int){
             tblRow.addEventListener("click", function() { t_MSED_Save(MSED_Response, tblRow) }, false )
@@ -290,7 +288,7 @@
             el_div = document.createElement("div");
                 const class_locked = (is_locked) ? "appr_2_6" :  "appr_0_0";
                 el_div.classList.add("tw_032", class_locked)
-                el_div.title = (is_locked) ? loc.This_examyear + loc.is_locked : "";
+                tblRow.title = (is_locked) ? loc.This_examyear + loc.is_locked : "";
             td.appendChild(el_div);
         }
     }  // t_MSED_CreateSelectRowNew

@@ -1430,7 +1430,7 @@ def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, pa
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
     # - usergroups are now stored per examyear in usergroup_allowed PR2022-12-09
     # PR2023-01-13
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
 
 # - get requsr_usergroups_list, requsr_allowed_clusters_list and  sel_examyear
     requsr_usergroups_list, requsr_allowed_sections_dict, requsr_allowed_clusters_list, sel_examyear = \
