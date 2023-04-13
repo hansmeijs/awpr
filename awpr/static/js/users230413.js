@@ -448,7 +448,7 @@ console.log("user_dicts",user_dicts)
 // +++++++++++++++++ EVENT HANDLERS +++++++++++++++++++++++++++++++++++++++++
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
-        console.log( "===== HandleBtnSelect ========= ");
+        //console.log( "===== HandleBtnSelect ========= ");
         //console.log( "skip_upload", skip_upload);
 
 // ---  get  selected_btn
@@ -456,7 +456,7 @@ console.log("user_dicts",user_dicts)
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
         selected_btn = (data_btn && ["btn_user", "btn_usergroup", "btn_allowed", "btn_userpermit"].includes(data_btn)) ? data_btn : "btn_user"
-    console.log( "selected_btn: ", selected_btn);
+    //console.log( "selected_btn: ", selected_btn);
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
@@ -493,17 +493,17 @@ console.log("user_dicts",user_dicts)
 
 //========= FillTblRows  =================== PR2021-08-01 PR2022-02-28 PR2023-04-04
     function FillTblRows(skip_upload) {
-        console.log( "===== FillTblRows  === ");
+        //console.log( "===== FillTblRows  === ");
 
         const tblName = get_tblName_from_selectedBtn();
         const data_dicts = get_data_dicts(tblName);
 
         const field_setting = field_settings[selected_btn];
 
-        console.log( "    selected_btn", selected_btn);
-        console.log( "    tblName", tblName);
-        console.log( "    data_dicts", data_dicts);
-        console.log( "    field_setting", field_setting);
+    //console.log( "    selected_btn", selected_btn);
+    //console.log( "    tblName", tblName);
+    //console.log( "    data_dicts", data_dicts);
+    //console.log( "    field_setting", field_setting);
 
 // --- show columns
         set_columns_hidden();
@@ -733,7 +733,7 @@ console.log("user_dicts",user_dicts)
 
                     } else if (field_name.slice(0, 5) === "group") {
                         // attach eventlistener and hover to td, not to el. No need to add icon_class here
-                        td.addEventListener("click", function() {UploadToggle(el)}, false)
+                        td.addEventListener("click", function() {UploadToggleMultiple(el)}, false)
                         add_hover(td);
                     } else if (field_name.includes("allowed")) {
                         if (field_name === "allowed_clusters") {
@@ -929,25 +929,110 @@ console.log("user_dicts",user_dicts)
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
 
-//========= UploadToggle  ============= PR2020-07-31
-    function UploadToggle(el_input) {
-        console.log( " ==== UploadToggle ====");
-        console.log( "el_input", el_input);
-        console.log( "permit_dict", permit_dict);
+//========= UploadToggleMultiple  ============= PR2023-04-13
+    function UploadToggleMultiple(el_input) {
+        console.log( " ==== UploadToggleMultiple ====");
+        //console.log( "el_input", el_input);
+        //console.log( "permit_dict", permit_dict);
+        // only called by fields starting qith  "group"
 
-        mod_dict = {};
+// ---  get  data_dict
+        const tblRow = t_get_tablerow_selected(el_input);
+        const data_dict = get_datadict_from_tblRow(tblRow);
+        const tblName = get_tblName_from_mapid(data_dict.mapid);
+        const fldName = get_attr_from_el(el_input, "data-field");
+        const arr = (fldName) ? fldName.split("_") : null;
+        const sel_usergroup = (arr && arr[1]) ? arr[1] : null;
+
+// ---  get permit
         const has_permit = (permit_dict.permit_crud_otherschool) ||
                             (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
 
-    console.log( "has_permit", has_permit);
+        if(has_permit && data_dict && sel_usergroup){
+
+            const has_sel_usergroup = (data_dict.usergroups) ?  data_dict.usergroups.includes(sel_usergroup) : false;
+            // permit_bool = true means that the user has this usergroup
+            const new_permit_bool = !has_sel_usergroup
+    // ---  create mod_dict
+            mod_dict = {mode: "update_usergroup_multiple",
+                        table: tblName,
+                        usergroup: sel_usergroup,
+                        permit_bool: new_permit_bool
+                        };
+
+// ---  loop through tblBody.rows and fill user_pk_list, skip user of tr_clicked
+            mod_dict.user_pk_list = [];
+            for (let i = 0, tr; tr = tblBody_datatable.rows[i]; i++) {
+                if (tr.classList.contains(cls_selected) ) {
+                    const tr_dict = user_dicts[tr.id];
+                    // skip user of tr_clicked
+                    if (tr_dict && tr_dict.id !== data_dict.id){
+                        const tr_has_sel_usergroup = (tr_dict.usergroups) ?  tr_dict.usergroups.includes(sel_usergroup) : false;
+                    // add only when value of has_sel_usergroup is same as value of tr_clicked
+                        if (has_sel_usergroup === tr_has_sel_usergroup){
+                            mod_dict.user_pk_list.push(tr_dict.id);
+                        };
+                    };
+                };
+            };
+            if (!mod_dict.user_pk_list.length){
+                //use UploadToggleSingle when no other rows are selected
+                 UploadToggleSingle(el_input)
+            } else {
+                // add tr_clicked to user_pk_list
+                mod_dict.user_pk_list.push(data_dict.id);
+                mod_dict.user_pk_count = (mod_dict.user_pk_list) ? mod_dict.user_pk_list.length : 0;
+
+                const msg_list = ["<p>"];
+                if (!mod_dict.user_pk_count){
+                    // this should not be possible, but let it stay
+                    hide_save_btn = true
+                    msg_list.push(...[loc.There_are_no, loc.users_selected, "</p>"]);
+                } else {
+                    // mod_dict.user_pk_list always contains more than 1 user
+                    const added_removed_txt = (has_sel_usergroup) ? loc.willbe_removed_from_users : loc.willbe_added_to_users;
+                    msg_list.push(...["<p>", loc.There_are, mod_dict.user_pk_count, loc.users_selected, "</p><p>",
+                                       loc.Usergroup, " '", loc.usergroupcaption[sel_usergroup], "' ", added_removed_txt]);
+
+                    msg_list.push(...["</p><p class='pt-2'>",  loc.Do_you_want_to_continue + "</p>"]);
+                };
+
+                el_confirm_header.innerText = (has_sel_usergroup) ? loc.Remove_usergroup : loc.Add_usergroup;
+                el_confirm_loader.classList.add(cls_visible_hide)
+                el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
+
+                el_confirm_msg_container.innerHTML = (msg_list.length) ? msg_list.join("") : null;
+
+                el_confirm_btn_save.innerText = loc.OK;
+                add_or_remove_class (el_confirm_btn_save, cls_hide, false);
+
+                add_or_remove_class (el_confirm_btn_save, "btn-primary", true, "btn-outline-danger")
+
+                el_confirm_btn_cancel.innerText = loc.Cancel;
+
+        // set focus to cancel button
+                set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+
+                // show modal
+                $("#id_mod_confirm").modal({backdrop: true});
+            };
+        };
+    }; // UploadToggleMultiple
+
+//========= UploadToggleSingle  ============= PR2020-07-31 PR2023-04-13
+    function UploadToggleSingle(el_input) {
+        console.log( " ==== UploadToggleSingle ====");
+        console.log( "el_input", el_input);
+        console.log( "permit_dict", permit_dict);
+        // only called by fields starting qith  "group"
+        mod_dict = {};
+        const has_permit = (permit_dict.permit_crud_otherschool) ||
+                            (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
 
         if(has_permit){
             const tblRow = t_get_tablerow_selected(el_input);
             const tblName = get_tblName_from_mapid(tblRow.id);
             const data_dict = get_datadict_from_tblRow(tblRow);
-
-console.log( "tblName", tblName);
-console.log( "data_dict", data_dict);
 
             if(!isEmpty(data_dict)){
                 const fldName = get_attr_from_el(el_input, "data-field");
@@ -987,7 +1072,7 @@ console.log( "upload_dict", upload_dict);
             }  //  if(!isEmpty(data_dict)){
 
         }  // if(permit_dict.usergroup_system)
-    }  // UploadToggle
+    }  // UploadToggleSingle
 
 //========= UploadChanges  ============= PR2020-08-03 PR2023-01-01
     function UploadChanges(upload_dict, url_str) {
@@ -1009,6 +1094,9 @@ console.log( "upload_dict", upload_dict);
 
                     console.log("response");
                     console.log( response);
+                    if ("msg_html" in response) {
+                        b_show_mod_message_html(response.msg_html)
+                    };
 
                     if("msg_dictlist" in response){
                         b_show_mod_message_dictlist(response.msg_dictlist);
@@ -3570,8 +3658,8 @@ console.log( "upload_dict", upload_dict);
         const tblRow = t_get_tablerow_selected(el_input);
         const data_dict = (tblRow) ? get_datadict_from_tblRow(tblRow) : selected.data_dict;
         const user_name = (data_dict.username) ? data_dict.username  : "-";
-        console.log("   tblRow", tblRow);
-        console.log("   data_dict", data_dict);
+    console.log("   tblRow", tblRow);
+    console.log("   data_dict", data_dict);
 
 // ---  get info from data_dict
         // TODO remove requsr_pk from client
@@ -3794,6 +3882,17 @@ console.log( "upload_dict", upload_dict);
             // TODO create msg when ok
             close_modal = true;
 
+        } else if (mod_dict.mode === "update_usergroup_multiple"){
+            url_str = urls.url_user_upload_multiple;
+            el_confirm_loader.classList.remove(cls_visible_hide);
+
+            upload_dict.user_pk_list = mod_dict.user_pk_list;
+            upload_dict.usergroup = mod_dict.usergroup;
+            upload_dict.permit_bool = mod_dict.permit_bool;
+
+            // TODO create msg when ok
+            close_modal = true;
+
         } else if( mod_dict.mode === "delete") {
             url_str = urls.url_user_upload;
             el_confirm_loader.classList.remove(cls_visible_hide);
@@ -3816,8 +3915,6 @@ console.log( "upload_dict", upload_dict);
             };
         };
 
-
-
 // ---  Upload changes
         if (!skip_uploadchanges){
             UploadChanges(upload_dict, url_str);
@@ -3825,7 +3922,6 @@ console.log( "upload_dict", upload_dict);
 
 // ---  hide modal
         if(close_modal) {
-
             $("#id_mod_confirm").modal("hide");
         };
     };  // ModConfirmSave
@@ -4203,8 +4299,8 @@ console.log( "new_value", new_value);
 
 //========= Filter_TableRows  ====================================
     function Filter_TableRows(set_filter_isactive) {  // PR2019-06-09 PR2020-08-31 PR2022-03-03
-        console.log( "===== Filter_TableRows=== ");
-        console.log( "filter_dict", filter_dict);
+        //console.log( "===== Filter_TableRows=== ");
+        //console.log( "filter_dict", filter_dict);
 
         // function filters by inactive and substring of fields
         //  - iterates through cells of tblRow
@@ -4225,7 +4321,7 @@ console.log( "new_value", new_value);
             tblRow = tblBody_datatable.rows[i]
             show_row = t_Filter_TableRow_Extended(filter_dict, tblRow, data_inactive_field);
 
-        console.log( "show_row", show_row);
+    //console.log( "show_row", show_row);
 
             add_or_remove_class(tblRow, cls_hide, !show_row);
             if (show_row) {selected.item_count += 1};
@@ -4415,7 +4511,7 @@ console.log( "new_value", new_value);
         const map_id = (tblRow && tblRow.id) ? tblRow.id : null;
         const tblName = get_tblName_from_mapid(map_id);
         const data_dicts = get_data_dicts(tblName);
-        return (data_dicts) ? data_dicts[map_id] : null;;
+        return (data_dicts && data_dicts[map_id]) ? data_dicts[map_id] : null;
     };
 
 //========= get_datadict_from_tblRow ============= PR2021-08-01 PR2023-04-04
@@ -4426,7 +4522,7 @@ console.log( "new_value", new_value);
 //========= get_tblName_from_mapid ============= PR2021-08-01
     function get_tblName_from_mapid(map_id) {
         const arr = (map_id) ? map_id.split("_") : null;
-        return (arr) ? arr[0] : null;
+        return (arr && arr.length) ? arr[0] : null;
     };
 //////////////////////
 

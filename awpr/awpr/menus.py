@@ -357,21 +357,23 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
 # ------- set message -------- PR2021-03-25
         # messages block access to the page.
         # warnings must be given via DatalistDownloadView
+
+        # PR2023-04-11 debug. when examyear is locked user must be able to view pages. Give message in downlaod instead
+        # elif examyear_locked:
+        #    # this is a warning, dont block access when examyear_locked
+        #    no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear_instance.code)}
+        #    messages.append(no_access_message)
+
+
         messages = []
         if no_examyears:
             no_access_message = _("There are no exam years yet.")
             messages.append(no_access_message)
 
         elif country_locked:
-            no_access_message = _("%(country)s has no license yet to use AWP-online.") % \
+            no_access_message = _("%(country)s has no license yet to use AWP-online this exam year.") % \
                                                  {'country': sel_country_name}
             messages.append(no_access_message)
-
-        # PR2023-04-11 debug. when examyear is locked user must be able to view pages. Give message in downlaod instead
-        #elif examyear_locked:
-        #    # this is a warning, dont block access when examyear_locked
-        #    no_access_message = _("Exam year %(ey)s is locked. You cannot make changes.") % {'ey': str(sel_examyear_instance.code)}
-        #    messages.append(no_access_message)
 
         elif examyear_not_published:
             # get latest name of ETE / Div of Exam from schools, if not found: default = MinOnd

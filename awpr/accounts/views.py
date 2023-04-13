@@ -161,7 +161,8 @@ class UserUploadView(View):
             logger.debug(' ========== UserUploadView ===============')
 
         update_wrap = {}
-        msg_list =[]
+        msg_list = []
+        border_class = ''
         user_without_userallowed = None
 
 # - reset language
@@ -182,9 +183,11 @@ class UserUploadView(View):
             # - checks if country is locked and if examyear is missing, not published or locked
             # - skip allow_not_published when req_usr is admin (ETE) or system
             allow_not_published = req_usr.role >= c.ROLE_064_ADMIN
-            sel_examyear, may_edit, msg_lst = get_selected_examyear_from_usersetting(request, allow_not_published)
-            if msg_lst:
-                msg_list.extend(msg_lst)
+            sel_examyear, may_edit, err_lst = get_selected_examyear_from_usersetting(request, allow_not_published)
+            if err_lst:
+                border_class = c.HTMLCLASS_border_bg_invalid
+                err_lst.append(c.ERROR_CANNOT_MAKE_CHANGES)
+                msg_list.extend(err_lst)
 
             # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
             requsr_permitlist = acc_prm.get_permit_list('page_user', req_usr)
@@ -274,7 +277,16 @@ class UserUploadView(View):
 
 # ++++  resend activation email ++++++++++++
                         if mode == 'send_activation_email':
-                            send_activation_email(user_pk, update_wrap, err_dict, request)
+                            sent_ok_list, sent_error_list = [], []
+                            has_error, msg_html, user_dict = send_activation_email(user_pk, request)
+                            if has_error:
+                                sent_error_list.append(user_dict)
+                            else:
+                                sent_ok_list.append(user_dict)
+
+                            if logging_on:
+                                logger.debug('    sent_error_list: ' + str(sent_error_list))
+                                logger.debug('    sent_ok_list: ' + str(sent_ok_list))
 
 # ++++  delete user or add userallowed ++++++++++++
                         elif mode in ('delete', 'user_without_userallowed'):
@@ -467,6 +479,12 @@ class UserUploadView(View):
         # TODO append  err_dict to  msg_list
         if msg_list:
             update_wrap['msg_dictlist'] = msg_list
+
+
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
+
+
         if user_without_userallowed:
             update_wrap['user_without_userallowed'] = user_without_userallowed
         # - create_user_rows returns list of only 1 user
@@ -482,7 +500,7 @@ class UserUploadView(View):
 # === UserUploadMultipleView ===================================== PR2023-04-12
 @method_decorator([login_required], name='dispatch')
 class UserUploadMultipleView(View):
-    #  UserUploadMultipleView is called from userpage when clicked on Add_users_from_prev_year or send verifcode
+    #  UserUploadMultipleView is called from userpage when clicked on Add_users_from_prev_year or send verifcode or update usergroup
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -531,9 +549,88 @@ class UserUploadMultipleView(View):
             updated_user_pk_list = []
             err_dict = {}
             if user_pk_list:
+                sent_ok_list, sent_error_list = [], []
                 for user_pk in user_pk_list:
-                    send_activation_email(user_pk, update_wrap, err_dict, request)
+                    has_error, msg_html, user_dict = send_activation_email(user_pk, request)
+                    if has_error:
+                        sent_error_list.append(user_dict)
+                    else:
+                        sent_ok_list.append(user_dict)
 
+                if logging_on:
+                    logger.debug('    sent_error_list: ' + str(sent_error_list))
+                    logger.debug('    sent_ok_list: ' + str(sent_ok_list))
+
+
+
+            return updated_user_pk_list
+
+        def update_usergroup_multiple(sel_examyear, user_pk_list, permit_bool, sel_usergroup):
+
+            if logging_on:
+                logger.debug(' ----- update_usergroup_multiple -----')
+                logger.debug('    user_pk_list: ' + str(user_pk_list))
+                logger.debug('    permit_bool: ' + str(permit_bool)+ ' ' + str(type(permit_bool)))
+                logger.debug('    sel_usergroup: ' + str(sel_usergroup))
+
+            updated_user_pk_list = []
+            if sel_examyear and user_pk_list and usergroup:
+                for user_pk in user_pk_list:
+                    uals = acc_mod.UserAllowed.objects.filter(
+                        user_id=user_pk,
+                        examyear=sel_examyear
+                    )
+                    if logging_on:
+                        logger.debug('    uals: ' + str(uals))
+                    if uals:
+                        # there should be only 1 ual
+                        for ual in uals:
+
+                            usergroups_str = getattr(ual, 'usergroups')
+                            usergroups_arr = json.loads(usergroups_str) if usergroups_str else []
+                            if logging_on:
+                                logger.debug('    usergroups_arr ' + str(usergroups_arr))
+
+                            has_changed = False
+                            if permit_bool:
+                                if logging_on:
+                                    logger.debug(' ?? sel_usergroup not in usergroups_arr ' + str(sel_usergroup not in usergroups_arr))
+                                # add usegroup
+                                if sel_usergroup not in usergroups_arr:
+                                    has_changed = True
+                                    usergroups_arr.append(sel_usergroup)
+                                    if logging_on:
+                                        logger.debug('  add  usergroups_arr ' + str(usergroups_arr))
+                            else:
+                                # remove usergroup
+                                if sel_usergroup in usergroups_arr:
+                                    usergroups_arr.remove(sel_usergroup)
+                                    has_changed = True
+                                    if logging_on:
+                                        logger.debug('  remove  usergroups_arr ' + str(usergroups_arr))
+                            if logging_on:
+                                logger.debug('  has_changed ' + str(has_changed))
+
+                            if has_changed:
+                                if usergroups_arr:
+                                    usergroups_arr.sort()
+                                    usergroups_str = json.dumps(usergroups_arr)
+                                else:
+                                    usergroups_str = None
+
+                                if logging_on:
+                                    logger.debug('    usergroups_str: ' + str(usergroups_str))
+
+                                setattr(ual,'usergroups', usergroups_str)
+                                ual.save(request=request)
+                                if logging_on:
+                                    logger.debug('    ual.usergroups: ' + str(ual.usergroups))
+
+                                if ual.user_id not in updated_user_pk_list:
+                                    updated_user_pk_list.append(ual.user_id)
+
+            if logging_on:
+                logger.debug('    updated_user_pk_list: ' + str(updated_user_pk_list))
             return updated_user_pk_list
 
 ########################
@@ -546,53 +643,70 @@ class UserUploadMultipleView(View):
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
-# - get permit
-        has_permit_same_school = False
-        req_usr = request.user
-
-        if req_usr and req_usr.country and req_usr.schoolbase:
-
-            requsr_permit_list = acc_prm.get_permit_list('page_user', req_usr)
-            has_permit_same_school = requsr_permit_list and 'permit_crud_sameschool' in requsr_permit_list
-
+# - get upload_dict from request.POST
+        upload_json = request.POST.get('upload', None)
+        if upload_json:
+            upload_dict = json.loads(upload_json)
             if logging_on:
-                logger.debug('    requsr_permit_list: ' + str(requsr_permit_list))
-                logger.debug('    has_permit_same_school: ' + str(has_permit_same_school))
+                logger.debug('upload_dict: ' + str(upload_dict))
 
-        if not has_permit_same_school:
-            border_class = 'border_bg_invalid'
-            msg_list.append(str(_("You don't have permission to perform this action.")))
-        else:
+# - get info from upload_dict
+            mode = upload_dict.get('mode')
+            user_pk_list = upload_dict.get('user_pk_list')
 
-            sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
-                get_selected_ey_school_dep_lvl_from_usersetting(request)
-            if err_list:
+            # permit_bool = True  means that the usergroup will be added to the users in user_pk_list
+            # permit_bool = False means that the usergroup will be removed from the users in user_pk_list
+            permit_bool = upload_dict.get('permit_bool') or False
+            usergroup = upload_dict.get('usergroup')
+            if logging_on:
+                logger.debug('    mode: ' + str(mode))
+                logger.debug('    user_pk_list: ' + str(user_pk_list))
+                logger.debug('    usergroup: ' + str(usergroup))
+                logger.debug('    permit_bool: ' + str(permit_bool))
+
+# - get permit
+            has_permit = False
+            req_usr = request.user
+
+            if req_usr and req_usr.country and req_usr.schoolbase:
+
+                requsr_permit_list = acc_prm.get_permit_list('page_user', req_usr)
+                # has_permit_crud = requsr_permit_list and 'permit_crud' in requsr_permit_list
+                has_permit_same_school = requsr_permit_list and 'permit_crud_sameschool' in requsr_permit_list
+                has_permit_other_school = requsr_permit_list and 'permit_crud_otherschool' in requsr_permit_list
+                if mode == 'update_usergroup_multiple':
+                    has_permit = has_permit_same_school or has_permit_other_school
+                else:
+                    has_permit = has_permit_same_school
+                if logging_on:
+                    logger.debug('    requsr_permit_list: ' + str(requsr_permit_list))
+                    logger.debug('    has_permit_same_school: ' + str(has_permit_same_school))
+                    logger.debug('    has_permit_other_school: ' + str(has_permit_other_school))
+                    logger.debug('    has_permit: ' + str(has_permit))
+
+            if not has_permit:
                 border_class = 'border_bg_invalid'
-                err_list.extend(('<br>', gettext('You cannot make changes.')))
-                msg_list.extend(err_list)
+                msg_list.append(str(_("You don't have permission to perform this action.")))
             else:
 
-        # - get upload_dict from request.POST
-                upload_json = request.POST.get('upload', None)
-                if upload_json:
-                    upload_dict = json.loads(upload_json)
-                    if logging_on:
-                        logger.debug('upload_dict: ' + str(upload_dict))
-
-        # - get info from upload_dict
-                    mode = upload_dict.get('mode')
-                    user_pk_list = upload_dict.get('user_pk_list')
-
-                    if logging_on:
-                        logger.debug('    mode: ' + str(mode))
-                        logger.debug('    user_pk_list: ' + str(user_pk_list))
+                sel_examyear, sel_school, sel_department, sel_level, may_edit, err_list = \
+                    get_selected_ey_school_dep_lvl_from_usersetting(request)
+                if err_list:
+                    border_class = 'border_bg_invalid'
+                    err_list.extend(('<br>', gettext('You cannot make changes.')))
+                    msg_list.extend(err_list)
+                else:
 
         # - create_user_rows
                     updated_user_pk_list = []
                     if mode == 'add_from_prev_examyears':
                         updated_user_pk_list = add_from_prev_examyears(user_pk_list)
+
                     elif mode == 'send_activation_email':
                         updated_user_pk_list = send_multiple_activation_emails(user_pk_list)
+
+                    elif mode == 'update_usergroup_multiple':
+                        updated_user_pk_list = update_usergroup_multiple(sel_examyear, user_pk_list, permit_bool, usergroup)
 
                     if logging_on:
                         logger.debug('    updated_user_pk_list: ' + str(updated_user_pk_list))
@@ -1457,7 +1571,7 @@ def UserActivate(request, uidb64, token):
 
 
 # === send_activation_email ===================================== PR2020-08-15
-def send_activation_email(user_pk, update_wrap, err_dict, request):
+def send_activation_email(user_pk, request):
     #  send_activation_email is called from table Users, field 'activated' when the activation link has expired.
     #  it sends an email to the user
     #  it returns a HttpResponse, with ok_msg or err-msg
@@ -1471,18 +1585,22 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
         logger.debug('user: ' + str(user))
 
     has_error = False
+    msg_html = None
+    user_dict = None
     if user:
-        req_usr = request.user.last_name
+        req_usr_last_name = request.user.last_name
         req_school = get_usr_schoolname_with_article(request.user)
 
-        update_wrap['user'] = {'pk': user.pk, 'username': user.username}
+        # update_wrap['user'] = {'pk': user.pk, 'username': user.username}
+        user_dict = {'pk': user.pk, 'last_name': user.last_name, 'email': user.email}
 
         current_site = get_current_site(request)
 
 # - check if user.email is a valid email address:
         msg_err = awpr_val.validate_email_address(user.email)
         if msg_err:
-            err_dict['msg01'] = _("'%(email)s' is not a valid email address.") % {'email': user.email}
+            msg_list = [gettext("'%(email)s' is not a valid email address.") % {'email': user.email}]
+            msg_html = acc_prm.msghtml_from_msglist_with_border(msg_list, 'border_bg_invalid')
             has_error = True
 
 # -  send email 'Activate your account'
@@ -1502,14 +1620,14 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
                     'uid': urlsafe_base64_encode(force_bytes(user.pk)),
                     'token': account_activation_token.make_token(user),
                     'req_school': req_school,
-                    'req_usr': req_usr,
+                    'req_usr': req_usr_last_name,
                 })
                 if logging_on:
                     logger.debug('user: ' + str(user))
                     logger.debug('current_site.domain: ' + str(current_site.domain))
                     logger.debug('urlsafe_base64_encode(force_bytes(user.pk)): ' + str(urlsafe_base64_encode(force_bytes(user.pk))))
                     logger.debug('account_activation_token.make_token(user): ' + str(account_activation_token.make_token(user)))
-                    logger.debug('req_usr: ' + str(req_usr))
+                    logger.debug('req_usr_last_name: ' + str(req_usr_last_name))
 
                 # PR2018-04-25 arguments: send_mail(subject, message, from_email, recipient_list, fail_silently=False, auth_user=None, auth_password=None, connection=None, html_message=None)
                 mail_count = send_mail(subject, message, from_email, [user.email], fail_silently=False)
@@ -1528,19 +1646,24 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
                 """
 
                 if not mail_count:
-                    err_dict['msg01'] = _('An error occurred.')
-                    err_dict['msg02'] = _('The activation email has not been sent.')
+                    msg_list = [gettext('An error occurred.'),
+                                gettext('The activation email has not been sent.')
+                    ]
+                    msg_html = acc_prm.msghtml_from_msglist_with_border(msg_list, 'border_bg_invalid')
                 else:
                 # - return message 'We have sent an email to user'
-                    msg01 = _("We have sent an email to the email address '%(email)s' of user '%(usr)s'.") % \
-                                                    {'email': user.email, 'usr': user.username_sliced}
-                    msg02 = _('The user must click the link in that email to verify the email address and create a password.')
+                    msg_list = [gettext("We have sent an email to the email address '%(email)s' of user '%(usr)s'.") % \
+                                                    {'email': user.email, 'usr': user.username_sliced},
+                                gettext('The user must click the link in that email to verify the email address and create a password.')
+                                ]
+                    msg_html = acc_prm.msghtml_from_msglist_with_border(msg_list, 'border_bg_valid')
 
-                    update_wrap['msg_ok'] = {'msg01': msg01, 'msg02': msg02}
-
-            except:
-                err_dict['msg01'] = _('An error occurred.')
-                err_dict['msg02'] = _('The activation email has not been sent.')
+            except Exception as e:
+                logger.error(getattr(e, 'message', str(e)))
+                has_error = True
+                msg_html = acc_prm.err_html_error_occurred(e, _('The activation email has not been sent.'))
+                # err_dict['msg01'] = _('An error occurred.')
+                # err_dict['msg02'] = _('The activation email has not been sent.')
 
 # - reset expiration date by setting the field 'date_joined', to now
         if not has_error:
@@ -1560,6 +1683,7 @@ def send_activation_email(user_pk, update_wrap, err_dict, request):
             user.modifiedat = now_utc
 
             user.save()
+    return has_error, msg_html, user_dict
 # === end of send_activation_email =====================================
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

@@ -263,8 +263,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['User_list'] = _('User list')
         dict['Permissions'] = _('Permissions')
         dict['Set_permissions'] = _('Set permissions')
-        dict['User'] = _('User')
-        dict['Users'] = _('Users')
+        dict['User'] = TXT_User
+        dict['Users'] = TXT_Users
+
+        dict['Usergroup'] = TXT_Usergroup
+        dict['Usergroups'] = TXT_Usergroups
+
         dict['Read_only'] = _('Read only')
         dict['Read_only_2lines'] =  pgettext_lazy('2 lines', 'Read\nonly')
         dict['Edit'] = _('Edit')
@@ -368,6 +372,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['There_are_no'] = _('There are no')
         dict['users_selected_not_activated'] = _(' users selected, whose accounts are not acivated.')
 
+        dict['users_selected'] = _(' users selected.')
 
         dict['msg_user_info'] = [
             str(_('Required, maximum %(max)s characters. Letters, digits and @/./+/-/_ only.') % {'max': c.USERNAME_SLICED_MAX_LENGTH}),
@@ -384,18 +389,22 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Activationlink_expired'] = _('The link to active the account is valid for 7 days and has expired.')
         dict['We_will_send_an_email_to'] = _('We will email an activation link to')
-
         dict['Activation_email_not_sent'] = _('The activation email has not been sent.')
-
         dict['Activation_email_sent'] = _('The activation email is sent')
-
-
         dict['Send_activationlink'] = _('Click to send an email with an activation link.')
         dict['Activated'] = _('Activated')
         dict['Send_activation_email'] = _('Send activation email')
-
         dict['Yes_send_email'] = _('Yes, send email')
 
+        dict['Usergroup'] = TXT_Usergroup
+        dict['usergroupcaption'] = c.USERGROUP_CAPTION
+
+        dict['Add_usergroup'] = _('Add usergroup')
+        dict['Remove_usergroup'] = _('Remove usergroup')
+        dict['willbe_added_to_users'] = _("will be added to these users.")
+        dict['willbe_removed_from_users'] = _("will be removed from these users.")
+
+# ====== PAGE CORRECTOR ========================= PR2019-11-19
     if 'page_corrector' in page_list:
 
         dict['Corrector'] = TXT_Corrector
@@ -508,8 +517,8 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['Sender'] = _('Sender')
         dict['Organization'] = TXT_Organization
-        dict['User'] = _('User')
-        dict['Usergroup'] = _('Usergroup')
+        dict['User'] = TXT_User
+        dict['Usergroup'] = TXT_Usergroup
         dict['From'] = _('From')
         dict['Subject'] = pgettext_lazy('onderwerp', ' Subject')
 
@@ -554,7 +563,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Available'] = _('Available')
         dict['Organizations'] = _('Organizations')
         dict['Users'] = _('Users')
-        dict['Usergroups'] = _('User groups')
+        dict['Usergroups'] = TXT_Usergroups
 
         dict['Include_users_of_'] = _('Include users of ')
         dict['Include'] = _('Include')
@@ -1916,6 +1925,11 @@ def get_locale_dict(table_dict, user_lang, request):
 
     return dict
 
+TXT_User = _('User')
+TXT_Users = _('Users')
+TXT_Usergroup = _('Usergroup')
+TXT_Usergroups = _('Usergroups')
+
 TXT_School_code = _('School code')
 TXT_Organization = _('Organization')
 
@@ -1978,7 +1992,6 @@ TXT_Ex3_backpage = _('Ex3 back page')
 
 TXT_Name_ex_form = _('Name Ex form')
 TXT_Date_submitted = _('Date submitted')
-TXT_Submitted_by = _('Submitted by')
 TXT_Download_Exform = _('Download Ex form')
 
 TXT_Sequence = _('Sequence')

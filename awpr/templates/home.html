@@ -2,6 +2,12 @@
 {% load i18n %}
 {% load static %}
 
+
+{% block script %}
+    <script src="{% static 'js/home230412.js' %}"></script>
+
+{% endblock %}
+
 <!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
@@ -36,6 +42,12 @@
         </div>
 
     {% endif %}
+    <div id="id_data"
+    data-url_datalist_download="{% url 'url_datalist_download' %}"
+    >
+    </div>
+
+
 {% endblock %}
 
 

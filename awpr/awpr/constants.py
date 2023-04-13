@@ -715,6 +715,9 @@ HTMLCLASS_border_bg_valid = 'border_bg_valid'
 HTMLCLASS_border_bg_warning = 'border_bg_warning'
 HTMLCLASS_border_bg_transparent = 'border_bg_transparent'
 
+# ERROR MESSAGES PR2023-04-13
+ERROR_CANNOT_MAKE_CHANGES = _('You cannot make changes.')
+
 # XLSWRITER FORMATS
 
 XF_BOLD = {'bold': True}

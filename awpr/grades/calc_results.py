@@ -4047,11 +4047,11 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
 
     # TODO pok is possible if use_exemp
     # The following situation exists:
-    # - a student has an exemption with grade 9
+    # - a student has an exemption with final grade 9
     # - she does exam this exam period and gets an 8
     # - AWP calculates the result based on the exemption
     #  - the student fails again
-    # - because she did the exam this year, she must get a new exemption
+    # - because she did the exam this year, she must get a new exemption, based on final grade 8
     # - therefore calculating max_pok is not enough, because it looks at the exemption and gives pok = False
     # - solution: add pok_sesr, pok_pece and pok_final to studsubject
 
@@ -4087,9 +4087,9 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
                 else:
         # a. Eindcijfer moet minstens een 7 zijn.
                     final_grade_ok = final_grade and Decimal(final_grade) >= 7
-        # b. SE cijfer moet minstens een 6 zijn.
+        # b. SE cijfer moet minstens een 6,0 zijn.
                     sesr_grade_ok = weight_se > 0 and sesr_grade and Decimal(sesr_grade) >= 6
-        # c. CE cijfer moet minstens een 6 zijn.
+        # c. CE cijfer moet minstens een 6,0 zijn.
                 #PR2020-05-20 Corona: geen CE cijfer, sla deze eis daarom over
                     if no_centralexam:
                         pece_grade_ok = True
@@ -4103,7 +4103,7 @@ def calc_pok(no_centralexam, gradetype, is_combi, weight_se, weight_ce,
                 logger.debug('    pece_grade_ok: ' + str(pece_grade_ok))
                 logger.debug('    final_grade_ok: ' + str(final_grade_ok))
 
-#5. bereken BewijsVanKennisOK
+#5. bereken BewijsVanKennis OK
     if final_grade_ok and sesr_grade_ok and pece_grade_ok:
         proof_of_knowledge_ok = True
 

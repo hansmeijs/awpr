@@ -21,6 +21,8 @@
     let subject_rows = [];
     //let cluster_rows = [];
 
+    // TODO 2023-03-13 change examyear_rows to examyear_dicts
+    const examyear_dicts = {};
     const studsubj_dictsNEW = {}; //PR2023-01-05 new approach, dict instead of sorted list
     const cluster_dictsNEW = {}; //PR2023-01-26 new approach, dict instead of sorted list
 
@@ -133,8 +135,8 @@
 //========= UpdateHeaderbar  ================== PR2020-11-14 PR2020-12-02 PR2023-01-08
     function b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school){
         //console.log(" --- UpdateHeaderbar ---" )
-        //console.log("    setting_dict", setting_dict )
-        //console.log("    permit_dict", permit_dict )
+    //console.log("    setting_dict", setting_dict )
+    //console.log("    el_hdrbar_examyear", el_hdrbar_examyear )
 
 // --- EXAM YEAR
         if(el_hdrbar_examyear) {
@@ -157,19 +159,17 @@
             add_or_remove_class(el_hdrbar_examyear_locked.children[0], "stat_0_6", setting_dict.sel_examyear_locked,"stat_0_0" );
         };
 
-
-
 // --- DEPARTMENT
         if(el_hdrbar_department) {
             const display_department = (!!permit_dict.display_department);
 
-        console.log("display_department", display_department )
-        console.log("permit_dict.allowed_depbases", permit_dict.allowed_depbases )
+    //console.log("display_department", display_department )
+    //console.log("permit_dict.allowed_depbases", permit_dict.allowed_depbases )
             const allowed_depbases_count = (permit_dict.allowed_depbases) ? permit_dict.allowed_depbases.length : 0
             const may_select_department = (display_department && allowed_depbases_count > 1);
 
-        console.log("allowed_depbases_count", allowed_depbases_count )
-        //console.log("may_select_department", may_select_department )
+    //console.log("allowed_depbases_count", allowed_depbases_count )
+    //console.log("may_select_department", may_select_department )
             add_or_remove_class(el_hdrbar_department, cls_hide, !display_department)
             // add pointer on hover when tehere are multiple departments
             add_or_remove_class(el_hdrbar_department, "awp_navbaritem_may_select", may_select_department, "awp_navbar_item" )
@@ -228,11 +228,11 @@
             };
             el_hdrbar_school.innerText = schoolname_txt;
 
-//console.log("display_school", display_school)
-//console.log("may_select_school", may_select_school)
+    //console.log("display_school", display_school)
+    //console.log("may_select_school", may_select_school)
 
         };
-//console.log(el_hdrbar_school)
+    //console.log(el_hdrbar_school)
 
     };  // UpdateHeaderbar
 
