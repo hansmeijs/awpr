@@ -183,34 +183,38 @@ class UserUploadView(View):
             # - checks if country is locked and if examyear is missing, not published or locked
             # - skip allow_not_published when req_usr is admin (ETE) or system
             allow_not_published = req_usr.role >= c.ROLE_064_ADMIN
-            sel_examyear, may_edit, err_lst = get_selected_examyear_from_usersetting(request, allow_not_published)
+            sel_examyear, err_lst = get_selected_examyear_from_usersetting(request, allow_not_published)
             if err_lst:
                 border_class = c.HTMLCLASS_border_bg_invalid
-                err_lst.append(c.ERROR_CANNOT_MAKE_CHANGES)
-                msg_list.extend(err_lst)
+                msg_list.append(acc_prm.err_html_no_permit())  # default: 'to perform this action')
 
             # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
             requsr_permitlist = acc_prm.get_permit_list('page_user', req_usr)
 
-            has_permit_same_school, has_permit_other_schools = False, False
-            if may_edit and requsr_permitlist:
-                has_permit_other_schools = 'permit_crud_otherschool' in requsr_permitlist
-                has_permit_same_school = 'permit_crud_sameschool' in requsr_permitlist
+            has_permit_crud, has_permit_crud_otherschool, has_permit_addto_otherschool = False, False, False
+            if not err_lst and requsr_permitlist:
+                has_permit_crud = 'permit_crud' in requsr_permitlist
+                has_permit_addto_otherschool = 'permit_addto_otherschool' in requsr_permitlist
+                has_permit_crud_otherschool = 'permit_crud_otherschool' in requsr_permitlist
 
             if logging_on:
                 logger.debug('    requsr_permitlist: ' + str(requsr_permitlist))
-                logger.debug('    has_permit_other_schools: ' + str(has_permit_other_schools))
-                logger.debug('    has_permit_same_school: ' + str(has_permit_same_school))
+                logger.debug('    has_permit_crud: ' + str(has_permit_crud))
+                logger.debug('    has_permit_addto_otherschool: ' + str(has_permit_addto_otherschool))
+                logger.debug('    has_permit_crud_otherschool: ' + str(has_permit_crud_otherschool))
 
-            if has_permit_same_school or has_permit_other_schools:
+            if not has_permit_crud and not has_permit_addto_otherschool and not has_permit_crud_otherschool:
+                border_class = c.HTMLCLASS_border_bg_invalid
+                msg_list.append(gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
 
+            else:
 # - get upload_dict from request.POST
                 upload_json = request.POST.get("upload")
                 if upload_json:
                     upload_dict = json.loads(upload_json)
 
                     if logging_on:
-                        logger.debug('upload_dict: ' + str(upload_dict))
+                        logger.debug('    upload_dict: ' + str(upload_dict))
                         logger.debug('    sel_examyear: ' + str(sel_examyear))
 
                     # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
@@ -254,24 +258,27 @@ class UserUploadView(View):
                     err_dict = {}
                     has_permit = False
                     if user_schoolbase:
-                        user_schoolbase_defaultrole = getattr(user_schoolbase, 'defaultrole')
-                        if user_schoolbase_defaultrole is None:
-                            user_schoolbase_defaultrole = 0
+                        user_schoolbase_defaultrole = getattr(user_schoolbase, 'defaultrole') or 0
+
                         if user_schoolbase_defaultrole <= req_usr.role:
-                            if has_permit_other_schools:
+                            if has_permit_addto_otherschool or has_permit_crud_otherschool:
                                 has_permit = True
-                            elif has_permit_same_school:
-                                has_permit = is_same_schoolbase
+                            elif has_permit_crud and is_same_schoolbase:
+                                has_permit = True
 
                         if logging_on:
                             logger.debug('    user_schoolbase: ' + str(user_schoolbase))
                             logger.debug('    user_schoolbase_defaultrole: ' + str(user_schoolbase_defaultrole))
-                            logger.debug('    has_permit_other_schools: ' + str(has_permit_other_schools))
-                            logger.debug('    has_permit_same_school: ' + str(has_permit_same_school))
+                            logger.debug('    has_permit_crud_otherschool: ' + str(has_permit_crud_otherschool))
+                            logger.debug('    is_same_schoolbase: ' + str(is_same_schoolbase))
+                            logger.debug('    has_permit_crud: ' + str(has_permit_crud))
                             logger.debug('    has_permit: ' + str(has_permit))
 
                     if not has_permit:
-                        err_dict['msg01'] = _("You don't have permission to perform this action.")
+                        border_class = c.HTMLCLASS_border_bg_invalid
+                        msg_list.append(
+                            gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
+
                     else:
                         updated_dict = {}
 
@@ -293,12 +300,12 @@ class UserUploadView(View):
                             if user_pk:
                 # - get user_instance
                                 user_instance = None
-                                if has_permit_other_schools:
+                                if has_permit_crud_otherschool:
                                     user_instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
                                         country=req_usr.country
                                     )
-                                elif has_permit_same_school:
+                                elif has_permit_crud and is_same_schoolbase:
                                     user_instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
                                         country=req_usr.country,
@@ -438,11 +445,11 @@ class UserUploadView(View):
 
 # - +++++++++ update ++++++++++++
                             user_instance = None
-                            if has_permit_other_schools:
+                            if has_permit_crud_otherschool:
                                 user_instance = acc_mod.User.objects.get_or_none(
                                     id=user_pk,
                                     country=req_usr.country)
-                            elif has_permit_same_school:
+                            elif has_permit_crud and is_same_schoolbase:
                                 user_instance = acc_mod.User.objects.get_or_none(
                                     id=user_pk,
                                     country=req_usr.country,
@@ -451,7 +458,12 @@ class UserUploadView(View):
                             if logging_on:
                                 logger.debug('    user_instance: ' + str(user_instance))
 
-                            if user_instance:
+                            if user_instance is None:
+                                border_class = c.HTMLCLASS_border_bg_invalid
+                                msg_list.append(
+                                    gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
+
+                            else:
                                 err_dict, ok_dict = update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, request)
                                 if err_dict:
                                     update_wrap['msg_err'] = err_dict
@@ -480,10 +492,8 @@ class UserUploadView(View):
         if msg_list:
             update_wrap['msg_dictlist'] = msg_list
 
-
         if msg_list:
             update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
-
 
         if user_without_userallowed:
             update_wrap['user_without_userallowed'] = user_without_userallowed
@@ -774,7 +784,7 @@ class UserAllowedSectionsUploadView(View):
                 update_wrap['mode'] = mode
 
 # - get selected examyear from usersettings
-                sel_examyear, may_edit, msg_list = \
+                sel_examyear, msg_list = \
                     get_selected_examyear_from_usersetting(request)
 
 # - get selected user instance
@@ -2938,7 +2948,6 @@ def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, req
                 now_utc = now_utc_naive.replace(tzinfo=pytz.utc)
 
                 try:
-
                     if logging_on:
                         logger.debug(' request.user.pk: ' + str(request.user.pk))
 
@@ -3135,55 +3144,6 @@ def update_allowedclusters(request, user_instance, sel_examyear, field_value, va
 
     return data_has_changed
 # - end of update_allowedclusters
-
-# +++++++++++++++++++  permits +++++++++++++++++++++++
-def get_permit(permits_int, permit_index):  # PR2020-10-12 PR2021-01-18
-    has_permit = False
-    if permits_int and permit_index:
-        permits_tuple = get_permits_tuple(permits_int)
-        has_permit = permit_index in permits_tuple
-    return has_permit
-
-
-def get_permits_tuple(permits_int): # PR2020-10-12 separate function made
-    # PR2018-05-27 permits_tuple converts self.permits_int into tuple, e.g.: permits=15 will be converted to permits_tuple=(1,2,4,8)
-    permits_list = []
-    if permits_int is not None:
-        if permits_int != 0:
-            for i in range(7, -1, -1):  # range(start_value, end_value, step), end_value is not included!
-                power = 2 ** i
-                if permits_int >= power:
-                    permits_int = permits_int - power
-                    permits_list.insert(0, power)  # list.insert(0, value) adds at the beginning of the list
-    if not permits_list:
-        permits_list = [0]
-    return tuple(permits_list)
-
-
-def get_permit_sum_from_tuple(permits_tuple):
-    # PR2021-01-19 sum all values of permits in tuple
-    return sum(permits_tuple) if permits_tuple else 0
-
-
-def remove_other_auth_permits(permit_field, permit_list):
-    # PR2021-01-19 remove value of other auth permits when auth permit is set
-    if permit_field != "perm_auth1" and c.USERGROUP_AUTH1_PRES in permit_list:
-        permit_list.remove(c.USERGROUP_AUTH1_PRES)
-    if permit_field != "perm_auth2" and c.USERGROUP_AUTH2_SECR in permit_list:
-        permit_list.remove(c.USERGROUP_AUTH2_SECR)
-    if permit_field != "perm_auth3" and c.USERGROUP_AUTH3_EXAM in permit_list:
-        permit_list.remove(c.USERGROUP_AUTH3_EXAM)
-    if permit_field != "perm_auth4" and c.USERGROUP_AUTH4_CORR in permit_list:
-        permit_list.remove(c.USERGROUP_AUTH4_CORR)
-
-
-def has_permit(permits_int, permit_index): # PR2020-10-12 separate function made PR2021-01-18
-    has_permit = False
-    if permits_int:
-        permits_tuple = get_permits_tuple(permits_int)
-        has_permit = permit_index in permits_tuple
-    return has_permit
-
 
 # +++++++++++++++++++  get and set setting +++++++++++++++++++++++
 
@@ -4135,28 +4095,6 @@ def get_sql_depbase_clause(sel_examyear_instance, sel_school, allowed_depbases_d
 # - end of get_sql_depbase_clause
 
 
-
-def get_permit_crud(page, request):
-    # --- get crud permit for page # PR2022-08-07
-    logging_on = False  # s.LOGGING_ON
-
-    if logging_on:
-        logger.debug(' ----- get_permit_crud ----- ')
-
-    has_permit = False
-    if request.user and request.user.country and request.user.schoolbase:
-        permit_list = request.user.permit_list(page)
-        if permit_list:
-            has_permit = 'permit_crud' in permit_list
-
-        if logging_on:
-            logger.debug('permit_list: ' + str(permit_list))
-            logger.debug('has_permit: ' + str(has_permit))
-
-    return has_permit
-# - end of get_permit_crud
-
-
 def check_schoolbase_allowed(schoolbase_instance, request):
     # - check if requsr_schoolbase is in allowed_sections, set None if not found PR2022-0=12-05
     schoolbase_is_allowed = False
@@ -5004,7 +4942,7 @@ def message_diff_exyr(request, sel_examyear_instance):
 ############## end of moved from downloads 2022-12-18 ###########################
 
 def get_selected_examyear_from_usersetting(request, allow_not_published=False):
-    # PR2021-09-08 PR2022-02-26 PR2022-04-16 PR2022-08-04
+    # PR2021-09-08 PR2022-02-26 PR2022-04-16 PR2022-08-04 PR2023-04-13
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
@@ -5021,7 +4959,10 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
     if req_usr.country:
         requsr_country = req_usr.country
         if requsr_country.locked:
-            msg_list.append(str(_('This country is locked.')))
+            # msg_list.append(str(_('This country is locked.')))
+            msg_list.append(gettext("%(country)s has no license yet to use AWP-online this exam year.") % \
+                                                 {'country': requsr_country.name})
+
         else:
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             if logging_on:
@@ -5049,7 +4990,7 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
         logger.debug('msg_list: ' + str(msg_list))
         logger.debug('may_edit: ' + str(may_edit))
 
-    return sel_examyear, may_edit, msg_list
+    return sel_examyear, msg_list
 # - end of get_selected_examyear_from_usersetting
 
 
@@ -5085,7 +5026,7 @@ def get_selected_examyear_examperiod_from_usersetting(request):  # PR2021-07-08 
 
 def get_selected_examyear_examperiod_dep_school_from_usersetting(request):  # PR2022-01-31
     # - get selected examyear and department from usersettings, only examyear from request.user.country
-    # used in ExamyearUploadView, OrderlistDownloadView
+    # used in ExamApproveOrPublishExamView
     # note: examyear.code is integer '2021'
     sel_examyear, sel_department, sel_school, sel_examperiod = None, None, None, None
     if request.user and request.user.country:
@@ -5377,7 +5318,10 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
         else:
             requsr_country = req_usr.country
             if requsr_country.locked:
-                msg_list.append(gettext('This country is locked.'))
+                # msg_list.append(gettext('This country is locked.'))
+                msg_list.append(_("%(country)s has no license yet to use AWP-online this exam year.") % \
+                                                 {'country': requsr_country.name})
+
 
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             if logging_on:
@@ -5674,7 +5618,7 @@ def get_sel_depbase_instance(sel_school_instance, page, request, request_item_de
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
@@ -5940,15 +5884,16 @@ def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
 # - end of get_selected_lvlbase_sctbase_from_usersetting
 
 
-def message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published=False):  # PR2021-12-04 PR2022-08-04
-    if sel_examyear is None:
-        msg_list.append(str(_('There is no exam year selected.')))
+def message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published=False):
+    # PR2021-12-04 PR2022-08-04 PR2023-04-13
+    if sel_examyear is None :
+        msg_list.append(gettext('There is no exam year selected.'))
     elif sel_examyear.locked:
-        msg_list.append(str(_('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)}))
+        msg_list.append(gettext('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)})
     elif not allow_not_published and not sel_examyear.published:
-        msg_list.extend((str(_("%(admin)s has not yet published examyear %(exyr)s.") % \
-                             {'admin': _('The Division of Examinations'), 'exyr': str(sel_examyear.code)}),
-                         str(_('You cannot enter data.'))))
+        msg_list.append(gettext("%(admin)s has not yet published examyear %(exyr)s.") % \
+                             {'admin': gettext('The Division of Examinations'), 'exyr': str(sel_examyear.code)})
+        msg_list.append(gettext('You cannot enter data.'))
 # - end of message_examyear_missing_notpublished_locked
 
 

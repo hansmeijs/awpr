@@ -437,7 +437,7 @@ def create_subjectrows_for_page_users(sel_examyear):
     # PR2022-06-15 debug: new subject has no si yet, will not show, cannot add si.
     # Make separate sql for page Subjects, without si link
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
 
     if logging_on:
         logger.debug(' =============== create_subjectrows_for_page_users ============= ')
@@ -562,7 +562,7 @@ def create_cluster_rows(request, sel_examyear, sel_schoolbase, sel_depbase,
 
 
 @method_decorator([login_required], name='dispatch')
-class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
+class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18 PR2023-04-14
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -574,7 +574,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
         update_wrap = {}
 
 # - get permit
-        has_permit = get_permit_crud_page_subject(request)
+        has_permit = acc_prm.has_permit( request, 'page_subject', ['permit_crud'])
         if has_permit:
 
 # - reset language
@@ -609,7 +609,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
                 # - no exam year selected
                 # - exam year is locked
                 # - (skip check for not published)
-                sel_examyear, may_edit, sel_msg_list = acc_view.get_selected_examyear_from_usersetting(request, True) # allow_not_published = True
+                sel_examyear, sel_msg_list = acc_view.get_selected_examyear_from_usersetting(request, True) # allow_not_published = True
                 if sel_msg_list:
                     msg_html = '<br>'.join(sel_msg_list)
                     messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
@@ -699,7 +699,7 @@ class SubjectUploadView(View):  # PR2020-10-01 PR2021-05-14 PR2021-07-18
 
 ##########################
 @method_decorator([login_required], name='dispatch')
-class SubjecttypebaseUploadView(View):  # PR2021-06-29 PR2022-08-06
+class SubjecttypebaseUploadView(View):  # PR2021-06-29 PR2022-08-06 PR2023-04-13
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -712,7 +712,7 @@ class SubjecttypebaseUploadView(View):  # PR2021-06-29 PR2022-08-06
         update_wrap = {}
 
 # - get permit
-        has_permit = get_permit_crud_page_subject(request)
+        has_permit = acc_prm.has_permit( request, 'page_subject', ['permit_crud'])
         if has_permit:
 
 # - reset language
@@ -1012,7 +1012,7 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
         update_wrap = {}
 
 # - get permit
-        has_permit = get_permit_crud_page_subject(request)
+        has_permit = acc_prm.has_permit( request, 'page_subject', ['permit_crud'])
         if has_permit:
 
 # - reset language
@@ -1119,7 +1119,7 @@ class SubjecttypeUploadView(View):  # PR2021-06-23
 ##########################
 
 @method_decorator([login_required], name='dispatch')
-class SchemeUploadView(View):  # PR2021-06-27
+class SchemeUploadView(View):  # PR2021-06-27 PR2023-04-14
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -1133,7 +1133,7 @@ class SchemeUploadView(View):  # PR2021-06-27
         update_wrap = {}
 
 # - get permit
-        has_permit = get_permit_crud_page_subject(request)
+        has_permit = acc_prm.has_permit( request, 'page_subject', ['permit_crud'])
         if has_permit:
 
 # - reset language
@@ -1205,7 +1205,7 @@ class SchemeUploadView(View):  # PR2021-06-27
 ##########################
 
 @method_decorator([login_required], name='dispatch')
-class SchemeitemUploadView(View):  # PR2021-06-25
+class SchemeitemUploadView(View):  # PR2021-06-25 PR2023-04-14
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -1216,7 +1216,7 @@ class SchemeitemUploadView(View):  # PR2021-06-25
         update_wrap = {}
 
 # - get permit
-        has_permit = get_permit_crud_page_subject(request)
+        has_permit = acc_prm.has_permit( request, 'page_subject', ['permit_crud'])
         if has_permit:
 
 # - reset language
@@ -1282,25 +1282,6 @@ class SchemeitemUploadView(View):  # PR2021-06-25
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of SchemeitemUploadView
-
-
-def get_permit_crud_page_subject(request):
-    # --- get crud permit for page subject # PR2021-06-26
-    logging_on = False  # s.LOGGING_ON
-
-    if logging_on:
-        logger.debug(' ----- get_permit_crud_page_subject ----- ')
-
-    has_permit = False
-    if request.user and request.user.country:
-        permit_list = request.user.permit_list('page_subject')
-        if permit_list:
-            has_permit = 'permit_crud' in permit_list
-        if logging_on:
-            logger.debug('permit_list: ' + str(permit_list))
-            logger.debug('has_permit: ' + str(has_permit))
-
-    return has_permit
 
 
 def get_sel_examyear(message_header, msg_dictlist, request):
@@ -1539,7 +1520,7 @@ class ExamUploadView(View):
                     logger.debug('    has_permit: ' + str(has_permit))
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit(_('to perform this action'))
+                msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
             else:
                 append_dict = {}
                 deleted_row = None
@@ -2299,7 +2280,7 @@ class ExamUploadDuoExamView(View):
                     logger.debug('    has_permit: ' + str(has_permit))
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit(_('to perform this action'))
+                msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
             else:
 
                 append_dict = {}

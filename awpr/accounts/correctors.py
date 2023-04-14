@@ -72,7 +72,7 @@ class UserAllowedClusterUploadView(View):
             has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit(_('to perform this action'))
+                msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
             else:
 
 # - get variables
@@ -167,7 +167,7 @@ class UserCompensationUploadView(View):
                 logger.debug('    has_permit:' + str(has_permit))
 
             if not has_permit:
-                msg_html = acc_prm.err_html_no_permit(_('to perform this action'))
+                msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
             else:
 
 # - get variables
@@ -463,7 +463,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
                 logger.debug('    has_permit:  ' + str(has_permit))
 
         if not has_permit:
-            msg_html = acc_prm.err_html_no_permit(_('to perform this action'))
+            msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
         else:
 
 # - get upload_dict from request.POST

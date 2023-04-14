@@ -261,6 +261,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if ("schoolsetting_dict" in response) {
                     i_UpdateSchoolsettingsImport(response.schoolsetting_dict);
                 };
+
+                if ("msg_html" in response) {
+                    b_show_mod_message_html(response.msg_html)
+                };
+                if ("messages" in response) {
+                    b_show_mod_message_dictlist(response.messages);
+                };
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows);
@@ -273,7 +280,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 if ("school_rows" in response) {
                     school_rows = response.school_rows;
-                }
+                };
+
 
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
             },
@@ -612,6 +620,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("messages" in response) {
                         b_show_mod_message_dictlist(response.messages);
                     };
+
+                    if ("msg_html" in response) {
+                        b_show_mod_message_html(response.msg_html)
+                    };
+
+
                     $("#id_mod_school").modal("hide");
 
                 },  // success: function (response) {

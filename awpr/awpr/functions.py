@@ -3241,12 +3241,15 @@ def message(req_usr, page_name ='None'):
     # TODO exclude read, authorize and None permissions
     if page_name == 'examyear_modify':
         # logger.debug('page: examyear_modify')
-        if not acc_prm.is_role_insp_or_system_and_group_admi(req_usr):
+        if not acc_prm.is_role_insp_or_system_and_group_admin(req_usr):
             # logger.debug('page: is_role_insp_or_system_and_group_admin')
             return _("You don't have permission to modify exam years.")
         elif req_usr.country_locked:
             # logger.debug('page: country_locked')
-            return _("This country is locked. You cannot modify exam years.")
+            # return _("This country is locked. You cannot modify exam years.")
+            return _("%(country)s has no license yet to use AWP-online this exam year.") % \
+                            {'country': req_usr.country.name if req_usr.country else '---'}
+
         else:
             # logger.debug('page: return None')
             return None  # Not disabled: admin of role_system and role_insp can modify examyears, if country not locked
@@ -3272,10 +3275,12 @@ def message(req_usr, page_name ='None'):
     # - departments / levels / sectors: can only be modified by role_system and role_insp, only admin
     # TODO exclude read, authorize and None permissions
     if page_name == 'default_items_modify':
-        if not acc_prm.is_role_insp_or_system_and_group_admi(req_usr):
+        if not acc_prm.is_role_insp_or_system_and_group_admin(req_usr):
             return _("You don't have permission to modify these items.")
         elif req_usr.country_locked:
-            return _("This country is locked. You cannot modify these items.")
+            # return _("This country is locked. You cannot modify these items.")
+            return _("%(country)s has no license yet to use AWP-online this exam year.") % \
+                    {'country': req_usr.country.name if req_usr.country else '---'}
         else:
             return None  # TODO: change: Not disabled: admin of role_system and role_insp can modify default schools, if country not locked
 
@@ -3286,10 +3291,12 @@ def message(req_usr, page_name ='None'):
     # - scheme, PR2018-08-23   >>>>>>>>>schooldefault / subjectdefault / departments / levels / sectors: can only be modified by role_system and role_insp, only admin
     if page_name == 'scheme_etc_edit':
         # TODO exclude read, authorize and None permissions
-        if not acc_prm.is_role_insp_or_system_and_group_admi(req_usr):
+        if not acc_prm.is_role_insp_or_system_and_group_admin(req_usr):
             return _("You don't have permission to modify these items.")
         elif req_usr.country_locked:
-            return _("This country is locked. You cannot modify these items.")
+            #return _("This country is locked. You cannot modify these items.")
+            return _("%(country)s has no license yet to use AWP-online this exam year.") % \
+                    {'country': req_usr.country.name if req_usr.country else '---'}
         elif req_usr.examyear_locked:
             return _("This examyear is locked. You cannot modify these items.")
         else:
@@ -3314,7 +3321,9 @@ def message(req_usr, page_name ='None'):
 
     if page_name == 'school_edit' or page_name == 'school_add_delete':
         if req_usr.country_locked:
-            return _("This country is locked. You cannot modify schools.")
+            #return _("This country is locked. You cannot modify schools.")
+            return _("%(country)s has no license yet to use AWP-online this exam year.") % \
+                    {'country': req_usr.country.name if req_usr.country else '---'}
         elif req_usr.examyear_locked:
             return _("This examyear is locked. You cannot modify schools.")
         elif not req_usr.is_usergroup_admin:
@@ -3339,7 +3348,9 @@ def message(req_usr, page_name ='None'):
         #  if not req_usr.is_role_school:
         #    return _("You don't have permission to modify these items.")
         if req_usr.country_locked:
-            return _("This country is locked. You cannot modify these items.")
+            # return _("This country is locked. You cannot modify these items.")
+            return _("%(country)s has no license yet to use AWP-online this exam year.") % \
+                   {'country': req_usr.country.name if req_usr.country else '---'}
         elif req_usr.examyear_locked:
             return _("This examyear is locked. You cannot modify these items.")
         elif req_usr.school_locked:

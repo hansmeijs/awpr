@@ -107,7 +107,7 @@ class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18  PR2022-09-16
                 header_txt = _('Create label text') if is_create else _('Delete label text') if is_delete else _('Edit label text')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -436,7 +436,7 @@ class EnvelopLabelUploadView(View):  # PR2022-08-08 PR2022-09-16
                 header_txt = _('Create label') if is_create else _('Delete label') if is_delete else _('Edit label')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -775,7 +775,7 @@ class EnvelopBundleUploadView(View):  # PR2022-08-11 PR2022-09-16
                 header_txt = _('New label bundle') if is_create else _('Delete label bundle') if is_delete else _('Edit label bundle')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -1077,7 +1077,7 @@ class EnvelopSubjectUploadView(View):  # PR2022-10-10
                 header_txt = _('Edit subject bundle')
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))
@@ -2098,7 +2098,7 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
             if has_permit:
 
 # ----- get selected examyear from usersettings
-                sel_examyear, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
+                sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
                     logger.debug('may_edit:       ' + str(may_edit))

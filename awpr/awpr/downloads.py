@@ -606,6 +606,7 @@ def download_setting(request_item_setting, user_lang, request):
     setting_dict = {'user_lang': user_lang, 'sel_page': page}
 
 # - create permit_dict
+    # creates permit_dict and adds keys 'requsr_pk', 'requsr_name', 'requsr_role' and  'requsr_role_school', 'requsr_role_corr' etc
     permit_dict = create_permit_dict(request)
 
     sel_examyear_instance = acc_prm.get_sel_examyear_from_user_instance(request.user)
@@ -789,7 +790,6 @@ def download_setting(request_item_setting, user_lang, request):
     )
     if sel_authindex_tobesaved:
         selected_pk_dict_has_changed = True
-
 
 # ===== SECTORBASE, SCHEME, SUBJECT, STUDENT, =======================
     # PR2021-01-23 PR2021-03-14 PR2021-08-13 PR2022-03-06

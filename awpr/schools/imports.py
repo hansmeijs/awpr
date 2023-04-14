@@ -1491,11 +1491,11 @@ class UploadImportUsernameView(View):  # PR2021-08-04
 
         # - get selected examyear from usersettings
                     sel_examyear_instance = acc_prm.get_sel_examyear_from_requsr(request)
-                    sel_examyear_instance, may_edit, error_list = acc_view.get_selected_examyear_from_usersetting(
+                    sel_examyear_instance, error_list = acc_view.get_selected_examyear_from_usersetting(
                         request=request,
                         allow_not_published=False
                     )
-                    if not may_edit:
+                    if error_list:
                         error_list.append(str(_('You cannot make changes.')))
                         err_html = '<br>'.join(error_list)
                         update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
@@ -4090,14 +4090,14 @@ class UploadImportNtermentableView(View):  # PR2022-02-26
 
 # - get selected examyear, school and department from usersettings
                 # PR2022-07-01 TODO
-                sel_examyear, may_edit, err_list = acc_view.get_selected_examyear_from_usersetting(request)
+                sel_examyear, err_list = acc_view.get_selected_examyear_from_usersetting(request)
                 if err_list:
                     msg_list.extend(err_list)
 
                 if not has_permit:
                     err_html = _("You don't have permission to perform this action.")
                     update_wrap['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
-                elif not may_edit:
+                elif err_list:
                     err_html = '<br>'.join(msg_list)
                     update_wrap['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
                 else:

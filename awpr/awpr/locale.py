@@ -319,11 +319,12 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Sysadm_cannot_remove_sysadm_perm'] = _("System administrators cannot remove their own 'system administrator' permission.")
         dict['Sysadm_cannot_set_inactive'] = _("System administrators cannot make their own account inactive.")
 
+        dict['cannot_change_other_organizations'] = _("You cannot make changes in accounts of other organizations.")
+
         dict['School_code'] = TXT_School_code
         dict['Username'] = _('Username')
         dict['Name'] = _('Name')
         dict['Email_address'] = TXT_Email_address
-        dict['Linked_to_employee'] = _('Linked to employee')
         dict['Activated_on'] = _('Activated on')
         dict['Last_loggedin'] = _('Last logged in')
         dict['Add_user'] = _('Add user')
@@ -373,6 +374,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['users_selected_not_activated'] = _(' users selected, whose accounts are not acivated.')
 
         dict['users_selected'] = _(' users selected.')
+        dict['users_selected_other_org_plur'] = _(' users selected of other organizations. They will be skipped.')
+        dict['users_selected_other_org_sing'] = _('There is 1 user selected of an other organization. That user will be skipped.')
 
         dict['msg_user_info'] = [
             str(_('Required, maximum %(max)s characters. Letters, digits and @/./+/-/_ only.') % {'max': c.USERNAME_SLICED_MAX_LENGTH}),

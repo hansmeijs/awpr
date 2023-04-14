@@ -1761,6 +1761,7 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         // TODO header, set focus after closing messagebox
 
         console.log( " -----b_show_mod_message_html -----");
+        console.log( "    msg_html", msg_html);
         console.log( "    header_text", header_text);
         console.log( "    max_size", max_size);
 
@@ -1772,7 +1773,6 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
         const el_msg_btn_cancel = document.getElementById("id_mod_message_btn_cancel");
         if(el_msg_btn_cancel){set_focus_on_el_with_timeout(el_msg_btn_cancel, 150 )};
-
 
     // hide btn 'Dont show again - used in anouncements - anouncements use b_show_mod_message_dictlist PR2022-06-01
         const el_mod_message_btn_hide = document.getElementById("id_mod_message_btn_hide");
@@ -1806,8 +1806,8 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
 //=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01 PR2022-08-28
     function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
-        //console.log("==== b_show_mod_message_dictlist  ======")
-        //console.log("msg_dictlist", msg_dictlist, typeof msg_dictlist)
+        console.log("==== b_show_mod_message_dictlist  ======")
+        console.log("msg_dictlist", msg_dictlist, typeof msg_dictlist)
         //console.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
@@ -1815,6 +1815,9 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         //  {'msg_html': [msg], 'class': 'border_bg_transparent', 'size': 'lg', 'btn_hide': True}
 
         const el_container = document.getElementById("id_mod_message_container");
+
+        console.log("el_container", el_container);
+
         if(el_container){
             if(msg_dictlist){
                 // convert to list when msg_dictlist is not a list

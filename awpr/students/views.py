@@ -2819,7 +2819,7 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                 if mode == 'publish_exam':
                     formname = 'ete_exam'
                     sel_school, sel_department = None, None
-                    sel_examyear, may_edit, msg_list = acc_view.get_selected_examyear_from_usersetting(request)
+                    sel_examyear, msg_list = acc_view.get_selected_examyear_from_usersetting(request)
                 elif mode == 'submit_grade_exam':
                     formname = 'grade_exam'
                     sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
@@ -2829,7 +2829,7 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                     sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                         acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
-                if may_edit:
+                if not msg_list:
                     try:
             # create _verificationcode and key, store in usersetting, send key to client, set expiration to 30 minutes
                         verif_key, verif_code = af.create_verificationcode(formname, request)

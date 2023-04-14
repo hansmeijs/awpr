@@ -933,7 +933,7 @@ console.log("user_dicts",user_dicts)
     function UploadToggleMultiple(el_input) {
         console.log( " ==== UploadToggleMultiple ====");
         //console.log( "el_input", el_input);
-        //console.log( "permit_dict", permit_dict);
+        console.log( "permit_dict", permit_dict);
         // only called by fields starting qith  "group"
 
 // ---  get  data_dict
@@ -945,76 +945,90 @@ console.log("user_dicts",user_dicts)
         const sel_usergroup = (arr && arr[1]) ? arr[1] : null;
 
 // ---  get permit
-        const has_permit = (permit_dict.permit_crud_otherschool) ||
-                            (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
+        if (data_dict && sel_usergroup){
+            if (!permit_dict.permit_crud) {
+                // no permit
+            } else if (data_dict.schoolbase_id !== permit_dict.requsr_schoolbase_pk){
+                b_show_mod_message_html(loc.cannot_change_other_organizations);
+            } else {
 
-        if(has_permit && data_dict && sel_usergroup){
+                const has_sel_usergroup = (data_dict.usergroups) ?  data_dict.usergroups.includes(sel_usergroup) : false;
+                // permit_bool = true means that the user has this usergroup
+                const new_permit_bool = !has_sel_usergroup
+        // ---  create mod_dict
+                mod_dict = {mode: "update_usergroup_multiple",
+                            table: tblName,
+                            usergroup: sel_usergroup,
+                            permit_bool: new_permit_bool
+                            };
 
-            const has_sel_usergroup = (data_dict.usergroups) ?  data_dict.usergroups.includes(sel_usergroup) : false;
-            // permit_bool = true means that the user has this usergroup
-            const new_permit_bool = !has_sel_usergroup
-    // ---  create mod_dict
-            mod_dict = {mode: "update_usergroup_multiple",
-                        table: tblName,
-                        usergroup: sel_usergroup,
-                        permit_bool: new_permit_bool
-                        };
+    // ---  loop through tblBody.rows and fill user_pk_list, skip user of tr_clicked
+                let other_org_count = 0
+                mod_dict.user_pk_list = [];
+                for (let i = 0, tr; tr = tblBody_datatable.rows[i]; i++) {
+                    if (tr.classList.contains(cls_selected) ) {
+                        const tr_dict = user_dicts[tr.id];
+                        // skip user of tr_clicked
+                        if (tr_dict && tr_dict.id !== data_dict.id){
+                            const tr_has_sel_usergroup = (tr_dict.usergroups) ?  tr_dict.usergroups.includes(sel_usergroup) : false;
+                        // add only when value of has_sel_usergroup is same as value of tr_clicked
+                            if (has_sel_usergroup === tr_has_sel_usergroup){
 
-// ---  loop through tblBody.rows and fill user_pk_list, skip user of tr_clicked
-            mod_dict.user_pk_list = [];
-            for (let i = 0, tr; tr = tblBody_datatable.rows[i]; i++) {
-                if (tr.classList.contains(cls_selected) ) {
-                    const tr_dict = user_dicts[tr.id];
-                    // skip user of tr_clicked
-                    if (tr_dict && tr_dict.id !== data_dict.id){
-                        const tr_has_sel_usergroup = (tr_dict.usergroups) ?  tr_dict.usergroups.includes(sel_usergroup) : false;
-                    // add only when value of has_sel_usergroup is same as value of tr_clicked
-                        if (has_sel_usergroup === tr_has_sel_usergroup){
-                            mod_dict.user_pk_list.push(tr_dict.id);
+                            // skip users of other organizations
+                                if (tr_dict.schoolbase_id !== permit_dict.requsr_schoolbase_pk){
+                                    other_org_count += 1;
+                                } else {
+                                    mod_dict.user_pk_list.push(tr_dict.id);
+                                };
+                            };
                         };
                     };
                 };
-            };
-            if (!mod_dict.user_pk_list.length){
-                //use UploadToggleSingle when no other rows are selected
-                 UploadToggleSingle(el_input)
-            } else {
-                // add tr_clicked to user_pk_list
-                mod_dict.user_pk_list.push(data_dict.id);
-                mod_dict.user_pk_count = (mod_dict.user_pk_list) ? mod_dict.user_pk_list.length : 0;
-
-                const msg_list = ["<p>"];
-                if (!mod_dict.user_pk_count){
-                    // this should not be possible, but let it stay
-                    hide_save_btn = true
-                    msg_list.push(...[loc.There_are_no, loc.users_selected, "</p>"]);
+                if (!mod_dict.user_pk_list.length){
+                    //use UploadToggleSingle when no other rows are selected
+                     UploadToggleSingle(el_input)
                 } else {
-                    // mod_dict.user_pk_list always contains more than 1 user
-                    const added_removed_txt = (has_sel_usergroup) ? loc.willbe_removed_from_users : loc.willbe_added_to_users;
-                    msg_list.push(...["<p>", loc.There_are, mod_dict.user_pk_count, loc.users_selected, "</p><p>",
-                                       loc.Usergroup, " '", loc.usergroupcaption[sel_usergroup], "' ", added_removed_txt]);
+                    // add tr_clicked to user_pk_list
+                    mod_dict.user_pk_list.push(data_dict.id);
+                    mod_dict.user_pk_count = (mod_dict.user_pk_list) ? mod_dict.user_pk_list.length : 0;
 
-                    msg_list.push(...["</p><p class='pt-2'>",  loc.Do_you_want_to_continue + "</p>"]);
+                    const msg_list = ["<p>"];
+                    if (!mod_dict.user_pk_count){
+                        // this should not be possible, but let it stay
+                        hide_save_btn = true
+                        msg_list.push(...[loc.There_are_no, loc.users_selected, "</p>"]);
+                    } else {
+                        // mod_dict.user_pk_list always contains more than 1 user
+                        const added_removed_txt = (has_sel_usergroup) ? loc.willbe_removed_from_users : loc.willbe_added_to_users;
+                        msg_list.push(...["<p>", loc.There_are, mod_dict.user_pk_count, loc.users_selected, "</p><p>",
+                                           loc.Usergroup, " '", loc.usergroupcaption[sel_usergroup], "' ", added_removed_txt]);
+                        if (other_org_count){
+                            const msg_list = (other_org_count === 1) ? ["</p><p>", loc.users_selected_other_org_sing] :
+                                            ["</p><p>", loc.There_are, other_org_count, loc.users_selected_other_org_plur];
+                            msg_list.push(...msg_list);
+                        };
+                        msg_list.push(...["</p><p class='pt-2'>",  loc.Do_you_want_to_continue + "</p>"]);
+                    };
+
+                    el_confirm_header.innerText = (has_sel_usergroup) ? loc.Remove_usergroup : loc.Add_usergroup;
+                    el_confirm_loader.classList.add(cls_visible_hide)
+                    el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
+
+                    el_confirm_msg_container.innerHTML = (msg_list.length) ? msg_list.join("") : null;
+
+                    el_confirm_btn_save.innerText = loc.OK;
+                    add_or_remove_class (el_confirm_btn_save, cls_hide, false);
+
+                    add_or_remove_class (el_confirm_btn_save, "btn-primary", true, "btn-outline-danger")
+
+                    el_confirm_btn_cancel.innerText = loc.Cancel;
+
+            // set focus to cancel button
+                    set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
+
+                    // show modal
+                    $("#id_mod_confirm").modal({backdrop: true});
                 };
-
-                el_confirm_header.innerText = (has_sel_usergroup) ? loc.Remove_usergroup : loc.Add_usergroup;
-                el_confirm_loader.classList.add(cls_visible_hide)
-                el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
-
-                el_confirm_msg_container.innerHTML = (msg_list.length) ? msg_list.join("") : null;
-
-                el_confirm_btn_save.innerText = loc.OK;
-                add_or_remove_class (el_confirm_btn_save, cls_hide, false);
-
-                add_or_remove_class (el_confirm_btn_save, "btn-primary", true, "btn-outline-danger")
-
-                el_confirm_btn_cancel.innerText = loc.Cancel;
-
-        // set focus to cancel button
-                set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);
-
-                // show modal
-                $("#id_mod_confirm").modal({backdrop: true});
             };
         };
     }; // UploadToggleMultiple
@@ -1026,13 +1040,17 @@ console.log("user_dicts",user_dicts)
         console.log( "permit_dict", permit_dict);
         // only called by fields starting qith  "group"
         mod_dict = {};
-        const has_permit = (permit_dict.permit_crud_otherschool) ||
-                            (permit_dict.permit_crud_sameschool && selected_btn !== "btn_userpermit");
 
-        if(has_permit){
-            const tblRow = t_get_tablerow_selected(el_input);
-            const tblName = get_tblName_from_mapid(tblRow.id);
-            const data_dict = get_datadict_from_tblRow(tblRow);
+        const tblRow = t_get_tablerow_selected(el_input);
+        const tblName = get_tblName_from_mapid(tblRow.id);
+        const data_dict = get_datadict_from_tblRow(tblRow);
+
+        if(isEmpty(data_dict)){
+        } else if (!permit_dict.permit_crud) {
+            // no permit
+        } else if (data_dict.schoolbase_id !== permit_dict.requsr_schoolbase_pk){
+            b_show_mod_message_html(loc.cannot_change_other_organizations);
+        } else {
 
             if(!isEmpty(data_dict)){
                 const fldName = get_attr_from_el(el_input, "data-field");

@@ -1370,6 +1370,20 @@ def get_sqlclause_allowed_dep_lvl_subj(table, userallowed_sections_dict, sel_sch
 # +++++++++++++++++++++++++++++++++++++++++++++
 
 
+def has_permit(request, page, permit_arr):  # PR2023-04-13
+    has_permit = False
+    if request.user and page and permit_arr:
+        req_usr = request.user
+        if req_usr.country and req_usr.schoolbase:
+            permit_list = get_permit_list(page, req_usr)
+            if permit_list:
+                for permit in permit_arr:
+                    if permit in permit_list:
+                        has_permit = True
+                        break
+    return has_permit
+
+
 def get_permit_list(page, req_usr):
     # --- create list of all permits  of this user PR2021-04-22  PR2021-07-03 PR2023-01-13
     logging_on = False  # s.LOGGING_ON
@@ -1551,7 +1565,6 @@ def err_html_no_permit(action_txt=None):  # PR2023-03-20
     return ''.join(("<div class='p-2 border_bg_invalid'>",
                     gettext("You don't have permission %(cpt)s.") % {'cpt': str(action_txt)},
                     "</div>"))
-
 
 def err_html_error_occurred(err_txt, msg_txt=None):  # PR2023-03-20
     msg_list = ["<p class='border_bg_invalid p-2'>",
