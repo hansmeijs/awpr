@@ -861,6 +861,19 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
 // +++++++++++++++++ DATA DICTS PR2023-02-22 +++++++++++++++++++++++++++++++++++++++
 
+//=========  b_fill_datadicts_by_mapid  ===  PR2023-04-16
+    function b_fill_datadicts_by_mapid(data_rows, data_dicts) {
+        //console.log("=====  b_fill_datadicts_by_mapid ===== ");
+
+    // - clear data_dicts
+        b_clear_dict(data_dicts);
+
+        if (data_rows && data_rows.length){
+            for (let i = 0, row; row = data_rows[i]; i++) {
+                data_dicts[row.mapid] = row;
+            };
+        };
+    };
 //=========  b_fill_datadicts  ===  PR2023-02-22
     function b_fill_datadicts(tblName, fldName_pk1, fldName_pk2, data_rows, data_dicts) {
         //console.log("=====  b_fill_datadicts ===== ");
@@ -1760,10 +1773,10 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
     // PR2021-01-26 PR2021-03-25 PR2021-07-03
         // TODO header, set focus after closing messagebox
 
-        console.log( " -----b_show_mod_message_html -----");
-        console.log( "    msg_html", msg_html);
-        console.log( "    header_text", header_text);
-        console.log( "    max_size", max_size);
+        //console.log( " -----b_show_mod_message_html -----");
+        //console.log( "    msg_html", msg_html);
+        //console.log( "    header_text", header_text);
+        //console.log( "    max_size", max_size);
 
         const el_msg_header = document.getElementById("id_mod_message_header");
         if(el_msg_header){el_msg_header.innerText = (header_text) ? header_text : null};

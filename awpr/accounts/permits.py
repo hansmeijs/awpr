@@ -1385,7 +1385,7 @@ def has_permit(request, page, permit_arr):  # PR2023-04-13
 
 
 def get_permit_list(page, req_usr):
-    # --- create list of all permits  of this user PR2021-04-22  PR2021-07-03 PR2023-01-13
+    # --- create list of all permits  of this user PR2021-04-22  PR2021-07-03 PR2023-01-13 PR2023-04-18
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('')
@@ -1396,6 +1396,7 @@ def get_permit_list(page, req_usr):
 
     userallowed_instance = get_userallowed_instance_from_user_instance(req_usr)
     requsr_usergroups_list = get_usergroup_list(userallowed_instance)
+
     if logging_on:
         logger.debug('    requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
         logger.debug('    requsr_role: ' + str(requsr_role) + ' ' + str(type(requsr_role)))
@@ -1405,27 +1406,36 @@ def get_permit_list(page, req_usr):
     if page and requsr_role and requsr_usergroups_list:
 
         sql_filter = ""
+        filter_list = []
+
         for usergroup in requsr_usergroups_list:
-            sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
+            filter_list.append("(POSITION('" + usergroup + "' IN p.usergroups) > 0)")
+
+        if filter_list:
+            sql_filter = ' OR '.join(filter_list)
+
+        if logging_on:
+            logger.debug('    sql_filter: ' + str(sql_filter))
 
         if sql_filter:
-            # remove first 'OR ' from sql_filter
-            sql_filter = "AND (" + sql_filter[4:] + ")"
+            sql_filter = ''.join(("AND (", sql_filter, ")"))
 
-            sql_keys = {'page': page, 'role': requsr_role}
-            sql_list = ["SELECT p.action FROM accounts_userpermit AS p",
-                        "WHERE (p.page = %(page)s OR p.page = 'page_all')",
-                        "AND p.role = %(role)s::INT",
+            sql_list = ["SELECT p.action FROM accounts_userpermit AS p ",
+                        "WHERE (p.page = '", page, "' OR p.page = 'page_all') ",
+                        "AND p.role = ", str(requsr_role), "::INT ",
                         sql_filter]
-            sql = ' '.join(sql_list)
+            sql = ''.join(sql_list)
+
+            if logging_on:
+                logger.debug('    sql: ' + str(sql))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 """
                 accounts_userpermit = {role: 8, page: 'page_school', action: 'view', usergroups: 'admin;anlz;auth1;auth2;auth3;edit;read'} 
                 """
                 for row in cursor.fetchall():
-                    if logging_on and False:
+                    if logging_on:
                         logger.debug('row: ' + str(row) + ' ' + str(type(row)))
 
                     if row[0]:
@@ -1540,7 +1550,8 @@ def is_usergroup_admin(req_usr):
     # PR2023-01-13
     has_permit = False
     if req_usr.is_authenticated:
-        requsr_usergroups_list, allowed_sections_dictNIU, requsr_allowed_clusters_listNIU, sel_examyearNIU = get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
+        requsr_usergroups_list, allowed_sections_dictNIU, requsr_allowed_clusters_listNIU, sel_examyearNIU = \
+            get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
 
         has_permit = requsr_usergroups_list and 'admin' in requsr_usergroups_list
 
@@ -1560,13 +1571,30 @@ def is_role_insp_or_system_and_group_admin(req_usr):
 
 
 def err_html_no_permit(action_txt=None):  # PR2023-03-20
+    return ''.join(("<div class='p-2 border_bg_invalid'>", err_txt_no_permit(action_txt), "</div>"))
+
+
+def err_txt_no_permit(action_txt=None):  # PR2023-04-16
     if not action_txt:
         action_txt = _('to perform this action')
-    return ''.join(("<div class='p-2 border_bg_invalid'>",
-                    gettext("You don't have permission %(cpt)s.") % {'cpt': str(action_txt)},
-                    "</div>"))
+    return gettext("You don't have permission %(cpt)s.") % {'cpt': str(action_txt)}
 
-def err_html_error_occurred(err_txt, msg_txt=None):  # PR2023-03-20
+
+def err_txt_cannot_make_changes():  # PR2023-04-16
+    return gettext("You cannot make changes.")
+
+
+def msghtml_error_occurred_no_border(err_txt, msg_txt=None):  # PR2023-04-17
+    msg_list = [gettext('An error occurred')]
+    if err_txt:
+        msg_list.extend(['<br>&emsp;<i>', str(err_txt), '</i>'])
+    if msg_txt:
+        msg_list.extend(['<br>', str(msg_txt)])
+    return ''.join((msg_list))
+
+
+
+def msghtml_error_occurred_with_border(err_txt, msg_txt=None):  # PR2023-03-20
     msg_list = ["<p class='border_bg_invalid p-2'>",
                 str(_('An error occurred'))]
     if err_txt:

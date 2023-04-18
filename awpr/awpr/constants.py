@@ -558,7 +558,20 @@ MAILBOX_USERGROUPS = {
     USERGROUP_AUTH4_CORR: _('Corrector'),
     USERGROUP_ADMIN: _('System administrator')
 }
+# PR2023-04-15 compensation for correctors
+"""
+Mail Shailini van Uytrecht Feb 9, 2023:
+De tarieven zijn volgens de Landsbesluit van 1994 vastgelegd en veranderen niet.
+Hieronder de tarieven die wij aan de gecommitteerden uitbetalen: 
+Correctie van het eerste schriftelijke examenwerk is 25 gulden 
+Correctie van de overige schriftelijke examenwerken is 10 gulden. 
+Bijwonen vergadering is 30 gulden per vergadering (tot een max. van 2 verg. per vak) 
 
+"""
+CORRCOMP_FIRST_APPROVAL = 2500 # compensation of the first approved exam, in cents
+CORRCOMP_OTHER_APPROVAL = 1000 # compensation of the following approved exams, in cents
+CORRCOMP_MEETING_COMP = 3000 # compensation per meeting, in cents
+CORRCOMP_MAX_MEETINGS = 2 # max number of meetings
 
 COLOR_LIST = [
     ['black', ' '],
@@ -715,15 +728,10 @@ HTMLCLASS_border_bg_valid = 'border_bg_valid'
 HTMLCLASS_border_bg_warning = 'border_bg_warning'
 HTMLCLASS_border_bg_transparent = 'border_bg_transparent'
 
-# ERROR MESSAGES PR2023-04-13
-ERROR_CANNOT_MAKE_CHANGES = _('You cannot make changes.')
-
 # XLSWRITER FORMATS
-
 XF_BOLD = {'bold': True}
 XF_BOLD_FCBLUE = {'font_color': 'blue', 'bold': True}
 XF_FCBLUE = {'font_color': 'blue'}
-
 
 XF_FOOTER_SIZE11_ALIGNCENTER_BLACK = {'font_size': 11, 'font_color': 'black', 'align': 'center', 'valign': 'vcenter'}
 XF_FOOTER_SIZE08_ALIGNCENTER_BLACK = {'font_size': 8, 'font_color': 'black', 'align': 'center', 'valign': 'vcenter'}

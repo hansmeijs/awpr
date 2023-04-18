@@ -933,7 +933,7 @@ console.log("user_dicts",user_dicts)
     function UploadToggleMultiple(el_input) {
         console.log( " ==== UploadToggleMultiple ====");
         //console.log( "el_input", el_input);
-        console.log( "permit_dict", permit_dict);
+        console.log( "  ??? permit_dict", permit_dict);
         // only called by fields starting qith  "group"
 
 // ---  get  data_dict
@@ -948,7 +948,7 @@ console.log("user_dicts",user_dicts)
         if (data_dict && sel_usergroup){
             if (!permit_dict.permit_crud) {
                 // no permit
-            } else if (data_dict.schoolbase_id !== permit_dict.requsr_schoolbase_pk){
+            } else if (data_dict.schoolbase_id !== permit_dict.requsr_schoolbase_pk && !permit_dict.requsr_role_system){
                 b_show_mod_message_html(loc.cannot_change_other_organizations);
             } else {
 
@@ -1048,7 +1048,7 @@ console.log("user_dicts",user_dicts)
         if(isEmpty(data_dict)){
         } else if (!permit_dict.permit_crud) {
             // no permit
-        } else if (data_dict.schoolbase_id !== permit_dict.requsr_schoolbase_pk){
+        } else if (data_dict.schoolbase_id !== permit_dict.requsr_schoolbase_pk && !permit_dict.requsr_role_system){
             b_show_mod_message_html(loc.cannot_change_other_organizations);
         } else {
 
@@ -3675,7 +3675,7 @@ console.log( "upload_dict", upload_dict);
         // tblRow is undefined when clicked on delete btn in submenu btn or form (no inactive btn)
         const tblRow = t_get_tablerow_selected(el_input);
         const data_dict = (tblRow) ? get_datadict_from_tblRow(tblRow) : selected.data_dict;
-        const user_name = (data_dict.username) ? data_dict.username  : "-";
+        const user_name = (data_dict && data_dict.username) ? data_dict.username  : "-";
     console.log("   tblRow", tblRow);
     console.log("   data_dict", data_dict);
 

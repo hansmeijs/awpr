@@ -34,7 +34,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const may_view_page = (!!el_loader);
 
-
     const cls_selected_item = "tsa_td_unlinked_selected";
 
     let mod_dict = {};
@@ -1015,10 +1014,10 @@ document.addEventListener("DOMContentLoaded", function() {
         //};
 
         if (el_SBR_select_level){
-            el_SBR_select_level.value = "null";
+            el_SBR_select_level.value = -9;
         };
         if (el_SBR_select_subject){
-            el_SBR_select_level.value = "null";
+            el_SBR_select_subject.value = "<" + loc.All_subjects + ">";
         };
 
 // ---  upload new setting
@@ -7203,8 +7202,8 @@ console.log("exam_dict", exam_dict);
     }  // MSED_Response
 
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
-    function MSSSS_Response(tblName, selected_dict, selected_pk) {
-        console.log( "===== MSSSS_Response ========= ");
+    function MSSSS_ResponseXXX(tblName, selected_dict, selected_pk) {
+        console.log( "???????? ===== MSSSS_Response ========= ");
         console.log( "selected_dict", selected_dict);
         console.log( "selected_pk", selected_pk);
         console.log( "tblName", tblName);
@@ -7282,9 +7281,9 @@ console.log("exam_dict", exam_dict);
     };  // MSSSS_Response
 
 
-//=========  MSSSS_Response  ================ PR2022-02-01
+//=========  MSSSS_Response  ================ PR2022-02-01 PR2023-04-17
     function MSSSS_Response(mode, selected_dict, sel_pk_int) {
-        console.log( "===== MSSSS_Response ========= ");
+        console.log( " @@@@@@@@ ===== MSSSS_Response ========= ");
         console.log( "sel_pk_int", sel_pk_int, typeof sel_pk_int);
         console.log( "selected_dict", selected_dict);
         console.log( "mode", mode);
@@ -7307,28 +7306,39 @@ console.log("exam_dict", exam_dict);
                 setting_dict.sel_student_name = null;
             };
 
+    // ---  upload new setting
+            upload_pk_dict.sel_subject_pk = sel_pk_int;
+            if(sel_pk_int) {
+                upload_pk_dict.sel_cluster_pk = null;
+                upload_pk_dict.sel_student_pk = null;
+            };
+            const upload_dict = {selected_pk: upload_pk_dict};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
+
             t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
             t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
             t_MSSSS_display_in_sbr("cluster", setting_dict.sel_cluster_pk);
 
-    // ---  download data when changing subject
-            let new_setting = {page: 'page_exams', sel_subject_pk: setting_dict.sel_subject_pk};
-            if(setting_dict.sel_cluster_pk) {
-                new_setting.sel_cluster_pk = null;
-                new_setting.sel_student_pk = null;
-            };
-    // also retrieve the tables that have been changed because of the change in examperiod
-            const datalist_request = {setting: new_setting,
-                    duo_subject_rows: {get: true},
-                    ete_exam_rows: {get: true},
-                    duo_exam_rows: {get: true},
-                    grade_exam_rows: {get: true},
-                    grade_exam_result_rows: {get: true},
-                    ntermentable_rows: {get: true},
-                    published_rows: {get: true}
-            };
+            FillTblRows();
 
-            DatalistDownload(datalist_request);
+    // ---  download data when changing subject
+            // PR2023-04-17 filtering on subj_pk takes place on client function FillTblRows(), no need for datalist_request
+            //let new_setting = {page: 'page_exams', sel_subject_pk: setting_dict.sel_subject_pk};
+            //if(setting_dict.sel_cluster_pk) {
+            //    new_setting.sel_cluster_pk = null;
+            //    new_setting.sel_student_pk = null;
+            //};
+    // also retrieve the tables that have been changed because of the change in examperiod
+            //const datalist_request = {setting: new_setting,
+            //        duo_subject_rows: {get: true},
+            //        ete_exam_rows: {get: true},
+            //        duo_exam_rows: {get: true},
+            //        grade_exam_rows: {get: true},
+            //        grade_exam_result_rows: {get: true},
+            //        ntermentable_rows: {get: true},
+            //        published_rows: {get: true}
+            // };
+            // DatalistDownload(datalist_request);
 
         } else if (mode === "cluster") {
             setting_dict.sel_cluster_pk = sel_pk_int;
@@ -7340,23 +7350,18 @@ console.log("exam_dict", exam_dict);
             setting_dict.sel_student_pk = null;
             setting_dict.sel_student_name = null;
 
+    // ---  upload new setting
             upload_pk_dict.sel_cluster_pk = sel_pk_int;
             if(sel_pk_int) {
                 upload_pk_dict.sel_subject_pk = setting_dict.sel_subject_pk;
                 upload_pk_dict.sel_student_pk = null;
             };
-        console.log( ">>> sel_pk_int", sel_pk_int);
-        console.log( ">>> setting_dict.sel_subject_pk", setting_dict.sel_subject_pk);
-        console.log( ">>> setting_dict.sel_cluster_pk", setting_dict.sel_cluster_pk);
+            const upload_dict = {selected_pk: upload_pk_dict};
+            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
             t_MSSSS_display_in_sbr("student", setting_dict.sel_student_pk);
             t_MSSSS_display_in_sbr("subject", setting_dict.sel_subject_pk);
             t_MSSSS_display_in_sbr("cluster", setting_dict.sel_cluster_pk);
-
-    // ---  upload new setting
-            const upload_dict = {selected_pk: upload_pk_dict};
-
-            b_UploadSettings (upload_dict, urls.url_usersetting_upload);
 
             FillTblRows();
         } else if (mode === "student") {

@@ -58,7 +58,7 @@ class LazyEncoder(DjangoJSONEncoder):
 class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18  PR2022-09-16
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopItemUploadView ============= ')
@@ -110,7 +110,6 @@ class EnvelopItemUploadView(View):  # PR2020-10-01 PR2021-07-18  PR2022-09-16
                 sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('may_edit:       ' + str(may_edit))
 
                 if error_list:
                     error_list.append(str(_('You cannot make changes.')))
@@ -370,7 +369,7 @@ def update_envelopitem_instance(instance, upload_dict, error_dict, request):
 class EnvelopLabelUploadView(View):  # PR2022-08-08 PR2022-09-16
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopLabelUploadView ============= ')
@@ -439,7 +438,6 @@ class EnvelopLabelUploadView(View):  # PR2022-08-08 PR2022-09-16
                 sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('may_edit:       ' + str(may_edit))
 
                 if error_list:
                     error_list.append(str(_('You cannot make changes.')))
@@ -720,7 +718,7 @@ def update_enveloplabel_instance(examyear, enveloplabel_instance, upload_dict, r
 class EnvelopBundleUploadView(View):  # PR2022-08-11 PR2022-09-16
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopBundleUploadView ============= ')
@@ -778,7 +776,6 @@ class EnvelopBundleUploadView(View):  # PR2022-08-11 PR2022-09-16
                 sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('may_edit:       ' + str(may_edit))
                     logger.debug('is_create:       ' + str(is_create))
                     logger.debug('is_delete:       ' + str(is_delete))
 
@@ -1033,7 +1030,7 @@ def update_envelopbundle_instance(examyear, envelopbundle_instance, upload_dict,
 class EnvelopSubjectUploadView(View):  # PR2022-10-10
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopSubjectUploadView ============= ')
@@ -1080,7 +1077,6 @@ class EnvelopSubjectUploadView(View):  # PR2022-10-10
                 sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('may_edit:       ' + str(may_edit))
                     logger.debug('envelopsubject_pk:       ' + str(envelopsubject_pk))
 
                 if error_list:
@@ -2062,7 +2058,7 @@ def create_exam_count_dictNIU(sel_examyear, exam_pk_list=None):
 class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= EnvelopPrintCheckView ============= ')
@@ -2101,7 +2097,6 @@ class EnvelopPrintCheckView(View):  # PR2022-08-19 PR2022-10-10
                 sel_examyear, error_list = acc_view.get_selected_examyear_from_usersetting(request, True)  # allow_not_published = True
                 if logging_on:
                     logger.debug('sel_examyear:   ' + str(sel_examyear))
-                    logger.debug('may_edit:       ' + str(may_edit))
 
                 if error_list:
                     error_list.append(str(_('You cannot make changes.')))

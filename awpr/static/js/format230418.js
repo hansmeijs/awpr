@@ -1,4 +1,11 @@
 
+    // PR2023-04-16 create constants for readability
+    const icon_blue = "0_4", icon_red = "1_4", icon_orange = "2_4", icon_blank = "3_4";
+    const icon_auth_0 = "0_0", icon_auth_1 = "0_1", icon_auth_2 = "0_2", icon_auth_12 = "0_3";
+    const icon_auth_3 = "1_0", icon_auth_13 = "1_1", icon_auth_23 = "1_2", icon_auth_123 = "1_3";
+    const icon_auth_4 = "2_0", icon_auth_14 = "2_1", icon_auth_24= "2_2", icon_auth_124 = "2_3";
+    const icon_auth_34 = "3_0", icon_auth_134 = "3_1", icon_auth_234 = "3_2", icon_auth_1234 = "3_3";
+
 //========= format_date with vanilla js  ======== PR2020-07-31
     function format_dateISO_vanilla (loc, date_iso, hide_weekday, hide_year, is_months_long, is_weekdays_long) {
         let date_formatted = null;
@@ -221,7 +228,7 @@
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
         // field_name = "se_status", "sr_status", "pe_status", "ce_status", "note_status"
-        let className = "diamond_3_4";  // diamond_3_4 is blank img
+        let className = "diamond_" + icon_blank;  // diamond_3_4 is blank img
         let title_text = null, filter_value = null;
         if (prefix_str === "note"){
             // dont show note icon when user has no permit_read_note
@@ -312,18 +319,20 @@
 
 
 //=========  f_format_status_subject  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24
-    function f_format_status_subject(prefix, data_dict) {
-        //console.log("=========  f_format_status_subject =========");
-        //console.log("    prefix", prefix);
-        //console.log("    data_dict", data_dict);
+    function f_format_status_subject(prefix_str, data_dict) {
+        console.log("=========  f_format_status_subject =========");
+        console.log("    prefix_str", prefix_str);
+        console.log("    data_dict", data_dict);
+        // for now: only used in page correctors UpdateField
 
         // field_name = "uc_auth1by_id", "uc_auth2by_id", "uc_published_id"
-        let className = "diamond_3_4";  // diamond_3_4 is blank img
+        // prefix_str = "uc"
+        let className = "diamond_" + icon_blank;  // diamond_3_4 is blank img
         let title_text = null, filter_value = null;
 
-        const field_auth1by_id = prefix + "_auth1by_id";
-        const field_auth2by_id = prefix + "_auth2by_id";
-        const field_published_id = prefix + "_published_id";
+        const field_auth1by_id = prefix_str + "_auth1by_id";
+        const field_auth2by_id = prefix_str + "_auth2by_id";
+        const field_published_id = prefix_str + "_published_id";
 
         const auth1by_id = (data_dict[field_auth1by_id]) ? data_dict[field_auth1by_id] : null;
         const auth2by_id = (data_dict[field_auth2by_id]) ? data_dict[field_auth2by_id] : null;
@@ -350,12 +359,17 @@
                                         (i === 2) ? loc.Secretary : "";
                     const field_usr = prefix_auth + "by_usr";
                     const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
+        console.log("    field_usr", field_usr);
+        console.log("    field_usr", field_usr);
 
                     title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
                 };
             };
         };
 
+        console.log("    className", className);
+        console.log("    title_text", title_text);
+        console.log("    filter_value", filter_value);
         return [className, title_text, filter_value]
     };  // f_format_status_subject
 
@@ -396,7 +410,7 @@
         // - make the diamond full black when auth1, auth2 and auth 3 have approved
 
         const prefix = (blocked) ? "blocked_" : "diamond_";
-        let img_class = prefix + "0_0"; // empty diamond
+        let img_class = prefix + icon_auth_0; // empty diamond
 
         if (auth3_must_sign) {
             if (auth4_must_sign) {
@@ -413,41 +427,40 @@
                 auth4 = true;
             };
         };
-
     //console.log( "img_class", img_class);
         if(publ){
             if (blocked){
-                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
+                img_class = prefix + icon_orange;  // orange diamond: published after blocked by Inspectorate
             } else {
-                img_class = prefix + "0_4";  // blue diamond: published
+                img_class = prefix + icon_blue;  // blue diamond: published
             };
         } else {
             if (auth1){
                 if (auth2){
                     if (auth3){
-                        img_class = (auth4) ? prefix + "3_3" : prefix + "1_3"; // auth 1+2+3+4 // auth 1+2+3
+                        img_class = (auth4) ? prefix + icon_auth_1234 : prefix + icon_auth_123; // auth 1+2+3+4 // auth 1+2+3
                     } else {
-                        img_class = (auth4) ? prefix + "2_3" : prefix + "0_3"; // auth 1+2+4 // auth 1+2
+                        img_class = (auth4) ? prefix + icon_auth_124 : prefix + icon_auth_12; // auth 1+2+4 // auth 1+2
                     };
                 } else {
                     if (auth3){
-                        img_class = (auth4) ? prefix + "3_1" : prefix + "1_1"; // auth 1+3+4 // auth 1+3
+                        img_class = (auth4) ? prefix + icon_auth_134 : prefix + icon_auth_13; // auth 1+3+4 // auth 1+3
                     } else {
-                        img_class = (auth4) ? prefix + "2_1" : prefix + "0_1";// auth 1+4  // auth 1
+                        img_class = (auth4) ? prefix + icon_auth_14 : prefix + icon_auth_1; // auth 1+4  // auth 1
                     }
                 }
             } else {
                 if (auth2){
                     if (auth3){
-                        img_class = (auth4) ? prefix + "3_2" : prefix + "1_2"; // auth 2+3+4 // auth 2+3
+                        img_class = (auth4) ? prefix + icon_auth_234 : prefix + icon_auth_23; // auth 2+3+4 // auth 2+3
                     } else {
-                        img_class = (auth4) ? prefix + "3_2" : prefix + "0_2"; // auth 2+4 // auth 2
+                        img_class = (auth4) ? prefix + icon_auth_24 : prefix + icon_auth_2; // auth 2+4 // auth 2
                     }
                 } else {
                     if (auth3){
-                        img_class = (auth4) ? prefix + "3_0" :  prefix + "1_0"; // auth 3+4 // auth 3
+                        img_class = (auth4) ? prefix + icon_auth_34 :  prefix + icon_auth_3; // auth 3+4 // auth 3
                     } else {
-                        img_class = (auth4) ? prefix + "2_0" : prefix + "0_0";  // auth 4 // auth -
+                        img_class = (auth4) ? prefix + icon_auth_4 : prefix + icon_auth_0;  // auth 4 // auth -
                     };
                 };
             };
@@ -464,27 +477,27 @@
         // auth1, auth2, auth3 must approve school exam
 
         const prefix = (blocked) ? "blocked_" : "diamond_";
-        let img_class = prefix + "0_0"; // empty diamond
+        let img_class = prefix + icon_auth_0; // empty diamond
 
     //console.log( "img_class", img_class);
         if(publ){
             if (blocked){
-                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
+                img_class = prefix + icon_orange;  // orange diamond: published after blocked by Inspectorate
             } else {
-                img_class = prefix + "0_4";  // blue diamond: published
+                img_class = prefix + icon_blue;  // blue diamond: published
             };
         } else {
             if (auth1){
                 if (auth2){
-                    img_class = (auth3) ? prefix + "3_3" : prefix + "0_3"; //  auth 1+2+3+4 / auth 1+2
+                    img_class = (auth3) ? prefix + icon_auth_1234 : prefix + icon_auth_12; //  auth 1+2+3+4 / auth 1+2
                 } else {
-                    img_class = (auth3) ? prefix + "1_1" : prefix + "0_1"; //  auth 1+3 / auth 1
+                    img_class = (auth3) ? prefix + icon_auth_13 : prefix + icon_auth_1; //  auth 1+3 / auth 1
                 };
             } else {
                 if (auth2){
-                    img_class = (auth3) ? prefix + "1_2" : prefix + "0_2"; //  auth 2+3 / auth 2
+                    img_class = (auth3) ? prefix + icon_auth_23 : prefix + icon_auth_2; //  auth 2+3 / auth 2
                 } else {
-                    img_class = (auth3) ? prefix + "1_0" : prefix + "0_0"; //  auth 3 /  auth -
+                    img_class = (auth3) ? prefix + icon_auth_3 : prefix + icon_auth_0; //  auth 3 /  auth -
                 };
             };
         };
@@ -495,22 +508,22 @@
     function f_get_status_auth12_iconclass(publ, blocked, auth1, auth2) {
     // PR2022-04-17
         const prefix = (blocked) ? "blocked_" : "diamond_";
-        let img_class = prefix + "0_0"; // empty diamond
+        let img_class = prefix + icon_auth_0; // empty diamond
         if(publ){
             if (blocked){
-                img_class = prefix + "2_4";  // orange diamond: published after blocked by Inspectorate
+                img_class = prefix + icon_orange;  // orange diamond: published after blocked by Inspectorate
             } else {
-                img_class = prefix + "0_4";  // blue diamond: published
+                img_class = prefix + icon_blue;  // blue diamond: published
             };
         } else {
             if (blocked){
-                img_class = prefix + "1_4";  // red diamond: blocked by Inspectorate, published is removed to enable correction
+                img_class = prefix + icon_red;  // red diamond: blocked by Inspectorate, published is removed to enable correction
             } else {
                 if (auth1){
-                    img_class = (auth2) ? prefix + "3_3" : prefix + "2_1"; // auth 1+2+3+4 / auth 1+4
+                    img_class = (auth2) ? prefix + icon_auth_1234 : prefix + icon_auth_14; // auth 1+2+3+4 / auth 1+4
 
                 } else {
-                    img_class = (auth2) ? prefix + "1_2" : prefix + "0_0"; //  auth 2+3 / auth -
+                    img_class = (auth2) ? prefix + icon_auth_23 : prefix + icon_auth_0; //  auth 2+3 / auth -
 
         }}};
         return img_class;

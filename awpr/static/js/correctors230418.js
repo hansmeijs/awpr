@@ -58,11 +58,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     mod_MCOL_dict.columns.all = {
         user_sb_code: "Organization", last_name: "Name",
-        depbase_code: "Department", lvlbase_code: "Learning_path",
+        uc_depbase_code: "Department", uc_lvlbase_code: "Learning_path",
         subj_name_nl:  "Subject", exam_version: "Version",
         uc_amount: "Number_approvals", uc_meetings: "Number_meetings"
     };
-    mod_MCOL_dict.columns.btn_approval = {sb_code: "School_code", school_abbrev: "School"};
+    mod_MCOL_dict.columns.btn_approval = {sb_code: "School_code", uc_school_abbrev: "School"};
     mod_MCOL_dict.columns.btn_compensation = { compensation: "Compensation"};
 
 
@@ -79,42 +79,42 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l", "l", "l", "l",  "l", "l", "l"]};
 
     field_settings.btn_approval = {
-                    field_caption: ["", "Organization", "Second_corrector", "Name",
+                    field_caption: ["", "Organization", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
-                                    "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines", "", "Compensation"],
-                    field_names: ["select", "user_sb_code", "username", "last_name",
-                                    "depbase_code", "lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
-                                     "sb_code", "school_abbrev","uc_amount", "uc_meetings", "status", "uc_compensation"],
-                    field_tags: ["div", "div", "div", "div",
+                                    "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines",  "", "Correction_approvals_2lines",  "Correction_meetings_2lines","Compensation"],
+                    field_names: ["select",  "user_sb_code", "last_name",
+                                    "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
+                                     "sb_code", "uc_school_abbrev", "uc_amount", "uc_meetings", "status", "uc_corr_amount", "uc_corr_meetings", "uc_compensation"],
+                    field_tags: ["div", "div", "div",
                                     "div", "div", "div", "div", "div", "div",
-                                     "div", "div","div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text",  "text",
+                                     "div", "div","div", "div", "div", "input", "input", "div"],
+                    filter_tags: ["select", "text",  "text",
                                     "text", "text",  "text",  "text", "text", "text",
-                                     "text",  "text", "text",  "text", "status", "text"],
-                    field_width:  ["020", "090", "150",  "180",
-                                    "090", "090", "090", "220", "090",  "090",
-                                    "090", "150", "150",  "150", "032", "150"],
-                    field_align: ["c", "l", "l", "l",
+                                     "text",  "text", "number",  "number", "status", "number",  "number", "number"],
+                    field_width:  ["020", "090",  "180",
+                                    "075", "075", "075", "220", "090",  "090",
+                                    "090", "150", "090",  "090", "032", "090",  "090", "090"],
+                    field_align: ["c",  "l", "l",
                                     "c", "c", "c", "l",  "l", "c",
-                                    "l", "l", "c",  "c", "c", "c"]};
+                                    "l", "l", "c",  "c", "c", "c", "c", "c"]};
 
     field_settings.btn_compensation = {
-                    field_caption: ["", "Organization", "Second_corrector", "Name",
+                    field_caption: ["", "Organization", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
                                     "Number_approvals_2lines",  "Number_meetings_2lines", "Compensation"],
-                    field_names: ["select", "user_sb_code", "username", "last_name",
-                                    "depbase_code", "lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
+                    field_names: ["select", "user_sb_code", "last_name",
+                                    "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
                                     "uc_amount", "uc_meetings", "compensation"],
-                    field_tags: ["div", "div", "div", "div",
+                    field_tags: ["div", "div",  "div",
                                     "div", "div", "div", "div", "div", "div",
                                     "div", "input","div"],
-                    filter_tags: ["select", "text", "text", "text",
+                    filter_tags: ["select", "text",  "text",
                                     "text", "text",  "text",  "text", "text", "text",
                                     "text",  "toggle", "text"],
-                    field_width:  ["020", "090", "150",  "180",
+                    field_width:  ["020", "090",  "180",
                                     "090", "090", "090", "220", "090",  "090",
                                     "150",  "150", "150"],
-                    field_align: ["c", "l", "l", "l",
+                    field_align: ["c", "l",  "l",
                                     "c", "c", "c", "l",  "l", "c",
                                         "c",  "c", "c"]};
 
@@ -328,8 +328,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 if ("usercompensation_rows" in response) {
-                    // mapid : "usercomp_2897"
-                    b_fill_datadicts("usercomp", "id", null, response.usercompensation_rows, usercompensation_dicts);
+                    // mapid : "usercomp_124_222"
+                    b_fill_datadicts_by_mapid(response.usercompensation_rows, usercompensation_dicts)
+                    console.log("usercompensation_dicts", usercompensation_dicts);
                 };
                 if ("usercomp_agg_rows" in response) {
                     b_fill_datadicts("usercomp_agg", "u_id", "exam_id", response.usercomp_agg_rows, usercomp_agg_dicts);
@@ -387,7 +388,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool) {
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, []);
         };
-        AddSubmenuButton(el_submenu, loc.Download_user_data, function() {ModConfirmOpen_DownloadUserdata("download_userdata_xlsx")});
 
         AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_corrector")}, [])
 
@@ -445,8 +445,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= FillTblRows  =================== PR2021-08-01 PR2022-02-28
     function FillTblRows(skip_upload) {
-        //console.log( "===== FillTblRows  === ");
-        //console.log( "    selected_btn: ", selected_btn);
+        console.log( "===== FillTblRows  === ");
+        console.log( "    selected_btn: ", selected_btn);
 
         const tblName = get_tblName_from_selectedBtn() // tblName = userapproval or usercompensation
         const field_setting = field_settings[selected_btn];
@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const col_hidden = get_column_is_hidden();
 
         //console.log( "    tblName", tblName);
-        //console.log( "    data_dicts", data_dicts);
+        console.log( "    data_dicts", data_dicts);
         //console.log( "    field_setting", field_setting);
 
 // --- reset table
@@ -477,10 +477,11 @@ document.addEventListener('DOMContentLoaded', function() {
         Filter_TableRows(skip_upload)
     }  // FillTblRows
 
-//=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01
+//=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01 PR2023-04-15
     function CreateTblHeader(field_setting, col_hidden) {
-        console.log("===  CreateTblHeader ===== ");
+        //console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
+        //console.log("    col_hidden", col_hidden);
 
         const column_count = field_setting.field_names.length;
 
@@ -645,7 +646,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
     // --- add EventListener to td
-                    if (field_name === "select") {
+
+                    if (field_tag === "input") {
+                        el.addEventListener("change", function() {UploadInputChange(el)}, false)
+                        add_hover(td);
+                    } else if (field_name === "select") {
                         // TODO add select multiple users option PR2020-08-18
 
                     } else if (field_name === "uc_meetings") {
@@ -704,8 +709,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (field_name === "select") {
                 // TODO add select multiple users option PR2020-08-18
 
-            } else if (["user_sb_code", "username", "last_name", "sb_code", "school_abbrev",
-                "depbase_code", "lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version"].includes(field_name)){
+            } else if (["user_sb_code", "username", "last_name", "sb_code", "uc_school_abbrev",
+                "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version"].includes(field_name)){
                 inner_text = data_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
 
@@ -718,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     title_text = [date1_txt, date2_txt].join("\n");
                 };
 
-            } else if (["uc_amount", "examperiod"].includes(field_name)){
+            } else if (["uc_amount", "uc_corr_amount", "uc_corr_meetings", "examperiod"].includes(field_name)){
                 inner_text = (data_dict[field_name]) ? data_dict[field_name] : null;  // don't show zero's
                 filter_value = (inner_text) ? inner_text : null;
 
@@ -726,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 inner_text = ( Number(data_dict[field_name])) ? Number( data_dict[field_name]) / 100 : null;
                 filter_value = (inner_text) ? inner_text : null;
 
-            } else if (field_name === "school_abbrev") {
+            } else if (field_name === "uc_school_abbrev") {
                 // schoolname cannot be put in user table, because it has no examyear PR2021-07-05
                 // lookup schoolname in school_rows instead
                 if (data_dict.schoolbase_id){
@@ -838,8 +843,61 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // get_column_is_hidden
 
 
-// +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-08-03
+// +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2023-04-15
+    function UploadInputChange(el_input) {
+        console.log( " ==== UploadInputChange ====");
+        console.log("el_input: ", el_input);
 
+// ---  upload changes
+        if (permit_dict.permit_crud){
+            const tblRow = t_get_tablerow_selected(el_input);
+            const data_field = get_attr_from_el(el_input, "data-field");
+            if(tblRow){
+                const data_dict = usercompensation_dicts[tblRow.id];
+                if (data_dict){
+                    const new_value = (el_input.value && Number(el_input.value)) ? Number(el_input.value) : 0;
+                    const old_value = (data_field[data_field]) ? data_field[data_field] : null;
+                                                    (data_field === "uc_corr_meetings") ? data_dict.uc_meetings : 0;
+                    const max_meetings = 2;
+                    const amount_or_meetings = (data_field === "uc_corr_amount") ? data_dict.uc_amount :
+                                                (data_field === "uc_corr_meetings") ? data_dict.uc_meetings : 0
+
+                    const not_valid_txt = [loc.Correction, " '", el_input.value, "'", loc.is_not_valid, "<br>"].join("");
+                    let msg_txt = null;
+                    if (el_input.value && !Number(el_input.value)){
+                        msg_txt = [not_valid_txt, loc.must_enter_whole_number].join("");
+
+                    // the remainder / modulus operator (%) returns the remainder after (integer) division.
+                    } else if(new_value % 1) {
+                        msg_txt = [not_valid_txt, loc.must_enter_whole_number].join("");
+
+                    } else if (amount_or_meetings + new_value  < 0 ){
+                        msg_txt = [not_valid_txt, loc.cannot_deduct_more_than_original_number].join("");
+
+                    } else if (data_field === "uc_corr_meetings" && amount_or_meetings + new_value > max_meetings ) {
+                        msg_txt = [not_valid_txt, loc.Total_number_meetings_cannot_be_greater_than, max_meetings, "."].join("");
+                    };
+
+                    if (msg_txt){
+                        const msg_html = ["<p class='border_bg_invalid p-2'>", msg_txt, "</p>"].join("");
+                        b_show_mod_message_html(msg_html);
+                        el_input.value = old_value;
+
+                    } else {
+                        let upload_dict = {
+                            table: "usercompensation",
+                            mode: "update",
+                            usercompensation_pk: data_dict.id
+                        };
+                        const db_field = (data_field === "uc_corr_amount") ? "correction_amount" :
+                                                (data_field === "uc_corr_meetings") ? "correction_meetings" : "-";
+                        upload_dict[db_field] = new_value;
+                        UploadChanges(upload_dict, urls.url_usercompensation_upload);
+                    };
+                };
+            };
+        };
+    }  // UploadInputChange
 
 //========= UploadToggleStatus  ============= PR2023-03-23
     function UploadToggleStatus(el_input) {
@@ -857,15 +915,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // const requsr_auth_index = b_get_auth_index_of_requsr(loc, permit_dict);
 
             // PR2022-05-30 debug: don't use b_get_auth_index_of_requsr, goes wrong when selected_auth = examinator
-            const is_chairperson = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth1"))
-            const is_secretary = (permit_dict.usergroup_list && permit_dict.usergroup_list.includes("auth2"))
-            const requsr_auth_index = (is_chairperson && !is_secretary) ? 1 :
-                                      (!is_chairperson && is_secretary) ? 2 : null;
 
+// get auth index of requsr, null when multiple found
+            const usergroup_list = (permit_dict.usergroup_list) ? permit_dict.usergroup_list : [];
+            const is_auth1 = usergroup_list.includes("auth1");
+            const is_auth2 = usergroup_list.includes("auth2");
+            const requsr_auth_index = (is_auth1 && !is_auth2) ? 1 :
+                                      (!is_auth1 && is_auth2) ? 2 : null;
+        console.log( "    usergroup_list", usergroup_list);
         console.log( "    requsr_auth_index", requsr_auth_index);
 
-// usergroup_list: (5) ['admin', 'auth1', 'auth3', 'edit', 'read']
-            if(requsr_auth_index){
+            if (requsr_auth_index){
                 const data_dict = get_usercompensation_dict(tblRow);
         console.log( "    data_dict", data_dict);
 
@@ -875,86 +935,63 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // give message and exit when published
                     if (is_published){
-                        const caption = [ loc.This_approval,
-                                        loc.is_already_published
-                                        ].join(" ");
-                        const msg_html = caption + "<br>" + loc.You_cannot_change_approval;
+                        const msg_html = [loc.This_approval, " ", loc.is_already_published, "<br>",
+                                          loc.You_cannot_change_approval].join("");
                         b_show_mod_message_html(msg_html);
+
                     } else {
+                        const model_field = "auth" +  requsr_auth_index + "by";
+                        const field_auth_id = model_field + "_id";
+                        // field_auth_id = 'auth1by_id'
+                        const auth_id = (data_dict[field_auth_id]) ? data_dict[field_auth_id] : null;
+    console.log( "    field_auth_id", field_auth_id);
+    console.log( "    auth_id", auth_id);
 
-// get auth index of requsr, null when multiple found
+                        // field_auth_id = 47
+                        const auth_dict = {};
+                        let requsr_auth_bool = false;
 
-                        const usergroup_list = (permit_dict.usergroup_list) ? permit_dict.usergroup_list : [];
-                        const is_auth1 = usergroup_list.includes("auth1");
-                        const is_auth2 = usergroup_list.includes("auth2");
-                        const auth_index = (is_auth1 && !is_auth2) ? 1 :
-                                           (!is_auth1 && is_auth2) ? 2 : null;
-        console.log( "    usergroup_list", usergroup_list);
-        console.log( "    auth_index", auth_index);
-                        if (auth_index){
-
-
-                            const model_field = "auth" +  auth_index + "by";
-                            const field_auth_id = model_field + "_id";
-                            // field_auth_id = 'subj_auth1by_id'
-                            const auth_id = (data_dict[field_auth_id]) ? data_dict[field_auth_id] : null;
-        console.log( "    field_auth_id", field_auth_id);
-        console.log( "    auth_id", auth_id);
-
-                            // field_auth_id = 47
-                            const auth_dict = {};
-                            let requsr_auth_bool = false;
-
-                            for (let i = 1, key_str; i < 3; i++) {
-                                key_str = "auth" + i + "by_id";
-                                if (data_dict[key_str]){
-                                    if (requsr_auth_index === i) {
-                                        requsr_auth_bool = true;
-                                    };
-                                    // only 2 auths are used, show icon with left or right part black
-                                    auth_dict[i] = (!!data_dict[key_str]);
+                        for (let auth_index = 1, key_str; auth_index < 3; auth_index++) {
+                            key_str = "auth" + auth_index + "by_id";
+                            if (data_dict[key_str]){
+                                if (requsr_auth_index === auth_index) {
+                                    requsr_auth_bool = true;
                                 };
+                                // only 2 auths are used, show icon with left or right part black
+                                auth_dict[auth_index] = (!!data_dict[key_str]);
                             };
+                        };
 ``
-        console.log( "    auth_dict", auth_dict);
+    console.log( "    auth_dict", auth_dict);
 
 // ---  toggle value of requsr_auth_bool
-                            // - get new_requsr_auth_bool - set false if already filled in
-                            // use 'true' instead of requsr_pk
-                            const new_requsr_auth_bool = !requsr_auth_bool;
+                        // - get new_requsr_auth_bool - set false if already filled in
+                        // use 'true' instead of requsr_pk
+                        const new_requsr_auth_bool = !requsr_auth_bool;
 
-        console.log( "    new_requsr_auth_bool", new_requsr_auth_bool);
+    console.log( "    new_requsr_auth_bool", new_requsr_auth_bool);
 
 // also update value in auth_dict;
-                            auth_dict[requsr_auth_index] = new_requsr_auth_bool
+                        auth_dict[requsr_auth_index] = new_requsr_auth_bool
 
-        // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
-                            el_input.className = f_get_status_auth12_iconclass(is_published, false, auth_dict[1], auth_dict[2]);
+    // ---  change icon, before uploading (set auth4 also when auth 1, auth3 also when auth 2)
+                        el_input.className = f_get_status_auth12_iconclass(is_published, false, auth_dict[1], auth_dict[2]);
 
-/*
-                mode = upload_dict.get('mode')
-                is_approve = True if mode in ('approve_test', 'approve_save', 'approve_reset') else False
-                is_submit = True if mode in ('submit_test', 'submit_save') else False
-                is_reset = True if mode == 'approve_reset' else False
-                is_test = True if mode in ('approve_test', 'submit_test') else False
-*/
+        // ---  upload changes
+                        const usercompensation_dict = {
+                            usercompensation_pk: data_dict.uc_id
+                        };
+                        usercompensation_dict[model_field] = new_requsr_auth_bool
 
+                        const upload_dict = {
+                            table: "usercompensation",
+                            usercompensation_list: [usercompensation_dict]
+                        };
 
+                        const url_str = urls.url_usercomp_approve_single
+    console.log( "   @@@@@@@@@@  url_str", url_str);
+                        UploadChanges(upload_dict, url_str);
 
-            // ---  upload changes
-                            const usercompensation_dict = {
-                                usercompensationt_pk: data_dict.id,
-                            };
-                            usercompensation_dict[model_field] = new_requsr_auth_bool;
-
-                            const upload_dict = {
-                                table: "usercompensation",
-                                usercompensation_list: [usercompensation_dict]
-                            };
-
-                            UploadChanges(upload_dict, urls.url_usercomp_approve_single);
-
-                        };  // if (examtype && auth_index)
                     };  //if (is_published)
                 };  //  if(!isEmpty(data_dict))
             };  //  if(requsr_auth_index)
@@ -1002,19 +1039,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log( "tblName", tblName);
     console.log( "fldName", fldName);
-                        const url_str = (tblName === "userpermit") ? urls.url_userpermit_upload : urls.url_user_upload;
+                        const url_str = urls.url_user_upload;
                         const upload_dict = {mode: "update", mapid: data_dict.mapid};
-                        if (tblName === "userpermit"){
-                            upload_dict.userpermit_pk = data_dict.id;
-                        } else {
-                            // use this both for table 'user' and 'usergroup'
-                            upload_dict.user_pk = data_dict.id,
-                            upload_dict.schoolbase_pk = data_dict.schoolbase_id;
-                        }
+
+                        upload_dict.user_pk = data_dict.id,
+                        upload_dict.schoolbase_pk = data_dict.schoolbase_id;
+
                         const usergroupname = fldName.substr(6);
                         upload_dict.usergroups = {}
                         upload_dict.usergroups[usergroupname] = permit_bool;
     console.log( "upload_dict", upload_dict);
+    console.log( "  >>>>>>>> url_str", url_str);
 
                         UploadChanges(upload_dict, url_str);
                     }  // if(fldName === "group_admin" && is_request_user && permit_bool ){
@@ -1061,6 +1096,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     if ("updated_usercompensation_rows" in response) {
                         RefreshDataRows("usercompensation", response.updated_usercompensation_rows, usercompensation_dicts, true)  // true = update
+                    };
+                    if ("msg_html" in response) {
+                        b_show_mod_message_html(response.msg_html)
+                    };
+                    if ("messages" in response) {
+                        b_show_mod_message_dictlist(response.messages)
                     };
 
                 },  // success: function (response) {
@@ -1137,11 +1178,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function MCH_Open(td_clicked) {
         console.log(" -----  MCH_Open   ----")
         console.log("    td_clicked", td_clicked)
+        console.log("    usercompensation_dicts", usercompensation_dicts)
 
         const tr_clicked = td_clicked.parentNode;
+        console.log("    tr_clicked", tr_clicked)
 
         const map_id = tr_clicked.id;
         const data_dict = usercompensation_dicts[map_id];
+        console.log("    map_id", map_id)
         console.log("    data_dict", data_dict)
         if (data_dict){
             el_MCH_header_text.innerHTML = [loc.Meetings, data_dict.subj_name_nl + " - " + loc.examperiod_caption[data_dict.examperiod]].join("<br>");
@@ -1211,7 +1255,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (enable_save_btn){
             const data_dict = mod_MCH_dict.data_dict;
         console.log("    data_dict", data_dict)
-            const usercompensation_pk = data_dict.id;
+            const usercompensation_pk = data_dict.uc_id;
 
             const new_uc_meetings = mod_MCH_dict.meeting_count;
             const new_uc_meetingdate1 = (el_MCH_meetingdate1.value) ? el_MCH_meetingdate1.value : null;
@@ -1219,7 +1263,7 @@ document.addEventListener('DOMContentLoaded', function() {
             let data_has_changed = false;
 
             const upload_dict = {mode: "update",
-                                usercompensation_pk: data_dict.id};
+                                usercompensation_pk: usercompensation_pk};
             if (new_uc_meetings !== data_dict.uc_meetings){
                 upload_dict.meetings = new_uc_meetings;
                 data_has_changed = true;
@@ -1357,7 +1401,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if(tblRow){
             selected_pk = get_attr_from_el_int(tblRow, "data-pk")
         } else {
-            selected_pk = (tblName === "userpermit") ? selected_userpermit_pk : selected_user_pk;
+            selected_pk = selected_user_pk;
         }
         console.log("    tblRow", tblRow )
         console.log("    selected_pk", selected_pk )
@@ -1376,12 +1420,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const has_selected_item = (!isEmpty(data_dict));
         if(has_selected_item){
             mod_dict.mapid = data_dict.mapid;
-            if (tblName === "userpermit"){
-                mod_dict.userpermit_pk = selected_userpermit_pk
-            } else {
-                mod_dict.user_pk = data_dict.id;
-                mod_dict.user_ppk = data_dict.schoolbase_id;
-            }
+
+            mod_dict.user_pk = data_dict.id;
+            mod_dict.user_ppk = data_dict.schoolbase_id;
+
         };
        console.log("    mod_dict", mod_dict);
 
@@ -1390,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const is_mode_permission_admin = (mode === "permission_admin");
         const is_mode_send_activation_email = (mode === "send_activation_email");
 
-        const header_text = (mode === "delete") ? (tblName === "userpermit") ? loc.Delete_permission : loc.Delete_user :
+        const header_text = (mode === "delete") ? loc.Delete_user :
                             (mode === "user_without_userallowed") ? loc.Add_user :
                             (is_mode_send_activation_email) ? loc.Send_activation_email :
                             (is_mode_permission_admin) ? loc.Set_permissions : "";
@@ -1401,30 +1443,24 @@ document.addEventListener('DOMContentLoaded', function() {
             msg_list.push("<p>" + loc.No_user_selected + "</p>");
             hide_save_btn = true;
         } else {
-            if(tblName === "userpermit"){
-                const action = (data_dict.action) ? data_dict.action  : "-";
-                const page = (data_dict.page) ? data_dict.page  : "-";
-                msg_list.push(["<p>", loc.Action, " '", action, "'", loc.on_page, "'",page, "'", loc.will_be_deleted, "</p>"].join(""));
-                msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
-            } else {
 
-                const username = (data_dict.username) ? data_dict.username  : "-";
-                if(mode === "delete"){
-                    if(is_request_user){
-                        msg_list.push("<p>" + loc.Sysadm_cannot_delete_own_account + "</p>");
-                        hide_save_btn = true;
-                    } else {
-                        msg_list.push(["<p>", loc.User + " '" + username + "'", loc.will_be_deleted, "</p>"].join(""));
-                        msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
-                    }
-                } else if(is_mode_permission_admin){
+            const username = (data_dict.username) ? data_dict.username  : "-";
+            if(mode === "delete"){
+                if(is_request_user){
+                    msg_list.push("<p>" + loc.Sysadm_cannot_delete_own_account + "</p>");
                     hide_save_btn = true;
-                    const fldName = get_attr_from_el(el_input, "data-field")
-                    if (fldName === "group_admin") {
-                        msg_list.push("<p>" + loc.Sysadm_cannot_remove_sysadm_perm + "</p>");
-                    }
+                } else {
+                    msg_list.push(["<p>", loc.User + " '" + username + "'", loc.will_be_deleted, "</p>"].join(""));
+                    msg_list.push("<p>" + loc.Do_you_want_to_continue + "</p>");
+                }
+            } else if(is_mode_permission_admin){
+                hide_save_btn = true;
+                const fldName = get_attr_from_el(el_input, "data-field")
+                if (fldName === "group_admin") {
+                    msg_list.push("<p>" + loc.Sysadm_cannot_remove_sysadm_perm + "</p>");
                 }
             }
+
         }
         if(!dont_show_modal){
             el_confirm_header.innerText = header_text;
@@ -1481,39 +1517,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             close_modal = true;
 
-        } else if(mod_dict.mode === "download_userdata_xlsx"){
-            const el_modconfirm_link = document.getElementById("id_modconfirm_link");
-            if (el_modconfirm_link) {
-                const href_str = urls.url_download_userdata_xlsx;
-                el_modconfirm_link.setAttribute("href", href_str);
-                el_modconfirm_link.click();
-
-                close_modal = true;
-            };
-            skip_uploadchanges = true;
-
-        } else if(mod_dict.table === "userpermit"){
-            if (mod_dict.mode === "delete"){
-                url_str = urls.url_userpermit_upload;
-                upload_dict.userpermit_pk = mod_dict.userpermit_pk;
-
-                close_modal = true;
-            }
-        } else {
-            if (mod_dict.mode === "delete"){
-    // show loader
-                el_confirm_loader.classList.remove(cls_visible_hide)
-
-            };
-
-            url_str = urls.url_user_upload;
-            upload_dict.user_pk = mod_dict.user_pk;
-            upload_dict.schoolbase_pk = mod_dict.user_ppk;
-            if (mod_dict.mode === "is_active") {
-                upload_dict.is_active = mod_dict.new_isactive;
-            };
         };
-
 // ---  Upload changes
         if (!skip_uploadchanges){
             UploadChanges(upload_dict, url_str);

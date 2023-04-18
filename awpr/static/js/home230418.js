@@ -6,7 +6,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get data stored in page
         let el_data = document.getElementById("id_data");
-        urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+        // PR2023-04-17 debug: Snery error: 'urls' is undefined. Must check why , add 'if (urls){' for now
+        if (urls){
+            urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
+        };
 
 // ---  HEADER BAR ------------------------------------
         const el_hdrbar_examyear = document.getElementById("id_hdrbar_examyear");

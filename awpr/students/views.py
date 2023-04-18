@@ -144,7 +144,7 @@ class OrderlistsListView(View): # PR2021-07-04
 def create_student_rows(request, sel_examyear, sel_schoolbase, sel_depbase, append_dict, show_deleted=False, student_pk=None):
     # --- create rows of all students of this examyear / school PR2020-10-27 PR2022-01-03 PR2022-02-15  PR2023-01-11
     # - show only students that are not tobedeleted
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_student_rows -----')
@@ -1281,9 +1281,6 @@ class ClusterUploadView(View):  # PR2022-01-06
         # - addd messages to update_wrap
         if msg_list:
             update_wrap['messages'] = [{'class': "border_bg_invalid", 'msg_html': '<br>'.join(msg_list)}]
-
-        if logging_on:
-            logger.debug('    update_wrap: ' + str(update_wrap))
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -5870,7 +5867,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         except Exception as e:
             recalc_subj_composition = False
             logger.error(getattr(e, 'message', str(e)))
-            msg_list.append(acc_prm.err_html_error_occurred(e, _('The changes have not been saved.')))
+            msg_list.append(acc_prm.msghtml_error_occurred_with_border(e, _('The changes have not been saved.')))
         else:
 
             if logging_on:
@@ -7981,6 +7978,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
     # PR2022-02-15 show only not tobeleted students and studentsubjects
     # PR2022-03-23 cluster_pk_list added, to return studsubj with changed clustername
     # PR2022-12-16 allowed filter renewed
+    # PR2023-04-18 Sentry error fixed: syntax error at or near ")" LINE 1: ...cluster_id IN (SELECT UNNEST(ARRAY[1465]::INT[])) ) ORDER BY...
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
@@ -8208,13 +8206,18 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
                 #   sql_list.append("AND ( studsubj.studsubj_id IN (SELECT UNNEST(%(ss_pk_list)s::INT[])) OR studsubj.cluster_id IN (SELECT UNNEST(%(cls_pk_list)s::INT[])) )")
 
                 sql_list.append(''.join((
-                    "AND ( studsubj.studsubj_id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[]))) OR studsubj.cluster_id IN (SELECT UNNEST(ARRAY", str(cluster_pk_list), "::INT[])) )"
+                    "AND (studsubj.studsubj_id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[])) OR ",
+                         "studsubj.cluster_id IN (SELECT UNNEST(ARRAY", str(cluster_pk_list),  "::INT[])) )"
                 )))
             else:
                 # PR2023-02-18 was:
                 #   PR2022-12-26 was: sql_list.append("AND studsubj.cluster_id = ANY(%(cls_pk_list)s::INT[])")
                 #   sql_list.append("AND studsubj.cluster_id IN (SELECT UNNEST( %(cls_pk_list)s::INT[]))")
-                sql_list.append(''.join(("AND studsubj.cluster_id IN (SELECT UNNEST(ARRAY", str(cluster_pk_list), "::INT[]))")))
+                sql_list.append(
+                    ''.join((
+                        "AND studsubj.cluster_id IN (SELECT UNNEST(ARRAY", str(cluster_pk_list), "::INT[]))"
+                    ))
+                )
 
         elif studsubj_pk_list:
             # PR2023-02-18 was:
@@ -8281,7 +8284,7 @@ def create_studentsubject_rows(sel_examyear, sel_schoolbase, sel_depbase, append
                     for key, value in studsubj_append_dict.items():
                         row[key] = value
 
-            if logging_on:
+            if logging_on and False:
                 logger.debug('row: ' + str(row))
 
     except Exception as e:

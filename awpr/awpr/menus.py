@@ -329,6 +329,8 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
 
 #  PR2022-06-06 back to previous one, to be able to block acces to result page when user is not chairperson of secretary
         # was: no_access = (not permit_list)
+
+
         may_receive_messages = 'msgreceive' in usergroup_list  # PR2023-04-05
 
         # PR2023-04-11 debug. Friedeman Sg Otrobanda: user cannot access page 'No permit to viw page.
@@ -337,7 +339,16 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
         # was:
         #if not ('permit_view' in permit_list or 'permit_crud' in permit_list):
         #    no_access = True
-        no_access = False
+
+# PE2023-04-17 to prevent - for instance - access to page exam when role = school:
+        no_access = not ( 'permit_view' in permit_list or
+                        'permit_crud' in permit_list or
+                        'permit_auth1' in permit_list or
+                        'permit_auth2' in permit_list or
+                        'permit_auth3' in permit_list or
+                        'permit_auth4' in permit_list or
+                        'permit_admin' in permit_list
+                        )
 
 # +++ do not display pages when country is locked,
         country_locked = sel_examyear_instance.country.locked if sel_examyear_instance else True

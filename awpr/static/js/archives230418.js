@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
     urls.url_archive_upload = get_attr_from_el(el_data, "data-url_archive_upload");
+    urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
 
     // columns_hidden and mod_MCOL_dict.columns are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
     // mod_MCOL_dict.columns contains the fields and captions that can be hidden
@@ -259,13 +260,13 @@ document.addEventListener('DOMContentLoaded', function() {
     };//function CreateSubmenu
 
 //###########################################################################
-//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14
+//=========  HandleBtnSelect  ================ PR2020-09-19  PR2020-11-14 PR2023-04-18
     function HandleBtnSelect(data_btn, skip_upload) {
         //console.log( "===== HandleBtnSelect ========= ", data_btn);
 
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
         if (!data_btn) {data_btn = selected_btn};
-        if (data_btn && ["btn_exform", "btn_diploma"].includes(data_btn)) {
+        if (data_btn && ["btn_orderlist", "btn_exform", "btn_diploma"].includes(data_btn)) {
             selected_btn = data_btn;
         } else {
             selected_btn = "btn_exform";
@@ -345,7 +346,23 @@ document.addEventListener('DOMContentLoaded', function() {
 // --- loop through data_rows
         if(data_rows && data_rows.length){
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
-                CreateTblRow(tblName, field_setting, data_dict, col_hidden);
+
+        console.log("data_dict.filename.charAt(0).toLowerCase()", data_dict.filename.charAt(0).toLowerCase());
+        console.log("data_dict.filename", data_dict.filename);
+
+                console.log ("data_dict", data_dict)
+            // TODO add field 'doctype' to table schools_published instead of filtering by name PR2023-04-18
+                const show_row =  (selected_btn === "btn_diploma") ?
+                                        (!!data_dict.regnumber) :
+                                  (selected_btn === "btn_exform") ?
+
+                                        (data_dict.filename.charAt(0).toLowerCase() === "e") :
+                                  (selected_btn === "btn_orderlist") ?
+                                        (!data_dict.regnumber && data_dict.filename.charAt(0).toLowerCase() !== "e") :
+                                        false;
+                if (show_row){
+                    CreateTblRow(tblName, field_setting, data_dict, col_hidden);
+                };
             };
         };
 // --- filter tblRows

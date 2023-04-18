@@ -2240,7 +2240,7 @@ class ExamUploadDuoExamView(View):
                     except Exception as e:
                         deleted_row = None
                         logger.error(getattr(e, 'message', str(e)))
-                        err_html = acc_prm.err_html_error_occurred(e, _('This CVTE exam can not be deleted.'))
+                        err_html = acc_prm.msghtml_error_occurred_with_border(e, _('This CVTE exam can not be deleted.'))
 
             if logging_on:
                 logger.debug('    deleted_row: ' + str(deleted_row))
@@ -4433,7 +4433,7 @@ def create_exam_instance(subject, department, level, examperiod_int, ete_exam, r
     except Exception as e:
 # - create error when exam is not created PR2023-03-20
         logger.error(getattr(e, 'message', str(e)))
-        err_html = acc_prm.err_html_error_occurred(e, _('The exam could not be created.'))
+        err_html = acc_prm.msghtml_error_occurred_with_border(e, _('The exam could not be created.'))
 
     return exam, err_html
 # - end of create_exam_instance
@@ -4447,12 +4447,11 @@ def delete_exam_instance(instance, request):  #  PR2021-04-05 PR2022-01-22 PR202
 
     err_html = None
     try:
-        a=1/0
         instance.delete(request=request)
     except Exception as e:
         deleted_row = None
         logger.error(getattr(e, 'message', str(e)))
-        err_html = acc_prm. err_html_error_occurred(e, _('This exam could not be deleted.'))
+        err_html = acc_prm. msghtml_error_occurred_with_border(e, _('This exam could not be deleted.'))
     return deleted_row, err_html
 # - end of delete_exam_instance
 

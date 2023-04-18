@@ -191,7 +191,6 @@ class UserCompensationUploadView(View):
                     msg_html = acc_prm.msghtml_from_msglist_with_border(sel_msg_list)
 
                 else:
-
 # +++  get existing usercompensation_instance
                     usercompensation_instance = acc_mod.UserCompensation.objects.get_or_none(
                         id=usercompensation_pk
@@ -200,16 +199,17 @@ class UserCompensationUploadView(View):
                     if usercompensation_instance:
                         if logging_on:
                             logger.debug('    usercompensation_instance: ' + str(usercompensation_instance))
-# +++ Update student, also when it is created, not when delete has failed (when deleted ok there is no student)
-                        update_usercompensation_instance(
-                            instance=usercompensation_instance,
-                            upload_dict=upload_dict,
-                            request=request
-                        )
+# +++ Update usercompensation_instance
+                        changes_are_saved, save_error, field_error = \
+                            update_usercompensation_instance(
+                                instance=usercompensation_instance,
+                                upload_dict=upload_dict,
+                                request=request
+                            )
 
-# - create student_row, also when deleting failed, not when deleted ok, in that case student_row is added in delete_student
-                    if usercompensation_instance:
-                        updated_rows = create_usercompensation_rows(sel_examyear, request)
+# - create usercompensation_rows
+                        if changes_are_saved:
+                            updated_rows = create_usercompensation_rows(sel_examyear, request)
 
                 update_wrap['updated_usercompensation_rows'] = updated_rows
 
@@ -223,9 +223,8 @@ class UserCompensationUploadView(View):
 
 #######################################################
 def update_usercompensation_instance(instance, upload_dict, request):
-    # --- update existing and new instance PR2023-02-25
-    instance_pk = instance.pk if instance else None
-
+    # --- update existing and new instance PR2023-02-25 PR2023-04-17
+    # calculated compensation is no stored in table
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_usercompensation_instance -------')
@@ -233,8 +232,9 @@ def update_usercompensation_instance(instance, upload_dict, request):
         logger.debug('    instance:    ' + str(instance))
 
 # ----- get user_lang
-
+    must_calc_comp = False
     changes_are_saved = False
+
     save_error = False
     field_error = False
 
@@ -243,22 +243,50 @@ def update_usercompensation_instance(instance, upload_dict, request):
     if instance:
         save_changes = False
         for field, new_value in upload_dict.items():
+            if logging_on:
+                logger.debug('    field: ' + str(field))
 
     # - save changes in fields
-            if field in ('meetingdate1', 'meetingdate2', 'meetings'):
+            if field in ('amount', 'meetings', 'correction_amount', 'correction_meetings'):
+                saved_value = getattr(instance, field) or 0
+                if new_value is None:
+                    new_value = 0
+                if logging_on:
+                    logger.debug('    new_value: ' + str(new_value) + ' ' + str(type(new_value)))
+                    logger.debug('    saved_value: ' + str(saved_value) + ' ' + str(type(saved_value)))
+                if new_value != saved_value:
+                    setattr(instance, field, new_value)
+                    save_changes = True
+                    must_calc_comp = True
+
+            elif field in ('meetingdate1', 'meetingdate2'):
                 saved_value = getattr(instance, field)
                 if new_value != saved_value:
                     setattr(instance, field, new_value)
                     save_changes = True
 
             elif field in ('auth1by', 'auth2by'):
-                saved_value = getattr(instance, field)
-                if new_value != saved_value:
-                    setattr(instance, field, new_value)
+                # field 'auth1by' contains boolaean, replace by requsr.pk when true or None when False
+                if new_value:
+                    new_auth = acc_mod.User.objects.get_or_none(pk=request.user.pk)
+                else:
+                    new_auth = None
+                saved_auth = getattr(instance, field)
+
+                if new_auth != saved_auth:
+                    setattr(instance, field, new_auth)
                     save_changes = True
 
     # - save changes
         if save_changes:
+            if must_calc_comp:
+                new_comp = calc_compensation(
+                        approvals_sum=getattr(instance, 'amount') or 0,
+                        meetings_sum=getattr(instance, 'meetings') or 0,
+                        approvals_sum_correction=getattr(instance, 'correction_amount') or 0,
+                        meetings_sum_corrections=getattr(instance, 'correction_meetings') or 0,
+                    )
+                setattr(instance, 'compensation', new_comp)
             try:
                 instance.save(request=request)
                 changes_are_saved = True
@@ -1232,7 +1260,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
 #################################################################################
 @method_decorator([login_required], name='dispatch')
-class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
+class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR2023-04-16
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -1243,21 +1271,18 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
 # function sets auth and publish of studentsubject records of current department # PR2021-07-25
         update_wrap = {}
         msg_list = []
+        border_class = None
 
 # - reset language
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
         activate(user_lang)
 
 # - get permit
-        has_permit = False
-        req_usr = request.user
-        if req_usr and req_usr.country and req_usr.schoolbase:
-            permit_list = acc_prm.get_permit_list('page_studsubj', req_usr)
-            if permit_list:
-                has_permit = 'permit_approve_subject' in permit_list
+        has_permit = acc_prm.get_permit_of_this_page('page_corrector', 'approve_comp', request)
 
         if not has_permit:
-            msg_list.append(str(_("You don't have permission to perform this action.")))
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
         else:
 
 # - get upload_dict from request.POST
@@ -1266,77 +1291,47 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
                 upload_dict = json.loads(upload_json)
                 if logging_on:
                     logger.debug('    upload_dict: ' + str(upload_dict))
+                #  upload_dict: {'table': 'usercompensation', 'usercompensation_list': [{'usercompensation_pk': 916, 'auth2by': True}]}
 
 # ----- get selected examyear, school and department from usersettings
-                # may_edit = False when:
-                # - examyear, schoolbase, school, depbase or department is None
-                # - country, examyear or school is locked
-                # - not requsr_same_school,
-                # - not sel_examyear.published,
-                # not af.is_allowed_depbase_requsr or not af.is_allowed_depbase_school,
-
                 sel_examyear, sel_school, sel_department, sel_level, may_editNIU, err_list = \
                     acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
                 if err_list:
+                    border_class = c.HTMLCLASS_border_bg_invalid
                     msg_list.extend(err_list)
+                    msg_list.append(acc_prm.err_txt_cannot_make_changes())
                 else:
 
-# check if studsubj is allowed PR2023-02-12
-                    userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
+# - get list of usercompensation_pk's  from upload_dict
+                    usercompensation_list = upload_dict.get('usercompensation_list') or []
+                    # 'usercompensation_list': [{'usercompensation_pk': 916, 'auth2by': True}]
                     if logging_on:
-                        logger.debug('    userallowed_instance: ' + str(userallowed_instance))
+                        logger.debug('    usercompensation_list: ' + str(usercompensation_list))
 
-                    userallowed_sections_dict = acc_prm.get_userallowed_sections_dict(userallowed_instance)
-                    if logging_on:
-                        logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
-
-                    userallowed_schoolbase_dict, userallowed_depbases_pk_arr = acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(userallowed_sections_dict, sel_school.base_id)
-                    if logging_on:
-                        logger.debug('    userallowed_schoolbase_dict: ' + str(userallowed_schoolbase_dict))
-                        logger.debug('    userallowed_depbases_pk_arr: ' + str(userallowed_depbases_pk_arr))
-
-                    userallowed_depbase_dict, userallowed_lvlbase_pk_arr = acc_prm.get_userallowed_depbase_dict_lvlbases_pk_arr(userallowed_schoolbase_dict, sel_department.base_id)
-                    if logging_on:
-                        logger.debug('    userallowed_depbase_dict: ' + str(userallowed_depbase_dict))
-                        logger.debug('    userallowed_lvlbase_pk_arr: ' + str(userallowed_lvlbase_pk_arr))
-
-                    sel_lvlbase_pk = sel_level.base_id if sel_level else None
-                    userallowed_subjbase_pk_list = acc_prm.get_userallowed_subjbase_arr(userallowed_depbase_dict, sel_lvlbase_pk)
-
-                    userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
-                    if logging_on:
-                        logger.debug('    userallowed_subjbase_pk_list: ' + str(userallowed_subjbase_pk_list))
-                        logger.debug('    userallowed_cluster_pk_list: ' + str(userallowed_cluster_pk_list))
-
-# - get list of studentsubjects from upload_dict
-                    studsubj_list = upload_dict.get('studsubj_list')
-                    #  'studsubj_list': [{'student_pk': 7959, 'studsubj_pk': 64174, 'subj_auth1by': True}]}
-                    if studsubj_list:
-                        studsubj_rows = []
+                    if usercompensation_list:
+                        updated_usercomp_rows = []
 # -------------------------------------------------
 # - loop through list of uploaded studentsubjects
-                        for studsubj_dict in studsubj_list:
-                            usercompensationt_pk = studsubj_dict.get('usercompensationt_pk')
+                        for usercompensation_dict in usercompensation_list:
 
                             append_dict = {}
                             error_dict = {}
+                            usercompensation_pk = usercompensation_dict.get('usercompensation_pk')
 
-# - get current student and studsubj
+# - get current usercomp_instance
                             usercomp_instance = acc_mod.UserCompensation.objects.get_or_none(
-                                id=usercompensationt_pk,
-                                department=sel_department
+                                id=usercompensation_pk
                             )
                             if logging_on:
                                 logger.debug('---------- ')
                                 logger.debug('    usercomp_instance: ' + str(usercomp_instance))
 
-                            if usercomp_instance and False:
+                            if usercomp_instance:
 # +++ update studsubj
 
                                 err_list, err_fields = [], []
-                                #update_studsubj(studsubj, studsubj_dict, si_dict,
-                                #                sel_examyear, sel_school, sel_department,
-                                #                err_list, err_fields, request)
+                                changes_are_saved, save_error, field_error = \
+                                    update_usercompensation_instance(usercomp_instance, usercompensation_dict, request)
                                 if logging_on:
                                     logger.debug('>>>>> err_list: ' + str(err_list))
                                     logger.debug('>>>>> err_fields: ' + str(err_fields))
@@ -1377,19 +1372,11 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18
                                #        studsubj_rows.append(studsubj_row)
 # - end of loop
 # -------------------------------------------------
-                        if studsubj_rows:
-                            update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
+                        if updated_usercomp_rows:
+                            update_wrap['updated_usercomp_rows'] = updated_usercomp_rows
 
-        if logging_on:
-            logger.debug('>>>>> msg_list: ')
-            if msg_list:
-                for msg in msg_list:
-                    logger.debug('msg: ' + str(msg))
         if msg_list:
-            messages = []
-            msg_html = '<br>'.join(msg_list)
-            messages.append({'class': "border_bg_warning", 'msg_html': msg_html})
-            update_wrap['messages'] = messages
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
@@ -1428,7 +1415,7 @@ def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase
     return corrector_rows
 
 
-def create_usercompensation_rows(sel_examyear, request):
+def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None):
     # --- create list of all correctors of this school, or  PR2023-02-19
     logging_on = False  # s.LOGGING_ON
     if logging_on:
@@ -1439,43 +1426,37 @@ def create_usercompensation_rows(sel_examyear, request):
     userapproval_rows = []
     if sel_examyear:
         try:
+            usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
 
-            sql_sub_list = ["SELECT uc.id,",
+            if logging_on:
+                logger.debug('    usergroup_list ' + str(usergroup_list) + ' ' + str(type(usergroup_list)))
+
+            auth4_in_usergroups = 'auth4' in usergroup_list if usergroup_list else False
+            auth1_or_auth2_in_usergroups = 'auth1' in usergroup_list or 'auth2' in usergroup_list if usergroup_list else False
+
+            sql_auth = "SELECT u.id, u.last_name FROM accounts_user AS u"
+
+            sql_sub_list = ["WITH auth1 AS (", sql_auth, "), auth2 AS (", sql_auth, ")",
+                        "SELECT uc.id, uc.user_id,",
                         "CONCAT('usercomp_', uc.id::TEXT) AS mapid,",
 
-                        "SUBSTRING(u.username, 7) AS username, u.last_name, u.is_active,",
-                        "user_sb.code AS user_sb_code,",
+                        "school.abbrev AS uc_school_abbrev, schoolbase.code AS sb_code,",
+                        "depbase.code AS uc_depbase_code, lvlbase.code AS uc_lvlbase_code,",
+                        "exam.version AS exam_version, exam.examperiod AS examperiod,",
 
-                        "school.abbrev AS school_abbrev,",
-                        "schoolbase.code AS sb_code,",
-                        "depbase.code AS depbase_code,",
-                        "lvlbase.code AS lvlbase_code,",
-                        "exam.version AS exam_version,",
-                        "exam.examperiod AS examperiod,",
+                        "subj.name_nl AS subj_name_nl, subjbase.code AS subjbase_code,",
 
-                        "subj.name_nl AS subj_name_nl,",
-                        "subjbase.code AS subjbase_code,",
-
-                        "uc.amount AS uc_amount,",
-                        "uc.meetings AS uc_meetings,",
-                        "uc.correction_amount AS uc_corr_amount,",
-                        "uc.correction_meetings AS uc_corr_meetings,",
+                        "uc.amount AS uc_amount, uc.meetings AS uc_meetings,",
+                        "uc.correction_amount AS uc_corr_amount, uc.correction_meetings AS uc_corr_meetings,",
                         "uc.compensation AS uc_compensation,",
-
-                        "uc.meetingdate1 AS uc_meetingdate1,",
-                        "uc.meetingdate2 AS uc_meetingdate2,",
-
-                        "uc.auth1by_id AS uc_auth1by_id,",
-                        "uc.auth2by_id AS uc_auth2by_id,",
+                        "uc.meetingdate1 AS uc_meetingdate1, uc.meetingdate2 AS uc_meetingdate2,",
+                        "uc.auth1by_id AS uc_auth1by_id, auth1.last_name AS uc_auth1by_usr,",
+                        "uc.auth2by_id AS uc_auth2by_id, auth2.last_name AS uc_auth2by_usr,",
                         "uc.published_id AS uc_published_id,",
 
                         "uc.notes AS uc_notes",
-##########################
 
                         "FROM accounts_usercompensation AS uc",
-
-                        "INNER JOIN accounts_user AS u ON (u.id = uc.user_id)",
-                        "LEFT JOIN schools_schoolbase AS user_sb ON (user_sb.id = u.schoolbase_id)",
 
                         "INNER JOIN subjects_exam AS exam ON (exam.id = uc.exam_id)",
 
@@ -1491,52 +1472,71 @@ def create_usercompensation_rows(sel_examyear, request):
                         "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
                         "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
+                        "LEFT JOIN auth1 ON (auth1.id = uc.auth1by_id)",
+                        "LEFT JOIN auth2 ON (auth2.id = uc.auth2by_id)",
+
                         ''.join(("WHERE school.examyear_id=", str(sel_examyear.pk), "::INT"))
                         ]
+            sub_sql = ' '.join(sql_sub_list)
 
-            sql_list = ["SELECT ",  # uc.id,",
+
+
+            sql_list = ["WITH uc_sub AS (", sub_sql, ")",
+                        "SELECT u.id AS u_id, uc_sub.id AS uc_id,",
+
+                        "CONCAT('usercomp_', u.id::TEXT, CASE WHEN uc_sub.id IS NULL THEN NULL ELSE '_' END, uc_sub.id::TEXT) AS mapid,",
+
                         "SUBSTRING(u.username, 7) AS username, u.last_name, u.is_active,",
+                       # "ual.examyear_id, ual.allowed_sections,",
 
-                        "ual.examyear_id, ual.allowed_sections",
+                        "user_sb.code AS user_sb_code,",
+                        "uc_sub.uc_school_abbrev, uc_sub.sb_code, uc_sub.uc_depbase_code, uc_sub.uc_lvlbase_code,",
+                        "uc_sub.exam_version, uc_sub.examperiod,",
+                        "uc_sub.subj_name_nl, uc_sub.subjbase_code,",
 
-                        #"school.abbrev AS school_abbrev,",
-                        #"schoolbase.code AS sb_code,",
-                        #"depbase.code AS depbase_code,",
-                       # "lvlbase.code AS lvlbase_code,",
-                       # "exam.version AS exam_version,",
-                       # "exam.examperiod AS examperiod,",
-
-                      #  "subj.name_nl AS subj_name_nl,",
-                      #  "subjbase.code AS subjbase_code,",
-
-                       # "uc.amount AS uc_amount,",
-                       # "uc.meetings AS uc_meetings,",
-                       # "uc.correction_amount AS uc_corr_amount,",
-                       # "uc.correction_meetings AS uc_corr_meetings,",
-                      #  "uc.compensation AS uc_compensation,",
-
-                    #    "uc.meetingdate1 AS uc_meetingdate1,",
-                    #    "uc.meetingdate2 AS uc_meetingdate2,",
-
-                   #     "uc.auth1by_id AS uc_auth1by_id,",
-                    #    "uc.auth2by_id AS uc_auth2by_id,",
-                   #     "uc.published_id AS uc_published_id,",
-
-                    #    "uc.notes AS uc_notes",
+                        "uc_sub.uc_amount, uc_sub.uc_meetings, uc_sub.uc_corr_amount, uc_sub.uc_corr_meetings, uc_sub.uc_compensation,",
+                        "uc_sub.uc_meetingdate1,uc_sub.uc_meetingdate2,",
+                        "uc_sub.uc_auth1by_id, uc_sub.uc_auth1by_usr,",
+                        "uc_sub.uc_auth2by_id, uc_sub.uc_auth2by_usr,",
+                        "uc_sub.uc_published_id, uc_sub.uc_notes",
 
                         "FROM accounts_user AS u",
                         "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
-                        "LEFT JOIN accounts_usercompensation AS uc ON (uc.user_id = u.id)",
+                        "INNER JOIN schools_schoolbase AS user_sb ON (user_sb.id = u.schoolbase_id)",
 
-                        ''.join(("WHERE ual.examyear_id=", str(sel_examyear.pk), "::INT")),
+                        "LEFT JOIN uc_sub ON (uc_sub.user_id = u.id)",
+
+                        "WHERE u.is_active",
+                        ''.join(("AND ual.examyear_id=", str(sel_examyear.pk), "::INT")),
                         ''.join(("AND (POSITION('", c.USERGROUP_AUTH4_CORR, "' IN ual.usergroups) > 0)")),
 
-                        ''.join(("AND u.is_active AND u.role=", str(c.ROLE_016_CORR), "::INT")),
-                        ]
+                        #''.join((" u.role=", str(c.ROLE_016_CORR), "::INT")),
 
-            #if request.user.role < c.ROLE_016_CORR:
-            #    schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
-           #     sql_list.append(''.join(("AND u.schoolbase_id=", str(schoolbase_pk), "::INT")))
+                        ]
+           # if usercompensation_pk:
+                #''.join(("AND uc_sub.id=", str(usercompensation_pk), "::INT"))
+
+            # - when req_usr.role = school: only correctors of this school are visible (from role corrector and own school)
+            #       - req_usr.role = school and usergroups countains auth4: show only usercomp rows of this school / this req_usr
+            #       - req_usr.role = school and usergroups countains auth1 or auth2: show usercomp rows of all schools / all req_usra with role = corrector
+            # - when req_usr.role = corrector: only correctors of with role = corrector are shown (exclude correctors that are appointed by school)
+            #       - req_usr.role = corrector and usergroups countains auth4: show usercomp rows of all schools / this req_usr
+            #       - req_usr.role = corrector and usergroups countains auth1 or auth2: show usercomp rows of all schools / this req_usr.role = correcor
+
+            if request.user.role == c.ROLE_008_SCHOOL:
+                req_usr_schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+                sql_list.append(''.join(("AND u.schoolbase_id=", str(req_usr_schoolbase_pk), "::INT")))
+
+            elif request.user.role == c.ROLE_016_CORR:
+                sql_list.append(''.join(("AND u.role=", str(c.ROLE_016_CORR), "::INT")))
+            else:
+                sql_list.append("AND FALSE")
+
+            if auth4_in_usergroups:
+                sql_list.append(''.join(("AND u.id=", str(request.user.pk), "::INT")))
+            elif not auth1_or_auth2_in_usergroups:
+                sql_list.append("AND FALSE")
+
 
             sql = ' '.join(sql_list)
 
@@ -1544,6 +1544,11 @@ def create_usercompensation_rows(sel_examyear, request):
                 if sql_list:
                     for sql_txt in sql_list:
                         logger.debug(' > ' + str(sql_txt))
+
+            if logging_on:
+                logger.debug('    request.user.roleL ' + str(request.user.role))
+                logger.debug('    auth4_in_usergroups ' + str(auth4_in_usergroups))
+                logger.debug('    auth1_or_auth2_in_usergroups ' + str(auth1_or_auth2_in_usergroups))
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
@@ -1631,10 +1636,10 @@ def create_usercomp_agg_rows(sel_examyear, request):
                     # add compensation to each row
                     for row in usercompensation_agg_rows:
                         compensation = calc_compensation(
-                            amount_sum=row.get('amount_sum') or 0,
+                            approvals_sum=row.get('amount_sum') or 0,
                             meetings_sum=row.get('meetings_sum') or 0,
-                            corr_amount_sum=row.get('corr_amount_sum') or 0,
-                            corr_meetings_sum=row.get('corr_meetings_sum') or 0
+                            approvals_sum_correction=row.get('corr_amount_sum') or 0,
+                            meetings_sum_corrections=row.get('corr_meetings_sum') or 0
                         )
                         row['compensation'] = compensation
 
@@ -1652,22 +1657,22 @@ def create_usercomp_agg_rows(sel_examyear, request):
 
 
 ####################################################
-def calc_compensation(amount_sum, meetings_sum, corr_amount_sum, corr_meetings_sum):
+def calc_compensation(approvals_sum, meetings_sum, approvals_sum_correction, meetings_sum_corrections):
     # calculate compensation PR2023-02-25
     # values, to be stored in examyear_settings
-    first_approval_amount = 2500  # in cents
-    other_approval_amount = 1000  # in cents
-    meeting_amount = 3000  # in cents
-    max_meetings = 2
+    first_approval_amount = c.CORRCOMP_FIRST_APPROVAL
+    other_approval_amount = c.CORRCOMP_OTHER_APPROVAL
+    meeting_amount = c.CORRCOMP_MEETING_COMP
+    max_meetings = c.CORRCOMP_MAX_MEETINGS
 
-    total_amount = amount_sum + corr_amount_sum
-    total_meetings = meetings_sum + corr_meetings_sum
+    total_approvals = approvals_sum + approvals_sum_correction
+    total_meetings = meetings_sum + meetings_sum_corrections
     if total_meetings > max_meetings:
         total_meetings = max_meetings
 
     compensation = 0
-    if total_amount >= 1:
-        compensation = first_approval_amount + (other_approval_amount * (total_amount - 1))
+    if total_approvals >= 1:
+        compensation = first_approval_amount + (other_approval_amount * (total_approvals - 1))
     if total_meetings:
         compensation += meeting_amount * total_meetings
 
@@ -1676,9 +1681,9 @@ def calc_compensation(amount_sum, meetings_sum, corr_amount_sum, corr_meetings_s
 
 def update_usercompensation(sel_examyear, request):
     # --- create list of all correctors,pprovals and return dict with key (eser_pk, exam_pk, school_pk) and count PR2023-02-24
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' =============== update_usercompensation ============= ')
+        logger.debug(' ----- update_usercompensation ----- ')
 
     # ++++++++++++++++++++++++++++++++++++++
     def get_approval_count_dict():
@@ -1951,10 +1956,10 @@ def update_usercompensation(sel_examyear, request):
         if request.user.role >= c.ROLE_008_SCHOOL:
 
             try:
-                first_approval_amount = 2500  # in cents
-                other_approval_amount = 1000  # in cents
-                meeting_amount = 3000
-                max_meetings = 2
+                first_approval_amount = c.CORRCOMP_FIRST_APPROVAL
+                other_approval_amount = c.CORRCOMP_OTHER_APPROVAL
+                meeting_amount = c.CORRCOMP_MEETING_COMP
+                max_meetings = c.CORRCOMP_MAX_MEETINGS
 
                 # - get dict with approval_count and dict with usercompensations
                 approval_count_dict = get_approval_count_dict()

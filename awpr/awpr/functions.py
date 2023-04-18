@@ -1149,16 +1149,17 @@ def has_unread_mailbox_items(examyear, req_user):
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
+    pass
 
 # PR2021-03-26 run this to update text in ex-forms, when necessary
     #if request.user.role == c.ROLE_128_SYSTEM:
-    awpr_lib.update_library(examyear, request)
+    #awpr_lib.update_library(examyear, request)
 
 # function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
-    add_usergroup_msgsend_msgreceive_ONCEONLY(request)
+    #add_usergroup_msgsend_msgreceive_ONCEONLY(request)
 
 # function removes dots, double underscores and underscore at the end in username of role corrector
-    remove_dots_in_username_correctorsONCEONLY(request)
+    #remove_dots_in_username_correctorsONCEONLY(request)
 
     #transfer_grade_tobedeleted_to_deletedONCEONLY(request)
 

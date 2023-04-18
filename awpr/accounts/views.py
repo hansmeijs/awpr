@@ -1671,7 +1671,7 @@ def send_activation_email(user_pk, request):
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
                 has_error = True
-                msg_html = acc_prm.err_html_error_occurred(e, _('The activation email has not been sent.'))
+                msg_html = acc_prm.msghtml_error_occurred_with_border(e, _('The activation email has not been sent.'))
                 # err_dict['msg01'] = _('An error occurred.')
                 # err_dict['msg02'] = _('The activation email has not been sent.')
 
@@ -5176,10 +5176,12 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                         msg_list.append(gettext("%(cpt)s is not in your list of allowed %(cpt2)s.") % {'cpt': caption,
                                                                                        'cpt2': gettext('schools')})
 
+        #TODO requsr_same_school and skip_same_school_clause has no effect, PR2023-04-17
         # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
         # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
         requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and
-                              sel_schoolbase_instance and request.user.schoolbase and request.user.schoolbase.pk == sel_schoolbase_instance.pk)
+                              sel_schoolbase_instance and request.user.schoolbase and
+                              request.user.schoolbase.pk == sel_schoolbase_instance.pk)
 
     # - get school from sel_schoolbase and sel_examyear_instance
         if sel_schoolbase_instance:
@@ -5415,7 +5417,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
-        msg_list.append(acc_prm.err_html_error_occurred(e))
+        msg_list.append(acc_prm.msghtml_error_occurred_with_border(e))
 
 
     may_edit = len(msg_list) == 0

@@ -1076,10 +1076,10 @@ document.addEventListener("DOMContentLoaded", function() {
         //};
 
         if (el_SBR_select_level){
-            el_SBR_select_level.value = "null";
+            el_SBR_select_level.value = -9;
         };
         if (el_SBR_select_subject){
-            el_SBR_select_level.value = "null";
+             el_SBR_select_subject.value = "<" + loc.All_subjects + ">";
         };
 
 // ---  upload new setting
@@ -7473,7 +7473,7 @@ console.log("exam_dict", exam_dict);
 
     }  // MSED_Response
 
-//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
+//=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26  PR2023-04-17
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
         console.log( "===== MSSSS_Response ========= ");
         console.log( "selected_dict", selected_dict);

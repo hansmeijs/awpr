@@ -132,7 +132,7 @@ def get_locale_dict(table_dict, user_lang, request):
     dict['SectorProfile_twolines'] = _('Sector /\nProfile')
     dict['Learning_path'] = _('Learning path')
     dict['Learning_paths'] = _('Learning paths')
-    dict['Learningpath_twolines'] = _('Learning\npath')
+    dict['Learningpath_twolines'] = _('Lear-\nning\npath')
     dict['Sectors'] = _('Sectors')
     dict['Abbreviation'] = _('Abbreviation')
     dict['Cluster'] = _('Cluster')
@@ -419,6 +419,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Number_meetings'] = _('Number of meetings')
         dict['Number_approvals_2lines'] = _('Number of\napprovals')
         dict['Number_meetings_2lines'] = _('Number of\nmeetings')
+        dict['Correction_approvals_2lines'] = _('Correction of\napprovals')
+        dict['Correction_meetings_2lines'] = _('Correction of\nmeetings')
         dict['Compensation'] = _('Compensation')
         dict['Version'] = _('Version')
         dict['Exam_period'] = _('Exam period')
@@ -431,8 +433,17 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Abbrev'] = _('Abbrev.')
         dict['is_an_invalid_number'] = _(' is an invalid number.')
         dict['is_not_valid'] = _(' is not valid.')
+        dict['Correction'] = _('Correction')
+
+        dict['Approved_by'] = TXT_Approved_by
+        dict['Submitted_by'] = TXT_Submitted_by
 
         dict['must_enter_whole_number_between_0_and_'] = _('You must enter a whole number between 0 and ')
+        dict['must_enter_whole_number'] = _('You must enter a whole number.')
+
+        dict['cannot_deduct_more_than_original_number'] = _("You cannot deduct more than the original number.")
+        dict['Total_number_meetings_cannot_be_greater_than'] = _("The total number of meetings cannot be greater than ")
+
 
         dict['cannot_enter_meetings_in_tab_compensation'] = _("You cannot enter the number of meetings in this tab 'Compensation'.")
         dict['select_tab_approvals_to_enter_meetings'] = _("Select the tab 'Approvals' and try again.")
@@ -861,7 +872,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Examnumber'] = TXT_Examnumber
         dict['Examnumber_twolines'] = TXT_Examnumber_twolines
 
-        dict['Abbreviation_twolines'] = _('Abbre-\nviation')
+        dict['Abbreviation_twolines'] = TXT_Abbreviation_twolines
         dict['Exemption_year'] = _('Exemption year')
         dict['Exemption_year_twolines'] = _('Exemption-\nyear')
 
@@ -1527,7 +1538,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['SECE_weighing'] = _('SE-CE\nweighing')
         dict['Final_grade_twolines'] = _('Final\ngrade')
 
-        dict['Abbrev_subject_2lines'] = '\n'.join((str(_('Abbreviation')), str(_('subject'))))
+        dict['Abbrev_subject_2lines'] = '\n'.join((str(TXT_Abbreviation_twolines), str(_('subject'))))
         dict['Exemption_SE'] = ' '.join((str(_('Exemption')), str(_('SE-grade'))))
         dict['Exemption_CE'] = ' '.join((str(_('Exemption')), str(_('CE-grade'))))
         dict['Exemption_FINAL'] = ' '.join((str(_('Exemption')), str(_('Final grade'))))
@@ -1652,8 +1663,12 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Corrector_cannot_approve_exem': _("As corrector you don't have to approve exemptions."),
                                'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
                                'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),  str(_("Designated exams don't have to be approved.")))),
-                               'Secret_exam_dont_enter_score': '<br>'.join((str(_('This is a designated exam.')),  str(_("You don't have to enter the score of designated exams."))))
-        }
+                               'Secret_exam_dont_enter_score': '<br>'.join((str(_('This is a designated exam.')),  str(_("You don't have to enter the score of designated exams.")))),
+                               'no_exam_linked_to_this_score': _("You cannot approve this score, because it is not linked to an exam yet."),
+                               'click_column_to_link_score_to_exam': _("Click in the columns 'Exam' to link this score to an exam."),
+                               'school_must_link_score_to_exam': _("The school must link this score to an exam first."),
+
+                                    }
 
         dict['No_cluster_unlock_permission'] =  _("You don't have permission to unlock grades of this cluster.")
         dict['No_cluster_remove_unlocking_permission'] =  _("You don't have permission to remove unlocking of grades of this cluster.")
@@ -1938,6 +1953,8 @@ TXT_Organization = _('Organization')
 
 TXT_Examnumber = _('Exam number')
 TXT_Examnumber_twolines = _('Exam\nnumber')
+
+TXT_Abbreviation_twolines = _('Abbre-\nviation')
 
 TXT_Select_examperiod = _('Select exam period')
 TXT_No_examperiods_found = _('No exam periods found')

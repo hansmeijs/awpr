@@ -1536,10 +1536,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 //=========  UpdateFieldStatus  ================ PR2021-12-19 PR2022-08-28 PR2023-01-24
     function UpdateFieldStatus(field_name, fld_value, data_dict) {
-        //console.log("=========  UpdateFieldStatus =========");
-        //console.log("    field_name", field_name);
-        //console.log("    fld_value", fld_value);
-        //console.log("    data_dict", data_dict);
+        console.log("=========  UpdateFieldStatus =========");
+        console.log("    field_name", field_name);
+        console.log("    fld_value", fld_value);
+        console.log("    data_dict", data_dict);
 
         const field_arr = field_name.split("_");
         const prefix_str = field_arr[0];
@@ -1564,6 +1564,9 @@ document.addEventListener("DOMContentLoaded", function() {
                                 ["pe_status", "ce_status"].includes(field_name) && data_dict.weight_ce > 0 );
             const show_status = (subj_has_weight && ! hide_secret_exam);
 
+        console.log("    hide_secret_exam", hide_secret_exam);
+        console.log("    subj_has_weight", subj_has_weight);
+        console.log("  show_status", show_status);
             if (show_status){
                 const field_auth1by_id = prefix_str + "_auth1by_id";
                 const field_auth2by_id = prefix_str + "_auth2by_id";
@@ -1593,6 +1596,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 // PR2023-02-07 debug: this is not correct value: !data_dict.examperiod === 4, must be: data_dict.examperiod !== 4
                 const auth4_must_sign = (!data_dict.secret_exam && data_dict.examperiod !== 4
                                             && ["pe_status", "ce_status"].includes(field_name));
+
+        console.log("    auth3_must_sign", auth3_must_sign);
+        console.log("    auth4_must_sign", auth4_must_sign);
 
                 className = f_get_status_auth_iconclass(published_id, is_blocked, auth1by_id, auth2by_id, auth3_must_sign, auth3by_id, auth4_must_sign, auth4by_id);
                 filter_value = className;
@@ -1659,10 +1665,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // +++++++++++++++++ UPLOAD CHANGES +++++++++++++++++ PR2020-12-15
 
-//========= HandleArrowEvent  ================== PR2020-12-20
+//========= HandleArrowEvent  ================== PR2020-12-20 PR2023-04-16
     function HandleArrowEvent(el, event){
-        //console.log(" --- HandleArrowEvent ---")
-        //console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
+        console.log(" --- HandleArrowEvent ---")
+        console.log("event.key", event.key, "event.shiftKey", event.shiftKey)
         // This is not necessary: (event.key === "Tab" && event.shiftKey === true)
         // Tab and shift-tab move cursor already to next / prev element
         if (["Enter", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
@@ -1673,33 +1679,75 @@ document.addEventListener("DOMContentLoaded", function() {
             let move_vertical = (event.key === "ArrowDown" || (event.key === "Enter" && !event.shiftKey)) ? 1 :
                                     (event.key === "ArrowUp" || (event.key === "Enter" && event.shiftKey)) ? -1 : 0
 
-        //console.log("move_horizontal", move_horizontal, "move_vertical", move_vertical)
             const td = el.parentNode
             let tblRow = td.parentNode
             const tblBody = tblRow.parentNode
-// --- get the first and last index of imput columns
-            let max_colindex = null,  min_colindex = null;
-            for (let i = 0, fldName, cell, td; td = tblRow.cells[i]; i++) {
-                cell = td.children[0];
-                fldName = get_attr_from_el(cell, "data-field")
-                if ( ["pescore", "cescore", "segrade", "pegrade", "cegrade", "pecegrade", "finalgrade"].includes(fldName) ) {
-                    if(min_colindex == null) {min_colindex = td.cellIndex}
-                    max_colindex = td.cellIndex;
-                }
-            }
-// --- set move up / down 1 row when min / max index is reached
-            let new_col_index = td.cellIndex + move_horizontal;
-            if(new_col_index > max_colindex) {
-                new_col_index = min_colindex
-                move_vertical += 1
-            } else  if(new_col_index < min_colindex) {
-                new_col_index = max_colindex
-                move_vertical -= 1
-            }
+            let new_col_index = td.cellIndex;
+
+// --- get array of indexes of imput columns PR2023-04-16
+            if (move_horizontal){
+                const colindex_arr = [];
+                for (let i = 0, fldName, cell, td; td = tblRow.cells[i]; i++) {
+                    cell = td.children[0];
+                    fldName = get_attr_from_el(cell, "data-field")
+                    if ( ["cescore", "segrade"].includes(fldName) ) {
+                        colindex_arr.push(td.cellIndex)
+                    };
+                };
+                colindex_arr.sort();
+                console.log ("colindex_arr", colindex_arr)
+
+        // get index in colindex_arr of current cellIndex
+                let cur_arr_index = null, new_arr_index = null;
+                for (let i = 0, colindex; colindex = colindex_arr[i]; i++) {
+                    if (colindex === td.cellIndex){
+                        cur_arr_index = i;
+                    };
+                };
+                if (move_horizontal > 0){
+        // goto next index in colindex_arr, got next row if last index
+                    if (cur_arr_index + move_horizontal > colindex_arr.length - 1){
+                        new_arr_index = 0;
+                        move_vertical += 1;
+                    } else {
+                        new_arr_index = cur_arr_index + move_horizontal;
+                    };
+                } else if (move_horizontal < 0){
+        // goto previous index in colindex_arr, got prev row if first index
+                    if (cur_arr_index + move_horizontal < 0){
+                        new_arr_index = colindex_arr.length - 1;
+                        move_vertical -= 1;
+                    } else {
+                        new_arr_index = cur_arr_index + move_horizontal;
+                    };
+                };
+                new_col_index = colindex_arr[new_arr_index];
+            };
+    console.log ("move_horizontal", move_horizontal)
+    console.log ("move_vertical", move_vertical)
+
 // --- set focus to next / previous cell
             // apparently you must deduct number of header rows from row_index
             let new_row_index = tblRow.rowIndex + move_vertical - 2;
-            const new_tblRow = tblBody.rows[new_row_index]
+            let new_tblRow = tblRow;
+            let stop_loop = false, count = 0;
+            if (move_vertical){
+                while (!stop_loop && count < 100) {
+                    count += 1;  // to prevent infinitive loop
+                    if (move_vertical > 0){
+                         new_tblRow = new_tblRow.nextElementSibling;
+                    } else if (move_vertical < 0){
+                         new_tblRow = new_tblRow.previousElementSibling;
+                    };
+                    // loop till next visible tblRow PR2023-04-16
+                   if (new_tblRow && !new_tblRow.classList.contains(cls_hide)) {
+                        stop_loop = true;
+                    };
+                };
+            };
+            //const new_tblRow = tblBody.rows[new_row_index]
+    console.log ("new_tblRow", new_tblRow)
+    console.log ("new_col_index", new_col_index)
             if(new_tblRow){
                 const next_cell = new_tblRow.cells[new_col_index];
                 if(next_cell){
@@ -2022,6 +2070,16 @@ console.log("is_blocked", is_blocked)
 
                             } else if (examperiod === 4 && requsr_auth_index > 2){
                                 const msg_html = (requsr_auth_index === 3) ? loc.approve_err_list.Examiner_cannot_approve_exem : loc.approve_err_list.Corrector_cannot_approve_exem;
+                                b_show_mod_message_html(msg_html, loc.Approve_grades);
+
+                            } else if (examperiod === 4 && requsr_auth_index > 2){
+                                const msg_html = (requsr_auth_index === 3) ? loc.approve_err_list.Examiner_cannot_approve_exem : loc.approve_err_list.Corrector_cannot_approve_exem;
+                                b_show_mod_message_html(msg_html, loc.Approve_grades);
+
+                            } else if (examtype_2char === "ce"  && !data_dict.ce_exam_id){
+                                const msg_html = ["<p class='border_bg_invalid p-2'>",
+                                loc.approve_err_list.no_exam_linked_to_this_score, "<br>",
+                                 (requsr_auth_index === 4) ? loc.approve_err_list.school_must_link_score_to_exam : loc.approve_err_list.click_column_to_link_score_to_exam, "</p>"].join("");
                                 b_show_mod_message_html(msg_html, loc.Approve_grades);
 
                             } else {

@@ -866,6 +866,7 @@ document.addEventListener('DOMContentLoaded', function() {
             //for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
 
     // ---  loop through studsubj_dictsNEW
+            //PR2023-04-17 Sentry error in IE 11: Const must be initialized. Let it stay
             for (const data_dict of Object.values(studsubj_dictsNEW)) {
 
                 const map_id = data_dict.mapid;

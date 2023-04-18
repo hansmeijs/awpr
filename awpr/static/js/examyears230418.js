@@ -194,9 +194,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     b_UpdateHeaderbar(loc, setting_dict, permit_dict, el_hdrbar_examyear, el_hdrbar_department, el_hdrbar_school);
                 };
                 if ("messages" in response) {
-                    console.log("response.messages", response.messages)
                     b_show_mod_message_dictlist(response.messages);
                 };
+                if ("msg_html" in response) {
+                    b_show_mod_message_html(response.msg_html)
+                };
+
                 if ("examyear_rows" in response) {
                     examyear_rows = response.examyear_rows;
                     //const tblName = "examyear";
@@ -532,11 +535,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if ("checked_examyear" in response) {
                         ModConfirmUndoOrDelete_Checked(response.checked_examyear)
                     };
-
                     if ("messages" in response) {
-                        console.log("response.messages", response.messages)
                         b_show_mod_message_dictlist(response.messages);
-                    }
+                    };
+                    if ("msg_html" in response) {
+                        b_show_mod_message_html(response.msg_html)
+                    };
                     if ("log_list" in response) {
                        OpenLogfile(loc, response.log_list);
                     };

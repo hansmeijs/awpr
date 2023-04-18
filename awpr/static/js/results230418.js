@@ -893,7 +893,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     el_div.innerText = (fld_value) ? fld_value : "\n";
                     filter_value = (fld_value) ? fld_value.toLowerCase() : null;
-
+                    // PR2023-04-18 Sentry error: data_dict.result_info.replaceAll is not a function
+                    // dont know why
                     if (data_dict.result_info) {
                         el_div.title = data_dict.result_info.replaceAll("|", "\n"); // replace | with \n // g modifier replaces all occurances
                     };

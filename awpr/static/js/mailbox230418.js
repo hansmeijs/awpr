@@ -835,7 +835,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     if("msg_html" in response){
                         b_show_mod_message_html(response.msg_html);
                     };
-
+                    // messages" in response tobe deprecated
+                    if("messages" in response){
+                        b_show_mod_message_dictlist(response.messages);
+                    };
                     if(refresh_page){
                         // refresh the whole page when a message is sent.
                         const datalist_request = {mailmessage_rows: {get: true}};
@@ -2346,7 +2349,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // MMM_FillAttachments
 
-//=========  MMM_RefreshAttachment  ================ PR2021-10-12
+//=========  MMM_RefreshAttachment  ================ PR2021-10-12 PR2023-04-17
     function MMM_RefreshAttachment(response) {
         console.log(" --- MMM_RefreshAttachment  ---");
         console.log("response:", response);
@@ -2354,7 +2357,10 @@ document.addEventListener('DOMContentLoaded', function() {
         el_MMM_loader.classList.add(cls_hide);
         if ("messages" in response) {
             b_show_mod_message_dictlist(response.messages);
-        }
+        };
+        if ("msg_html" in response) {
+            b_show_mod_message_html(response.msg_html);
+        };
         if (response && "updated_mailattachment_row" in response) {
             const row = response.updated_mailattachment_row;
         console.log("row:", row);

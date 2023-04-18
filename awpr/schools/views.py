@@ -163,7 +163,7 @@ class MailListView(View):
 
 
 @method_decorator([login_required], name='dispatch')
-class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
+class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06 PR2023-04-17
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -172,8 +172,10 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
             logger.debug('')
             logger.debug(' ============= MailmessageUploadView ============= ')
 
-        msg_html = None
+        # TODO deprecate messages, replace by msg_list
         messages = []
+        msg_list = []
+        border_class = None
         update_wrap = {}
 
 # - reset language
@@ -181,15 +183,10 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
         activate(user_lang)
 
 # - get permit 'write_message'
-        # PR2023-04-05 write_message does not use permitlist but usergroup 'msgsend' instead
-        #   was: # has_permit = 'permit_write_message' in request.user.permit_list('page_mailbox') if request.user.permit_list else False
-
-        # PR2023-02-03 was: was: requsr_usergroup_list = req_usr.usergroup_list
-        requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
-        has_permit = requsr_usergroup_list and 'msgsend' in requsr_usergroup_list
-        #has_permit = acc_prm.has_permit(request, 'page_mailbox', ['msgsend'])
+        has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
         if not has_permit:
-            msg_html = acc_prm.err_html_no_permit(_('to send messages'))
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit(_('to send messages')))
         else:
 
 # - get upload_dict from request.POST
@@ -215,11 +212,11 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
                 is_send = (mode == 'send')
 
                 if logging_on:
-                    logger.debug('mailmessage_pk: ' + str(mailmessage_pk))
-                    logger.debug('is_saved: ' + str(is_saved))
-                    logger.debug('mode: ' + str(mode))
-                    logger.debug('is_create: ' + str(is_create))
-                    logger.debug('is_delete: ' + str(is_delete))
+                    logger.debug('    mailmessage_pk: ' + str(mailmessage_pk))
+                    logger.debug('    is_saved: ' + str(is_saved))
+                    logger.debug('    mode: ' + str(mode))
+                    logger.debug('    is_create: ' + str(is_create))
+                    logger.debug('    is_delete: ' + str(is_delete))
 
                 header = upload_dict.get('header')
                 body_txt = upload_dict.get('body')
@@ -230,7 +227,7 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
                 if recipients_dict:
                     recipients_json = json.dumps(recipients_dict, cls=LazyEncoder)
                 if logging_on:
-                    logger.debug('recipients_json: ' + str(recipients_json))
+                    logger.debug('    recipients_json: ' + str(recipients_json))
                     # recipients_json: {"ml": [4, 7, 8], "sb": [10, 11], "us": [41, 102], "ug": ["anlz", "auth4"]}
 
                 updated_rows = []
@@ -249,8 +246,8 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
                 sel_examyear = af.get_selected_examyear_from_usersetting_without_check(request)
 
                 if logging_on:
-                    logger.debug('sel_examyear: ' + str(sel_examyear))
-                    logger.debug('is_create: ' + str(is_create))
+                    logger.debug('    sel_examyear: ' + str(sel_examyear))
+                    logger.debug('    is_create: ' + str(is_create))
 
 # ++++ Create new mailmessage_instance:
                 if is_create:
@@ -276,11 +273,9 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
                     if is_delete:
                         deleted_row, err_html = delete_mailmessage_instance(mailmessage_instance, request)
                         if err_html:
-                            messages.append(
-                                {'header': str(header_txt),
-                                 'class': "border_bg_invalid",
-                                 'msg_html': err_html}
-                            )
+                            border_class = c.HTMLCLASS_border_bg_invalid
+                            msg_list.append(err_html)
+
                         elif deleted_row:
                             mailmessage_instance = None
                             updated_rows.append(deleted_row)
@@ -340,9 +335,10 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06
 
                 # attachments are stored in spaces awpmedia/awpmedia/media/private
 
-        # - addd msg_html to update_wrap
-        if msg_html:
-            update_wrap['msg_html'] = msg_html
+# - addd msg_html to update_wrap
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
+
 # 9. return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
 # - ens of MailmessageUploadView
@@ -358,16 +354,20 @@ class MailboxUploadView(View):  # PR2021-10-28
             logger.debug('')
             logger.debug(' ============= MailboxUploadView ============= ')
 
-        messages = []
+        msg_list = []
+        border_class = None
         update_wrap = {}
 
-# - get permit 'write_message'
-        has_permit = 'permit_write_message' in request.user.permit_list('page_mailbox') if request.user.permit_list else False
-        if has_permit:
-
 # - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get permit 'write_message'
+        has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        if not has_permit:
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
+        else:
 
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
@@ -396,17 +396,20 @@ class MailboxUploadView(View):  # PR2021-10-28
                     logger.debug('mailbox_instance: ' + str(mailbox_instance))
 
                 if mailbox_instance:
-                    update_mailbox_instance(mailbox_instance, upload_dict, messages, request)
-
+                    err_html = update_mailbox_instance(mailbox_instance, upload_dict, request)
+                    if err_html:
+                        border_class = c.HTMLCLASS_border_bg_invalid
+                        msg_list.append(err_html)
+                    else:
 # - create updated mailmessage_row
-                    updated_mailmessage_received_rows = sch_dicts.create_mailmessage_received_rows(
-                        examyear=sel_examyear,
-                        request=request,
-                        mailmessage_pk=mailbox_instance.mailmessage_id
-                    )
+                        updated_mailmessage_received_rows = sch_dicts.create_mailmessage_received_rows(
+                            examyear=sel_examyear,
+                            request=request,
+                            mailmessage_pk=mailbox_instance.mailmessage_id
+                        )
 
-# - add messages to updated_row (there is only 1 updated_row
-                    update_wrap['updated_mailmessage_received_rows'] = updated_mailmessage_received_rows
+# - add mailmessages to updated_row (there is only 1 updated_row
+                        update_wrap['updated_mailmessage_received_rows'] = updated_mailmessage_received_rows
 
 # - check if there are any unread mailbox items
                 class_has_mail = 'envelope_0_0'
@@ -414,6 +417,8 @@ class MailboxUploadView(View):  # PR2021-10-28
                     class_has_mail = 'envelope_0_2'
                 update_wrap['class_has_mail'] = class_has_mail
 
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 
 # 9. return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
@@ -780,12 +785,14 @@ def update_mailmessage_instance(mailmessage_instance, header, body, recipients_j
 # - end of update_mailmessage_instance
 
 
-def update_mailbox_instance(mailbox_instance, upload_dict, messages, request):
-    # --- update existing mailbox instance PR2021-10-28
+def update_mailbox_instance(mailbox_instance, upload_dict, request):
+    # --- update existing mailbox instance PR2021-10-28 PR2023-04-17
     # the following fiels can not be changed: examyear, sender_user, sender_school
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_mailbox_instance ----- ')
+
+    err_html = None
 
     if mailbox_instance:
         save_changes = False
@@ -797,21 +804,14 @@ def update_mailbox_instance(mailbox_instance, upload_dict, messages, request):
             if new_value != saved_value:
                 setattr(mailbox_instance, field, new_value)
                 save_changes = True
-                if logging_on:
-                    if logging_on:
-                        logger.debug('field:        ' + str(field))
-                        logger.debug('saved_value: <' + str(saved_value) + '> ' + str(type(saved_value)))
-                        logger.debug('new_value:   <' + str(new_value) + '> ' + str(type(new_value)))
 
         if save_changes:
             try:
                 mailbox_instance.save(request=request)
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                msg_html = ''.join((str(_('An error occurred')), ': ', '<br><i>', str(e), '</i><br>',
-                                    str(_("This item could not be updated."))))
-                messages.append({'class': "border_bg_invalid", 'msg_html': msg_html})
-
+                err_html = acc_prm.msghtml_error_occurred_no_border(e, _('This item could not be updated.'))
+    return err_html
 # - end of update_mailbox_instance
 
 def convert_recipients_dict(recipients_dict, sel_examyear):
@@ -1627,9 +1627,9 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
             logger.debug('')
             logger.debug(' ============= MailAttachmentUploadView ============= ')
 
+        msg_list = []
+        border_class = None
         update_wrap = {}
-        messages = []
-        header_txt = _("Add attachment")
 
 # - reset language
         user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
@@ -1637,15 +1637,9 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
 
 # - get permit 'write_message'
         has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
-
         if not has_permit:
-            #err_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
-            err_html = _("You don't have permission %(cpt)s.") % {'cpt': _('to perform this action')}
-            messages.append(
-                {'header': header_txt,
-                 'class': "border_bg_invalid",
-                 'msg_html': err_html}
-            )
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
         else:
 
 # - get upload_dict from request.POST
@@ -1659,19 +1653,12 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
                 #   'tempid': '1_996637', 'file_name': 'a3.png', 'file_type': 'image/png', 'file_size': 23770}
 
 # - get selected examyear and school from usersettings
-                sel_examyear, msg_list = \
+                sel_examyear, msg_lst = \
                     acc_view.get_selected_examyear_from_usersetting(request)
 
-                if logging_on:
-                    logger.debug('msg_list: ' + str(msg_list))
-
                 requsr_school = None
-                if msg_list:
-                    messages.append(
-                        {'header': header_txt,
-                         'class': "border_bg_warning",
-                         'msg_html': msg_list}
-                    )
+                if msg_lst:
+                    msg_list.append(msg_lst)
 
                 else:
                     requsr_school = sch_mod.School.objects.get_or_none(
@@ -1724,13 +1711,11 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
                # +++ save attachment
                         if mailmessage and file:
                             if file_size > c.MAX_ATTACHMENT_SIZE_Mb * 1000000:
-                                msg_html = '<br>'.join((str(_('The attachment is too large.')),
+                                err_html = '<br>'.join((str(_('The attachment is too large.')),
                                                     str(_("The maximum size is %(val)s Mb.") % {
                                                         'cpt': _('Message'), 'val': str(c.MAX_ATTACHMENT_SIZE_Mb)})))
-                                messages.append({'class': "border_bg_invalid", 'header': str(_('Upload attachment')),
-                                                 'msg_html': msg_html})
-                                if logging_on:
-                                    logger.debug('messages: ' + str(messages))
+                                msg_list.append(err_html)
+
                             else:
 
                                 # ---  create file_path
@@ -1783,17 +1768,13 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
                                 this_txt=this_txt
                             )
                             if err_html:
-                                header_txt = str(_("Attachment"))
-                                messages.append(
-                                    {'header': str(header_txt),
-                                     'class': "border_bg_invalid",
-                                     'msg_html': err_html}
-                                )
+                                msg_list.append(err_html)
 
                             else:
                                 update_wrap['updated_mailattachment_row'] = deleted_row
-        if messages:
-            update_wrap['messages'] = messages
+
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 
         if logging_on:
             logger.debug('update_wrap: ' + str(update_wrap))
@@ -1841,20 +1822,31 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= ExamyearUploadView ============= ')
+            logger.debug('    permit_list: ' + str(acc_prm.get_permit_list('page_examyear', request.user)))
 
+            usergroup_list, userallowed_sections_dict, allowed_clusters_list, sel_examyear_instance = \
+                acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(request.user)
+
+            logger.debug('    usergroup_list: ' + str(usergroup_list))
+            logger.debug('    permit_list: ' + str(acc_prm.get_permit_list('page_examyear', request.user)))
         update_wrap = {}
+        msg_list = []
+        border_class = None
+
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
 
 # - get permit
-        has_permit = acc_prm.get_permit_crud_of_this_page('page_examyear', request)
-        if has_permit:
+        has_permit = acc_prm.has_permit(request, 'page_examyear', ['permit_crud'])
+        if not has_permit:
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit())  # default: 'to perform this action')
+        else:
 
 # - get country of requsr, only if country is not locked
             if request.user.country and not request.user.country.locked:
                 req_usr_country = request.user.country
-
-# - reset language
-                user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                activate(user_lang)
 
 # - get upload_dict from request.POST
                 upload_json = request.POST.get('upload', None)
@@ -2024,6 +2016,8 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
 
                     update_wrap['updated_examyear_rows'] = updated_rows
 
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 
         if logging_on:
             logger.debug('update_wrap' + str(update_wrap))
@@ -2249,9 +2243,9 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
         msg_list = []
         class_str = 'border_bg_transparent'
         if not has_permit:
-            class_str = 'border_bg_invalid'
-            msg_list.append(str(_("You don't have permission to perform this action.")))
             has_error = True
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
         else:
 
 # - get upload_dict from request.POST
@@ -2331,10 +2325,10 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
         log_list = []
         msg_list = []
-        class_str = 'border_bg_transparent'
+        border_class = c.HTMLCLASS_border_bg_transparent
         if not has_permit:
-            class_str = 'border_bg_invalid'
-            msg_list.append(str(_("You don't have permission to perform this action.")))
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
             has_error = True
         else:
 
@@ -2350,7 +2344,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                     acc_view.get_selected_examyear_from_usersetting(request)
 
                 if msg_list:
-                    class_str = 'border_bg_warning'
+                    border_class = c.HTMLCLASS_border_bg_warning
                     has_error = True
                 else:
 
@@ -2361,7 +2355,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                         logger.debug('msg_err' + str(msg_err))
                     if msg_err:
                         has_error = True
-                        class_str = 'border_bg_invalid'
+                        border_class = c.HTMLCLASS_border_bg_invalid
                         msg_list.append(str(msg_err))
                     else:
                         update_wrap['verification_is_ok'] = True
@@ -2426,7 +2420,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
                         if not total_dict:
                             has_error = True
-                            class_str = 'border_bg_warning'
+                            border_class = c.HTMLCLASS_border_bg_warning
                             msg_str = str(_("There are no submitted subjects."))
                             msg_list.append(msg_str)
 
@@ -2458,7 +2452,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                                         requsr_school_name, min_ond, user_lang)
                             if msg_err:
                                 has_error = True
-                                class_str = 'border_bg_invalid'
+                                border_class = c.HTMLCLASS_border_bg_invalid
                                 err_str01 = str(_('An error occurred'))
                                 err_str02 = str(_('The orderlist is not created.'))
                                 msg_str = ''.join((err_str01, ': ', msg_err, '<br>', err_str02))
@@ -2472,7 +2466,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 # - save published instance
                                 msg_err = save_published_instance(published_instance, file_path, temp_file, request)
                                 if msg_err:
-                                    class_str = 'border_bg_invalid'
+                                    border_class = c.HTMLCLASS_border_bg_invalid
                                     err_str01 = str(_('An error occurred'))
                                     err_str02 = str(_('The orderlist is not saved.'))
                                     msg_str = ''.join((err_str01, ': ', msg_err, '<br>', err_str02))
@@ -2516,7 +2510,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                     if logging_on:
                                         logger.debug('    enveloporderlist: ' + str(enveloporderlist))
 
-                                    class_str = 'border_bg_valid'
+                                    border_class = c.HTMLCLASS_border_bg_valid
                                     msg_str = str(_("An orderlist is created with the filename:"))
                                     msg_list.append('<br>'.join((msg_str, filename_ext)))
 
@@ -2603,7 +2597,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
         update_wrap['log_list'] = log_list
 
-        msg_wrap_start = ["<div class='p-2 ", class_str, "'>"]
+        msg_wrap_start = ["<div class='p-2 ", border_class, "'>"]
         msg_list_html = []
         for item in msg_list:
             msg_list_html.append(''.join(("<p>", item, "</p>")))

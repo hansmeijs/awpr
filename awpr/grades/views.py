@@ -192,7 +192,7 @@ class GradeBlockView(View):  # PR2022-04-16 PR2023-04-08
 
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                err_html = acc_prm.err_html_error_occurred(e, _('This CVTE exam can not be deleted.'))
+                err_html = acc_prm.msghtml_error_occurred_with_border(e, _('This CVTE exam can not be deleted.'))
 
             return updated_grade_rows, err_html
 ########################
@@ -3789,7 +3789,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
     # --- create grade rows of all students of this examyear / school PR2020-12-14 PR2022-02-20 PR2023-02-22
 
     # note: don't forget to filter deleted = false!! PR2021-03-15
-    # grades that are not published are only visible when 'same_school'
+    # PR2023-04-17 not any more: was: grades that are not published are only visible when 'same_school'
     # note_icon is downloaded in separate call
 
     # IMPORTANT: only add field 'keys' when ETE has logged in .
@@ -3797,10 +3797,10 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
     #   they may not be downloaded by schools,
     #   to be 100% sure that the answers cannot be retrieved by a school.
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_with_ete_exam_rows -----')
-        logger.debug('setting_dict: ' + str(setting_dict))
+        logger.debug('    setting_dict: ' + str(setting_dict))
 
     # - only requsr of the same school  can view grades that are not published, PR2021-04-29
     # - also corrector .TODO: add school to corrector permit
@@ -3871,22 +3871,11 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                         "ce_exam.secret_exam AS ceex_secret_exam, ce_exam.published_id AS ceex_published_id,",
                         "ce_exam.ntb_omschrijving,",
 
-                        # examkeys_fields,
-
-                        #"pe_exam.id AS peex_exam_id, pe_exam.exam_name AS peex_name,"
-                        #"pe_exam.examperiod AS peex_examperiod, pe_exam.examtype AS peex_examtype,",
-                        #"pe_exam.version AS peex_version, pe_exam.amount AS peex_amount,",
-                        #"pe_exam.has_partex AS peex_has_partex, pe_exam.partex AS peex_partex,",
-                        #"pe_exam.blanks AS peex_blanks, pe_exam.assignment AS peex_assignment,",
-                        #"pe_exam.nex_id AS peex_nex_id, pe_exam.scalelength AS peex_scalelength,",
-                        #"pe_exam.cesuur AS peex_cesuur, pe_exam.nterm AS peex_nterm,",
-
                         "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr, publ.modifiedat AS ce_exam_publ_modat",
 
                         "FROM students_grade AS grd",
                         "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
                         "LEFT JOIN (", sub_exam, ") AS ce_exam ON (ce_exam.id = grd.ce_exam_id)",
-                        #"LEFT JOIN (", sub_exam, ") AS pe_exam ON (pe_exam.id = grd.pe_exam_id)",
 
                         "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
                         "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
@@ -3951,9 +3940,6 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                     #    sql_keys['student_pk'] = sel_student_pk
                     #    sql_list.append("AND stud.id = %(student_pk)s::INT")
 
-
-
-
 # show grades that are not published only when requsr_same_school PR2021-04-29
 
                 # - filter on selected schoolbase
@@ -3970,31 +3956,31 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
 
                 # - get selected sctbase_pk of req_usr
                 selected_pk_dict = acc_prm.get_selected_pk_dict_of_user_instance(request.user)
-
-                saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
-                if saved_sctbase_pk:
-                    sql_clause_sctbase = ''.join(("AND (sct.base_id = ", str(saved_sctbase_pk), "::INT)"))
-                    sql_list.append(sql_clause_sctbase)
-                    if logging_on:
-                        logger.debug('     saved_ssql_clause_sctbasectbase_pk:  ' + str(sql_clause_sctbase))
+                # PR 2023-04-17 Sentry error: missing FROM-clause entry for table "sct"
+                # sql has no table sct, dont filter on sector:
+                # was:
+                    #saved_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
+                    #if saved_sctbase_pk:
+                    #    sql_clause_sctbase = ''.join(("AND (sct.base_id = ", str(saved_sctbase_pk), "::INT)"))
+                    #    sql_list.append(sql_clause_sctbase)
 
                 # - filter on selected subjectbase
-                saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
-                if saved_subjbase_pk:
-                    sql_clause_subjbase_pk = ''.join(("AND (subj.base_id = ", str(saved_subjbase_pk), "::INT)"))
-                    sql_list.append(sql_clause_subjbase_pk)
-                    if logging_on:
-                        logger.debug('     sql_clause_subjbase_pk:  ' + str(sql_clause_subjbase_pk))
+                # PR2023-04-17 filtering on subj_pk takes place on client function FillTblRows()
+                # was:
+                    # saved_subjbase_pk = selected_pk_dict.get(c.KEY_SEL_SUBJBASE_PK)
+                    # if saved_subjbase_pk:
+                    #    sql_clause_subjbase_pk = ''.join(("AND (subj.base_id = ", str(saved_subjbase_pk), "::INT)"))
+                    #    sql_list.append(sql_clause_subjbase_pk)
 
                 # - filter on selected cluster_pk
                 # dont filter on allowed clusters. Allowed clusters give permit to edit and approve, but others mat be viewed
-                saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
-                if saved_cluster_pk:
-                    sql_clause_cluster_pk = ''.join(
-                        ("AND (studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)"))
-                    sql_list.append(sql_clause_cluster_pk)
-                    if logging_on:
-                        logger.debug('     sql_clause_cluster_pk:  ' + str(sql_clause_cluster_pk))
+                # PR2023-04-17 filtering on selected cluster_pk takes place on client function FillTblRows()
+                # was:
+                    # saved_cluster_pk = selected_pk_dict.get(c.KEY_SEL_CLUSTER_PK)
+                    # if saved_cluster_pk:
+                    #    sql_clause_cluster_pk = ''.join(
+                    #       ("AND (studsubj.cluster_id = ", str(saved_cluster_pk), "::INT)"))
+                    #    sql_list.append(sql_clause_cluster_pk)
 
             # - filter on allowed depbases, levelbase, subjectbases
             # was: sqlclause_allowed_dep_lvl_subj = acc_prm.get_sqlclause_allowed_dep_lvl_subj(
@@ -4048,7 +4034,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
             if logging_on:
                 logger.debug('sql_keys: ' + str(sql_keys))
                 logger.debug('sql: ' + str(sql))
-                logger.debug('grade_rows: ' + str(grade_rows))
+                logger.debug('    len grade_rows: ' + str(len(grade_rows)))
 
         # - add full name to rows, and array of id's of auth
             if grade_rows:
@@ -4096,7 +4082,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     # when DOE: show all SXM exams
     # when school: show all school exams
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('setting_dict: ' + str(setting_dict))
@@ -4136,7 +4122,6 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
 # - when role other than school: only submitted exams are calulated in avg, when school: also exams that are not submitted are calculated
     if req_usr.role != c.ROLE_008_SCHOOL:
         sub_list.append("AND grd.ce_exam_published_id IS NOT NULL")
-
 
     sub_grd_result = ' '.join(sub_list)
 
@@ -4316,6 +4301,7 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depba
                     'name': row.name,
                     'examtype': row.examtype,
                     'examperiod': row.examperiod,
+                    'regnumber': row.regnumber,
                     'datepublished': row.datepublished,
                     'filename': row.filename,
                     'sb_code': row.school.base.code,
