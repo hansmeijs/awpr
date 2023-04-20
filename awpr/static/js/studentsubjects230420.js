@@ -118,74 +118,81 @@ document.addEventListener('DOMContentLoaded', function() {
     //          captions: ["Exemption_year"]}
 
 // --- get field_settings
-    const field_settings = {
-        btn_ep_01: {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Character", "Extra_subject_nocount_2lines",
-        // PR2023-02-12 dont show field thumbrule. Should be done using setting_dict.sel_examyear_thumbrule_allowed
-                                 //NIU  "Thumbrule_2lines",  "Extra_subject_count_2lines",
-                                "Assignment_title", "Assignment_subjects", ""],
-                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name_nl", "sjtp_abbrev", "is_extra_nocount",
-                                //NIU  "is_thumbrule", "is_extra_counts",
-                                "pws_title", "pws_subjects", "subj_status",
-                                ],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div",
-                                //NIU "div", "div",
-                                "input", "input", "div"],
-                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text",
-                                "text", "text", "text", "toggle",
-                                //NIU "toggle", "toggle",
-                                "text", "text", "status"],
-                    field_width:  ["020", "020", "075", "180", "075", "075", "120",
-                                    "075", "180", "090", "120",
-                                    //NIU "090", "120",
-                                    "150","150", "032"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l",
-                                    "c", "l", "l", "c",
-                                    //NIU  "c", "c",
-                                    "l", "l", "c"]},
+    field_settings.btn_ep_01 = {
+        field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
+                    "Abbreviation_twolines", "Subject", "Character", "Extra_subject_nocount_2lines",
+// PR2023-02-12 dont show field thumbrule. Should be done using setting_dict.sel_examyear_thumbrule_allowed
+                     //NIU  "Thumbrule_2lines",  "Extra_subject_count_2lines",
+                    "Assignment_title", "Assignment_subjects", ""],
+        field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    "subj_code", "subj_name_nl", "sjtp_abbrev", "is_extra_nocount",
+                    //NIU  "is_thumbrule", "is_extra_counts",
+                    "pws_title", "pws_subjects", "subj_status",
+                    ],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    "div", "div", "div", "div",
+                    //NIU "div", "div",
+                    "input", "input", "div"],
+        filter_tags: ["", "toggle", "text", "text", "text", "text", "text",
+                    "text", "text", "text", "toggle",
+                    //NIU "toggle", "toggle",
+                    "text", "text", "status"],
+        field_width:  ["020", "020", "075", "180", "075", "075", "120",
+                        "075", "180", "090", "120",
+                        //NIU "090", "120",
+                        "150","150", "032"],
+        field_align: ["c", "c", "c", "l", "c", "c", "l",
+                        "c", "l", "l", "c",
+                        //NIU  "c", "c",
+                        "l", "l", "c"]
+    };
         // note: exemption has no status, only exemption grades must be submitted
         // exemption_year to be added in 2023
 
-        btn_exem: {field_caption: ["","", "Examnumber_twolines", "Candidate", "Learning_path", "SectorProfile_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
-                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name_nl", "has_exemption", "exemption_year"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
-                    field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120","120"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+    field_settings.btn_exem = {
+        field_caption: ["","", "Examnumber_twolines", "Candidate", "Learning_path", "SectorProfile_twolines", "Cluster",
+                    "Abbreviation_twolines", "Subject", "Exemption", "Exemption_year_twolines"],
+        field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    "subj_code", "subj_name_nl", "has_exemption", "exemption_year"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "text"],
+        field_width:  ["020", "020", "075", "180", "075", "075", "120", "075", "180", "120","120"],
+        field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]
+    };
 
-        btn_reex:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Re_examination", "", ],
-                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name_nl", "has_reex", "reex_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
+    field_settings.btn_reex = {
+        field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
+                    "Abbreviation_twolines", "Subject", "Re_examination", "", ],
+        field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    "subj_code", "subj_name_nl", "has_reex", "reex_status"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
+        field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
+        field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]
+    };
+    field_settings.btn_reex03 = {
+        field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
+                    "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
+        field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    "subj_code", "subj_name_nl", "has_reex03", "reex3_status"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
+        field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
+        field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]
+    };
+    field_settings.btn_pok = {
+        field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
+                    "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
+        field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
+                    "subj_code", "subj_name_nl", "pok_validthru", "pok_status"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
+        field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
+        field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]
+    };
 
-        btn_reex03:  {field_caption: ["","", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Re_exam_3rd_2lns", "", ],
-                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name_nl", "has_reex03", "reex3_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
-        btn_pok:  {field_caption: ["", "", "Examnumber_twolines", "Candidate",  "Learning_path", "SectorProfile_twolines", "Cluster",
-                                "Abbreviation_twolines", "Subject", "Proof_of_knowledge_2lns", "", ],
-                    field_names: ["select", "subj_error", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "cluster_name",
-                                "subj_code", "subj_name_nl", "pok_validthru", "pok_status"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["", "toggle", "text", "text", "text", "text", "text", "text", "text",  "toggle", "toggle"],
-                    field_width:  ["020", "020", "075", "180",  "075", "075", "120", "075", "180", "120", "032"],
-                    field_align: ["c", "c", "c", "l", "c", "c", "l", "c", "l", "c", "c"]},
-        };
-
-        const tblHead_datatable = document.getElementById("id_tblHead_datatable");
-        const tblBody_datatable = document.getElementById("id_tblBody_datatable");
+    const tblHead_datatable = document.getElementById("id_tblHead_datatable");
+    const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 
 // === EVENT HANDLERS ===
 // === reset filter when ckicked on Escape button ===

@@ -16,6 +16,7 @@ from awpr import settings as s
 
 from schools import models as sch_mod
 from students import models as stud_mod
+from students import functions as stud_fnc
 from subjects import models as subj_mod
 
 import logging
@@ -318,7 +319,7 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 
     # this one is not used for uploading subjects and grade - they lookup idnumber in students_dict_with_subjbase_pk_list
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----------- lookup_student_by_idnumber_nodots ----------- ')
         logger.debug('--- school:           ' + str(school))
@@ -359,7 +360,15 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
             if row.department_id == department.pk:
                 # return error when creating single student
                 if found_is_error:
-                    err_str = str(_("%(cpt)s '%(val)s' already exists.") % msg_keys)
+                    full_name = stud_fnc.get_firstname_prefix_lastname(
+                        last_name=row.lastname or '',
+                        first_name=row.firstname or '',
+                        prefix=row.prefix or ''
+                    )
+                    err_str = '<br>'.join((
+                        str(_("%(cpt)s '%(val)s' already exists in this department.") % msg_keys),
+                        str(_("%(cand)s has this ID number.") % {'cand': full_name})
+                    ))
                 else:
                     # return student when importing, to update student info PR2021-08-23
                     student = row
@@ -1775,7 +1784,7 @@ def get_dateformat_from_uploadfileNIU(data_list, date_field):
 # - end of get_dateformat_from_uploadfile
 
 
-# ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20 PR2022-08-22 PR2023-01-29
+# ========  get_idnumberlist_from_database  ======= PR2021-07-19 PR2022-06-20 PR2022-08-22 PR2023-01-29  PR2023-04-20
 def get_idnumberlist_from_database(sel_school, idnumber_list):
     # get list of idnumbers of this school, used with import student and update student
     # idnumber_list contains tuples with (id, idnumber)
@@ -1786,10 +1795,10 @@ def get_idnumberlist_from_database(sel_school, idnumber_list):
         logger.debug('sel_school: ' + str(sel_school))
 
     # add fake row to indicate that this function is called PR2022-08-22
-    idnumber_list.append((-9, '#$%#@'))
+    idnumber_list.append((-9, '#$%#@', '-', '-', '-'))
     if sel_school:
         sql_keys = {'sch_id': sel_school.pk}
-        sql_list = ["SELECT st.id, st.idnumber",
+        sql_list = ["SELECT st.id, st.idnumber, st.lastname, st.firstname, st.prefix",
             "FROM students_student AS st",
             "WHERE st.school_id = %(sch_id)s::INT",
             "AND st.idnumber IS NOT NULL",
@@ -2087,7 +2096,7 @@ def get_double_idnumberlist_from_uploadfile(data_list):
 
 def get_idnumber_nodots_stripped_lower(id_number):
     # PR2021-07-20 PR2021-09-10 PR2022-08-30 PR2023-01-16
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  get_idnumber_nodots_stripped_lower  -----')
         logger.debug('id_number: ' + str(id_number) + ' ' + str(type(id_number)))

@@ -6852,6 +6852,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                     if err_txt is None:
             # check idnumber_already_exists
                         idnumber_already_exists = False
+                        idnumber_already_exists_namelist = []
 
                         # when updating single student, idnumber_list is not filled yet. in that case: get idnumber_list
                         if not idnumber_list:
@@ -6862,16 +6863,23 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
                         if idnumber_list:
                             for row in idnumber_list:
-                                # row is a tuple with (id, idnumber), id=0 when instance not saved yet
+                                # row is a tuple with (id, idnumber, lastname, firstname, prefix), id=0 when instance not saved yet
+                                #  (8518, '2000120411', 'Suarez Mendoza', 'Mayra  Alejandra', '')
                                 # skip idnumber of this student
                                 if instance_pk is None or row[0] != instance_pk:
                                     if row[1] and row[1] == idnumber_nodots_stripped_lower:
                                         idnumber_already_exists = True
-                                        break
+                                        idnumber_already_exists_namelist.append(
+                                            stud_fnc.get_firstname_prefix_lastname(row[2], row[3], row[4])
+                                        )
 
                         if idnumber_already_exists:
-                            err_txt = _("%(cpt)s '%(val)s' already exists.") % {'cpt': str(caption), 'val': idnumber_nodots_stripped_lower}
-                            class_txt = "border_bg_warning"
+                            class_txt = "border_bg_invalid"
+                            err_txt = '<br>'.join((
+                                str(_("%(cpt)s '%(val)s' already exists.") % {'cpt': str(caption), 'val': idnumber_nodots_stripped_lower}),
+                                str(_("%(cand)s has this ID number.") % {'cand': ', '.join(idnumber_already_exists_namelist)})
+                            ))
+
                         else:
                             # add new_value to idnumber_list if it doesn't exist yet
 

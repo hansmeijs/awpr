@@ -1807,12 +1807,31 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Date_submitted'] = TXT_Date_submitted
         dict['Submitted_by'] = TXT_Submitted_by
         dict['Download_Exform'] = TXT_Download_Exform
+
+        dict['Upload_document'] = _('Upload document')
         dict['Delete_document'] = _('Delete document')
-        #dict['Document'] = _('Document')
-        dict['This_document_willbe_deleted'] = _('This document will be deleted')
+        dict['Document_name'] = _('Document name')
+
+        dict['Published_by'] = TXT_Published_by
+        dict['Date_published'] = _('Date published')
+
+        dict['Please_select_a_document_first'] = _('Please select %(cpt)s first.') % {'cpt': _('a document')}
+
+        dict['is_not_a_valid_file'] = _(' is not a valid file.')
+
+
+        dict['Only'] = _('Only ')
+        dict['_and_'] = TXT__and_
+        dict['are_allowed'] = _(' are allowed.')
+        dict['is_allowed'] = _(' is allowed.')
 
         dict['File_not_found'] = _('This file has not been found.')
 
+        dict['Document'] = _('Document')
+        dict['is_too_large'] = _(' is too large.')
+        dict['Maximum_size_is'] = _('The maximum size is ')
+
+        dict['First_select_valid_file'] = _('You must select a valid file first.')
 # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
 

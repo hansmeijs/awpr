@@ -15,6 +15,8 @@
         }
         return date_formatted;
     }
+
+
 //========= get_dateJS_from_dateISO  ======== PR2019-10-28
     function get_dateJS_from_dateISO (date_iso) {
         //console.log( "===== get_dateJS_from_dateISO  ========= ");
@@ -31,6 +33,27 @@
         }
         return date_JS
     }  //  get_dateJS_from_dateISO
+
+
+//========= format_date with vanilla js  ======== PR2023-04-19
+    function get_dateISO_from_dateJS (date_JS) {
+        console.log(" ----- get_dateISO_from_dateJS", date_JS);
+        let dateISO = null
+        if(date_JS) {
+            const year_str = date_JS.getFullYear().toString();
+            const month_index = date_JS.getMonth();
+        console.log("    month_index", month_index);
+        console.log("    month_index", month_index);
+            const month_str =  ("0" + (month_index + 1).toString()).slice(-2);
+        console.log("    month_str", month_str);
+            const date_str = ("0" + date_JS.getDate().toString()).slice(-2);
+        console.log("    date_str", date_str);
+
+            dateISO = [year_str, month_str, date_str ].join("-")
+        };
+        return dateISO
+    };  // function format_dateJS_vanilla
+
 
 //========= format_date with vanilla js  ======== PR2019-10-12 PR2020-07-31
     function format_dateJS_vanilla (loc, date_JS, hide_weekday, hide_year, is_months_long, is_weekdays_long) {

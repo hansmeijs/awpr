@@ -1,14 +1,7 @@
-// PR2022-03-09 added
+// PR2023-04-18 added
 
-// PR2021-07-23  these variables are declared in base.js to make them global variables
-
-// selected_btn is also used in t_MCOL_Open
-//let selected_btn = "btn_exform";
-
-//let school_rows = [];
-let published_rows = [];
-
-const field_settings = {};
+const published_dicts = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -18,28 +11,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const el_hdr_left = document.getElementById("id_header_left");
     const may_view_page = (!!el_loader);
 
-// ---  id of selected customer and selected order
-    // declared as global: //let selected_btn = "btn_exform";
-    ////let setting_dict = {};
-    ////let permit_dict = {};
-
-    let mod_dict = {};
-    let mod_MSTUD_dict = {};
+    let col_hidden = [];
+    const mod_dict = {};
+    const mod_MEXPAPER_dict = {};
 
     let examyear_map = new Map();
-    let school_map = new Map();
-    // PR2020-12-26 These variable defintions are moved to import.js, so they can also be used in that file
-    let department_map = new Map();
-    let level_map = new Map();
-    let sector_map = new Map();
 
-    //let filter_dict = {};
+    const max_file_size_Mb = 5;
 
 // --- get data stored in page
     const el_data = document.getElementById("id_data");
     urls.url_datalist_download = get_attr_from_el(el_data, "data-url_datalist_download");
-    urls.url_archive_upload = get_attr_from_el(el_data, "data-url_archive_upload");
     urls.url_usersetting_upload = get_attr_from_el(el_data, "data-url_usersetting_upload");
+    urls.url_exampaper_upload = get_attr_from_el(el_data, "data-url_exampaper_upload");
 
     // columns_hidden and mod_MCOL_dict.columns are declared in tables.js, they are also used in t_MCOL_Open and t_MCOL_Save
     // mod_MCOL_dict.columns contains the fields and captions that can be hidden
@@ -52,14 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 // --- get field_settings
-    const field_settings = {
-        published: {field_caption: ["", "Name_ex_form", "Date_submitted", "Submitted_by", "Download_Exform", ""],
-                    field_names: ["select", "name", "datepublished", "modifiedby", "url", "delete"],
+    field_settings.btn_exampaper = {field_caption: ["", "Document_name", "Date_published", "Published_by", "Download", ""],
+                    field_names: ["select", "filename", "datepublished", "school_name", "url", "delete"],
                     field_tags: ["div", "div", "div", "div", "a", "div"],
                     filter_tags: ["text", "text", "text",  "text", "toggle", ""],
-                    field_width: ["020", "480",  "150", "180", "120", "032"],
-                    field_align: ["c", "l", "c", "l", "c", "c"]}
-        };
+                    field_width: ["020", "420",  "180", "300", "120", "032"],
+                    field_align: ["c", "l", "c", "l", "c", "c"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -101,14 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
             el_hdrbar_examyear.addEventListener("click", function() {
                 t_MSED_Open(loc, "examyear", examyear_map, setting_dict, permit_dict, MSED_Response)}, false );
         }
-        if (el_hdrbar_department){
-            el_hdrbar_department.addEventListener("click", function() {
-                t_MSED_Open(loc, "department", department_map, setting_dict, permit_dict, MSED_Response)}, false );
-        }
-        if (el_hdrbar_school){
-            el_hdrbar_school.addEventListener("click",
-                function() {t_MSSSS_Open(loc, "school", school_rows, false, false, setting_dict, permit_dict, MSSSS_Response)}, false );
-        }
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -117,6 +91,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 t_MCOL_Save(urls.url_usersetting_upload, HandleBtnSelect)}, false )
         };
 
+
+// ---  MODAL EXAM PAPER --
+        const el_MEXPAPER_input_title = document.getElementById("id_MEXPAPER_input_title");
+        if (el_MEXPAPER_input_title){
+            el_MEXPAPER_input_title.addEventListener("change", function() {MEXPAPER_input_change(el_MEXPAPER_input_title)}, false );
+        };
+        const el_MEXPAPER_input_date_published = document.getElementById("id_MEXPAPER_input_date_published");
+        if (el_MEXPAPER_input_date_published){
+            el_MEXPAPER_input_date_published.addEventListener("change", function() {MEXPAPER_input_change(el_MEXPAPER_input_date_published)}, false );
+        };
+
+
+
+        const el_MEXPAPER_input_message = document.getElementById("id_MEXPAPER_input_message");
+        if (el_MEXPAPER_input_message){
+            el_MEXPAPER_input_message.addEventListener("keyup", function() {MEXPAPER_input_Keyup()}, false );
+        };
+
+        const el_MEXPAPER_filedialog = document.getElementById("id_MEXPAPER_filedialog");
+        if (el_MEXPAPER_filedialog){
+            el_MEXPAPER_filedialog.addEventListener("change", function() {MEXPAPER_HandleFiledialog(el_MEXPAPER_filedialog)}, false)};
+
+        const el_MEXPAPER_msg_container = document.getElementById("id_MEXPAPER_msg_container")
+
+// ---  display sel_filename in elid_MEXPAPER_filename, make btn 'outline' when filename exists
+        const el_MEXPAPER_filename = document.getElementById("id_MEXPAPER_filename");
+
+        const el_MEXPAPER_btn_filedialog = document.getElementById("id_MEXPAPER_btn_filedialog");
+        if (el_MEXPAPER_filedialog && el_MEXPAPER_btn_filedialog){
+            el_MEXPAPER_btn_filedialog.addEventListener("click", function() {MEXPAPER_Filedialog_Open(el_MEXPAPER_filedialog)}, false)
+        };
+
+        const el_MEXPAPER_loader = document.getElementById("id_MEXPAPER_loader");
+        const el_MEXPAPER_msg_error = document.getElementById("id_MEXPAPER_msg_error");
+
+        const el_MEXPAPER_btn_save = document.getElementById("id_MEXPAPER_btn_save");
+        if(el_MEXPAPER_btn_save){el_MEXPAPER_btn_save.addEventListener("click", function() {MEXPAPER_Save()}, false)};
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");
@@ -133,18 +144,13 @@ document.addEventListener('DOMContentLoaded', function() {
         SetMenubuttonActive(document.getElementById("id_plg_page_archive"));
 
     if(may_view_page){
-        // period also returns emplhour_list
         const datalist_request = {
                 setting: {page: "page_archive"},
                 schoolsetting: {setting_key: "page_archive"},
                 locale: {page: ["page_archive"]},
                 examyear_rows: {get: true},
-                school_rows: {get: true},
-                department_rows: {get: true},
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
 
-                published_rows: {get: true}
+                published_rows: {examtype: "exampaper"}
             };
 
         DatalistDownload(datalist_request);
@@ -226,16 +232,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     examyear_rows = response.examyear_rows;
                     b_fill_datamap(examyear_map, response.examyear_rows);
                 };
-                if ("department_rows" in response) {
-                    department_rows = response.department_rows;
-                    b_fill_datamap(department_map, response.department_rows)
-                };
-                if ("school_rows" in response)  {
-                    school_rows =  response.school_rows;
-                    b_fill_datamap(school_map, response.school_rows)};
 
                 if ("published_rows" in response) {
-                    published_rows = response.published_rows;
+                    b_fill_datadicts("published",  "id", null, response.published_rows, published_dicts);
                 };
                 HandleBtnSelect(selected_btn, true);  // true = skip_upload
             },
@@ -257,6 +256,13 @@ document.addEventListener('DOMContentLoaded', function() {
         //AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_archive")}, [], "id_submenu_columns");
         //el_submenu.classList.remove(cls_hide);
 
+        if (permit_dict.requsr_role_admin || permit_dict.permit_crud) {
+            AddSubmenuButton(el_submenu, loc.Upload_document, function() {MEXPAPER_Open()});
+            AddSubmenuButton(el_submenu, loc.Delete_document, function() {ModConfirmOpen()});
+        };
+
+
+
     };//function CreateSubmenu
 
 //###########################################################################
@@ -266,10 +272,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // check if data_btn exists, gave error because old btn name was still in saved setting PR2021-09-07 debug
         if (!data_btn) {data_btn = selected_btn};
-        if (data_btn && ["btn_orderlist", "btn_exform", "btn_diploma"].includes(data_btn)) {
+        if (data_btn && ["btn_exampaper"].includes(data_btn)) {
             selected_btn = data_btn;
         } else {
-            selected_btn = "btn_exform";
+            selected_btn = "btn_exampaper";
         };
 
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
@@ -292,29 +298,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     }  // HandleBtnSelect
 
-//=========  HandleTblRowClicked  ================ PR2020-08-03
+//=========  HandleTblRowClicked  ================ PR2020-08-03 PR2023-04-19
     function HandleTblRowClicked(tr_clicked) {
-        //console.log("=== HandleTblRowClicked");
+        console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
-
-// ---  get selected.student_dict
-        //selected.student_pk = get_attr_from_el_int(tr_clicked, "data-pk");
-        //selected.student_dict = b_get_datadict_by_integer_from_datarows(student_rows, "id", selected.student_pk);
-        //console.log( "selected.student_pk: ", selected.student_pk);
-        //console.log( "selected.student_dict: ", selected.student_dict);
-
-// ---  deselect all highlighted rows - also tblFoot , highlight selected row
-        //DeselectHighlightedRows(tr_clicked, cls_selected);
-       //tr_clicked.classList.add(cls_selected)
-
 
 // ---  deselect all highlighted rows, select clicked row
         t_tbody_selected_clear(tr_clicked.parentNode);
         t_tr_selected_set(tr_clicked);
-        //t_td_selected_toggle(tr_clicked);
 
-    }  // HandleTblRowClicked
+// ---  update selected studsubj_dict / student_pk / subject pk
+        selected.map_id = (tr_clicked.id) ? tr_clicked.id : null;
+        console.log( "selected: ", selected, typeof selected);
 
+    } ; // HandleTblRowClicked
+
+//=========  DownloadDocument  ================ PR2023-04-19
+    function DownloadDocument(el) {
+        console.log("=== DownloadDocument");
+        //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
+
+// ---  deselect all highlighted rows, select clicked row
+        const tblRow = t_get_tablerow_selected(el)
+        const el_url = b_get_element_by_data_value(tblRow, "field", "url");
+        if (el_url) {
+            el_url.click();
+        };
+    }  // DownloadDocument
 
 //========= FillTblRows  ============== PR2021-06-16  PR2021-12-14
     function FillTblRows() {
@@ -322,13 +332,12 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "setting_dict", setting_dict);
 
         const tblName = "published";
-        const field_setting = field_settings[tblName];
-        const data_rows = published_rows;
-        //console.log( "data_rows", data_rows);
+        const field_setting = field_settings[selected_btn];
+        const data_dicts = published_dicts;
 
 // ---  get list of hidden columns
         // copy col_hidden from mod_MCOL_dict.cols_hidden
-        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
+        col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
 
         // hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvlbase_id")};
@@ -344,45 +353,19 @@ document.addEventListener('DOMContentLoaded', function() {
         CreateTblHeader(field_setting, col_hidden);
 
 // --- loop through data_rows
-        if(data_rows && data_rows.length){
-            for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
 
-        console.log("data_dict.filename.charAt(0).toLowerCase()", data_dict.filename.charAt(0).toLowerCase());
-        console.log("data_dict.filename", data_dict.filename);
-
-                console.log ("data_dict", data_dict)
-            // TODO add field 'doctype' to table schools_published instead of filtering by name PR2023-04-18
-                const show_row =  (selected_btn === "btn_diploma") ?
-                                        (!!data_dict.regnumber) :
-                                  (selected_btn === "btn_exform") ?
-
-                                        (data_dict.filename.charAt(0).toLowerCase() === "e") :
-                                  (selected_btn === "btn_orderlist") ?
-                                        (!data_dict.regnumber && data_dict.filename.charAt(0).toLowerCase() !== "e") :
-                                        false;
-                if (show_row){
-                    CreateTblRow(tblName, field_setting, data_dict, col_hidden);
-                };
-            };
+        for (const data_dict of Object.values(published_dicts)) {
+            CreateTblRow(tblName, field_setting, data_dict);
         };
 // --- filter tblRows
         Filter_TableRows();
     }  // FillTblRows
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-06-15 PR2021-08-02 PR2021-12-14
-    function CreateTblHeader(field_setting, col_hidden) {
+    function CreateTblHeader(field_setting) {
         console.log("===  CreateTblHeader ===== ");
         console.log("field_setting", field_setting);
         console.log("col_hidden", col_hidden);
-
-//--- get info from selected department_map
-        let sct_caption = null, has_profiel = false,  lvl_req = false, sct_req = false;
-        const dep_dict = get_mapdict_from_datamap_by_tblName_pk(department_map, "department", setting_dict.sel_department_pk);
-        if(dep_dict){
-            has_profiel = (!!dep_dict.has_profiel);
-            lvl_req = (!!dep_dict.lvl_req);
-            sct_req = (!!dep_dict.sct_req);
-        }
 
         const column_count = field_setting.field_names.length;
 
@@ -397,9 +380,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // skip columns if in columns_hidden
             if (!col_hidden.includes(field_name)){
 
-        // --- get field_caption from field_setting, display 'Profiel' in column sctbase_id if has_profiel
+        // --- get field_caption from field_setting
                 const key = field_setting.field_caption[j];
-                const field_caption = (field_name === "sctbase_id" && has_profiel) ? loc.Profile : (loc[key]) ? loc[key] : key;
+                const field_caption = (loc[key]) ? loc[key] : key;
                 const filter_tag = field_setting.filter_tags[j];
                 const class_width = "tw_" + field_setting.field_width[j] ;
                 const class_align = "ta_" + field_setting.field_align[j];
@@ -468,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
-    function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
+    function CreateTblRow(tblName, field_setting, data_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
         //console.log("data_dict", data_dict);
 
@@ -530,12 +513,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 td.appendChild(el);
 
     // --- add EventListener to td
-                if (["select", "name", "datepublished", "url"].includes(field_name)){
-                    //td.addEventListener("click", function() {MSTUD_Open(el)}, false)
-                    //td.classList.add("pointer_show");
+                if (["filename", "datepublished", "school_name"].includes(field_name)){
                     add_hover(td);
-                } else if (field_name === "delete"){
-                    td.addEventListener("click", function() {ModConfirmOpen("delete", tblRow)}, false);
+                    td.addEventListener("click", function() {DownloadDocument(td)}, false);
+
+                } else if (field_name === "url"){
+                    add_hover(td);
+
                 };
     // --- put value in field
                UpdateField(el, data_dict)
@@ -573,19 +557,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else if (field_name === "url"){
                     if (fld_value){
                         el_div.href = fld_value;
+                        el_div.target = "_blank";
                     } else {
                         el_div.innerHTML = "&emsp;&emsp;&emsp;&emsp;-&emsp;&emsp;&emsp;&emsp;";
                         el_div.title = loc.File_not_found;
                     }
 
                 } else if (field_name === "datepublished"){
-                    const date_formatted = format_date_from_dateISO(loc, fld_value);
-
+                    //const date_formatted = format_date_from_dateISO(loc, fld_value);
+                    const date_formatted = format_dateISO_vanilla (loc, fld_value, false, false, false, false);
                     inner_text = (date_formatted) ? date_formatted : "\n";
                     filter_value = date_formatted;
 
 
-                } else if (["name", "modifiedby"].includes(field_name)){
+                } else if (["filename", "school_name"].includes(field_name)){
                     // put hard return in el_div, otherwise green border doesnt show in update PR2021-06-16
                     inner_text = (fld_value) ? fld_value : "\n";
                     filter_value = (fld_value) ? fld_value.toString().toLowerCase() : null;
@@ -642,55 +627,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
 //=========  ModConfirmOpen  ================ PR2022-11-02
-    function ModConfirmOpen(mode, tblRow) {
-        //console.log(" -----  ModConfirmOpen   ----")
-        //console.log("mode", mode)
-        //console.log("tblRow", tblRow)
+    function ModConfirmOpen() {
+        console.log(" -----  ModConfirmOpen   ----")
 
 // reset  modal
-        el_confirm_header.innerText = null;
+        el_confirm_header.innerText = loc.Delete_document;
         el_confirm_msg_container.innerHTML = null;
         el_confirm_loader.classList.add(cls_hide);
         el_confirm_btn_save.classList.remove(cls_hide);
         el_confirm_btn_cancel.innerText = loc.Cancel;
 
-        if (mode === "delete"){
-            mod_dict = {mode: mode}
-
-            el_confirm_header.innerText = loc.Delete_document;
+        b_clear_dict(mod_dict);
+        mod_dict.mode = "delete";
 
 // --- get existing data_dict from data_rows
-            const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-            const [index, data_dict, compare] = b_recursive_integer_lookup(published_rows, "id", pk_int);
 
-// skip if no tblRow selected or if exam has no envelopbundle
-            if (!isEmpty(data_dict)){
-                const tblName = "published";
-                mod_dict = {
-                    mode: mode,
-                    table: tblName,
-                    published_pk: data_dict.id,
-                    map_id: data_dict.mapid,
-                };
-                const msg_html = ["<div class='mx-2'>",
-                                "<p>", loc.This_document_willbe_deleted,  ":</p><p class='pl-3'>", data_dict.name, "</p>",
-                                "<p>", loc.Do_you_want_to_continue, "</p>",
-                             "</div>"].join("")
+        const data_dict = published_dicts[selected.map_id]
 
-                el_confirm_loader.classList.add(cls_hide)
-                el_confirm_msg_container.className = "p-3";
-                el_confirm_msg_container.innerHTML = msg_html;
+        console.log("    data_dict", data_dict)
 
-                el_confirm_btn_save.innerText = loc.Yes_delete;
-                el_confirm_btn_cancel.innerText = loc.No_cancel;
-                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", true, "btn-primary");
+        if (isEmpty(data_dict)){
+        // no document selected - give msg - not when is_create
+            b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_a_document_first + "</div>");
+        } else {
+            mod_dict.table = "published";
+            mod_dict.published_pk = data_dict.id;
+            mod_dict.map_id = data_dict.mapid;
 
-    // set focus to cancel button
-                set_focus_on_el_with_timeout(el_confirm_btn_save)
-        // show modal
-                $("#id_mod_confirm").modal({backdrop: true});
-            };
+            const msg_html = ["<div class='mx-2'>",
+                            "<p>", loc.Document, " '", data_dict.name, "'", loc.will_be_deleted, "</p>",
+                            "<p class='mt-2'>", loc.Do_you_want_to_continue, "</p>",
+                         "</div>"].join("")
+
+            el_confirm_loader.classList.add(cls_hide)
+            el_confirm_msg_container.className = "p-3";
+            el_confirm_msg_container.innerHTML = msg_html;
+
+            el_confirm_btn_save.innerText = loc.Yes_delete;
+            el_confirm_btn_cancel.innerText = loc.No_cancel;
+            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", true, "btn-primary");
+
+// set focus to cancel button
+            set_focus_on_el_with_timeout(el_confirm_btn_save)
+    // show modal
+            $("#id_mod_confirm").modal({backdrop: true});
         };
+
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2021-08-22 PR2022-10-10
@@ -699,26 +681,24 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("mod_dict: ", mod_dict);
         let close_modal_with_timout = false;
 
-        if (mod_dict.mode === "delete"){
-            // remove msg
-            el_confirm_msg_container.innerHTML = null;
-            // show loader
-            el_confirm_loader.classList.remove(cls_hide);
-            // hide save btn
-            el_confirm_btn_save.classList.add(cls_hide);
-            // rename cancel btn
-            el_confirm_btn_cancel.innerText = loc.Close;
+        el_confirm_msg_container.innerHTML = null;
+        el_confirm_loader.classList.remove(cls_hide);
+        el_confirm_btn_save.classList.add(cls_hide);
+        el_confirm_btn_cancel.innerText = loc.Close;
 
-            let upload_dict = {
-                table: mod_dict.table,
-                mode: "delete",
-                published_pk: mod_dict.published_pk
-            };
-            UploadChanges(upload_dict, urls.url_archive_upload);
-
-            const tblRow = document.getElementById(mod_dict.map_id)
-            ShowClassWithTimeout(tblRow, "tsa_tr_error")
+        let upload_dict = {
+            table: mod_dict.table,
+            mode: "delete",
+            published_pk: mod_dict.published_pk
         };
+        UploadChanges(upload_dict, urls.url_exampaper_upload);
+
+        const tblRow = document.getElementById(mod_dict.map_id)
+        ShowClassWithTimeout(tblRow, "tsa_tr_error")
+
+    // hide modal
+            $("#id_mod_confirm").modal("hide");
+
     };  // ModConfirmSave
 
 //=========  ModConfirmResponseNEW  ================ PR2022-11-03
@@ -742,84 +722,13 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         } else {
             $("#id_mod_confirm").modal("hide");
-            RefreshDataRows("published", response.updated_published_rows, published_rows, true); // true = is_update
+
+            t_Refresh_DataDicts("published", response.updated_published_rows, published_dicts, CreateTblRow);
+            Filter_TableRows();
         };
     };  // ModConfirmResponseNEW
 ////////////////////////
 
-//=========  RefreshDataRows  ================ R2022-11-03
-    function RefreshDataRows(tblName, update_rows, data_rows, is_update, skip_show_ok) {
-        console.log(" --- RefreshDataRows  ---");
-        console.log("is_update", is_update);
-        console.log("update_rows", update_rows);
-
-        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
-        if (update_rows && update_rows.length ) {
-            const field_setting = field_settings[tblName];
-            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(tblName, field_setting, data_rows, update_dict, skip_show_ok);
-            }
-        } else if (!is_update) {
-            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
-            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
-           data_rows = [];
-        }
-    }  //  RefreshDataRows
-
-//=========  RefreshDatarowItem  ================ PR2022-11-03
-    function RefreshDatarowItem(tblName, field_setting, data_rows, update_dict) {
-        console.log(" --- RefreshDatarowItem  ---");
-        console.log("tblName", tblName);
-        console.log("field_setting", field_setting);
-        console.log("update_dict", update_dict);
-
-        if(!isEmpty(update_dict)){
-            const field_names = field_setting.field_names;
-
-            const map_id = update_dict.mapid;
-            const is_deleted = (!!update_dict.deleted);
-            const is_created = (!!update_dict.created);
-
-// ---  get list of hidden columns
-            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
-
-// ---  get list of columns that are not updated because of errors
-            const error_columns = (update_dict.err_fields) ? update_dict.err_fields : [];
-
-// --- get existing data_dict from data_rows
-            const pk_int = (update_dict && update_dict.id) ? update_dict.id : null;
-            const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-            const datarow_index = index;
-    console.log("pk_int", pk_int);
-    console.log("data_dict", data_dict);
-
-// ++++ deleted ++++
-            if(is_deleted){
-                // delete row from data_rows. Splice returns array of deleted rows
-                const deleted_row_arr = data_rows.splice(datarow_index, 1)
-                const deleted_row_dict = deleted_row_arr[0];
-    //console.log("deleted_row_dict", deleted_row_dict);
-    //console.log("deleted_row_dict.mapid", deleted_row_dict.mapid);
-
-    //--- delete tblRow
-                if(deleted_row_dict && deleted_row_dict.mapid){
-                    const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
-    //console.log("tblRow_tobe_deleted", tblRow_tobe_deleted);
-                    if (tblRow_tobe_deleted ){
-                        tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
-                    };
-                };
-// --- subtract 1 from item_count
-                selected.item_count -= 1;
-// ---  show total in sidebar
-                t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Candidate, loc.Candidates, setting_dict.user_lang);
-            };  // if(is_deleted)
-        //console.log("student_rows", student_rows);
-        };  // if(!isEmpty(update_dict))
-    };  // RefreshDatarowItem
-
-////////////////////////
 
 //###########################################################################
 // +++++++++++++++++ FILTER TABLE ROWS ++++++++++++++++++++++++++++++++++++++
@@ -956,8 +865,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function Filter_TableRows() {
         //console.log( "===== Filter_TableRows  ========= ");
 
-        const tblName_settings = "published";
-        const field_setting = field_settings[tblName_settings];
+        const field_setting = field_settings[selected_btn];
         const filter_tags = field_setting.filter_tags;
 
 
@@ -1005,6 +913,170 @@ document.addEventListener('DOMContentLoaded', function() {
         FillTblRows();
     }  // function ResetFilterRows
 
+
+
+//###########################################################################
+//========= MOD EXAMPAPEr Open===================== PR2023-04-18
+    function MEXPAPER_Open (mode) {
+        console.log("===  MEXPAPER_Open  =====") ;
+
+        if (permit_dict.requsr_role_admin && permit_dict.permit_crud) {
+            b_clear_dict(mod_MEXPAPER_dict);
+
+    // - reset input fields
+            el_MEXPAPER_filedialog.value = null;
+            el_MEXPAPER_filename.innerText = null;
+            el_MEXPAPER_input_title.value = null;
+            el_MEXPAPER_input_date_published.value = null;
+            // accept is in modexampaper.html
+           //   el_MEXPAPER_filedialog.setAttribute("accept", ".pdf");
+           el_MEXPAPER_msg_container.innerHTML = null;
+
+            $("#id_mod_exampaper").modal({backdrop: true});
+        };
+    };  // MEXPAPER_Open
+
+//=========   MEXPAPER_Save   ====================== PR2023-04-18
+    function MEXPAPER_Save(){
+        console.log(" ========== MEXPAPER_Save ===========");
+
+    console.log("  mod_MEXPAPER_dict", mod_MEXPAPER_dict);
+        const filename = el_MEXPAPER_filedialog.value;
+
+        console.log( "mod_MEXPAPER_dict", mod_MEXPAPER_dict);
+
+        // from https://medium.com/typecode/a-strategy-for-handling-multiple-file-uploads-using-javascript-eb00a77e15f
+        const date_published = (el_MEXPAPER_input_date_published && el_MEXPAPER_input_date_published.value) ? el_MEXPAPER_input_date_published.value : null;
+        const file_title = (el_MEXPAPER_input_title && el_MEXPAPER_input_title.value) ? el_MEXPAPER_input_title.value : null;
+
+        const upload_dict = {
+            mode: "create",
+            file_name: mod_MEXPAPER_dict.curFile_name,
+            file_size: mod_MEXPAPER_dict.curFile_size,
+            file_title: file_title,
+            date_published: date_published
+        };
+
+// get attachment info
+
+        el_MEXPAPER_loader.classList.remove(cls_hide);
+
+        const upload_json = JSON.stringify (upload_dict)
+        const url_str = urls.url_exampaper_upload;
+
+        console.log("    url_str", url_str);
+        console.log("    upload_dict", upload_dict);
+
+        const uploadFile = new b_UploadFile(upload_json, mod_MEXPAPER_dict.curFile, url_str);
+        uploadFile.doUpload(MEXPAPER_Refresh);
+
+    };  // MEXPAPER_Save
+
+//=========   MEXPAPER_Filedialog_Open   ======================
+    function MEXPAPER_Filedialog_Open(el_filedialog) { // PR2022-02-26
+        console.log(" ========== MEXPAPER_Filedialog_Open ===========");
+        el_filedialog.click();
+    };
+
+//=========   MEXPAPER_HandleFiledialog   ====================== PR2022-02-26  PR2023-04-18
+    function MEXPAPER_HandleFiledialog(el_filedialog) { // functie wordt alleen doorlopen als file is geselecteerd
+        console.log(" ========== MEXPAPER_HandleFiledialog ===========");
+
+// ---  get curfiles from filedialog
+        // curfiles is list of files: PR2020-04-16
+        // curFiles[0]: {name: "tsa_import_orders.xlsx", lastModified: 1577989274259, lastModifiedDate: Thu Jan 02 2020 14:21:14 GMT-0400 (Bolivia Time) {}
+       // webkitRelativePath: "", size: 9622, type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}, length: 1}
+
+        let curFiles = el_filedialog.files; //This one doesn't work in Firefox: let curFiles = event.target.files;
+
+        console.log("    curFiles", curFiles);
+
+// ---  validate selected file
+        let curFile = (curFiles && curFiles.length) ?  curFiles[0] : null;
+        let msg_html = null;
+        if(!curFile) {
+             msg_html = ["<div class='p-2 border_bg_invalid'>", loc.First_select_valid_file, "</div>"].join('')
+        } else if(!MEXPAPER_is_allowed_filetype(curFile)) {
+             msg_html = ["<div class='p-2 border_bg_invalid'>'", curFile.name, "'", loc.is_not_a_valid_file, "<br>",
+                               loc.Only, "PDF", loc.is_allowed, "</div>"].join('')
+        } else if (curFile.size > max_file_size_Mb * 1000000) {
+             msg_html = ["<div class='p-2 border_bg_invalid'>", loc.Document, " '",  curFile.name, "'", loc.is_too_large, "<br>",
+                               loc.Maximum_size_is, (max_file_size_Mb), " Mb.", "</div>"].join('');
+        };
+        if (msg_html){
+            el_MEXPAPER_msg_container.innerHTML = msg_html;
+        } else {
+            el_MEXPAPER_msg_container.innerHTML = null;
+
+            el_MEXPAPER_filename.innerText = (curFile) ? curFile.name : null;
+
+            const curFile_name_no_ext = (curFile) ? (curFile.name.includes(".")) ? curFile.name.split(".").slice(0, -1).join(".") : curFile.name : null;
+            el_MEXPAPER_input_title.value = curFile_name_no_ext;
+
+            const lastModifiedDate_iso = (curFile && curFile.lastModifiedDate) ? get_dateISO_from_dateJS(curFile.lastModifiedDate) : null;
+
+            el_MEXPAPER_input_date_published.value = lastModifiedDate_iso;
+
+            mod_MEXPAPER_dict.curFile = curFile;
+            mod_MEXPAPER_dict.curFile_name = (curFile) ? curFile.name : null;
+            mod_MEXPAPER_dict.curFile_size = (curFile) ? curFile.size : null;
+        };
+        el_MEXPAPER_btn_save.disabled = !mod_MEXPAPER_dict.curFile_name;
+
+    };  // MEXPAPER_HandleFiledialog
+
+//=========  MEXPAPER_input_change  ================ PR2023-04-19
+    function MEXPAPER_input_change(el_input) {
+        console.log(" --- MEXPAPER_input_change  ---");
+
+    };  // MEXPAPER_input_change
+
+//=========  MEXPAPER_Refresh  ================ PR2021-10-12 PR2023-04-17
+    function MEXPAPER_Refresh(response) {
+        console.log(" --- MEXPAPER_Refresh  ---");
+        console.log("    response:", response);
+
+        el_MEXPAPER_loader.classList.add(cls_hide);
+
+        $("#id_mod_exampaper").modal("hide");
+
+        if ("messages" in response) {
+            b_show_mod_message_dictlist(response.messages);
+        };
+        if ("msg_html" in response) {
+            b_show_mod_message_html(response.msg_html);
+        };
+        if (response && response.hasOwnProperty("updated_published_rows")) {
+            t_Refresh_DataDicts("published", response.updated_published_rows, published_dicts, CreateTblRow);
+            Filter_TableRows();
+        };
+    }; // MEXPAPER_Refresh
+
+
+//========= MEXPAPER_is_allowed_filetype  ====================================
+    function MEXPAPER_is_allowed_filetype(File) {
+        // MIME xls: application/vnd.ms-excel
+        // MIME xlsx: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        // MIME csv: text/csv
+        const allowed_MIMEtypes = {
+            pdf: "application/pdf",
+            //txt: "text/plain",
+            //docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            //xls: "application/vnd.ms-excel",
+            //xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        };
+        let is_valid = false;
+        for (const value of Object.values(allowed_MIMEtypes)) {
+            if(File.type === value) {
+                is_valid = true;
+                break;
+            };
+        };
+        return is_valid;
+    };  // MEXPAPER_is_allowed_filetype
+
+
+
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // +++++++++++++++++ MODAL SELECT EXAMYEAR OR DEPARTMENT  ++++++++++++++++++++
 // functions are in table.js, except for MSED_Response
@@ -1034,21 +1106,13 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  MSSSS_Response  ================ PR2021-01-23 PR2021-02-05 PR2021-07-26
     function MSSSS_Response(tblName, selected_dict, selected_pk) {
         //console.log( "===== MSSSS_Response ========= ");
-        //console.log( "selected_pk", selected_pk);
-        //console.log( "selected_code", selected_code);
-        //console.log( "selected_name", selected_name);
+
 
 // ---  upload new setting and refresh page
         const datalist_request = {
                 setting: {page: "page_archive",
                           sel_schoolbase_pk: selected_pk  },
-                school_rows: {get: true},
-                department_rows: {get: true},
-                level_rows: {cur_dep_only: true},
-                sector_rows: {cur_dep_only: true},
-                student_rows: {get: true},
-                subject_rows: {get: true},
-                studentsubject_rows: {get: true},
+
                 scheme_rows: {cur_dep_only: true},
             };
 

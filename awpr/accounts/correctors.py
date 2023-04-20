@@ -14,7 +14,6 @@ from django.contrib.auth import get_user_model, authenticate
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 
-
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext, gettext_lazy as _, pgettext_lazy
 from django.views.generic import View
@@ -40,14 +39,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
 ########################################################################
 # === UserAllowedClusterUploadView ===================================== PR2023-02-26
 @method_decorator([login_required], name='dispatch')
 class UserAllowedClusterUploadView(View):
     # used in page correctors when schools set allowedcluster in user with role corrector
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserAllowedClusterUploadView ===============')
@@ -140,7 +138,7 @@ class UserAllowedClusterUploadView(View):
 class UserCompensationUploadView(View):
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserCompensationUploadView ===============')
@@ -225,7 +223,7 @@ class UserCompensationUploadView(View):
 def update_usercompensation_instance(instance, upload_dict, request):
     # --- update existing and new instance PR2023-02-25 PR2023-04-17
     # calculated compensation is no stored in table
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_usercompensation_instance -------')
         logger.debug('    upload_dict: ' + str(upload_dict))
@@ -305,7 +303,7 @@ def update_usercompensation_instance(instance, upload_dict, request):
 class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR2023-01-10
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= UserCompensationApproveSubmitView ============= ')
@@ -888,7 +886,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 
     def create_msg_list(self, sel_department, sel_level, count_dict, requsr_auth, is_approve, is_test,  published_instance_filename):
         # PR2022-08-25 PR2023-01-15
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ----- create_msg_list -----')
             logger.debug('    count_dict: ' + str(count_dict))
@@ -1234,7 +1232,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
     def create_usercomp_form(self, published_instance, sel_examyear, sel_school, sel_department, sel_level,
                                     save_to_disk, request, user_lang):
         #PR2021-07-27 PR2021-08-14
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= create_usercomp_form ============= ')
@@ -1263,7 +1261,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR2023-04-16
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= UserCompensationApproveSingleView ============= ')
@@ -1681,7 +1679,7 @@ def calc_compensation(approvals_sum, meetings_sum, approvals_sum_correction, mee
 
 def update_usercompensation(sel_examyear, request):
     # --- create list of all correctors,pprovals and return dict with key (eser_pk, exam_pk, school_pk) and count PR2023-02-24
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_usercompensation ----- ')
 
@@ -1993,7 +1991,7 @@ def update_usercompensation(sel_examyear, request):
 def create_excomp_xlsx(published_instance, examyear, sel_school, sel_department, sel_level,
                     save_to_disk, request, user_lang):  # PR2021-02-13 PR2021-08-14
     # called by StudsubjDownloadEx4View
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_excomp_xlsx -----')
 
@@ -2516,7 +2514,7 @@ def submit_usercom(usercomp_row, is_test, count_dict):
 
 def create_published_usercomp_instance(sel_school, sel_department, sel_level, now_arr, request):
     # PR2023-03-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- create_published_usercomp_instance -----')
         logger.debug('     sel_school: ' + str(sel_school))

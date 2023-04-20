@@ -28,6 +28,7 @@ from awpr import excel as awpr_excel
 from awpr import library as awpr_lib
 
 from schools import models as sch_mod
+from schools import views as sch_view
 from students import models as stud_mod
 from students import functions as stud_fnc
 from subjects import models as subj_mod
@@ -1456,11 +1457,10 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                                             request=request,
                                             user_lang=user_lang)
 
-                                        update_wrap['updated_published_rows'] = create_published_rows(
+                                        update_wrap['updated_published_rows'] = sch_view.create_published_rows(
                                             request=request,
                                             sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
                                             sel_schoolbase_pk=sel_school.base_id if sel_school else None,
-                                            sel_depbase_pk=sel_department.base_id if sel_department else None,
                                             published_pk=published_pk
                                         )
                                         if logging_on:
@@ -4233,91 +4233,6 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
                 logger.debug('row: ' + str(row))
 
     return result_rows
-
-
-def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, published_pk=None):
-    # --- create rows of published records PR2021-01-21 PR2022-09-16
-    #logger.debug(' ----- create_grade_rows -----')
-
-    """
-    sql_keys = {'ey_id': sel_examyear_pk,
-                'sb_id': sel_schoolbase_pk,
-                'depbase_id': sel_depbase_pk,
-                'mediadir': s.MEDIA_DIR}
-
-    sql_list = ["SELECT publ.id, CONCAT('published_', publ.id::TEXT) AS mapid, 'published' AS table,",
-        "publ.name, publ.examtype, publ.examperiod, publ.datepublished, publ.filename,",
-        "CONCAT(%(mediadir)s, publ.filename) AS filepath,",
-        "sb.code AS sb_code, school.name AS school_name, db.code AS db_code, ey.code AS ey_code",
-
-        "FROM schools_published AS publ",
-        "INNER JOIN schools_school AS school ON (school.id = publ.school_id)",
-        "INNER JOIN schools_schoolbase AS sb ON (sb.id = school.base_id)",
-        "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-        "INNER JOIN schools_department AS dep ON (dep.id = publ.department_id)",
-        "INNER JOIN schools_departmentbase AS db ON (db.id = dep.base_id)",
-
-        "WHERE ey.id = %(ey_id)s::INT",
-        "AND school.base_id = %(sb_id)s::INT",
-        "AND dep.base_id = %(depbase_id)s::INT",
-        "ORDER BY publ.datepublished"
-        ]
-    sql = ' '.join(sql_list)
-
-    with connection.cursor() as cursor:
-        cursor.execute(sql, sql_keys)
-        published_rows = af.dictfetchall(cursor)
-    """
-    # can't use sql because of file field
-
- # +++ get selected rows
-    crit = Q(school__examyear_id=sel_examyear_pk)
-          # Q(department__base_id=sel_depbase_pk)
-    # admin and insp can view all Ex forms
-    if request.user.role < c.ROLE_032_INSP:
-        crit.add(Q(school__base_id=sel_schoolbase_pk), crit.connector)
-
-    # published_pk only has value when called by GradeApproveView. Then it is a created row
-    if published_pk:
-        crit.add(Q(pk=published_pk), crit.connector)
-
-    #rows = sch_mod.Published.objects.filter(crit).order_by('-datepublished')
-    rows = sch_mod.Published.objects.filter(crit).order_by('pk')
-
-    published_rows = []
-    for row in rows:
-        if row.file:
-            file_name = str(row.file)
-            file_url = row.file.url
-
-            #PR2022-06-12 There a a lot of published_instances saved without file_url
-            # that should not happen, but it does. I don't know why.Check out TODO
-            # for now: filter on file_url
-            if file_url:
-                dict = {
-                    'id': row.pk,
-                    'mapid': 'published_' + str(row.pk),
-                    'table': 'published',
-                    'name': row.name,
-                    'examtype': row.examtype,
-                    'examperiod': row.examperiod,
-                    'regnumber': row.regnumber,
-                    'datepublished': row.datepublished,
-                    'filename': row.filename,
-                    'sb_code': row.school.base.code,
-                    'school_name': row.school.name,
-                    #'db_code': row.department.base.code,
-                    'ey_code': row.school.examyear.code,
-                    'file_name': file_name,
-                    'url': file_url,
-                    'modifiedby': row.modifiedby.last_name if row.modifiedby else None
-                }
-                if published_pk:
-                    dict['created'] = True
-                published_rows.append(dict)
-
-    return published_rows
-# --- end of create_grade_rows
 
 
 def create_ex2a(published_instance, sel_examyear, sel_school, sel_department, sel_subject, sel_examperiod, sel_examtype, grade_rows, request):

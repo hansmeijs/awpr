@@ -86,7 +86,9 @@
                     </li>
                 {% endif %}
                 <li>
-                    <a href="#"> <div title="{% trans 'Exam papers' %}" class="etelogo"></div> </a>
+                    <a href="{% url 'url_exampapers' %}">
+                        <div title="{% trans 'Exam papers' %}" class="etelogo"></div>
+                    </a>
                 </li>
                 <li>
                     {% if page and paragraph %}

@@ -186,308 +186,311 @@ class UserUploadView(View):
             sel_examyear, err_lst = get_selected_examyear_from_usersetting(request, allow_not_published)
             if err_lst:
                 border_class = c.HTMLCLASS_border_bg_invalid
-                msg_list.append(acc_prm.err_html_no_permit())  # default: 'to perform this action')
-
-            # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
-            requsr_permitlist = acc_prm.get_permit_list('page_user', req_usr)
-
-            has_permit_crud, has_permit_crud_otherschool, has_permit_addto_otherschool = False, False, False
-            if not err_lst and requsr_permitlist:
-                has_permit_crud = 'permit_crud' in requsr_permitlist
-                has_permit_addto_otherschool = 'permit_addto_otherschool' in requsr_permitlist
-                has_permit_crud_otherschool = 'permit_crud_otherschool' in requsr_permitlist
-
-            if logging_on:
-                logger.debug('    requsr_permitlist: ' + str(requsr_permitlist))
-                logger.debug('    has_permit_crud: ' + str(has_permit_crud))
-                logger.debug('    has_permit_addto_otherschool: ' + str(has_permit_addto_otherschool))
-                logger.debug('    has_permit_crud_otherschool: ' + str(has_permit_crud_otherschool))
-
-            if not has_permit_crud and not has_permit_addto_otherschool and not has_permit_crud_otherschool:
-                border_class = c.HTMLCLASS_border_bg_invalid
-                msg_list.append(gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
-
+                err_lst.append(acc_prm.err_txt_cannot_make_changes())
+                msg_list.extend(err_lst)
             else:
-# - get upload_dict from request.POST
-                upload_json = request.POST.get("upload")
-                if upload_json:
-                    upload_dict = json.loads(upload_json)
 
-                    if logging_on:
-                        logger.debug('    upload_dict: ' + str(upload_dict))
-                        logger.debug('    sel_examyear: ' + str(sel_examyear))
+                # requsr_permitlist: ['view_page', 'crud_otherschool', 'crud', 'crud', 'permit_userpage']
+                requsr_permitlist = acc_prm.get_permit_list('page_user', req_usr)
 
-                    # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
-                    """
-                    upload_dict: {'user_pk': None, 'schoolbase_pk': 13, 'mode': 'validate', 
-                        'username': 'Hans__Meijs', 'last_name': 'Hans', 'email': 'hmeijs@gmail.com'}
-                    """
+                has_permit_crud, has_permit_crud_otherschool, has_permit_addto_otherschool = False, False, False
+                if not err_lst and requsr_permitlist:
+                    has_permit_crud = 'permit_crud' in requsr_permitlist
+                    has_permit_addto_otherschool = 'permit_addto_otherschool' in requsr_permitlist
+                    has_permit_crud_otherschool = 'permit_crud_otherschool' in requsr_permitlist
 
-# - get info from upload_dict
-                    user_pk = upload_dict.get('user_pk')
-                    user_schoolbase_pk = upload_dict.get('schoolbase_pk')
-                    map_id = upload_dict.get('mapid')
-                    mode = upload_dict.get('mode')
+                if logging_on:
+                    logger.debug('    requsr_permitlist: ' + str(requsr_permitlist))
+                    logger.debug('    has_permit_crud: ' + str(has_permit_crud))
+                    logger.debug('    has_permit_addto_otherschool: ' + str(has_permit_addto_otherschool))
+                    logger.debug('    has_permit_crud_otherschool: ' + str(has_permit_crud_otherschool))
 
-                    is_validate_only = (mode == 'validate')
-                    update_wrap['mode'] = mode
+                if not has_permit_crud and not has_permit_addto_otherschool and not has_permit_crud_otherschool:
+                    border_class = c.HTMLCLASS_border_bg_invalid
+                    msg_list.append(gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
 
-                    if logging_on:
-                        logger.debug('    user_pk: ' + str(user_pk))
-                        logger.debug('    user_schoolbase_pk: ' + str(user_schoolbase_pk))
-                        logger.debug('    map_id: ' + str(map_id))
-                        logger.debug('    mode: ' + str(mode))
-
-# - check if the user schoolbase exists
-                    user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
-                        id=user_schoolbase_pk,
-                        country=req_usr.country
-                    )
-                    is_same_schoolbase = (user_schoolbase and user_schoolbase == req_usr.schoolbase)
-
-                    if is_same_schoolbase:
-                        new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT)
-                    else:
-                        new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_DOWNLOAD,
-                                              c.USERGROUP_MSGRECEIVE, c.USERGROUP_MSGWRITE,
-                                              c.USERGROUP_ARCHIVE, c.USERGROUP_ADMIN)
-
-                    # <PERMIT> PR2021-04-23
-                    # user role can never be higher dan requser role
-
-                    err_dict = {}
-                    has_permit = False
-                    if user_schoolbase:
-                        user_schoolbase_defaultrole = getattr(user_schoolbase, 'defaultrole') or 0
-
-                        if user_schoolbase_defaultrole <= req_usr.role:
-                            if has_permit_addto_otherschool or has_permit_crud_otherschool:
-                                has_permit = True
-                            elif has_permit_crud and is_same_schoolbase:
-                                has_permit = True
+                else:
+    # - get upload_dict from request.POST
+                    upload_json = request.POST.get("upload")
+                    if upload_json:
+                        upload_dict = json.loads(upload_json)
 
                         if logging_on:
-                            logger.debug('    user_schoolbase: ' + str(user_schoolbase))
-                            logger.debug('    user_schoolbase_defaultrole: ' + str(user_schoolbase_defaultrole))
-                            logger.debug('    has_permit_crud_otherschool: ' + str(has_permit_crud_otherschool))
-                            logger.debug('    is_same_schoolbase: ' + str(is_same_schoolbase))
-                            logger.debug('    has_permit_crud: ' + str(has_permit_crud))
-                            logger.debug('    has_permit: ' + str(has_permit))
+                            logger.debug('    upload_dict: ' + str(upload_dict))
+                            logger.debug('    sel_examyear: ' + str(sel_examyear))
 
-                    if not has_permit:
-                        border_class = c.HTMLCLASS_border_bg_invalid
-                        msg_list.append(
-                            gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
+                        # upload_dict: {'mode': 'delete', 'user_pk': 169, 'user_ppk': 3, 'mapid': 'user_169'}
+                        """
+                        upload_dict: {'user_pk': None, 'schoolbase_pk': 13, 'mode': 'validate', 
+                            'username': 'Hans__Meijs', 'last_name': 'Hans', 'email': 'hmeijs@gmail.com'}
+                        """
 
-                    else:
-                        updated_dict = {}
+    # - get info from upload_dict
+                        user_pk = upload_dict.get('user_pk')
+                        user_schoolbase_pk = upload_dict.get('schoolbase_pk')
+                        map_id = upload_dict.get('mapid')
+                        mode = upload_dict.get('mode')
 
-# ++++  resend activation email ++++++++++++
-                        if mode == 'send_activation_email':
-                            sent_ok_list, sent_error_list = [], []
-                            has_error, msg_html, user_dict = send_activation_email(user_pk, request)
-                            if has_error:
-                                sent_error_list.append(user_dict)
-                            else:
-                                sent_ok_list.append(user_dict)
+                        is_validate_only = (mode == 'validate')
+                        update_wrap['mode'] = mode
+
+                        if logging_on:
+                            logger.debug('    user_pk: ' + str(user_pk))
+                            logger.debug('    user_schoolbase_pk: ' + str(user_schoolbase_pk))
+                            logger.debug('    map_id: ' + str(map_id))
+                            logger.debug('    mode: ' + str(mode))
+
+    # - check if the user schoolbase exists
+                        user_schoolbase = sch_mod.Schoolbase.objects.get_or_none(
+                            id=user_schoolbase_pk,
+                            country=req_usr.country
+                        )
+                        is_same_schoolbase = (user_schoolbase and user_schoolbase == req_usr.schoolbase)
+
+                        if is_same_schoolbase:
+                            new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT)
+                        else:
+                            new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_DOWNLOAD,
+                                                  c.USERGROUP_MSGRECEIVE, c.USERGROUP_MSGWRITE,
+                                                  c.USERGROUP_ARCHIVE, c.USERGROUP_ADMIN)
+
+                        # <PERMIT> PR2021-04-23
+                        # user role can never be higher dan requser role
+
+                        err_dict = {}
+                        has_permit = False
+                        if user_schoolbase:
+                            user_schoolbase_defaultrole = getattr(user_schoolbase, 'defaultrole') or 0
+
+                            if user_schoolbase_defaultrole <= req_usr.role:
+                                if has_permit_addto_otherschool or has_permit_crud_otherschool:
+                                    has_permit = True
+                                elif has_permit_crud and is_same_schoolbase:
+                                    has_permit = True
 
                             if logging_on:
-                                logger.debug('    sent_error_list: ' + str(sent_error_list))
-                                logger.debug('    sent_ok_list: ' + str(sent_ok_list))
+                                logger.debug('    user_schoolbase: ' + str(user_schoolbase))
+                                logger.debug('    user_schoolbase_defaultrole: ' + str(user_schoolbase_defaultrole))
+                                logger.debug('    has_permit_crud_otherschool: ' + str(has_permit_crud_otherschool))
+                                logger.debug('    is_same_schoolbase: ' + str(is_same_schoolbase))
+                                logger.debug('    has_permit_crud: ' + str(has_permit_crud))
+                                logger.debug('    has_permit: ' + str(has_permit))
 
-# ++++  delete user or add userallowed ++++++++++++
-                        elif mode in ('delete', 'user_without_userallowed'):
-                            if user_pk:
-                # - get user_instance
+                        if not has_permit:
+                            border_class = c.HTMLCLASS_border_bg_invalid
+                            msg_list.append(
+                                gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
+
+                        else:
+                            updated_dict = {}
+
+    # ++++  resend activation email ++++++++++++
+                            if mode == 'send_activation_email':
+                                sent_ok_list, sent_error_list = [], []
+                                has_error, msg_html, user_dict = send_activation_email(user_pk, request)
+                                if has_error:
+                                    sent_error_list.append(user_dict)
+                                else:
+                                    sent_ok_list.append(user_dict)
+
+                                if logging_on:
+                                    logger.debug('    sent_error_list: ' + str(sent_error_list))
+                                    logger.debug('    sent_ok_list: ' + str(sent_ok_list))
+
+    # ++++  delete user or add userallowed ++++++++++++
+                            elif mode in ('delete', 'user_without_userallowed'):
+                                if user_pk:
+                    # - get user_instance
+                                    user_instance = None
+                                    if has_permit_crud_otherschool:
+                                        user_instance = acc_mod.User.objects.get_or_none(
+                                            id=user_pk,
+                                            country=req_usr.country
+                                        )
+                                    elif has_permit_crud and is_same_schoolbase:
+                                        user_instance = acc_mod.User.objects.get_or_none(
+                                            id=user_pk,
+                                            country=req_usr.country,
+                                            schoolbase=req_usr.schoolbase
+                                        )
+
+                                    if logging_on:
+                                        logger.debug('user_instance: ' + str(user_instance))
+
+                                    if user_instance:
+
+                                        if mode == 'user_without_userallowed':
+
+    # ++++  add userallowed record of this examyear to user
+                            # - get usergroups_arr from last UserAllowed record, get default if None
+
+                                            last_userallowed = acc_mod.UserAllowed.objects.filter(
+                                                user=user_instance
+                                            ).order_by('-examyear__code').first()
+
+                                            if last_userallowed and last_userallowed.usergroups:
+                                                usergroups_str = last_userallowed.usergroups
+                                            else:
+                                                usergroups_str = json.dumps(new_usergroups_arr)
+
+                                            now_utc = timezone.now()
+
+                                            new_user_allowed = acc_mod.UserAllowed(
+                                                user=user_instance,
+                                                examyear=sel_examyear,
+                                                usergroups=usergroups_str,
+                                                modifiedby=request.user,
+                                                modifiedat=now_utc
+                                            )
+                                            new_user_allowed.save()
+
+                                            if new_user_allowed:
+                                                created_instance_list = create_user_rowsNEW(
+                                                    sel_examyear=sel_examyear if sel_examyear else None,
+                                                    request=request,
+                                                    user_pk=user_instance.pk if user_instance else None
+                                                )
+                                                if created_instance_list:
+                                                    updated_dict = created_instance_list[0]
+                                                    updated_dict['created'] = True
+
+                                        elif mode == 'delete':
+
+    # ++++  delete user ++++++++++++
+                                            deleted_instance_list = create_user_rowsNEW(
+                                                sel_examyear=sel_examyear if sel_examyear else None,
+                                                request=request,
+                                                user_pk=user_instance.pk if user_instance else None
+                                            )
+
+                                            if logging_on:
+                                                logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
+
+                                            if deleted_instance_list:
+                                                updated_dict = deleted_instance_list[0]
+                                                updated_dict['mapid'] = 'user_' + str(user_instance.pk)
+
+                                            # TODO change to userexamyear setting
+
+                                            allowed_sections_dict, usergroups_arr, allowed_clusters_arr = get_requsr_usergroups_allowedsections_allowedclusters(request, sel_examyear)
+
+                                            requsr_usergroupslist, allowed_sections_dict, allowed_clusters_list, sel_examyear_instance = acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
+
+                                            if c.USERGROUP_ADMIN in requsr_usergroupslist and user_instance == req_usr:
+                                                err_dict['msg01'] = _("System administrators cannot delete their own account.")
+                                            else:
+                                                try:
+                                                    # PR2021-02-05 debug: CASCADE delete usersetting not working. Delete manually
+                                                    usersettings = Usersetting.objects.filter(user=user_instance)
+                                                    for usersetting in usersettings:
+
+                                                        if logging_on:
+                                                            logger.debug('usersetting delete: ' + str(usersetting))
+                                                        usersetting.delete()
+                                                    user_instance.delete()
+                                                    updated_dict['deleted'] = True
+
+                                                    if logging_on:
+                                                        logger.debug('deleted: ' + str(True))
+                                                except Exception as e:
+                                                    logger.error(getattr(e, 'message', str(e)))
+                                                    msg_html = ''.join((
+                                                        str(_("User account '%(val)s' can not be deleted.") % {'val': user_instance.username_sliced}),
+                                                        '<br>',
+                                                        str(_("Instead, you can make the user account inactive."))))
+                                                    msg_dict = {'header': str(_('Delete user')), 'class': 'border_bg_invalid',
+                                                                'msg_html': msg_html}
+                                                    msg_list.append(msg_dict)
+                                                else:
+                                                    user_instance = None
+                                                    deleted_ok = True
+                                                    ##############
+
+    # ++++  create or validate new user ++++++++++++
+                            elif mode in ('create', 'validate'):
+                                # - get permits of new user.
+                                #       - new_permits is 'write' when user_school is same as requsr_school,
+                                #       - permits is 'write' plus 'admin' when user_school is different from requsr_school
+
+                                # is_existing_user = True if user_pk else False
+
+                                new_user_pk, err_dict, ok_dict, user_without_userallowed = \
+                                    create_or_validate_user_instance(
+                                        user_schoolbase=user_schoolbase,
+                                        upload_dict=upload_dict,
+                                        user_pk=user_pk,
+                                        usergroups_arr=new_usergroups_arr,
+                                        is_validate_only=is_validate_only,
+                                        user_lang=user_lang,
+                                        sel_examyear=sel_examyear,
+                                        request=request
+                                    )
+
+                                if err_dict:
+                                    update_wrap['msg_err'] = err_dict
+                                elif user_without_userallowed:
+                                    update_wrap['user_without_userallowed'] = user_without_userallowed
+                                elif ok_dict:
+                                    update_wrap['msg_ok'] = ok_dict
+                                # - new_user_pk has only value when new user is created, not when is_validate_only
+                                # - create_user_rows returns list of only 1 user
+                                if new_user_pk:
+                                    created_instance_list = create_user_rowsNEW(
+                                        sel_examyear=sel_examyear,
+                                        request=request,
+                                        user_pk=new_user_pk
+                                    )
+                                    if created_instance_list:
+                                        updated_dict = created_instance_list[0]
+                                        updated_dict['created'] = True
+                            else:
+
+    # - +++++++++ update ++++++++++++
                                 user_instance = None
                                 if has_permit_crud_otherschool:
                                     user_instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
-                                        country=req_usr.country
-                                    )
+                                        country=req_usr.country)
                                 elif has_permit_crud and is_same_schoolbase:
                                     user_instance = acc_mod.User.objects.get_or_none(
                                         id=user_pk,
                                         country=req_usr.country,
                                         schoolbase=req_usr.schoolbase
                                     )
-
                                 if logging_on:
-                                    logger.debug('user_instance: ' + str(user_instance))
+                                    logger.debug('    user_instance: ' + str(user_instance))
 
-                                if user_instance:
+                                if user_instance is None:
+                                    border_class = c.HTMLCLASS_border_bg_invalid
+                                    msg_list.append(
+                                        gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
 
-                                    if mode == 'user_without_userallowed':
+                                else:
+                                    err_dict, ok_dict = update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, request)
+                                    if err_dict:
+                                        update_wrap['msg_err'] = err_dict
+                                    if ok_dict:
+                                        update_wrap['msg_ok'] = ok_dict
 
-# ++++  add userallowed record of this examyear to user
-                        # - get usergroups_arr from last UserAllowed record, get default if None
+            # - create_user_rows returns list of only 1 user
+                                    updated_instance_list = create_user_rowsNEW(
+                                        sel_examyear=sel_examyear,
+                                        request=request,
+                                        user_pk=user_instance.pk if user_instance else None
+                                    )
+                                    updated_dict = updated_instance_list[0] if updated_instance_list else {}
+                                    updated_dict['updated'] = True
+                                    updated_dict['mapid'] = 'user_' + str(user_instance.pk)
 
-                                        last_userallowed = acc_mod.UserAllowed.objects.filter(
-                                            user=user_instance
-                                        ).order_by('-examyear__code').first()
+        # - +++++++++ en of is update ++++++++++++
+                            if updated_dict:
+                                update_wrap['updated_user_rows'] = [updated_dict]
 
-                                        if last_userallowed and last_userallowed.usergroups:
-                                            usergroups_str = last_userallowed.usergroups
-                                        else:
-                                            usergroups_str = json.dumps(new_usergroups_arr)
+                        if err_dict:
+                            update_wrap['msg_err'] = err_dict
+                        elif is_validate_only:
+                            update_wrap['validation_ok'] = True
 
-                                        now_utc = timezone.now()
-
-                                        new_user_allowed = acc_mod.UserAllowed(
-                                            user=user_instance,
-                                            examyear=sel_examyear,
-                                            usergroups=usergroups_str,
-                                            modifiedby=request.user,
-                                            modifiedat=now_utc
-                                        )
-                                        new_user_allowed.save()
-
-                                        if new_user_allowed:
-                                            created_instance_list = create_user_rowsNEW(
-                                                sel_examyear=sel_examyear if sel_examyear else None,
-                                                request=request,
-                                                user_pk=user_instance.pk if user_instance else None
-                                            )
-                                            if created_instance_list:
-                                                updated_dict = created_instance_list[0]
-                                                updated_dict['created'] = True
-
-                                    elif mode == 'delete':
-
-# ++++  delete user ++++++++++++
-                                        deleted_instance_list = create_user_rowsNEW(
-                                            sel_examyear=sel_examyear if sel_examyear else None,
-                                            request=request,
-                                            user_pk=user_instance.pk if user_instance else None
-                                        )
-
-                                        if logging_on:
-                                            logger.debug('deleted_instance_list: ' + str(deleted_instance_list))
-
-                                        if deleted_instance_list:
-                                            updated_dict = deleted_instance_list[0]
-                                            updated_dict['mapid'] = 'user_' + str(user_instance.pk)
-
-                                        # TODO change to userexamyear setting
-
-                                        allowed_sections_dict, usergroups_arr, allowed_clusters_arr = get_requsr_usergroups_allowedsections_allowedclusters(request, sel_examyear)
-
-                                        requsr_usergroupslist, allowed_sections_dict, allowed_clusters_list, sel_examyear_instance = acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
-
-                                        if c.USERGROUP_ADMIN in requsr_usergroupslist and user_instance == req_usr:
-                                            err_dict['msg01'] = _("System administrators cannot delete their own account.")
-                                        else:
-                                            try:
-                                                # PR2021-02-05 debug: CASCADE delete usersetting not working. Delete manually
-                                                usersettings = Usersetting.objects.filter(user=user_instance)
-                                                for usersetting in usersettings:
-
-                                                    if logging_on:
-                                                        logger.debug('usersetting delete: ' + str(usersetting))
-                                                    usersetting.delete()
-                                                user_instance.delete()
-                                                updated_dict['deleted'] = True
-
-                                                if logging_on:
-                                                    logger.debug('deleted: ' + str(True))
-                                            except Exception as e:
-                                                logger.error(getattr(e, 'message', str(e)))
-                                                msg_html = ''.join((
-                                                    str(_("User account '%(val)s' can not be deleted.") % {'val': user_instance.username_sliced}),
-                                                    '<br>',
-                                                    str(_("Instead, you can make the user account inactive."))))
-                                                msg_dict = {'header': str(_('Delete user')), 'class': 'border_bg_invalid',
-                                                            'msg_html': msg_html}
-                                                msg_list.append(msg_dict)
-                                            else:
-                                                user_instance = None
-                                                deleted_ok = True
-                                                ##############
-
-# ++++  create or validate new user ++++++++++++
-                        elif mode in ('create', 'validate'):
-                            # - get permits of new user.
-                            #       - new_permits is 'write' when user_school is same as requsr_school,
-                            #       - permits is 'write' plus 'admin' when user_school is different from requsr_school
-
-                            # is_existing_user = True if user_pk else False
-
-                            new_user_pk, err_dict, ok_dict, user_without_userallowed = \
-                                create_or_validate_user_instance(
-                                    user_schoolbase=user_schoolbase,
-                                    upload_dict=upload_dict,
-                                    user_pk=user_pk,
-                                    usergroups_arr=new_usergroups_arr,
-                                    is_validate_only=is_validate_only,
-                                    user_lang=user_lang,
-                                    sel_examyear=sel_examyear,
-                                    request=request
-                                )
-
-                            if err_dict:
-                                update_wrap['msg_err'] = err_dict
-                            elif user_without_userallowed:
-                                update_wrap['user_without_userallowed'] = user_without_userallowed
-                            elif ok_dict:
-                                update_wrap['msg_ok'] = ok_dict
-                            # - new_user_pk has only value when new user is created, not when is_validate_only
-                            # - create_user_rows returns list of only 1 user
-                            if new_user_pk:
-                                created_instance_list = create_user_rowsNEW(
-                                    sel_examyear=sel_examyear,
-                                    request=request,
-                                    user_pk=new_user_pk
-                                )
-                                if created_instance_list:
-                                    updated_dict = created_instance_list[0]
-                                    updated_dict['created'] = True
-                        else:
-
-# - +++++++++ update ++++++++++++
-                            user_instance = None
-                            if has_permit_crud_otherschool:
-                                user_instance = acc_mod.User.objects.get_or_none(
-                                    id=user_pk,
-                                    country=req_usr.country)
-                            elif has_permit_crud and is_same_schoolbase:
-                                user_instance = acc_mod.User.objects.get_or_none(
-                                    id=user_pk,
-                                    country=req_usr.country,
-                                    schoolbase=req_usr.schoolbase
-                                )
-                            if logging_on:
-                                logger.debug('    user_instance: ' + str(user_instance))
-
-                            if user_instance is None:
-                                border_class = c.HTMLCLASS_border_bg_invalid
-                                msg_list.append(
-                                    gettext("You don't have permission %(cpt)s.") % {'cpt': gettext('to perform this action')})
-
-                            else:
-                                err_dict, ok_dict = update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, request)
-                                if err_dict:
-                                    update_wrap['msg_err'] = err_dict
-                                if ok_dict:
-                                    update_wrap['msg_ok'] = ok_dict
-
-        # - create_user_rows returns list of only 1 user
-                                updated_instance_list = create_user_rowsNEW(
-                                    sel_examyear=sel_examyear,
-                                    request=request,
-                                    user_pk=user_instance.pk if user_instance else None
-                                )
-                                updated_dict = updated_instance_list[0] if updated_instance_list else {}
-                                updated_dict['updated'] = True
-                                updated_dict['mapid'] = 'user_' + str(user_instance.pk)
-
-    # - +++++++++ en of is update ++++++++++++
-                        if updated_dict:
-                            update_wrap['updated_user_rows'] = [updated_dict]
-
-                    if err_dict:
-                        update_wrap['msg_err'] = err_dict
-                    elif is_validate_only:
-                        update_wrap['validation_ok'] = True
         # TODO append  err_dict to  msg_list
         if msg_list:
             update_wrap['msg_dictlist'] = msg_list
@@ -750,7 +753,7 @@ class UserAllowedSectionsUploadView(View):
     #  UserAllowedSectionsUploadView is called from Users form MUPS_Open
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserAllowedSectionsUploadView ===============')
@@ -878,7 +881,7 @@ class UserAllowedSectionsUploadView(View):
 class UserdataDownloadXlsxView(View):  # PR2023-01-31
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= UserdataDownloadXlsxView ============= ')
         # function xlsx file with student data
@@ -1088,7 +1091,7 @@ def create_permits_xlsx(permits_rows, user_lang, request):  # PR2021-04-20
 
 
 ########################################################################
-# === UserpermitUploadView ===================================== PR2021-03-18 PR2023-01-15
+# === UserpermitUploadView ===================================== PR2021-03-18 PR2023-01-15 PR2023-04-19
 @method_decorator([login_required], name='dispatch')
 class UserpermitUploadView(View):
     #  UserpermitUploadView is called from Users form
@@ -1101,6 +1104,9 @@ class UserpermitUploadView(View):
             logger.debug(' ========== UserpermitUploadView ===============')
 
         update_wrap = {}
+        msg_list = []
+        border_class = None
+
 # -  get permit -- don't use requsr_usergroups_list, you might lock yourself out PR2021-05-20
         if request.user is not None and request.user.country is not None:
             req_usr = request.user
@@ -1116,7 +1122,7 @@ class UserpermitUploadView(View):
                 if upload_json:
                     upload_dict = json.loads(upload_json)
                     if logging_on:
-                        logger.debug('upload_dict:     ' + str(upload_dict))
+                        logger.debug('    upload_dict:     ' + str(upload_dict))
 
 # - get selected mode. Modes are  'create"  'update' 'delete'
                     mode = upload_dict.get('mode')
@@ -1134,7 +1140,7 @@ class UserpermitUploadView(View):
                         logger.debug('    userpermit_pk:   ' + str(userpermit_pk))
 
                     append_dict = {}
-                    error_dict = {}
+
                     updated_permit_rows = []
 
 # +++  get current permit - when mode is 'create': permit is None. It will be created at "elif mode == 'create'"
@@ -1189,37 +1195,42 @@ class UserpermitUploadView(View):
                         if logging_on :
                             logger.debug('    sel_examyear: ' + str(sel_examyear))
 
-                        update_grouppermit(userpermit_instance, upload_dict, error_dict, request)
-                    if logging_on :
-                        logger.debug('    error_dict: ' + str(error_dict))
+                        updated_userpermit_pk, err_html = update_grouppermit(userpermit_instance, upload_dict, request)
+                        if err_html:
+                            border_class = c.HTMLCLASS_border_bg_invalid
+                            msg_list.append(err_html)
 
-# - add update_dict to update_wrap
-                    if userpermit_instance:
-                        if error_dict:
-                            append_dict['error'] = error_dict
+                        if logging_on :
+                            logger.debug('    err_html: ' + str(err_html))
 
-               # - add update_dict to update_wrap
+               # - create_permit_list
                         if userpermit_instance.pk:
                             permit_rows = create_permit_list(userpermit_instance.pk)
                             if permit_rows:
                                 updated_permit_rows.extend(permit_rows)
 
-                    update_wrap['updated_permit_rows'] = updated_permit_rows
+                    if updated_permit_rows:
+                        update_wrap['updated_permit_rows'] = updated_permit_rows
 
+            if msg_list:
+                update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 # F. return update_wrap
             return HttpResponse(json.dumps(update_wrap, cls=af.LazyEncoder))
 # - end of UserpermitUploadView
 
 
-def update_grouppermit(userpermit_instance, upload_dict, msg_dict, request): # PR2021-03-20 PR2023-01-15
+def update_grouppermit(userpermit_instance, upload_dict, request): # PR2021-03-20 PR2023-01-15 PR2023-04-19
     # --- update existing and new userpermit_instance
     # add new values to update_dict (don't reset update_dict, it has values)
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_grouppermit -------')
         logger.debug('    upload_dict' + str(upload_dict))
 
     save_changes = False
+    updated_userpermit_pk = None
+    err_html = None
+
     for field, new_value in upload_dict.items():
         if field in ['role', 'page', 'action']:
             saved_value = getattr(userpermit_instance, field)
@@ -1248,6 +1259,7 @@ def update_grouppermit(userpermit_instance, upload_dict, msg_dict, request): # P
                     if logging_on:
                         logger.debug('    usergroup: ' + str(usergroup))
                         logger.debug('    value: ' + str(value))
+
                     if value:
                         if usergroup not in usergroups_list:
                             usergroups_list.append(usergroup)
@@ -1257,13 +1269,12 @@ def update_grouppermit(userpermit_instance, upload_dict, msg_dict, request): # P
                             usergroups_list.remove(usergroup)
                             save_usergroups_changes = True
 
-
-
                 if save_usergroups_changes:
                     if usergroups_list:
                         usergroups_list.sort()
-                    if logging_on:
-                        logger.debug('    usergroups_list: ' + str(usergroups_list))
+                        if logging_on:
+                            logger.debug('    usergroups_list: ' + str(usergroups_list))
+
                         usergroups_str = ';'.join(usergroups_list)
                         setattr(userpermit_instance, field, usergroups_str)
                     else:
@@ -1277,14 +1288,15 @@ def update_grouppermit(userpermit_instance, upload_dict, msg_dict, request): # P
     if save_changes:
         try:
             userpermit_instance.save(request=request)
+            updated_userpermit_pk = userpermit_instance.pk
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
-
-            msg_dict['err_update'] = getattr(e, 'message', str(e))
-            #msg_dict['err_update'] = _('An error occurred. The changes have not been saved.')
+            err_html = acc_prm.msghtml_error_occurred_no_border(e, _('The changes have not been saved.'))
 
     if logging_on:
-        logger.debug('msg_dict' + str(msg_dict) + str(type(msg_dict)))
+        logger.debug('err_html' + str(err_html))
+
+    return updated_userpermit_pk, err_html
 # --- end of update_grouppermit
 
 
@@ -2027,7 +2039,7 @@ class AwpPasswordResetConfirmView(PasswordContextMixin, FormView):
 class UserModMessageHideView(View):
     #  PR2022-05-29
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserModMessageHideView ===============')
@@ -2985,7 +2997,7 @@ def update_userallowed_usergroups(request, user_instance, sel_examyear, field_di
 
     # usergroups: {auth2: false} dict always contains only 1 auth key
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_userallowed_usergroups  -----')
         logger.debug('    field_dict:    ' + str(field_dict) + ' ' + str(type(field_dict)))
@@ -3101,7 +3113,7 @@ def update_allowedclusters(request, user_instance, sel_examyear, field_value, va
     # called by UserUploadView.update_user_instance and UserpermitUploadView.update_grouppermit
     # validate only when called by update_user_instance
     # usergroups: {auth2: false} dict always contains only 1 auth key
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_allowedclusters  -----')
         logger.debug('    field_value:    ' + str(field_value) + ' ' + str(type(field_value)))
@@ -3184,7 +3196,7 @@ def set_usersetting_dict(key_str, setting_dict, request):  # PR2019-03-09 PR2021
 
 
 def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_uploaddict ----- ')
         logger.debug('     upload_dict: ' + str(upload_dict))
@@ -3206,7 +3218,7 @@ def set_usersetting_from_uploaddict(upload_dict, request):  # PR2021-02-07
 
 def set_usersetting_from_upload_subdict(key_str, new_setting_dict, request):  # PR2021-02-07 PR2021-08-19 PR2021-12-02
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- set_usersetting_from_upload_subdict ----- ')
         logger.debug('     key_str: ' + str(key_str))
@@ -3768,7 +3780,7 @@ def get_sel_lvlbase_pk_arr(allowed_lvlbases_dict, selected_pk_dict, level_is_req
 
 def get_lvl_subjbase_clause(sel_lvlbase_pk_arr, allowed_lvlbases_dict, subjbase_id_fld, skip_allowedsubjbase_filter):
     # PR2022-12-22
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     lvl_subjbase_clause = None
 
     if sel_lvlbase_pk_arr:
@@ -4005,7 +4017,7 @@ def get_sql_schoolbase_clause(req_usr, sel_examyear_instance, allowed_sections_d
     # - otherwise: get selected school from settings
     # - if None: don't return records
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_sql_schoolbase_clause ----- ')
         if logging_on:
@@ -4048,7 +4060,7 @@ def get_sql_schoolbase_clause(req_usr, sel_examyear_instance, allowed_sections_d
 
 def get_sql_depbase_clause(sel_examyear_instance, sel_school, allowed_depbases_dict, selected_pk_dict):
     # PR2022-12-15 PR2023-01-06
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_sql_depbase_clause ----- ')
 
@@ -4193,7 +4205,7 @@ def get_requsr_usergroups_allowedsections_allowedclusters (request, sel_examyear
 
 def set_userallowed_dict(user_pk, examyear_pk, usergroups_arr, allowed_clusters_arr, allowed_sections_dict):  # PR2022-12-02
     # function saves setting in first row that matches the filter, adds new row when not found
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('---  set_userallowed_dict  ------- ')
         logger.debug('    user_pk:      ' + str(user_pk))
@@ -4959,7 +4971,6 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
     if req_usr.country:
         requsr_country = req_usr.country
         if requsr_country.locked:
-            # msg_list.append(str(_('This country is locked.')))
             msg_list.append(gettext("%(country)s has no license yet to use AWP-online this exam year.") % \
                                                  {'country': requsr_country.name})
 
@@ -4980,7 +4991,7 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
                 logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
     # - add info to msg_list, will be sent back to client
-            message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published)
+            msg_list = message_examyear_missing_notpublished_locked(sel_examyear, allow_not_published)
 
     may_edit = not msg_list
     if not may_edit:
@@ -5522,7 +5533,7 @@ def get_sel_depbase_instance___ISN(sel_school_instance, page, request, request_i
     # - in sidebar (only bij admin in page exam, subjects, orderlist). 'All deps' is allowed, stored with value -1
     # tobe checked  if sel_depbase_pk will be saved when using download function, or is saved separately bij set_user_setting
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' -----  get_sel_depbase_instance  -----')
         logger.debug('    request_item_depbase_pk: ' + str(request_item_depbase_pk))
@@ -5886,16 +5897,18 @@ def get_selected_lvlbase_sctbase_from_usersetting(request):  # PR2021-11-18
 # - end of get_selected_lvlbase_sctbase_from_usersetting
 
 
-def message_examyear_missing_notpublished_locked(sel_examyear, msg_list, allow_not_published=False):
+def message_examyear_missing_notpublished_locked(sel_examyear, allow_not_published=False):
     # PR2021-12-04 PR2022-08-04 PR2023-04-13
+    err_list = []
     if sel_examyear is None :
-        msg_list.append(gettext('There is no exam year selected.'))
+        err_list.append(gettext('There is no exam year selected.'))
     elif sel_examyear.locked:
-        msg_list.append(gettext('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)})
+        err_list.append(gettext('Exam year %(ey_code)s is locked.') % {'ey_code': str(sel_examyear.code)})
     elif not allow_not_published and not sel_examyear.published:
-        msg_list.append(gettext("%(admin)s has not yet published examyear %(exyr)s.") % \
+        err_list.append(gettext("%(admin)s has not yet published examyear %(exyr)s.") % \
                              {'admin': gettext('The Division of Examinations'), 'exyr': str(sel_examyear.code)})
-        msg_list.append(gettext('You cannot enter data.'))
+        err_list.append(gettext('You cannot enter data.'))
+    return err_list
 # - end of message_examyear_missing_notpublished_locked
 
 

@@ -53,7 +53,7 @@ def get_selected_pk_dict_of_user_instance(user_instance):
 def get_sel_examyear_from_selected_pk_dict(selected_pk_dict):
     #   PR2023-01-16
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
         logger.debug('  ----- get_sel_examyear_from_selected_pk_dict ----- ')
@@ -716,7 +716,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
 #############################################
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')
@@ -962,7 +962,7 @@ def validate_userallowed_depbase(userallowed_sections_dict, sel_schoolbase_pk, s
 
 def validate_userallowed_lvlbase(userallowed_sections_dict, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk):
     # This function checks if een given lvlbase is allowed, based on allowedsections # PR2023-02-22
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_userallowed_lvlbase -----')
         logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
@@ -1017,7 +1017,7 @@ def validate_userallowed_lvlbase(userallowed_sections_dict, sel_schoolbase_pk, s
 
 def validate_userallowed_subjbase(userallowed_sections_dict, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, sel_subjbase_pk):
     # This function checks if een given subjbase is allowed, based on allowedsections # PR2023-02-22
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- validate_userallowed_subjbase -----')
         logger.debug('    userallowed_sections_dict: ' + str(userallowed_sections_dict))
@@ -1165,7 +1165,7 @@ def get_sqlclause_allowed_lvlbaseNIU(userallowed_sections_dict, sel_schoolbase_p
     # filter school and depbase not included, happens outsude this functions
     # only add sqlclasue lvlbase
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('----- get_sqlclause_allowed_lvlbase -----')
@@ -1532,7 +1532,7 @@ def get_permit_of_this_page(page, permit, request):
 def get_permit_crud_of_this_page(page, request):
     # --- get crud permit for this page # PR2021-07-18 PR2021-09-05 PR2023-01-13
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_permit_crud_of_this_page  -------')
 
@@ -1591,7 +1591,6 @@ def msghtml_error_occurred_no_border(err_txt, msg_txt=None):  # PR2023-04-17
     if msg_txt:
         msg_list.extend(['<br>', str(msg_txt)])
     return ''.join((msg_list))
-
 
 
 def msghtml_error_occurred_with_border(err_txt, msg_txt=None):  # PR2023-03-20

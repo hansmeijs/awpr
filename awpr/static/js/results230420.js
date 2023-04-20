@@ -11,7 +11,7 @@ let results_per_school_rows = [];
 let pres_secr_dict = {};
 //let school_rows = [];
 
-const field_settings = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -106,12 +106,10 @@ document.addEventListener('DOMContentLoaded', function() {
         filter_tags: ["select", "text", "text", "text" ,"text", "text", "text", "toggle", "text", "text"],
         field_width:  ["020", "120", "390", "090", "090", "090", "120", "090", "120", "120"],
         field_align: ["c", "l", "l", "l", "l", "l", "l", "c", "c", "c"]
-        };
-
+    };
     field_settings.overview = {
         field_caption: ["", "", "", "", "",
                         "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T", "M", "V", "T"],
-
         field_names: ["select", "db_code", "lvl_code", "sb_code", "sch_name",
                         "c_m", "c_v", "c_t",
                         "r_p_m", "r_p_v", "r_p_t",

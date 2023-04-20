@@ -4,7 +4,7 @@
 
 //console.log("PAGE VARIABLES")
 
-const field_settings = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 //let school_rows = [];
 let student_rows = [];
@@ -97,60 +97,64 @@ document.addEventListener("DOMContentLoaded", function() {
     mod_MCOL_dict.columns.btn_reex03 = {ce_exam_name: "Exam"};
 
 // --- get field_settings
-    const field_settings = {
-        btn_ep_01: {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "subj_code", "subj_name_nl",
-                                   "segrade", "se_status", "srgrade", "sr_status",
-                                   "pescore", "pe_status", "pegrade",
-                                    "cescore", "ce_status", "cegrade", "finalgrade",
-                                   "note_status", "ce_exam_name", "download_conv_table"],
-                    field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Abbrev_subject_2lines", "Subject",
-                                   "School_exam_2lines", "", "Herkansing_SE_grade_2lines", "",
-                                  "PE_score", "", "PE_grade",
-                                  "CE_score", "", "CE_grade", "Final_grade_twolines",
-                                  "", "Exam", ""],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "input", "div",  "input", "div",
-                                "input", "div", "input",
-                                "input", "div", "div", "div",
-                                "div", "div", "a"],
-                    filter_tags: ["text", "text", "text", "text", "text", "text", "text",
-                                "text", "grade_status", "text", "grade_status",
-                                "text", "grade_status", "text",
-                                "text", "grade_status", "text",  "text",
-                                "toggle", "text", "text" ],
-                    field_width: ["020", "060", "240", "060", "060",  "075","240",
-                                "090", "020", "090", "020",
-                                "090", "020", "090",
-                                "090", "020", "090", "090",
-                                 "032", "240", "032"],
-                    field_align: ["c", "r", "l", "c", "c", "c","l",
-                                "c", "c", "c", "c",
-                                "c", "c", "c",
-                                "c", "c", "c", "c",
-                                "c", "l", "c"]},
+    field_settings.btn_ep_01 = {
+        field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev",  "subj_code", "subj_name_nl",
+                       "segrade", "se_status", "srgrade", "sr_status",
+                       "pescore", "pe_status", "pegrade",
+                        "cescore", "ce_status", "cegrade", "finalgrade",
+                       "note_status", "ce_exam_name", "download_conv_table"],
+        field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Abbrev_subject_2lines", "Subject",
+                       "School_exam_2lines", "", "Herkansing_SE_grade_2lines", "",
+                      "PE_score", "", "PE_grade",
+                      "CE_score", "", "CE_grade", "Final_grade_twolines",
+                      "", "Exam", ""],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    "input", "div",  "input", "div",
+                    "input", "div", "input",
+                    "input", "div", "div", "div",
+                    "div", "div", "a"],
+        filter_tags: ["text", "text", "text", "text", "text", "text", "text",
+                    "text", "grade_status", "text", "grade_status",
+                    "text", "grade_status", "text",
+                    "text", "grade_status", "text",  "text",
+                    "toggle", "text", "text" ],
+        field_width: ["020", "060", "240", "060", "060",  "075","240",
+                    "090", "020", "090", "020",
+                    "090", "020", "090",
+                    "090", "020", "090", "090",
+                     "032", "240", "032"],
+        field_align: ["c", "r", "l", "c", "c", "c","l",
+                    "c", "c", "c", "c",
+                    "c", "c", "c",
+                    "c", "c", "c", "c",
+                    "c", "l", "c"]
+    };
 
-        btn_reex:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name_nl",
-                                  "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
-                    field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector",  "Abbrev_subject_2lines", "Subject",
-                                  "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Exam", ""],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "input", "div",  "div", "div", "div", "a"],
-                    filter_tags: ["text", "text", "text", "text", "text", "text", "text",
-                                "text", "grade_status", "text", "text", "toggle", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "075", "240", "090", "020", "090", "032", "240", "032"],
-                    field_align: ["c", "r", "l", "c", "c",  "c", "l", "c", "c", "c", "c"]},
+    field_settings.btn_reex = {
+        field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name_nl",
+                      "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
+        field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector",  "Abbrev_subject_2lines", "Subject",
+                      "Re_examination_score_2lines", "", "Re_examination_grade_2lines", "", "Exam", ""],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    "input", "div",  "div", "div", "div", "a"],
+        filter_tags: ["text", "text", "text", "text", "text", "text", "text",
+                    "text", "grade_status", "text", "text", "toggle", "text", "text"],
+        field_width: ["020", "060", "240", "060", "060", "075", "240", "090", "020", "090", "032", "240", "032"],
+        field_align: ["c", "r", "l", "c", "c",  "c", "l", "c", "c", "c", "c"]
+    };
 
-        btn_reex03:  {field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name_nl",
-                                  "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
-                    field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Abbrev_subject_2lines", "Subject",
-                                  "Third_period_score_2lines", "", "Third_period_grade_2lines", "", "Exam", ""],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "input", "div",  "div", "div", "div", "a"],
-                    filter_tags: ["text", "text", "text", "text", "text", "text", "text",
-                                "text", "grade_status", "text", "text", "toggle", "text", "text"],
-                    field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032"],
-                    field_align: ["c", "r", "l", "c", "c", "c", "l", "c", "c", "c", "c"]},
-        };
+    field_settings.btn_reex03 = {
+        field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "sct_abbrev", "subj_code", "subj_name_nl",
+                      "cescore", "ce_status", "cegrade", "note_status", "ce_exam_name", "download_conv_table"],
+        field_caption: ["", "Ex_nr", "Candidate", "Learningpath_twolines", "Sector", "Abbrev_subject_2lines", "Subject",
+                      "Third_period_score_2lines", "", "Third_period_grade_2lines", "", "Exam", ""],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    "input", "div",  "div", "div", "div", "a"],
+        filter_tags: ["text", "text", "text", "text", "text", "text", "text",
+                    "text", "grade_status", "text", "text", "toggle", "text", "text"],
+        field_width: ["020", "060", "240", "060", "060", "120", "075", "240", "090", "020", "090", "032", "240", "032"],
+        field_align: ["c", "r", "l", "c", "c", "c", "l", "c", "c", "c", "c"]
+    };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");

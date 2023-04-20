@@ -6,8 +6,7 @@
 //let permit_dict = {};
 //let loc = {};
 //let urls = {};
-
-const field_settings = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 let corrector_rows = [];
 

@@ -40,16 +40,14 @@ document.addEventListener('DOMContentLoaded', function() {
     urls.url_school_upload = get_attr_from_el(el_data, "data-url_school_upload");
 
 // --- get field_settings
-    const field_settings = {
         //PR2020-06-02 dont use loc.Examyear here, has no value yet. Use "Examyear" here and loc in CreateTblHeader
-        examyear: {
-                    field_caption: ["", "Examyear", "Created_at", "Published", "Published_at", "Closed", "Closed_on"],
-                    field_names: ["select", "examyear_code", "createdat", "published", "publishedat", "locked", "lockedat"],
-                    filter_tags: ["select", "text", "text", "toggle", "text", "toggle", "text"],
-                    field_width:  ["032", "120", "120", "120", "120", "120", "120"],
-                    field_align: ["c", "l", "l", "c", "l", "c", "l"]}
-
-        };
+    field_settings.examyear = {
+        field_caption: ["", "Examyear", "Created_at", "Published", "Published_at", "Closed", "Closed_on"],
+        field_names: ["select", "examyear_code", "createdat", "published", "publishedat", "locked", "lockedat"],
+        filter_tags: ["select", "text", "text", "toggle", "text", "toggle", "text"],
+        field_width:  ["032", "120", "120", "120", "120", "120", "120"],
+        field_align: ["c", "l", "l", "c", "l", "c", "l"]
+    };
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
 

@@ -2543,10 +2543,9 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                 upload_dict = json.loads(upload_json)
 
 # ----- get selected examyear and department from usersettings
-                msg_list = []
                 sel_examyear, sel_department, sel_schoolNIU, sel_examperiod = \
                     acc_view.get_selected_examyear_examperiod_dep_school_from_usersetting(request)
-                acc_view.message_examyear_missing_notpublished_locked(sel_examyear, msg_list)
+                msg_list = acc_view.message_examyear_missing_notpublished_locked(sel_examyear)
 
                 if msg_list:
                     msg_html = ''.join(("<div class='p-2 border_bg_warning'>", '<br>'.join(msg_list), '</>'))

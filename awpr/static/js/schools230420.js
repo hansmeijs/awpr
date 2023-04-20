@@ -56,13 +56,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let columns_hidden = {};
 
 // --- get field_settings
-    const field_settings = {
-        school: {field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language", "Locked"],
-                 field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "locked"],
-                 filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle"],
-                 field_width:  ["020", "075", "075", "360", "180", "120", "150", "120",  "100"],
-                 field_align: ["c", "l", "l", "l","l", "l", "l", "l",  "c"]}
-        };
+    field_settings.school = {
+        field_caption: ["", "Code", "Article", "Name", "Short_name", "Departments", "Day_Evening_LEXschool",  "Other_language", "Locked"],
+        field_names: ["select", "sb_code", "article", "name", "abbrev", "depbases", "dayevelex", "otherlang", "locked"],
+        filter_tags: ["select", "text", "text",  "text", "text",  "text", "text", "text", "toggle"],
+        field_width:  ["020", "075", "075", "360", "180", "120", "150", "120",  "100"],
+        field_align: ["c", "l", "l", "l","l", "l", "l", "l",  "c"]
+    };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");

@@ -12,7 +12,7 @@
 let student_rows = [];
 //let school_rows = [];
 
-const field_settings = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -86,7 +86,8 @@ document.addEventListener('DOMContentLoaded', function() {
         field_names: ["select", "idnumber", "lastname", "firstname", "prefix", "gender", "birthdate", "birthcountry", "birthcity", "lvl_abbrev", "sct_abbrev", "classname", "examnumber", "extrafacilities", "bis_exam"],
         filter_tags: ["select", "text", "text",  "text", "text", "text", "text", "text", "text", "text", "text", "text", "text", "toggle", "toggle"],
         field_width:  ["020", "120", "220", "240", "090", "090", "120", "180", "180", "090", "090", "090", "090", "090","090"],
-        field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l", "l","l", "c","c"]}
+        field_align: ["c", "l", "l", "l", "l", "c", "l", "l", "l", "l", "l", "l","l", "c","c"]
+    };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -1360,31 +1361,36 @@ function RefreshDataRowsAfterUpload(response) {
         return dep_list;
     }  // MSTUD_get_selected_depbases
 
-//========= MSTUD_InputKeyup  ============= PR2020-10-01 PR2023-01-28
+//========= MSTUD_InputKeyup  ============= PR2020-10-01 PR2023-01-28 PR2023-04-20
     function MSTUD_InputKeyup(el_input, event){
         if (el_input){
+            console.log( "  ---  MSTUD_InputKeyup  --- ")
             mod_MSTUD_dict.active_el = el_input;
             mod_MSTUD_dict.caret_at = event.target.selectionStart;
 
+            let has_error = false;
             const fldName = get_attr_from_el(el_input, "data-field");
             if (fldName === "idnumber"){
-                MSTUD_validate_idnumber(el_input);
+                has_error = MSTUD_validate_idnumber(el_input);
+
             } else if (["lastname", "firstname"].includes(fldName)){
-                MSTUD_validate_lastname_firstname(el_input);
+                has_error = MSTUD_validate_lastname_firstname(el_input);
 
             } else {
     // check if value is null
-                const has_error = MSTUD_validate_null_field(el_input)
-
-    // ---  enable / disable save button
-                el_MSTUD_btn_save.disabled = has_error;
+                has_error = MSTUD_validate_null_field(el_input)
             };
+
+            console.log( "  ---  has_error: ", has_error)
+    // ---  enable / disable save button
+            el_MSTUD_btn_save.disabled = has_error;
         };
     }; // MSTUD_InputKeyup
 
 //========= MSTUD_InputMouseup  ============= PR2020-10-01 PR2023-01-28
     function MSTUD_InputMouseup(el_input, event){
         if (el_input){
+            console.log( "  ---  MSTUD_InputMouseup  --- ")
             mod_MSTUD_dict.active_el = el_input;
             mod_MSTUD_dict.caret_at = event.target.selectionStart;
         };
@@ -1446,7 +1452,6 @@ function RefreshDataRowsAfterUpload(response) {
 //=========  MSTUD_validate_idnumber  ================  PR2020-10-01 PR2023-01-28
     function MSTUD_validate_idnumber(el_input) {
         console.log(" -----  MSTUD_validate_idnumber   ----")
-        let has_error = false;
 
         let msg_err = null;
         let birthdate_iso = null;
@@ -1483,6 +1488,8 @@ function RefreshDataRowsAfterUpload(response) {
         };
         add_or_remove_class(el_input, "border_bg_invalid", msg_err)
 
+        const has_error = !!msg_err;
+        return  has_error;
     };  // MSTUD_validate_idnumber
 
 //=========  MSTUD_validate_lastname_firstname  ================  PR2020-10-01 PR2023-01-28

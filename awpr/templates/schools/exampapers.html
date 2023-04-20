@@ -2,22 +2,19 @@
 {% load i18n %} {% load l10n %}
 {% load static %}
 
-{% block title %}{% trans 'Archive' %}{% endblock %}
+{% block title %}{% trans 'Exam papers' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/archives230420.js' %}"></script>
+    <script src="{% static 'js/exampapers230420.js' %}"></script>
 {% endblock %}
 
-<!-- SIDE BAR -->
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left mx-2 my-4">
-            <h5>{% trans 'Archive' %}</h5>
+            <h5>{% trans 'Exam papers' %}</h5>
         </div>
-
     </nav>
 {% endblock %}
-<!-- END SIDE BAR -->
 
 {% block content %}
     <div id="id_content">
@@ -26,31 +23,26 @@
         {% else %}
             {% include 'includes/modselectexamyearordepbase.html' %}
             {% include 'includes/modselectschoolsubjectstudent.html' %}
+            {% include 'schools/modexampaper.html' %}
             {% include 'includes/modselectcolumns.html' %}
             {% include 'includes/modmessage.html' %}
             {% include 'includes/modconfirm.html' %}
 
-    <!-- CONTENT HEADER - LOADER -->
             <div class="content_margin_top78">
                 <div class="flex_4 mx-4 visibility_hide">
                     <h5 id="id_header_left"></h5>
                 </div>
-    <!-- loader -->
                 <div class="flex_1 py-2">
                     {% include 'includes/loader.html' %}
                 </div>
             </div>
-            <!-- end content_header -->
+
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_orderlist" class="btn btn-secondary">{% trans 'Order list' %}</button>
-                <button data-btn="btn_exform" class="btn btn-secondary">{% trans 'Ex forms' %}</button>
-                <button data-btn="btn_diploma" class="btn btn-secondary">{% trans "Diploma's and grade lists" %}</button>
+                <button data-btn="btn_exampapers" class="btn btn-secondary">{% trans 'Exam papers' %}</button>
             </div>
     <!-- end BUTTON GROUP -->
-    <!-- END OF CONTENT HEADER -->
 
-    <!-- CONTENT BODY -->
     <!-- =================== DATA TABLE  =================== -->
             <div id="id_tbl_container" class="content_body mx-2 mt-2">
                 <table class="table tsa_tbl">
@@ -59,11 +51,10 @@
                 </table>
             </div>
 
-    <!-- END OF CONTENT BODY -->
             <div id="id_data"
                 data-url_datalist_download="{% url 'url_datalist_download' %}"
                 data-url_usersetting_upload="{% url 'url_usersetting_upload' %}"
-                data-url_archive_upload="{% url 'url_archive_upload' %}"
+                data-url_exampaper_upload="{% url 'url_exampaper_upload' %}"
             >
             </div>
         {% endif %}

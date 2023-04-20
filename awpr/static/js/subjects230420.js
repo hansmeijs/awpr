@@ -9,8 +9,7 @@
 //let loc = {};  // locale_dict
 //let urls = {};
 
-
-const field_settings = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -110,13 +109,14 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 // --- get field_settings
-    field_settings.btn_subject = {field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
-                    field_names: ["select", "code", "name_nl", "depbases", "sequence"],
-                    field_tags: ["div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text",  "text", "number"],
-                    field_width:  ["020", "120", "300", "150", "120",  "120"],
-                    field_align: ["c", "l", "l", "l",  "r"]};
-
+    field_settings.btn_subject = {
+        field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
+        field_names: ["select", "code", "name_nl", "depbases", "sequence"],
+        field_tags: ["div", "div", "div", "div", "div"],
+        filter_tags: ["select", "text", "text",  "text", "number"],
+        field_width:  ["020", "120", "300", "150", "120",  "120"],
+        field_align: ["c", "l", "l", "l",  "r"]
+    };
     field_settings.btn_scheme = {
         field_caption: ["", "Subject_scheme_name", "Department", "Learning_path",  "SectorProfile_twolines", "Minimum_studyloadhours_2lines",
                         "Minimum_subjects", "Maximum_subjects", "Minimum_MVT_subjects", "Maximum_MVT_subjects",
@@ -147,112 +147,117 @@ document.addEventListener('DOMContentLoaded', function() {
         field_align: ["c", "l", "c", "c",  "c", "c",
                         "c", "c", "c", "c",
                         "c", "c", "c", "c", "c",
-                        "c", "c", "c", "c"
-        ]};
+                        "c", "c", "c", "c"]
+    };
     field_settings.btn_schemeitem = {
-                    field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam", "Other_languages",
-                            "Grade_type", "SE_weighing", "CE_weighing", "Counts_double",
-                            "Mandatory", "Mandatory_if_subject", "Combination_subject",
-                            "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
-                            "Not_at_dayschool", "Studyloadhours_2lines",
-                            "Extra_count_allowed",  "Extra_nocount_allowed",
-                            "Has_practical_exam", "Herkansing_SE_allowed",
-                            "Final_grade_rule", "Final_grade_rule_notatevelex",
-                            "Thumbrule_applies", "Examyears_without_CE"
-                            ],
-                    field_names: ["select", "scheme_name", "subj_code", "subj_name_nl", "sjtp_abbrev", "ete_exam", "otherlang",
-                            "gradetype", "weight_se", "weight_ce", "multiplier",
-                            "is_mandatory", "is_mand_subj", "is_combi",
-                            "is_core_subject", "is_mvt", "is_wisk",
-                            "notatdayschool", "studyloadhours",
-                            "extra_count_allowed",  "extra_nocount_allowed",
-                            "has_practexam", "sr_allowed",
-                            "rule_grade_sufficient", "rule_gradesuff_notatevlex",
-                            "thumb_rule", "no_ce_years"
-                            ],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div",
-                                "div", "div", "div", "div",
-                                "div", "div", "div",
-                                "div", "div", "div",
-                                "div", "input",
-                                "div", "div",
-                                "div", "div",
-                                "div", "div",
-                                "div", "div"
-                                 ],
-                    filter_tags: ["select", "text", "text", "text",  "text", "toggle", "text",
-                                "toggle", "toggle", "toggle", "toggle",
-                                "toggle", "toggle", "toggle",
-                                "toggle", "toggle", "toggle",
-                                "toggle", "number",
-                                "toggle", "toggle",
-                                "toggle",  "toggle",
-                                "toggle",  "toggle",
-                                "toggle",  "text",
-                                ],
-                    field_width:  ["020", "180", "090", "300", "120", "090", "150",
-                                    "090", "090", "090", "090",
-                                    "090", "090", "090",
-                                    "090", "090", "090",
-                                    "090", "090",
-                                    "090", "090",
-                                    "090", "100",
-                                    "100", "100",
-                                    "100", "100",
-                                     ],
-                    field_align: ["c", "l", "l","l", "l", "c", "l",
-                                    "c", "c", "c", "c",
-                                    "c", "c", "c",
-                                    "c", "c", "c",
-                                    "c", "c",
-                                    "c", "c",
-                                    "c", "c",
-                                    "c", "c",
-                                    "c", "l",
-                                    ]
-                    };
-    field_settings.btn_subjecttype = {field_caption: ["", "Subject_scheme", "Base_character", "Character_name",
+        field_caption: ["", "Subject_scheme", "Abbreviation", "Subject", "Character", "ETE_exam", "Other_languages",
+                "Grade_type", "SE_weighing", "CE_weighing", "Counts_double",
+                "Mandatory", "Mandatory_if_subject", "Combination_subject",
+                "Is_core_subject", "Is_MVT_subject", "Is_wiskunde_subject",
+                "Not_at_dayschool", "Studyloadhours_2lines",
+                "Extra_count_allowed",  "Extra_nocount_allowed",
+                "Has_practical_exam", "Herkansing_SE_allowed",
+                "Final_grade_rule", "Final_grade_rule_notatevelex",
+                "Thumbrule_applies", "Examyears_without_CE"
+                ],
+        field_names: ["select", "scheme_name", "subj_code", "subj_name_nl", "sjtp_abbrev", "ete_exam", "otherlang",
+                "gradetype", "weight_se", "weight_ce", "multiplier",
+                "is_mandatory", "is_mand_subj", "is_combi",
+                "is_core_subject", "is_mvt", "is_wisk",
+                "notatdayschool", "studyloadhours",
+                "extra_count_allowed",  "extra_nocount_allowed",
+                "has_practexam", "sr_allowed",
+                "rule_grade_sufficient", "rule_gradesuff_notatevlex",
+                "thumb_rule", "no_ce_years"
+                ],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div",
+                    "div", "div", "div", "div",
+                    "div", "div", "div",
+                    "div", "div", "div",
+                    "div", "input",
+                    "div", "div",
+                    "div", "div",
+                    "div", "div",
+                    "div", "div"
+                     ],
+        filter_tags: ["select", "text", "text", "text",  "text", "toggle", "text",
+                    "toggle", "toggle", "toggle", "toggle",
+                    "toggle", "toggle", "toggle",
+                    "toggle", "toggle", "toggle",
+                    "toggle", "number",
+                    "toggle", "toggle",
+                    "toggle",  "toggle",
+                    "toggle",  "toggle",
+                    "toggle",  "text",
+                    ],
+        field_width:  ["020", "180", "090", "300", "120", "090", "150",
+                        "090", "090", "090", "090",
+                        "090", "090", "090",
+                        "090", "090", "090",
+                        "090", "090",
+                        "090", "090",
+                        "090", "100",
+                        "100", "100",
+                        "100", "100",
+                         ],
+        field_align: ["c", "l", "l","l", "l", "c", "l",
+                        "c", "c", "c", "c",
+                        "c", "c", "c",
+                        "c", "c", "c",
+                        "c", "c",
+                        "c", "c",
+                        "c", "c",
+                        "c", "c",
+                        "c", "l",
+                        ]
+    };
+    field_settings.btn_subjecttype = {
+        field_caption: ["", "Subject_scheme", "Base_character", "Character_name",
                     "Minimum_subjects", "Maximum_subjects",
                     "Minimum_extra_nocount", "Maximum_extra_nocount",
                     "Minimum_extra_counts", "Maximum_extra_counts", "Has_assignment"
-                    ],
-                    field_names: ["select", "scheme_name", "sjtpbase_name", "name",
-                                "min_subjects",  "max_subjects", "min_extra_nocount" , "max_extra_nocount",
-                                "min_extra_counts", "max_extra_counts", "has_pws"
-                    ],
-                    field_tags: ["div", "div", "div", "input",
-                                "input", "input",  "input", "input",
-                                "input", "input", "div"],
-                    filter_tags: ["select", "text", "text", "text",
-                                "number", "number", "number", "number",
-                                "number", "number", "toggle"],
-                    field_width:  ["020", "180", "280", "240",
-                                "100", "100", "100", "100",
-                                "100", "100", "100"],
-                    field_align: ["c", "l", "l", "l",
-                                    "c", "c", "c", "c",
-                                    "c", "c", "c"]};
-
-    field_settings.btn_subjecttypebase = {field_caption: ["", "Code", "Name", "Abbreviation",  "Sequence"],
-                    field_names: ["select", "code", "name", "abbrev", "sequence"],
-                    field_tags: ["div", "input", "input", "input", "input"],
-                    filter_tags: ["select", "text", "text", "text", "number"],
-                    field_width:  ["020", "120", "280", "120", "120"],
-                    field_align: ["c", "l", "l", "l", "l", "c"]};
-
-    field_settings.btn_level = {  field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
-                    field_names: ["select", "abbrev", "name", "depbases", "sequence"],
-                    field_tags: ["div", "div", "div", "div",  "div"],
-                    filter_tags: ["select", "text", "text",  "text", "number"],
-                    field_width:  ["020", "120", "240", "240",  "120"],
-                    field_align: ["c", "l", "l", "l",  "r", "c"]}
-
-    field_settings.btn_sector = {  field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence"],
-                    field_names: ["select", "abbrev", "name", "depbases", "sequence"],
-                    field_tags: ["div", "div", "div", "div",  "div"],
-                    filter_tags: ["select", "text", "text",  "text", "number"],
-                    field_width:  ["020", "120", "240", "240",  "120"],
-                    field_align: ["c", "l", "l", "l",  "r", "c"]};
+        ],
+        field_names: ["select", "scheme_name", "sjtpbase_name", "name",
+                    "min_subjects",  "max_subjects", "min_extra_nocount" , "max_extra_nocount",
+                    "min_extra_counts", "max_extra_counts", "has_pws"
+        ],
+        field_tags: ["div", "div", "div", "input",
+                    "input", "input",  "input", "input",
+                    "input", "input", "div"],
+        filter_tags: ["select", "text", "text", "text",
+                    "number", "number", "number", "number",
+                    "number", "number", "toggle"],
+        field_width:  ["020", "180", "280", "240",
+                    "100", "100", "100", "100",
+                    "100", "100", "100"],
+        field_align: ["c", "l", "l", "l",
+                        "c", "c", "c", "c",
+                        "c", "c", "c"]
+    };
+    field_settings.btn_subjecttypebase = {
+        field_caption: ["", "Code", "Name", "Abbreviation",  "Sequence"],
+        field_names: ["select", "code", "name", "abbrev", "sequence"],
+        field_tags: ["div", "input", "input", "input", "input"],
+        filter_tags: ["select", "text", "text", "text", "number"],
+        field_width:  ["020", "120", "280", "120", "120"],
+        field_align: ["c", "l", "l", "l", "l", "c"]
+    };
+    field_settings.btn_level = {
+        field_caption: ["", "Abbreviation", "Name", "Departments", "Sequence"],
+        field_names: ["select", "abbrev", "name", "depbases", "sequence"],
+        field_tags: ["div", "div", "div", "div",  "div"],
+        filter_tags: ["select", "text", "text",  "text", "number"],
+        field_width:  ["020", "120", "240", "240",  "120"],
+        field_align: ["c", "l", "l", "l",  "r", "c"]
+    };
+    field_settings.btn_sector = {
+        field_caption: ["", "Abbreviation", "Name", "Departments",  "Sequence"],
+        field_names: ["select", "abbrev", "name", "depbases", "sequence"],
+        field_tags: ["div", "div", "div", "div",  "div"],
+        filter_tags: ["select", "text", "text",  "text", "number"],
+        field_width:  ["020", "120", "240", "240",  "120"],
+        field_align: ["c", "l", "l", "l",  "r", "c"]
+    };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");

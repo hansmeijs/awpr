@@ -20,8 +20,8 @@ from awpr import functions as af
 from awpr import validators as val
 from awpr import locale as loc
 
-from schools import models as sch_mod
 from schools import functions as sch_fnc
+from schools import views as sch_view
 from schools import dicts as school_dicts
 from subjects import models as subj_mod
 from subjects import views as sj_vw
@@ -430,12 +430,13 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             logger.debug('    error_dict: ' + str(error_dict))
 # ----- published
                 if datalist_request.get('published_rows'):
-                    if sel_examyear and sel_schoolbase and sel_depbase:
-                        datalists['published_rows'] = gr_vw.create_published_rows(
+                    if sel_examyear:
+                        sel_examtype = af.get_dict_value(datalist_request, ('published_rows', 'examtype'))
+                        datalists['published_rows'] = sch_view.create_published_rows(
                             request=request,
                             sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
                             sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
-                            sel_depbase_pk=sel_depbase.pk if sel_depbase else None
+                            sel_examtype=sel_examtype
                         )
 # ----- mailbox
                 if datalist_request.get('mailmessage_rows'):
@@ -553,7 +554,7 @@ def download_setting(request_item_setting, user_lang, request):
     if request_item_setting is None:
         request_item_setting = {}
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ')

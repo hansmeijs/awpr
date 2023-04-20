@@ -2,6 +2,9 @@
 from django.contrib.auth.decorators import login_required  # PR2018-04-01
 from django.core.files import File
 from django.core.mail import EmailMessage
+
+from django.db.models import Q
+
 from mimetypes import guess_type
 from os.path import basename
 
@@ -131,6 +134,257 @@ def Loggedin(request):
         logger.debug('page_url: ' + str(page_url))
 
     return HttpResponseRedirect(reverse_lazy(page_url))
+
+
+
+
+def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_examtype=None, published_pk=None):
+    # --- create rows of published records PR2021-01-21 PR2022-09-16 PR2023-04-19
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ----- create_published_rows -----')
+        logger.debug('    sel_schoolbase_pk: ' + str(sel_schoolbase_pk))
+        logger.debug('    sel_examtype: ' + str(sel_examtype))
+        logger.debug('    published_pk: ' + str(published_pk))
+
+    # can't use sql because of file field
+
+ # +++ get selected rows
+    crit = Q(school__examyear_id=sel_examyear_pk)
+
+    # published_pk only has value when called by GradeApproveView. Then it is a created row
+    if published_pk:
+        crit.add(Q(pk=published_pk), crit.connector)
+    elif sel_examtype == 'exampaper':
+        crit.add(Q(examtype=sel_examtype), crit.connector)
+    else:
+    # --- exclude 'exampaper'
+        crit.add(~Q(examtype='exampaper'), crit.connector)
+
+    # admin, insp and corr can view all Ex forms
+        if request.user.role < c.ROLE_016_CORR:
+            crit.add(Q(school__base_id=sel_schoolbase_pk), crit.connector)
+
+        if sel_examtype in ('diploma', 'gradelist'):
+            crit.add(Q(examtype=sel_examtype), crit.connector)
+        else:
+            crit.add(~Q(examtype='diploma'), crit.connector)
+            crit.add(~Q(examtype='gradelist'), crit.connector)
+
+
+    #rows = sch_mod.Published.objects.filter(crit).order_by('-datepublished')
+    rows = sch_mod.Published.objects.filter(crit).order_by('pk')
+
+    if logging_on:
+        logger.debug('    rows: ' + str(rows))
+
+    published_rows = []
+    for row in rows:
+        if row.file:
+            file_name = str(row.file)
+            file_url = row.file.url
+
+            #PR2022-06-12 There a a lot of published_instances saved without file_url
+            # that should not happen, but it does. I don't know why.Check out TODO
+            # for now: filter on file_url
+            if file_url:
+                dict = {
+                    'id': row.pk,
+                    'mapid': 'published_' + str(row.pk),
+                    'table': 'published',
+                    'name': row.name,
+                    'examtype': row.examtype,
+                    'examperiod': row.examperiod,
+                    'regnumber': row.regnumber,
+                    'datepublished': row.datepublished,
+                    'filename': row.filename,
+                    'sb_code': row.school.base.code,
+                    'school_name': row.school.name,
+                    #'db_code': row.department.base.code,
+                    'ey_code': row.school.examyear.code,
+                    'file_name': file_name,
+                    'url': file_url,
+                    'modifiedby': row.modifiedby.last_name if row.modifiedby else None
+                }
+                if published_pk:
+                    dict['created'] = True
+                published_rows.append(dict)
+
+    if logging_on:
+        logger.debug('    published_rows: ' + str(published_rows))
+    return published_rows
+# --- end of create_published_rows
+
+
+
+
+
+# === EXAMPAPER =====================================
+@method_decorator([login_required], name='dispatch')
+class ExampaperListView(View):
+    # PR2023-04-18
+
+    def get(self, request):
+        logging_on = False  # s.LOGGING_ON
+        if logging_on:
+            logger.debug(" =====  ExampaperListView  =====")
+
+        # 'AnonymousUser' object has no attribute 'lang'
+        # -  get user_lang
+        user_lang = c.LANG_DEFAULT
+        if request.user.is_authenticated:
+            if request.user.lang:
+                user_lang = request.user.lang
+        activate(user_lang)
+
+    # - get headerbar parameters
+        page = 'page_exampaper'
+        param = {'page': page, 'lang': user_lang}
+
+        if logging_on:
+            logger.debug("param: " + str(param))
+
+        param = { 'display_school': False, 'display_department': False }
+        headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+
+        return render(request, 'exampapers.html', headerbar_param)
+
+
+@method_decorator([login_required], name='dispatch')
+class ExampaperUploadView(View):  # PR2023-04-19
+
+    def post(self, request):
+        logging_on = s.LOGGING_ON
+        if logging_on:
+            logger.debug('')
+            logger.debug(' ============= ExampaperUploadView ============= ')
+
+        msg_list = []
+        border_class = None
+        update_wrap = {}
+
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
+# - get permit
+        has_permit = acc_prm.has_permit(request, 'page_exampaper', ['permit_crud'])
+        if not has_permit:
+            border_class = c.HTMLCLASS_border_bg_invalid
+            msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
+        else:
+
+# - get upload_dict from request.POST
+            upload_json = request.POST.get('upload', None)
+            if upload_json:
+                upload_dict = json.loads(upload_json)
+                if logging_on:
+                    logger.debug('    upload_dict: ' + str(upload_dict))
+
+                mode = upload_dict.get('mode')
+
+# - get selected examyear and school from usersettings
+                sel_examyear, msg_lst = \
+                    acc_view.get_selected_examyear_from_usersetting(request)
+
+                requsr_school = None
+                if msg_lst:
+                    border_class = c.HTMLCLASS_border_bg_invalid
+                    msg_list.extend(msg_lst)
+
+                else:
+                    requsr_school = sch_mod.School.objects.get_or_none(
+                        base = request.user.schoolbase,
+                        examyear=sel_examyear
+                    )
+
+                if requsr_school:
+                    updated_published_pk = None
+                    if mode == 'create':
+
+                        files = request.FILES
+                        file = files.get('file')
+
+                        file_name = upload_dict.get('file_name')
+                        file_size = upload_dict.get('file_size')
+                        file_title = upload_dict.get('file_title')
+                        date_published = upload_dict.get('date_published')
+
+               # +++ save document
+                        if file:
+                            if file_size > c.MAX_ATTACHMENT_SIZE_Mb * 1000000:
+                                err_html = '<br>'.join((str(_('The attachment is too large.')),
+                                                    str(_("The maximum size is %(val)s Mb.") % {
+                                                        'cpt': _('Message'), 'val': str(c.MAX_ATTACHMENT_SIZE_Mb)})))
+                                msg_list.append(err_html)
+
+                            else:
+
+                                # ---  create file_path
+                                # PR2021-08-07 file_dir = 'country/examyear/attachments/'
+                                # this one gives path:awpmedia/awpmedia/media/cur/2022/published
+                                requsr_schoolcode = requsr_school.base.code if requsr_school.base.code else '---'
+                                country_abbrev = sel_examyear.country.abbrev.lower()
+                                examyear_str = str(sel_examyear.code)
+                                file_dir = '/'.join((country_abbrev, examyear_str, 'exampaper'))
+                                file_path = '/'.join((file_dir, file_name))
+
+                                if logging_on:
+                                    logger.debug('    file_dir: ' + str(file_dir))
+                                    logger.debug('    file_name: ' + str(file_name))
+                                    logger.debug('    filepath: ' + str(file_path))
+
+                                published_instance = sch_mod.Published(
+                                    school=requsr_school,
+                                    department=None,
+                                    examtype='exampaper',
+                                    examperiod=c.EXAMPERIOD_FIRST,
+                                    name=file_name,
+                                    filename=file_title,
+                                    datepublished=date_published
+                                )
+
+                                # PR2021-09-06 debug: request.user is not saved in instance.save, don't know why
+                                published_instance.save(request=request)
+
+                                published_instance.file.save(file_path, file)
+
+                                if published_instance:
+                                    updated_published_pk = published_instance.pk
+
+                    elif mode == 'delete':
+                        mailattachment = sch_mod.Mailattachment.objects.get_or_none(pk=99)
+                        if mailattachment:
+                            this_txt = _("Attachment '%(tbl)s' ") % {'tbl': str(mailattachment.filename)}
+                            deleted_row, err_html = sch_mod.delete_instance(
+                                table='mailinglist',
+                                instance=mailattachment,
+                                request=request,
+                                this_txt=this_txt
+                            )
+                            if err_html:
+                                msg_list.append(err_html)
+
+                            else:
+                                update_wrap['published_rows'] = deleted_row
+
+                    if updated_published_pk:
+                        update_wrap['updated_published_rows'] = create_published_rows(
+                            published_pk=updated_published_pk,
+                            request=request,
+                            sel_examyear_pk=sel_examyear.pk,
+                            sel_schoolbase_pk=None
+                        )
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
+
+        if logging_on:
+            logger.debug('update_wrap: ' + str(update_wrap))
+# . return update_wrap
+        return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
+# - end of ExampaperUploadView
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 # === MAIL =====================================
@@ -2464,7 +2718,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                 log_list.append(c.STRING_SPACE_05)
                             else:
 # - save published instance
-                                msg_err = save_published_instance(published_instance, file_path, temp_file, request)
+                                msg_err = save_published_excelfile(published_instance, file_path, temp_file, request)
                                 if msg_err:
                                     border_class = c.HTMLCLASS_border_bg_invalid
                                     err_str01 = str(_('An error occurred'))
@@ -2707,7 +2961,7 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                 log_list.append(''.join((c.STRING_SPACE_10, err_str02)))
                 log_list.append(c.STRING_SPACE_05)
             else:
-                msg_err = save_published_instance(published_instance, file_path, temp_file, request)
+                msg_err = save_published_excelfile(published_instance, file_path, temp_file, request)
                 if msg_err:
                     err_str01 = str(_('An error occurred'))
                     err_str02 = str(
@@ -3084,28 +3338,54 @@ def create_published_instance_orderlist(now_arr, examyear, school, request, user
 # - end of create_published_instance_orderlist
 
 
-def save_published_instance(published_instance, file_path, output, request):
+def save_published_excelfile(published_instance, file_path, output, request):
     # PR2021-09-09
     logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
-        logger.debug(' ============= save_published_instance ============= ')
+        logger.debug(' ============= save_published_excelfile ============= ')
 
 
 # +++ save file to disk
-    msg_err = None
+    err_html = None
     try:
         excel_file = File(output)
         published_instance.file.save(file_path, excel_file)
 
         # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
         published_instance.save(request=request)
-    except Exception as e:
-        msg_err = getattr(e, 'message', str(e))
-        logger.error(msg_err)
 
-    return msg_err
-# - end of save_published_instance
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+        err_html = acc_prm.msghtml_error_occurred_no_border(e, _('The file has not been saved.'))
+
+    return err_html
+# - end of save_published_excelfile
+
+
+def save_published_file(published_instance, file_path, file, request):
+    # PR2023-04-19
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ')
+        logger.debug(' ============= save_published_file ============= ')
+
+# +++ save file to disk
+    err_html = None
+    if published_instance and file_path and file:
+
+        try:
+            published_instance.file.save(file_path, file)
+
+            # published_instance.file.save saves without modifiedby_id. Save again to add modifiedby_id
+            published_instance.save(request=request)
+
+        except Exception as e:
+            logger.error(getattr(e, 'message', str(e)))
+            err_html = acc_prm.msghtml_error_occurred_no_border(e, _('The file has not been saved.'))
+
+    return err_html
+# - end of save_published_file
 
 
 def create_final_orderlist_xlsx(output, sel_examyear_instance,

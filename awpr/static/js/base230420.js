@@ -14,6 +14,8 @@
     let loc = {};
     let urls = {};
 
+    const field_settings = {};  // PR2023-04-20 made global
+
     // PR2023-01-13  these variables are declared in base.js to make them global variables for t_MUPS_Open
     let school_rows = [];
     let level_rows = [];

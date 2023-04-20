@@ -17,7 +17,7 @@ let mailbox_school_rows = [];
 let mailbox_usergroup_rows = [];
 let mailinglist_rows = [];
 
-const field_settings = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 document.addEventListener('DOMContentLoaded', function() {
     "use strict";
@@ -62,32 +62,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const has_new_mail = (get_attr_from_el(el_data, "data-class_has_mail") === "envelope_0_2")
 
 // --- get field_settings
-    const field_settings = {
-        btn_received: { field_caption: ["", "Subject", "From", "Sender", "Date_sent", "Attachment", ""],
-                    field_names: ["read", "header", "sender_school_abbrev", "sender_lastname", "sentdate", "has_att", "deleted"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["toggle", "text", "text",  "text",  "text", "toggle", "inactive"],
-                    field_width:  ["020", "360", "150", "180", "180", "090", "020"],
-                    field_align: ["c", "l", "l", "l", "l",  "c",  "c"]},
-        btn_sent: { field_caption: ["", "Subject", "Date_sent", "Attachment"],
-                    field_names: ["select", "header", "sentdate", "has_att"],
-                    field_tags: ["div", "div", "div", "div"],
-                    filter_tags: ["toggle", "text", "text", "toggle"],
-                    field_width:  ["020", "360", "180", "090", "020"],
-                    field_align: ["c", "l", "l",  "c"]},
-        btn_draft: { field_caption: ["", "Subject", "Attachment"],
-                    field_names: ["select", "header", "has_att"],
-                    field_tags: ["div", "div", "div"],
-                    filter_tags: ["toggle", "text", "toggle"],
-                    field_width:  ["020", "360", "090"],
-                    field_align: ["c", "l", "c"]},
-        btn_mailinglist: { field_caption: ["", "Name_of_the_mailinglist", "For_general_use"],
-                    field_names: ["select", "name", "ispublic"],
-                    field_tags: ["div", "div", "div"],
-                    filter_tags: ["select", "text", "toggle"],
-                    field_width:  ["020", "480", "180"],
-                    field_align: ["c", "l", "c"]}
-        };
+    field_settings.btn_received = {
+        field_caption: ["", "Subject", "From", "Sender", "Date_sent", "Attachment", ""],
+        field_names: ["read", "header", "sender_school_abbrev", "sender_lastname", "sentdate", "has_att", "deleted"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["toggle", "text", "text",  "text",  "text", "toggle", "inactive"],
+        field_width:  ["020", "360", "150", "180", "180", "090", "020"],
+        field_align: ["c", "l", "l", "l", "l",  "c",  "c"]
+    };
+    field_settings.btn_sent = {
+        field_caption: ["", "Subject", "Date_sent", "Attachment"],
+        field_names: ["select", "header", "sentdate", "has_att"],
+        field_tags: ["div", "div", "div", "div"],
+        filter_tags: ["toggle", "text", "text", "toggle"],
+        field_width:  ["020", "360", "180", "090", "020"],
+        field_align: ["c", "l", "l",  "c"]
+    };
+    field_settings.btn_draft = {
+        field_caption: ["", "Subject", "Attachment"],
+        field_names: ["select", "header", "has_att"],
+        field_tags: ["div", "div", "div"],
+        filter_tags: ["toggle", "text", "toggle"],
+        field_width:  ["020", "360", "090"],
+        field_align: ["c", "l", "c"]
+    };
+    field_settings.btn_mailinglist = {
+        field_caption: ["", "Name_of_the_mailinglist", "For_general_use"],
+        field_names: ["select", "name", "ispublic"],
+        field_tags: ["div", "div", "div"],
+        filter_tags: ["select", "text", "toggle"],
+        field_width:  ["020", "480", "180"],
+        field_align: ["c", "l", "c"]
+    };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");

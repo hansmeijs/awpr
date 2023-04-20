@@ -6,8 +6,7 @@
 //let permit_dict = {};
 //let loc = {};
 //let urls = {};
-
-const field_settings = {};
+//const field_settings = {};  // PR2023-04-20 made global
 
 const corrector_dicts = {}; //PR2023-03-26
 const usercompensation_dicts = {}; //PR2023-02-24
@@ -67,7 +66,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 // --- get field_settings
-
     field_settings.btn_correctors = {
                     field_caption: ["", "Name", "Allowed_departments",
                                     "Allowed_levels", "Allowed_subjects", "Allowed_clusters"],
@@ -220,11 +218,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  MOD SELECT MULTIPLE  ------------------------------
         const el_MSM_tblbody_select = document.getElementById("id_MSM_tbody_select");
-        const el_MSM_input = document.getElementById("id_MSM_input")
+        const el_MSM_input = document.getElementById("id_MSM_input");
+        if (el_MSM_input){
             el_MSM_input.addEventListener("keyup", function(){
                 setTimeout(function() {MSM_InputKeyup(el_MSM_input)}, 50)});
+        };
         const el_MSM_btn_save = document.getElementById("id_MSM_btn_save")
+        if (el_MSM_btn_save){
             el_MSM_btn_save.addEventListener("click", function() {MSM_Save()}, false )
+        };
 
 // ---  MOD CONFIRM ------------------------------------
         let el_confirm_header = document.getElementById("id_modconfirm_header");

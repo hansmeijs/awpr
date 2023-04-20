@@ -1843,6 +1843,284 @@
         return item_text;
     };  // t_FillOptionTextNew
 
+
+
+
+//###########################################################################
+// +++++++++++++++++ REFRESH DATADICTS ++++++++++++++++++++++++++++++++++++++++++++++++++
+
+//=========  t_Refresh_DataDicts  ================  PR2021-06-21 PR2023-01-05
+    function t_Refresh_DataDicts(tblName, update_rows, data_dicts, CreateTblRow) {
+        console.log(" ===== t_Refresh_DataDicts  =====");
+        console.log("    tblName", tblName);
+        console.log("    field_settings", field_settings);
+        console.log("    update_rows", update_rows);
+
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            const field_setting = field_settings[selected_btn];
+        console.log("    selected_btn", selected_btn);
+        console.log("    field_setting", field_setting);
+            const pk_fldName = (tblName === "studsubj") ? "studsubj_id" :
+                                (tblName === "cluster") ?  "id" :  "";
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+                t_Refresh_DatadictItem(tblName, field_setting, update_dict, data_dicts, pk_fldName, CreateTblRow);
+            };
+        };
+
+    };  //  t_Refresh_DataDicts
+
+//=========  t_Refresh_DatadictItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-21 PR2022-03-04 PR2023-01-05
+    function t_Refresh_DatadictItem(tblName, field_setting, update_dict, data_dicts, pk_fldName, CreateTblRow) {
+        console.log(" --- t_Refresh_DatadictItem  ---");
+        console.log("    tblName", tblName);
+        console.log("    pk_fldName", pk_fldName);
+        console.log("field_setting", field_setting);
+        console.log("    update_dict", update_dict);
+        console.log("    update_dict.err_fields", update_dict.err_fields);
+
+        if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
+
+            const pk_int = (update_dict[pk_fldName]) ? update_dict[pk_fldName] : null;
+
+            const map_id = update_dict.mapid;
+            const is_deleted = (!!update_dict.deleted);
+            const is_created = (!!update_dict.created);
+            const is_restored = (!!update_dict.restored);
+            const is_changed = (!!update_dict.changed);
+
+        console.log("    pk_int", pk_int, typeof pk_int);
+        console.log("    is_deleted", is_deleted);
+        console.log("    is_created", is_created);
+        console.log("    is_restored", is_restored);
+
+    // ---  get list of hidden columns
+        const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
+
+    // ---  get list of columns that are not updated because of errors
+            const error_columns = [];
+            if (update_dict.err_fields){
+                // replace field 'subj_auth2by' by 'subj_status'
+                for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
+                    if (err_field && err_field.includes("_auth")){
+                        const arr = err_field.split("_");
+                        err_field = arr[0] + "_status";
+                    };
+                    error_columns.push(err_field);
+                };
+            };
+
+// ++++ created ++++
+            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
+            //arr.splice(index, 0, item); will insert item into arr at the specified index
+            // (deleting 0 items first, that is, it's just an insert).
+
+            if(is_created){
+    // ---  first remove key 'created' from update_dict
+                delete update_dict.created;
+
+    // --- lookup index where new row must be inserted in data_rows
+                // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
+
+    // ---  add new item to  data_dicts with key
+                //data_rows.push(update_dict);
+                const pk_int = (tblName === "cluster") ? update_dict.id : update_dict.stud_id;
+                const key_str = b_get_datadicts_keystr(tblName, pk_int, update_dict.studsubj_id);
+
+                data_dicts[key_str] = update_dict;
+
+    // - delete row without subjects
+                if (tblName === "studsubj"){
+                const nosubjects_keystr = b_get_datadicts_keystr(tblName, update_dict.stud_id);
+                    if (data_dicts[nosubjects_keystr]){
+                        delete data_dicts[nosubjects_keystr];
+                    };
+                };
+    // clusters are not table rows, skip Filter_TableRows when tblName = "cluster"
+                if (tblName !== "cluster"){
+        // ---  create row in table., insert in alphabetical order
+                    const new_tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden);
+
+                    if(new_tblRow){
+        // --- add1 to item_count and show total in sidebar
+                        selected.item_count += 1;
+        // ---  scrollIntoView,
+                        new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
+
+        // ---  make new row green for 2 seconds,
+                        ShowOkElement(new_tblRow);
+                    };
+                };
+            } else {
+
+// +++ get existing data_dict from data_rows. data_rows is ordered by: stud_id, studsubj_id'
+                let data_dict = null, datarow_index = null;
+                if (tblName === "cluster"){
+                    //const cluster_pk = update_dict.id;
+                    //const [index, found_dict, compare] = b_recursive_integer_lookup(cluster_rows, "id", cluster_pk);
+                    //if (!isEmpty(found_dict)){
+                    //    data_dict = found_dict;
+                    //    datarow_index = index;
+                    //};
+                    data_dict = (!isEmpty(cluster_dictsNEW[update_dict.id])) ? cluster_dictsNEW[update_dict.id] : null;
+                } else {
+                    // 'ORDER BY st.id, studsubj.studsubj_id NULLS FIRST'
+                    const student_pk = (update_dict && update_dict.stud_id) ? update_dict.stud_id : null;
+                    const studsubj_pk = (update_dict && update_dict.studsubj_id) ? update_dict.studsubj_id : null;
+                    //const [index, found_dict] = get_datadict_by_studpk_studsubjpk(student_pk, studsubj_pk);
+                    //if (!isEmpty(found_dict)){
+                    //    data_dict = found_dict;
+                    //    datarow_index = index;
+                    //};
+                    data_dict = get_datadict_by_studpk_studsubjpk (student_pk, studsubj_pk);
+                };
+
+        console.log("    data_dict", data_dict);
+
+// ++++ deleted ++++
+                if(is_restored){
+
+    // ---  remove key 'restored' from update_dict
+                    delete update_dict.restored;
+
+    // ---  update data_dict
+                    data_dicts[map_id] = update_dict;
+                    let tblRow = document.getElementById(map_id);
+
+    // ---  update tblRow
+                    UpdateTblRow(tblRow, tblName, update_dict);
+
+                } else if(is_changed){
+    // ---  remove key 'changed' from update_dict
+                    delete update_dict.changed;
+
+    // ---  update data_dict
+                    data_dicts[map_id] = update_dict;
+                    let tblRow = document.getElementById(map_id);
+
+    // ---  update tblRow
+                    UpdateTblRow(tblRow, tblName, update_dict);
+
+                } else if(is_deleted){
+
+    // ---  delete key/value from data_dict
+                    if (map_id && map_id in data_dicts){
+                        delete data_dicts[map_id];
+
+        //--- delete tblRow
+                        if (tblName !== "cluster"){
+                            const tblRow_tobe_deleted = document.getElementById(map_id);
+                            if (tblRow_tobe_deleted ){
+                                tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
+            // --- subtract 1 from item_count and show total in sidebar
+                                selected.item_count -= 1;
+                            };
+                        };
+                    };
+
+                } else {
+
+// +++++++++++ updated row +++++++++++
+    console.log("updated row");
+    // ---  check which fields are updated, add to list 'updated_columns'
+                    if(!isEmpty(data_dict) && field_names){
+
+    // ---  first add updated fields to updated_columns list, before updating data_row
+                        let updated_columns = [];
+                        // first column subj_error
+                        for (let i = 0, col_field, old_value, new_value; col_field = field_names[i]; i++) {
+
+    // ---  'status' fields are not in data_row
+                            if (col_field.includes("_status")){
+                                const [old_status_className, old_status_title] = UpdateFieldStatus(col_field, data_dict);
+                                const [new_status_className, new_status_title] = UpdateFieldStatus(col_field, update_dict);
+                                if (old_status_className !== new_status_className || old_status_title !== new_status_title ) {
+                                    updated_columns.push(col_field)
+                                };
+                            } else if (col_field === "subj_error"){
+                                    // PR2023-01-16
+                                    if (update_dict.subj_composition_ok !== data_dict.subj_composition_ok ||
+                                        update_dict.subj_dispensation !== data_dict.subj_dispensation) {
+                                            updated_columns.push(col_field);
+                                        };
+
+                            } else if (col_field in data_dict && col_field in update_dict){
+                                if (data_dict[col_field] !== update_dict[col_field] ) {
+                                    updated_columns.push(col_field)
+                                };
+                            };
+                        };
+
+// ---  update fields in data_row
+                        for (const [key, new_value] of Object.entries(update_dict)) {
+                            if (key in data_dict){
+                                const old_value = data_dict[key];
+                                if (new_value !== data_dict[key]) {
+                                    data_dict[key] = new_value;
+                                };
+                            };
+                        };
+
+// ---  update field in tblRow
+                        // note: when updated_columns is empty, then updated_columns is still true.
+                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+                        // PR2021-09-29 always update all columns, to remove strikethrough after undelete
+                        // was: if(updated_columns.length || field_error_list.length){
+
+// --- get existing tblRow
+                            let tblRow = document.getElementById(map_id);
+    console.log("tblRow", tblRow);
+    console.log("updated_columns", updated_columns);
+                            if(tblRow){
+
+    // - to make it perfect: move row when first or last name have changed
+                                if (updated_columns.includes("name")){
+                                //--- delete current tblRow
+                                    tblRow.parentNode.removeChild(tblRow);
+                                //--- insert row new at new position
+                                    tblRow = CreateTblRow(tblName, field_setting, map_id, update_dict, col_hidden)
+                                };
+
+    // - loop through cells of row
+                                const tobedeleted = (update_dict.tobedeleted) ? update_dict.tobedeleted : false;
+                                const st_tobedeleted = (update_dict.st_tobedeleted) ? update_dict.st_tobedeleted : false;
+
+    console.log("tobedeleted", tobedeleted);
+                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
+                                    el = td.children[0];
+                                    if (el){
+                                        el_fldName = get_attr_from_el(el, "data-field");
+                                        const is_updated_field = updated_columns.includes(el_fldName);
+                                        const is_err_field = error_columns.includes(el_fldName);
+
+    // - update field and make field green when field name is in updated_columns
+                                        // PR2022-01-18 debug: UpdateField also when record is tobedeleted
+                                        if(is_updated_field || tobedeleted){
+                                            UpdateField(el, update_dict, tobedeleted);
+                                        };
+                                        if(is_updated_field){ShowOkElement(el)};
+                                        if(is_err_field){
+    // - make field red when error and reset old value after 2 seconds
+                                            reset_element_with_errorclass(el, update_dict, tobedeleted, st_tobedeleted);
+                                        };
+
+                                    }  //  if (el){
+                                };  //  for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++)
+                            };  // if(tblRow)
+                        //}; // if(updated_columns.length)
+                    };  // if(!isEmpty(data_dict) && field_names)
+                };  //  if(is_deleted)
+            }; // if(is_created)
+
+    // ---  show total in sidebar
+            t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Subject, loc.Subjects, setting_dict.user_lang);
+
+        };  // if(!isEmpty(update_dict))
+    }  // t_Refresh_DatadictItem
+
+//###########################################################################
+
 // +++++++++++++++++ FILTER ++++++++++++++++++++++++++++++++++++++++++++++++++
 //========= t_Filter_SelectRows  ==================================== PR2020-01-17 PR2021-01-23
     function t_Filter_SelectRows(tblBody_select, filter_text, filter_show_inactive, has_ppk_filter, selected_ppk, col_index_list) {

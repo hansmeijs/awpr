@@ -86,56 +86,58 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 // --- get field_settings
-    const field_settings = {
-        orderlist: {field_caption: ["", "School_code", "School_name", "Number_of_candidates",
-                                 "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted", "Download_Exform"],
-                    field_names: ["", "schbase_code", "school_abbrev", "total_students",
-                                 "total", "publ_count", "datepublished", "url"],
-                    field_tags: ["div", "div", "div",
-                                 "div", "div","div", "div", "a"],
-                    filter_tags: ["select", "text", "text",
-                                  "number", "number", "number", "text", "text"],
-                    field_width:  ["020", "090", "180",
-                                   "120", "120", "120", "150", "120"],
-                    field_align: ["c", "l", "l",
-                                    "r", "r", "r", "l", "c"]
-                     },
-        envelopsubject: { field_caption: ["", "Abbrev_subject_2lines", "Subject", "Department", "Learning_path", "Exam_period",
-                                "Date", "Thru_date", "Start_time_Duration", "End_time", "Has_errata", "Designated_exam_2lines", "Label_bundle", ""],
-                field_names: ["select", "subjbase_code", "subj_name_nl", "depbase_code", "lvl_abbrev", "examperiod",
-                                "firstdate", "lastdate", "starttime", "endtime", "has_errata", "secret_exam", "bundle_name", "download"],
-                field_tags: ["div", "div", "div", "div", "div", "div",
-                                "input", "input", "input", "input", "div", "div",  "div","div"],
-                filter_tags: ["text", "text", "text", "text", "text", "text",
-                                "text", "text", "text", "text", "toggle", "toggle", "text", ""],
-                field_width: ["020", "075", "240", "120", "120", "150",
-                                "150", "150",  "120", "120", "090", "090", "240", "060"],
-                field_align: ["c", "c", "l", "c", "c", "c",
-                                "l", "l", "l", "l", "c", "c", "l", "c"]
-                },
-
-        envelopbundle: {field_caption: ["", "Bundle_name"],
-                    field_names: ["select", "name"],
-                    field_tags: ["div", "div"],
-                    filter_tags: ["", "text"],
-                    field_width:  ["020", "240"],
-                    field_align: ["c", "l"]
-                    },
-        enveloplabel: {field_caption: ["", "Label_name", "Variable_number_envelops_2lines", "Number_of_envelops", "Items_per_envelop", "Is_errata_label",],
-                    field_names: ["select", "name", "is_variablenumber", "numberofenvelops", "numberinenvelop", "is_errata"],
-                    field_tags: ["div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["", "text", "text","text", "text","text"],
-                    field_width:  ["020", "240", "090", "120", "120", "090"],
-                    field_align: ["c", "l", "c",  "c", "c",  "c"]
-                     },
-        envelopitem: {field_caption: ["", "Content", "Instruction"],
-                    field_names: ["select", "content_nl", "instruction_nl"],
-                    field_tags: ["div", "div", "div"],
-                    filter_tags: ["", "text", "text"],
-                    field_width:  ["020", "360", "720"],
-                    field_align: ["c", "l", "l"]
-                     },
-        };
+    field_settings.orderlist = {
+        field_caption: ["", "School_code", "School_name", "Number_of_candidates",
+                     "Number_of_entered_subjects", "Number_of_submitted_subjects", "Date_submitted", "Download_Exform"],
+        field_names: ["", "schbase_code", "school_abbrev", "total_students",
+                     "total", "publ_count", "datepublished", "url"],
+        field_tags: ["div", "div", "div",
+                     "div", "div","div", "div", "a"],
+        filter_tags: ["select", "text", "text",
+                      "number", "number", "number", "text", "text"],
+        field_width:  ["020", "090", "180",
+                       "120", "120", "120", "150", "120"],
+        field_align: ["c", "l", "l",
+                        "r", "r", "r", "l", "c"]
+    };
+    field_settings.envelopsubject = {
+        field_caption: ["", "Abbrev_subject_2lines", "Subject", "Department", "Learning_path", "Exam_period",
+                        "Date", "Thru_date", "Start_time_Duration", "End_time", "Has_errata", "Designated_exam_2lines", "Label_bundle", ""],
+        field_names: ["select", "subjbase_code", "subj_name_nl", "depbase_code", "lvl_abbrev", "examperiod",
+                        "firstdate", "lastdate", "starttime", "endtime", "has_errata", "secret_exam", "bundle_name", "download"],
+        field_tags: ["div", "div", "div", "div", "div", "div",
+                        "input", "input", "input", "input", "div", "div",  "div","div"],
+        filter_tags: ["text", "text", "text", "text", "text", "text",
+                        "text", "text", "text", "text", "toggle", "toggle", "text", ""],
+        field_width: ["020", "075", "240", "120", "120", "150",
+                        "150", "150",  "120", "120", "090", "090", "240", "060"],
+        field_align: ["c", "c", "l", "c", "c", "c",
+                        "l", "l", "l", "l", "c", "c", "l", "c"]
+    };
+    field_settings.envelopbundle = {
+        field_caption: ["", "Bundle_name"],
+        field_names: ["select", "name"],
+        field_tags: ["div", "div"],
+        filter_tags: ["", "text"],
+        field_width:  ["020", "240"],
+        field_align: ["c", "l"]
+    };
+    field_settings.enveloplabel = {
+        field_caption: ["", "Label_name", "Variable_number_envelops_2lines", "Number_of_envelops", "Items_per_envelop", "Is_errata_label",],
+        field_names: ["select", "name", "is_variablenumber", "numberofenvelops", "numberinenvelop", "is_errata"],
+        field_tags: ["div", "div", "div", "div", "div", "div"],
+        filter_tags: ["", "text", "text","text", "text","text"],
+        field_width:  ["020", "240", "090", "120", "120", "090"],
+        field_align: ["c", "l", "c",  "c", "c",  "c"]
+    };
+    field_settings.envelopitem = {
+        field_caption: ["", "Content", "Instruction"],
+        field_names: ["select", "content_nl", "instruction_nl"],
+        field_tags: ["div", "div", "div"],
+        filter_tags: ["", "text", "text"],
+        field_width:  ["020", "360", "720"],
+        field_align: ["c", "l", "l"]
+    };
 
         const tblHead_datatable = document.getElementById("id_tblHead_datatable");
         const tblBody_datatable = document.getElementById("id_tblBody_datatable");

@@ -1,8 +1,10 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.urls import reverse_lazy
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
 from django.utils.translation import activate, gettext_lazy as _
+from django.utils.decorators import method_decorator
 
 from django.views.generic import View
 
@@ -30,14 +32,14 @@ pos_y = 18
 MENUS_BUTTONS = {
     c.ROLE_128_SYSTEM: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
                         'page_studsubj', 'page_exams', 'page_wolf', 'page_grade',
-                      'page_result', 'page_corrector', 'page_archive'], #  'page_report', 'page_analysis'],
+                      'page_result', 'page_corrector', 'page_archive', 'page_exampaper'], #  'page_report', 'page_analysis'],
     c.ROLE_064_ADMIN: ['page_examyear', 'page_subject', 'page_school', 'page_orderlist', 'page_student',
                        'page_studsubj', 'page_exams', 'page_grade', # 'page_secretexam',
-                     'page_result', 'page_corrector', 'page_archive'],  #, 'page_report', 'page_analysis'],
+                     'page_result', 'page_corrector', 'page_archive', 'page_exampaper'],  #, 'page_report', 'page_analysis'],
     c.ROLE_032_INSP: ['page_examyear', 'page_school', 'page_orderlist', 'page_student', 'page_studsubj',
-                      'page_exams', 'page_grade', 'page_result', 'page_archive'],  #,'page_report', 'page_analysis'],
-    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive'],
-    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive'] # 'page_report',
+                      'page_exams', 'page_grade', 'page_result', 'page_archive', 'page_exampaper'],  #,'page_report', 'page_analysis'],
+    c.ROLE_016_CORR: ['page_school', 'page_student', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive', 'page_exampaper'],
+    c.ROLE_008_SCHOOL: ['page_student', 'page_studsubj', 'page_wolf', 'page_grade', 'page_result', 'page_corrector', 'page_archive', 'page_exampaper'] # 'page_report',
 }
 
 MENUS_DICT = {
@@ -55,6 +57,7 @@ MENUS_DICT = {
     'page_report': {'caption': _('Reports'), 'href': 'url_archive', 'width': 120},
     'page_corrector': {'caption': _('Second correctors'), 'href': 'url_corrector', 'width': 150},
     'page_archive': {'caption': _('Archive'), 'href': 'url_archive', 'width': 90},
+    'page_exampaper': {'caption': _('Exam papers'), 'href': 'url_exampapers', 'width': 150},
     'page_analysis': {'caption':  _('Analysis'), 'href': 'url_archive', 'width': 90}
 }
 
@@ -86,7 +89,7 @@ class ManualListView(View):
         # - get headerbar parameters
        # page = 'page_manual'
         #param = {'list': list}
-        #headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
+        # headerbar_param = awpr_menu.get_headerbar_param(request, page, param)
         param = {'page': page, 'paragraph': paragraph, 'lang': user_lang}
 
         if logging_on:
@@ -330,7 +333,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
 #  PR2022-06-06 back to previous one, to be able to block acces to result page when user is not chairperson of secretary
         # was: no_access = (not permit_list)
 
-
         may_receive_messages = 'msgreceive' in usergroup_list  # PR2023-04-05
 
         # PR2023-04-11 debug. Friedeman Sg Otrobanda: user cannot access page 'No permit to viw page.
@@ -340,25 +342,34 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
         #if not ('permit_view' in permit_list or 'permit_crud' in permit_list):
         #    no_access = True
 
-# PE2023-04-17 to prevent - for instance - access to page exam when role = school:
-        no_access = not ( 'permit_view' in permit_list or
-                        'permit_crud' in permit_list or
-                        'permit_auth1' in permit_list or
-                        'permit_auth2' in permit_list or
-                        'permit_auth3' in permit_list or
-                        'permit_auth4' in permit_list or
-                        'permit_admin' in permit_list
-                        )
 
-# +++ do not display pages when country is locked,
         country_locked = sel_examyear_instance.country.locked if sel_examyear_instance else True
-        if country_locked:
-            pass
-            #no_access = True
-        elif sel_page == 'page_archive' and 'archive' not in usergroup_list:
-            no_access = True
-        elif sel_page == 'page_mailbox' and not may_receive_messages:
-            no_access = True
+
+# PE2023-04-17 to prevent - for instance - access to page exam when role = school:
+# but all users have acces to page page_exampaper
+        no_access = False
+        if sel_page != 'page_exampaper':
+
+            if 'permit_view' in permit_list or \
+                'permit_crud' in permit_list or \
+                'permit_auth1' in permit_list or \
+                'permit_auth2' in permit_list or \
+                'permit_auth3' in permit_list or \
+                'permit_auth4' in permit_list or \
+                'permit_admin' in permit_list or \
+                'permit_admin' in permit_list:
+                pass
+            else:
+                no_access = True
+
+    # +++ display pages when country is locked,
+            if country_locked:
+                pass
+
+            elif sel_page == 'page_archive' and 'archive' not in usergroup_list:
+                no_access = True
+            elif sel_page == 'page_mailbox' and not may_receive_messages:
+                no_access = True
 
         if logging_on:
             logger.debug('  ..sel_page: ' + str(sel_page))
@@ -469,7 +480,7 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
 def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
     # function is called by get_headerbar_param, creates template tags menu_buttons and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
-    logging_on = False # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('===== set_menu_buttons ===== ')
         logger.debug('    sel_page: ' + str(sel_page))
@@ -478,7 +489,9 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
         # PR2023-02-24 show page button 'Second correctors' only when:
         # - role is corrector or admin
         #  - or if role c.ROLE_008_SCHOOL and user has usergroup chairperson, secretary or corrector (auth1, auth2, auth4)
-        if key_str == 'page_corrector':
+        if key_str == 'page_exampaper':
+            show_btn = False
+        elif key_str == 'page_corrector':
             show_btn = False
             if request.user.role == c.ROLE_016_CORR or request.user.role == c.ROLE_064_ADMIN:
                 show_btn = True
@@ -517,48 +530,53 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
     # loop through all menus in menus, to retrieve href from all menu-buttons
     # from https://treyhunner.com/2016/04/how-to-loop-with-indexes-in-python/
     for menu_index, key_str in enumerate(menu_buttons):
-        menu_item = MENUS_DICT[key_str]
+        if key_str in MENUS_DICT:
+            menu_item = MENUS_DICT[key_str]
 
-        # lookup the href that belongs to this index in submenus_tuple
-        # function gets first href in href_string, when insp or admin it gets the second item
-        menu_href = menu_item.get('href')
+            # lookup the href that belongs to this index in submenus_tuple
+            # function gets first href in href_string, when insp or admin it gets the second item
+            menu_href = menu_item.get('href')
 
-    # ------------ get menu ------------
-        caption = menu_item.get('caption', '-')
-        if logging_on:
-            logger.debug('caption: ' + str(caption))
+        # ------------ get menu ------------
+            caption = menu_item.get('caption', '-')
+            if logging_on:
+                logger.debug('caption: ' + str(caption))
 
-        h_ref_reverse = ''
-        if menu_href:
-           h_ref_reverse = reverse_lazy(menu_href)
+            h_ref_reverse = ''
+            if menu_href:
+               h_ref_reverse = reverse_lazy(menu_href)
 
-        # highlight selected menu
-        if key_str == sel_page:
-            if _class_bg_color == 'awp_bg_purple':
-                polygon_class = 'menu_polygon_selected_purple'
-            elif _class_bg_color == 'awp_bg_green':
-                polygon_class = 'menu_polygon_selected_green'
-            elif _class_bg_color == 'awp_bg_yellow':
-                polygon_class = 'menu_polygon_selected_yellow'
+            # highlight selected menu
+            if key_str == sel_page:
+                if _class_bg_color == 'awp_bg_purple':
+                    polygon_class = 'menu_polygon_selected_purple'
+                elif _class_bg_color == 'awp_bg_green':
+                    polygon_class = 'menu_polygon_selected_green'
+                elif _class_bg_color == 'awp_bg_yellow':
+                    polygon_class = 'menu_polygon_selected_yellow'
+                else:
+                    polygon_class = 'menu_polygon_selected_blue'
+                text_fill = '#EDF2F8'
             else:
-                polygon_class = 'menu_polygon_selected_blue'
-            text_fill = '#EDF2F8'
-        else:
-            polygon_class = 'menu_polygon_unselected'
-            text_fill = '#212529'
+                polygon_class = 'menu_polygon_unselected'
+                text_fill = '#212529'
+
 
 # add menu settings to parameter 'menu_item'
-        width = menu_item.get('width', 0)
-        indent_left = indent_none if menu_index == 0 else indent_10
-        indent_right = indent_none if menu_index == last_index else indent_10
+            width = menu_item.get('width', 0)
+            indent_left = indent_none if menu_index == 0 else indent_10
+            indent_right = indent_none if menu_index == last_index else indent_10
 
-        points = get_svg_arrow(width, height, indent_left, indent_right)
-        pos_x = width / 2
-        menu_item_tag= {'caption': caption, 'href': h_ref_reverse,
-                   'width': str(width), 'height':  str(height), 'points': points,
-                    'class': polygon_class,
-                    'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
-        menu_item_tags.append(menu_item_tag)
+            points = get_svg_arrow(width, height, indent_left, indent_right)
+            pos_x = width / 2
+            menu_item_tag= {'caption': caption, 'href': h_ref_reverse,
+                       'width': str(width), 'height':  str(height), 'points': points,
+                        'class': polygon_class,
+                        'x': str(pos_x), 'y': pos_y, 'fill': text_fill}
+            menu_item_tags.append(menu_item_tag)
+
+    if logging_on:
+        logger.debug('    menu_item_tags: ' + str(menu_item_tags))
 
     return menu_item_tags
 

@@ -200,7 +200,11 @@ urlpatterns = [
     path('manual/', include([
         path('<page>/<paragraph>/', awpr_menus.ManualListView.as_view(), name='manual_url')
     ])),
-
+# ===== EXAMPAPER ==========================  PR2021-06-10
+    path('exampaper/', include([
+        path('exampaper/', school_views.ExampaperListView.as_view(), name='url_exampapers'),
+        path('exampaper_upload', school_views.ExampaperUploadView.as_view(), name='url_exampaper_upload')
+    ])),
 # ===== MAILBOX ==========================  PR2021-06-10
     path('mail/', include([
         path('mailbox/', school_views.MailListView.as_view(), name='page_mailbox_url'),
