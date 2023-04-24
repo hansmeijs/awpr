@@ -232,6 +232,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const el_MSTUD_btn_symbols = document.getElementById("id_MSTUD_btn_symbols");
         if(el_MSTUD_btn_symbols){el_MSTUD_btn_symbols.addEventListener("click", function() {MSTUD_FillSymbols()}, false)}
 
+        const el_MSTUD_msg_modified = document.getElementById("id_MSTUD_msg_modified");
+
         // TODO add log
         const el_MSTUD_btn_log = document.getElementById("id_MSTUD_btn_log");
         const el_MSTUD_btn_save = document.getElementById("id_MSTUD_btn_save");
@@ -1227,6 +1229,7 @@ function RefreshDataRowsAfterUpload(response) {
     // set label partial / additional exam
             MSTUD_SetLabelPartialAdditionalExam();
 
+            let display_txt = null;
             if (!is_addnew){
                 //el_MSTUD_abbrev.value = (mod_MSTUD_dict.abbrev) ? mod_MSTUD_dict.abbrev : null;
                 //el_MSTUD_name.value = (mod_MSTUD_dict.name) ? mod_MSTUD_dict.name : null;
@@ -1234,9 +1237,10 @@ function RefreshDataRowsAfterUpload(response) {
                 const modified_dateJS = parse_dateJS_from_dateISO(mod_MSTUD_dict.modifiedat);
                 const modified_date_formatted = format_datetime_from_datetimeJS(loc, modified_dateJS)
                 const modified_by = (mod_MSTUD_dict.modby_username) ? mod_MSTUD_dict.modby_username : "-";
-                const display_txt = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by;
-                document.getElementById("id_MSTUD_msg_modified").innerText = display_txt;
+                display_txt = loc.Last_modified_on + modified_date_formatted + loc._by_ + modified_by;
             };
+
+            el_MSTUD_msg_modified.innerText = display_txt;
 
     // ---  hide delete btn when is_addnew
             add_or_remove_class(el_MSTUD_btn_delete, cls_hide, is_addnew )
@@ -1725,6 +1729,9 @@ function RefreshDataRowsAfterUpload(response) {
         for (let i = 0, el_msg; el_msg = msg_elements[i]; i++) {
             el_msg.innerText = null;
         };
+
+// ---  reset modified
+        el_MSTUD_msg_modified.innerText = null;
 
 // ---  disable save button on error
         el_MSTUD_btn_save.disabled = true;

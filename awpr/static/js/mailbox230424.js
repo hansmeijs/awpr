@@ -2229,7 +2229,7 @@ document.addEventListener('DOMContentLoaded', function() {
         //console.log( "mod_MMM_dict.mailattachment_pk", mod_MMM_dict.mailattachment_pk);
         //console.log( "el_input", el_input);
         let filesize_exceeded = false;
-        const max_file_size_Mb = 1;
+        const max_file_size_Mb = 5;
 // - message can be edited when has_prmit,  new or created by this user and not sent
         const may_edit = ( (permit_dict.permit_write_message) &&
                   ((!mod_MMM_dict.mailmessage_pk) || (!mod_MMM_dict.sentdate && mod_MMM_dict.sender_user_id === permit_dict.requsr_pk)));

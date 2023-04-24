@@ -2017,6 +2017,21 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
 
         log_list = []
 
+
+        #PR2023-04-24 TODO implement approximate string matching
+        """
+        https://stackoverflow.com/questions/31642940/finding-if-two-strings-are-almost-similar
+        
+        You can use difflib.sequencematcher if you want something from the stdlib:
+
+        from difflib import SequenceMatcher
+        s_1 = 'Mohan Mehta'
+        s_2 = 'Mohan Mehte'
+        print(SequenceMatcher(a=s_1,b=s_2).ratio())
+        0.909090909091
+
+        """
+
 # - get permit - StudentLinkStudentView is called from page studsubj
         has_permit = acc_prm.get_permit_crud_of_this_page('page_studsubj', request)
         if has_permit:

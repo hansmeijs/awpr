@@ -455,7 +455,10 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
     rule_gradesuff_notatevlex = si_dict.get('rule_gradesuff_notatevlex', False)
 
     no_ce_years = si_dict.get('no_ce_years')
-    thumb_rule_applies = si_dict.get('thumb_rule', False)
+
+    # si.thumb_rule = True means: thumbrule is allowed for this subject
+    # studsubj.is_thumbrule = True means: student has applied thumbrule for this subject
+    thumb_rule_allowed = si_dict.get('thumb_rule', False)
 
     # Practical exam does not exist any more. Set has_practexam = False PR2022-05-26
     # was: has_practexam = si_dict.get('has_practexam', False)
@@ -491,7 +494,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
             log_list.append(''.join((c.STRING_SPACE_05, str(_('Extra subject, does not count for the result.')))))
 
     is_thumbrule = False
-    if thumb_rule_applies:
+    if thumb_rule_allowed:
         is_thumbrule = studsubj_dict.get('is_thumbrule', False)
         if is_thumbrule:
             if log_list is not None:
@@ -669,7 +672,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                 # when failed: 'failed' info is added to student_ep_dict
                 # 'failed': {'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 'Sectorwerkstuk is onvoldoende.'],
                 calc_rule_issufficient(use_studsubj_ep_dict, calc_student_ep_dict,
-                                        isevlexstudent, is_extra_nocount, thumb_rule_applies,
+                                        isevlexstudent, is_extra_nocount, thumb_rule_allowed,
                                         rule_grade_sufficient, rule_gradesuff_notatevlex, subj_name)
 
             if logging_on and False:
@@ -852,6 +855,7 @@ def calc_noinput(examperiod, studsubj_dict, subj_code, weight_se, weight_ce, has
                             logger.debug('   ni: ' + str(this_examperiod_dict['ni']))
                             logger.debug('   noin: ' + str(this_examperiod_dict['noin']))
 # - end of calc_noinput
+
 
 def calc_exemp_noce(exemption_year, no_ce_years):
 # PR2022-05-26 calculate if exemption has ce
@@ -1478,7 +1482,7 @@ def get_gradeinfo_extension(multiplier, max_ep):
 
     # PR021-11-26
     # add '2x','vr','h','h3' to grade
-    gradeinfo_extension = None
+    gradeinfo_extension = ''
     addition_list = []
     if multiplier != 1:
         addition_list.append(str(multiplier) + 'x')
@@ -1679,6 +1683,7 @@ def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
         pece_sumX10_int = pece_dict.get('sumX10', 0)
         pece_cnt_str, pece_sum_str = None, None
         pece_avg_dot, pece_avg_comma = None, '-'
+
         if pece_cnt_int > 0:
             pece_cnt_str = str(pece_cnt_int)
             if pece_sumX10_int > 0:
@@ -1936,7 +1941,7 @@ def put_noinput_in_student_ep_dict(is_combi, use_studsubj_ep_dict, calc_student_
 
 
 def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent,
-                           is_extra_nocount, thumb_rule_applies, rule_grade_sufficient, rule_gradesuff_notatevlex, subj_name):  # PR2021-11-23
+                           is_extra_nocount, thumb_rule_allowed, rule_grade_sufficient, rule_gradesuff_notatevlex, subj_name):  # PR2021-11-23
     # function checks if max final grade is sufficient (
     # - only when 'rule_grade_sufficient' for this subject is set True in schemeitem
     # - skip when evlex student and notatevlex = True
@@ -1950,8 +1955,8 @@ def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent
         logger.debug( ' -----  calc_rule_issufficient  -----')
         logger.debug('use_studsubj_ep_dict: ' + str(use_studsubj_ep_dict))
 
-# - skip when subject is 'is_extra_nocount' or when thumb_rule_applies
-    if not is_extra_nocount or thumb_rule_applies:
+# - skip when subject is 'is_extra_nocount' or when thumb_rule_allowed
+    if not is_extra_nocount or thumb_rule_allowed:
         try:
             has_failed = False
 
@@ -3168,6 +3173,8 @@ def get_students_with_grades_dictlist(examyear, school, department, student_pk_l
                                     stud_dict['c_sr'] = 1 + (stud_dict.get('c_sr') or 0)
                                     ss_dict['has_sr'] = True  # has_school_reex
                                 if field == 'is_thumbrule':
+
+                                    # combi thumbrule counts as one, put True in student_dict if combi has thumbrule
                                     if row.get('is_combi'):
                                         stud_dict['thumbrule_combi'] = True
                                     else:
@@ -3528,7 +3535,7 @@ def get_sql_student_values(student_dict, last_student_ep_dict, result_info_list)
         reex_count_str = get_sql_value_int(student_dict.get('c_ep2'))
         reex03_count_str = get_sql_value_int(student_dict.get('c_ep3'))
 
-        # combi thumbrule counts as one
+        # combi thumbrule counts as one, thumbrule_combi = True in student_dict if any combi has thumbrule
         c_thumbrule = student_dict.get('c_thumbrule') or 0
         if student_dict.get('thumbrule_combi'):
             c_thumbrule += 1
@@ -3671,7 +3678,7 @@ def log_list_student_header(student_dict, full_name, log_list):  # PR2021-12-19
 
 def log_list_add_scheme_notfound(dep_level_req, log_list):  # PR2021-12-19
     # - add msg when scheme not found
-    log_list.append(''.join((c.STRING_SPACE_05, str(_('The subjectscheme of this candidate could not be found.')))))
+    log_list.append(''.join((c.STRING_SPACE_05, str(_('The subject scheme of this candidate could not be found.')))))
     log_list.append(''.join((c.STRING_SPACE_05, str(_('The result cannot be calculated.')))))
     msg_txt = _('Please enter the learning path and sector.') if dep_level_req else _('Please enter the profile.')
     log_list.append(('').join((c.STRING_SPACE_05, str(msg_txt))))
@@ -3780,6 +3787,7 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
 
 
 ##########################################################################
+
 def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, student_pk_list=None):
     # PR2022-07-02 temporary, to be replaced by calc_proof_of_knowledge as part of  calc_studsubj_result
 

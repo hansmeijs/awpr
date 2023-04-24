@@ -338,10 +338,12 @@ def lookup_student_by_idnumber_nodots(school, department, idnumber_nodots, uploa
 # - count how many students exist with this idnumber in this school (all departments)
         # get all students from this school with this idnumber
         # idnumber can have letters, therefore compare case insensitive
-        # include deleted students PR2023-01-16
+        # # include tobedeleted students PR2023-04-20
+        #   was: include deleted students PR2023-01-16
         rows = stud_mod.Student.objects.filter(
             idnumber__iexact=idnumber_nodots,
-            school=school
+            school=school,
+            deleted=False
         )
         if logging_on:
             for row in rows:

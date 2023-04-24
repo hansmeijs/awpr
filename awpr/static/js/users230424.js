@@ -56,56 +56,58 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // --- get field_settings
     field_settings.btn_user = {
-                    field_caption: ["", "School_code", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Exam_years", "Inactive"],
-                    field_names: ["select", "sb_code", "school_abbrev", "username", "last_name", "email", "activated", "last_login", "ey_arr", "is_active"],
-                    field_tags: ["div", "div", "div", "div", "div",  "div", "div","div", "div", "div"],
-                    filter_tags: ["select", "text", "text",  "text",  "text", "text",  "toggle", "text","text",  "inactive"],
-                    field_width:  ["020", "090", "150", "150",  "180", "240",  "100", "200", "120", "090"],
-                    field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "l", "c"]};
-
+        field_caption: ["", "School_code", "School", "User", "Name", "Email_address",  "Activated", "Last_loggedin", "Exam_years", "Inactive"],
+        field_names: ["select", "sb_code", "school_abbrev", "username", "last_name", "email", "activated", "last_login", "ey_arr", "is_active"],
+        field_tags: ["div", "div", "div", "div", "div",  "div", "div","div", "div", "div"],
+        filter_tags: ["select", "text", "text",  "text",  "text", "text",  "toggle", "text","text",  "inactive"],
+        field_width:  ["020", "090", "150", "150",  "180", "240",  "100", "200", "120", "090"],
+        field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "l", "c"]
+        };
     field_settings.btn_usergroup = {
-                    field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
-                                    "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
-                                    "Receive_messages", "Send_messages", "Access_to_archive",
-                                    "System_administrator_2lines"],
-                                    //"Download", "Archive", "System_administrator_2lines"],
-                    field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
-                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4",
-                                    "group_msgreceive", "group_msgsend", "group_archive",
-                                    "group_admin"],
-                                    //"group_download", "group_archive", "group_admin"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle",
-                                    "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
-                    field_width:  ["020", "090", "150", "150", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090", "090"],
-                    field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c","c", "c", "c"]};
-
+        field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
+                        "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
+                        "Receive_messages", "Send_messages", "Access_to_archive",
+                        "System_administrator_2lines"],
+                        //"Download", "Archive", "System_administrator_2lines"],
+        field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
+                        "group_auth1", "group_auth2", "group_auth3", "group_auth4",
+                        "group_msgreceive", "group_msgsend", "group_archive", "group_admin"],
+                        //"group_download", "group_archive", "group_admin"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["select", "text", "text", "text", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle",
+                        "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
+        field_width:  ["020", "090", "150", "150", "090", "090",
+                        "090", "090", "090", "090",
+                        "090", "090", "090", "110"],
+        field_align: ["c", "l", "l","l", "c", "c", "c", "c", "c", "c", "c", "c", "c","c", "c", "c"]
+    };
     field_settings.btn_allowed = {
-                    field_caption: ["", "School_code", "School", "Username", "Allowed_schools", "Allowed_departments",
-                                    "Allowed_levels", "Allowed_subjects", "Allowed_clusters"],
-                    field_names: ["select", "sb_code", "school_abbrev", "username", "allowed_schoolbases", "allowed_depbases",
-                                    "allowed_lvlbases", "allowed_subjbases", "allowed_clusters"],
-                    field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text"],
-                    field_width:  ["032", "090", "150", "150", "180", "180", "180", "180", "180"],
-                    field_align: ["c", "l", "l", "l", "l", "l",  "l", "l", "l"]};
-
+        field_caption: ["", "School_code", "School", "Username", "Allowed_schools", "Allowed_departments",
+                        "Allowed_levels", "Allowed_subjects", "Allowed_clusters"],
+        field_names: ["select", "sb_code", "school_abbrev", "username", "allowed_schoolbases", "allowed_depbases",
+                        "allowed_lvlbases", "allowed_subjbases", "allowed_clusters"],
+        field_tags: ["div", "div", "div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["select", "text", "text", "text", "text", "text", "text", "text", "text"],
+        field_width:  ["032", "090", "150", "150", "180", "180", "180", "180", "180"],
+        field_align: ["c", "l", "l", "l", "l", "l",  "l", "l", "l"]
+    };
     field_settings.btn_userpermit = {
-                    field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
-                                    "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
-                                    "Receive_messages", "Send_messages", "Access_to_archive",
-                                    "Analyze", "System_administrator_2lines"],
-                    field_names: ["select", "role", "page", "action", "group_read", "group_edit",
-                                    "group_auth1", "group_auth2", "group_auth3", "group_auth4",
-                                    "group_msgreceive", "group_msgsend", "group_archive",
-                                     "group_anlz", "group_admin"],
-                    field_tags: ["div", "div", "div", "input", "div", "div",
-                                    "div", "div", "div", "div", "div", "div", "div", "div", "div"],
-                    filter_tags: ["select", "text", "text", "text", "toggle","toggle",
-                                    "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
-                    field_width:  ["020", "090", "120","150", "075", "075",
-                                    "075", "075", "090", "075", "090", "075", "075", "090", "075"],
-                    field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c",  "c", "c", "c", "c", "c", "c"]};
+        field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
+                        "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
+                        "Receive_messages", "Send_messages", "Access_to_archive",
+                        "Analyze", "System_administrator_2lines"],
+        field_names: ["select", "role", "page", "action", "group_read", "group_edit",
+                        "group_auth1", "group_auth2", "group_auth3", "group_auth4",
+                        "group_msgreceive", "group_msgsend", "group_archive",
+                         "group_anlz", "group_admin"],
+        field_tags: ["div", "div", "div", "input", "div", "div",
+                        "div", "div", "div", "div", "div", "div", "div", "div", "div"],
+        filter_tags: ["select", "text", "text", "text", "toggle","toggle",
+                        "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle", "toggle"],
+        field_width:  ["020", "090", "120","150", "075", "075",
+                        "075", "075", "090", "075", "090", "075", "075", "090", "075"],
+        field_align: ["c", "l", "l", "l", "c", "c",  "c", "c", "c",  "c", "c", "c", "c", "c", "c"]
+    };
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -530,10 +532,11 @@ console.log("user_dicts",user_dicts)
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01
     function CreateTblHeader(field_setting) {
-        //console.log("===  CreateTblHeader ===== ");
+        console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
-
         const column_count = field_setting.field_names.length;
+
+        console.log("filter_dict", filter_dict);
 
 // +++  insert header and filter row ++++++++++++++++++++++++++++++++
         let tblRow_header = tblHead_datatable.insertRow (-1);
@@ -4316,8 +4319,8 @@ console.log( "new_value", new_value);
 
 //========= Filter_TableRows  ====================================
     function Filter_TableRows(set_filter_isactive) {  // PR2019-06-09 PR2020-08-31 PR2022-03-03
-        //console.log( "===== Filter_TableRows=== ");
-        //console.log( "filter_dict", filter_dict);
+        console.log( "===== Filter_TableRows=== ");
+        console.log( "filter_dict", filter_dict);
 
         // function filters by inactive and substring of fields
         //  - iterates through cells of tblRow

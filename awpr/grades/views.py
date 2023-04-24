@@ -2737,7 +2737,7 @@ class GradeUploadView(View):
 
             # - add update_dict to update_wrap
                         grade_rows = []
-                        if return_grades_with_exam and False:
+                        if return_grades_with_exam:
                             rows = create_grade_with_ete_exam_rows(
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_school.base if sel_school else None,
@@ -3509,10 +3509,11 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
         # - also exemptions, because they are not published - they are always visible.
         # PR2023-04-08 dont hide grades any more for Inspection and adminshow grades
         # if requsr_same_school or requsr_corrector or sel_examperiod == c.EXAMPERIOD_EXEMPTION:
-        if True:
-            grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
-            final_grade = "grd.finalgrade AS finalgrade,"
-            status = "se_status, sr_status, pe_status, ce_status,"
+        # if True:
+        grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
+        final_grade = "grd.finalgrade AS finalgrade,"
+        status = "se_status, sr_status, pe_status, ce_status,"
+        """
         else:
             grades = ' '.join([
                 "CASE WHEN grd.se_published_id IS NOT NULL THEN grd.segrade ELSE NULL END AS segrade,",
@@ -3535,7 +3536,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
             final_grade = "CASE WHEN " + final_check_se + " AND " + final_check_ce + "  AND " + final_check_pe + " THEN grd.finalgrade ELSE NULL END AS finalgrade,"
 
             status = "se_status, sr_status, pe_status, ce_status,"
-
+        """
         # sel_examtype not in use
         sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk,
                     'experiod': sel_examperiod}
@@ -3743,9 +3744,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
 
         # - add exam_name
                 ce_exam_id = row.get('ce_exam_id')
-                ce_exam_name = None
+                exam_name = None
                 if ce_exam_id:
-                    ce_exam_name = subj_vw.get_exam_name(
+                    exam_name = subj_vw.get_exam_name(
                         ce_exam_id=ce_exam_id,
                         ete_exam=row.get('ete_exam'),
                         subj_name_nl=row.get('subj_name_nl'),
@@ -3755,7 +3756,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
                         version=row.get('version'),
                         ntb_omschrijving=row.get('ntb_omschrijving')
                     )
-                row['ce_exam_name'] = ce_exam_name
+                row['exam_name'] = exam_name
 
         # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase note icon when refreshing this row
                 if remove_note_status:
@@ -4532,7 +4533,7 @@ def get_grade_assignment_with_results_dict(partex_str, assignment_str, keys_str,
     # PR2022-01-29 PR2022-04-22 PR2022-05-14 PR2022-05-21
     # called by draw_grade_exam
     #  ce_exam_result: "189;202#1|1;1|2;a|3;2|4;b|5;2|6;0|7;x|8;x#2|1;x|2;c|3;b|4;d|5;x#3#4"
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- get_grade_assignment_with_results_dict -----')

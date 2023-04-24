@@ -59,6 +59,9 @@ document.addEventListener("DOMContentLoaded", function() {
     let grade_exam_rows = [];
     let grade_exam_result_rows = [];
 
+    const grade_exam_dicts = {};
+    const grade_exam_result_dicts = {};
+
     //let filter_dict = {};
 
     let el_focus = null; // stores id of element that must get the focus after closing mod message PR2020-12-20
@@ -156,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function() {
         field_caption: ["", "Examnumber_twolines", "Candidate",  "Learning_path", "Cluster", "Abbrev_subject_2lines",
                             "Subject", "Exam", "Blanks", "Score", "", "Download_exam"],
         field_names: ["select", "examnumber", "fullname", "lvl_abbrev", "cluster_name", "subj_code",
-                      "subj_name_nl", "ceex_name", "blanks", "ce_exam_score", "status", "download_exam"],
+                      "subj_name_nl", "exam_name", "blanks", "ce_exam_score", "status", "download_exam"],
         field_tags: ["div", "div", "div", "div", "div", "div",
                     "div", "div", "div", "div","div", "a"],
         filter_tags: ["select", "text", "text",  "text", "text", "text",
@@ -553,8 +556,8 @@ document.addEventListener("DOMContentLoaded", function() {
        // SetMenubuttonActive(document.getElementById("id_hdr_users"));
 
         const datalist_request = {
-                setting: {page: "page_exams"},
-                locale: {page: ["page_exams", "page_grade", "upload"]},
+                setting: {page: "page_wolf"},
+                locale: {page: ["page_exams", "page_grade", "upload"]},  //page_wolf does not exist in locale
                 examyear_rows: {get: true},
                 school_rows: {get: true},
                 department_rows: {get: true},
@@ -710,8 +713,17 @@ document.addEventListener("DOMContentLoaded", function() {
                 if ("ete_exam_rows" in response) {ete_exam_rows = response.ete_exam_rows};
                 if ("duo_subject_rows" in response) {duo_subject_rows = response.duo_subject_rows};
                 if ("duo_exam_rows" in response) {duo_exam_rows = response.duo_exam_rows};
-                if ("grade_exam_rows" in response) {grade_exam_rows = response.grade_exam_rows};
-                if ("grade_exam_result_rows" in response) {grade_exam_result_rows = response.grade_exam_result_rows};
+                if ("grade_exam_rows" in response) {
+                    grade_exam_rows = response.grade_exam_rows;
+
+                    b_fill_datadicts("grade",  "id", null, response.grade_exam_rows, grade_exam_dicts);
+
+                };
+                if ("grade_exam_result_rows" in response) {
+                    grade_exam_result_rows = response.grade_exam_result_rows;
+                    b_fill_datadicts("exam",  "exam_id", null, response.grade_exam_result_rows, grade_exam_result_dicts);
+
+                };
 
                 if ("ntermentable_rows" in response) {ntermentable_rows = response.ntermentable_rows};
 
@@ -744,7 +756,7 @@ document.addEventListener("DOMContentLoaded", function() {
             };
         };
 
-        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_exams")}, [], "id_submenu_columns")
+        AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_wolf")}, [], "id_submenu_columns")
 
         el_submenu.classList.remove(cls_hide);
 
@@ -782,11 +794,11 @@ document.addEventListener("DOMContentLoaded", function() {
         if(!skip_upload){
     // ---  upload new setting
 
-            // request_item_setting: {'page': 'page_exams', 'page_exams': {'sel_btn': 'btn_reex'}, 'sel_examperiod': 2}
+            // request_item_setting: {'page': 'page_wolf', 'page_wolf': {'sel_btn': 'btn_reex'}, 'sel_examperiod': 2}
 
-            let new_setting = {page: 'page_exams'};
+            let new_setting = {page: 'page_wolf'};
 
-            new_setting.page_exams = {sel_btn: selected_btn};
+            new_setting.page_wolf = {sel_btn: selected_btn};
             if (selected_btn === "btn_ep_01"){
                 new_setting.sel_examperiod = 1;
             } else if (selected_btn === "btn_reex"){
@@ -845,7 +857,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, lookup_1_field, data_pk, lookup_2_field, school_pk);
         const pk_int = (!isEmpty(found_dict)) ?  (tblName === "results") ? found_dict.exam_id : found_dict.id : null;
 
-        console.log( "pk_int: ", pk_int);
 // ---  update setting_dict.pk_int
         if (["duo_exam", "ete_exam"].includes(tblName)){
             setting_dict.sel_exam_pk = (pk_int) ? pk_int : null;
@@ -865,7 +876,7 @@ document.addEventListener("DOMContentLoaded", function() {
         setting_dict.sel_examperiod = (Number(el_select.value)) ? Number(el_select.value) : null;
 
 // ---  upload new setting
-        let new_setting = {page: 'page_exams',
+        let new_setting = {page: 'page_wolf',
                            sel_examperiod: setting_dict.sel_examperiod};
 // also retrieve the tables that have been changed because of the change in examperiod
         const datalist_request = {setting: new_setting,
@@ -904,7 +915,7 @@ document.addEventListener("DOMContentLoaded", function() {
         setting_dict.sel_lvlbase_code = (el_select.options[el_select.selectedIndex]) ? el_select.options[el_select.selectedIndex].innerText : null;
 
 // ---  upload new setting
-        let new_setting = {page: 'page_exams',
+        let new_setting = {page: 'page_wolf',
                            sel_lvlbase_pk: setting_dict.sel_lvlbase_pk};
 // also retrieve the tables that have been changed because of the change in examperiod
         const datalist_request = {setting: new_setting,
@@ -1044,7 +1055,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // also retrieve the tables that have been changed because of the change in examperiod
 // ---  upload new setting
-        let new_setting = {page: 'page_exams',
+        let new_setting = {page: 'page_wolf',
                             sel_examperiod: null,
                             sel_lvlbase_pk: null,
                             sel_sctbase_pk: null,
@@ -1377,7 +1388,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         // target="_blank opens file in new tab
                         el.target = "_blank";
                     };
-                } else if (field_name === "ceex_name"){
+                } else if (field_name === "exam_name"){
                     td.addEventListener("click", function() {MSELEX_Open(el)}, false);
                     add_hover(td);
 
@@ -1808,7 +1819,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         RefreshDataRows("duo_exam", response.updated_duo_exam_rows, duo_exam_rows, true)  // true = update
                     };
                     if ("updated_grade_rows" in response) {
-                        RefreshDataRows("grades", response.updated_grade_rows, grade_exam_rows, true)  // true = update
+                        RefreshDataRows("grades", response.updated_grade_rows, grade_exam_dicts, true)  // true = update
                     };
 
                     if ("loglist_copied_ntermen" in response) {
@@ -2128,9 +2139,9 @@ document.addEventListener("DOMContentLoaded", function() {
 //###########################################################################
 // +++++++++++++++++ REFRESH DATA MAP +++++++++++++++++++++++++++++++++++++++
 
-//=========  RefreshDataRows  ================ PR2020-08-16 PR2020-09-30 PR2021-05-11 PR2022-01-23 PR2022-04-13
-    function RefreshDataRows(tblName, update_rows, data_rows, is_update) {
-        //console.log(" --- RefreshDataRows  ---");
+//=========  RefreshDataRows  ================ PR2020-08-16 PR2020-09-30 PR2021-05-11 PR2022-01-23 PR2022-04-13 PR2023-04-24
+    function RefreshDataRows(tblName, update_rows, data_dicts, is_update) {
+        console.log(" --- RefreshDataRows  ---");
         //console.log("tblName", tblName);
         //console.log("update_rows", update_rows);
 
@@ -2145,12 +2156,12 @@ document.addEventListener("DOMContentLoaded", function() {
             if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
 
             for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
-                RefreshDatarowItem(tblName, field_setting, col_hidden, update_dict, data_rows);
+                RefreshDatarowItem(tblName, field_setting, col_hidden, update_dict, data_dicts);
             };
         } else if (!is_update) {
-            // empty the data_rows when update_rows is empty PR2021-01-13 debug forgot to empty data_rows
-            // PR2021-03-13 debug. Don't empty de data_rows when is update. Returns [] when no changes made
-           data_rows = [];
+            // empty the data_dicts when update_rows is empty PR2021-01-13 debug forgot to empty data_dicts
+            // PR2021-03-13 debug. Don't empty de data_dicts when is update. Returns [] when no changes made
+           b_clear_dict(data_dicts);
         };
         if (tblName === "duo_exam" && el_MDUO_btn_save){
             MDUO_FillSelectTables();
@@ -2159,11 +2170,10 @@ document.addEventListener("DOMContentLoaded", function() {
     };  //  RefreshDataRows
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2022-01-23 PR2022-04-13 PR2022-05-17
-    function RefreshDatarowItem(tblName, field_setting, col_hidden, update_dict, data_rows) {
-        //console.log(" --- RefreshDatarowItem  ---");
-        //console.log("tblName", tblName);
-        //console.log("update_dict", update_dict);
-        //console.log("data_rows", data_rows);
+    function RefreshDatarowItem(tblName, field_setting, col_hidden, update_dict, data_dicts) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("tblName", tblName);
+        console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -2192,62 +2202,18 @@ document.addEventListener("DOMContentLoaded", function() {
             // (deleting 0 items first, that is, it's just an insert).
 
             if(is_created){
-    // ---  first remove key 'created' from update_dict
-                delete update_dict.created;
-
-    // --- lookup index where new row must be inserted in data_rows
-                // PR2021-06-21 not necessary, new row has always pk higher than existing. Add at end of rows
-
-    // ---  add new item in data_rows at end
-                data_rows.push(update_dict);
-
-    // ---  create row in table., insert in alphabetical order
-                const new_tblRow = CreateTblRow(tblName, field_setting, update_dict, col_hidden)
-
-                if(new_tblRow){
-    // --- add1 to item_count and show total in sidebar
-                    selected.item_count += 1;
-
-    // ---  show total in sidebar
-                    t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Exam, loc.Exams, setting_dict.user_lang);
-
-    // ---  scrollIntoView,
-                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
-
-    // ---  make new row green for 2 seconds,
-                    ShowOkElement(new_tblRow);
-                };
+                // cannor create rows
             } else {
 
-// +++ get existing data_dict from data_rows.
-                const data_rows = (tblName === "ete_exam") ? ete_exam_rows :
-                                  (tblName === "duo_exam") ? duo_exam_rows :
-                                  (tblName === "grades") ? grade_exam_rows : [];
-                const pk_int = (update_dict && update_dict.id) ? update_dict.id : null;
-                const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
-                const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-                const datarow_index = index;
-    //console.log("data_dict", data_dict);
+    // +++ get existing data_dict from data_dicts
+                const data_dict = data_dicts[update_dict.mapid]
+    console.log("    data_dict", data_dict);
 
                 if(!isEmpty(data_dict)){
 
 // ++++ deleted ++++
                     if(is_deleted){
-                        // delete row from data_rows. Splice returns array of deleted rows
-                        const deleted_row_arr = data_rows.splice(datarow_index, 1)
-                        const deleted_row_dict = deleted_row_arr[0];
-
-            //--- delete tblRow
-                        if(deleted_row_dict && deleted_row_dict.mapid){
-                            const tblRow_tobe_deleted = document.getElementById(deleted_row_dict.mapid);
-                            if (tblRow_tobe_deleted ){
-                                tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
-            // --- subtract 1 from item_count and show total in sidebar
-                                selected.item_count -= 1;
-        // ---  show total in sidebar
-                                t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Exam, loc.Exams, setting_dict.user_lang);
-                            };
-                        };
+                        // cannor delete rows
                     } else {
 
 // ++++ updated row +++++++++++
@@ -2285,6 +2251,9 @@ document.addEventListener("DOMContentLoaded", function() {
     // ---  update field in data_row when value has changed
                                     data_dict[key] = new_value;
 
+                            console.log("   ", key, new_value);
+                            console.log(">>> has changed");
+                            console.log("field_names", field_names);
     // ---  add field to updated_columns list when field exists in field_names
                                     if (field_names && field_names.includes(key)) {
         // ---  add field to updated_columns list
@@ -2294,31 +2263,6 @@ document.addEventListener("DOMContentLoaded", function() {
                             };
                         };
 
-    //console.log("updated_columns", updated_columns);
-
-
-/*
-        // fields 'amount', 'assignment', 'partex' and 'ce_exam_result' are not in fieldlist. Check for changes and make whole row green when changed
-                        const other_fieldnames = ["amount", "scalelength", "assignment", "partex", "ce_exam_result"]
-        //console.log("other_fieldnames", other_fieldnames);
-                        for (let i = 0, col_field, old_value, new_value; col_field = other_fieldnames[i]; i++) {
-
-        //console.log("col_field", col_field);
-                            if (col_field in data_dict && col_field in update_dict){
-        //console.log("data_dict[col_field]", data_dict[col_field])
-        //console.log("update_dict[col_field]", update_dict[col_field])
-                                if (data_dict[col_field] !== update_dict[col_field] ) {
-        // ---  update field in data_row
-                                    data_dict[col_field] = update_dict[col_field];
-                // ---  update field 'blanks'
-                                    updated_columns.push("blanks");
-    // ---  make new row green for 2 seconds,
-                                    const tblRow = document.getElementById(update_dict.mapid);
-                                    ShowOkElement(tblRow);
-                                };
-                            };
-                        };
-*/
         //console.log("updated_columns", updated_columns);
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.
@@ -2747,7 +2691,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function MSELEX_Open(el_input){
         console.log(" ===  MSELEX_Open  =====") ;
         console.log( "el_input", el_input);
-        // only called in table "grades" when clicked on field "ceex_name"
+        // only called in table "grades" when clicked on field "exam_name"
         // cannot change exam when it is approved or published
 
         el_MSELEX_header.innerText = loc.Select_exam;
@@ -2909,7 +2853,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
         let el_div = document.createElement("div");
             el_div.innerText = code_value;
-            el_div.classList.add("tw_360", "px-2", "pointer_show" )
+            el_div.classList.add("tw_480", "px-2", "pointer_show" )
         td.appendChild(el_div);
     }  // MSELEX_FillSelectRow
 
@@ -3665,20 +3609,13 @@ document.addEventListener("DOMContentLoaded", function() {
     }  // MEX_BtnPageClicked
 
 // ------- fill functions
-//========= MEX_reset_mod_MEX_dict  ============= PR2022-01-21
+//========= MEX_reset_mod_MEX_dict  ============= PR2022-01-21 PR2023-04-24
     function MEX_reset_mod_MEX_dict(is_addnew, is_result_page) {
         //console.log("===== MEX_reset_mod_MEX_dict =====");
 
-        const is_permit_admin = (permit_dict.requsr_role_admin && permit_dict.permit_crud);
-        const is_permit_same_school = (permit_dict.requsr_same_school && permit_dict.permit_crud);
-
-        //console.log("permit_dict", permit_dict);
-        //console.log("is_permit_admin", is_permit_admin);
-
         b_clear_dict(mod_MEX_dict);
 
-        mod_MEX_dict.is_permit_admin = is_permit_admin;
-        mod_MEX_dict.is_permit_same_school = is_permit_same_school;
+        mod_MEX_dict.is_permit_same_school = (permit_dict.requsr_same_school && permit_dict.permit_crud);;
 
         mod_MEX_dict.sel_tab = "tab_start";
         mod_MEX_dict.pge_index = 1;
@@ -4641,167 +4578,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
         if (mod_MEX_dict.is_permit_same_school){
             MEXA_InputAnswer(el_input, event);
-        } else if(mod_MEX_dict.is_permit_admin){
-            MEXQ_InputQuestion(el_input);
         }
     };
-
-//========= MEXQ_InputQuestion  ===============PR2020-08-16 PR2021-03-25 PR2022-01-14
-    function MEXQ_InputQuestion(el_input){
-        console.log("--- MEXQ_InputQuestion ---")
-        //console.log("el_input.id: ", el_input.id)
-        // el_input.id = el_input.id:  idMEXq_1_1
-        //const q_number_str = (el_input.id) ? el_input.id[10] : null;
-        const el_id_arr = el_input.id.split("_")
-        const partex_pk = (el_id_arr && el_id_arr[1]) ? Number(el_id_arr[1]) : null;
-        const q_number = (el_id_arr && el_id_arr[2]) ? Number(el_id_arr[2]) : null;
-
-        if (partex_pk && q_number){
-            // open-question input has a number (8)
-            // multiplechoice-question has one letter, may be followed by a number as score (D3)
-            let new_max_char = "", new_max_score_str = "", new_max_score = "", msg_err = "";
-            const input_value = el_input.value;
-
-            // lookup assignment, create if it does not exist
-            const p_dict = mod_MEX_dict.partex_dict[partex_pk];
-            if (!(q_number in p_dict.a_dict)){
-                p_dict.a_dict[q_number] = {};
-            };
-            const q_dict = p_dict.a_dict[q_number];
-
-// - split input_value in first charactes and the rest
-            const first_char = input_value.charAt(0);
-            const remainder = input_value.slice(1);
-
-// check if first character is a letter or a number => is multiple choice when a letter
-            // !!Number(0) = false, therefore "0" must be filtered out with Number(first_char) !== 0
-            const is_multiple_choice = (!Number(first_char) && Number(first_char) !== 0 );
-
-            if(is_multiple_choice){
-                new_max_char = (first_char) ? first_char.toUpperCase() : "";
-                const remainder_int = (Number(remainder)) ? Number(remainder) : 0;
-                new_max_score_str = (remainder_int > 1) ? remainder : "";
-            } else {
-                new_max_score_str = input_value;
-            };
-
-// +++++ when input is question:
-            if (!mod_MEX_dict.is_keys_mode){
-                if (new_max_char){
-                    // Letter 'A' not allowed, only 1 choice doesn't make sense,
-                    // also X,Y,Z not allowed because 'x' value is used for blank
-                    if(!"BCDEFGHIJKLMNOPQRSTUVW".includes(new_max_char)){
-                        msg_err = loc.err_list.Character + " '" + first_char  + "'" + loc.err_list.not_allowed +
-                            "<br>" + loc.err_list.character_mustbe_between;
-                    };
-                };
-// - validate max_score
-                if (new_max_score_str){
-                    new_max_score = Number(new_max_score_str);
-                    // the remainder / modulus operator (%) returns the remainder after (integer) division.
-                    if (!new_max_score || new_max_score % 1 !== 0 || new_max_score < 1 || new_max_score > 99) {
-                        if (msg_err) {msg_err += "<br><br>"}
-                        msg_err += loc.Maximum_score + " '" + new_max_score_str  + "'" + loc.err_list.not_allowed +
-                                            "<br>" + loc.err_list.maxscore_mustbe_between;
-                    };
-                };
-
-// - show message when error, restore input in element
-                if (msg_err) {
-                    const old_max_char = (q_dict.max_char) ? q_dict.max_char : "";
-                    const old_max_score = (q_dict.max_char) ?
-                // '1' is default max_score when max_char, don't show a_dict
-                            (q_dict.max_score > 1) ? q_dict.max_score : "" :
-                            (q_dict.max_score) ? q_dict.max_score : "";
-                    const old_value = old_max_char + old_max_score;
-                    el_input.value = (old_value) ? old_value : null;
-
-                    el_mod_message_container.innerHTML = msg_err;
-                    $("#id_mod_message").modal({backdrop: false});
-                    set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
-                } else {
-
-// - put new value in element
-                    const new_value = new_max_char + ( (new_max_score) ? new_max_score : "" );
-
-                    el_input.value = new_value;
-                    add_or_remove_class(el_input, "border_invalid", !el_input.value)
-
-// - put new value in mod_MEX_dict.p_dict.a_dict.q_dict
-                    q_dict.max_char = (new_max_char) ? new_max_char : "";
-                    q_dict.max_score = (new_max_score) ? new_max_score : 0;
-                }
-
-                MEXQ_calc_max_score(partex_pk);
-
-// +++++ when input is keys:
-    // admin mode - keys - possible answers entered by requsr_role_admin
-            } else {
-
-    //console.log("q_dict: ", q_dict)
-
-                const max_char_lc = (q_dict.max_char) ? q_dict.max_char.toLowerCase() : "";
-
-    //console.log("max_char_lc", max_char_lc)
-    //console.log("is_multiple_choice", is_multiple_choice)
-    //console.log("mod_MEX_dict.partex_dict", mod_MEX_dict.partex_dict)
-
-// answer only has value when multiple choice question. one or more letters, may be followed by a number as minimum score (ca3)
-                if (!q_dict.max_char){
-                    el_mod_message_container.innerHTML = loc.err_list.This_isnota_multiplechoice_question;
-                    $("#id_mod_message").modal({backdrop: false});
-                    set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
-                } else {
-
-                    if (input_value){
-                        let new_keys = "", min_score = null, pos = -1;
-                        for (let i = 0, len=input_value.length; i < len; i++) {
-                            const char = input_value[i];
-                            // !!Number(0) = false, therefore "0" must be filtered out with Number(first_char) !== 0
-                            const is_char = (!Number(char) && Number(char) !== 0 )
-                            if(!is_char){
-                                msg_err += loc.Key + " '" + char  + "'" + loc.err_list.not_allowed + "<br>";
-                            } else {
-                                const char_lc = char.toLowerCase();
-    //console.log("char_lc", char_lc)
-    //console.log("max_char_lc", max_char_lc)
-                                // y, z are not allowed because 'x' value is used for blank
-                                if(!"abcdefghijklmnopqrstuvwx".includes(char_lc)){
-                                    msg_err += loc.Key + " '" + char  + "'" + loc.err_list.not_allowed + "<br>";
-                                } else if ( new_keys.includes(char_lc)) {
-                                    msg_err += loc.Key + " '" + char  + "' " + loc.err_list.exists_multiple_times + "<br>";
-                                } else if (char_lc > max_char_lc ) {
-                                    msg_err += loc.Key + " '" + char  + "'" + loc.err_list.not_allowed + "<br>";
-                                } else {
-                                    new_keys += char_lc;
-                                }
-                            }
-                        }  // for (let i = 0, len=input_value.length; i < len; i++) {
-// - show message when error, delete input in element and in mod_MEX_dict.keys_dict
-                        if (msg_err){
-                            msg_err += loc.err_list.key_mustbe_between_and_ + max_char_lc + "'.";
-                            el_input.value = null;
-                            q_dict.keys = ";"
-
-                            el_mod_message_container.innerHTML = msg_err;
-                            $("#id_mod_message").modal({backdrop: false});
-                            set_focus_on_el_with_timeout(el_mod_message_btn_cancel, 150 )
-
-                        } else {
-// - put new new_keys in element and in mod_MEX_dict.keys_dict
-                            el_input.value = (new_keys) ? new_keys : null;
-                            q_dict.keys = (new_keys) ? new_keys : "";
-                        }
-// - delete if input_value is empty
-                    } else {
-                        q_dict.keys = "";
-                    };
-                };  // if (!is_multiple_choice)
-            };
-            MEXQ_calc_amount_maxscore()
-        } ; //  if (q_number)
-    };  // MEXQ_InputQuestion
-
 
 //--------- calc functions
 //========= MEX_get_ete_exam_dict_info  ============= PR2021-05-23 PR2022-01-21
@@ -5173,13 +4951,14 @@ document.addEventListener("DOMContentLoaded", function() {
     };  // MEXQ_calc_amount_maxscore
 
 ///////////////////////////////////////
-// +++++++++ MOD EXAM ANSWERS ++++++++++++++++ PR2021-05-23 PR2022-01-21 PR2022-04-20
+// +++++++++ MOD EXAM ANSWERS ++++++++++++++++ PR2021-05-23 PR2022-01-21 PR2022-04-20 PR2023-04-24
     function MEXA_Open(el_input){
         console.log(" ===  MEXA_Open  =====");
 
-// - reset mod_MEX_dict
         const is_addnew = false;
         const is_result_page = true;
+
+// - reset mod_MEX_dict
         MEX_reset_mod_MEX_dict(is_addnew, is_result_page);
 
 // el_input must always have value
@@ -5188,16 +4967,16 @@ document.addEventListener("DOMContentLoaded", function() {
         if(mod_MEX_dict.is_permit_same_school){
 
             const tblRow = t_get_tablerow_selected(el_input)
-            const pk_int = get_attr_from_el_int(tblRow, "data-pk");
-            const [index, found_dict, compare] = b_recursive_integer_lookup(grade_exam_rows, "id", pk_int);
-            const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
-            const datarow_index = index;
+            const data_dict = grade_exam_dicts[tblRow.id]
         console.log("grade_with_exam_dict", data_dict);
 
             if(data_dict) {
             // check if grade_exam is approved or publishesd -if so: return msg
             // get exam questions
-                if(data_dict.ce_exam_id){
+                if(!data_dict.ce_exam_id){
+                    b_show_mod_message_html(loc.No_exam_linked_to_candidate + "<br>" + loc.First_select_exam_in_column_exam);
+
+                } else {
 
             // check if grade_exam is approved or publishesd -if so: return msg
                     if(data_dict.secret_exam){
@@ -5247,7 +5026,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             mod_MEX_dict.examperiod = setting_dict.sel_examperiod;
                             mod_MEX_dict.examtype = setting_dict.sel_examtype;
 
-                            const exam_name = (ete_exam_dict.ceex_name) ? ete_exam_dict.ceex_name : "---";
+                            const exam_name = (ete_exam_dict.exam_name) ? ete_exam_dict.exam_name : "---";
 
                             // these are entered in MEX_get_ete_exam_dict_info
                                 //mod_MEX_dict.exam_pk = exam_dict.id;
@@ -6288,7 +6067,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // MASE_UpdateFromResponse refreshes the table, therefore no need for DatalistDownload
 /* if ( (mod_MASE_dict.is_approve_mode && mod_MASE_dict.step === 3) || (mod_MASE_dict.is_submit_mode && mod_MASE_dict.step === 5)){
 // ---  download page again
-            //let new_setting = {page: 'page_exams'};
+            //let new_setting = {page: 'page_wolf'};
             //const datalist_request = {setting: new_setting,
             //    duo_subject_rows: {get: true},
             //    ete_exam_rows: {get: true},
@@ -6696,7 +6475,7 @@ console.log("exam_dict", exam_dict);
 
                     mod_dict.subject_pk = data_dict.subj_id;
                     mod_dict.subj_name_nl = data_dict.subj_name_nl;
-                    mod_dict.ceex_name = data_dict.ceex_name;
+                    mod_dict.exam_name = data_dict.exam_name;
                     mod_dict.fullname = data_dict.fullname;
                     mod_dict.student_pk = data_dict.student_id;
             };
@@ -6707,7 +6486,7 @@ console.log("exam_dict", exam_dict);
                 hide_save_btn = true;
             } else {
                 msg_html = ["<p class='pb-2'>", loc.Submitted_will_be_removed_from_exam, "</p><p>",
-                        "&emsp;", mod_dict.ceex_name, "<br>",
+                        "&emsp;", mod_dict.exam_name, "<br>",
                         "&emsp;", mod_dict.subj_name_nl, "<br>",
                         "&emsp;", mod_dict.fullname, "</p><p class='py-2'>",
                         loc.Do_you_want_to_continue, "</p>"].join("");;
@@ -7221,7 +7000,7 @@ console.log("exam_dict", exam_dict);
 // ---  upload new setting and refresh page
         // PR2022-04-07 debug: when changing dep, levels must also be retrieved again. Added: level_rows: {cur_dep_only: true},
         const datalist_request = {
-                setting: {page: "page_exams",
+                setting: {page: "page_wolf",
                         sel_schoolbase_pk: selected_pk
                     },
                 school_rows: {get: true},
@@ -7327,7 +7106,7 @@ console.log("exam_dict", exam_dict);
 
     // ---  download data when changing subject
             // PR2023-04-17 filtering on subj_pk takes place on client function FillTblRows(), no need for datalist_request
-            //let new_setting = {page: 'page_exams', sel_subject_pk: setting_dict.sel_subject_pk};
+            //let new_setting = {page: 'page_wolf', sel_subject_pk: setting_dict.sel_subject_pk};
             //if(setting_dict.sel_cluster_pk) {
             //    new_setting.sel_cluster_pk = null;
             //    new_setting.sel_student_pk = null;
@@ -7443,7 +7222,7 @@ console.log("exam_dict", exam_dict);
 
         if(!is_test) {
             const datalist_request = {
-                setting: {page: "page_exams"},
+                setting: {page: "page_wolf"},
                 grade_exam_rows: {get: true}
             };
             //DatalistDownload(datalist_request);

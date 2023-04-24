@@ -3012,7 +3012,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // --- add a element to td., necessary to get same structure as item_table, used for filtering
         let el_div = document.createElement("div");
             el_div.innerText = code_value;
-            el_div.classList.add("tw_360", "px-2", "pointer_show" )
+            el_div.classList.add("tw_480", "px-2", "pointer_show" )
         td.appendChild(el_div);
     }  // MSELEX_FillSelectRow
 
@@ -3045,6 +3045,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         el_MDEC_select_subject.innerText = null;
         el_MDEC_input_version.innerText = null;
+        el_MDEC_select_level.value = null;
 
         if(permit_dict.permit_crud && permit_dict.requsr_role_admin){
 
@@ -3157,7 +3158,7 @@ document.addEventListener("DOMContentLoaded", function() {
     function MDEC_SelectLevelChange(el_select) {
         console.log("===== MDEC_SelectLevelChange =====");
 
-        mod_MEX_dict.lvlbase_pk = (el_select.value) ? el_select : null;
+        mod_MEX_dict.lvlbase_pk = (el_select.value && Number(el_select.value)) ? Number(el_select.value) : null;
         MDEC_enable_btn_save();
 
     };  // MDEC_SelectLevelChange
@@ -5705,7 +5706,18 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log(" ===  MDUO_Open  =====") ;
         const is_permit_admin = (permit_dict.requsr_role_admin && permit_dict.permit_crud);
         if(is_permit_admin){
-            if ([1,2, 3].includes(setting_dict.sel_examperiod)) {
+
+
+            console.log("    setting_dict.sel_dep_level_req", setting_dict.sel_dep_level_req) ;
+            console.log("    setting_dict.sel_lvlbase_pk", setting_dict.sel_lvlbase_pk) ;
+
+            if (![1,2, 3].includes(setting_dict.sel_examperiod)) {
+                b_show_mod_message_html(loc.Please_select_examperiod_sbr);
+
+            } else if (setting_dict.sel_dep_level_req && !setting_dict.sel_lvlbase_pk) {
+                b_show_mod_message_html(loc.Please_select_level_sbr);
+
+            } else {
                 const depbase_txt = (setting_dict.sel_depbase_code) ? setting_dict.sel_depbase_code : " ---";
                 const lvlbase_txt = (setting_dict.sel_dep_level_req && setting_dict.sel_lvlbase_pk) ? setting_dict.sel_lvlbase_code : "";
 
@@ -5721,9 +5733,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 el_MDUO_btn_save.disabled = true;
         // ---  show modal
                 $("#id_mod_duoexams").modal({backdrop: true});
-            } else {
-                b_show_mod_message_html(loc.Please_select_examperiod_sbr);
-            } ; //  if(is_permit_admin)
+            }; //  if(is_permit_admin)
         };
     };  // MDUO_Open
 

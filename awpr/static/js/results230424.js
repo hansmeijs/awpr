@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if(permit_dict.permit_calc_results){
             AddSubmenuButton(el_submenu, loc.Calculate_results, function() {MGL_Open("calc_results")}, ["tab_show", "tab_btn_result"]);
-            AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
+            //AddSubmenuButton(el_submenu, loc.Calculate_reex, function() {MGL_Open("calc_reex")}, ["tab_show", "tab_btn_result"]);
         };
         if(permit_dict.requsr_same_school){
             AddSubmenuButton(el_submenu, loc.Preliminary_gradelist, function() {MGL_Open("prelim")}, ["tab_show", "tab_btn_result"]);
@@ -781,9 +781,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const column_count = field_names.length;
 
 // ---  lookup index where this row must be inserted
-        const ob1 = (data_dict.fullname) ? data_dict.fullname : "";
+        const ob1 = (data_dict.lastname) ? data_dict.lastname.toLowerCase() : "";
+        const ob2 = (data_dict.firstname) ? data_dict.firstname.toLowerCase() : "";
         // ordering of table overview is doe on server, put row at end
-        const row_index = (selected_btn === "btn_result") ? b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1) : -1;
+        const row_index = (selected_btn === "btn_result") ? b_recursive_tblRow_lookup(tblBody_datatable, setting_dict.user_lang, ob1, ob2) : -1;
 
 // --- insert tblRow into tblBody at row_index
         const tblRow = tblBody_datatable.insertRow(row_index);
@@ -794,6 +795,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ---  add data-sortby attribute to tblRow, for ordering new rows
         tblRow.setAttribute("data-ob1", ob1);
+        tblRow.setAttribute("data-ob2", ob2);
 
 // --- add EventListener to tblRow
         tblRow.addEventListener("click", function() {HandleTblRowClicked(tblRow)}, false);
@@ -1156,9 +1158,9 @@ function RefreshDataRowsAfterUpload(response) {
 
 //=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2021-06-16
     function RefreshDatarowItem(tblName, field_setting, update_dict, data_rows) {
-        console.log(" --- RefreshDatarowItem  ---");
-        console.log("tblName", tblName);
-        console.log("update_dict", update_dict);
+        //console.log(" --- RefreshDatarowItem  ---");
+        //console.log("tblName", tblName);
+        //console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -1169,7 +1171,7 @@ function RefreshDataRowsAfterUpload(response) {
 
             let field_error_list = []
             const error_list = get_dict_value(update_dict, ["error"], []);
-    console.log("error_list", error_list);
+    //console.log("error_list", error_list);
 
             if(error_list && error_list.length){
 
@@ -1218,8 +1220,8 @@ function RefreshDataRowsAfterUpload(response) {
                 const [index, found_dict, compare] = b_recursive_integer_lookup(data_rows, "id", pk_int);
                 const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
                 const datarow_index = index;
-        console.log("pk_int", pk_int);
-        console.log("data_dict", data_dict);
+        //console.log("pk_int", pk_int);
+        //console.log("data_dict", data_dict);
 
 // ++++ deleted ++++
                 if(is_deleted){
@@ -1253,7 +1255,7 @@ function RefreshDataRowsAfterUpload(response) {
                                     updated_columns.push(col_field)
                                 }};
                         };
-        console.log("updated_columns", updated_columns);
+        //console.log("updated_columns", updated_columns);
 
 // ---  update fields in data_row
                         for (const [key, new_value] of Object.entries(update_dict)) {
@@ -1261,7 +1263,7 @@ function RefreshDataRowsAfterUpload(response) {
                                 if (new_value !== data_dict[key]) {
                                     data_dict[key] = new_value
                         }}};
-        console.log("data_dict", data_dict);
+        //console.log("data_dict", data_dict);
 
         // ---  update field in tblRow
                         // note: when updated_columns is empty, then updated_columns is still true.

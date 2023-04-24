@@ -1095,6 +1095,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
 
         dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical grey bar at the left.')
+        dict['Please_select_level_sbr'] = _('Please select a learning path in the vertical grey bar at the left.')
 
         dict['ETE_exams'] = _("ETE exams")
         dict['CVTE_exams'] = _("CVTE exams")
@@ -1219,6 +1220,10 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['No_exam_for_this_subject'] = _("There is no exam for this subject.")
         dict['No_exam_linked_to_this_subject'] = _("There is no exam linked to this subject.")
+
+        dict['No_exam_linked_to_candidate'] = _("There is no exam linked to the subject of this candidate.")
+        dict['First_select_exam_in_column_exam'] = _("Click in the column 'Exam' to link an exam to the subject of this candidate.")
+
         dict['This_exam_has_no_questions'] = _("This exam has no questions.")
         dict['This_is_a_secret_exam_01'] = _("This exam will be taken at the Division of Exams.")
         dict['This_is_a_secret_exam_02'] = _("You cannot enter scores.")
@@ -1832,6 +1837,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Maximum_size_is'] = _('The maximum size is ')
 
         dict['First_select_valid_file'] = _('You must select a valid file first.')
+
+        dict['AWP_is_uploading_document01'] = pgettext_lazy("AWP is document", "AWP is uploading document '")
+        dict['AWP_is_uploading_document02'] = pgettext_lazy("aan het uploaden", "' ...")
+
 # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
 

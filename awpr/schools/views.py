@@ -152,7 +152,7 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_examt
  # +++ get selected rows
     crit = Q(school__examyear_id=sel_examyear_pk)
 
-    # published_pk only has value when called by GradeApproveView. Then it is a created row
+    # published_pk only has value when called by GradeApproveView or ExampaperUploadView. Then it is a created row
     if published_pk:
         crit.add(Q(pk=published_pk), crit.connector)
     elif sel_examtype == 'exampaper':
@@ -282,6 +282,7 @@ class ExampaperUploadView(View):  # PR2023-04-19
                     logger.debug('    upload_dict: ' + str(upload_dict))
 
                 mode = upload_dict.get('mode')
+                published_pk = upload_dict.get('published_pk')
 
 # - get selected examyear and school from usersettings
                 sel_examyear, msg_lst = \
@@ -353,20 +354,20 @@ class ExampaperUploadView(View):  # PR2023-04-19
                                     updated_published_pk = published_instance.pk
 
                     elif mode == 'delete':
-                        mailattachment = sch_mod.Mailattachment.objects.get_or_none(pk=99)
-                        if mailattachment:
-                            this_txt = _("Attachment '%(tbl)s' ") % {'tbl': str(mailattachment.filename)}
+                        published_instance = sch_mod.Published.objects.get_or_none(pk=published_pk)
+                        if published_instance:
+                            this_txt = ''.join((gettext("Document"), " '", str(published_instance.filename), "' "))
                             deleted_row, err_html = sch_mod.delete_instance(
-                                table='mailinglist',
-                                instance=mailattachment,
+                                table='published',
+                                instance=published_instance,
                                 request=request,
                                 this_txt=this_txt
                             )
                             if err_html:
+                                border_class = c.HTMLCLASS_border_bg_invalid
                                 msg_list.append(err_html)
-
                             else:
-                                update_wrap['published_rows'] = deleted_row
+                                update_wrap['updated_published_rows'] = [deleted_row]
 
                     if updated_published_pk:
                         update_wrap['updated_published_rows'] = create_published_rows(

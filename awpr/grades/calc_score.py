@@ -638,8 +638,8 @@ def get_nterm_number_from_input_str(input_str):
                 has_error = True
 
         if has_error:
-            err_list.append(str(_("Grade '%(val)s' is not allowed.") % {'val': imput_trim}))
-            err_list.append(''.join((str(_('The grade must be a number between 1 and 10')), ',')))
+            err_list.append(str(_("N-term '%(val)s' is not allowed.") % {'val': imput_trim}))
+            err_list.append(''.join((str(_('The N-term must be a number between 1 and 10')), ',')))
             err_list.append(str(_('with one digit after the decimal point.')))
 
     if logging_on:

@@ -36,12 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
 // --- get field_settings
-    field_settings.btn_exampaper = {field_caption: ["", "Document_name", "Date_published", "Published_by", "Download", ""],
-                    field_names: ["select", "filename", "datepublished", "school_name", "url", "delete"],
-                    field_tags: ["div", "div", "div", "div", "a", "div"],
-                    filter_tags: ["text", "text", "text",  "text", "toggle", ""],
-                    field_width: ["020", "420",  "180", "300", "120", "032"],
-                    field_align: ["c", "l", "c", "l", "c", "c"]};
+    field_settings.btn_exampaper = {field_caption: ["", "Document_name", "Date_published", "Published_by", "Download"],
+                    field_names: ["select", "filename", "datepublished", "school_name", "url"],
+                    field_tags: ["div", "div", "div", "div", "a"],
+                    filter_tags: ["text", "text", "text",  "text", "toggle"],
+                    field_width: ["020", "420",  "180", "300", "120"],
+                    field_align: ["c", "l", "c", "l", "c"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (permit_dict.requsr_role_admin || permit_dict.permit_crud) {
             AddSubmenuButton(el_submenu, loc.Upload_document, function() {MEXPAPER_Open()});
-            AddSubmenuButton(el_submenu, loc.Delete_document, function() {ModConfirmOpen()});
+            AddSubmenuButton(el_submenu, loc.Delete_document, function() {ModConfirmOpen("delete")});
         };
 
 
@@ -353,7 +353,6 @@ document.addEventListener('DOMContentLoaded', function() {
         CreateTblHeader(field_setting, col_hidden);
 
 // --- loop through data_rows
-
         for (const data_dict of Object.values(published_dicts)) {
             CreateTblRow(tblName, field_setting, data_dict);
         };
@@ -453,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-06-21 PR2021-12-14
     function CreateTblRow(tblName, field_setting, data_dict) {
         //console.log("=========  CreateTblRow =========", tblName);
-        //console.log("data_dict", data_dict);
+        //console.log("   data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -495,12 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const el = document.createElement(field_tag);
 
                 if (field_name === "url"){
-                    //el.innerHTML = "download &#8681;";
                     el.innerHTML = "&emsp;&emsp;&emsp;&emsp;&#8681;&emsp;&emsp;&emsp;&emsp;";
-
-                } else if (field_name === "delete"){
-                    el.classList.add("delete_0_1")
-                    add_hover(el, "delete_0_2", "delete_0_1")
                 };
 
         // --- add data-field attribute
@@ -546,9 +540,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if(el_div){
             const field_name = get_attr_from_el(el_div, "data-field");
             const fld_value = (data_dict[field_name]) ? data_dict[field_name] : null;
-
-        //console.log("field_name", field_name);
-        //console.log("fld_value", fld_value);
 
             if(field_name){
                 let inner_text = null, h_ref = null, filter_value = null;
@@ -610,10 +601,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log( "response");
                     console.log( response);
 
-                    if("updated_published_rows" in response){
-                        ModConfirmResponseNEW(response);
-                    }
+                    if (response.hasOwnProperty("msg_html")){
+                        b_show_mod_message_html(response.msg_html);
+                    };
 
+                    if (response.hasOwnProperty("updated_published_rows")) {
+                        RefreshDataRows("published", response.updated_published_rows, published_dicts);
+
+                    };
                 },  // success: function (response) {
                 error: function (xhr, msg) {
                     // ---  hide loader
@@ -625,9 +620,215 @@ document.addEventListener('DOMContentLoaded', function() {
     };  // UploadChanges
 
 
+//###########################################################################
+// +++++++++++++++++ REFRESH DATA MAP +++++++++++++++++++++++++++++++++++++++
+
+//=========  RefreshDataRows  ================ PR2023-04-24
+    function RefreshDataRows(tblName, update_rows, data_dicts, is_update) {
+        console.log(" --- RefreshDataRows  ---");
+        console.log("tblName", tblName);
+        console.log("update_rows", update_rows);
+
+        // PR2021-01-13 debug: when update_rows = [] then !!update_rows = true. Must add !!update_rows.length
+        if (update_rows && update_rows.length ) {
+            const field_setting = field_settings[selected_btn];
+
+        console.log("field_setting", field_setting);
+    // ---  get list of hidden columns
+            const col_hidden = b_copy_array_to_new_noduplicates(mod_MCOL_dict.cols_hidden);
+
+    // - hide level when not level_req
+            if(!setting_dict.sel_dep_level_req){col_hidden.push("lvl_abbrev")};
+
+            for (let i = 0, update_dict; update_dict = update_rows[i]; i++) {
+        console.log("update_dict", update_dict);
+                RefreshDatarowItem(tblName, field_setting, col_hidden, update_dict, data_dicts);
+            };
+        } else if (!is_update) {
+            // empty the data_dicts when update_rows is empty PR2021-01-13 debug forgot to empty data_dicts
+            // PR2021-03-13 debug. Don't empty de data_dicts when is update. Returns [] when no changes made
+           b_clear_dict(data_dicts);
+        };
+    };  //  RefreshDataRows
+
+//=========  RefreshDatarowItem  ================ PR2020-08-16 PR2020-09-30 PR2022-01-23 PR2022-04-13 PR2022-05-17
+    function RefreshDatarowItem(tblName, field_setting, col_hidden, update_dict, data_dicts) {
+        console.log(" --- RefreshDatarowItem  ---");
+        console.log("tblName", tblName);
+        console.log("update_dict", update_dict);
+
+        if(!isEmpty(update_dict)){
+            const field_names = field_setting.field_names;
+
+            const map_id = update_dict.mapid;
+            const is_deleted = (!!update_dict.deleted);
+            const is_created = (!!update_dict.created);
+        console.log("map_id", map_id);
+        console.log("is_deleted", is_deleted);
+        console.log("is_created", is_created);
+
+    // ---  get list of columns that are not updated because of errors
+            const error_columns = [];
+            if (update_dict.err_fields){
+                // replace field '_auth2by' by '_status'
+                for (let i = 0, err_field; err_field = update_dict.err_fields[i]; i++) {
+                    if (err_field && err_field.includes("_auth")){
+                        const arr = err_field.split("_");
+                        err_field = arr[0] + "_status";
+                    };
+                    error_columns.push(err_field);
+                };
+            };
+        //console.log("error_columns", error_columns);
+
+// ++++ created ++++
+            // PR2021-06-16 from https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index-javascript
+            //arr.splice(index, 0, item); will insert item into arr at the specified index
+            // (deleting 0 items first, that is, it's just an insert).
+
+            if(is_created){
+    // ---  first remove key 'created' from update_dict
+                delete update_dict.created;
+    // ---  add new item to  data_dictsNEW with key
+                data_dicts[update_dict.mapid] = update_dict;
+    // ---  create row in table., insert in alphabetical order
+                const new_tblRow = CreateTblRow("published", field_setting, update_dict);
+
+                if(new_tblRow){
+    // --- add1 to item_count and show total in sidebar
+                    selected.item_count += 1;
+    // ---  scrollIntoView,
+                    new_tblRow.scrollIntoView({ block: 'center',  behavior: 'smooth' });
+    // ---  make new row green for 2 seconds,
+                    ShowOkElement(new_tblRow);
+                };
+            } else {
+
+    // +++ get existing data_dict from data_dicts
+                const data_dict = data_dicts[update_dict.mapid]
+    console.log("    data_dict", data_dict);
+
+                if(!isEmpty(data_dict)){
+
+// ++++ deleted ++++
+                    if(is_deleted){
+
+                        delete data_dict[map_id];
+
+        //--- delete tblRow
+                        const tblRow_tobe_deleted = document.getElementById(map_id);
+                        if (tblRow_tobe_deleted ){
+                            tblRow_tobe_deleted.parentNode.removeChild(tblRow_tobe_deleted);
+        // --- subtract 1 from item_count and show total in sidebar
+                            selected.item_count -= 1;
+        // ---  show total in sidebar
+                            t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Document, loc.Documents, setting_dict.user_lang);
+                        };
+                    } else {
+
+// ++++ updated row +++++++++++
+        // loop through fields of update_dict, check which fields are updated, add to list 'updated_columns'
+
+        // ---  first add updated fields to updated_columns list, before updating data_row
+                        let updated_columns = [];
+
+    // ---  add field 'ce_exam_score' to updated_columns when value has changed
+                        const [old_ce_exam_score, old_title_niu] = UpdateFieldScore(loc, data_dict)
+                        const [new_ce_exam_score, new_title_niu] = UpdateFieldScore(loc, update_dict)
+                        if (old_ce_exam_score !== new_ce_exam_score ) {
+                            updated_columns.push("ce_exam_score");
+                            updated_columns.push("download_exam");
+                        };
+
+    // ---  add field 'blanks' to updated_columns when value has changed
+                        const [old_inner_txt, old_title_txt, old_filter_val] = UpdateFieldBlanks(tblName, data_dict);
+                        const [new_inner_txt, new_title_txt, new_filter_val] = UpdateFieldBlanks(tblName, update_dict);
+                        if (old_inner_txt !== new_inner_txt || old_title_txt !== new_title_txt ) {
+                            updated_columns.push("blanks");
+                        };
+
+    // ---  add field 'status' to updated_columns when value has changed
+                        const [old_status_className, old_status_title] = UpdateFieldStatus(tblName, data_dict);
+                        const [new_status_className, new_status_title] = UpdateFieldStatus(tblName, update_dict);
+                        if (old_status_className !== new_status_className || old_status_title !== new_status_title ) {
+                            updated_columns.push("status");
+                        };
+
+    // ---  loop through fields of update_dict
+                        for (const [key, new_value] of Object.entries(update_dict)) {
+                            if (key in data_dict){
+                                if (new_value !== data_dict[key]) {
+    // ---  update field in data_row when value has changed
+                                    data_dict[key] = new_value;
+
+                            console.log("   ", key, new_value);
+                            console.log(">>> has changed");
+                            console.log("field_names", field_names);
+    // ---  add field to updated_columns list when field exists in field_names
+                                    if (field_names && field_names.includes(key)) {
+        // ---  add field to updated_columns list
+                                        updated_columns.push(key);
+                                    };
+                                };
+                            };
+                        };
+
+        //console.log("updated_columns", updated_columns);
+        // ---  update field in tblRow
+                        // note: when updated_columns is empty, then updated_columns is still true.
+                        // Therefore don't use Use 'if !!updated_columns' but use 'if !!updated_columns.length' instead
+                        if(updated_columns.length){
+
+    // --- get existing tblRow
+                            let tblRow = document.getElementById(map_id);
+        //console.log("tblRow", tblRow);
+        //console.log("updated_columns", updated_columns);
+                            if(tblRow){
+
+    // - to make it perfect: move row when first or last name have changed
+                                if (updated_columns.includes("name")){
+                                //--- delete current tblRow
+                                    tblRow.parentNode.removeChild(tblRow);
+                                //--- insert row new at new position
+                                    tblRow = CreateTblRow(tblName, field_setting, update_dict)
+                                };
+
+    // - loop through cells of row
+                                for (let i = 1, el_fldName, el, td; td = tblRow.cells[i]; i++) {
+                                    el = td.children[0];
+                                    if (el){
+                                        el_fldName = get_attr_from_el(el, "data-field");
+                                        const is_updated_field = updated_columns.includes(el_fldName);
+                                        const is_err_field = error_columns.includes(el_fldName);
+
+    // - update field and make field green when field name is in updated_columns
+                                        if(is_updated_field){
+                                            UpdateField(tblName, el, update_dict);
+                                            ShowOkElement(el);
+                                        };
+                                        if(is_err_field){
+    // - make field red when error and reset old value after 2 seconds
+                                            reset_element_with_errorclass(tblName, el, update_dict, tobedeleted)
+                                        };
+                                    }  // if (el)
+                                };  // for (let i = 1, el_fldName, el; el = tblRow.cells[i]; i++)
+                            };  // if(tblRow)
+                        };  // if(updated_columns.length || field_error_list.length)
+                    };  //  if(is_deleted)
+                }  // if(!isEmpty(data_dict))
+            }; // if(is_created)
+
+    // ---  show total in sidebar
+            t_set_sbr_itemcount_txt(loc, selected.item_count, loc.Exam, loc.Exams, setting_dict.user_lang);
+
+        }; // if(!isEmpty(update_dict))
+    }; // RefreshDatarowItem
+
+// ##########################################################################
+
 // +++++++++++++++++ MODAL CONFIRM +++++++++++++++++++++++++++++++++++++++++++
-//=========  ModConfirmOpen  ================ PR2022-11-02
-    function ModConfirmOpen() {
+//=========  ModConfirmOpen  ================ PR2022-11-02 PR2023-04-24
+    function ModConfirmOpen(mode) {
         console.log(" -----  ModConfirmOpen   ----")
 
 // reset  modal
@@ -638,41 +839,54 @@ document.addEventListener('DOMContentLoaded', function() {
         el_confirm_btn_cancel.innerText = loc.Cancel;
 
         b_clear_dict(mod_dict);
-        mod_dict.mode = "delete";
-
+        mod_dict.mode = mode;
+        if ( mode === "delete"){
 // --- get existing data_dict from data_rows
 
-        const data_dict = published_dicts[selected.map_id]
+            const data_dict = published_dicts[selected.map_id]
 
-        console.log("    data_dict", data_dict)
+            console.log("    data_dict", data_dict)
 
-        if (isEmpty(data_dict)){
-        // no document selected - give msg - not when is_create
-            b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_a_document_first + "</div>");
-        } else {
-            mod_dict.table = "published";
-            mod_dict.published_pk = data_dict.id;
-            mod_dict.map_id = data_dict.mapid;
+            if (isEmpty(data_dict)){
+            // no document selected - give msg - not when is_create
+                b_show_mod_message_html("<div class='p-2'>" + loc.Please_select_a_document_first + "</div>");
+            } else {
+                mod_dict.table = "published";
+                mod_dict.published_pk = data_dict.id;
+                mod_dict.map_id = data_dict.mapid;
 
+                const msg_html = ["<div class='mx-2'>",
+                                "<p>", loc.Document, " '", data_dict.name, "'", loc.will_be_deleted, "</p>",
+                                "<p class='mt-2'>", loc.Do_you_want_to_continue, "</p>",
+                             "</div>"].join("")
+
+                el_confirm_loader.classList.add(cls_hide)
+                el_confirm_msg_container.className = "p-3";
+                el_confirm_msg_container.innerHTML = msg_html;
+
+                el_confirm_btn_save.innerText = loc.Yes_delete;
+                el_confirm_btn_cancel.innerText = loc.No_cancel;
+                add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", true, "btn-primary");
+
+    // set focus to cancel button
+                set_focus_on_el_with_timeout(el_confirm_btn_save)
+            };
+        } else if (mode ==="uploading"){
             const msg_html = ["<div class='mx-2'>",
-                            "<p>", loc.Document, " '", data_dict.name, "'", loc.will_be_deleted, "</p>",
-                            "<p class='mt-2'>", loc.Do_you_want_to_continue, "</p>",
+                            "<p>", loc.AWP_is_uploading_document01, mod_MEXPAPER_dict.curFile_name, loc.AWP_is_uploading_document02, "</p>",
                          "</div>"].join("")
 
-            el_confirm_loader.classList.add(cls_hide)
+            el_confirm_loader.classList.remove(cls_hide)
+            add_or_remove_class (el_confirm_loader, cls_hide, false);
             el_confirm_msg_container.className = "p-3";
             el_confirm_msg_container.innerHTML = msg_html;
 
-            el_confirm_btn_save.innerText = loc.Yes_delete;
-            el_confirm_btn_cancel.innerText = loc.No_cancel;
-            add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", true, "btn-primary");
-
-// set focus to cancel button
-            set_focus_on_el_with_timeout(el_confirm_btn_save)
-    // show modal
-            $("#id_mod_confirm").modal({backdrop: true});
+            el_confirm_btn_save.innerText = loc.OK;
+            add_or_remove_class (el_confirm_btn_save, cls_hide, true);
+            el_confirm_btn_cancel.innerText = loc.Close;
         };
-
+// show modal
+        $("#id_mod_confirm").modal({backdrop: true});
     };  // ModConfirmOpen
 
 //=========  ModConfirmSave  ================ PR2021-08-22 PR2022-10-10
@@ -723,7 +937,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             $("#id_mod_confirm").modal("hide");
 
-            t_Refresh_DataDicts("published", response.updated_published_rows, published_dicts, CreateTblRow);
+            //t_Refresh_DataDicts("published", response.updated_published_rows, published_dicts, CreateTblRow);
+            RefreshDataRows("published", response.updated_published_rows, published_dicts);
+
             Filter_TableRows();
         };
     };  // ModConfirmResponseNEW
@@ -970,6 +1186,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const uploadFile = new b_UploadFile(upload_json, mod_MEXPAPER_dict.curFile, url_str);
         uploadFile.doUpload(MEXPAPER_Refresh);
 
+        $("#id_mod_exampaper").modal("hide");
+
+        ModConfirmOpen("uploading")
+
     };  // MEXPAPER_Save
 
 //=========   MEXPAPER_Filedialog_Open   ======================
@@ -1047,9 +1267,12 @@ document.addEventListener('DOMContentLoaded', function() {
             b_show_mod_message_html(response.msg_html);
         };
         if (response && response.hasOwnProperty("updated_published_rows")) {
-            t_Refresh_DataDicts("published", response.updated_published_rows, published_dicts, CreateTblRow);
+            //t_Refresh_DataDicts("published", response.updated_published_rows, published_dicts, CreateTblRow);
+            RefreshDataRows("published", response.updated_published_rows, published_dicts);
             Filter_TableRows();
         };
+
+        $("#id_mod_confirm").modal("hide");
     }; // MEXPAPER_Refresh
 
 

@@ -786,7 +786,8 @@ def get_gradelist_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sct
                 first_name = row.get('firstname') or '---'
                 prefix = row.get('prefix')
                 full_name = stud_fnc.get_firstname_prefix_lastname(last_name, first_name, prefix)
-                sort_name = stud_fnc.get_full_name(last_name, first_name, prefix)
+                sort_name = (last_name.lower() + c.STRING_SPACE_30)[:30] + first_name.lower()
+
                 birth_date = row.get('birthdate', '')
                 birth_date_formatted = af.format_DMY_from_dte(birth_date, 'nl', False)  # month_abbrev = False
 
@@ -1021,7 +1022,7 @@ def get_diploma_dictlist(examyear, school, department, sel_lvlbase_pk, sel_sctba
             sql_keys['sctbase_pk'] = sel_sctbase_pk
             sql_list.append("AND sct.base_id = %(sctbase_pk)s::INT")
 
-    sql_list.append("ORDER BY stud.lastname, stud.firstname")
+    sql_list.append("ORDER BY LOWER(stud.lastname), LOWER(stud.firstname)")
 
     sql = ' '.join(sql_list)
 

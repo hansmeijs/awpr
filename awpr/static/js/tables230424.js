@@ -2543,6 +2543,12 @@
         // - forEach() and for/in skip empty elements, also known as "holes" in the array, for and for/of do not.
         // - Generally, for/of is the most robust way to iterate over an array in JavaScript.
         // - It is more concise than a conventional for loop and doesn't have as many edge cases as for/in and forEach().
+
+        // PR223-04-22 --- in userpage: put filter of column 1 (username in filterrow, because filter stays when tab btn changes PR223-04-22
+        // doesnt work because index refers to diferent columns in different tabs. filter_dict must use fieldname instead of index
+       // TODO use fieldnames in filterdict instead of index. Check if that is much slower, because you must get fieldname from attribute data-field
+
+
         let hide_row = false;
 
 // ---  show all rows if filter_dict is empty - except for inactive ones

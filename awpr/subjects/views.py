@@ -1679,10 +1679,6 @@ class ExamUploadView(View):
 
                             elif table == 'duo_exam':
 
-                                """
-                                create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, sel_lvlbase, sel_examperiod, append_dict, exam_pk_list=None)
-                                """
-
                                 updated_duo_exam_rows = create_duo_exam_rows(
                                     req_usr=request.user,
                                     sel_examyear=sel_examyear,
@@ -2250,8 +2246,6 @@ class ExamUploadDuoExamView(View):
     # - end of delete_duo_exam_instance
 
 
-
-
         req_usr = request.user
         update_wrap = {}
         msg_html = None
@@ -2338,7 +2332,13 @@ class ExamUploadDuoExamView(View):
                             exam_instance = subj_mod.Exam.objects.get_or_none(id=exam_id)
 
             # - create exam if it does not exist and ntb_id exists
-                            if exam_instance is None and ntermentable_instance is not None:
+                            # PR 2023-04-21 error: column "none" does not exist
+                            # LINE 1: ...ND exam.id IN (SELECT UNNEST(ARRAY[461, 458, 455, None]::INT...
+                            # exam_pk_list contains 'None'
+                            # cause: when exam_instance is None was stil added to the list
+                            # was:
+                            # if exam_instance is None and ntermentable_instance is not None:
+                            if exam_instance is None:
                                 exam_instance, err_html = create_exam_instance(
                                     subject=subject_instance,
                                     department=department_instance,
@@ -4471,10 +4471,31 @@ def update_exam_instance(request, sel_examyear, sel_department, exam_instance, u
         calc_cegrade_from_exam_score = False
 
         for field, new_value in upload_dict.items():
-
 # --- skip fields that don't contain new values
             if field in ('mode', 'examyear_pk', 'subject_pk', 'exam_pk', 'examtype'):
                 pass
+
+            elif field == 'lvlbase_pk':
+                db_field = 'level'
+                if logging_on:
+                    logger.debug('     field: ' + str(field))
+                    logger.debug('     new_value: ' + str(new_value))
+
+                new_level = subj_mod.Level.objects.get_or_none(
+                    base_id=new_value,
+                    examyear=sel_examyear
+                )
+                if logging_on:
+                    logger.debug('     new_level: ' + str(new_level))
+
+                old_level = getattr(exam_instance, db_field)
+                if logging_on:
+                    logger.debug('     old_level: ' + str(old_level))
+
+                if new_level != old_level:
+                    setattr(exam_instance, db_field, new_level)
+                    save_changes = True
+                    calc_cegrade_from_exam_score = True
 
             elif field in ('amount', 'blanks'):
                 # these are calculated fields and will be calculated in calc_amount_and_scalelength
@@ -5011,7 +5032,7 @@ def create_ete_exam_rows(req_usr, sel_examyear, sel_depbase, append_dict, settin
 
 def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, sel_lvlbase, sel_examperiod, append_dict, exam_pk_list=None):
     # PR2022-04-06 PR2022-06-02
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_duo_exam_rows ============= ')
         logger.debug('    sel_examyear: ' + str(sel_examyear))
@@ -5035,6 +5056,10 @@ def create_duo_exam_rows(req_usr, sel_examyear, sel_depbase, sel_lvlbase, sel_ex
     #       - this examyear_code i.e both exams of Cur and Sxm are showing
     # - when role = admin:
     #       - this examyear_pk i.e only exams of Cur or Sxm are showing
+
+    # PR 2023-04-21 error: column "none" does not exist
+    # LINE 1: ...ND exam.id IN (SELECT UNNEST(ARRAY[461, 458, 455, None]::INT...
+    # exam_pk_list contains 'None'
 
     duo_exam_rows = []
     if sel_examyear and sel_depbase and sel_examperiod:
@@ -6859,9 +6884,9 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
                     acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
 
             if logging_on:
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
-                logger.debug('grade_pk: ' + str(grade_pk))
+                logger.debug('    sel_school: ' + str(sel_school))
+                logger.debug('    sel_department: ' + str(sel_department))
+                logger.debug('    grade_pk: ' + str(grade_pk))
 
             if sel_examyear and grade_pk:
 
@@ -6882,6 +6907,9 @@ class ExamDownloadGradeExamView(View):  # PR2022-01-29
                 if sel_ce_exam_instance and sel_ce_exam_instance.published is not None:
 
                     student_name = sel_grade_instance.studentsubject.student.fullnamewithinitials
+
+                    if logging_on:
+                        logger.debug('    student_name: ' + str(student_name))
 
                     file_name = ' '.join(( str(_('Exam')),
                         c.EXAMPERIOD_CAPTION.get(sel_ce_exam_instance.examperiod, ''),
