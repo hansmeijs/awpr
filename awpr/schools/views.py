@@ -175,9 +175,6 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_examt
     #rows = sch_mod.Published.objects.filter(crit).order_by('-datepublished')
     rows = sch_mod.Published.objects.filter(crit).order_by('pk')
 
-    if logging_on:
-        logger.debug('    rows: ' + str(rows))
-
     published_rows = []
     for row in rows:
         if row.file:
@@ -210,8 +207,6 @@ def create_published_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_examt
                     dict['created'] = True
                 published_rows.append(dict)
 
-    if logging_on:
-        logger.debug('    published_rows: ' + str(published_rows))
     return published_rows
 # --- end of create_published_rows
 
@@ -356,18 +351,28 @@ class ExampaperUploadView(View):  # PR2023-04-19
                     elif mode == 'delete':
                         published_instance = sch_mod.Published.objects.get_or_none(pk=published_pk)
                         if published_instance:
-                            this_txt = ''.join((gettext("Document"), " '", str(published_instance.filename), "' "))
-                            deleted_row, err_html = sch_mod.delete_instance(
-                                table='published',
-                                instance=published_instance,
-                                request=request,
-                                this_txt=this_txt
-                            )
-                            if err_html:
+                            publ_school = published_instance.school
+                            if publ_school and publ_school.base != request.user.schoolbase:
                                 border_class = c.HTMLCLASS_border_bg_invalid
-                                msg_list.append(err_html)
+                                school_name = (publ_school.article + ' ' if publ_school.article else '') + publ_school.name
+                                msg_list.append(''.join((
+                                    str(_('This document has been published by %(cpt)s.') % {'cpt': school_name}),
+                                    '<br>', str(_("You cannot delete %(cpt)s.") % {'cpt': pgettext_lazy('neutral', 'it')})
+                                )))
                             else:
-                                update_wrap['updated_published_rows'] = [deleted_row]
+
+                                this_txt = ''.join((gettext("Document"), " '", str(published_instance.filename), "' "))
+                                deleted_row, err_html = sch_mod.delete_instance(
+                                    table='published',
+                                    instance=published_instance,
+                                    request=request,
+                                    this_txt=this_txt
+                                )
+                                if err_html:
+                                    border_class = c.HTMLCLASS_border_bg_invalid
+                                    msg_list.append(err_html)
+                                else:
+                                    update_wrap['updated_published_rows'] = [deleted_row]
 
                     if updated_published_pk:
                         update_wrap['updated_published_rows'] = create_published_rows(
@@ -3991,15 +3996,15 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21 PR2021-03-25
 
 
 @method_decorator([login_required], name='dispatch')
-class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
+class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27 PR2023-04-25
 
     def post(self, request):
         logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= SchoolUploadView ============= ')
 
-        msg_html = None
-        border_class = ''
+        msg_list = []
+        border_class = None
         update_wrap = {}
 
 # - reset language
@@ -4009,18 +4014,19 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 # - get permit
         has_permit = acc_prm.has_permit(request, 'page_school', ['permit_crud'])
         if not has_permit:
-            msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
-
+            msg_list.append(acc_prm.err_html_no_permit())  # default: 'to perform this action')
         else:
 
 # --- get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
             if upload_json:
                 upload_dict = json.loads(upload_json)
-
+                """
+                upload_dict{'table': 'school', 'examyear_pk': 4, 'school_pk': 43, 'mapid': 'school_43', 'defaultrole': '32', 'name': 'Inspectie Onderwijs', 'otherlang': None, 'depbases': '1;2;3'}
+    
+                """
                 updated_rows = []
                 append_dict = {}
-                msg_list = []
 
 # --- get variables from upload_dict PR2020-12-25
                 school_pk = upload_dict.get('school_pk')
@@ -4029,10 +4035,10 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                 is_delete = (mode == 'delete')
 
                 if logging_on:
-                    logger.debug('upload_dict' + str(upload_dict))
-                    logger.debug('school_pk: ' + str(school_pk))
-                    logger.debug('is_create: ' + str(is_create))
-                    logger.debug('is_delete: ' + str(is_delete))
+                    logger.debug('    upload_dict' + str(upload_dict))
+                    logger.debug('    school_pk: ' + str(school_pk))
+                    logger.debug('    is_create: ' + str(is_create))
+                    logger.debug('    is_delete: ' + str(is_delete))
 
                 header_txt = _('Add school') if is_create else _('Delete school') if is_delete else _('Edit school')
 
@@ -4047,7 +4053,6 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                 if msg_lst:
                     border_class = "border_bg_warning"
                     msg_list.extend(msg_lst)
-
                 else:
 
 # +++ Create new school
@@ -4066,7 +4071,7 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                             examyear=sel_examyear
                         )
                     if logging_on:
-                        logger.debug('school_instance: ' + str(school_instance))
+                        logger.debug('    school_instance: ' + str(school_instance))
 
                     if school_instance:
 
@@ -4085,15 +4090,15 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
                                 logger.debug('    deleted_row: ' + str(deleted_row))
                                 logger.debug('    err_html: ' + str(err_html))
 
-                    else:
+                        else:
 
-# --- Update school, also when it is created. When deleted: school is None
-                    #  Not necessary when created. Most fields are required. All fields are saved in create_school_instance
+    # --- Update school, also when it is created. When deleted: school is None
+                        #  Not necessary when created. Most fields are required. All fields are saved in create_school_instance
 
-                        error_list = update_school_instance(school_instance, sel_examyear, upload_dict, request)
-                        if error_list:
-                            border_class = 'border_bg_invalid'
-                            msg_list.extend(error_list)
+                            error_list = update_school_instance(school_instance, sel_examyear, upload_dict, request)
+                            if error_list:
+                                border_class = 'border_bg_invalid'
+                                msg_list.extend(error_list)
 
 # - create subject_row, also when deleting failed (when deleted ok there is no subject, subject_row is made above)
 # PR2021-089-04 debug. gave error on subject.pk: 'NoneType' object has no attribute 'pk'
@@ -4107,11 +4112,8 @@ class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27
 
                         update_wrap['updated_school_rows'] = updated_rows
 
-                if msg_list:
-                    msg_html  = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
-
-        if msg_html:
-            update_wrap['msg_html'] = msg_html
+        if msg_list:
+            update_wrap['msg_html'] = acc_prm.msghtml_from_msglist_with_border(msg_list, border_class)
 
 # - return update_wrap
         return HttpResponse(json.dumps(update_wrap, cls=LazyEncoder))
@@ -4390,12 +4392,12 @@ def delete_school_instance(school_instance, request):
 
 #######################################################
 def update_school_instance(school_instance, examyear, upload_dict, request):
-    # --- update existing and new instance PR2019-06-06 PR2021-05-13 PR2022-08-07
+    # --- update existing and new instance PR2019-06-06 PR2021-05-13 PR2022-08-07  PR2023-04-25
     # add new values to update_dict (don't reset update_dict, it has values)
-    logging_on = False  # s.LOGGING_ON
+    logging_on = False  #s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_school_instance -------')
-        logger.debug('upload_dict' + str(upload_dict))
+        logger.debug('     upload_dict' + str(upload_dict))
 
     # upload_dict = {id: {table: "school", ppk: 1, pk: 1, mapid: "school_1"},
     #                depbases: {value: Array(1), update: true} }
@@ -4427,6 +4429,12 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
 
             elif field in ['name', 'abbrev']:
                 saved_value = getattr(school_instance, field)
+
+                if logging_on:
+                    logger.debug('     field' + str(field))
+                    logger.debug('     new_value' + str(new_value))
+                    logger.debug('     saved_value' + str(saved_value))
+
                 if new_value and new_value != saved_value:
                     # TODO validate_code_name_blank_length_exists_id checks for null, too long and exists. Puts err_msg in update_dict
                     # err_msg = validate_code_name_blank_length_exists(
@@ -4488,11 +4496,8 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
                 if logging_on:
                     logger.debug('parent changes saved')
             except Exception as e:
-
                 logger.error(getattr(e, 'message', str(e)))
-                msg_html = ''.join((str(_('An error occurred')), ':<br>&emsp;<i>', str(e), '</i><br>',
-                                    str(_('The changes have not been saved.'))))
-                error_list.append(msg_html)
+                error_list.append(acc_prm.msghtml_error_occurred_with_border(e, _('The changes have not been saved.')))
 
         if save_changes:
             try:
@@ -4501,9 +4506,11 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
                     logger.debug('school_instance changes saved')
             except Exception as e:
                 logger.error(getattr(e, 'message', str(e)))
-                msg_html = ''.join((str(_('An error occurred')), ':<br>&emsp;<i>', str(e), '</i><br>',
-                                    str(_('The changes have not been saved.'))))
-                error_list.append(msg_html)
+                error_list.append(acc_prm.msghtml_error_occurred_no_border(e, _('The changes have not been saved.')))
+
+    if logging_on:
+        for err in error_list:
+            logger.debug('   err in error_list:  ' + str(err))
 
     return error_list
 # - -end of update_school_instance

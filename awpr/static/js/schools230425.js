@@ -1224,8 +1224,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  validate_duplicates_in_department  ================ PR2020-09-11
     function validate_duplicates_in_department(loc, tblName, fldName, caption, selected_mapid, selected_code) {
-        console.log(" =====  validate_duplicates_in_department =====")
-        console.log("fldName", fldName)
+        //console.log(" =====  validate_duplicates_in_department =====")
+        //console.log("fldName", fldName)
 
         let msg_err = null;
         if (tblName && fldName && selected_code){

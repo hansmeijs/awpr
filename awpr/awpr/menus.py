@@ -57,7 +57,7 @@ MENUS_DICT = {
     'page_report': {'caption': _('Reports'), 'href': 'url_archive', 'width': 120},
     'page_corrector': {'caption': _('Second correctors'), 'href': 'url_corrector', 'width': 150},
     'page_archive': {'caption': _('Archive'), 'href': 'url_archive', 'width': 90},
-    'page_exampaper': {'caption': _('Exam papers'), 'href': 'url_exampapers', 'width': 150},
+    'page_exampaper': {'caption': _('Publications'), 'href': 'url_exampapers', 'width': 150},
     'page_analysis': {'caption':  _('Analysis'), 'href': 'url_archive', 'width': 90}
 }
 
@@ -341,7 +341,6 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
         # was:
         #if not ('permit_view' in permit_list or 'permit_crud' in permit_list):
         #    no_access = True
-
 
         country_locked = sel_examyear_instance.country.locked if sel_examyear_instance else True
 

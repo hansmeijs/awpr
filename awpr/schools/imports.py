@@ -3482,7 +3482,7 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
                             requsr_allowed_sections_dict, requsr_allowed_cluster_pk_list,
                             sjbase_pk_str, grade_arr, tobe_updated_dict, log_list, is_test):
     # PR2021-12-10 PR2022-01-04 PR2022-02-09 PR2022-02-19
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- import_studsubj_grade_from_datalist ----- ')
         logger.debug('       examperiod:    ' + str(examperiod) + ' ' + str(type(examperiod)))

@@ -2,16 +2,16 @@
 {% load i18n %} {% load l10n %}
 {% load static %}
 
-{% block title %}{% trans 'Exam papers' %}{% endblock %}
+{% block title %}{% trans 'Publications' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exampapers230424.js' %}"></script>
+    <script src="{% static 'js/exampapers230425.js' %}"></script>
 {% endblock %}
 
 {% block sidebar %}
     <nav id="id_sidebar" class="awp_sidebar">
         <div class="content_subheader_left mx-2 my-4">
-            <h5>{% trans 'Exam papers' %}</h5>
+            <h5>{% trans 'Publications' %}</h5>
         </div>
     </nav>
 {% endblock %}
@@ -39,7 +39,7 @@
 
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                <button data-btn="btn_exampapers" class="btn btn-secondary">{% trans 'Exam papers' %}</button>
+                <button data-btn="btn_exampapers" class="btn btn-secondary">{% trans 'Publications' %}</button>
             </div>
     <!-- end BUTTON GROUP -->
 

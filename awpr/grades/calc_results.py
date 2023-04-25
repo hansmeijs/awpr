@@ -208,7 +208,7 @@ class CalcResultsView(View):  # PR2021-11-19 PR2022-06-15
 
 def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_pk_list, sel_lvlbase_pk, user_lang):
     # PR2022-05-26
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ---------------  calc_batch_student_result  ---------------')
@@ -270,7 +270,7 @@ def calc_batch_student_result(sel_examyear, sel_school, sel_department, student_
 def calc_student_result(examyear, department, student_dict, scheme_dict, schemeitems_dict,
                         log_list, sql_studsubj_list, sql_student_list):
     # PR2021-11-19 PR2021-12-18 PR2021-12-30 PR2022-01-04
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ---------------  calc_student_result  ---------------')
 
@@ -421,7 +421,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
                          si_dict, ep_list, log_list, sql_studsubj_list):
     # PR2021-12-30 PR2022-01-02
     # called by calc_student_result and update_and_save_gradelist_fields_in_studsubj_student
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  ++++++++++++  calc_studsubj_result  ++++++++++++')
         logger.debug(' studsubj_dict: ' + str(studsubj_dict))
@@ -908,7 +908,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
     # in ep1: if ep1 has noinput (ni = ['se', 'ce']) > use exemp if any, because ep1 no input is allowed
     # in ep2 or ep3: if ep2 or ep3 has noinput > give no_result, regardless of exemp, because ep2 or ep3 no input is not allowed
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('--------------- calc_max_grades ---------------')
         logger.debug('     subj           : ' + str(this_examperiod_dict.get('subj', '-')))
@@ -1575,7 +1575,7 @@ def calc_count_final_3457_core(calc_student_ep_dict, max_final, gradetype, is_co
 
 
 def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR2021-12-22
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' @@@@@@@@@@@@@@@@ -----  calc_combi_and_add_to_totals  -----')
         logger.debug('examperiod: ' + str(examperiod))
@@ -1657,7 +1657,7 @@ def calc_combi_and_add_to_totals(examperiod, student_ep_dict, log_list):  # PR20
 
 
 def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  calc_pece_avg  -----')
         logger.debug('     examperiod: ' + str(examperiod))
@@ -1727,7 +1727,7 @@ def calc_pece_avg(examperiod, student_ep_dict):  # PR2021-12-23
 
 
 def calc_final_avg(student_ep_dict):  # PR2021-12-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('  -----  calc_final_avg  -----')
 
@@ -2005,7 +2005,7 @@ def calc_student_passedfailed(ep_list, student_dict, rule_avg_pece_sufficient, r
     # - calculate combi grade for each examperiod and add it to final and count dict in student_ep_dict
     # last_examperiod contains the grades that must pe put un the grade_list.
     # is reex03 when reex03 student, reex when reex student, firstperiod otherwise
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('--------- calc_student_passedfailed ---------------')
@@ -3791,7 +3791,7 @@ def log_list_subject_grade (this_examperiod_dict, examperiod, multiplier, weight
 def get_proof_of_knowledge_dict(examyear, school, department, lvlbase_pk=None, student_pk_list=None):
     # PR2022-07-02 temporary, to be replaced by calc_proof_of_knowledge as part of  calc_studsubj_result
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('---------  calc_proof_of_knowledge  --------- ')
 

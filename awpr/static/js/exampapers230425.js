@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_tags: ["div", "div", "div", "div", "a"],
                     filter_tags: ["text", "text", "text",  "text", "toggle"],
                     field_width: ["020", "420",  "180", "300", "120"],
-                    field_align: ["c", "l", "c", "l", "c"]};
+                    field_align: ["c", "l", "r", "l", "c"]};
 
     const tblHead_datatable = document.getElementById("id_tblHead_datatable");
     const tblBody_datatable = document.getElementById("id_tblBody_datatable");
@@ -145,9 +145,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if(may_view_page){
         const datalist_request = {
-                setting: {page: "page_archive"},
-                schoolsetting: {setting_key: "page_archive"},
-                locale: {page: ["page_archive"]},
+                setting: {page: "page_exampaper"},
+                schoolsetting: {setting_key: "page_exampaper"},
+                locale: {page: ["page_exampaper", "page_archive"]},
                 examyear_rows: {get: true},
 
                 published_rows: {examtype: "exampaper"}
@@ -256,12 +256,11 @@ document.addEventListener('DOMContentLoaded', function() {
         //AddSubmenuButton(el_submenu, loc.Hide_columns, function() {t_MCOL_Open("page_archive")}, [], "id_submenu_columns");
         //el_submenu.classList.remove(cls_hide);
 
-        if (permit_dict.requsr_role_admin || permit_dict.permit_crud) {
+        if ( (permit_dict.requsr_role_admin && permit_dict.permit_crud) ||
+             (permit_dict.requsr_role_insp && permit_dict.permit_crud)   ) {
             AddSubmenuButton(el_submenu, loc.Upload_document, function() {MEXPAPER_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_document, function() {ModConfirmOpen("delete")});
         };
-
-
 
     };//function CreateSubmenu
 
@@ -342,9 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // hide level when not level_req
         if(!setting_dict.sel_dep_level_req){col_hidden.push("lvlbase_id")};
 
-        // hide delete btn when not req_usr is admin PR2022-11-21
-        if(!permit_dict.requsr_role_admin){col_hidden.push("delete")};
-
 // --- reset table
         tblHead_datatable.innerText = null;
         tblBody_datatable.innerText = null;
@@ -396,8 +392,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // --- add width, text_align, right padding in examnumber
                     th_header.classList.add(class_width, class_align);
                     el_header.classList.add(class_width, class_align);
-                    // if(field_name === "examnumber"){el_header.classList.add("pr-2")};
-
+                    if (field_name === "datepublished"){
+                        el_header.classList.add("pr-4");
+                    };
                     th_header.appendChild(el_header)
                 tblRow_header.appendChild(th_header);
 
@@ -502,7 +499,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // --- add  text_align
                 el.classList.add(class_width, class_align);
-
+                if (field_name === "datepublished"){
+                    el.classList.add("pr-4");
+                };
         // --- append element
                 td.appendChild(el);
 
@@ -1136,7 +1135,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function MEXPAPER_Open (mode) {
         console.log("===  MEXPAPER_Open  =====") ;
 
-        if (permit_dict.requsr_role_admin && permit_dict.permit_crud) {
+        if ( (permit_dict.requsr_role_admin && permit_dict.permit_crud) ||
+             (permit_dict.requsr_role_insp && permit_dict.permit_crud)   ) {
+
             b_clear_dict(mod_MEXPAPER_dict);
 
     // - reset input fields
