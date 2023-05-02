@@ -357,7 +357,7 @@ def calc_student_result(examyear, department, student_dict, scheme_dict, schemei
             ep_list.append(c.EXAMPERIOD_THIRD)
 
 # - add number of sr, reex, reex03 to log_list
-        # TODO add extra_nocount
+        # TODO add extra_nocount like in calc_reex
         if log_list is not None:
             log_list_reex_count(exemption_count, sr_count, reex_count, reex03_count, thumbrule_count, thumbrule_combi, log_list)
 
@@ -580,7 +580,7 @@ def calc_studsubj_result(student_dict, isevlexstudent, sr_allowed, no_practexam,
 
 # --- calculate max values, maximum grade when comparing exemption, ep_1, ep_2, ep_3
             #  calc_max_grades stores these keys to this_examperiod_dict:
-            #  'max_ep' 'max_sesr''max_pece' 'max_final', 'max_ni' 'max_use_exem'
+            #  'max_ep' 'max_sesr' 'max_pece' 'max_final', 'max_ni' 'max_use_exem'
             #  will be saved in studsubj by: get_sql_studsubj_values
             max_examperiod, max_ni = calc_max_grades(examperiod, this_examperiod_dict, studsubj_dict, gradetype)
 
@@ -1024,7 +1024,7 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
             elif prev_max_ni:
                 # if reex:   previous = firstperiod
 
-                # when this period has input and previous period has no input:
+                # when this period has input and previous period has max no input:
                 # - set max_examperiod = this_examperiod
 
                 # PR2022-06-30 Mireille Peterson Sundial: student failed afters reex, should have passed
@@ -1065,11 +1065,9 @@ def calc_max_grades(this_examperiod, this_examperiod_dict, studsubj_dict, gradet
             elif prev_max_ni:
                 if logging_on:
                     logger.debug('>>>> elif prev_max_ni')
-                first_examperiod_dict = studsubj_dict.get(c.EXAMPERIOD_FIRST)
                 if logging_on:
                     logger.debug('     previous_examperiod:   ' + str(previous_examperiod))
                     logger.debug('     prev_examperiod_dict:  ' + str(prev_examperiod_dict))
-                    logger.debug('     first_examperiod_dict: ' + str(first_examperiod_dict))
 
                 # if reex03: previous = reex if exists, else firstperiod
 
@@ -1950,10 +1948,13 @@ def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent
     # rule 2022 Havo/VWO CUR + SXM
     # - voor de vakken cav en lo een voldoende of goed is behaald
 
-    logging_on = False  # s.LOGGING_ON
+    #TODO URGENT student doesnt fail when garde insufficient PR2023-04-26
+
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug( ' -----  calc_rule_issufficient  -----')
-        logger.debug('use_studsubj_ep_dict: ' + str(use_studsubj_ep_dict))
+        logger.debug('    subj: ' + str(use_studsubj_ep_dict.get('subj')) + ' max_ep: ' + str(use_studsubj_ep_dict.get('max_ep')))
+        logger.debug('    rule_grade_sufficient: ' + str(rule_grade_sufficient) + '    notatevlex: ' + str(rule_gradesuff_notatevlex))
 
 # - skip when subject is 'is_extra_nocount' or when thumb_rule_allowed
     if not is_extra_nocount or thumb_rule_allowed:
@@ -1991,6 +1992,9 @@ def calc_rule_issufficient(use_studsubj_ep_dict, student_ep_dict, isevlexstudent
                         if 'insuff' not in failed_dict:
                             failed_dict['insuff'] = []
                         failed_dict['insuff'].append(result_info)
+
+                        if logging_on:
+                            logger.debug('    failed_dict: ' + str(failed_dict))
             """
             'failed': {'insuff': ['Lichamelijke Opvoeding is onvoldoende.', 'Sectorwerkstuk is onvoldoende.'],
             """

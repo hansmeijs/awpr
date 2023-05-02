@@ -5,7 +5,7 @@
 {% block title %}Wolf{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/wolf230424.js' %}"></script>
+    <script src="{% static 'js/wolf230502.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -149,18 +149,14 @@
                 data-url_exam_upload="{% url 'url_exam_upload' %}"
                 data-url_duo_exam_upload="{% url 'url_duo_exam_upload' %}"
                 data-url_exam_copy="{% url 'url_exam_copy' %}"
-                data-url_exam_copy_ntermen="{% url 'url_exam_copy_ntermen' %}"
                 data-url_link_exam_to_grades="{% url 'url_link_exam_to_grades' %}"
 
-                data-url_approve_publish_exam="{% url 'url_approve_publish_exam' %}"
-                data-url_approve_submit_grade_exam="{% url 'url_approve_submit_grade_exam' %}"
+                data-url_approve_submit_wolf="{% url 'url_approve_submit_wolf' %}"
                 data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
 
                 data-url_exam_download_exam_pdf="{% url 'url_exam_download_exam_pdf'  '-' %}"
-                data-url_exam_download_grade_exam_pdf="{% url 'url_exam_download_grade_exam_pdf'  '-' %}"
+                data-url_download_wolf_pdf="{% url 'url_download_wolf_pdf'  '-' %}"
                 data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
-
-                data-url_exam_download_exam_json="{% url 'url_exam_download_exam_json' %}"
 
                 data-url_grade_upload="{% url 'url_grade_upload' %}"
 

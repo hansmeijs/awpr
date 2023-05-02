@@ -272,7 +272,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Read_only'] = _('Read only')
         dict['Read_only_2lines'] =  pgettext_lazy('2 lines', 'Read\nonly')
         dict['Edit'] = _('Edit')
-        # NIU dict['pagelist'] = c.PAGE_LIST
+
+        dict['Edit_wolf_2lines'] = pgettext_lazy('2 lines', 'Edit\nWolf')
+        dict['Edit_wolf'] = _('Edit Wolf')
 
         dict['Allowed_sections'] = _('Allowed sections')
         dict['Allowed_departments'] = _('Allowed departments')
@@ -1148,8 +1150,10 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_linked_CVTE_exams'] = _("There are no linked CVTE exams")
 
         dict['Publish_exams'] = _("Publish exams")
-        dict['Submit_exams'] = _("Submit exams")
+        #dict['Submit_exams'] = _("Submit exams")
+        dict['Submit_wolf_exams'] = _("Submit Wolf exams")
         dict['Approve_exams'] = _("Approve exams")
+        dict['Approve_wolf_exams'] = _("Approve Wolf exams")
         dict['_by_'] = TXT__by_
         dict['Upload_ntermen'] = _("Upload N-termen tabel")
         dict['Copy_ntermen_to_exams'] = _("Copy N-termen to exams")
@@ -1329,6 +1333,7 @@ def get_locale_dict(table_dict, user_lang, request):
 
             'Approve_exams': _('Approve exams'),
             'approving_exams': _('AWP is approving the exams'),
+            'removing_approval_exams': _('AWP is removing the approval of the exams'),
 
             'need_verifcode': _('You need a 6 digit verification code '),
             'to_publish_exams': _("to publish the exams."),
@@ -1492,8 +1497,8 @@ def get_locale_dict(table_dict, user_lang, request):
             'unlock_02': _("The diploma and final grade list can not be printed when a grade is unlocked."),
             'unlock_03': _("The school has to change the grade and approve and submit it again."),
             'unlock_04': _("Then you can remove the unlocking of the grade by clicking this icon again."),
-            'unlock_05': _("Please add a note with an explanation and include the grade in the note."),
-            'unlock_06': _("After unlocking the grade, the value of the grade will no longer be visible for you."),
+            #'unlock_05': _("Please add a note with an explanation and include the grade in the note."),
+            #'unlock_06': _("After unlocking the grade, the value of the grade will no longer be visible for you."),
 
             'remove_unlock_01': _("You are about to remove the unlocking of this grade."),
             'remove_unlock_multiple_01': _("You are about to remove the unlocking of "),

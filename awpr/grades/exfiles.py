@@ -621,7 +621,7 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
                     last_name=row.get('lastname'),
                     first_name=row.get('firstname'),
                     prefix=row.get('prefix'),
-                    has_extrafacilities=extrafacilities
+                    has_extrafacilities=False # dont add astrisk after fullname, but use separate column
                 )
 
                 if sel_layout == "level":
@@ -818,7 +818,8 @@ def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department,
     #height = top - bottom  # 275 mm
     border = [top, right, bottom, left]
     coord = [left, top]
-    col_width_list = (20, 55, 35, 18, 18, 22, 22)
+    #col_width_list = (20, 55, 35, 18, 18, 22, 22)
+    col_width_list = (20, 50, 34, 18, 18, 18, 16, 16)
 
 # - draw border around page
     draw_page_border(canvas, border)
@@ -888,7 +889,7 @@ def draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department,
     for index in range(0, len(col_width_list) - 1):  # range(start_value, end_value, step), end_value is not included!
         w = col_width_list[index]
         x += w * mm
-        y1_mod = y_top_minus if index == 3 else y_top
+        y1_mod = y_top_minus if index in (3, 6) else y_top
         canvas.line(x, y1_mod, x, y_bottom)
 
 # - loop through students
@@ -990,7 +991,7 @@ def draw_Ex3_page_header(canvas, coord, text_list):
 
 
 def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, sequence, has_extrafacilities, user_lang):
-    # PR2021-10-08
+    # PR2021-10-08 PR2023-04-29
     footer_height = 10 * mm
     padding_left = 4 * mm
     padding_bottom = 2 * mm
@@ -1010,9 +1011,12 @@ def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, 
     canvas.setFillColor(colors.HexColor("#000000"))
 
 # - column 0 'Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1.'
-    # canvas.drawString(x, y, exform_text.get('footer_01', '-'))  # 'col_00_00': 'Examennr.'
     if has_extrafacilities:
-        canvas.drawString(x, y, exform_text.get('extrafacilities', ''))  # 'col_00_00': 'Examennr.'
+        line_height = 4 * mm
+        canvas.drawString(x, y + line_height, exform_text.get('footer_01', '-'))
+        canvas.drawString(x, y, '2) ' + exform_text.get('extrafacilities', ''))
+    else:
+        canvas.drawString(x, y, exform_text.get('footer_01', '-'))
 
     today_dte = af.get_today_dateobj()
     today_formatted = af.format_DMY_from_dte(today_dte, user_lang, True)  # True = month_abbrev
@@ -1022,7 +1026,7 @@ def draw_Ex3_page_footer(canvas, border, coord, exform_text, page_index, pages, 
         page_txt = ' '.join(('Pagina', str(page_index + 1), 'van', str(pages)))
         canvas.drawString(right - 60 * mm, y, page_txt)
 
-    # TODO add number to pages to be used when uploading Ex3 forms wit h signatures
+    # TODO add number to pages to be used when uploading Ex3 forms with signatures
     #canvas.drawRightString(right - 2 * mm, bottom - 4 * mm, str(sequence))
 
 
@@ -1075,7 +1079,6 @@ def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, 
     canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_02_01', '-'))  # 'col_02_01': '(bij aanvang)',
 
 
-
 # - column 3 'Aantal ingeleverde bladen',
     col_index += 1
     x += col_width_list[col_index - 1] * mm
@@ -1106,14 +1109,40 @@ def draw_Ex3_colum_header(canvas, border, coord, header_height, col_width_list, 
     canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_05_01', '-'))  # ''col_05_01', 'inlevering'
 
 # - column 6 'Paraaf surveillant',
+    #col_index += 1
+    #x += col_width_list[col_index - 1] * mm
+    #x_center = x + col_width_list[col_index] * mm / 2
+    #canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_06_00', '-'))  # 'col_06_00', 'Paraaf'
+    #canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_06_01', '-'))  # ''col_06_01', 'surveillant'
+    #canvas.drawCentredString(x_center, y_txt3, exform_text.get('col_06_02', '-'))  # 'col_06_02', '(voor inlevering)'
+
+##############
+
+# - column 6 'Paraaf voor inlevering',
+    col_index += 1
+    x += col_width_list[col_index - 1] * mm
+    x_center = x + (col_width_list[col_index] + col_width_list[col_index + 1]) * mm / 2
+    x_right = x + (col_width_list[col_index] + col_width_list[col_index + 1]) * mm
+    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_06_00', '-'))  # 'col_06_00': 'Paraaf voor inlevering'
+
+    # horizontal line under text
+    canvas.line(x, y_txt1 - 2 * mm, x_right, y_txt1 - 2 * mm)
+
+# - column 6 'surveillant',
+    x_center = x + col_width_list[col_index] * mm / 2
+    canvas.drawCentredString(x_center, y_txt2 - 2 * mm, exform_text.get('col_06_01', '-'))  # 'col_06_01': 'surveillant',
+    #canvas.drawCentredString(x_center, y_txt3 - 2 * mm, exform_text.get('col_03_02', '-'))  # 'col_03_02': 'bladen',
+
+# - column 7 'kandidaat',
     col_index += 1
     x += col_width_list[col_index - 1] * mm
     x_center = x + col_width_list[col_index] * mm / 2
-    canvas.drawCentredString(x_center, y_txt1, exform_text.get('col_06_00', '-'))  # 'col_06_00', 'Paraaf'
-    canvas.drawCentredString(x_center, y_txt2, exform_text.get('col_06_01', '-'))  # ''col_06_01', 'surveillant'
-    canvas.drawCentredString(x_center, y_txt3, exform_text.get('col_06_02', '-'))  # 'col_06_02', '(voor inlevering)'
+    canvas.drawCentredString(x_center, y_txt2 - 2 * mm, exform_text.get('col_07_01', '-'))  # 'col_07_01': 'kandidaat',
 # - end of draw_Ex3_colum_header
 
+
+
+###########
 
 def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_width_list):
     # PR2023-01-07
@@ -1139,10 +1168,12 @@ def draw_Ex3_row(canvas, row, left, right, y_bottom, coord, line_height, col_wid
             canvas.drawString(x + pl_exnr, y + pb, examnumber)
 
             x += col_width_list[0] * mm
-            fullname =  row.get('full_name', '---')
-            canvas.drawString(x + pl, y + pb, fullname)
+            fullname = row.get('full_name', '---')
+            canvas.drawString(x + 2 * mm, y + pb, fullname)
 
             extrafacilities = row.get('extrafacilities', False)
+            if extrafacilities:
+                canvas.drawRightString(x + (col_width_list[1] - 1) * mm, y + pb, '2)')
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))

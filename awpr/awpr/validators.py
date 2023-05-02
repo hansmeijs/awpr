@@ -2,7 +2,7 @@ from django.core.validators import validate_email
 from django.db.models import Q
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 
 
 from accounts import models as acc_mod
@@ -813,6 +813,39 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
     # called only once by Loggedin, to reset before setting is retrieved
     # to reset hiding messages: remove 'reset_show_msg' from schools_systemupdate manually
 
+        # De permissies van de gebruikers accounts zijn uitgebreid
+        # je kunt voortaan voor elke gebuiker apart de volgende permissies instellen:
+        # het wijzigen van Wolf scores ne het wijizgen van de overige gegevens
+        # het ontvangen en versturen van berichten in de berichtenservice
+        # togang tot de pagina 'archief
+# The permissions of the user accountss have been expanded
+        # De examenbladen en handboek examinering zijn opgeomen in AWP. Klik op het ETE logo rechts in de titelbalk om naar de pagin Publicaties te gaan
+# The exam sheets and examination handbook are included in AWP. Click on the ETE logo on the right in the title bar to go to the Publications page
+    """
+    msg = ''.join((
+    '<p><b>', gettext("The following changes have been made in AWP-online"), ':</b></p>',
+          "<p>",
+        gettext("The exam papers and examination handbook can be downloaded from AWP-online."), '<br>',
+        gettext("Click on the ETE logo on the right in the title bar to go to the page <i>Publications</i> page."),
+    "</p>",
+          "<p>",
+        gettext("The following permissions have been added to the tab User groups in de page Users"),  "</p>",
+    gettext("You can now set these permissions for each individual user"),
+          "<ul><li>", str(_("The permission 'Edit Wolf' gives permission to edit scores in the Wolf page", "</li>",
+          "<li>", str(_("The permission 'Edit' gives permission to edit all other data", "</li>",
+          "<li>", str(_("'Receive messages' gives access to the mailbox, the user may receive messages", "</li>",
+          "<li>", str(_("'Receive messages' gives access to the mailbox, the user may receive messages", "</li>",
+
+          # PR2023-02-20 not for now: "<li>", str(_("Exemption grades must also be approved.")), "</li>",
+
+          "<li>", str(_("Exemption grades are included in the Ex2 form.")), "</li></ul>",
+          "<ul class='mb-0'><li>", str(
+        _("The accounts of the second correctors will be created by the Ministry of Education.")), "</li>",
+          "<li>", str(_("The 'Allowed sections' window is improved.")), "</li>",
+          "<li>", str(_("In the candidates window you can enter special characters.")), "</li></ul>",
+    ))
+    """
+
     msg = ''.join((
         '<p><b>', str(_("The following changes have been made in AWP-online 2023")), ':</b></p>',
         "<ul><li>", str(_("Previously submitted subjects and deleted subjects are included in the Ex1 form.")), "</li>",
@@ -833,6 +866,19 @@ def message_openargs():  # PR2022-05-28 PR2022-06-01
 
     """
     
+    msg = ''.join((
+        '<p><b>', str(_("The following changes have been made in AWP-online 2023")), ':</b></p>',
+        "<ul><li>", str(_("Previously submitted subjects and deleted subjects are included in the Ex1 form.")), "</li>",
+        "<li>", str(_("When a candidate or subject is deleted, you must submit it in an additional Ex1 form")), "</li></ul>",
+        "<ul><li>", str(_("AWP can enter exemptions from the previous examyear.")), "</li>",
+
+        # PR2023-02-20 not for now: "<li>", str(_("Exemption grades must also be approved.")), "</li>",
+
+        "<li>", str(_("Exemption grades are included in the Ex2 form.")), "</li></ul>",
+        "<ul class='mb-0'><li>", str(_("The accounts of the second correctors will be created by the Ministry of Education.")), "</li>",
+        "<li>", str(_("The 'Allowed sections' window is improved.")), "</li>",
+        "<li>", str(_("In the candidates window you can enter special characters.")), "</li></ul>",
+    ))
     msg = ''.join((
         '<p><b>', str(_("Examyear 2023 has been created in AWP-online.")), '</b><br>',
         str(_("You can start entering data now.")), '<br>',

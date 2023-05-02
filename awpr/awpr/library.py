@@ -133,7 +133,7 @@ def update_library(examyear, request):
 
         ('ex3', 'col_00_00', 'Examennr.'),
         ('ex3', 'col_00_01', '1)'),
-        ('ex3', 'col_01_00', 'Naam en voorletters van de kandidaat'),
+        ('ex3', 'col_01_00', 'Naam en voorletters kandidaat'),
         ('ex3', 'col_01_01', '(in alfabetische volgorde)'),
         ('ex3', 'col_02_00', 'Handtekening kandidaat'),
         ('ex3', 'col_02_01', '(bij aanvang)'),
@@ -144,9 +144,13 @@ def update_library(examyear, request):
         ('ex3', 'col_04_02', 'bladen'),
         ('ex3', 'col_05_00', 'Tijdstip van'),
         ('ex3', 'col_05_01', 'inlevering'),
-        ('ex3', 'col_06_00', 'Paraaf'),
+        ('ex3', 'col_06_00', 'Paraaf voor inlevering'),
         ('ex3', 'col_06_01', 'surveillant'),
-        ('ex3', 'col_06_02', '(voor inlevering)'),
+        ('ex3', 'col_06_02', None),
+        ('ex3', 'col_07_01', 'kandidaat'),
+        #('ex3', 'col_06_02', '(voor inlevering)'),
+        #('ex3', 'col_06_02', '(voor inlevering)'),
+        #('ex3', 'col_06_02', '(voor inlevering)'),
         ('ex3', 'footer_01', '1) Examennummer en naam dienen in overeenstemming te zijn met formulier EX.1'),
 
         ('ex3', 'back_01', 'Verloop en eventuele bijzonderheden van het schriftelijk examen van het vak'),
@@ -248,20 +252,18 @@ def update_library(examyear, request):
         #('gradelist', 'eex_article02', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
         #('gradelist', 'eex_article03', ''),
         # text 2022
-        ('gradelist', 'eex_article02_cur', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en de Tijdelijke regeling afwijking'),
-        ('gradelist', 'eex_article03_cur', 'centrale examens v.w.o., h.a.v.o., v.s.b.o. voor het schooljaar 2021-2022 P.B. 2022, no. 53 d.d. 10 juni 2022'),
-        ('gradelist', 'eex_article04_cur', 'en heeft de hierna vermelde cijfers behaald.'),
+            #('gradelist', 'eex_article02_cur', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en de Tijdelijke regeling afwijking'),
+            #('gradelist', 'eex_article03_cur', 'centrale examens v.w.o., h.a.v.o., v.s.b.o. voor het schooljaar 2021-2022 P.B. 2022, no. 53 d.d. 10 juni 2022'),
+            #('gradelist', 'eex_article04_cur', 'en heeft de hierna vermelde cijfers behaald.'),
+
+        # text 2023
+        ('gradelist', 'eex_article02_cur', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
+        ('gradelist', 'eex_article03_cur', None),
+        ('gradelist', 'eex_article04_cur', None),
 
 # heeft deelgenomen aan het eindexamen text for St Maarten
-        ('gradelist', 'eex_article01_sxm',
-         'De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en'),
-        # standard text
-        # ('gradelist', 'eex_article02', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
-        # ('gradelist', 'eex_article03', ''),
-        # text 2022
-        ('gradelist', 'eex_article02_sxm',
-         'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
-
+        ('gradelist', 'eex_article01_sxm','De kandidaat heeft examen afgelegd in de onderstaande vakken volgens de voorschriften gegeven bij en'),
+        ('gradelist', 'eex_article02_sxm', 'krachtens artikel 32 van de Landsverordening Voortgezet Onderwijs en heeft de hierna vermelde cijfers behaald.'),
         ('gradelist', 'eex_article03_sxm', None),
         ('gradelist', 'eex_article04_sxm', None),
 

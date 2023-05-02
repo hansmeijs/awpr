@@ -76,7 +76,6 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_exam_copy = get_attr_from_el(el_data, "data-url_exam_copy");
     urls.url_exam_copy_ntermen = get_attr_from_el(el_data, "data-url_exam_copy_ntermen");
     urls.url_approve_publish_exam = get_attr_from_el(el_data, "data-url_approve_publish_exam");
-    urls.url_approve_submit_grade_exam = get_attr_from_el(el_data, "data-url_approve_submit_grade_exam");
     urls.url_send_email_verifcode = get_attr_from_el(el_data, "data-url_send_email_verifcode");
 
     urls.url_link_exam_to_grades = get_attr_from_el(el_data, "data-url_link_exam_to_grades");
@@ -84,7 +83,7 @@ document.addEventListener("DOMContentLoaded", function() {
     urls.url_grade_upload = get_attr_from_el(el_data, "data-url_grade_upload");
 
     urls.url_exam_download_exam_pdf = get_attr_from_el(el_data, "data-url_exam_download_exam_pdf");
-    urls.url_exam_download_grade_exam_pdf = get_attr_from_el(el_data, "data-url_exam_download_grade_exam_pdf");
+    urls.url_download_wolf_pdf = get_attr_from_el(el_data, "data-url_download_wolf_pdf");
     urls.url_exam_download_conversion_pdf = get_attr_from_el(el_data, "data-url_exam_download_conversion_pdf");
 
     urls.url_exam_download_exam_json = get_attr_from_el(el_data, "data-url_exam_download_exam_json");
@@ -738,7 +737,6 @@ document.addEventListener("DOMContentLoaded", function() {
 //=========  CreateSubmenu  ===  PR2020-07-31 PR2021-01-19 PR2021-03-25 PR2021-05-25
     function CreateSubmenu() {
         //console.log("===  CreateSubmenu == ");
-        //console.log("permit_dict.permit_submit_exam", permit_dict.permit_submit_exam);
         //console.log("permit_dict.requsr_same_school", permit_dict.requsr_same_school);
 
         let el_submenu = document.getElementById("id_submenu")
@@ -767,10 +765,6 @@ document.addEventListener("DOMContentLoaded", function() {
         } else if (permit_dict.requsr_role_school){
             if (permit_dict.permit_approve_exam ){
                 AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
-            };
-            if (permit_dict.permit_submit_exam ){
-                AddSubmenuButton(el_submenu, loc.Submit_exams, function() {MASE_Open("submit_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
-                AddSubmenuButton(el_submenu, loc.Undo_submitted, function() {ModConfirmOpen("grades", "undo_submitted")}, ["tab_showXX", "tab_btn_ete_exams"]);
             };
         };
 
@@ -1636,7 +1630,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const pk_str = (data_dict.id) ? data_dict.id.toString() : null;
         const href_str = (!show_href || !pk_str) ? null :
                             (tblName === "ete_exam") ? urls.url_exam_download_exam_pdf.replace("-", pk_str) :
-                                                       urls.url_exam_download_grade_exam_pdf.replace("-", pk_str) ;
+                                                       urls.url_download_wolf_pdf.replace("-", pk_str) ;
         el_div.href = href_str;
     };  // UpdateFieldDownloadExam
 
@@ -6361,8 +6355,7 @@ console.log("    mimp.import_table", mimp.import_table);
                                         (is_approve_mode && permit_dict.permit_approve_exam) ||
                                         (is_submit_mode && permit_dict.permit_publish_exam) : false;
             mod_MASE_dict.permit_same_school = (permit_dict.requsr_same_school) ?
-                                        (is_approve_mode && permit_dict.permit_approve_exam) ||
-                                        (is_submit_mode && permit_dict.permit_submit_exam) : false;
+                                        (is_approve_mode && permit_dict.permit_approve_exam) : false;
             mod_MASE_dict.has_permit = mod_MASE_dict.permit_admin || mod_MASE_dict.permit_same_school;
 
             console.log("mod_MASE_dict.has_permit", mod_MASE_dict.has_permit) ;
@@ -6372,16 +6365,12 @@ console.log("    mimp.import_table", mimp.import_table);
 
 // --- get header_txt and subheader_txt
                 const header_txt = (is_approve_mode) ? loc.Approve_exams :
-                                 (mod_MASE_dict.permit_admin) ? loc.Publish_exams :
-                                 (mod_MASE_dict.permit_same_school) ? loc.Submit_exams : "---";
+                                 (mod_MASE_dict.permit_admin) ? loc.Publish_exams : "---";
                 el_MASE_header.innerText = header_txt;
 
                 // note: must use loc.MASE_info, not loc.MASE_info
                 const subheader_txt = (is_approve_mode) ? loc.MASE_info.subheader_approve :
-                                              (is_submit_mode) ?
-                                              (mod_MASE_dict.permit_admin) ? loc.MASE_info.subheader_publish :
-                                              (mod_MASE_dict.permit_same_school) ? loc.MASE_info.subheader_submit_exam
-                                              : null : null;
+                           (is_submit_mode && mod_MASE_dict.permit_admin) ? loc.MASE_info.subheader_publish : null;
                 el_MASE_subheader.innerText = subheader_txt;
 
 // get subject_text
@@ -6459,10 +6448,8 @@ console.log("    mimp.import_table", mimp.import_table);
         // save_mode = 'save' or 'delete'
         // mod_MASE_dict.mode = 'approve' or 'submit'
 
-        const has_permit = (permit_dict.requsr_role_admin && permit_dict.permit_approve_exam) ||
-                            (permit_dict.requsr_role_admin && permit_dict.publish_exam) ||
-                            (permit_dict.requsr_same_school && permit_dict.permit_approve_exam) ||
-                            (permit_dict.requsr_same_school && permit_dict.submit_exam);
+        const has_permit = ((permit_dict.requsr_role_admin && permit_dict.permit_approve_exam) ||
+                            (permit_dict.requsr_role_admin && permit_dict.publish_exam));
     console.log("has_permit", has_permit) ;
 
         if (has_permit) {
@@ -6476,15 +6463,17 @@ console.log("    mimp.import_table", mimp.import_table);
     console.log("mod_MASE_dict.step", mod_MASE_dict.step) ;
 
             //  upload_dict.modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
-            let url_str = (permit_dict.requsr_role_admin) ? urls.url_approve_publish_exam : urls.url_approve_submit_grade_exam;
+            let url_str = urls.url_approve_publish_exam;
             const form_name = (permit_dict.requsr_role_admin) ? "ete_exam" : "grade_exam";
             const upload_dict = {form: form_name, now_arr: get_now_arr()};
+
             if (mod_MASE_dict.is_approve_mode){
                 if (mod_MASE_dict.step === 0){
                     upload_dict.mode = "approve_test";
                 } else if (mod_MASE_dict.step === 2){
                     upload_dict.mode = (mod_MASE_dict.is_reset) ? "approve_reset" : "approve_save";
                 };
+
             } else if (mod_MASE_dict.is_submit_mode){
                 if (mod_MASE_dict.step === 0){
                     upload_dict.mode = "submit_test";
@@ -6566,20 +6555,7 @@ console.log("    mimp.import_table", mimp.import_table);
         console.log("mod_MASE_dict.step", mod_MASE_dict.step);
 
 // MASE_UpdateFromResponse refreshes the table, therefore no need for DatalistDownload
-/* if ( (mod_MASE_dict.is_approve_mode && mod_MASE_dict.step === 3) || (mod_MASE_dict.is_submit_mode && mod_MASE_dict.step === 5)){
-// ---  download page again
-            //let new_setting = {page: 'page_exams'};
-            //const datalist_request = {setting: new_setting,
-            //    duo_subject_rows: {get: true},
-            //    ete_exam_rows: {get: true},
-            //    duo_exam_rows: {get: true},
-           //     grade_exam_rows: {get: true},
-            //    ntermentable_rows: {get: true},
-            //    published_rows: {get: true}
-            //};
-            //DatalistDownload(datalist_request);
-        };
-*/
+
     };  // MASE_UpdateFromResponse
 
 //=========  MASE_SetInfoboxesAndBtns  ================ PR2021-02-08
@@ -6606,9 +6582,6 @@ console.log("    mimp.import_table", mimp.import_table);
         // TODO is_reset
         const is_reset = mod_MASE_dict.is_reset;
 
-//////////////////////////////////////////////////////////
-// ---  select_container                                //
-//////////////////////////////////////////////////////////
 // ---  info_container, loader, info_verifcode and input_verifcode
         let msg_info_txt = null, show_loader = false;
         let show_info_request_verifcode = false, show_input_verifcode = false;
@@ -6619,16 +6592,16 @@ console.log("    mimp.import_table", mimp.import_table);
             mod_MASE_dict.msg_html = response.approve_msg_html;
         };
 
-    console.log("step", step);
+    console.log("  >> step:", step);
 
         if (step === 0) {
             // step 0: when form opens and request to check is sent to server
             // tekst: 'The subjects of the candidates are checked'
-            msg_info_txt = loc.MASE_info.checking_studsubj_ex1;
+            msg_info_txt = loc.MASE_info.checking_exams;
             show_loader = true;
         } else {
             if(mod_MASE_dict.is_approve_mode){
-                // is approve
+    // --- is approve
                 if (step === 1) {
                 // response with checked exams
                 // msg_info_txt is in response
@@ -6638,15 +6611,14 @@ console.log("    mimp.import_table", mimp.import_table);
                     };
                 } else if (step === 2) {
                     // clicked on 'Approve'
-                    // tekst: 'AWP is approving the subjects of the candidates'
-                    msg_info_txt = loc.MASE_info.approving_exams;
+                    msg_info_txt = (is_reset) ? loc.MASE_info.removing_approval_exams : loc.MASE_info.approving_exams;
                     show_loader = true;
                 } else if (step === 3) {
                     // response 'approved'
                     // msg_info_txt is in response
                 };
             } else {
-                // is submit
+    // --- is submit
                 if (step === 1) {
                     // response with checked subjects
                     // msg_info_txt is in response
@@ -6666,7 +6638,7 @@ console.log("    mimp.import_table", mimp.import_table);
                     show_info_request_verifcode = mod_MASE_dict.test_is_ok;
                     show_input_verifcode = true;
                     disable_save_btn = !el_MASE_input_verifcode.value;
-                    save_btn_txt = loc.Submit_Ex1_form;
+                    save_btn_txt = loc.Publish_exams;
                 } else if (step === 4) {
                     // clicked on 'Submit Ex form'
                     // msg_info_txt is in response
@@ -6697,7 +6669,7 @@ console.log("    mimp.import_table", mimp.import_table);
 
         if (el_MASE_info_request_msg1){
             el_MASE_info_request_msg1.innerText = loc.MASE_info.need_verifcode +
-                ((permit_dict.requsr_role_admin) ? loc.MASE_info.to_publish_exams : loc.MASE_info.to_submit_exams);
+                ((permit_dict.requsr_role_admin) ? loc.MASE_info.to_publish_exams : "");
         };
 
         if (show_input_verifcode){set_focus_on_el_with_timeout(el_MASE_input_verifcode, 150); };
@@ -6757,7 +6729,7 @@ console.log("    mimp.import_table", mimp.import_table);
         el_confirm_msg_container.innerHTML = msg_html;
 
         el_confirm_header.innerText = loc.Remove_partial_exams;
-        el_confirm_loader.classList.add(cls_visible_hide);
+        el_confirm_loader.classList.add(cls_hide);
         el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
         el_confirm_btn_save.innerText = loc.Yes_remove;
         add_or_remove_class(el_confirm_btn_save, "btn-outline-secondary", true, "btn-primary")
@@ -6775,7 +6747,7 @@ console.log("    mimp.import_table", mimp.import_table);
     };  // ModConfirm_PartexCheck_Open
 
 
-//=========  ModConfirm_link_exam_to_grades_Open  ================ PR2022-05-19 PR2022-06-14
+//=========  ModConfirm_link_exam_to_grades_Open  ================ PR2022-05-19 PR2022-06-14  PR2023-05-02
     function ModConfirm_link_exam_to_grades_Open() {
         console.log(" -----  ModConfirm_link_exam_to_grades_Open   ----")
 
@@ -6828,12 +6800,14 @@ console.log("exam_dict", exam_dict);
             el_confirm_msg_container.innerHTML = msg_html;
 
             el_confirm_btn_save.innerText = btn_save_txt;
+
             add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", false, "btn-primary");
             add_or_remove_class (el_confirm_btn_save, cls_hide, !has_selected_item);
             el_confirm_btn_cancel.innerText = btn_cancel_txt;
 
-    // show loader
-            add_or_remove_class(el_confirm_loader, cls_visible_hide, !has_selected_item)
+    // show loader, disable save btn
+            el_confirm_btn_save.disabled = true;
+            add_or_remove_class(el_confirm_loader, cls_hide, !has_selected_item)
 
     // test link
             const upload_dict = { mode: "link_exam_to_grades",
@@ -6848,7 +6822,6 @@ console.log("exam_dict", exam_dict);
             UploadChanges(upload_dict, urls.url_link_exam_to_grades);
             // mod_dict.save_value prevents putting back the old value in el_input
             mod_dict.dont_rest_input_value = true;
-
 
     // set focus to cancel button
             setTimeout(function (){
@@ -6893,7 +6866,7 @@ console.log("exam_dict", exam_dict);
             const btn_save_txt = loc.Yes_save;
 
             el_confirm_header.innerText = header_text;
-            el_confirm_loader.classList.add(cls_visible_hide);
+            el_confirm_loader.classList.add(cls_hide);
             el_confirm_msg_container.classList.remove("border_bg_invalid", "border_bg_valid");
             el_confirm_msg_container.innerHTML = msg_html;
 
@@ -7121,7 +7094,7 @@ console.log("exam_dict", exam_dict);
 
             };
 
-            el_confirm_loader.classList.add(cls_visible_hide);
+            el_confirm_loader.classList.add(cls_hide);
 
             el_confirm_header.innerText = header_text;
 
@@ -7302,7 +7275,7 @@ console.log("exam_dict", exam_dict);
         //console.log(" --- ModConfirmResponse --- ");
         //console.log("mod_dict: ", mod_dict);
         // hide loader
-        el_confirm_loader.classList.add(cls_visible_hide)
+        el_confirm_loader.classList.add(cls_hide)
         const mode = get_dict_value(response, ["mode"])
         if(mode === "delete"){
 //--- delete tblRow. Multiple deleted rows not in use yet, may be added in the future PR2020-08-18
@@ -7340,12 +7313,12 @@ console.log("exam_dict", exam_dict);
         }
     }  // ModConfirmResponse
 
-//=========  ModConfirmResponseLinkExamToGrades  ================ PR2022-06-14
+//=========  ModConfirmResponseLinkExamToGrades  ================ PR2022-06-14 PR2023-05-02
     function ModConfirmResponseLinkExamToGrades(response) {
         console.log(" --- ModConfirmResponseLinkExamToGrades --- ");
 
     // hide loader
-        el_confirm_loader.classList.add(cls_visible_hide)
+        el_confirm_loader.classList.add(cls_hide)
 
         const has_grades = response.response_link_exam_has_grades
 
@@ -7356,6 +7329,8 @@ console.log("exam_dict", exam_dict);
         el_confirm_btn_cancel.innerText = (hide_save_btn) ? loc.Close : loc.Cancel;
 
         add_or_remove_class(el_confirm_btn_save, cls_hide, hide_save_btn)
+        el_confirm_btn_save.disabled = false;
+
     }  // ModConfirmResponse
 
 //=========  ModMessageHide  ================ PR2022-05-28

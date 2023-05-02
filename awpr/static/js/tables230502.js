@@ -1058,7 +1058,7 @@
     }; // t_MSSSS_InputKeyup
 
 //========= t_MSSSS_display_in_sbr  ====================================
-    function t_MSSSS_display_in_sbr(tblName, selected_pk) {
+    function t_MSSSS_display_in_sbr(tblName, selected_pk) {  // PR2-23-04-30
         //console.log( "===== t_MSSSS_display_in_sbr  ========= ");
         //console.log( "tblName", tblName);
         //console.log( "selected_pk", selected_pk);
@@ -1080,28 +1080,31 @@
                                   (tblName === "subject") ? subject_rows :
                                   //(tblName === "cluster") ? cluster_rows :
                                   [];
-    //console.log( "data_rows", data_rows);
+    // console.log( "data_rows", data_rows);
                 let display_txt = null, data_dict = null;
-                // selected_pk = -1 when clicked on All
-                if(selected_pk > 0){
-                    data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
-                    display_txt = t_MSSSS_get_display_text(tblName, data_dict);
 
-    //console.log( "data_dict", data_dict);
+                const enabled = (data_rows && data_rows.length > 1);
+    //console.log( "enabled", enabled);
+                if (!data_rows){
+                    display_txt = t_MSSSS_NoItems_txt(tblName);
                 } else {
-                    if (data_rows){
+                    // selected_pk = -1 when clicked on All
+                    if(selected_pk > 0){
+                        data_dict = b_get_datadict_by_integer_from_datarows(data_rows, "id", selected_pk)
+                        display_txt = t_MSSSS_get_display_text(tblName, data_dict);
+
+                    } else {
                         // PR2022-12-23 debug: when table = cluster, 'all' must always be shown, even when there is only 1 cluster, beacuse there may be students without cluster
                         if (data_rows.length === 1 && tblName !== 'cluster'){
                             display_txt = t_MSSSS_get_display_text(tblName, data_rows[0]);
                         } else {
                             display_txt = t_MSSSS_AddAll_txt(tblName);
-                        }
-                    } else {
-                        display_txt = t_MSSSS_NoItems_txt(tblName);
+                        };
                     };
                 };
                 el_SBR_select.value = display_txt;
                 add_or_remove_class(el_SBR_select.parentNode, cls_hide, false)
+                el_SBR_select.disabled = !enabled;
             }
             const el_SBR_container_showall = document.getElementById("id_SBR_container_showall");
             add_or_remove_class(el_SBR_container_showall, cls_hide, false)
@@ -2928,7 +2931,7 @@ const mod_MCOL_dict = {
 
 //=========  t_SBR_select_level_sector  ================ PR2021-08-02 PR2023-03-26
     function t_SBR_select_level_sector(tblName, el_select, SBR_lvl_sct_response, skip_upload) {
-        console.log("===== t_SBR_select_level_sector =====");
+        //console.log("===== t_SBR_select_level_sector =====");
         //console.log( "    tblName: ", tblName) // tblName = "lvlbase" or "sctbase"
         //console.log( "    el_select.value: ", el_select.value, typeof el_select.value)
 
@@ -2973,15 +2976,15 @@ const mod_MCOL_dict = {
         // ---  upload new setting
                 b_UploadSettings (upload_dict, urls.url_usersetting_upload);
             };
-        console.log("    selected_pk_int", selected_pk_int);
-        console.log("    selected_dict", selected_dict);
+    //console.log("    selected_pk_int", selected_pk_int);
+    //console.log("    selected_dict", selected_dict);
             SBR_lvl_sct_response(tblName, selected_dict, selected_pk_int);
         };
     };  // t_SBR_select_level_sector
 
 //=========  t_SBR_filloptions_level_sector  ================ PR2021-08-02 PR2023-01-11
     function t_SBR_filloptions_level_sector(tblName, rows) {
-        console.log("=== t_SBR_filloptions_level_sector");
+        //console.log("=== t_SBR_filloptions_level_sector");
         //console.log("tblName", tblName);
         //console.log("rows", rows);
 

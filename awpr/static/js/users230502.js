@@ -64,12 +64,12 @@ document.addEventListener('DOMContentLoaded', function() {
         field_align: ["c", "l", "l", "l","l",  "l",  "c", "l", "l", "c"]
         };
     field_settings.btn_usergroup = {
-        field_caption: ["", "School_code", "School", "User", "Read_only_2lines", "Edit",
+        field_caption: ["", "School_code", "School", "User", "Edit", "Edit_wolf_2lines",
                         "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
                         "Receive_messages", "Send_messages", "Access_to_archive",
                         "System_administrator_2lines"],
                         //"Download", "Archive", "System_administrator_2lines"],
-        field_names: ["select", "sb_code", "school_abbrev", "username", "group_read", "group_edit",
+        field_names: ["select", "sb_code", "school_abbrev", "username", "group_edit", "group_wolf",
                         "group_auth1", "group_auth2", "group_auth3", "group_auth4",
                         "group_msgreceive", "group_msgsend", "group_archive", "group_admin"],
                         //"group_download", "group_archive", "group_admin"],
@@ -92,11 +92,11 @@ document.addEventListener('DOMContentLoaded', function() {
         field_align: ["c", "l", "l", "l", "l", "l",  "l", "l", "l"]
     };
     field_settings.btn_userpermit = {
-        field_caption: ["", "Organization", "Page", "Action", "Read_only_2lines", "Edit",
+        field_caption: ["", "Organization", "Page", "Action", "Edit", "Edit_wolf_2lines",
                         "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
                         "Receive_messages", "Send_messages", "Access_to_archive",
                         "Analyze", "System_administrator_2lines"],
-        field_names: ["select", "role", "page", "action", "group_read", "group_edit",
+        field_names: ["select", "role", "page", "action", "group_edit", "group_wolf",
                         "group_auth1", "group_auth2", "group_auth3", "group_auth4",
                         "group_msgreceive", "group_msgsend", "group_archive",
                          "group_anlz", "group_admin"],
@@ -846,11 +846,11 @@ console.log("user_dicts",user_dicts)
                 filter_value = data_dict[field_name];
 
             } else if (field_name.slice(0, 5) === "group") {
-                //  field_name is "group_read", "group_edit",  "group_auth1", "group_auth2", etc
+                //  field_name is "group_edit", "group_wolf", "group_edit",  "group_auth1", "group_auth2", etc
 
                 // data_dict[field_name] example: perm_system: true
                 const db_field = field_name.slice(6);
-                //  db_field is "read", "edit",  "auth1", "auth2", etc
+                //  db_field is "edit", "wolf", "auth1", "auth2", etc
 
                 // const permit_bool = (data_dict[field_name]) ? data_dict[field_name] : false;
                 const permit_bool = (data_dict.usergroups) ? data_dict.usergroups.includes(db_field) : false;

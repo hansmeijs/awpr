@@ -155,7 +155,7 @@ class UserUploadView(View):
     #  when ok: it also sends an email to the user
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserUploadView ===============')
@@ -248,9 +248,10 @@ class UserUploadView(View):
                         is_same_schoolbase = (user_schoolbase and user_schoolbase == req_usr.schoolbase)
 
                         if is_same_schoolbase:
-                            new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT)
+                            new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_WOLF)
                         else:
-                            new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_DOWNLOAD,
+                            new_usergroups_arr = (c.USERGROUP_READ, c.USERGROUP_EDIT, c.USERGROUP_WOLF,
+                                                  c.USERGROUP_DOWNLOAD,
                                                   c.USERGROUP_MSGRECEIVE, c.USERGROUP_MSGWRITE,
                                                   c.USERGROUP_ARCHIVE, c.USERGROUP_ADMIN)
 
@@ -2798,7 +2799,7 @@ def create_or_validate_user_instance(user_schoolbase, upload_dict, user_pk, user
 
 # === update_user_instance ========== PR2020-08-16 PR2020-09-24 PR2021-03-24 PR2021-08-01 PR2022-02-18
 def update_user_instance(sel_examyear, user_instance, upload_dict, msg_list, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('-----  update_user_instance  -----')
         logger.debug('    user_instance: ' + str(user_instance))
@@ -4955,7 +4956,7 @@ def message_diff_exyr(request, sel_examyear_instance):
 
 def get_selected_examyear_from_usersetting(request, allow_not_published=False):
     # PR2021-09-08 PR2022-02-26 PR2022-04-16 PR2022-08-04 PR2023-04-13
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- get_selected_examyear_from_usersetting ----- ' )
     # this function gets sel_examyear, from req_usr and usersetting
@@ -4977,7 +4978,7 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
         else:
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             if logging_on:
-                logger.debug('selected_pk_dict: ' + str(selected_pk_dict))
+                logger.debug('    selected_pk_dict: ' + str(selected_pk_dict))
 
 # ===== EXAMYEAR =======================
     # - get selected examyear from Usersetting
@@ -4987,8 +4988,8 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
                 country=requsr_country
             )
             if logging_on:
-                logger.debug('sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
-                logger.debug('sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
+                logger.debug('    sel_examyear_pk: ' + str(sel_examyear_pk) + ' ' + str(type(sel_examyear_pk)))
+                logger.debug('    sel_examyear: ' + str(sel_examyear) + ' ' + str(type(sel_examyear)))
 
     # - add info to msg_list, will be sent back to client
             msg_list = message_examyear_missing_notpublished_locked(sel_examyear, allow_not_published)
@@ -4998,8 +4999,8 @@ def get_selected_examyear_from_usersetting(request, allow_not_published=False):
         sel_examyear = None
 
     if logging_on:
-        logger.debug('msg_list: ' + str(msg_list))
-        logger.debug('may_edit: ' + str(may_edit))
+        logger.debug('    msg_list: ' + str(msg_list))
+        logger.debug('    may_edit: ' + str(may_edit))
 
     return sel_examyear, msg_list
 # - end of get_selected_examyear_from_usersetting
@@ -5105,7 +5106,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-
 def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_clause=False, page=None):
     # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31 PR2023-04-10
     # called by not has_subjbases
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
         logger.debug(' +++++ get_selected_ey_school_dep_lvl_from_usersetting +++++ ' )
@@ -5189,7 +5190,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
         #TODO requsr_same_school and skip_same_school_clause has no effect, PR2023-04-17
         # requsr_same_school = True when selected school is same as requsr_school PR2021-04-27
-        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
+        # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not enter grades
         requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and
                               sel_schoolbase_instance and request.user.schoolbase and
                               request.user.schoolbase.pk == sel_schoolbase_instance.pk)
@@ -5258,7 +5259,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
     def get_level_instance(sel_examyear_instance, sel_department_instance,
                                         allowed_depbase_dict, selected_pk_dict):
-        # PR2022-12-19 PR2023-02-21
+        # PR2022-12-19 PR2023-02-21 PR2023-05-01
         logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ------- get_level_instance -------')
@@ -5270,7 +5271,8 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
         if logging_on:
             logger.debug('    level_is_required: ' + str(level_is_required))
             logger.debug('    allowed_depbase_dict: ' + str(allowed_depbase_dict))
-            # allowed_depbase_dict: {'4': [], '5': []}
+            # allowed_depbase_dict: {'-9': [], '4': [], '5': []}
+
         if level_is_required:
             sel_lvlbase_pk = None
 
@@ -5279,13 +5281,8 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
             # PR2023-02-21 debug: when allowed_lvlbases_dict is empty: all levels are allowed
             if allowed_depbase_dict:
                 for lvlbase_pk_str in allowed_depbase_dict:
-                    allowed_lvlbases_arr.append(int(lvlbase_pk_str))
-            else:
-                # - if multiple allowed: get saved_lvlbase_pk from Usersetting
-                saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
-                # - don't get saved_depbase when saved_depbase_pk is 'select all'
-                if saved_lvlbase_pk and saved_lvlbase_pk != -9:
-                    sel_lvlbase_pk = saved_lvlbase_pk
+                    if lvlbase_pk_str != '-9':
+                        allowed_lvlbases_arr.append(int(lvlbase_pk_str))
 
             if logging_on:
                 logger.debug('    allowed_lvlbases_arr: ' + str(allowed_lvlbases_arr))
@@ -5293,15 +5290,22 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
             # - get sel_lvlbase_pk if only 1 allowed
             if len(allowed_lvlbases_arr) == 1:
                 sel_lvlbase_pk = allowed_lvlbases_arr[0]
+                if logging_on:
+                    logger.debug('  allowed_lvlbases_arr[0] sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
             else:
-                # - if multiple allowed: get saved_lvlbase_pk from Usersetting
-                saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
 
-                # - don't get saved_depbase when saved_depbase_pk is 'select all'
+# - get saved_lvlbase_pk from Usersetting
+                saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+                if logging_on:
+                    logger.debug('    saved_lvlbase_pk: ' + str(saved_lvlbase_pk))
+
+# - don't get saved_lvlbase when saved_lvlbase_pk is 'select all'
                 if saved_lvlbase_pk and saved_lvlbase_pk != -9:
                     # - check if saved_depbase is in allowed_depbases_arr
-                    if saved_lvlbase_pk in allowed_lvlbases_arr:
+                    if not allowed_lvlbases_arr or saved_lvlbase_pk in allowed_lvlbases_arr:
                         sel_lvlbase_pk = saved_lvlbase_pk
+            if logging_on:
+                logger.debug('    sel_lvlbase_pk: ' + str(sel_lvlbase_pk))
 
             if sel_lvlbase_pk:
                 sel_level_instance = subj_mod.Level.objects.get_or_none(
@@ -5335,6 +5339,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
                 msg_list.append(_("%(country)s has no license yet to use AWP-online this exam year.") % \
                                                  {'country': requsr_country.name})
 
+            # selected_pk_dict: {'sel_examyear_pk': 5, 'sel_examperiod': 1, 'sel_examtype': 'se', 'sel_depbase_pk': 1, 'sel_auth_index': 3, 'sel_lvlbase_pk': 4}
 
             selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
             if logging_on:
@@ -5347,9 +5352,9 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
             if logging_on:
                 logger.debug('    sel_examyear_instance: ' + str(sel_examyear_instance))
-                logger.debug('msg_list: ' + str(msg_list))
 
     # - get allowed_sections_dict
+            # allowed_sections_dict: {'30': {'1': {'-9': []}, '2': {'-9': []}, '3': {'-9': []}}}
             allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
             if logging_on:
                 logger.debug('    allowed_sections_dict: ' + str(allowed_sections_dict))
@@ -5367,9 +5372,9 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
             if logging_on:
                 logger.debug('    sel_school_instance: ' + str(sel_school_instance))
-                logger.debug('msg_list: ' + str(msg_list))
 
     # - get allowed_schoolbase_dict
+            # allowed_schoolbase_dict: {'1': {'-9': []}, '2': {'-9': []}, '3': {'-9': []}}
             allowed_schoolbase_dict, allowed_depbases_pk_arr = \
                 acc_prm.get_userallowed_schoolbase_dict_depbases_pk_arr(
                     userallowed_sections_dict=allowed_sections_dict,
@@ -5378,6 +5383,7 @@ def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_cl
 
             if logging_on:
                 logger.debug('    allowed_schoolbase_dict: ' + str(allowed_schoolbase_dict))
+                logger.debug('    allowed_depbases_pk_arr: ' + str(allowed_depbases_pk_arr))
 
             sel_department_instance = get_department_instance(
                     sel_examyear_instance=sel_examyear_instance,

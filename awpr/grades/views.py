@@ -440,8 +440,9 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                 if sel_examyear and sel_school and sel_department and sel_examperiod and sel_examtype:
                                     err_list = []
                                     logger.debug('    err_list: ' + str(err_list))
-                                    logger.debug('    sel_examperiod: ' + str(sel_examperiod) + str(type(sel_examperiod)))
-                                    logger.debug('    sel_examtype: ' + str(sel_examtype) + str(type(sel_examtype)))
+                                    logger.debug('    sel_examperiod: ' + str(sel_examperiod) + ' ' + str(type(sel_examperiod)))
+                                    logger.debug('    sel_examtype: ' + str(sel_examtype) + ' ' + str(type(sel_examtype)))
+
         # give msg when corrector wants to approve exem or se, or when examiner wants to approve exem
                                     auth_txt, gradetype_txt = None, None
                                     if requsr_auth == c.USERGROUP_AUTH4_CORR:
@@ -492,7 +493,7 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                             grade_pk=grade_pk
                                         )
                                         if logging_on:
-                                            logger.debug('grade_approve_rows len: ' + str(len(grade_approve_rows)))
+                                            logger.debug(' >> len grade_approve_rows: ' + str(len(grade_approve_rows)))
                                             #for row in grade_approve_rows:
                                             #    logger.debug(' -- ' + str(row))
                                         """
@@ -1686,9 +1687,6 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
         logger.debug('    count_dict: ' + str(count_dict))
         logger.debug('    is_test: ' + str(is_test))
 
-    studsubj_not_published = 0
-    auth_missing = 0
-    composition_error = 0
     test_is_ok = False
     show_warning_novalue = False
     no_value = 0
@@ -1717,19 +1715,42 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
         if logging_on:
             logger.debug('    studsubj_not_published: ' + str(studsubj_not_published))
 
-        level_html = ''
-        if sel_department and sel_level and sel_department.level_req and sel_level.abbrev:
-            level_html = '<br>' + str(_('The selection contains only candidates of the learning path: %(lvl_abbrev)s.') % {'lvl_abbrev': sel_level.abbrev})
+# - create line with 'only candidates of the learning path'
+        if sel_department and sel_department.level_req:
+            if sel_level and sel_level.abbrev:
+                abbrev = sel_level.abbrev if sel_level.abbrev else '-'
+                level_txt = ''.join((
+                    gettext('The selection contains only candidates of the learning path: %(lvl_abbrev)s.') % {'lvl_abbrev': abbrev},
+                    '<br>',
+                    gettext("Select 'All learning paths' in the vertical grey bar on the left to submit all learning paths.")
+                ))
+            else:
+                level_txt = ''.join((
+                        '<b>', gettext('ATTENTION'), '</b>: ',
+                        gettext('The selection contains the candidates of all learning paths.'), '<br>',
+                        gettext('Select a learning path in the vertical grey bar on the left to submit one learning path.')
+                ))
+            msg_list.append(''.join(("<p class='pb-2'>", level_txt, '</p>')))
 
-# - create first line with 'The selection contains 39 subjects'
-        if is_test:
-            grade_score_txt = get_grade_text(count) if sel_examtype == 'se' else get_score_text(count)
-            count_txt = str(_("The selection contains %(val)s.") % {'val': grade_score_txt})
-            msg_list.append(''.join(("<p class='pb-2'>",
-                                     count_txt,
-                                     level_html,
-                                     '</p>')))
+# - create line with 'The selection contains 39 subjects'
+        grade_score_txt = get_grade_text(count) if sel_examtype == 'se' else get_score_text(count)
+        #count_txt = str(_("The selection contains %(val)s.") % {'val': grade_score_txt})
+        count_txt = gettext("The selection contains %(val)s.") % {'val': grade_score_txt}
+        msg_list.append(''.join(("<p class='pb-2'>", count_txt, '</p>')))
 
+# - create line with 'composition not correct'
+        if composition_error:
+            is_are = gettext('is') if composition_error == 1 else gettext('are')
+            cannot_submit_list.append(''.join(("<li>",
+                                               gettext(
+                                                   "There %(is_are)s %(val)s whose composition of the subjects is not correct.") % \
+                                               {'is_are': is_are, 'val': get_grade_text(composition_error)},
+                                               '<br>',
+                                               gettext(
+                                                   "Make the necessary corrections in the subject composition or contact the  Inspectorate."),
+                                               '</li>')))
+
+# - create line with 'not yet submitted in an additional Ex1 form' with list of students, if less than 25
         if studsubj_not_published:
             examperiod = 1
             studsubj_not_published_txt = str(_("%(val)s not yet submitted in an additional Ex1 form.") % \
@@ -1747,30 +1768,7 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
                                      submitE_ex1_form_txt,
                                      '</li>')))
 
-            if logging_on:
-                logger.debug('    studsubj_not_published_txt: ' + str(studsubj_not_published_txt))
-
-        if composition_error:
-            if composition_error == 1:
-                compositiontxt = gettext("There is %(val)s of which the composition of the subjects is not correct.") % \
-                                   {'val': get_grade_text(composition_error)}
-            else:
-                compositiontxt = gettext("There are %(val)s of which the composition of the subjects is not correct.") % \
-                                   {'val': get_grade_text(composition_error)}
-
-            compositiontxt2 = gettext("Make the necessary corrections in the subject composition or contact the  Inspectorate.")
-
-            # | "Make the necessary corrections in the subject composition or contact the  Inspectorate."
-
-            cannot_submit_list.append(''.join(("<li>",
-                                     compositiontxt,
-                                     '<br>',
-                                     compositiontxt2,
-                                     '</li>')))
-
-            if logging_on:
-                logger.debug('    compositiontxt: ' + str(compositiontxt))
-
+# - create line with 'not fully approved'
         if auth_missing:
             auth_missing_txt = str(_("%(val)s not fully approved") % \
                                    {'val': get_grades_are_text(auth_missing)})
@@ -1778,7 +1776,6 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
             if authmissing_list and len(authmissing_list) <= 25:
                 for log_str in authmissing_list:
                     auth_missing_txt += '<br>&emsp;&emsp;' + log_str
-            msg_list.append(auth_missing_txt)
 
             exam_comm = _(' and examiner') if exform_txt == 'Ex2' else _(', examiner and corrector')
 
@@ -1892,7 +1889,6 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
         elif test_is_ok:
             class_str = 'border_bg_valid'
             msg_list.append(''.join(("<p>", str(_("The %(cpt)s form can be submitted.") % {'cpt': exform_txt}), '</p>')))
-
 
         if logging_on:
             logger.debug('  ????  class_str: ' + str(class_str))
@@ -2126,11 +2122,12 @@ def get_approved_by_you_text(count):
         msg_text = str(count) + str(_(' grades are already approved by you'))
     return msg_text
 
+
 def get_grades_tobe_updated(grade_row, tobe_updated_list, sel_examtype, requsr_auth, auth_index, is_test, is_reset, count_dict, request):
     # PR2021-01-19 PR2022-03-08
     # auth_bool_at_index is not used to set or rest value. Instead 'is_reset' is used to reset, set otherwise PR2021-03-27
     # PR2022-03-08 this one will replace approve_grade
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_grades_tobe_updated -----')
         logger.debug('     sel_examtype: ' + str(sel_examtype))
@@ -2165,7 +2162,7 @@ def get_grades_tobe_updated(grade_row, tobe_updated_list, sel_examtype, requsr_a
             auth4by_id = grade_row.get('auth4by_id')
 
             if logging_on:
-                logger.debug('requsr_authby_field: ' + str(requsr_authby_field))
+                logger.debug(' .. requsr_authby_field: ' + str(requsr_authby_field))
                 logger.debug('    auth1by_id:      ' + str(auth1by_id))
                 logger.debug('    auth2by_id:      ' + str(auth2by_id))
                 logger.debug('    auth3by_id:      ' + str(auth3by_id))
@@ -2183,7 +2180,7 @@ def get_grades_tobe_updated(grade_row, tobe_updated_list, sel_examtype, requsr_a
                 requsr_authby_id = grade_row.get(requsr_auth + 'by_id')
                 requsr_authby_field_already_approved = True if requsr_authby_id else False
                 if logging_on:
-                    logger.debug('requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
+                    logger.debug('  > requsr_authby_field_already_approved: ' + str(requsr_authby_field_already_approved))
 
                 if requsr_authby_field_already_approved:
                     af.add_one_to_count_dict(count_dict, 'already_approved')
@@ -2197,7 +2194,6 @@ def get_grades_tobe_updated(grade_row, tobe_updated_list, sel_examtype, requsr_a
                     # corrector cannot also approve as chairperson, secretary or examiner
 
                     # PR2023-04-10 debug. there are se-grades with approval of corrector. To prevent double approval notcie, skip corrector in se grade
-
                     double_approved = False
                     if requsr_auth == 'auth1':
                         double_approved = (auth2by_id and auth2by_id == req_usr.pk or sel_examtype in ('pe', 'ce') and auth4by_id and auth4by_id == req_usr.pk)
@@ -2207,8 +2203,9 @@ def get_grades_tobe_updated(grade_row, tobe_updated_list, sel_examtype, requsr_a
                         double_approved = (sel_examtype in ('pe', 'ce') and auth4by_id and auth4by_id == req_usr.pk)
                     elif requsr_auth == 'auth4':
                         double_approved = (auth1by_id and auth1by_id == req_usr.pk) or (auth2by_id and auth2by_id == req_usr.pk) or (auth3by_id and auth3by_id == req_usr.pk)
+
                     if logging_on:
-                        logger.debug('double_approved: ' + str(double_approved))
+                        logger.debug('  > double_approved: ' + str(double_approved))
 
                     if double_approved:
                         af.add_one_to_count_dict(count_dict, 'double_approved')
@@ -2227,14 +2224,15 @@ def get_grades_tobe_updated(grade_row, tobe_updated_list, sel_examtype, requsr_a
 
                             has_value = grade_row.get('has_value', False)
                             if logging_on:
-                                logger.debug('     has_value   : ' + str(has_value))
+                                logger.debug('  > has_value   : ' + str(has_value))
+
                             if not has_value:
                                 af.add_one_to_count_dict(count_dict, 'no_value')
                             else:
                                 # add pk and req_usr.pk to tobe_updated_list
                                 save_changes = True
                                 if logging_on:
-                                    logger.debug('save_changes: ' + str(save_changes))
+                                    logger.debug('  > save_changes: ' + str(save_changes))
 
 # - set value of requsr_authby_field
             if save_changes:
@@ -3510,9 +3508,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
         # PR2023-04-08 dont hide grades any more for Inspection and adminshow grades
         # if requsr_same_school or requsr_corrector or sel_examperiod == c.EXAMPERIOD_EXEMPTION:
         # if True:
-        grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
-        final_grade = "grd.finalgrade AS finalgrade,"
-        status = "se_status, sr_status, pe_status, ce_status,"
+        #grades = "segrade, srgrade, sesrgrade, cescore, cegrade, pescore, pegrade, pecegrade,"
+        #final_grade = "grd.finalgrade AS finalgrade,"
+       # status = "se_status, sr_status, pe_status, ce_status,"
         """
         else:
             grades = ' '.join([
@@ -3552,7 +3550,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
                     "studsubj.has_exemption, studsubj.exemption_year, studsubj.has_sr, studsubj.has_reex, studsubj.has_reex03,",
                     "studsubj.tobedeleted AS studsubj_tobedeleted,",
 
-                    grades, final_grade, status,
+                    "grd.segrade, grd.srgrade, grd.sesrgrade, grd.cescore, grd.cegrade, grd.pescore, grd.pegrade, grd.pecegrade,",
+                    "grd.finalgrade AS finalgrade,",
+                    "grd.se_status, grd.sr_status, grd.pe_status, grd.ce_status,",
 
                     "exam.ete_exam, exam.secret_exam, exam.version, ntb.omschrijving AS ntb_omschrijving,",
                     "grd.examperiod,",
@@ -3568,7 +3568,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
 
                     "grd.ce_exam_id, grd.ce_exam_score,",
 
-                    "grd.exemption_imported,", # PR2023-01-24 added
+                    "grd.exemption_imported,",  # PR2023-01-24 added
 
                     "si.subject_id, si.subjecttype_id,",
                     "si.gradetype, si.weight_se, si.weight_ce, si.is_mandatory, si.is_mand_subj_id, si.is_combi, si.extra_count_allowed,",
@@ -3623,8 +3623,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
                     ''.join(("AND dep.base_id = ", str(sel_depbase_pk), "::INT"))
                     ]
         # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
-        if sel_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_EXEMPTION):
-            sql_list.append("AND NOT grd.deleted")
+        # not true, in 2022 there were some deleted grades  PR2023-03-29
+        # was: if sel_examperiod in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_EXEMPTION):
+        sql_list.append("AND NOT grd.deleted")
 
         if grade_pk_list:
             # when grade_pk_list has value: skip subject filter
@@ -3648,11 +3649,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
             # +++ add sql_clause with selected sct, cluster an d allowed depbase, lvlbase, subj_base
 
     # - filter on selected levelbase
-            saved_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
-            if logging_on:
-                logger.debug('     saved_lvlbase_pk:  ' + str(saved_lvlbase_pk))
-            if saved_lvlbase_pk:
-                sql_clause_lvlbase = ''.join(("AND (lvl.base_id=", str(saved_lvlbase_pk), "::INT)"))
+            # PR2023-04-29 debug: dont use saved_lvlbase_pk, it will show no records when changing to havo/vwo
+            if sel_lvlbase_pk:
+                sql_clause_lvlbase = ''.join(("AND (lvl.base_id=", str(sel_lvlbase_pk), "::INT)"))
                 sql_list.append(sql_clause_lvlbase)
                 if logging_on:
                     logger.debug('     sql_clause_lvlbase:  ' + str(sql_clause_lvlbase))
@@ -3858,7 +3857,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                         "grd.examperiod, grd.pescore, grd.cescore,",
 
                         "grd.ce_exam_id, grd.ce_exam_blanks, grd.ce_exam_result, grd.ce_exam_score,",
-                        "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, ",
+                        "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_auth3by_id,",
                         "grd.ce_exam_published_id AS ce_exam_published_id, grd.ce_exam_blocked,",
 
                         "ce_exam.id AS ceex_exam_id, ce_exam.exam_name AS ceex_name,"
@@ -3872,7 +3871,8 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                         "ce_exam.secret_exam AS ceex_secret_exam, ce_exam.published_id AS ceex_published_id,",
                         "ce_exam.ntb_omschrijving,",
 
-                        "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr, publ.modifiedat AS ce_exam_publ_modat",
+                        "auth1.last_name AS ce_exam_auth1_usr, auth2.last_name AS ce_exam_auth2_usr,",
+                        "auth3.last_name AS ce_exam_auth3_usr, publ.modifiedat AS ce_exam_publ_modat",
 
                         "FROM students_grade AS grd",
                         "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
@@ -3893,6 +3893,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
 
                         "LEFT JOIN accounts_user AS auth1 ON (auth1.id = grd.ce_exam_auth1by_id)",
                         "LEFT JOIN accounts_user AS auth2 ON (auth2.id = grd.ce_exam_auth2by_id)",
+                        "LEFT JOIN accounts_user AS auth3 ON (auth3.id = grd.ce_exam_auth3by_id)",
                         "LEFT JOIN schools_published AS publ ON (publ.id = grd.ce_exam_published_id)",
 
                         "WHERE ey.id = %(ey_id)s::INT",
@@ -4002,9 +4003,6 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                         type(userallowed_sections_dict)))
                 # allowed_sections_dict: {'2': {'1': {'4': [117, 114], '5': [], '-9': [118, 121]}}} <class 'dict'>
 
-            sel_schoolbase_pk = sel_schoolbase.pk if sel_schoolbase else None
-            sel_depbase_pk = sel_depbase.pk if sel_depbase else None
-            sel_lvlbase_pk = sel_lvlbase.pk if sel_lvlbase else None
 
             # PR2023-03-27
             # when a corrector has no allowed subjects, must return None.
@@ -4013,9 +4011,9 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
 
             sql_clause = acc_prm.get_sqlclause_allowed_NEW(
                 table='grade',
-                sel_schoolbase_pk=sel_schoolbase_pk,
-                sel_depbase_pk=sel_depbase_pk,
-                sel_lvlbase_pk=sel_lvlbase_pk,
+                sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+                sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
+                sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
                 userallowed_sections_dict=userallowed_sections_dict,
                 return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
             )
@@ -4188,6 +4186,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     if req_usr.role == c.ROLE_008_SCHOOL:
         sql_keys['schoolbase_pk'] = sel_schoolbase_pk
         sql_list.append("AND school.base_id = %(schoolbase_pk)s::INT")
+        sql_list.append("AND ey.id = %(ey_pk)s::INT")
     else:
         if sel_examyear.country.abbrev == 'Sxm':
             sql_list.append("AND ey.id = %(ey_pk)s::INT")

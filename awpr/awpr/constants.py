@@ -554,6 +554,7 @@ USERGROUP_CAPTION = {
     USERGROUP_ADMIN: _('System administrator')
 }
 
+
 MAILBOX_USERGROUPS = {
     USERGROUP_AUTH1_PRES: _('Chairperson'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
@@ -744,15 +745,20 @@ XF_FOOTER_SIZE11_ALIGNLEFT_BLUE = {'font_size': 11, 'font_color': 'blue', 'align
 XF_FOOTER_SIZE11_ALIGNCENTER_RED = {'font_size': 11, 'font_color': 'red', 'align': 'center', 'valign': 'vcenter'}
 
 # row_align_left
-XF_ROW_ALIGN_LEFT = {'font_size': 8, 'font_color': 'blue', 'align': 'left', 'valign': 'vcenter', 'border': True}
+XF_ROW_ALIGN_LEFT_BLUE = {'font_size': 8, 'font_color': 'blue', 'align': 'left', 'valign': 'vcenter', 'border': True}
 # row_align_center
-XF_ROW_ALIGN_CENTER = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
-#row_align_center_red
-XF_ROW_ALIGN_CENTER_RED = {'font_size': 8, 'font_color': 'red', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
+XF_ROW_ALIGN_CENTER_BLUE = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
+
+XF_ROW_ALIGN_CENTER_BLACK = {'font_size': 8, 'font_color': 'black', 'align': 'center', 'valign': 'vcenter', 'border': True}
+# row_align_center_red
+XF_ROW_ALIGN_CENTER_RED = {'font_size': 8, 'font_color': 'red', 'align': 'center', 'valign': 'vcenter', 'border': True}
+# row_align_left_red
+XF_ROW_ALIGN_LEFT_RED = {'font_size': 8, 'font_color': 'red', 'align': 'left', 'valign': 'vcenter', 'border': True}
+
 #row_align_center_green
 XF_ROW_ALIGN_CENTER_GREEN = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True}
 #row_align_left_green
-XF_ROW_ALIGN_LEFT__GREEN = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'left', 'valign': 'vcenter', 'border': True}
+XF_ROW_ALIGN_LEFT_GREEN = {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'left', 'valign': 'vcenter', 'border': True}
 
 XF_ROW_BG_LIGHTGREY = {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True}
 

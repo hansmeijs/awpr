@@ -150,8 +150,8 @@ class StudsubjDownloadEx4View(View):  # PR2022-05-27
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, sel_level,
-                    examperiod, prefix, settings, save_to_disk, request,
-                    user_lang):  # PR2021-02-13 PR2021-08-14 PR2022-12-30 PR2023-02-21
+                    examperiod, prefix, settings, save_to_disk, request, user_lang):
+    # PR2021-02-13 PR2021-08-14 PR2022-12-30 PR2023-02-21
     # called by StudentsubjectApproveOrSubmitEx1Ex4View.create_ex1_ex4_form, StudsubjDownloadEx1View
     logging_on = s.LOGGING_ON
     if logging_on:
@@ -343,7 +343,6 @@ def create_ex1_xlsx(published_instance, examyear, sel_school, sel_department, se
 
                 if len(stud_list):
                     for row in stud_list:
-
                         stud_tobedel = row.get('tobedel', False)
 
                         subj_id_arr = row.get('subj', [])
@@ -987,8 +986,10 @@ def create_ex1_ex4_format_dict(book, sheet, sel_school, sel_department, subject_
     row_align_center_blue = book.add_format({'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter','border': True})
 
     # for deleted subjects in Ex1
-    row_align_center_red = book.add_format({'font_size': 8, 'font_color': 'red', 'align': 'center', 'valign': 'vcenter','border': True})
-    row_align_left_red = book.add_format({'font_size': 8, 'font_color': 'red', 'align': 'left', 'valign': 'vcenter','border': True})
+    #row_align_center_red = book.add_format({'font_size': 8, 'font_color': 'red', 'align': 'center', 'valign': 'vcenter','border': True})
+    #row_align_left_red = book.add_format({'font_size': 8, 'font_color': 'red', 'align': 'left', 'valign': 'vcenter','border': True})
+    row_align_center_red = book.add_format(c.XF_ROW_ALIGN_CENTER_RED)
+    row_align_left_red = book.add_format(c.XF_ROW_ALIGN_LEFT_RED)
 
     totalrow_align_center = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
     totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
@@ -1448,15 +1449,15 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
 
     # - may submit Ex2 per level
                     # - get selected levelbase from usersetting
-                    sel_lvlbase_pk, sel_level = None, None
-                    selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
-                    if selected_pk_dict:
-                        sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
-                    if sel_lvlbase_pk:
-                        sel_level = subj_mod.Level.objects.get_or_none(
-                            base_id=sel_lvlbase_pk,
-                            examyear=sel_examyear
-                        )
+                    #sel_lvlbase_pk, sel_level = None, None
+                    #selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
+                    #if selected_pk_dict:
+                    #    sel_lvlbase_pk = selected_pk_dict.get(c.KEY_SEL_LVLBASE_PK)
+                    #if sel_lvlbase_pk:
+                    #    sel_level = subj_mod.Level.objects.get_or_none(
+                    #        base_id=sel_lvlbase_pk,
+                    #        examyear=sel_examyear
+                    #    )
                     if logging_on:
                         logger.debug('     sel_level: ' + str(sel_level))
 
@@ -1464,6 +1465,7 @@ class GradeDownloadEx2View(View):  # PR2022-02-17
                     save_to_disk = False
                     # just to prevent PyCharm warning on published_instance=published_instance
                     published_instance = sch_mod.School.objects.get_or_none(pk=None)
+
                     response, saved_to_disk = create_ex2_ex2a_xlsx(
                         published_instance=published_instance,
                         examyear=sel_examyear,
@@ -1711,6 +1713,7 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
     ex2_rows_dict, grades_auth_dict = create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, is_ex2a, save_to_disk, published_instance)
     if logging_on:
         logger.debug('grades_auth_dict: ' + str(grades_auth_dict))
+
     """
     ex2_rows_dict: {
         6: {'lvl_name': 'Praktisch Basisgerichte Leerweg', 'students': 
@@ -1774,19 +1777,22 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
             country_abbrev = examyear.country.abbrev.lower()
             file_dir = '/'.join((country_abbrev, examyear_str, requsr_schoolcode, 'exfiles'))
             file_path = '/'.join((file_dir, published_instance.filename))
-            file_name = published_instance.name
-
-            if logging_on:
-                logger.debug('file_dir: ' + str(file_dir))
-                logger.debug('file_name: ' + str(file_name))
-                logger.debug('filepath: ' + str(file_path))
 
 # ---  create file Name and worksheet Name
         exform_name = 'Ex2A' if is_ex2a else 'Ex2'
         today_dte = af.get_today_dateobj()
+        title_list = [exform_name, str(examyear), school.base.code]
+        if department:
+            title_list.append(department.base.code)
+        if level:
+            title_list.append(level.base.code)
         today_formatted = af.format_DMY_from_dte(today_dte, user_lang, False)  # False = not month_abbrev
-        title = ' '.join((exform_name, str(examyear), school.base.code, today_dte.isoformat()))
-        file_name = title + ".xlsx"
+        title_list.append(today_dte.isoformat())
+
+        file_name = ''.join((' '.join(title_list), ".xlsx"))
+
+        if logging_on:
+            logger.debug('    file_name: ' + str(file_name))
 
 # - Create an in-memory output file for the new workbook.
         # from https://docs.python.org/3/library/tempfile.html
@@ -1818,8 +1824,11 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
             bold_format = ex2_formats.get('bold_format')
             bold_blue = ex2_formats.get('bold_blue')
             normal_blue = ex2_formats.get('normal_blue')
+
+            row_align_center_black = ex2_formats.get('row_align_center_black')
             row_align_center_red = ex2_formats.get('row_align_center_red')
             row_align_center_green = ex2_formats.get('row_align_center_green')
+
             th_merge_bold = ex2_formats.get('th_merge_bold')
             th_prelim = ex2_formats.get('th_prelim')
             totalrow_merge = ex2_formats.get('totalrow_merge')
@@ -1902,7 +1911,7 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
                     for i, field_caption in enumerate(ex2_formats['field_captions']):
                         sheet.write(row_index, i, field_caption, ex2_formats['header_formats'][i])
 
-                    if logging_on:
+                    if logging_on and False:
                         logger.debug('  students_dict: ' + str(students_dict))
 # ---  student rows
                     for key, stud_dict in students_dict.items():
@@ -1912,18 +1921,23 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
                                     'exemptions': {223: '7,6-7,7>8', 224: 'x'}, 
                                     'has_exemptions': True}
                         stud_dict: {'idnr': '2007101110', 'exnr': '003', 'cls': '4', 'lvl': 'TKL', 'sct': 'ec', 'name': 'da Costa Gomez, Jaydah Alejandra Ashni', 'grades': {224: 'x', 247: 'x', 223: 'x', 225: 'x', 264: 'x', 259: 'x', 222: 'x', 229: 'x', 239: 'x'}, 
-                                    'exemptions': {}}    
+                                    'exemptions': {}} 
+                        stud_dict: {'idnr': '2005052070', 'exnr': '313', 'cls': 'TieP4', 'lvl': 'PKL', 'sct': 'tech', 'stud_tobedel': False, 'name': "Dennis, O'Brian Romario", 
+                                    'grades': {301: '4,8', 288: '6,4', 276: '5,2', 305: '6,8', 320: 'x', 310: '7,0', 280: '5,9', 278: '7,0', 303: '8,2', 283: '4,2'}, 
+                                    'new': [301, 288, 276, 305, 320, 310, 280, 278, 303, 283], 
+                                    'exemptions': {305: 'x', 320: 'x', 310: 'x', 278: 'x'}},        
+                                       
                         """
 
         # skip in exemption sheet when students has no exemptions
                         exemptions_dict = stud_dict.get('exemptions')
-                        if logging_on:
+                        if logging_on and False:
                             logger.debug('  key: ' + str(key))
                             logger.debug('  stud_dict: ' + str(stud_dict))
 
-
                         if not sheet_index or exemptions_dict:
                             grades_dict = exemptions_dict if sheet_index else stud_dict.get('grades')
+                            new_submitted_studsubj_pk_list = stud_dict.get('new') or []
                             """
                             stud_dict: {
                                 idnumber': '2002111708', 'examnumber': '2101', 'classname': 'B4A', 'lvl_abbrev': 'PBL', 'sct_abbrev': 'ec', 'fullname': 'Ahoua, Ahoua Bryan Blanchard ', 
@@ -1940,18 +1954,19 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
                                 if isinstance(field_name, int):
                                     # in subject column 'field_name' is subject_id
                                     value = grades_dict.get(field_name)
-                                    if value == 'x':
-                                        exc_format = row_align_center_red
-                                    elif value == 'vr':
-                                        exc_format = row_align_center_green
+
+                                    if not new_submitted_studsubj_pk_list or field_name not in new_submitted_studsubj_pk_list:
+                                        exc_format = row_align_center_black
+                                    else:
+                                        if value == 'x':
+                                            exc_format = row_align_center_red
+                                        elif value == 'vr':
+                                            exc_format = row_align_center_green
 
                                 else:
                                     value = stud_dict.get(field_name, '')
-                                    if logging_on and False:
-                                        logger.debug('field_name: ' + str(field_name))
-                                        logger.debug('value: ' + str(value))
-                                sheet.write(row_index, i, value, exc_format)
 
+                                sheet.write(row_index, i, value, exc_format)
 
     # ---  table footer row
                     row_index += 1
@@ -2030,6 +2045,13 @@ def create_ex2_ex2a_xlsx(published_instance, examyear, school, department, level
 # +++++++++++++++++++++++++
 # +++ print back page
         sheet = book.add_worksheet(str(_('Handtekeningen')))
+
+# --- create format of Ex2 sheet
+        sheet_index = 0
+        ex2_formats = create_ex2_format_dict(book, sheet, sheet_index, school, department, subject_pk_list,
+                                             subject_code_list)
+        bold_format = ex2_formats.get('bold_format')
+        bold_blue = ex2_formats.get('bold_blue')
 
 # --- set column width
         field_width = (40, 40, 40, 40)
@@ -2173,18 +2195,8 @@ def create_ex2_format_dict(book, sheet, sheet_index, school, department, subject
 
     th_exists = book.add_format({'bold': False, 'align': 'left', 'valign': 'vcenter'})
 
-    row_align_left = book.add_format({'font_size': 8, 'font_color': 'blue', 'valign': 'vcenter', 'border': True})
-    row_align_center = book.add_format(
-        {'font_size': 8, 'font_color': 'blue', 'align': 'center', 'valign': 'vcenter', 'border': True})
-
-    row_align_center_red = book.add_format(
-        {'font_size': 8, 'font_color': 'red', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True})
-
-    row_align_center_green = book.add_format(
-        {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': True})
-
-    row_align_left_green = book.add_format(
-        {'font_size': 8, 'font_color': '#008000', 'bold': True, 'align': 'left', 'valign': 'vcenter', 'border': True})
+    row_align_left = book.add_format(c.XF_ROW_ALIGN_LEFT_BLUE)
+    row_align_center = book.add_format(c.XF_ROW_ALIGN_CENTER_BLUE)
 
     totalrow_align_center = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
     totalrow_number = book.add_format({'font_size': 8, 'align': 'center', 'valign': 'vcenter', 'border': True})
@@ -2212,9 +2224,11 @@ def create_ex2_format_dict(book, sheet, sheet_index, school, department, subject
                    'bold_format': bold_format,
                    'bold_blue': bold_blue,
                    'normal_blue': normal_blue,
-                   'row_align_center_red': row_align_center_red,
-                   'row_align_center_green': row_align_center_green,
-                   'row_align_left_green': row_align_left_green,
+                   'row_align_center_black':  book.add_format(c.XF_ROW_ALIGN_CENTER_BLACK),
+                   'row_align_center_red': book.add_format(c.XF_ROW_ALIGN_CENTER_RED),
+                   'row_align_left_red': book.add_format(c.XF_ROW_ALIGN_LEFT_RED),
+                   'row_align_center_green': book.add_format(c.XF_ROW_ALIGN_CENTER_GREEN),
+                   'row_align_left_green': book.add_format(c.XF_ROW_ALIGN_LEFT_GREEN),
                    'th_merge_bold': th_merge_bold,
                    'th_exists': th_exists,
                    'th_prelim': th_prelim,
@@ -2486,6 +2500,7 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, i
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- create_ex2_ex2a_rows_dict -----')
+        logger.debug('    published_instance.pk: ' + str(published_instance.pk if published_instance else None))
     # function creates dictlist of all students of this examyear, school and department
     #  key 'subj_id_arr' contains list of all studentsubjects of this student, not tobedeleted
     #  skip studsubjects that are not fully approved
@@ -2523,6 +2538,8 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, i
                 "grd.", grade_score, " AS grade_score, grd.", se_ce, "_auth1by_id AS auth1by_id, grd.", se_ce, "_auth2by_id AS auth2by_id, ",
                 "grd.", se_ce, "_auth3by_id AS auth3by_id, grd.", se_ce, "_auth4by_id AS auth4by_id, ",
 
+                "grd.", se_ce, "_published_id AS published_id, ",
+
                 "studsubj.has_exemption, grd_exem.exem_segrade, grd_exem.exem_cegrade, grd_exem.exem_finalgrade, ",
 
                 "auth1.last_name AS auth1_usr, auth2.last_name AS auth2_usr, auth3.last_name AS auth3_usr, auth4.last_name AS auth4_usr ",
@@ -2545,16 +2562,19 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, i
                 "LEFT JOIN subjects_level AS lvl ON (lvl.id = st.level_id) ",
                 "LEFT JOIN subjects_sector AS sct ON (sct.id = st.sector_id) ",
                 "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT ",
-                "AND grd.examperiod = %(ep)s::INT AND NOT st.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted AND NOT grd.deleted "
+                "AND grd.examperiod = %(ep)s::INT "
+                "AND NOT st.deleted AND NOT studsubj.deleted AND NOT grd.deleted ",
+                "AND NOT st.tobedeleted AND NOT studsubj.tobedeleted AND NOT grd.tobedeleted "
                 ]
 
-    if save_to_disk:
+    # PR2023-05-02 shoq all gardes on Ex2, make them black when alreay published, blue are new grades
+    #if save_to_disk:
         # when submitting an Ex2 form published_instance is already saved, therefore published_instance.pk has a value
         # filter on published_instance.pk, so only subjects of this submit will ne added to Ex2 form
         # was: sql_studsubj_agg_list.append("AND studsubj.subj_published_id = %(published_id)s::INT")
 
-        sql_keys['published_id'] = published_pk
-        sql_list.append("AND grd." + se_ce + "_published_id = %(published_id)s::INT ")
+        #sql_keys['published_id'] = published_pk
+        #sql_list.append("AND grd." + se_ce + "_published_id = %(published_id)s::INT ")
 
     if level:
         sql_keys['lvl_id'] = level.pk
@@ -2615,11 +2635,16 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, i
                 'cls': row.get('classname', ''),
                 'lvl': row.get('lvl_abbrev', '---'),
                 'sct': row.get('sct_abbrev', '---'),
+                'stud_tobedel': row.get('stud_tobedel', False),
                 'name': fullname,
                 'grades': {},
+                'new_dict': {},
+                'new': [],
                 'exemptions': {}
             }
         level_student_grades_dict = level_students[student_pk].get('grades')
+        # new_dict stores grades that are not submitted yet, must be shown in blue on Ex from PR2023-05-02
+        level_student_new_list = level_students[student_pk].get('new')
         level_student_exemptions_dict = level_students[student_pk].get('exemptions')
 
         subject_pk = row.get('subject_id')
@@ -2630,6 +2655,8 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, i
                 has_exemption = row.get('has_exemption', False)
                 exem_finalgrade = row.get('exem_finalgrade') if has_exemption else None
 
+                published_id = row.get('published_id')
+
                 if grade_score is not None and not grade_score == '':
                     grade_score_comma = str(grade_score).replace('.', ',')
                 elif has_exemption and exem_finalgrade:
@@ -2638,6 +2665,10 @@ def create_ex2_ex2a_rows_dict(examyear, school, department, level, examperiod, i
                     grade_score_comma = 'x'
 
                 level_student_grades_dict[subject_pk] = grade_score_comma
+
+                # new_dict stores grades that are not submitted yet, must be shown in blue on Ex from PR2023-05-02
+                if published_id is None or published_pk and published_id == published_pk:
+                    level_student_new_list.append(subject_pk)
 
                 if has_exemption:
                     #level_students['has_exemptions'] = True
@@ -3240,9 +3271,9 @@ def create_ex5_xlsx(published_instance, examyear, school, department, examperiod
         bold_blue = book.add_format(c.XF_BOLD_FCBLUE)
         normal_blue = book.add_format(c.XF_FCBLUE)
 
-        row_align_center = book.add_format(c.XF_ROW_ALIGN_CENTER)
+        row_align_center = book.add_format(c.XF_ROW_ALIGN_CENTER_BLUE)
         row_align_center_green = book.add_format(c.XF_ROW_ALIGN_CENTER_GREEN)
-        row_align_left_green = book.add_format(c.XF_ROW_ALIGN_LEFT__GREEN)
+        row_align_left_green = book.add_format(c.XF_ROW_ALIGN_LEFT_GREEN)
         th_align_center = ex5_formats.get('th_align_center')
         th_rotate = ex5_formats.get('th_rotate')
 
@@ -5985,8 +6016,8 @@ def create_result_overview_xlsx(sel_examyear, sel_school, department_dictlist, l
 # create dict with formats, used in this workbook
         formats = {
             'bold_format': book.add_format(c.XF_BOLD),
-            'row_align_center': book.add_format(c.XF_ROW_ALIGN_CENTER),
-            'row_align_left': book.add_format(c.XF_ROW_ALIGN_LEFT),
+            'row_align_center': book.add_format(c.XF_ROW_ALIGN_CENTER_BLUE),
+            'row_align_left': book.add_format(c.XF_ROW_ALIGN_LEFT_BLUE),
 
             'hdr_tableheader': book.add_format(c.XF_TABLEHEADER),
             'hdr_tableheader_alignleft': book.add_format(c.XF_TABLEHEADER_ALIGNLEFT),

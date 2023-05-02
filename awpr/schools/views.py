@@ -2788,7 +2788,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                         logger.debug('cc_email_list: ' + str(cc_email_list))
 # - send email
                                     if not send_email:
-                                        log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ', str(_('The email is not sent.')))))
+                                        log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ', str(_('The email has not been sent.')))))
                                     else:
                                         mail_sent = send_email_orderlist(
                                             examyear=sel_examyear_instance,
@@ -2804,7 +2804,7 @@ class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
                                         )
 
                                         if not mail_sent:
-                                            log_list.append(''.join((c.STRING_SPACE_10, str(_('An error occurred while sending the email.')), ' ', str(_('The email is not sent.')))))
+                                            log_list.append(''.join((c.STRING_SPACE_10, str(_('An error occurred while sending the email.')), ' ', str(_('The email has not been sent.')))))
                                         else:
                                             log_list.append(''.join((c.STRING_SPACE_10, str(_('An email with the orderlist is sent to')), ':')))
                                             log_list.append(''.join((c.STRING_SPACE_15, ', '.join((cc_name_list)) )))
@@ -2986,7 +2986,7 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                     # get list of users of this school, for sending email
                     if not send_email:
                         log_list.append(''.join((c.STRING_SPACE_10, str(_('This is a test.')), ' ',
-                                                 str(_('The email to %(cpt)s is not sent.') % {'cpt': school.name}))))
+                                                 str(_('The email to %(cpt)s has not been sent.') % {'cpt': school.name}))))
                         log_list.append(c.STRING_SPACE_05)
                     else:
                         mail_sent = send_email_orderlist(
@@ -3004,7 +3004,7 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                         if not mail_sent:
                             log_list.append(''.join((c.STRING_SPACE_10, str(_(
                                 'An error occurred while sending the email.')), ' ',
-                                                     str(_('The email is not sent.')))))
+                                                     str(_('The email has not been sent.')))))
                         else:
                             log_list.append(''.join((c.STRING_SPACE_10, str(_(
                                 'An email with the orderlist is sent to')), ':')))

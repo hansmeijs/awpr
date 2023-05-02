@@ -638,7 +638,7 @@ def allowedsections_has_subjbases(userallowed_sections_dict):
 def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, userallowed_sections_dict, return_false_when_no_allowedsubjects):
     # PR2023-02-15 PR2023-04-10
     # This function  gives sql clause of all allowed schools, deps, levels and subjects.
-    # It does not filter on sel_schoolpk etc.
+    # it also filters on sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk.
 
     # called by create_studentsubject_rows, create_grade_rows,  create_grade_with_ete_exam_rows
 
@@ -696,27 +696,26 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
     # - create subjbase_clause
         subjbase_clause = None
         if allowed_subjbase_list:
-            logger.debug('    allowed_subjbase_list: ' + str(allowed_subjbase_list))
+
             if len(allowed_subjbase_list) == 1:
                 subjbase_clause = ''.join((subjbase_id_fld, "=", str(allowed_subjbase_list[0]), "::INT"))
             else:
                 subjbase_clause = ''.join(
                     (subjbase_id_fld, " IN (SELECT UNNEST(ARRAY", str(allowed_subjbase_list), "::INT[]))"))
-            logger.debug('    subjbase_clause: ' + str(subjbase_clause))
+
         else:
-            logger.debug('    return_false_when_no_allowedsubjects: ' + str(return_false_when_no_allowedsubjects))
+
             # when user is inspectorate: 'all subjects' is not possible
             if return_false_when_no_allowedsubjects:
                 subjbase_clause = 'FALSE'
     # - join lvlbase_clause AND subjbase_clause
         lvl_subjbase_clause = get_AND_joined(lvlbase_clause, subjbase_clause, has_subjbases)
 
-        logger.debug('    lvl_subjbase_clause: ' + str(lvl_subjbase_clause))
         return lvl_subjbase_clause
 
 #############################################
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')
@@ -1502,25 +1501,31 @@ def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, pa
 # - end of get_requsr_permitlist_usergroups_allowedsections_allowedclusters
 
 
-def get_permit_of_this_page(page, permit, request):
-    # --- get permit for this page # PR2021-07-18 PR2021-09-05 PR2022-07-05 PR2023-01-13
-
-    logging_on = False  # s.LOGGING_ON
+def get_permit_of_this_page(page, permit_txt_or_arr, request):
+    # --- get permit for this page # PR2021-07-18 PR2021-09-05 PR2022-07-05 PR2023-01-13 PR2023-04-30
+    # has_permit = True if one or more items in permit_arr are in permit_list
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_permit_of_this_page  -------')
 
     has_permit = False
-    if page and permit and request.user and request.user.country and request.user.schoolbase:
+    if page and permit_txt_or_arr and request.user and request.user.country and request.user.schoolbase:
         permit_list = get_permit_list(page, request.user)
         if logging_on:
             logger.debug('    permit_list: ' + str(permit_list))
 
         if permit_list:
-            prefix_permit = 'permit_' + permit
-            if logging_on:
-                logger.debug('    prefix_permit: ' + str(prefix_permit))
+            # convert to list if permit_txt_or_arr is string
+            permit_arr = [permit_txt_or_arr] if isinstance(permit_txt_or_arr, str) else permit_txt_or_arr
 
-            has_permit = prefix_permit in permit_list
+            for permit in permit_arr:
+                prefix_permit = 'permit_' + permit
+                if logging_on:
+                    logger.debug('    prefix_permit: ' + str(prefix_permit))
+
+                if prefix_permit in permit_list:
+                    has_permit = True
+                    break
 
     if logging_on:
         logger.debug('    has_permit: ' + str(has_permit))
@@ -1605,11 +1610,15 @@ def msghtml_error_occurred_with_border(err_txt, msg_txt=None):  # PR2023-03-20
     return ''.join((msg_list))
 
 
-def msghtml_from_msglist_with_border(err_list, border_class=None):  # PR2023-04-02
+def msghtml_from_msglist_with_border(err_list_or_txt, border_class=None):  # PR2023-04-02
     msg_list = []
-    if err_list:
+    if err_list_or_txt:
         if border_class is None:
             border_class = ""
+        if isinstance(err_list_or_txt, str):
+            err_list = [err_list_or_txt]
+        else:
+            err_list = err_list_or_txt
 
         msg_list.extend(["<p class='", border_class, " p-2'>"])
 

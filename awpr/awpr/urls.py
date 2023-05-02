@@ -361,12 +361,10 @@ urlpatterns = [
 
         path('duo_exam_upload', subject_views.ExamUploadDuoExamView.as_view(), name='url_duo_exam_upload'),
         path('approve_publish_exam', subject_views.ExamApproveOrPublishExamView.as_view(), name='url_approve_publish_exam'),
-        path('approve_grade_exam', subject_views.ExamApproveOrSubmitGradeExamView.as_view(), name='url_approve_submit_grade_exam'),
 
         path('send_email_submit_exam', student_views.SendEmailVerifcodeView.as_view(), name='url_send_email_submit_exam'),
 
         path('download_exam_pdf/<list>/', subject_views.ExamDownloadExamView.as_view(), name='url_exam_download_exam_pdf'),
-        path('download_grade_exam_pdf/<list>/', subject_views.ExamDownloadGradeExamView.as_view(), name='url_exam_download_grade_exam_pdf'),
         path('download_conversion_pdf/<list>/', subject_views.ExamDownloadConversionView.as_view(), name='url_exam_download_conversion_pdf'),
         path('download_exam_json', subject_views.ExamDownloadExamJsonView.as_view(), name='url_exam_download_exam_json'),
     ])),
@@ -375,7 +373,8 @@ urlpatterns = [
 # ===== WOLF ========================== PR2022-12-16
     path('wolf/', include([
         path('wolf', subject_views.WolfListView.as_view(), name='wolf_url'),
-
+        path('approve_submit_wolf', subject_views.ExamApproveOrSubmitWolfView.as_view(), name='url_approve_submit_wolf'),
+        path('download_wolf_pdf/<list>/', subject_views.ExamDownloadWolfView.as_view(), name='url_download_wolf_pdf'),
     ])),
 # ===== IMPORT ==========================
     path('import/', include([

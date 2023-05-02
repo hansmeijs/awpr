@@ -1149,11 +1149,12 @@ def has_unread_mailbox_items(examyear, req_user):
 def system_updates(examyear, request):
     # these are once-only updates in tables. Data will be changed / moved after changing fields in tables
     # after uploading the new version the function can be removed
-    pass
 
 # PR2021-03-26 run this to update text in ex-forms, when necessary
-    #if request.user.role == c.ROLE_128_SYSTEM:
-    #awpr_lib.update_library(examyear, request)
+    update_library_in_awpr_lib(examyear, request)
+
+# PR2023-05-01 add usergroup 'wolf' and archive to all users with usergroup 'edit'
+    add_usergroup_wolf(request)
 
 # function adds 'msgreceive' and 'msgsend' to usergroups, only when user is chairperson, secretary or sysadmin
     #add_usergroup_msgsend_msgreceive_ONCEONLY(request)
@@ -1276,6 +1277,39 @@ def reset_show_msg(request):
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
 # -end of reset_show_msg
+
+
+def update_library_in_awpr_lib(examyear, request):
+    # pr2023-04-29
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- update_library_in_awpr_lib -------')
+
+    try:
+        name = 'update_library'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=name
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+        if not exists:
+            # reset values
+            awpr_lib.update_library(examyear, request)
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=name
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# -end of reset_show_msg
+
+
+
 
 
 def add_usergroup_msgsend_msgreceive_ONCEONLY(request):  # PR2023-04-05
@@ -2674,6 +2708,55 @@ def recalc_amount_and_scalelength_of_assignment(request):
 
     except Exception as e:
         logger.error(getattr(e, 'message', str(e)))
+
+
+def add_usergroup_wolf(request):
+    # PR2023-05-01 add usergroup 'wolf' and archive to all users with usergroup 'edit'
+
+    logging_on = s.LOGGING_ON
+    if logging_on:
+        logger.debug(' ------- add_usergroup_wolf -------')
+    try:
+        key = 'add_ug_wolf'
+        exists = sch_mod.Systemupdate.objects.filter(
+            name=key
+        ).exists()
+        if logging_on:
+            logger.debug('exists: ' + str(exists))
+
+        if not exists:
+            # get only users with usergroups contains 'edit'
+            usersallowed = acc_mod.UserAllowed.objects.filter(usergroups__contains='edit')
+            if usersallowed:
+                for userallowed_instance in usersallowed:
+                    usergroup_list = acc_prm.get_usergroup_list(userallowed_instance)
+                    if 'wolf' not in usergroup_list:
+                        usergroup_list.append('wolf')
+                    usergroup_list.sort()
+                    # sort the list before saving, to be able to compare new and saved usergroups
+                    if logging_on:
+                        logger.debug('    usergroup_list: ' + str(usergroup_list))
+                    usergroups_str = json.dumps(usergroup_list)
+
+                    setattr(userallowed_instance,'usergroups', usergroups_str)
+                    userallowed_instance.save()
+
+                    if logging_on:
+                        logger.debug('    userallowed_instance.usergroups: ' + str(userallowed_instance.usergroups))
+
+
+        # - add function to systemupdate, so it won't run again
+            systemupdate = sch_mod.Systemupdate(
+                name=key
+            )
+            systemupdate.save(request=request)
+            if logging_on:
+                logger.debug('systemupdate: ' + str(systemupdate))
+
+    except Exception as e:
+        logger.error(getattr(e, 'message', str(e)))
+# - end of add_usergroup_download
+
 
 
 def add_usergroup_download_archive(request):

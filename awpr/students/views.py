@@ -2794,15 +2794,22 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                 sel_page = 'page_result'
             elif table == 'grade':
                 sel_page = 'page_grade'
-            elif mode in ('publish_exam', 'submit_grade_exam'):
+            elif mode == 'publish_exam':
                 sel_page = 'page_exams'
+            elif mode == 'submit_grade_exam':
+                sel_page = 'page_wolf'
             else:
                 sel_page ='page_studsubj'
+
             if logging_on:
-                logger.debug('mode: ' + str(mode))
-                logger.debug('sel_page: ' + str(sel_page))
+                logger.debug('    mode: ' + str(mode))
+                logger.debug('    sel_page: ' + str(sel_page))
+
             if req_usr and req_usr.country and req_usr.schoolbase:
                 permit_list = acc_prm.get_permit_list(sel_page, req_usr)
+
+                if logging_on:
+                    logger.debug('    permit_list: ' + str(permit_list))
 
                 requsr_usergroup_list, allowed_sections_dictNIU, allowed_clusters_listNIU, sel_examyear_instanceNIU = acc_prm.get_allowedusergrouplist_allowedsectionsdict_allowedclusterlist(req_usr)
 
@@ -2819,23 +2826,24 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                         else:
                             has_permit = 'permit_approve_subject' in permit_list
 
-                if logging_on:
-                    logger.debug('permit_list: ' + str(permit_list))
-
             if logging_on:
                 logger.debug('    mode: ' + str(mode))
                 logger.debug('    sel_page: ' + str(sel_page))
                 logger.debug('    has_permit: ' + str(has_permit))
 
             if has_permit:
+                sel_level = None
+
                 if mode == 'publish_exam':
                     formname = 'ete_exam'
                     sel_school, sel_department = None, None
                     sel_examyear, msg_list = acc_view.get_selected_examyear_from_usersetting(request)
+
                 elif mode == 'submit_grade_exam':
                     formname = 'grade_exam'
                     sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
                         acc_view.get_selected_ey_school_dep_lvl_from_usersetting(request)
+
                 else:
                     formname = upload_dict.get('form')
                     sel_examyear, sel_school, sel_department, sel_level, may_edit, msg_list = \
@@ -2846,7 +2854,6 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
             # create _verificationcode and key, store in usersetting, send key to client, set expiration to 30 minutes
                         verif_key, verif_code = af.create_verificationcode(formname, request)
                         update_wrap['verificationkey'] = verif_key
-
 
                         if logging_on:
                             logger.debug('    verif_key: ' + str(verif_key))
@@ -2882,6 +2889,7 @@ class SendEmailVerifcodeView(View):  # PR2021-07-26 PR2022-04-18
                             'school': sel_school,
                             'ex_form': ex_form,
                             'department': sel_department,
+                            'level': sel_level,
                             'verificationcode': verif_code
                         })
                         if logging_on:
@@ -3720,6 +3728,28 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
         subjects_txt = _('subjects') if examperiod == 1 else _('re-examinations')
         form_txt = _('Ex1') if examperiod == 1 else _('Ex4')
+        msg_list = []
+
+        msg_list.extend(("<div class='p-2 ", class_str, "'>"))
+
+# - create line with 'only candidates of the learning path'
+        if sel_department and sel_department.level_req:
+            if sel_level and sel_level.abbrev:
+                abbrev = sel_level.abbrev if sel_level.abbrev else '-'
+                level_txt = ''.join((
+                    gettext('The selection contains only candidates of the learning path: %(lvl_abbrev)s.') % {
+                        'lvl_abbrev': abbrev},
+                    '<br>',
+                    gettext(
+                        "Select 'All learning paths' in the vertical grey bar on the left to submit all learning paths.")
+                ))
+            else:
+                level_txt = ''.join((
+                    '<b>', gettext('ATTENTION'), '</b>: ',
+                    gettext('The selection contains the candidates of all learning paths.'), '<br>',
+                    gettext('Select a learning path in the vertical grey bar on the left to submit one learning path.')
+                ))
+            msg_list.append(''.join(("<p class='pb-2'>", level_txt, '</p>')))
 
         level_html = ''
         if sel_level:
@@ -3731,13 +3761,11 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             tobedeleted_html = ' ' + str(_('%(subj)s marked to be deleted.') % {'subj': get_subjects_are_text(examperiod, studsubj_tobedeleted)})
 
 # - create first line with 'The selection contains 4 candidates with 39 subjects'
-        msg_list = ["<div class='p-2 ", class_str, "'>"]
         if is_test:
             msg_list.append(''.join(( "<p class='pb-2'>",
                         str(_("The selection contains %(stud)s with %(subj)s.") %
                             {'stud': get_student_count_text(student_count), 'subj': get_subject_count_text(examperiod, count)}), ' ',
                             tobedeleted_html,
-                            level_html,
                         '</p>')))
 
 # if students with errors in compositiosn: skip other msg

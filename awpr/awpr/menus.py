@@ -102,7 +102,7 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('')
         logger.debug('===== get_headerbar_param ===== ')
@@ -479,7 +479,7 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
 def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
     # function is called by get_headerbar_param, creates template tags menu_buttons and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('===== set_menu_buttons ===== ')
         logger.debug('    sel_page: ' + str(sel_page))

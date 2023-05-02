@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 
 #PR2022-02-13 was ugettext_lazy as _, replaced by: gettext_lazy as _
-from django.utils.translation import activate, pgettext_lazy, gettext_lazy as _
+from django.utils.translation import activate, gettext, pgettext_lazy, gettext_lazy as _
 
 from django.views.generic import View
 
@@ -183,7 +183,8 @@ class UploadImportDataView(View):  # PR2020-12-05 PR2021-02-23 PR2021-07-17
 
 
 @method_decorator([login_required], name='dispatch')
-class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
+class \
+        UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
     # function updates mapped fields, no_header and worksheetname in table Schoolsetting
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -254,13 +255,13 @@ class UploadImportGradeView(View):  # PR2021-07-20 PR2021-12-10
                     sel_db_field = grade_val.get_grade_db_field_from_examgradetype(examgradetype)
 
                     if logging_on:
-                        logger.debug('is_test:        ' + str(is_test))
-                        logger.debug('filename:       ' + str(filename))
-                        logger.debug('examgradetype:  ' + str(examgradetype))
-                        logger.debug('sel_examperiod: ' + str(sel_examperiod))
+                        logger.debug('    is_test:        ' + str(is_test))
+                        logger.debug('    filename:       ' + str(filename))
+                        logger.debug('    examgradetype:  ' + str(examgradetype))
+                        logger.debug('    sel_examperiod: ' + str(sel_examperiod))
                         if upload_data_list:
-                            logger.debug('len upload_data_list : ' + str(len(upload_data_list)))
-                            logger.debug('upload_data_list : ' + str(upload_data_list))
+                            logger.debug('    len upload_data_list : ' + str(len(upload_data_list)))
+                            #logger.debug('    upload_data_list : ' + str(upload_data_list))
 
                     log_list = []
                     tobe_updated_dict = {}
@@ -2697,7 +2698,8 @@ def get_students_dict_with_subjbase_pk_list(school, department, double_idnumberl
         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
         "INNER JOIN subjects_subjecttype AS sjtp ON (sjtp.id = si.subjecttype_id)",
         # "WHERE subj.examyear_id = %(ey_id)s::INT AND NOT studsubj.tobedeleted"]
-        "WHERE NOT studsubj.tobedeleted"]
+        #"WHERE NOT studsubj.tobedeleted"]
+        "WHERE NOT studsubj.tobedeleted AND NOT studsubj.deleted"]
     sub_sql = ' '.join(sql_studsubj_list)
     # sub_sql row: (8855, 422, 'ne')
 
@@ -3755,8 +3757,8 @@ def import_studsubj_grade_from_datalist(request, examyear, examperiod, examgrade
                 blank_str = ''.join(('<', str(_('blank')), '>'))
                 saved_value_nz = (saved_value.replace('.', ',') if saved_value else blank_str) + c.STRING_SPACE_10
 
-                has_changed_str = '' if not value_has_changed else ''.join((' (', str(_('has changed')), ')'))
-                log_list.append(''.join((caption_txt, output_spaces, str(_('was')), ': ', saved_value_nz[:8], has_changed_str)))
+                has_changed_txt = gettext('has changed') if value_has_changed else gettext('unchanged')
+                log_list.append(''.join((caption_txt, output_spaces, str(_('was')), ': ', saved_value_nz[:8], has_changed_txt)))
 
     if logging_on:
         logger.debug(' ----- end ----- ')

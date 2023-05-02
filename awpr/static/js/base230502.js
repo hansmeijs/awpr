@@ -1766,7 +1766,6 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
                 (auth_index === 2) ? loc.Secretary :
                 (auth_index === 3) ? loc.Examiner :
                 (auth_index === 4) ? loc.Corrector : "-";
-
     };  // b_get_function_of_auth_index
 
 //#########################################################################

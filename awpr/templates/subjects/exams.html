@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams230424.js' %}"></script>
+    <script src="{% static 'js/exams230502.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import230329.js' %}"></script>
 {% endblock %}
@@ -142,11 +142,11 @@
                 data-url_link_exam_to_grades="{% url 'url_link_exam_to_grades' %}"
 
                 data-url_approve_publish_exam="{% url 'url_approve_publish_exam' %}"
-                data-url_approve_submit_grade_exam="{% url 'url_approve_submit_grade_exam' %}"
+                data-url_approve_submit_wolf="{% url 'url_approve_submit_wolf' %}"
                 data-url_send_email_verifcode="{% url 'url_send_email_verifcode' %}"
 
                 data-url_exam_download_exam_pdf="{% url 'url_exam_download_exam_pdf'  '-' %}"
-                data-url_exam_download_grade_exam_pdf="{% url 'url_exam_download_grade_exam_pdf'  '-' %}"
+                data-url_download_wolf_pdf="{% url 'url_download_wolf_pdf'  '-' %}"
                 data-url_exam_download_conversion_pdf="{% url 'url_exam_download_conversion_pdf'  '-' %}"
 
                 data-url_exam_download_exam_json="{% url 'url_exam_download_exam_json' %}"

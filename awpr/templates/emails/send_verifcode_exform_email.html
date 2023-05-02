@@ -7,6 +7,7 @@
 
   - {% trans 'School' %}:  {{ school.base.code }} {{ school.name }}
   - {% trans 'Department' %}:  {{ department.name }}
+{% if level %}  - {% trans 'Learning path' %}:  {{ level.name }}{% endif %}
   - {% trans 'Exam year' %}:  {{ examyear.code }}
 
 {% trans 'The verificationcode is:' %}
