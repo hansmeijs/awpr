@@ -3090,6 +3090,10 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         requsr_auth = None
         msg_html = None
 
+# -  get user_lang
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
 # - get permit
         # <PERMIT>
         # only users with role > student and perm_edit can change student data
@@ -3127,13 +3131,8 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                 logger.debug('    has_permit approve_subject:  ' + str(has_permit))
 
         if not has_permit:
-            msg_html = "<div class='p-2 border_bg_invalid'>" + str(_("You don't have permission to perform this action.")) + "</div>"
-
+            msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
         else:
-
-# -  get user_lang
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
 
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
@@ -3273,8 +3272,10 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                             # and batch update at the end
                             tobesaved_studsubj_pk_list = []
 
-                            # PR2023-01-12 create list of tobedeleted student_pk and batch delete at the end
-                            tobedeleted_student_pk_list = []
+                            # PR2023-05-02 debug: email Pien van Dijk ETE: student gets deleted,
+                            # apparently after deleting subject.
+                            # was: PR2023-01-12 create list of tobedeleted student_pk and batch delete at the end
+                            #   tobedeleted_student_pk_list = []
 
 # +++++ loop through studsubjects +++++
                             for studsubj in studsubjects:
@@ -3328,9 +3329,11 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                 if student_pk not in student_pk_list:
                                     student_pk_list.append(student_pk)
 
-                                    #if studsubj.student.tobedeleted and student_pk not in tobedeleted_student_pk_list:
-                                    if studsubj.get('studsubj_tobedeleted') and student_pk not in tobedeleted_student_pk_list:
-                                        tobedeleted_student_pk_list.append(student_pk)
+                                    # PR2023-05-02 debug: email Pien van Dijk ETE: student gets deleted,
+                                    # apparently after deleting subject.
+                                    # was:
+                                    # if studsubj.get('studsubj_tobedeleted') and student_pk not in tobedeleted_student_pk_list:
+                                    #    tobedeleted_student_pk_list.append(student_pk)
 
                                 if is_committed:
                                     if student_pk not in student_committed_list:
@@ -3425,8 +3428,11 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                         if logging_on:
                                             logger.debug('    saved_studsubj_pk_list: ' + str(saved_studsubj_pk_list))
 
-                                    if is_submit and tobedeleted_student_pk_list:
-                                        self.set_student_deleted(tobedeleted_student_pk_list, request)
+                                    # PR2023-05-02 debug: email Pien van Dijk ETE: student gets deleted,
+                                    # apparently after deleting subject.
+                                    # cause: self.set_student_deleted(tobedeleted_student_pk_list, request)
+                                    # was: if is_submit and tobedeleted_student_pk_list:
+                                    #    self.set_student_deleted(tobedeleted_student_pk_list, request)
 
                                 # - delete the 'tobedeleted' rows from StudSubject, only after submitting and no test!
 
@@ -3530,7 +3536,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         return saved_studsubj_pk_list, err_html
 # - end of save_approved_in_studsubj
 
-    def set_student_deleted(self, student_pk_list, request):
+    def set_student_deletedNIU(self, student_pk_list, request):
         # PR2023-01-12
 
         logging_on = s.LOGGING_ON
@@ -5011,21 +5017,22 @@ class StudentsubjectMultipleUploadView(View):  # PR2020-11-20 PR2021-08-17 PR202
                             logger.debug('    schemeitem_pk: ' + str(schemeitem_pk))
 
 # - get current studsubj - when mode is 'create': studsubj is None. It will be created at "elif mode == 'create'"
-                        studsubj = stud_mod.Studentsubject.objects.get_or_none(
+                        studsubj_instance = stud_mod.Studentsubject.objects.get_or_none(
                             id=studsubj_pk,
                             student=student_instance
                         )
                         if logging_on:
-                            logger.debug('    studsubj: ' + str(studsubj))
+                            logger.debug('    studsubj_instance: ' + str(studsubj_instance))
 
                         append_dict = {}
                         deleted_rows = []
+
 # +++ delete studsubj ++++++++++++
                         if mode == 'delete':
-                            if studsubj:
+                            if studsubj_instance:
                                 deleted_row, tobedeleted_studsubj_pk, err_html = delete_studentsubject(
                                     student_instance=student_instance,
-                                    studsubj_instance=studsubj,
+                                    studsubj_instance=studsubj_instance,
                                     request=request
                                 )
                                 if err_html:
@@ -5201,7 +5208,8 @@ def delete_studentsubject(student_instance, studsubj_instance, request):
     # the key 'tobedeleted' must be added via append_dict
 
 # - when studsubj is not yet submitted, deleted is set True, studsubj will NOT be retrieved by updated_rows = create_studentsubject_rows
-    # therefore a dict with the info af the deleted row must be added to updated_rows at the end, to remove the dict from the data_dicts and the tblrow
+    # therefore a dict with the info af the deleted row must be added to updated_rows at the end,
+    # to remove the dict from the data_dicts and the tblrow
 
     deleted_row, tobedeleted_studsubj_pk = None, None
 
@@ -5645,7 +5653,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         other_combi_subjects = stud_mod.Studentsubject.objects.filter(
                             student=studsubj_instance.student,
                             schemeitem__is_combi=True,
-                            tobedeleted=False
+                            tobedeleted=False,
+                            deleted=False
                         ).exclude(pk=studsubj_instance.pk)
 
                         if other_combi_subjects:
@@ -5920,7 +5929,8 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
             if recalc_finalgrade:
                 grades = stud_mod.Grade.objects.filter(
                     studentsubject=studsubj_instance,
-                    tobedeleted=False
+                    tobedeleted=False,
+                    deleted=False
                 )
                 if logging_on:
                     logger.debug('grades: ' + str(grades))
@@ -5934,6 +5944,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
                         # when first examperiod: also update and save grades in reex, reex03, if exist
                         grd_view.recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
 
+                sql_studsubj_list, sql_student_list = [], []
                 try:
                     student = studsubj_instance.student
                     if logging_on:
@@ -5951,7 +5962,6 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
 
                 except Exception as e:
                     logger.error(getattr(e, 'message', str(e)))
-
 
                 try:
                     if sql_studsubj_list:
@@ -5971,6 +5981,7 @@ def update_studsubj(studsubj_instance, upload_dict, si_dict, sel_examyear, sel_s
         logger.debug('  ..... end of update_studsubj .....')
     return studsubj_pk_list, recalc_subj_composition
 # --- end of update_studsubj
+
 
 def update_student_subj_composition(student_instance):
     # PR2022-08-30

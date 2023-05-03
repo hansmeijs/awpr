@@ -258,6 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
             el_MML_input_name.addEventListener("keyup", function() {MML_name_Keyup(el_MMMselect_input_filter)}, false );
         };
         const el_MML_ispublic = document.getElementById("id_MML_ispublic");
+
+        // all_countries is not in use in mailinglist, all_countries is filtered in mod_select_mailinglist PR2023-05-03
         const el_MML_all_countries = document.getElementById("id_MML_all_countries");
         const el_MML_all_countries_label = document.getElementById("id_MML_all_countries_label");
 
@@ -2682,6 +2684,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const name_str = el_MML_input_name.value;
             const is_public = el_MML_ispublic.checked;
+            // all_countries is not in use in mailinglist, all_countries is filtered in mod_select_mailinglist PR2023-05-03
             const all_countries = el_MML_all_countries.checked;
 
     // ---  upload changes

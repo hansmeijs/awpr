@@ -1294,7 +1294,7 @@ def update_library_in_awpr_lib(examyear, request):
             logger.debug('exists: ' + str(exists))
         if not exists:
             # reset values
-            awpr_lib.update_library(examyear, request)
+            awpr_lib.update_library(examyear)
 
         # - add function to systemupdate, so it won't run again
             systemupdate = sch_mod.Systemupdate(

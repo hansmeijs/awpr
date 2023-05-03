@@ -443,7 +443,11 @@ class MailmessageUploadView(View):  # PR2021-01-16  PR2021-10-11 PR2022-08-06 PR
         activate(user_lang)
 
 # - get permit 'write_message'
-        has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        #PR2023-05-03 mailbox does not use the permit_list (yet), but uses usergroups "msgreceive", "msgsend" instead
+        #   was: has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
+        has_permit = usergroup_list and 'msgsend' in usergroup_list
+
         if not has_permit:
             border_class = c.HTMLCLASS_border_bg_invalid
             msg_list.append(acc_prm.err_txt_no_permit(_('to send messages')))
@@ -623,7 +627,11 @@ class MailboxUploadView(View):  # PR2021-10-28
         activate(user_lang)
 
 # - get permit 'write_message'
-        has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        #PR2023-05-03 mailbox does not use the permit_list (yet), but uses usergroups "msgreceive", "msgsend" instead
+        #   was: has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
+        has_permit = usergroup_list and 'msgsend' in usergroup_list
+
         if not has_permit:
             border_class = c.HTMLCLASS_border_bg_invalid
             msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
@@ -740,15 +748,17 @@ class MailinglistUploadView(View):  # PR2021-10-23
         update_wrap = {}
         messages = []
 
+# - reset language
+        user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+        activate(user_lang)
+
 # - get permit 'write_message'
-        has_permit = 'permit_write_message' in request.user.permit_list(
-            'page_mailbox') if request.user.permit_list else False
+        #PR2023-05-03 mailbox does not use the permit_list (yet), but uses usergroups "msgreceive", "msgsend" instead
+        #   was: has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
+        has_permit = usergroup_list and 'msgsend' in usergroup_list
 
         if request.user.schoolbase and has_permit:
-
-# - reset language
-            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-            activate(user_lang)
 
 # - get upload_dict from request.POST
             upload_json = request.POST.get('upload', None)
@@ -1077,7 +1087,7 @@ def update_mailbox_instance(mailbox_instance, upload_dict, request):
 def convert_recipients_dict(recipients_dict, sel_examyear):
     # function takes recipients_dict and creates dict of user_pk per school PR2021-10-29
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== convert_recipients_dict ============= ')
 
@@ -1116,24 +1126,28 @@ def convert_recipients_dict(recipients_dict, sel_examyear):
 
 
 def get_users_from_ml_list(recipients_dict, examyear, userlist_dict):
-    # --- loop trhrough list of mailinglists and get users PR2021-10-29
-    logging_on = s.LOGGING_ON
+    # --- loop through list of mailinglists and get users PR2021-10-29
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('----- get_users_from_ml_list -----')
+        logger.debug('    recipients_dict: ' + str(recipients_dict))
 
     ml_list = recipients_dict.get('ml')
     if ml_list:
+        if logging_on:
+            logger.debug('    ml_list: ' + str(ml_list))
         for ml_pk in ml_list:
             mailinglist = sch_mod.Mailinglist.objects.get_or_none(
                 pk=ml_pk
             )
+
             if mailinglist:
                 recipients_json = getattr(mailinglist, 'recipients')
                 if recipients_json:
                     recipients_dict = json.loads(recipients_json)
                     if logging_on:
-                        logger.debug('recipients_dict: ' + str(recipients_dict) + ' ' + str(type(recipients_dict)))
+                        logger.debug('   recipients_dict: ' + str(recipients_dict) + ' ' + str(type(recipients_dict)))
 
                     if recipients_dict:
                         get_users_from_us_list(recipients_dict, examyear, userlist_dict)
@@ -1159,51 +1173,52 @@ def get_users_from_us_list(recipients_dict, examyear, userlist_dict):
         logger.debug(' ')
         logger.debug('----- get_users_from_us_list -----')
 
-    us_list = recipients_dict.get('us')
+    user_pk_list = recipients_dict.get('us')
     if logging_on:
-        logger.debug('us_list: ' + str(us_list))
+        logger.debug('    user_pk_list: ' + str(user_pk_list))
 
-    if us_list:
+    if user_pk_list:
         # - filter on us_list with ANY clause, https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-any/
         try:
-            sql_keys = {'ey_code': examyear.code, 'us_list': us_list}
-            sql_list = ["SELECT u.id, u.last_name, u.email, sb.id, sch.name, sch.article, sb.code",
 
-                        "FROM accounts_user AS u",
-                        "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
-                        "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
+            sql = ''.join((
+                "SELECT u.id AS u_id, u.last_name AS u_name, u.email, ",
+                "sb.id AS sb_id, sch.name AS sch_name, sch.article AS sch_article, sb.code AS sb_code ",
 
-                        #"INNER JOIN schools_country AS c ON (c.id = u.country_id)",
-                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
+                "FROM accounts_user AS u ",
+                "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id) ",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id) ",
 
-                        # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
-                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id AND sch.examyear_id = ual.examyear_id)",
+                #"INNER JOIN schools_country AS c ON (c.id = u.country_id) ",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id) ",
 
-                        "WHERE u.activated AND u.is_active",
-                        "AND ey.code = %(ey_code)s::INT",
+                # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
+                "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id AND sch.examyear_id = ual.examyear_id) ",
 
-                        # add only users to list when they have usergroup 'receive messages'
-                        ''.join(("AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0)")),
+                "WHERE u.activated AND u.is_active ",
 
-                        "AND u.id = ANY(%(us_list)s::INT[])"
-                        ]
-            sql = ' '.join(sql_list)
+                "AND ey.code = ", str(examyear.code) , "::INT ",
+
+                # add only users to list when they have usergroup 'receive messages'
+                "AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0) ",
+                "AND u.id = ANY(ARRAY", str(user_pk_list), "::INT[])"
+                ))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
-                for row in cursor.fetchall():
-                    user_pk = row[0]
-                    user_name = row[1]
-                    user_email = row[2]
-                    schoolbase_pk = row[3]
+                cursor.execute(sql)
+                for row in af.dictfetchall(cursor):
+                    user_pk = row.get('u_id')
+                    user_name = row.get('u_name')
+                    user_email = row.get('email')
+                    schoolbase_pk = row.get('sb_id')
                     if logging_on:
-                        logger.debug('user_name: ' + str(user_name) + ' sb_pk: ' + str(schoolbase_pk))
+                        logger.debug('    user_name: ' + str(user_name) + ' sb_pk: ' + str(schoolbase_pk))
 
                     if schoolbase_pk not in userlist_dict:
                         userlist_dict[schoolbase_pk] = {
-                            'schoolname': row[4],
-                            'schoolarticle': row[5],
-                            'schoolcode': row[6]
+                            'schoolname': row.get('sch_name'),
+                            'schoolarticle': row.get('sch_article'),
+                            'schoolcode': row.get('sb_code')
                         }
 
                     school_users = userlist_dict[schoolbase_pk]
@@ -1260,15 +1275,15 @@ def get_users_from_db_list(recipients_dict, examyear, userlist_dict):
         try:
             # when all_countries = True, filter on examyear_code to get schools from all countries
             # when all_countries = False, filter on examyear_pk to get only schools from this country
-            if all_countries:
-                filter_examyear = "AND ey.id = %(ey_id)s::INT"
-            else:
-                filter_examyear = "AND ey.code = %(ey_code)s::INT"
+            #if all_countries:
+            #    filter_examyear = "AND ey.id = %(ey_id)s::INT"
+            #else:
+            filter_examyear = "AND ey.code = %(ey_code)s::INT"
 
             #sql_keys = {'ey_id': examyear.pk, 'ey_code': examyear.code, 'sb_list': sb_list}
             sql_keys = {'ey_id': examyear.pk, 'ey_code': examyear.code}
 
-            sql_list = ["SELECT u.id, u.last_name, u.email, u.usergroups, sb.id, sch.name, sch.article",
+            sql_list = ["SELECT u.id, u.last_name, u.email, ual.usergroups, sb.id, sch.name, sch.article",
 
                         "FROM accounts_user AS au",
                         "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
@@ -1303,21 +1318,14 @@ def get_users_from_db_list(recipients_dict, examyear, userlist_dict):
                         logger.debug('user_name: ' + str(user_name) + ' sb_pk: ' + str(row[4]) + ' usergroups: ' + str(
                             user_usergroups))
 
-                    add_user = False
                     if ug_list:
-                        if user_usergroups:
-                            usergroup_arr = user_usergroups.split(';')
-                            if logging_on:
-                                logger.debug('usergroup_arr: ' + str(usergroup_arr))
-                            for user_ug in usergroup_arr:
-                                if user_ug in ug_list:
-                                    add_user = True
-                                    break
+                        add_user = ug_exists_in_usergroups_json(ug_list, user_usergroups)
                     else:
                         # add all users if ug_list is empty
                         add_user = True
                     if logging_on:
                         logger.debug('add_user: ' + str(add_user))
+
                     if add_user:
                         schoolbase_pk = row[4]
                         if schoolbase_pk not in userlist_dict:
@@ -1359,41 +1367,36 @@ def get_users_from_sb_list(recipients_dict, examyear, userlist_dict):
 
     sb_list = recipients_dict.get('sb')
     ug_list = recipients_dict.get('ug')
+    all_countries = recipients_dict.get('ac', False)
+
     if logging_on:
-        logger.debug('sb_list: ' + str(sb_list))
-        logger.debug('ug_list: ' + str(ug_list))
+        logger.debug('    sb_list: ' + str(sb_list))
+        logger.debug('    ug_list: ' + str(ug_list))
+        logger.debug('    all_countries: ' + str(all_countries))
 
     if sb_list:
         try:
-            filter_examyear = "AND ey.code = %(ey_code)s::INT"
+            sql = ''.join((
+                "SELECT u.id, u.last_name, u.email, ual.usergroups, sb.id, sch.name, sch.article, sb.code ",
 
-            sql_keys = {'ey_code': examyear.code, 'sb_list': sb_list}
+                "FROM accounts_user AS u ",
+                "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id) ",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id) ",
+                "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id) ",
 
-            sql_list = ["SELECT u.id, u.last_name, u.email, u.usergroups, sb.id, sch.name, sch.article, sb.code",
+                # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
+                "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id AND sch.examyear_id = ual.examyear_id) ",
 
-                        "FROM accounts_user AS au",
-                        "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
-                        "INNER JOIN schools_examyear AS ey ON (ey.id = ual.examyear_id)",
+                "WHERE u.activated AND u.is_active ",
+                "AND ey.code = ", str(examyear.code), "::INT ",
 
-                        "INNER JOIN schools_schoolbase AS sb ON (sb.id = u.schoolbase_id)",
-
-                        # PR2023-04-05 debug: users appeared twice, because school was not joined on examyear_id
-                        "INNER JOIN schools_school AS sch ON (sch.base_id = sb.id AND sch.examyear_id = ual.examyear_id)",
-
-                        "INNER JOIN schools_examyear AS ey ON (ey.id = sch.examyear_id)",
-
-                        "WHERE u.activated AND u.is_active",
-                        "AND ey.code = %(ey_code)s::INT",
-
-                        # add only users to list when they have usergroup 'receive messages'
-                        ''.join(("AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0)")),
-
-                        "AND sb.id = ANY(%(sb_list)s::INT[])"
-                        ]
-            sql = ' '.join(sql_list)
+                # add only users to list when they have usergroup 'receive messages'
+                "AND (POSITION('", c.USERGROUP_MSGRECEIVE, "' IN ual.usergroups) > 0) ",
+                "AND sb.id = ANY(ARRAY", str(sb_list), "::INT[])"
+            ))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 for row in cursor.fetchall():
                     user_pk = row[0]
                     user_name = row[1]
@@ -1402,21 +1405,14 @@ def get_users_from_sb_list(recipients_dict, examyear, userlist_dict):
                     if logging_on:
                         logger.debug('user_name: ' + str(user_name) + ' sb_pk: ' + str(row[4]) + ' usergroups: ' + str(user_usergroups))
 
-                    add_user = False
                     if ug_list:
-                        if user_usergroups:
-                            usergroup_arr = user_usergroups.split(';')
-                            if logging_on:
-                                logger.debug('usergroup_arr: ' + str(usergroup_arr))
-                            for user_ug in usergroup_arr:
-                                if  user_ug in ug_list:
-                                    add_user = True
-                                    break
+                        add_user = ug_exists_in_usergroups_json(ug_list, user_usergroups)
                     else:
                         # add all users if ug_list is empty
                         add_user = True
                     if logging_on:
                         logger.debug('add_user: ' + str(add_user))
+
                     if add_user:
                         schoolbase_pk = row[4]
                         if schoolbase_pk not in userlist_dict:
@@ -1431,7 +1427,7 @@ def get_users_from_sb_list(recipients_dict, examyear, userlist_dict):
                             school_users[user_pk] = [user_name, user_email]
 
             if logging_on:
-                logger.debug('userlist_dict: ' + str(userlist_dict))
+                logger.debug('    userlist_dict: ' + str(userlist_dict))
 
             # userlist_dict: {
             #   11: {'schoolname': 'St. Jozef Vsbo', 'schoolarticle': 'de',
@@ -1506,7 +1502,7 @@ def create_mailbox_items(mailmessage_instance, userlist_dict, request):
 
 
 def send_email_message(examyear, userlist_dict, log_list, header, body_txt, request):
-    logging_on = s.LOGGING_ON  # PR2021-10-30
+    logging_on = False  # s.LOGGING_ON  # PR2021-10-30
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- send_email_message  -----')
@@ -1646,7 +1642,7 @@ def send_email_message(examyear, userlist_dict, log_list, header, body_txt, requ
 
 def delete_mailinglist(mailinglist_instance, is_public, request):
 
-    logging_on = s.LOGGING_ON  # PR2021-10-24 PR2022-08-07
+    logging_on = False  # s.LOGGING_ON  # PR2021-10-24 PR2022-08-07
     if logging_on:
         logger.debug(' ----- delete_mailinglist ----- ')
         logger.debug('mailinglist_instance: ' + str(mailinglist_instance))
@@ -1679,7 +1675,7 @@ def delete_mailinglist(mailinglist_instance, is_public, request):
 def create_mailinglist_instance(name, is_public, recipients_json, msg_list, request):
     # --- create mailinglist instance PR2021-10-23
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_mailinglist_instance ----- ')
 
@@ -1738,7 +1734,7 @@ def create_mailinglist_instance(name, is_public, recipients_json, msg_list, requ
 def update_mailinglist_instance(mailinglist_instance, name, recipients_json, is_public, all_countries, err_list, request):
     # --- update existing mailbox instance and mailinglist instance PR2021-10-11
     # the following fiels can not be changed: examyear, sender_user, sender_school
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_mailinglist_instance ----- ')
         logger.debug('name: ' + str(name))
@@ -1820,7 +1816,7 @@ def update_mailinglist_instance(mailinglist_instance, name, recipients_json, is_
 
 
 def get_recipients_by_school(examyear, sendto_pk_list, sendcc_pk_list):
-        logging_on = s.LOGGING_ON  # PR2021-10-16
+        logging_on = False  # s.LOGGING_ON  # PR2021-10-16
         if logging_on:
             logger.debug('')
             logger.debug(' ============= get_recipients_by_school ============= ')
@@ -1878,11 +1874,22 @@ def get_recipients_by_school(examyear, sendto_pk_list, sendcc_pk_list):
 # - end of get_recipients_by_school
 
 
+def ug_exists_in_usergroups_json(ug_list, usergroups_str):
+    # PR2023-05-03
+    add_user = False
+    if ug_list and usergroups_str:
+        for user_ug in json.loads(usergroups_str):
+            if user_ug in ug_list:
+                add_user = True
+                break
+    return add_user
+
+
 @method_decorator([login_required], name='dispatch')
 class MailAttachmentUploadView(View):  # PR2021-10-14
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= MailAttachmentUploadView ============= ')
@@ -1896,7 +1903,11 @@ class MailAttachmentUploadView(View):  # PR2021-10-14
         activate(user_lang)
 
 # - get permit 'write_message'
-        has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        #PR2023-05-03 mailbox does not use the permit_list (yet), but uses usergroups "msgreceive", "msgsend" instead
+        #   was: has_permit = acc_prm.has_permit(request, 'page_mailbox', ['permit_write_message'])
+        usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
+        has_permit = usergroup_list and 'msgsend' in usergroup_list
+
         if not has_permit:
             border_class = c.HTMLCLASS_border_bg_invalid
             msg_list.append(acc_prm.err_txt_no_permit()) # default: 'to perform this action')
@@ -2078,7 +2089,7 @@ class ExamyearListView(View):
 class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= ExamyearUploadView ============= ')
@@ -2289,7 +2300,7 @@ class ExamyearUploadView(View):  # PR2020-10-04 PR2021-08-30 PR2022-08-02
 
 def create_examyear_instance(upload_dict, request):
     # --- create_examyear_instance PR2022-08-09
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_examyear_instance ----- ')
 
@@ -2412,7 +2423,7 @@ def delete_examyear_instance(is_check, request):
 class OrderlistsParametersView(View):  # PR2021-08-31
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug('OrderlistsParametersView')
@@ -2558,7 +2569,7 @@ class OrderlistRequestVerifcodeView(View):  # PR2021-09-08
 class OrderlistsPublishView(View):  # PR2021-09-08 PR2021-10-12 PR2022-09-04
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug('===== OrderlistsPublishView =====')
@@ -2893,7 +2904,7 @@ def create_orderlist_per_school(sel_examyear_instance, schoolbase_dict,
                                 cc_pk_str_list, cc_email_list, cc_name_list, send_email,
                                 user_lang, request):
     # function creates orderlist of one school # PR2021-10-12
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug('  ===== create_orderlist_per_school =====')
@@ -3074,17 +3085,8 @@ def get_school_emailto_list(school, allowed_usergroups):  # PR2021-09-09
         usergroups__isnull=False
     )
     for school_user in school_users:
-        is_allowed = False
-        if school_user.usergroups:
-            user_usergroup_arr = school_user.usergroups.split(';')
-            is_allowed = False
-            for user_usergroup in user_usergroup_arr:
-                for allowed_usergroup in allowed_usergroups:
-                    if allowed_usergroup == user_usergroup:
-                        is_allowed = True
-                        break
-                if is_allowed:
-                    break
+        is_allowed = ug_exists_in_usergroups_json(allowed_usergroups, school_user.usergroups)
+
         if is_allowed:
             sendto_pk_str_list.append(str(school_user.pk))
             sendto_email_list.append(school_user.email)
@@ -3097,7 +3099,7 @@ def get_school_emailto_list(school, allowed_usergroups):  # PR2021-09-09
 def send_email_orderlist(examyear, school, is_total_orderlist,
                          sendto_pk_str_list, sendto_name_list, sendto_email_list,
                          cc_pk_str_list, cc_email_list, published_instance, request):
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' ----- send_email_orderlist  -----')
@@ -3397,7 +3399,7 @@ def save_published_file(published_instance, file_path, file, request):
 def create_final_orderlist_xlsx(output, sel_examyear_instance,
                                 department_dictlist, lvlbase_dictlist, subjectbase_dictlist, schoolbase_dictlist,
                                 count_dict, requsr_school_name, min_ond, user_lang):  # PR2021-09-09
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_final_orderlist_xlsx -----')
         logger.debug('count_dict: ' + str(count_dict))
@@ -3558,7 +3560,7 @@ def create_final_orderlist_perschool_xlsx(output, sel_examyear_instance,
 class ExamyearCopyToSxmView(View):  # PR2021-08-06
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
         update_wrap = {}
         error_list = []
@@ -3656,7 +3658,7 @@ class ExamyearCopyToSxmView(View):  # PR2021-08-06
 class CopySchemesFromExamyearView(View):  # PR2021-09-24
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
 
         update_wrap = {}
         log_list = []
@@ -3999,7 +4001,7 @@ class SchoolListView(View):  # PR2018-08-25 PR2020-10-21 PR2021-03-25
 class SchoolUploadView(View):  # PR2020-10-22 PR2021-03-27 PR2023-04-25
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= SchoolUploadView ============= ')
 
@@ -4521,7 +4523,7 @@ def update_school_instance(school_instance, examyear, upload_dict, request):
 class ArchivesListView(View):  # PR2022-03-09
 
     def get(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug(' =====  ArchivesListView ===== ')
 
@@ -4544,7 +4546,7 @@ class ArchivesListView(View):  # PR2022-03-09
 class ArchivesUploadView(View):  # PR2022-11-02
 
     def post(self, request):
-        logging_on = s.LOGGING_ON
+        logging_on = False  # s.LOGGING_ON
         if logging_on:
             logger.debug('')
             logger.debug(' ============= ArchivesUploadView ============= ')

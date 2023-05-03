@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def update_library(examyear, request):
+def update_library(examyear):
     # function to add sysadmin permit to admin users PR2020-07-30
     # logger.debug('........update_sysadmin_in_user..........')
 
@@ -335,21 +335,27 @@ def update_library(examyear, request):
         ('diploma', 'reg_nr', 'Registratienr.:'),
         ('diploma', 'id_nr', 'Id.nr.:'),
     ]
-    for key_value in key_value_list:
-        instance = sch_mod.ExfilesText.objects.filter(
-            examyear=examyear,
-            key=key_value[0],
-            subkey=key_value[1]).first()
-        if instance is None:
-            instance = sch_mod.ExfilesText(
-                examyear=examyear,
+    # PR2023-05-03 update both sxm and cur
+    examyears = sch_mod.Examyear.objects.filter(
+        code=examyear.code
+    )
+    for ey in examyears:
+
+        for key_value in key_value_list:
+            instance = sch_mod.ExfilesText.objects.filter(
+                examyear=ey,
                 key=key_value[0],
-                subkey=key_value[1],
-                setting=key_value[2]
-            )
-        else:
-            instance.setting = key_value[2]
-        instance.save()
+                subkey=key_value[1]).first()
+            if instance is None:
+                instance = sch_mod.ExfilesText(
+                    examyear=examyear,
+                    key=key_value[0],
+                    subkey=key_value[1],
+                    setting=key_value[2]
+                )
+            else:
+                instance.setting = key_value[2]
+            instance.save()
 
 
 def get_library(examyear, key_list):  # PR2021-03-10
