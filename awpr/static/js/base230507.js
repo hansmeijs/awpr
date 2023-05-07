@@ -1820,8 +1820,8 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
 //=========  b_show_mod_message_dictlist  ================ PR2021-06-27  PR2021-07-03 PR2021-12-01 PR2022-08-28
     function b_show_mod_message_dictlist(msg_dictlist, skip_warning_messages) {
-        console.log("==== b_show_mod_message_dictlist  ======")
-        console.log("msg_dictlist", msg_dictlist, typeof msg_dictlist)
+        //console.log("==== b_show_mod_message_dictlist  ======")
+        //console.log("msg_dictlist", msg_dictlist, typeof msg_dictlist)
         //console.log("skip_warning_messages", skip_warning_messages)
 
         //  [ { class: "border_bg_invalid", header: 'Update this', msg_html: "An eror occurred."]
@@ -1830,7 +1830,7 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
         const el_container = document.getElementById("id_mod_message_container");
 
-        console.log("el_container", el_container);
+        //console.log("el_container", el_container);
 
         if(el_container){
             if(msg_dictlist){

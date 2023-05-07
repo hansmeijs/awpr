@@ -3007,9 +3007,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
 
                 # filter reex subjects when ex4 or ex4ep3
                     if sel_examperiod == 2:
-                        sql_list.append("AND stud.has_reex")
+                        sql_list.append("AND studsubj.has_reex")
                     elif sel_examperiod == 3:
-                        sql_list.append("AND stud.has_reex03")
+                        sql_list.append("AND studsubj.has_reex03")
 
         # - may also filter on level when submitting Ex form
                     # PR2023-02-12 request MPC: must be able to submit per level tkl / pkl/pbl
@@ -3418,9 +3418,9 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                     if tobesaved_studsubj_pk_list:
                                         err_html = None
                                         if is_approve:
-                                            saved_studsubj_pk_list, err_html = self.save_approved_in_studsubj(tobesaved_studsubj_pk_list, is_reset, 'subj_', requsr_auth, request.user)
+                                            saved_studsubj_pk_list, err_html = self.save_approved_in_studsubj(tobesaved_studsubj_pk_list, is_reset, prefix, requsr_auth, request.user)
                                         elif is_submit:
-                                            saved_studsubj_pk_list, err_html = self.save_published_in_studsubj(tobesaved_studsubj_pk_list, 'subj_', published_instance.pk)
+                                            saved_studsubj_pk_list, err_html = self.save_published_in_studsubj(tobesaved_studsubj_pk_list, prefix, published_instance.pk)
 
                                         if err_html:
                                             msg_html = "<div class='p-2 border_bg_invalid'>" + err_html + "</div>"
@@ -3464,9 +3464,6 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                                         studsubj_pk_list=saved_studsubj_pk_list
                                     )
 
-                                if logging_on:
-                                    logger.debug('    studsubj_rows: ' + str(studsubj_rows))
-
                                 if (studsubj_rows):
                                     update_wrap['updated_studsubj_approve_rows'] = studsubj_rows
 
@@ -3484,7 +3481,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
     def save_approved_in_studsubj(self, studsubj_pk_list, is_reset, prefix, requsr_auth, req_user):
         # PR2023-01-10
 
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug('----- save_approved_in_studsubj -----')
@@ -3492,19 +3489,18 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
         saved_studsubj_pk_list = []
         err_html = None
         try:
+            # prefix = 'reex3_' if examperiod == 3 else 'reex_' if examperiod == 2 else 'subj_'
             requsr_authby_field = ''.join((prefix, requsr_auth, 'by_id'))
 
             #   was: setattr(studsubj, requsr_authby_field, req_user)
             # - remove authby when is_reset
             requsr_authby_value = "NULL" if is_reset else str(req_user.pk)
 
-            sql_keys = {'requsr_pk': req_user.pk, 'sb_arr': studsubj_pk_list}
-
-            sql_list = ["UPDATE students_studentsubject AS studsubj ",
-                        "SET", requsr_authby_field, "=", requsr_authby_value,
-                        "WHERE studsubj.id IN (SELECT UNNEST(%(sb_arr)s::INT[]))",
-                        "AND studsubj.deleted = FALSE",
-                        "RETURNING id;"]
+            sql_list = ["UPDATE students_studentsubject",
+                        " SET", requsr_authby_field, "=", requsr_authby_value,
+                        " WHERE id IN (SELECT UNNEST(ARRAY", str(studsubj_pk_list), "::INT[]))",
+                        " AND NOT deleted",
+                        " RETURNING id, ", requsr_authby_field]
 
             sql = ' '.join(sql_list)
 
@@ -3512,11 +3508,13 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                 logger.debug('    sql: ' + str(sql))
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
 
                 rows = cursor.fetchall()
                 if rows:
                     for row in rows:
+                        if logging_on:
+                            logger.debug('    row: ' + str(row))
                         saved_studsubj_pk_list.append(row[0])
 
             if logging_on:
@@ -5346,7 +5344,6 @@ class StudentsubjectSingleUpdateView(View):  # PR2021-09-18 PR2023-04-01
         # function updates single studentsubject record
         update_wrap = {}
 
-        msg_html = None
         msg_list = []
         err_fields = []
         border_class = None
@@ -6011,7 +6008,6 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
     # when new_value = True: add or undelete grade
     # when new_value = False: make grade 'tobedeleted', remove all values if allowed
 
-
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_or_delete_grade_exem_reex_reex03 -------')
@@ -6068,7 +6064,7 @@ def add_or_delete_grade_exem_reex_reex03(field, studsubj_instance, new_value, re
                     logger.debug('     grade new: ' + str(exam_period))
     # if 2nd or 3rd period: get se sr pe from first period and put them in new grade
             # PR2022-01-05 dont save se, sr, pe in reex reex03 any more
-            # PR2022-05-29 changed my mind: due to batch update needs nthosegardes in reex_grade to calc final grade
+            # PR2022-05-29 changed my mind: due to batch update needs those grades in reex_grade to calc final grade
             # must make sure that values in reex_grade are updated when update them in ep 1
             if exam_period in (c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
                 found, segrade, srgrade, pegrade = get_se_sr_pe_from_grade_ep1(studsubj_instance)

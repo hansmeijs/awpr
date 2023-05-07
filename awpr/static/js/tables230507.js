@@ -371,11 +371,10 @@
     console.log( "may_select", may_select);
             if (may_select){
                 const selected_pk = (tblName === "cluster") ? setting_dict.sel_cluster_pk :
-                                   (tblName === "school") ? setting_dict.sel_school_pk :
-                                   (["subject", "duosubject"].includes(tblName)) ? setting_dict.sel_subject_pk :
-
-                                   (tblName === "student") ? setting_dict.sel_studbase_pk :
-                                   (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
+                                    (tblName === "school") ? setting_dict.sel_school_pk :
+                                    (tblName === "subject") ? setting_dict.sel_subject_pk :
+                                    (tblName === "student") ? setting_dict.sel_studbase_pk :
+                                    (tblName === "envelopbundle") ? setting_dict.envelopbundle_pk : null;
     console.log( "setting_dict", setting_dict );
     console.log( "selected_pk", selected_pk, typeof selected_pk );
                 const el_MSSSS_input = document.getElementById("id_MSSSS_input")
@@ -472,14 +471,14 @@
         const label_text = loc.Select + ((tblName === "cluster") ?  loc.a_cluster :
                                     (tblName === "school") ?  loc.a_school :
                                     (tblName === "student") ?  loc.a_candidate :
-                                    (["subject", "duosubject"].includes(tblName)) ?  loc.a_subject :
+                                    (tblName === "subject") ?  loc.a_subject :
                                     (tblName === "envelopbundle") ?  loc.a_label_bundle : ""
                                   );
 
         const item = (tblName === "cluster") ?  loc.a_cluster :
                      (tblName === "school") ? loc.a_school :
                      (tblName === "student") ? loc.a_candidate :
-                     (["subject", "duosubject"].includes(tblName)) ? loc.a_subject :
+                     (tblName === "subject") ? loc.a_subject :
                      (tblName === "cluster") ?  loc.a_cluster :
                      (tblName === "envelopbundle") ? loc.a_label_bundle : "";
         const placeholder = loc.Type_few_letters_and_select + item + loc.in_the_list;
@@ -503,7 +502,7 @@
         for (const data_dict of Object.values(data_dicts)) {
             // when filling clusters and a subject is selected: only show clusters of this subject;: PR2023-03-30
             let add_to_list = true;
-            if (setting_dict.sel_subject_pk){
+            if (tblName === "cluster" && setting_dict.sel_subject_pk){
                 add_to_list = (data_dict.subject_id === setting_dict.sel_subject_pk);
             };
             if (add_to_list){
@@ -525,14 +524,11 @@
 
         const code = (tblName === "school") ? map_dict.sb_code :
                     (tblName === "subject") ? map_dict.code :
-                    (tblName === "duosubject") ? map_dict.subjbase_code :
                     (tblName === "cluster") ? map_dict.subj_code :
                     (tblName === "student") ? map_dict.name_first_init : "";
 
         const name =  (tblName === "school") ? map_dict.name : // map_dict.abbrev
                     (tblName === "subject") ? map_dict.name_nl :
-                    (tblName === "duosubject") ? map_dict.subj_name_nl
- :
                     (tblName === "cluster") ? map_dict.name :
                     (tblName === "student") ? map_dict.fullname  :
                     (tblName === "envelopbundle") ? map_dict.name : "";
@@ -541,11 +537,11 @@
 
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", row_index = -1;
-        if(tblName === "student"){
+        if (tblName === "student"){
             if (map_dict.lastname) { ob1 = map_dict.lastname.toLowerCase()};
             if (map_dict.firstname) { ob2 = map_dict.firstname.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1, ob2);
-        } else if(["subject", "duosubject"].includes(tblName)){
+        } else if (tblName === "subject"){
             if (code) { ob1 = code.toLowerCase()};
             row_index = b_recursive_tblRow_lookup(tblBody_select, loc.user_lang, ob1);
         } else if(tblName === "cluster"){
@@ -1713,10 +1709,10 @@
 //========= t_FillSelectOptions  =======  // PR2020-09-30 PR2021-05-12
     function t_FillSelectOptions(el_select, data_map, id_field, display_field, hide_none,
                 selected_pk, selectall_text, select_text_none, select_text) {
-        console.log( "===== t_FillSelectOptions  ===== ");
+        //console.log( "===== t_FillSelectOptions  ===== ");
         // called by page exam MEXQ_FillSelectTableLevel  and page_subject SBR_Select_scheme
-        console.log( "    selected_pk", selected_pk, typeof selected_pk);
-        console.log( "    data_map", data_map);
+        //console.log( "    selected_pk", selected_pk, typeof selected_pk);
+        //console.log( "    data_map", data_map);
 
 // ---  fill options of select box
         let option_text = "";

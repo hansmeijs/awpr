@@ -98,7 +98,7 @@ class ManualListView(View):
         return render(request, 'manual.html', param)
 
 
-def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-01-08 PR2023-04-12
+def get_headerbar_param(request, sel_page, param=None, display_requsrschool=False):  # PR2021-03-25 PR2023-01-08 PR2023-04-12
     # PR2018-05-28 set values for headerbar
     # params.get() returns an element from a dictionary, second argument is default when not found
     # this is used for arguments that are passed to headerbar
@@ -243,23 +243,34 @@ def get_headerbar_param(request, sel_page, param=None):  # PR2021-03-25 PR2023-0
 # - get allowed_sections_dict
         allowed_sections_dict = acc_prm.get_userallowed_sections_dict_from_request(request)
 
+        if logging_on:
+            logger.debug('    display_requsrschool: ' + str(display_requsrschool))
+            logger.debug('    req_usr.schoolbase: ' + str(req_usr.schoolbase))
 # - get sel_schoolbase_instance
-        sel_schoolbase_instance, sel_schoolbase_tobesaved_NIU = \
-            acc_view.get_sel_schoolbase_instance(
-                request=request,
-                request_item_schoolbase_pk=None,
-                allowed_sections_dict=allowed_sections_dict
-            )
+        if display_requsrschool:
+            sel_schoolbase_instance = req_usr.schoolbase
+        else:
+            sel_schoolbase_instance, sel_schoolbase_tobesaved_NIU = \
+                acc_view.get_sel_schoolbase_instance(
+                    request=request,
+                    request_item_schoolbase_pk=None,
+                    allowed_sections_dict=allowed_sections_dict
+                )
         sel_school_instance = None
 
 # if sel_examyear and display_school:
         if sel_examyear_instance:
             school_name = sel_schoolbase_instance.code if sel_schoolbase_instance.code else ''
 
+            if logging_on:
+                logger.debug('    school_code: ' + str(school_name))
     # - get school from sel_schoolbase and sel_examyear_instance
             sel_school_instance = sch_mod.School.objects.get_or_none(
                 base=sel_schoolbase_instance,
                 examyear=sel_examyear_instance)
+
+            if logging_on:
+                logger.debug('  ###  sel_school_instance: ' + str(sel_school_instance))
 
             if sel_school_instance:
                 school_name += ' ' + sel_school_instance.name

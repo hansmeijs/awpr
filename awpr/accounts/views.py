@@ -4324,6 +4324,7 @@ def get_settings_country(request, permit_dict):
     if request.user.country:
         permit_dict['requsr_country_pk'] = request.user.country.pk
         permit_dict['requsr_country'] = request.user.country.name
+        permit_dict['requsr_country_is_cur'] = request.user.country.abbrev.lower() == 'cur'
         # set locked=True if country is locked or country is None
         permit_dict['requsr_country_locked'] = request.user.country.locked
 # - end of get_settings_country

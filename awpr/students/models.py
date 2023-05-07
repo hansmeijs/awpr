@@ -609,8 +609,7 @@ class Grade(sch_mod.AwpBaseModel):
 
     examperiod = PositiveSmallIntegerField(db_index=True, default=1) # 1 = period 1, 2 = period 2, 3 = period 3, 4 = exemption
 
-    # NOTE: field ce_exam_score tobe added, total_score is stored in pescore for now.
-    #   the field ce_score stores score after submitting or calculated from n-term
+    # NOTE: total score was stored in pescore, is moved to ce_exam_score PR2022-05-15
     pescore = PositiveSmallIntegerField(null=True)
     cescore = PositiveSmallIntegerField(null=True)
 
@@ -674,9 +673,7 @@ class Grade(sch_mod.AwpBaseModel):
     pe_exam_published = ForeignKey(sch_mod.Published, related_name='+', null=True, on_delete=PROTECT)
     pe_exam_blocked = BooleanField(default=False)
 
-    # TODO: field ce_exam_score tobe added, total_score is stored in pescore for now.
-    #   the field ce_score stores score after submitting or calculated from n-term
-    #   addd field ce_exam_auth3by
+    # NOTE: total score was stored in pescore, is moved to ce_exam_score PR2022-05-15
     ce_exam = ForeignKey(subj_mod.Exam, related_name='+', null=True, on_delete=SET_NULL)
     ce_exam_blanks = PositiveSmallIntegerField(null=True)
     ce_exam_result = CharField(max_length=2048, null=True)

@@ -936,7 +936,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
     sel_sctbase_pk, sel_subject_pk, sel_cluster_pk = None, None, None
     selected_pk_dict = acc_prm.get_usersetting_dict(c.KEY_SELECTED_PK, request)
     if selected_pk_dict:
-        # don't filter on lvl, subj, cluster when approving single grade or when submitting Ex2 form
+        # don't filter on sct, subj, cluster when approving single grade or when submitting Ex2 form
         if grade_pk is None and apply_allowed_filter:
             sel_sctbase_pk = selected_pk_dict.get(c.KEY_SEL_SCTBASE_PK)
             sel_subject_pk = selected_pk_dict.get(c.KEY_SEL_SUBJECT_PK)
@@ -947,7 +947,7 @@ def create_grade_approve_rows(request, sel_examyear_pk, sel_schoolbase_pk, sel_d
 
         # PR2022-05-11 Sentry debug: syntax error at or near "FROM"
         # in: grd.pecegrade, grd.finalgrade, FROM students_grade AS grd
-        # because sel_examtype had no or wrong value and therefor auth_line etc were ''
+        # because sel_examtype had no or wrong value and therefore auth_line etc were ''
         # put schoolbase_id field at the end, to make sure there is never a comma in front of FROM
 
         sql_list = [
@@ -1321,7 +1321,7 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
                             if sel_examtype in ('reex', 'reex03'):
                                 sel_examtype = 'ce'
 
-                        # PR2023-02-27 debug: when submitting Ex2, examtype is always 'se'
+    # PR2023-02-27 debug: when submitting Ex2, examtype is always 'se'
                         if form_name == 'ex2':
                             sel_examtype = 'se'
 
@@ -1352,10 +1352,8 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
 
                             if verification_is_ok:
 
-# - may submit Ex2 per level, only on sxm  PR2023-02-20
+# - may submit Ex2 per level.
                                 sel_level = None
-                                # was: if sel_lvlbase_pk:
-                                # if sel_lvlbase_pk and is_sxm:
                                 if sel_lvlbase_pk:
                                     sel_level = subj_mod.Level.objects.get_or_none(
                                         base_id=sel_lvlbase_pk,
@@ -2847,17 +2845,23 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     if logging_on:
                         logger.debug('  > save_changes of : ' + str(field))
 
-                    # - when reex or reex03: copy segrade, srgrade and pegrade to reex grade_instance
+        # - when reex or reex03: copy segrade, srgrade and pegrade to reex grade_instance
                     must_recalc_reex_reex03 = field in ('segrade', 'srgrade', 'pegrade')
 
-                    # - remove exemption_imported - is only True when AWP has entered exemption from previous year
+        # - remove exemption_imported - is only True when AWP has entered exemption from previous year
                     setattr(grade_instance, 'exemption_imported', False)
 
  # when score has changed: recalc grade when cesuur/nterm is given
+                    # PR2022-05-29 changed my mind: due to batch update needs those grades in reex_grade to calc final grade
+                    # must make sure that values in reex_grade are updated when update them in ep 1
+
+                    # - recalculate gl_sesr, gl_pece, gl_final, gl_use_exem in studsubj record
+                    # - also update these fields when scores are changed or nterm entered
+
                     if field in ('pescore', 'cescore'):
                         recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_value)
 
-        # ----- save changes in field 'exam'
+    # ----- save changes in field 'exam'
         elif field == 'exam_pk':
 
 # - validate if ce_exam is approved or submitted:
@@ -3046,6 +3050,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
             # TODO also update these fields when scores are changed or nterm entered
             if must_recalc_reex_reex03:
     # - when field = 'segrade', 'srgrade', 'pegrade': also update and save grades in reex, reex03, if exist
+                # PR2022-05-29 due to batch update needs those grades in reex_grade to calc final grade
+                # must make sure that values in reex_grade are updated when update them in ep 1
+
                 recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
 
     return err_list
@@ -3854,8 +3861,8 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                         "lvl.id AS level_id, lvl.base_id AS lvlbase_id, lvl.abbrev AS lvl_abbrev,",
                         "subj.id AS subj_id, subjbase.code AS subj_code, subjbase.id AS subjbase_id, subj.name_nl AS subj_name_nl,",
                         "studsubj.id AS studsubj_id, cls.id AS cluster_id, cls.name AS cluster_name,",
-                        "grd.examperiod, grd.pescore, grd.cescore,",
 
+                        "grd.examperiod, grd.pescore, grd.cescore,",
                         "grd.ce_exam_id, grd.ce_exam_blanks, grd.ce_exam_result, grd.ce_exam_score,",
                         "grd.ce_exam_auth1by_id, grd.ce_exam_auth2by_id, grd.ce_exam_auth3by_id,",
                         "grd.ce_exam_published_id AS ce_exam_published_id, grd.ce_exam_blocked,",
@@ -3908,7 +3915,10 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
 
                         "AND NOT stud.deleted",
                         "AND NOT studsubj.deleted",
-                        "AND NOT grd.deleted"
+                        "AND NOT grd.deleted",
+                        
+                        # PR2023-05-05 added: only subjects with CE must be shown, only ETE exams
+                        "AND si.weight_ce > 0 AND si.ete_exam"
                         ]
 
             if logging_on:

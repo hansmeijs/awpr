@@ -379,7 +379,7 @@ class DownloadPublishedFile(View):  # PR2021-02-07
 class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
 
     def get(self, request, list):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ============= DownloadEx3View ============= ')
             if logging_on:
@@ -414,9 +414,9 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
             sel_examperiod, sel_examtype_NIU, sel_subject_pk_NIU = acc_view.get_selected_experiod_extype_subject_from_usersetting(request)
 
             if logging_on:
-                logger.debug('sel_examperiod: ' + str(sel_examperiod))
-                logger.debug('sel_school: ' + str(sel_school))
-                logger.debug('sel_department: ' + str(sel_department))
+                logger.debug('    sel_examperiod: ' + str(sel_examperiod))
+                logger.debug('    sel_school: ' + str(sel_school))
+                logger.debug('    sel_department: ' + str(sel_department))
 
             if sel_examperiod and sel_school and sel_department:
                 sel_layout = upload_dict.get('sel_layout')
@@ -470,14 +470,14 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
                 # turn off setLineWidth (0)
                 # canvas.setLineWidth(0)
 
-                max_rows = 30  # was:  24
+                # PR2023-05-05 debug Oscap Panneflek Vpco last student prints through footer. Put row to 29
+                max_rows = 29  # was: 30,  24
                 line_height = 6.73 * mm  # was:  8 * mm
 
                 for key, page_dict in ex3_dict.items():
                     student_list = page_dict.get('students', [])
                     if logging_on:
-                        logger.debug('page_dict: ' + str(page_dict))
-                        logger.debug('student_list: ' + str(student_list))
+                        logger.debug(' len student_list: ' + str(len(student_list)))
 
                     if student_list:
                         row_count = len(student_list)
@@ -489,6 +489,13 @@ class DownloadEx3View(View):  # PR2021-10-07 PR2023-01-07
                             first_row_of_page = page_index * max_rows
                             last_row_of_page_plus_one = (page_index + 1) * max_rows
                             row_range = [first_row_of_page, last_row_of_page_plus_one]
+
+                            if logging_on:
+                                logger.debug('    max_rows: ' + str(max_rows))
+                                logger.debug('    page_index: ' + str(page_index))
+                                logger.debug('    first_row_of_page: ' + str(first_row_of_page))
+                                logger.debug('    last_row_of_page_plus_one: ' + str(last_row_of_page_plus_one))
+                                logger.debug('    row_range: ' + str(row_range))
 
                             draw_Ex3_page(canvas, sel_examyear, sel_school, islexschool, sel_department, sel_examperiod, exform_text,
                                      page_dict, student_list, row_range, line_height, page_index, pages_roundup, user_lang)

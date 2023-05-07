@@ -211,6 +211,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- subjects
                 if datalist_request.get('subject_rows'):
                     cur_dep_only = af.get_dict_value(datalist_request, ('subject_rows', 'cur_dep_only'), False)
+                    with_ce_only = af.get_dict_value(datalist_request, ('subject_rows', 'with_ce_only'), False)
                     skip_allowedsubjbase_filter = af.get_dict_value(datalist_request, ('subject_rows', 'skip_allowed_filter'), False)
 
                     # PR2022-08-21 notatdayschool added: show this subject only when school is evening school or lex school
@@ -226,14 +227,24 @@ class DatalistDownloadView(View):  # PR2019-05-23
                         sel_lvlbase=sel_lvlbase,
                         skip_allowedsubjbase_filter=skip_allowedsubjbase_filter,
                         skip_notatdayschool=skip_notatdayschool,
-                        cur_dep_only=cur_dep_only)
+                        cur_dep_only=cur_dep_only,
+                        with_ce_only=with_ce_only
+                    )
 
 # ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
-                if datalist_request.get('duo_subject_rows'):
-                    datalists['duo_subject_rows'] = sj_vw.create_duo_subject_rows(
+                if datalist_request.get('duo_ete_subject_rows'):
+                    datalists['duo_subject_rows'] = sj_vw.create_duo_or_ete_subject_rows(
                         sel_examyear=sel_examyear,
                         sel_depbase=sel_depbase,
-                        sel_lvlbase=sel_lvlbase
+                        sel_lvlbase=sel_lvlbase,
+                        create_duo_rows=True
+                    )
+# ----- duo_subjects -- shows subjects + dep + level that may have duo exam, used in exam page link DUO exams
+                    datalists['ete_subject_rows'] = sj_vw.create_duo_or_ete_subject_rows(
+                        sel_examyear=sel_examyear,
+                        sel_depbase=sel_depbase,
+                        sel_lvlbase=sel_lvlbase,
+                        create_duo_rows=False
                     )
 # ----- subjects for page subjectscheme
                 if datalist_request.get('subject_rows_page_subjects'):

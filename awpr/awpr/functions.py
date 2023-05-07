@@ -2713,7 +2713,7 @@ def recalc_amount_and_scalelength_of_assignment(request):
 def add_usergroup_wolf(request):
     # PR2023-05-01 add usergroup 'wolf' and archive to all users with usergroup 'edit'
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- add_usergroup_wolf -------')
     try:

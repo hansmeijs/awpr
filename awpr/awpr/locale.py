@@ -210,7 +210,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Upload_permissions'] = _('Upload permissions')
         dict['Upload_awpdata'] = _('Upload AWP data file')
         dict['Upload_subjects'] = _('Upload subjects')
-        dict['Upload_dnt'] = _('Upload downloadbare N-termen tabel')
+        dict['Upload_dnt'] = _('Upload N-termen table')
 
         dict['Step'] = _('Step')
         dict['Select_grade_type'] = _('Select grade type')
@@ -1030,8 +1030,14 @@ def get_locale_dict(table_dict, user_lang, request):
 
         dict['ATTENTION'] = _('ATTENTION')
         dict['Only_the_learningpath'] = _('Only the learning path ')
-        dict['willbe_added_to_Ex1form'] = _(' will be added to the Ex1 form.')
-        dict['Select_all_learningpaths'] = _("Select 'All learning paths' in the grey bar on the left to include all learning paths.")
+        dict['All_learningpaths'] = _('All learning paths')
+        dict['willbe_added_to_Ex1form'] = _(' will be added to the %(cpt)s form.') % {'cpt': 'Ex1'}
+        dict['willbe_added_to_Ex4form'] = _(' will be added to the %(cpt)s form.') % {'cpt': 'Ex4'}
+
+        dict['Select_all_learningpaths'] = _("Select 'All learning paths' in the vertical grey bar on the left to include all learning paths.")
+
+        dict['Select_a_learningpath'] = _('Select a learning path in the vertical grey bar on the left to include one learning path.')
+
 
         dict['MASS_info'] = {
             'subheader_approve_ex1': _('Selection of the subjects, that will be approved:'),
@@ -1095,9 +1101,19 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_examperiods_found'] = TXT_No_examperiods_found
         dict['No_learningpaths_found'] = _("No learning paths found")
 
-
         dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical grey bar at the left.')
         dict['Please_select_level_sbr'] = _('Please select a learning path in the vertical grey bar at the left.')
+
+        dict['no_CVTE_exams'] = _("There are no %(cpt)s exams") % {'cpt': _('CVTE')}
+        dict['no_ETE_exams'] = _("There are no %(cpt)s exams") % {'cpt': _('ETE')}
+        dict['in_the_1st_examperiod'] = pgettext_lazy('het tijdvak', ' in the %(cpt)s') % {'cpt': c.EXAMPERIOD_CAPTION[1].lower() }
+        dict['in_the_2nd_examperiod'] = pgettext_lazy('het tijdvak', ' in the %(cpt)s') % {'cpt': c.EXAMPERIOD_CAPTION[2].lower() }
+        dict['in_the_3rd_examperiod'] = pgettext_lazy('het tijdvak', ' in the %(cpt)s') % {'cpt': c.EXAMPERIOD_CAPTION[3].lower() }
+
+        dict['Exam_is_published'] = _('This exam is already published.')
+        dict['Remove_publication_first'] = _('You must first remove the publication before you can delete the exam.')
+
+
 
         dict['ETE_exams'] = _("ETE exams")
         dict['CVTE_exams'] = _("CVTE exams")
@@ -1140,8 +1156,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Delete_exam'] = _("Delete exam")
         dict['Copy_exam'] = _("Copy exam")
 
-        dict['CVTE_exam'] = _("CVTE exam")
         dict['ETE_exam'] = _("ETE exam")
+        dict['Add_ETE_exam'] = _("Add ETE exam")
+        dict['CVTE_exam'] = _("CVTE exam")
         dict['Add_CVTE_exam'] = _("Add CVTE exam")
         dict['Link_CVTE_exams'] = _("Link CVTE exams")
         dict['Delete_CVTE_exam'] = _("Delete CVTE exam")
@@ -1155,7 +1172,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Approve_exams'] = _("Approve exams")
         dict['Approve_wolf_exams'] = _("Approve Wolf exams")
         dict['_by_'] = TXT__by_
-        dict['Upload_ntermen'] = _("Upload N-termen tabel")
+        dict['Upload_ntermen'] = _("Upload N-termen table")
         dict['Copy_ntermen_to_exams'] = _("Copy N-termen to exams")
         dict['Ntermen_will_be_copied'] = _("The scalelengths and n-termen will be copied to the CVTE exams.")
 

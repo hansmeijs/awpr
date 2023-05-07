@@ -236,6 +236,13 @@ select.form-control:not([size]):not([multiple]) {
 .close {
   line-height: .75;  /* PR2018-08-18 was: line-height: 1; */
 }
+/* only used in page exams */
+.margin_top96_left16_right32 {
+   /*margin-top: 78px; */
+   margin-top: 96px;
+   margin-left: 16px;
+   margin-right: 32px;
+}
 
 .margin_top80_left16_right32 {
    /*margin-top: 78px; */
@@ -243,7 +250,6 @@ select.form-control:not([size]):not([multiple]) {
    margin-left: 16px;
    margin-right: 32px;
 }
-
 .content_margin_top78 {
    margin-top: 78px;
    margin-left: 16px;

@@ -5,7 +5,7 @@
 {% block title %}{% trans 'Exams' %}{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/exams230502.js' %}"></script>
+    <script src="{% static 'js/exams230507.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
     <script src="{% static 'js/import230329.js' %}"></script>
 {% endblock %}
@@ -69,7 +69,7 @@
             {% include 'includes/modimportdnt.html' %}
 
     <!-- CONTENT HEADER - LOADER -->
-            <div class="margin_top80_left16_right32">
+            <div class="margin_top96_left16_right32">
     <!-- content_header -->
                 <div class="flex_container">
         <!-- header_text left -->
@@ -101,17 +101,10 @@
 
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                {% if is_requsr_admin %}
-                    <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
-                    <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'CVTE exams' %}</button>
-                    <button data-btn="btn_ntermen" class="btn btn-secondary ">{% trans 'N-termen tabel' %}</button>
-                {% else %}
-                    <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
-                    {% if not no_centralexam %}
-                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
-                    {% endif %}
-                {% endif %}
 
+                <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
+                <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'CVTE exams' %}</button>
+                <button data-btn="btn_ntermen" class="btn btn-secondary ">{% trans 'N-termen table' %}</button>
                 <button data-btn="btn_results" class="btn btn-secondary ">{% trans 'Overview exams' %}</button>
             </div>
 

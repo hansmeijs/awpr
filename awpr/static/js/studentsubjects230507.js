@@ -4597,11 +4597,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const caption = (mode === "prelim_ex4") ? loc.The_preliminary_Ex4_form : loc.The_preliminary_Ex1_form
             msg_html = "<p>" + caption + loc.will_be_downloaded_sing + "</p>";
 
-            if (setting_dict.sel_dep_level_req  && setting_dict.sel_lvlbase_pk){
-                msg_html += ["<p class='py-2'><b>", loc.ATTENTION, "</b>:<br>", loc.Only_the_learningpath, setting_dict.sel_lvlbase_code, loc.willbe_added_to_Ex1form,
-                 "<br>", loc.Select_all_learningpaths,
-                 "</p>"].join("");
-            }
+            if (setting_dict.sel_dep_level_req){
+                msg_html += ["<p class='py-2'><b>", loc.ATTENTION, "</b>:<br>"].join("");
+                if (setting_dict.sel_lvlbase_pk){
+                    msg_html += [ loc.Only_the_learningpath, setting_dict.sel_lvlbase_code,
+                        (mode === "prelim_ex4") ? loc.willbe_added_to_Ex4form : loc.willbe_added_to_Ex1form,
+                        "<br>", loc.Select_all_learningpaths].join("");
+                } else {
+                    msg_html += [ loc.All_learningpaths,
+                        (mode === "prelim_ex4") ? loc.willbe_added_to_Ex4form : loc.willbe_added_to_Ex1form,
+                        "<br>", loc.Select_a_learningpath].join("");
+                };
+                 msg_html += "</p>";
+            };
             msg_html += "<p>" + loc.Do_you_want_to_continue + "</p>";
 
             btn_save_txt = loc.OK;
@@ -5438,7 +5446,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         Filter_TableRows();
     };  // HandleFilterToggle
-
 
 
 //========= HandleFilterStatus  =============== PR2023-02-21
