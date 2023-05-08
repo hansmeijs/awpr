@@ -432,7 +432,7 @@ def get_sqlclause_allowed_schoolbase_from_allowed_sections(userallowed_sections_
     #       else:
     #           --> no filter
 
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_sqlclause_allowed_schoolbase_from_allowed_sections ----- ')
         logger.debug('    schoolbase_pk: ' + str(schoolbase_pk) + ' ' + str(type(schoolbase_pk)))
@@ -452,6 +452,14 @@ def get_sqlclause_allowed_schoolbase_from_allowed_sections(userallowed_sections_
 
     if logging_on:
         logger.debug('    userallowed_schoolbase_pk_int_arr: ' + str(userallowed_schoolbase_pk_int_arr))
+        # userallowed_schoolbase_pk_int_arr: [3, 9, 11, 12, 13, 14, 16, 17, 18, 28, -9]
+
+
+    # PR2023-05-08 debug: email Shalini v Uytecht: gecomm sees list of all schools
+    #: caused by -9 in allowed school.
+    # solved by removing 'all schools allowed' from  userallowed_schoolbase_pk_int_arr
+    if -9 in userallowed_schoolbase_pk_int_arr:
+        userallowed_schoolbase_pk_int_arr.remove(-9)
 
     if schoolbase_pk and schoolbase_pk != -9:
         if not userallowed_schoolbase_pk_int_arr or \
@@ -462,6 +470,7 @@ def get_sqlclause_allowed_schoolbase_from_allowed_sections(userallowed_sections_
             filter_none = True
 
     elif userallowed_schoolbase_pk_int_arr and not skip_allowed_filter:
+
         # no filter when -9 ('all schools') in userallowed_schoolbase_pk_int_arr
         if -9 not in userallowed_schoolbase_pk_int_arr:
             if len(userallowed_schoolbase_pk_int_arr) == 1:

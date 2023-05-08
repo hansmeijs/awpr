@@ -1460,6 +1460,12 @@ class UploadImportUsernameView(View):  # PR2021-08-04
         update_dict = {}
 
         if request.user and request.user.country and request.user.schoolbase:
+
+# - Reset language
+            # PR2019-03-15 Debug: language gets lost, get request.user.lang again
+            user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
+            activate(user_lang)
+
             if request.POST['upload']:
                 upload_dict = json.loads(request.POST['upload'])
 
@@ -1467,8 +1473,8 @@ class UploadImportUsernameView(View):  # PR2021-08-04
                 page = importtable.replace('import', 'page')
 
                 permit_list, requsr_usergroups_listNIU,  requsr_allowed_sections_dictNIU, requsr_allowed_clusters_arr = acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
+
 # - get permit
-                has_permit = False
             # to prevent you from locking out when no permits yet
                 if request.user.role == c.ROLE_128_SYSTEM:
                     has_permit = True
@@ -1481,14 +1487,10 @@ class UploadImportUsernameView(View):  # PR2021-08-04
                     logger.debug('has_permit: ' + str(has_permit))
 
                 if not has_permit:
-                    err_html = _("You don't have permission to perform this action.")
-                    update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", str(err_html), "</p>"))
+                    msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
+                    update_dict['result'] = msg_html
                 else:
 
-        # - Reset language
-                    # PR2019-03-15 Debug: language gets lost, get request.user.lang again
-                    user_lang = request.user.lang if request.user.lang else c.LANG_DEFAULT
-                    activate(user_lang)
 
         # - get selected examyear from usersettings
                     sel_examyear_instance = acc_prm.get_sel_examyear_from_requsr(request)
@@ -1754,7 +1756,7 @@ def upload_username_from_datalist(sel_examyear_instance, data_dict, double_usern
                     new_user.save()
                     new_user_pk = new_user.pk
 
-                # add user_allowed record with usergroups PR2023-01-29
+    # add user_allowed record with usergroups PR2023-01-29
                     now_utc = timezone.now()
                     new_user_allowed = acc_mod.UserAllowed(
                         user=new_user,

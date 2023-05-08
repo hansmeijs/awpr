@@ -248,9 +248,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 corrector_rows: {get: true},
                 usercompensation_rows: {get: true},
                 // PR2023-01-06 was: department_rows: {skip_allowed_filter: true},
+                // PR2023-05-08 was: school_rows: {skip_allowed_filter: true}, level_rows: {skip_allowed_filter: true},
                 department_rows: {get: true},
-                school_rows: {skip_allowed_filter: true},
-                level_rows: {skip_allowed_filter: true},
+                school_rows: {get: true},
+                level_rows: {get: true},
                 subject_rows_page_users: {get: true},
                 cluster_rows: {get: true}
             };
@@ -1920,8 +1921,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 setting: new_setting,
 
                 department_rows: {get: true},
-                school_rows: {skip_allowed_filter: true},
-                level_rows: {skip_allowed_filter: true},
+
+                // PR2023-05-08 was: school_rows: {skip_allowed_filter: true}, level_rows: {skip_allowed_filter: true}
+                school_rows: {get: true},
+                level_rows: {get: true},
+
                 subject_rows_page_users: {get: true},
                 cluster_rows: {get: true}
             };

@@ -39,7 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 schoolsetting: {setting_key: "import_student"},
                 locale: {page: ["page_home"]},
                 examyear_rows: {get: true},
-                school_rows: {skip_allowed_filter: true},
+
+                // PR2023-05-08 was: school_rows: {skip_allowed_filter: true}
+                school_rows: {get: true},
                 department_rows: {get: true},
                 level_rows: {cur_dep_only: true},
                 sector_rows: {cur_dep_only: true}
