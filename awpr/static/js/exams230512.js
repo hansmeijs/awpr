@@ -1288,8 +1288,12 @@ document.addEventListener("DOMContentLoaded", function() {
         const column_count = field_names.length;
 
         const map_id = (data_dict.mapid) ? data_dict.mapid : null;
-        const permit_ete_admin_crud_only = (permit_dict.permit_crud && permit_dict.requsr_role_admin)
+        // only admin with crud permit may change, ete exams only when user is cur PR2023-05-12
+        const permit_admin_crud_only = (permit_dict.permit_crud && permit_dict.requsr_role_admin
+                && (data_dict.ete_exam && permit_dict.requsr_country_is_cur) || (!data_dict.ete_exam));
 
+        const permit_admin_approve_exam = (permit_dict.permit_approve_exam && permit_dict.requsr_role_admin
+                && (data_dict.ete_exam && permit_dict.requsr_country_is_cur) || (!data_dict.ete_exam));
 // ---  lookup index where this row must be inserted
         let ob1 = "", ob2 = "", ob3 = "";
         if (tblName === "ete_exam") {
@@ -1362,27 +1366,25 @@ document.addEventListener("DOMContentLoaded", function() {
                     el.setAttribute("ondragstart", "return false;");
                     el.setAttribute("ondrop", "return false;");
     // --- add EventListener
-                    el.addEventListener("change", function(){HandleInputChange(el)});
-                    el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
-
+                    if (permit_admin_crud_only){
+                        el.addEventListener("change", function(){HandleInputChange(el)});
+                        el.addEventListener("keydown", function(event){HandleArrowEvent(el, event)});
+                    };
 // --- add class 'input_text' and text_align
                 // class 'input_text' contains 'width: 100%', necessary to keep input field within td width
                     el.classList.add("input_text");
 
 // --- make el readonly when not requsr_role_admin
-                    el.readOnly = !permit_ete_admin_crud_only;
+                    el.readOnly = !permit_admin_crud_only;
 
                 } else if (field_name === "secret_exam"){
-                    if(permit_ete_admin_crud_only){
+                    if(permit_admin_crud_only){
                         td.addEventListener("click", function() {UploadToggle(el)}, false)
                         add_hover(td);
                     };
 
                 } else if (field_name === "status"){
-                    if ( (permit_dict.permit_approve_exam) &&
-                       ( (tblName === "ete_exam" && permit_ete_admin_crud_only) ||
-                         (tblName === "duo_exam" && permit_ete_admin_crud_only) ||
-                         (tblName === "grades" && permit_dict.requsr_same_school && data_dict.ce_exam_id) ) ){
+                    if (permit_admin_approve_exam){
                         td.addEventListener("click", function() {HandleToggleApprove(tblName, el)}, false)
                         add_hover(td);
                     };
@@ -1411,25 +1413,18 @@ document.addEventListener("DOMContentLoaded", function() {
                         el.target = "_blank";
                     };
                 } else if (field_name === "ceex_name"){
-                    td.addEventListener("click", function() {MSELEX_Open(el)}, false);
-                    add_hover(td);
-
+                    if (permit_admin_crud_only) {
+                        td.addEventListener("click", function() {MSELEX_Open(el)}, false);
+                        add_hover(td);
+                    };
                 } else {
-                    if (tblName === "duo_exam"){
-                        if (permit_ete_admin_crud_only) {
+                    if (permit_admin_crud_only) {
+                        if (tblName === "duo_exam"){
                             td.addEventListener("click", function() {MDEC_Open(el)}, false);
-                            add_hover(td);
-                        };
-                    } else if (tblName === "ete_exam"){
-                        if (permit_ete_admin_crud_only) {
+                        } else if (tblName === "ete_exam"){
                             td.addEventListener("click", function() {MEXQ_Open(el)}, false);
-                            add_hover(td);
                         };
-                    } else if (tblName === "grades"){
-                        if(permit_dict.requsr_same_school){
-                            td.addEventListener("click", function() {MEXA_Open(el)}, false);
-                            add_hover(td);
-                        };
+                        add_hover(td);
                     };
                 };
                 //td.classList.add("pointer_show", "px-2");

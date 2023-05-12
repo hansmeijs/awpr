@@ -1836,21 +1836,26 @@ def get_examnumberlist_from_database(sel_school, sel_department, examnumber_list
         logger.debug('sel_school: ' + str(sel_school))
         logger.debug('sel_department: ' + str(sel_department))
 
+    # PR2023-05-11 debug. enail Roxane Wederfoort CAL: cannot change examnumber
+    # cause: deleted studen thas this exam number
+    # solution: add ' AND NOT st.deleted" to filter
+    # st.firstname, st.prefix added to show which student as this idd number
+
     # add fake row to indicate that this function is called PR2022-08-22
-    examnumber_list.append((-9, '#$%#@'))
+    examnumber_list.append({'student_id': -9, 'examnumber': '#$%#@', 'lastname': '-', 'firstname': '-', 'prefix': None})
     if sel_school and sel_department:
         sql_keys = {'sch_id': sel_school.pk, 'dep_id': sel_department.pk}
-        sql_list = ["SELECT st.id, LOWER(st.examnumber)",
+        sql_list = ["SELECT st.id AS student_id, LOWER(st.examnumber) AS examnumber, st.lastname, st.firstname, st.prefix",
             "FROM students_student AS st",
             "WHERE st.school_id = %(sch_id)s::INT AND st.department_id = %(dep_id)s::INT",
             "AND st.examnumber IS NOT NULL",
-            "AND NOT st.tobedeleted",
+            "AND NOT st.tobedeleted AND NOT st.deleted",
             "ORDER BY st.examnumber"]
         sql = ' '.join(sql_list)
 
         with connection.cursor() as cursor:
             cursor.execute(sql, sql_keys)
-            rows = cursor.fetchall()
+            rows = af.dictfetchall(cursor)
             if len(rows):
                 examnumber_list.extend(rows)
 

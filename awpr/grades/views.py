@@ -273,10 +273,10 @@ class GradeBlockView(View):  # PR2022-04-16 PR2023-04-08
 
                         if updated_grade_pk_list:
                             updated_grade_rows = create_grade_rows(
-                                sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
-                                sel_schoolbase_pk=sel_school.base_id if sel_school else None,
-                                sel_depbase_pk=sel_department.base_id if sel_department else None,
-                                sel_lvlbase_pk=None,
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_school.base if sel_school else None,
+                                sel_depbase=sel_department.base if sel_department else None,
+                                sel_lvlbase=None,
                                 sel_examperiod=examperiod,
                                 # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase not icon when refreshing this row
                                 remove_note_status=True,
@@ -627,10 +627,10 @@ class GradeApproveView(View):  # PR2021-01-19 PR2022-03-08 PR2023-02-02
                                                     logger.debug('append_dict: ' + str(append_dict))
 
                                                 updated_grade_rows = create_grade_rows(
-                                                    sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
-                                                    sel_schoolbase_pk=sel_school.base_id if sel_school else None,
-                                                    sel_depbase_pk=sel_department.base_id if sel_department else None,
-                                                    sel_lvlbase_pk=None,
+                                                    sel_examyear=sel_examyear,
+                                                    sel_schoolbase=sel_school.base if sel_school else None,
+                                                    sel_depbase=sel_department.base if sel_department else None,
+                                                    sel_lvlbase=None,
                                                     sel_examperiod=sel_examperiod,
                                                     # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase not icon when refreshing this row
                                                     remove_note_status=True,
@@ -1467,10 +1467,10 @@ class GradeSubmitEx2Ex2aView(View):  # PR2021-01-19 PR2022-03-08 PR2022-04-17 PR
 
                                         if updated_grade_pk_list:
                                             updated_grade_rows = create_grade_rows(
-                                                sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
-                                                sel_schoolbase_pk=sel_school.base_id if sel_school else None,
-                                                sel_depbase_pk=sel_department.base_id if sel_department else None,
-                                                sel_lvlbase_pk=None,
+                                                sel_examyear=sel_examyear,
+                                                sel_schoolbase=sel_school.base if sel_school else None,
+                                                sel_depbase=sel_department.base if sel_department else None,
+                                                sel_lvlbase=None,
                                                 sel_examperiod=sel_examperiod,
                                                 # PR2021-06-01 debug. Remove key 'note_status', otherwise it will erase not icon when refreshing this row
                                                 remove_note_status=True,
@@ -2734,7 +2734,7 @@ class GradeUploadView(View):
             # - add update_dict to update_wrap
                         grade_rows = []
                         if return_grades_with_exam:
-                            rows = create_grade_with_ete_exam_rows(
+                            rows = create_grade_with_exam_rows(
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_school.base if sel_school else None,
                                 sel_depbase=sel_department.base if sel_department else None,
@@ -2758,10 +2758,10 @@ class GradeUploadView(View):
                                 logger.debug('    append_dict: ' + str(append_dict))
 
                             rows = create_grade_rows(
-                                sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
-                                sel_schoolbase_pk=sel_school.base_id,
-                                sel_depbase_pk=sel_department.base_id if sel_department else None,
-                                sel_lvlbase_pk=None,
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_school.base,
+                                sel_depbase=sel_department.base if sel_department else None,
+                                sel_lvlbase=None,
                                 sel_examperiod=grade.examperiod,
                                 request=request,
                                 append_dict=append_dict,
@@ -2815,10 +2815,6 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
     for field, new_value in upload_dict.items():
 
-        if logging_on:
-            logger.debug('....field: ' + str(field))
-            logger.debug('    new_value: ' + str(new_value))
-
         if field in ('pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'):
 
 # - validate new_value
@@ -2864,6 +2860,10 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
     # ----- save changes in field 'exam'
         elif field == 'exam_pk':
 
+            if logging_on:
+                logger.debug('....field: ' + str(field))
+                logger.debug('    new_value: ' + str(new_value))
+
 # - validate if ce_exam is approved or submitted:
             # ce_exam_auth1by is approval of exam (wolf)
             # ce_auth1by is approval of score
@@ -2881,6 +2881,12 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                 exam_is_approved = getattr(grade_instance, 'ce_exam_auth1by') or \
                                        getattr(grade_instance, 'ce_exam_auth2by') or \
                                        getattr(grade_instance, 'ce_exam_auth3by')
+
+            if logging_on:
+                logger.debug('....field: ' + str(field))
+                logger.debug('    score_is_approved: ' + str(score_is_approved))
+                logger.debug('    score_is_submitted: ' + str(score_is_submitted))
+                logger.debug('    exam_is_submitted: ' + str(exam_is_submitted))
 
             if score_is_submitted or score_is_approved or exam_is_submitted or exam_is_approved:
                 score_exam_txt = str(_('This score') if score_is_submitted or score_is_approved else _('This exam'))
@@ -2908,6 +2914,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                 else:
                     save_exam = (saved_exam is not None)
 
+                if logging_on:
+                    logger.debug('     save_exam:              ' + str(save_exam) + ' ' + str(type(save_exam)))
+
                 if save_exam:
                     setattr(grade_instance, db_field, exam)
                     # reset ce_exam_ fields when exam_pk changes
@@ -2922,7 +2931,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     setattr(grade_instance, "ce_exam_published", None)
                     setattr(grade_instance, "ce_exam_blocked", False)
 
-                    #PR2022-06-08 debug tel Angela Richardson Maris Stella: score disappears
+                    # PR2022-06-08 debug tel Angela Richardson Maris Stella: score disappears
                     # dont reset cescore cegrade
                     # was: setattr(grade_instance, "pescore", None)
                     # was: setattr(grade_instance, "cescore", None)
@@ -2938,8 +2947,6 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                     save_changes = True
                     recalc_finalgrade = True
 
-                    if logging_on:
-                        logger.debug('     save_exam:              ' + str(save_exam) + ' ' + str(type(save_exam)))
 
 # - save changes in field 'ce_exam_result', 'pe_exam_result'
         elif field in ('ce_exam_result', 'pe_exam_result'):
@@ -3060,7 +3067,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
 
 def recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_value):
     # PR2022-06-23
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- recalc_grade_from_score_in_grade_instance -------')
 
@@ -3078,8 +3085,9 @@ def recalc_grade_from_score_in_grade_instance(grade_instance, field, validated_v
         if grade_instance.ce_exam and grade_instance.cescore is not None:
             exam_instance = grade_instance.ce_exam
             # DUO exams don't have to be published
-            if exam_instance.ete_exam and exam_instance.published:
-                grade_value = calc_score.calc_grade_from_score_ete(validated_value, exam_instance.scalelength,
+            if exam_instance.ete_exam:
+                if exam_instance.published:
+                    grade_value = calc_score.calc_grade_from_score_ete(validated_value, exam_instance.scalelength,
                                                                    exam_instance.cesuur)
             elif not exam_instance.ete_exam:
                 grade_value = calc_score.calc_grade_from_score_duo(validated_value, exam_instance.scalelength,
@@ -3462,7 +3470,7 @@ def create_grade_stat_icon_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_
 # --- end of create_grade_stat_icon_rows
 
 
-def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk, sel_examperiod, request,
+def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod, request,
                       append_dict=None, grade_pk_list=None, auth_dict=None,
                       remove_note_status=False):
     # --- create grade rows of all students of this examyear / school PR2020-12-14  PR2021-12-03 PR2022-02-09 PR2022-12-12
@@ -3471,14 +3479,14 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
     # grades that are not published are only visible when 'same_school'
     # note_icon is downloaded in separate call
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_rows -----')
         logger.debug('    sel_examperiod:    ' + str(sel_examperiod))
         logger.debug('    grade_pk_list:     ' + str(grade_pk_list))
-        logger.debug('    sel_schoolbase_pk:     ' + str(sel_schoolbase_pk))
-        logger.debug('    sel_depbase_pk:     ' + str(sel_depbase_pk))
-        logger.debug('    sel_lvlbase_pk:     ' + str(sel_lvlbase_pk))
+        logger.debug('    sel_schoolbase:     ' + str(sel_schoolbase))
+        logger.debug('    sel_depbase:     ' + str(sel_depbase))
+        logger.debug('    sel_lvlbase:     ' + str(sel_lvlbase))
         logger.debug(' ----------')
 
     grade_rows = []
@@ -3487,7 +3495,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
         req_usr = request.user
 
 # - only requsr of the same school can view grades that are not published, PR2021-04-29
-        requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase.pk == sel_schoolbase_pk)
+        requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase.pk == sel_schoolbase.pk)
 
  # - also corrector can view grades that are not published
         requsr_corrector = (req_usr.role == c.ROLE_016_CORR)
@@ -3543,7 +3551,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
             status = "se_status, sr_status, pe_status, ce_status,"
         """
         # sel_examtype not in use
-        sql_keys = {'ey_id': sel_examyear_pk, 'sb_id': sel_schoolbase_pk, 'depbase_id': sel_depbase_pk,
+        sql_keys = {'ey_id': sel_examyear.pk, 'sb_id': sel_schoolbase.pk, 'depbase_id': sel_depbase.pk,
                     'experiod': sel_examperiod}
 
         sql_list = ["SELECT grd.id, studsubj.id AS studsubj_id, studsubj.schemeitem_id, cl.id AS cluster_id, cl.name AS cluster_name,",
@@ -3624,10 +3632,10 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
                     "LEFT JOIN accounts_user AS ce_auth4 ON (ce_auth4.id = grd.ce_auth4by_id)",
 
                     "WHERE NOT stud.deleted AND NOT studsubj.deleted",
-                    ''.join(("AND ey.id = ", str(sel_examyear_pk), "::INT")),
+                    ''.join(("AND ey.id = ", str(sel_examyear.pk), "::INT")),
                     ''.join(("AND grd.examperiod = ", str(sel_examperiod), "::INT")),
-                    ''.join(("AND school.base_id=", str(sel_schoolbase_pk), "::INT")),
-                    ''.join(("AND dep.base_id = ", str(sel_depbase_pk), "::INT"))
+                    ''.join(("AND school.base_id=", str(sel_schoolbase.pk), "::INT")),
+                    ''.join(("AND dep.base_id = ", str(sel_depbase.pk), "::INT"))
                     ]
         # grd.deleted is only used when examperiod = exem, reex ofr reex3 PR2023-02-14
         # not true, in 2022 there were some deleted grades  PR2023-03-29
@@ -3657,8 +3665,8 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
 
     # - filter on selected levelbase
             # PR2023-04-29 debug: dont use saved_lvlbase_pk, it will show no records when changing to havo/vwo
-            if sel_lvlbase_pk:
-                sql_clause_lvlbase = ''.join(("AND (lvl.base_id=", str(sel_lvlbase_pk), "::INT)"))
+            if sel_lvlbase:
+                sql_clause_lvlbase = ''.join(("AND (lvl.base_id=", str(sel_lvlbase.pk), "::INT)"))
                 sql_list.append(sql_clause_lvlbase)
                 if logging_on:
                     logger.debug('     sql_clause_lvlbase:  ' + str(sql_clause_lvlbase))
@@ -3709,9 +3717,9 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
 
         sql_clause = acc_prm.get_sqlclause_allowed_NEW(
             table='grade',
-            sel_schoolbase_pk=sel_schoolbase_pk,
-            sel_depbase_pk=sel_depbase_pk,
-            sel_lvlbase_pk=sel_lvlbase_pk,
+            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
+            sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
+            sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
             userallowed_sections_dict=userallowed_sections_dict,
             return_false_when_no_allowedsubjects=return_false_when_no_allowedsubjects
         )
@@ -3759,6 +3767,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
                         depbase_code=row.get('depbase_code'),
                         lvl_abbrev=row.get('lvl_abbrev'),
                         examperiod=row.get('examperiod'),
+                        examyear=sel_examyear,
                         version=row.get('version'),
                         ntb_omschrijving=row.get('ntb_omschrijving')
                     )
@@ -3791,7 +3800,7 @@ def create_grade_rows(sel_examyear_pk, sel_schoolbase_pk, sel_depbase_pk, sel_lv
 # --- end of create_grade_rows
 
 
-def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod,
+def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod,
                                     request, setting_dict=None, grade_pk_list=None):
     # --- create grade rows of all students of this examyear / school PR2020-12-14 PR2022-02-20 PR2023-02-22
 
@@ -3806,7 +3815,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
 
     logging_on = s.LOGGING_ON
     if logging_on:
-        logger.debug(' ----- create_grade_with_ete_exam_rows -----')
+        logger.debug(' ----- create_grade_with_exam_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))
 
     # - only requsr of the same school  can view grades that are not published, PR2021-04-29
@@ -3917,8 +3926,8 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                         "AND NOT studsubj.deleted",
                         "AND NOT grd.deleted",
                         
-                        # PR2023-05-05 added: only subjects with CE must be shown, only ETE exams
-                        "AND si.weight_ce > 0 AND si.ete_exam"
+                        # PR2023-05-05 added: only subjects with CE must be shown
+                        "AND si.weight_ce > 0"
                         ]
 
             if logging_on:
@@ -4041,8 +4050,8 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                 grade_rows = af.dictfetchall(cursor)
 
             if logging_on:
-                logger.debug('sql_keys: ' + str(sql_keys))
-                logger.debug('sql: ' + str(sql))
+                #logger.debug('sql_keys: ' + str(sql_keys))
+                #logger.debug('sql: ' + str(sql))
                 logger.debug('    len grade_rows: ' + str(len(grade_rows)))
 
         # - add full name to rows, and array of id's of auth
@@ -4055,20 +4064,28 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
                     prefix = row.get('prefix')
                     full_name = stud_fnc.get_lastname_firstname_initials(last_name, first_name, prefix)
                     row['fullname'] = full_name if full_name else None
-                    ceex_exam_id = row.get('ceex_exam_id')
+                    ce_exam_id = row.get('ce_exam_id')
                     exam_name = None
-                    if ceex_exam_id:
+
+                    if logging_on:
+                        logger.debug('ce_exam_id: ' + str(ce_exam_id))
+                        logger.debug('ceex_name: ' + str(row.get('ceex_name')))
+                    if ce_exam_id:
                     # def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
                         exam_name = subj_vw.get_exam_name(
-                            ce_exam_id=ceex_exam_id,
+                            ce_exam_id=ce_exam_id,
                             ete_exam=row.get('ceex_ete_exam'),
                             subj_name_nl=row.get('subj_name_nl'),
                             depbase_code=row.get('depbase_code'),
                             lvl_abbrev=row.get('lvl_abbrev') or '-',
                             examperiod=row.get('examperiod'),
+                            examyear=sel_examyear,
                             version=row.get('ceex_version'),
                             ntb_omschrijving=row.get('ntb_omschrijving')
                         )
+
+                    if logging_on:
+                        logger.debug('exam_name: ' + str(exam_name))
                     row['exam_name'] = exam_name
 
             if logging_on:
@@ -4078,7 +4095,7 @@ def create_grade_with_ete_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, s
         logger.error(getattr(e, 'message', str(e)))
 
     return grade_rows
-# --- end of create_grade_with_ete_exam_rows
+# --- end of create_grade_with_exam_rows
 
 
 def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, sel_examperiod, setting_dict, request):

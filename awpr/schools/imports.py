@@ -402,10 +402,10 @@ class \
 
                         if updated_grade_pk_list:
                             updated_grade_rows = grade_view.create_grade_rows(
-                                sel_examyear_pk=sel_examyear.pk,
-                                sel_schoolbase_pk=sel_school.base_id,
-                                sel_depbase_pk=sel_department.base_id,
-                                sel_lvlbase_pk=None,
+                                sel_examyear=sel_examyear,
+                                sel_schoolbase=sel_school.base,
+                                sel_depbase=sel_department.base,
+                                sel_lvlbase=None,
                                 sel_examperiod=sel_examperiod,
                                 request=request,
                                 grade_pk_list=updated_grade_pk_list
@@ -743,8 +743,8 @@ class UploadImportStudentView(View):
                     #logger.debug('upload_dict: ' + str(upload_dict))
 
                 if not has_permit:
-                    err_html = str(_("You don't have permission to perform this action."))
-                    update_dict['result'] = ''.join(("<p class='border_bg_invalid p-2'>", err_html, "</p>"))
+                    msg_html = acc_prm.err_html_no_permit()  # default: 'to perform this action')
+                    update_dict['result'] = msg_html
                 else:
 
         # - Reset language
@@ -1163,6 +1163,9 @@ def upload_student_from_datalist(data_dict, examyear, school, department, is_tes
 # - update fields, both in new and existing students
         if student_instance:
             data_dict.pop('rowindex')
+
+            # idnumber_list and examnumber_list will be filled in upload_student_from_datalist
+            # without a row the reference to these lists get lost. Cost me 2 hours to figure this out. PR2022-08-22
 
             changes_are_saved, error_save, field_error = \
                 stud_view.update_student_instance(

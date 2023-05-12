@@ -432,7 +432,7 @@ def get_sqlclause_allowed_schoolbase_from_allowed_sections(userallowed_sections_
     #       else:
     #           --> no filter
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_sqlclause_allowed_schoolbase_from_allowed_sections ----- ')
         logger.debug('    schoolbase_pk: ' + str(schoolbase_pk) + ' ' + str(type(schoolbase_pk)))
@@ -649,7 +649,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
     # This function  gives sql clause of all allowed schools, deps, levels and subjects.
     # it also filters on sel_schoolbase_pk, sel_depbase_pk, sel_lvlbase_pk.
 
-    # called by create_studentsubject_rows, create_grade_rows,  create_grade_with_ete_exam_rows
+    # called by create_studentsubject_rows, create_grade_rows,  create_grade_with_exam_rows
 
     def get_add_to_list(sel_base_pk, base_pk_str):
         # add_to_list = True if:

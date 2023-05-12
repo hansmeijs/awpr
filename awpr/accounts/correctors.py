@@ -133,12 +133,12 @@ class UserAllowedClusterUploadView(View):
 # - ens of UserAllowedClusterUploadView
 
 ########################################################################
-# === UserUploadView ===================================== PR2023-02-25
+# === UserUploadView ===================================== PR2023-02-25 PR2023-05-12
 @method_decorator([login_required], name='dispatch')
 class UserCompensationUploadView(View):
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug('  ')
             logger.debug(' ========== UserCompensationUploadView ===============')
@@ -158,9 +158,7 @@ class UserCompensationUploadView(View):
             activate(user_lang)
 
 # - get permit
-            page_name = 'page_corrector'
-            has_permit = acc_prm.get_permit_crud_of_this_page(page_name, request)
-
+            has_permit = acc_prm.get_permit_of_this_page('page_corrector', ['crud', 'approve_comp'], request)
             if logging_on:
                 logger.debug('    has_permit:' + str(has_permit))
 
@@ -223,7 +221,7 @@ class UserCompensationUploadView(View):
 def update_usercompensation_instance(instance, upload_dict, request):
     # --- update existing and new instance PR2023-02-25 PR2023-04-17
     # calculated compensation is no stored in table
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_usercompensation_instance -------')
         logger.debug('    upload_dict: ' + str(upload_dict))
@@ -1261,7 +1259,7 @@ class UserCompensationApproveSubmitView(View):  # PR2021-07-26 PR2022-05-30 PR20
 class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR2023-04-16
 
     def post(self, request):
-        logging_on = False  # s.LOGGING_ON
+        logging_on = s.LOGGING_ON
         if logging_on:
             logger.debug(' ')
             logger.debug(' ============= UserCompensationApproveSingleView ============= ')
@@ -1303,8 +1301,6 @@ class UserCompensationApproveSingleView(View):  # PR2021-07-25 PR2023-02-18 PR20
 # - get list of usercompensation_pk's  from upload_dict
                     usercompensation_list = upload_dict.get('usercompensation_list') or []
                     # 'usercompensation_list': [{'usercompensation_pk': 916, 'auth2by': True}]
-                    if logging_on:
-                        logger.debug('    usercompensation_list: ' + str(usercompensation_list))
 
                     if usercompensation_list:
                         updated_usercomp_rows = []
@@ -1593,7 +1589,9 @@ def create_usercomp_agg_rows(sel_examyear, request):
                             "subjbase.code AS subjbase_code,",
 
                             "SUM(uc.amount) AS uc_amount, SUM(uc.meetings) AS uc_meetings,",
-                            "SUM(uc.correction_amount) AS uc_corr_amount, SUM(uc.correction_meetings) AS uc_corr_meetings",
+                            "SUM(uc.correction_amount) AS uc_corr_amount, SUM(uc.correction_meetings) AS uc_corr_meetings,",
+
+                            "SUM(uc.compensation) AS uc_compensation",
 
                             "FROM accounts_usercompensation AS uc",
 
@@ -1639,7 +1637,7 @@ def create_usercomp_agg_rows(sel_examyear, request):
                             approvals_sum_correction=row.get('corr_amount_sum') or 0,
                             meetings_sum_corrections=row.get('corr_meetings_sum') or 0
                         )
-                        row['compensation'] = compensation
+                        #row['compensation'] = compensation
 
                         if logging_on:
                             logger.debug('   row: ' + str(row))

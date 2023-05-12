@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     field_settings.btn_usergroup = {
         field_caption: ["", "School_code", "School", "User", "Edit", "Edit_wolf_2lines",
-                        "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
+                        "Chairperson", "Secretary", "Examiner", "Second_corrector_2lines",
                         "Receive_messages", "Send_messages", "Access_to_archive",
                         "System_administrator_2lines"],
                         //"Download", "Archive", "System_administrator_2lines"],
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     field_settings.btn_userpermit = {
         field_caption: ["", "Organization", "Page", "Action", "Edit", "Edit_wolf_2lines",
-                        "Chairperson", "Secretary", "Examiner", "Corrector_2lines",
+                        "Chairperson", "Secretary", "Examiner", "Second_corrector_2lines",
                         "Receive_messages", "Send_messages", "Access_to_archive",
                         "Analyze", "System_administrator_2lines"],
         field_names: ["select", "role", "page", "action", "group_edit", "group_wolf",
@@ -2855,6 +2855,10 @@ console.log( "upload_dict", upload_dict);
                         console.log("   @@@@@@@@@@@@  mod_MUPS_dict.expanded", mod_MUPS_dict.expanded);
                         console.log("   @@@@@@@@@@@@  expanded_schoolbase_dict", expanded_schoolbase_dict);
                             if (expanded_schoolbase_dict) {
+
+                            // PR2023-05-11 Sentry debug: ReferenceError depbase_pk_str is not defined
+                            // TODO solve this error
+
                                 const expanded_depbase_dict = expanded_schoolbase_dict[depbase_pk_str];
                         console.log("    expanded_depbase_dict", expanded_depbase_dict);
                                 if (!(depbase_pk_str in expanded_schoolbase_dict)){

@@ -295,6 +295,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Collapse_all'] = _('Collapse all')
 
         dict['Organization'] = TXT_Organization
+        dict['Organization_twolines'] = TXT_Organization_twolines
+
         dict['Action'] = _('Action')
         dict['Page'] = _('Page')
         dict['on_page'] = _(' on page ')
@@ -304,6 +306,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Secretary'] = TXT_Secretary
         dict['Corrector'] = TXT_Corrector
         dict['Corrector_2lines'] = pgettext_lazy('2 lines', 'Corrector')
+        dict['Second_corrector'] = _('Second corrector')
+        dict['Second_corrector_2lines'] = pgettext_lazy('2 lines', 'Second\ncorrector')
+
         dict['Examiner'] = TXT_Examiner
         dict['Teacher'] = _('Teacher')
         dict['Analyze'] = _('Analyze')
@@ -424,6 +429,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Correction_approvals_2lines'] = _('Correction of\napprovals')
         dict['Correction_meetings_2lines'] = _('Correction of\nmeetings')
         dict['Compensation'] = _('Compensation')
+
+        dict['Compensation_2lines'] = _('Compen-\nsation')
+
         dict['Version'] = _('Version')
         dict['Exam_period'] = _('Exam period')
 
@@ -1664,7 +1672,11 @@ def get_locale_dict(table_dict, user_lang, request):
             'need_permission_inspection': _('You can only change it with permission of the Inspectorate.'),
 
             'blocked_and_submitted01': _('This grade is unlocked by the Inspectorate and you have submitted it again.'),
-            'blocked_and_submitted02': _('The Inspectorate will review it and remove the unlocking if approved.')
+            'blocked_and_submitted02': _('The Inspectorate will review it and remove the unlocking if approved.'),
+
+            'This_exam_is_submitted': _('This exam is submitted.'),
+            'This_exam_is_approved': _('This exam is approved.'),
+            'You_cannot_change_exam': _('You cannot change the exam.'),
         }
 
         dict['approve_err_list'] = {'You_have_functions': _('You have the functions of '),
@@ -2000,6 +2012,7 @@ TXT_Usergroups = _('Usergroups')
 
 TXT_School_code = _('School code')
 TXT_Organization = _('Organization')
+TXT_Organization_twolines = _('Organi-\nzation')
 
 TXT_Examnumber = _('Exam number')
 TXT_Examnumber_twolines = _('Exam\nnumber')

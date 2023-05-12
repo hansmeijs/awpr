@@ -2357,10 +2357,10 @@ class StudentEnterExemptionsView(View):  # PR203-01-24
 
                 # enter exemptions
                                 grade_rows = grd_view.create_grade_rows(
-                                    sel_examyear_pk=sel_examyear.pk,
-                                    sel_schoolbase_pk=sel_school.base_id,
-                                    sel_depbase_pk=sel_department.base_id,
-                                    sel_lvlbase_pk=None,
+                                    sel_examyear=sel_examyear,
+                                    sel_schoolbase=sel_school.base if sel_school else None,
+                                    sel_depbase=sel_department.base if sel_department else None,
+                                    sel_lvlbase=None,
                                     sel_examperiod=c.EXAMPERIOD_EXEMPTION,
                                     request=request,
                                     append_dict=append_dict,
@@ -3085,7 +3085,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
             return studsubject_rows
 
 ################################
-# function sets auth and publish of studentsubject records of current department # PR2021-07-25
+# function sets auth and publish of studentsubject records of current department / level # PR2021-07-25
         update_wrap = {}
         requsr_auth = None
         msg_html = None
@@ -3316,7 +3316,7 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
     # - add student_pk to student_pk_list, student_committed_list or student_saved_list
                                 # this is used to count the students in msg: '4 students with 39 subjects are added'
                                 # after the loop the totals are added to count_dict['student_count'] etc
-                                # PR2022-08-25 submit not allowed when subject composition not coorect and no dispensation
+                                # PR2022-08-25 submit not allowed when subject composition not correct and no dispensation
                                 student_pk = studsubj.get('stud_id')
                                 if logging_on and False:
                                     logger.debug('    student_pk: ' + str(student_pk))
@@ -6978,6 +6978,7 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
 
             # check examnumber_already_exists
                         examnumber_already_exists = False
+                        studentname_list = []
 
                         # PR2022-09-01 Angela Richardson Maris Stella: cannot upload students
                         # error: new_value.lower(): 'NoneType' object has no attribute 'lower'
@@ -6989,24 +6990,29 @@ def update_student_instance(instance, sel_examyear, sel_school, sel_department, 
                                 stud_val.get_examnumberlist_from_database(instance.school, instance.department, examnumber_list)
 
                             if examnumber_list:
-                                # examnumber_list:  list of tuples (student_pk, LOWER(examnumber)) [(4445, '201'), (4545, '202'), (4546, '203'), (4547, '204'), (5888, '205'), (4549, '206'), (6016, '207')]
+                                    # examnumber_list:  list of tuples (student_pk, LOWER(examnumber)) [(4445, '201'), (4545, '202'), (4546, '203'), (4547, '204'), (5888, '205'), (4549, '206'), (6016, '207')]
+                                 # examnumber_list:  list of dictionaties: {'student_id': -9, 'examnumber': '#$%#@', 'lastname': '-', 'firstname': '-', 'prefix': None}
+
                                  for row in examnumber_list:
                                     # skip exam number of this student
                                     if logging_on:
                                         logger.debug('examnumber_list: ' + str(examnumber_list) + ' ' + str(type(examnumber_list)))
                                         logger.debug('row: ' + str(row) + ' ' + str(type(row)))
-                                        logger.debug('row[0]: ' + str(row[0]) + ' ' + str(type(row[0])))
-                                        logger.debug('row[1]: ' + str(row[1]) + ' ' + str(type(row[1])))
                                         logger.debug('new_value: ' + str(new_value) + ' ' + str(type(new_value)))
-
-                                    if instance_pk is None or row[0] != instance_pk:
-                                        if row[1] and row[1] == new_value.lower():
+                                    student_pk = row.get('student_id')
+                                    if instance_pk is None or student_pk != instance_pk:
+                                        examnumber_lower = row.get('examnumber')
+                                        if examnumber_lower and examnumber_lower == new_value.lower():
                                             examnumber_already_exists = True
-                                            break
+                                            studentname_list.append(stud_fnc.get_full_name(row.get('lastname'), row.get('firstname'), row.get('prefix')))
 
                         if examnumber_already_exists:
-                            err_txt = _("%(cpt)s '%(val)s' already exists.")  % {'cpt': str(caption), 'val': new_value}
-                            class_txt = "border_bg_warning"
+                            class_txt = "border_bg_invalid"
+                            err_txt = gettext("%(cpt)s '%(val)s' already exists at") % {'cpt': str(caption), 'val': new_value}
+                            err_txt += ':<ul>'
+                            for stud in studentname_list:
+                                err_txt += ''.join(('<li>',  stud, '</li>'))
+                            err_txt += '</ul>'
                         else:
             # add new_value to examnumber_list if it doesn't exist yet
 

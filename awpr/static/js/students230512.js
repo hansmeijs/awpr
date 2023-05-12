@@ -192,8 +192,10 @@ document.addEventListener('DOMContentLoaded', function() {
             el_SBR_filter.addEventListener("keyup", function() {MSTUD_InputKeyup(el_SBR_filter)}, false );
         }
 
+
 // ---  SUBMENU ------------------------------------
-        const el_submenu_delete_candidate = document.getElementById("id_submenu_delete_candidate");
+        // get element in CreateSubmenu, because element does not exist here yet. PR2023-05-12
+        let el_submenu_delete_candidate = null;
 
 // ---  MODAL SELECT COLUMNS ------------------------------------
         const el_MCOL_btn_save = document.getElementById("id_MCOL_btn_save")
@@ -485,6 +487,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if(permit_dict.permit_crud){
             AddSubmenuButton(el_submenu, loc.Add_candidate, function() {MSTUD_Open()});
             AddSubmenuButton(el_submenu, loc.Delete_candidate, function() {ModConfirmOpen("delete_candidate")}, [], "id_submenu_delete_candidate");
+
+// ---  SUBMENU ------------------------------------
+        // get element here, because element does not exist on opening page PR2023-05-12
+        el_submenu_delete_candidate = document.getElementById("id_submenu_delete_candidate");
+        console.log( "el_submenu_delete_candidate: ", el_submenu_delete_candidate);
+
         };
         if(permit_dict.requsr_role_system){
             AddSubmenuButton(el_submenu, loc.Validate_candidate_schemes, function() {ModConfirmOpen("validate_scheme")});
@@ -536,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  HandleTblRowClicked  ================ PR2020-08-03  PR2022-08-05
     function HandleTblRowClicked(tr_clicked) {
-        //console.log("=== HandleTblRowClicked");
+        console.log("=== HandleTblRowClicked");
         //console.log( "tr_clicked: ", tr_clicked, typeof tr_clicked);
 
 // ---  deselect all highlighted rows, select clicked row
@@ -545,8 +553,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ---  get selected.student_dict
         selected.student_pk = get_attr_from_el_int(tr_clicked, "data-pk");
         selected.student_dict = b_get_datadict_by_integer_from_datarows(student_rows, "id", selected.student_pk);
-        //console.log( "selected.student_pk: ", selected.student_pk);
-        //console.log( "selected.student_dict: ", selected.student_dict);
+        console.log( "selected.student_pk: ", selected.student_pk);
+        console.log( "selected.student_dict: ", selected.student_dict);
 
 // --- get existing data_dict from data_rows
         const pk_int = get_attr_from_el_int(tr_clicked, "data-pk");
@@ -554,10 +562,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const data_dict = (!isEmpty(found_dict)) ? found_dict : null;
         selected.student_pk = (data_dict) ? data_dict.id : null
 
+        console.log( "data_dict: ", data_dict);
+
 // --- change caption of submenubutton delete_candidate
         // PR2023-03-13 Sentry error: TypeError Cannot set properties of null (setting 'innerText')
         if (el_submenu_delete_candidate){
             const caption = (data_dict && (data_dict.tobedeleted || data_dict.deleted)) ? loc.Restore_candidate : loc.Delete_candidate;
+
+        console.log( "data_dict: ", data_dict);
             el_submenu_delete_candidate.innerText = caption;
         };
     }  // HandleTblRowClicked
@@ -1983,6 +1995,7 @@ function RefreshDataRowsAfterUpload(response) {
         let header_txt = "";
         const msg_list = [];
         let caption_save = loc.OK;
+        let caption_close = loc.Close;
         let hide_save_btn = false;
 
         if (["delete_candidate", "bis_exam", "MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
@@ -2003,6 +2016,7 @@ function RefreshDataRowsAfterUpload(response) {
                     };
                     msg_list.push("<p>" +  loc.Do_you_want_to_continue + "</p>");
                     caption_save = loc.Yes_remove;
+                    caption_close = loc.No_cancel;
 
                 } else if (["MSTUD_bis_exam", "MSTUD_iseveningstudent"].includes(mode)){
                     msg_list.push("<p>" + loc.Possible_exemptions_willbe_deleted + "</p>");
@@ -2017,6 +2031,7 @@ function RefreshDataRowsAfterUpload(response) {
 
                         show_large_modal = true;
                         caption_save = loc.Restore_candidate;
+                        caption_close = loc.Cancel;
 
                         // change mode to 'restore'
                         mod_dict.mode = "restore_candidate";
@@ -2029,6 +2044,7 @@ function RefreshDataRowsAfterUpload(response) {
 
                         show_large_modal = true;
                         caption_save = loc.Restore_candidate;
+                        caption_close = loc.Cancel;
 
                         // change mode to 'restore' when marked for deletion
                         mod_dict.mode = "restore_candidate";
@@ -2050,12 +2066,14 @@ function RefreshDataRowsAfterUpload(response) {
 
                         show_large_modal = true;
                         caption_save = loc.Yes_delete;
+                        caption_close = loc.No_cancel;
 
                     } else {
                         header_txt = loc.Delete_candidate;
                         msg_list.push("<p>" + loc.Candidate + " '" + full_name + "'" + loc.will_be_deleted + "</p>");
                         msg_list.push("<p class='mt-3 mb-0'>" + loc.Do_you_want_to_continue + "</p>");
                         caption_save = loc.Yes_delete;
+                        caption_close = loc.No_cancel;
                     };
                 };
             };
@@ -2071,9 +2089,10 @@ function RefreshDataRowsAfterUpload(response) {
 
         } else if (mode === "download_studentxlsx"){
             header_txt = loc.Download_candidate_data;
-            caption_save = loc.Yes_download;
             msg_list.push("<p>" + loc.The_candidate_data + loc.will_be_downloaded_plur + "</p><p>");
             msg_list.push("<p>" +  loc.Do_you_want_to_continue + "</p>");
+            caption_save = loc.Yes_download;
+            caption_close = loc.No_cancel;
         };
 
         el_confirm_header.innerText = header_txt;
@@ -2088,7 +2107,7 @@ function RefreshDataRowsAfterUpload(response) {
         //add_or_remove_class (el_confirm_btn_save, "btn-primary", (mode !== "delete"));
         add_or_remove_class (el_confirm_btn_save, "btn-outline-danger", (mode === "delete_candidate"), "btn-primary");
 
-        el_confirm_btn_cancel.innerText = (hide_save_btn) ? loc.Close : loc.No_cancel;
+        el_confirm_btn_cancel.innerText = caption_close;
 
 // set focus to cancel button
         set_focus_on_el_with_timeout(el_confirm_btn_cancel, 150);

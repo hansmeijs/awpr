@@ -343,9 +343,9 @@
 
 //=========  f_format_status_subject  ================ PR2021-12-19 PR2022-08-28 PR2023-03-24
     function f_format_status_subject(prefix_str, data_dict) {
-        console.log("=========  f_format_status_subject =========");
-        console.log("    prefix_str", prefix_str);
-        console.log("    data_dict", data_dict);
+        //console.log("=========  f_format_status_subject =========");
+        //console.log("    prefix_str", prefix_str);
+        //console.log("    data_dict", data_dict);
         // for now: only used in page correctors UpdateField
 
         // field_name = "uc_auth1by_id", "uc_auth2by_id", "uc_published_id"
@@ -382,20 +382,20 @@
                                         (i === 2) ? loc.Secretary : "";
                     const field_usr = prefix_auth + "by_usr";
                     const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
-        console.log("    field_usr", field_usr);
-        console.log("    field_usr", field_usr);
+        //console.log("    field_usr", field_usr);
+        //console.log("    field_usr", field_usr);
 
                     title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
                 };
             };
         };
 
-        console.log("    className", className);
-        console.log("    title_text", title_text);
-        console.log("    filter_value", filter_value);
+        //console.log("    className", className);
+        //console.log("    title_text", title_text);
+        //console.log("    filter_value", filter_value);
+
         return [className, title_text, filter_value]
     };  // f_format_status_subject
-
 
     function f_get_status_auth_iconclass(publ, blocked, auth1, auth2, auth3_must_sign, auth3, auth4_must_sign, auth4) {
         //console.log( " ==== f_get_status_auth_iconclass ====");

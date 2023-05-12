@@ -660,7 +660,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 HandleBtnSelect(selected_btn, true)  // true = skip_upload
 
                 if (check_validation) {
-                 DownloadValidationStatusNotes();
+                    DownloadValidationStatusNotes();
                 };
             },
             error: function (xhr, msg) {

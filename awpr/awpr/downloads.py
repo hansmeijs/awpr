@@ -128,6 +128,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 
 # ----- get users
                 if datalist_request.get('user_rows'):
+                    # get_all_users is only True when clicked in userpage on HandleShowAll
                     all_users = af.get_dict_value(datalist_request, ('user_rows', 'get_all_users'), False)
                     if all_users:
                         datalists['user_rows'] = acc_view.create_all_user_rows(
@@ -376,7 +377,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- grade_exam_rows
                 if datalist_request.get('grade_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
-                        datalists['grade_exam_rows'] = gr_vw.create_grade_with_ete_exam_rows(
+                        datalists['grade_exam_rows'] = gr_vw.create_grade_with_exam_rows(
                             sel_examyear=sel_examyear,
                             sel_schoolbase=sel_schoolbase,
                             sel_depbase=sel_depbase,
@@ -400,10 +401,10 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if datalist_request.get('grade_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
                         datalists['grade_rows'] = gr_vw.create_grade_rows(
-                            sel_examyear_pk=sel_examyear.pk if sel_examyear else None,
-                            sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
-                            sel_depbase_pk=sel_depbase.pk if sel_depbase else None,
-                            sel_lvlbase_pk=sel_lvlbase.pk if sel_lvlbase else None,
+                            sel_examyear=sel_examyear,
+                            sel_schoolbase=sel_schoolbase,
+                            sel_depbase=sel_depbase,
+                            sel_lvlbase=sel_lvlbase,
                             sel_examperiod=sel_examperiod,
                             request=request
                         )

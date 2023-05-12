@@ -309,7 +309,8 @@ def get_firstname_prefix_lastname(last_name, first_name, prefix):  # PR2022-03-0
     return _full_name
 # - end of get_firstname_prefix_lastname
 
-def get_full_name(last_name, first_name, prefix, has_extrafacilities=False):  # PR2021-07-26 PR2021-09-05  PR2021-10-07 PR2023-01-07
+def get_full_name(last_name, first_name, prefix, has_extrafacilities=False):
+    # PR2021-07-26 PR2021-09-05  PR2021-10-07 PR2023-01-07
 
     _full_name = last_name.strip() if last_name else ''
 

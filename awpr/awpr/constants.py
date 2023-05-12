@@ -572,10 +572,10 @@ Correctie van de overige schriftelijke examenwerken is 10 gulden.
 Bijwonen vergadering is 30 gulden per vergadering (tot een max. van 2 verg. per vak) 
 
 """
-CORRCOMP_FIRST_APPROVAL = 2500 # compensation of the first approved exam, in cents
-CORRCOMP_OTHER_APPROVAL = 1000 # compensation of the following approved exams, in cents
-CORRCOMP_MEETING_COMP = 3000 # compensation per meeting, in cents
-CORRCOMP_MAX_MEETINGS = 2 # max number of meetings
+CORRCOMP_FIRST_APPROVAL = 2500  # compensation of the first approved exam, in cents, per school per exam
+CORRCOMP_OTHER_APPROVAL = 1000  # compensation of the following approved exams, in cents
+CORRCOMP_MEETING_COMP = 3000  # compensation per meeting, in cents
+CORRCOMP_MAX_MEETINGS = 2  # max number of meetings per school per exam
 
 COLOR_LIST = [
     ['black', ' '],

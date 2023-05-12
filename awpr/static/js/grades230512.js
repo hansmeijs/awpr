@@ -1443,6 +1443,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const fld_value = data_dict[field_name];
     //console.log("     field_name", field_name);
     //console.log("     fld_value", fld_value);
+    //console.log("     data_dict", data_dict);
 
             if(field_name){
                 let title_text = null, filter_value = null;
@@ -1637,7 +1638,11 @@ document.addEventListener("DOMContentLoaded", function() {
                             const field_usr = prefix_auth + "by_usr";
                             const auth_usr = (data_dict[field_usr]) ?  data_dict[field_usr] : "-";
 
-                            title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
+                            // PR2023-05-11 Sentry debug: TypeError function_str is undefined
+                            // solved by adding ' if (function_str) {', not tested yet
+                            if (function_str) {
+                                title_text += "\n" + function_str.toLowerCase() + ": " + auth_usr;
+                            };
                         };
                     };
                 };
@@ -3976,7 +3981,7 @@ attachments: [{id: 2, attachment: "aarst1.png", contenttype: null}]
         console.log(" --- RefreshDatarowItem  ---");
         //console.log("tblName", tblName);
         //console.log("field_setting", field_setting);
-    //console.log("update_dict", update_dict);
+    console.log("update_dict", update_dict);
 
         if(!isEmpty(update_dict)){
             const field_names = field_setting.field_names;
@@ -4863,11 +4868,13 @@ console.log( "......filter_value", filter_value);
 
                 if (!!data_dict.ce_exam_published_id){
     // exit and give message when grade is submitted
-                    b_show_mod_message_html(loc.err_list.This_exam_is_submitted + "<br>" + loc.err_list.You_cannot_change_exam);
+                    b_show_mod_message_html(loc.grade_err_list.This_exam_is_submitted + "<br>" + loc.grade_err_list.You_cannot_change_exam);
                 } else if (!!data_dict.ce_exam_auth1by_id || !!data_dict.ce_exam_auth2by_id){
     // exit and give message when grade is submitted
-                    b_show_mod_message_html(loc.err_list.This_exam_is_approved + "<br>" + loc.err_list.You_cannot_change_exam);
-
+                    b_show_mod_message_html(loc.grade_err_list.This_exam_is_approved + "<br>" + loc.grade_err_list.You_cannot_change_exam);
+                } else if (!data_dict.weight_ce){
+    // exit and give message when subject weight = 0 (no central exam)
+                    b_show_mod_message_html(loc.grade_err_list.weightce_is_zero);
                 } else {
                     mod_MSELEX_dict.exam_pk = data_dict.ce_exam_id;
                     mod_MSELEX_dict.mapid = data_dict.mapid;

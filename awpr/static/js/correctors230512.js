@@ -77,9 +77,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_align: ["c", "l", "l", "l", "l",  "l", "l", "l"]};
 
     field_settings.btn_approval = {
-                    field_caption: ["", "Organization", "Name",
+                    field_caption: ["", "Organization_twolines", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
-                                    "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines",  "", "Correction_approvals_2lines",  "Correction_meetings_2lines","Compensation"],
+                                    "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines",  "",
+                                    "Correction_approvals_2lines",  "Correction_meetings_2lines","Compensation_2lines"],
                     field_names: ["select",  "user_sb_code", "last_name",
                                     "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
                                      "sb_code", "uc_school_abbrev", "uc_amount", "uc_meetings", "status", "uc_corr_amount", "uc_corr_meetings", "uc_compensation"],
@@ -97,15 +98,15 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "l", "l", "c",  "c", "c", "c", "c", "c"]};
 
     field_settings.btn_compensation = {
-                    field_caption: ["", "Organization", "Name",
+                    field_caption: ["", "Organization_twolines", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
-                                    "Number_approvals_2lines",  "Number_meetings_2lines", "Compensation"],
+                                    "Number_approvals_2lines",  "Number_meetings_2lines", "Compensation_2lines"],
                     field_names: ["select", "user_sb_code", "last_name",
-                                    "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
-                                    "uc_amount", "uc_meetings", "compensation"],
+                                    "depbase_code", "lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version", "examperiod",
+                                    "uc_amount", "uc_meetings", "uc_compensation"],
                     field_tags: ["div", "div",  "div",
                                     "div", "div", "div", "div", "div", "div",
-                                    "div", "input","div"],
+                                    "div", "div","div"],
                     filter_tags: ["select", "text",  "text",
                                     "text", "text",  "text",  "text", "text", "text",
                                     "text",  "toggle", "text"],
@@ -576,8 +577,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-02-26
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        //console.log("=========  CreateTblRow =========", tblName);
-        //console.log("    data_dict", data_dict);
+        console.log("=========  CreateTblRow =========", tblName);
+        console.log("    data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -649,10 +650,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
     // --- add EventListener to td
-
+                    // only input fields are: "uc_corr_amount", "uc_corr_meetings"
                     if (field_tag === "input") {
-                        el.addEventListener("change", function() {UploadInputChange(el)}, false)
-                        add_hover(td);
+                        if (permit_dict.permit_approve_comp){
+                            el.addEventListener("change", function() {UploadInputChange(el)}, false)
+                            add_hover(td);
+                        };
+                        el.readOnly = !permit_dict.permit_approve_comp;
+
                     } else if (field_name === "select") {
                         // TODO add select multiple users option PR2020-08-18
 
@@ -674,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         const published_id = (data_dict.published_id) ? data_dict.published_id : null;
 
-                        if(!published_id){
+                        if(!published_id && permit_dict.permit_approve_comp){
                             td.addEventListener("click", function() {UploadToggleStatus(el)}, false)
                             add_hover(td);
                         };
@@ -713,7 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // TODO add select multiple users option PR2020-08-18
 
             } else if (["user_sb_code", "username", "last_name", "sb_code", "uc_school_abbrev",
-                "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version"].includes(field_name)){
+                "depbase_code", "lvlbase_code", "uc_depbase_code", "uc_lvlbase_code", "subjbase_code", "subj_name_nl", "exam_version"].includes(field_name)){
                 inner_text = data_dict[field_name];
                 filter_value = (inner_text) ? inner_text.toLowerCase() : null;
 
@@ -850,17 +855,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function UploadInputChange(el_input) {
         console.log( " ==== UploadInputChange ====");
         console.log("el_input: ", el_input);
+        // only input fields are: "uc_corr_amount", "uc_corr_meetings"
 
 // ---  upload changes
         if (permit_dict.permit_crud){
             const tblRow = t_get_tablerow_selected(el_input);
             const data_field = get_attr_from_el(el_input, "data-field");
+        console.log("data_field: ", data_field);
             if(tblRow){
                 const data_dict = usercompensation_dicts[tblRow.id];
                 if (data_dict){
                     const new_value = (el_input.value && Number(el_input.value)) ? Number(el_input.value) : 0;
-                    const old_value = (data_field[data_field]) ? data_field[data_field] : null;
-                                                    (data_field === "uc_corr_meetings") ? data_dict.uc_meetings : 0;
+                    const old_value = (data_dict[data_field]) ? data_dict[data_field] : null;
+                     // ??? (data_field === "uc_corr_meetings") ? data_dict.uc_meetings : 0;
+
+        console.log("old_value: ", old_value);
+        console.log("data_dict: ", data_dict);
                     const max_meetings = 2;
                     const amount_or_meetings = (data_field === "uc_corr_amount") ? data_dict.uc_amount :
                                                 (data_field === "uc_corr_meetings") ? data_dict.uc_meetings : 0
@@ -890,7 +900,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         let upload_dict = {
                             table: "usercompensation",
                             mode: "update",
-                            usercompensation_pk: data_dict.id
+                            usercompensation_pk: data_dict.uc_id
                         };
                         const db_field = (data_field === "uc_corr_amount") ? "correction_amount" :
                                                 (data_field === "uc_corr_meetings") ? "correction_meetings" : "-";
@@ -947,15 +957,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         const field_auth_id = model_field + "_id";
                         // field_auth_id = 'auth1by_id'
                         const auth_id = (data_dict[field_auth_id]) ? data_dict[field_auth_id] : null;
-    console.log( "    field_auth_id", field_auth_id);
-    console.log( "    auth_id", auth_id);
-
                         // field_auth_id = 47
                         const auth_dict = {};
                         let requsr_auth_bool = false;
 
                         for (let auth_index = 1, key_str; auth_index < 3; auth_index++) {
-                            key_str = "auth" + auth_index + "by_id";
+                            key_str = "uc_auth" + auth_index + "by_id";
+
                             if (data_dict[key_str]){
                                 if (requsr_auth_index === auth_index) {
                                     requsr_auth_bool = true;
@@ -965,14 +973,11 @@ document.addEventListener('DOMContentLoaded', function() {
                             };
                         };
 ``
-    console.log( "    auth_dict", auth_dict);
 
 // ---  toggle value of requsr_auth_bool
                         // - get new_requsr_auth_bool - set false if already filled in
                         // use 'true' instead of requsr_pk
                         const new_requsr_auth_bool = !requsr_auth_bool;
-
-    console.log( "    new_requsr_auth_bool", new_requsr_auth_bool);
 
 // also update value in auth_dict;
                         auth_dict[requsr_auth_index] = new_requsr_auth_bool
@@ -990,9 +995,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             table: "usercompensation",
                             usercompensation_list: [usercompensation_dict]
                         };
-
                         const url_str = urls.url_usercomp_approve_single
-    console.log( "   @@@@@@@@@@  url_str", url_str);
                         UploadChanges(upload_dict, url_str);
 
                     };  //if (is_published)

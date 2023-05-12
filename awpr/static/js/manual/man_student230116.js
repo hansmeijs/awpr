@@ -134,7 +134,14 @@ const man_student = {
             "<p><b>Kandidaat herstellen</b><br>",
             "Wanneer een kandidaat is aangemerkt om gewist te worden, kun je dit ongedaan maken. ",
             "Selecteer een kandidaat die is aangemerkt om gewist te worden en klik in de menubalk op de knop <i>Kandidaat herstellen</i>. De kandidaat en de vakken van de kandidaat worden nu hersteld. ",
-            "Herstelde vakken hoeven niet opnieuw ingediend te worden."
+            "Herstelde vakken hoeven niet opnieuw ingediend te worden.",
+
+            "<p class='mb-0 pb-0'><b>Gewiste kandidaat herstellen</b><br>",
+            "Als een kandidaat is gewist kun je dit als volgt herstellen:</p>",
+            "<ul class='manual_bullet mb-0'><li>Klik in de verticale grijze balk links op <i>Alle kandidaten weergeven</i>. De gewiste kandidaten worden nu ook weergegeven. Ze hebben een rode achtegrond.</li>",
+            "<li>Selecteer de gewiste kandidaat die je wilt herstellen.</li>",
+            "<li>Klik in de menubalk op de knop <i>Kandidaat herstellen</i>.</li></ul>",
+            "<p>De gewiste kandidaat en de vakken van de kandidaat worden nu hersteld.</p>"
             ]),
 
         write_paragraph_header("id_download_students", "Kandidaatgegevens downloaden"),
@@ -274,7 +281,14 @@ en:  [
              "<p><b>Restore a candidate</b><br>",
              "When a candidate is marked to be deleted, you can undo it. ",
              "Select a candidate marked to be deleted and click the <i>Restore candidate</i> button in the menu bar. The candidate and the candidate's subjects will now be restored.",
-             "Restored subjects do not need to be resubmitted."
+             "Restored subjects do not need to be resubmitted.",
+
+             "<p class='mb-0 pb-0'><b>Restoring a deleted candidate</b><br>",
+             "If a candidate has been deleted, you can restore it as follows:</p>",
+             "<ul class='manual_bullet mb-0'><li>In the vertical gray bar on the left, click <i>Show all candidates</i>. The deleted candidates are now also displayed. They have a red background.</ li>",
+             "<li>Select the deleted candidate you want to restore.</li>",
+             "<li>Click the <i>Restore candidate</i> button in the menu bar.</li></ul>",
+             "<p>The deleted candidate and the candidate's subjects are now restored.</p>"
              ]),
 
          write_paragraph_header("id_download_students", "Download candidate data"),

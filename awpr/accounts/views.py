@@ -5107,7 +5107,7 @@ def get_selected_experiod_extype_subject_from_usersetting(request): # PR2021-01-
 def get_selected_ey_school_dep_lvl_from_usersetting(request, skip_same_school_clause=False, page=None):
     # PR2021-01-13 PR2021-06-14 PR2022-02-05 PR2022-12-18 PR2023-03-31 PR2023-04-10
     # called by not has_subjbases
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ' )
         logger.debug(' +++++ get_selected_ey_school_dep_lvl_from_usersetting +++++ ' )
