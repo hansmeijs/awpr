@@ -3052,6 +3052,7 @@ class ExamApproveOrSubmitWolfView(View):
                                 sel_depbase=sel_department.base if sel_department else None,
                                 sel_lvlbase=sel_level.base if sel_level else None,
                                 sel_examperiod=sel_examperiod,
+                                ete_exams_only=False,
                                 request=request,
                                 grade_pk_list=updated_grade_pk_list
                             )

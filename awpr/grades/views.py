@@ -2741,6 +2741,7 @@ class GradeUploadView(View):
                                 sel_lvlbase=sel_level.base if sel_level else None,
                                 sel_examperiod=grade.examperiod,
                                 request=request,
+                                ete_exams_only=ete_exams_only,
                                 grade_pk_list=[grade.pk]
                             )
                         else:
@@ -3800,7 +3801,7 @@ def create_grade_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, se
 # --- end of create_grade_rows
 
 
-def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod,
+def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase, sel_examperiod, ete_exams_only,
                                     request, setting_dict=None, grade_pk_list=None):
     # --- create grade rows of all students of this examyear / school PR2020-12-14 PR2022-02-20 PR2023-02-22
 
@@ -3817,6 +3818,7 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
     if logging_on:
         logger.debug(' ----- create_grade_with_exam_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))
+        logger.debug('    ete_exams_only: ' + str(ete_exams_only))
 
     # - only requsr of the same school  can view grades that are not published, PR2021-04-29
     # - also corrector .TODO: add school to corrector permit
@@ -3831,7 +3833,8 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
         req_usr = request.user
         requsr_same_school = (req_usr.role == c.ROLE_008_SCHOOL and req_usr.schoolbase == sel_schoolbase)
 
-        if requsr_same_school and sel_examyear and sel_schoolbase and sel_depbase:
+        # PR2023-05-12 was: if requsr_same_school and sel_examyear and sel_schoolbase and sel_depbase:
+        if sel_examyear and sel_schoolbase and sel_depbase:
             #examkeys_fields = ""
             #if req_usr.role == c.ROLE_064_ADMIN:
             #    # pe_exam not in use: was: examkeys_fields = "ce_exam.keys AS ceex_keys, pe_exam.keys AS peex_keys,"
@@ -3915,7 +3918,6 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
                         "WHERE ey.id = %(ey_id)s::INT",
                         "AND school.base_id = %(sb_id)s::INT",
                         "AND dep.base_id = %(depbase_id)s::INT",
-                        # "AND si.ete_exam",
 
                         # PR2023-01-16 added:
                         # show tobedeleted students / subjects PR2-23-02-09
@@ -3930,8 +3932,12 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
                         "AND si.weight_ce > 0"
                         ]
 
+            # PR2023-05-12 in page wolf: show only ete exams
+            if ete_exams_only:
+                sql_list.append("AND si.ete_exam")
+
             if logging_on:
-                logger.debug('grade_pk_list: ' + str(grade_pk_list))
+                logger.debug(' sql_list: ' + str(sql_list))
 
             # note: don't filter on sel_subjbase_pk, must be able to change within allowed
             sel_subjbase_pk = None
@@ -4040,6 +4046,9 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
             if sql_clause:
                 sql_list.append(sql_clause)
 
+            if logging_on:
+                logger.debug('    sql_clause: ' + str(sql_clause))
+
             sql_list.append('ORDER BY grd.id')
 
             sql = ' '.join(sql_list)
@@ -4067,9 +4076,6 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
                     ce_exam_id = row.get('ce_exam_id')
                     exam_name = None
 
-                    if logging_on:
-                        logger.debug('ce_exam_id: ' + str(ce_exam_id))
-                        logger.debug('ceex_name: ' + str(row.get('ceex_name')))
                     if ce_exam_id:
                     # def get_exam_name(ce_exam_id, ete_exam, subj_name, depbase_code, lvl_abbrev, examperiod, version, ntb_omschrijving):
                         exam_name = subj_vw.get_exam_name(
@@ -4083,10 +4089,12 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
                             version=row.get('ceex_version'),
                             ntb_omschrijving=row.get('ntb_omschrijving')
                         )
-
-                    if logging_on:
-                        logger.debug('exam_name: ' + str(exam_name))
                     row['exam_name'] = exam_name
+
+                    if logging_on and False:
+                        logger.debug('ce_exam_id: ' + str(ce_exam_id))
+                        logger.debug('ceex_name: ' + str(row.get('ceex_name')))
+                        logger.debug('exam_name: ' + str(exam_name))
 
             if logging_on:
                 logger.debug('---------------- ')
@@ -4098,7 +4106,8 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
 # --- end of create_grade_with_exam_rows
 
 
-def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, sel_examperiod, setting_dict, request):
+def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, sel_examperiod,
+                                  setting_dict, ete_exams_only, request):
     # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
 
     # - only ce_exams that are submitted have results shown
@@ -4111,7 +4120,8 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
-        logger.debug('setting_dict: ' + str(setting_dict))
+        logger.debug('    setting_dict: ' + str(setting_dict))
+        logger.debug('    ete_exams_only: ' + str(ete_exams_only))
 
 
     req_usr = request.user
@@ -4145,7 +4155,7 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
                 "AND grd.ce_exam_score IS NOT NULL"
                 ]
 
-# - when role other than school: only submitted exams are calulated in avg, when school: also exams that are not submitted are calculated
+    # - when role other than school: only submitted exams are calulated in avg, when school: also exams that are not submitted are calculated
     if req_usr.role != c.ROLE_008_SCHOOL:
         sub_list.append("AND grd.ce_exam_published_id IS NOT NULL")
 

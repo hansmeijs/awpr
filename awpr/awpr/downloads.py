@@ -377,6 +377,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
 # ----- grade_exam_rows
                 if datalist_request.get('grade_exam_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
+                        # show only ete_exams with weight_ce > 0
+                        ete_exams_only = af.get_dict_value(datalist_request, ('grade_exam_rows', 'ete_exams_only'))
                         datalists['grade_exam_rows'] = gr_vw.create_grade_with_exam_rows(
                             sel_examyear=sel_examyear,
                             sel_schoolbase=sel_schoolbase,
@@ -384,17 +386,20 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_lvlbase=sel_lvlbase,
                             sel_examperiod=sel_examperiod,
                             setting_dict=new_setting_dict,
+                            ete_exams_only=ete_exams_only,
                             request=request
                         )
 # ----- grade_exam_result_rows
                 if datalist_request.get('grade_exam_result_rows'):
                     if sel_examyear and sel_schoolbase and sel_depbase:
+                        ete_exams_only = af.get_dict_value(datalist_request, ('grade_exam_rows', 'ete_exams_only'))
                         datalists['grade_exam_result_rows'] = gr_vw.create_grade_exam_result_rows(
                             sel_examyear=sel_examyear,
                             sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
                             sel_depbase=sel_depbase,
                             sel_examperiod=sel_examperiod,
                             setting_dict=new_setting_dict,
+                            ete_exams_only=ete_exams_only,
                             request=request
                         )
 # ----- grades

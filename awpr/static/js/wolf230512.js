@@ -565,8 +565,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 duo_subject_rows: {get: true},
                 ete_exam_rows: {get: true},
                 duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
+                grade_exam_rows: {ete_exams_only: true},
+                grade_exam_result_rows: {ete_exams_only: true},
                 ntermentable_rows: {get: ntermentable_rows},
 
                 published_rows: {get: true}
@@ -881,8 +881,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 duo_subject_rows: {get: true},
                 duo_exam_rows: {get: true},
                 ntermentable_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
+                grade_exam_rows: {ete_exams_only: true},
+                grade_exam_result_rows: {ete_exams_only: true},
                 published_rows: {get: true}
         };
 
@@ -919,8 +919,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 duo_subject_rows: {get: true},
                 ete_exam_rows: {get: true},
                 duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
+                grade_exam_rows: {ete_exams_only: true},
+                grade_exam_result_rows: {ete_exams_only: true},
                 ntermentable_rows: {get: true},
                 published_rows: {get: true}
         };
@@ -1065,8 +1065,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 duo_subject_rows: {get: true},
                 ete_exam_rows: {get: true},
                 duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
+                grade_exam_rows: {ete_exams_only: true},
+                grade_exam_result_rows: {ete_exams_only: true},
                 ntermentable_rows: {get: true},
                 published_rows: {get: true}
         }
@@ -6459,8 +6459,8 @@ console.log("exam_dict", exam_dict);
                 duo_subject_rows: {get: true},
                 ete_exam_rows: {get: true},
                 duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
+                grade_exam_rows: {ete_exams_only: true},
+                grade_exam_result_rows: {ete_exams_only: true},
                 ntermentable_rows: {get: true},
                 published_rows: {get: true}
             };
@@ -6494,8 +6494,8 @@ console.log("exam_dict", exam_dict);
                 duo_subject_rows: {get: true},
                 ete_exam_rows: {get: true},
                 duo_exam_rows: {get: true},
-                grade_exam_rows: {get: true},
-                grade_exam_result_rows: {get: true},
+                grade_exam_rows: {ete_exams_only: true},
+                grade_exam_result_rows: {ete_exams_only: true},
                 ntermentable_rows: {get: true},
                 published_rows: {get: true}
             };
@@ -6600,8 +6600,8 @@ console.log("exam_dict", exam_dict);
             //        duo_subject_rows: {get: true},
             //        ete_exam_rows: {get: true},
             //        duo_exam_rows: {get: true},
-            //        grade_exam_rows: {get: true},
-            //        grade_exam_result_rows: {get: true},
+            //        grade_exam_rows: {ete_exams_only: true},
+            //        grade_exam_result_rows: {ete_exams_only: true},
             //        ntermentable_rows: {get: true},
             //        published_rows: {get: true}
             // };
@@ -6670,6 +6670,7 @@ console.log("exam_dict", exam_dict);
 
 //========= get_tblName_from_selectedBtn  ======== // PR2022-02-26
     function get_tblName_from_selectedBtn() {
+        // selected btns in page wolf are: "btn_ep_01", "btn_reex", "btn_results"
         return (["btn_ep_01", "btn_reex"].includes(selected_btn)) ? "grades" :
                    (selected_btn === "btn_ete_exams") ? "ete_exam" :
                    (selected_btn === "btn_duo_exams") ? "duo_exam" :
