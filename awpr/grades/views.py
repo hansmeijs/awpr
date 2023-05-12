@@ -2741,7 +2741,7 @@ class GradeUploadView(View):
                                 sel_lvlbase=sel_level.base if sel_level else None,
                                 sel_examperiod=grade.examperiod,
                                 request=request,
-                                ete_exams_only=ete_exams_only,
+                                ete_exams_only=False,
                                 grade_pk_list=[grade.pk]
                             )
                         else:
