@@ -428,7 +428,7 @@ console.log("user_dicts",user_dicts)
             AddSubmenuButton(el_submenu, loc.Add_user, function() {MUA_Open("addnew")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
         };
         if (permit_dict.permit_crud_sameschool) {
-            AddSubmenuButton(el_submenu, loc.Add_users_from_prev_year, function() {ModConfirmOpen_AddFromPreviousExamyears()}, ["tab_show", "tab_btn_user"]);
+            AddSubmenuButton(el_submenu, loc.Add_users_from_prev_year, function() {ModConfirmOpen_AddFromPreviousExamyears()}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
             AddSubmenuButton(el_submenu, loc.Delete_user, function() {ModConfirmOpen("user","delete")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"]);
             AddSubmenuButton(el_submenu, loc.Upload_usernames, function() {MIMP_Open(loc, "import_username")}, ["tab_show", "tab_btn_user", "tab_btn_usergroup", "tab_btn_allowed"], "id_submenu_import");
 

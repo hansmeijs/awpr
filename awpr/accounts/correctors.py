@@ -170,7 +170,7 @@ class UserCompensationUploadView(View):
                 usercompensation_pk = upload_dict.get('usercompensation_pk')
 
                 updated_rows = []
-                error_list = []
+                msg_list = []
 
                 append_dict = {}
 
@@ -263,15 +263,20 @@ def update_usercompensation_instance(instance, upload_dict, request):
 
             elif field in ('auth1by', 'auth2by'):
                 # field 'auth1by' contains boolaean, replace by requsr.pk when true or None when False
-                if new_value:
-                    new_auth = acc_mod.User.objects.get_or_none(pk=request.user.pk)
-                else:
-                    new_auth = None
-                saved_auth = getattr(instance, field)
+                #only school can approve meetings
+                if request.user.role == c.ROLE_008_SCHOOL:
+                    if new_value:
+                        new_auth = acc_mod.User.objects.get_or_none(pk=request.user.pk)
+                    else:
+                        new_auth = None
+                    saved_auth = getattr(instance, field)
 
-                if new_auth != saved_auth:
-                    setattr(instance, field, new_auth)
-                    save_changes = True
+                    if new_auth != saved_auth:
+                        setattr(instance, field, new_auth)
+                        save_changes = True
+                else:
+                    #TODO write err msg
+                    pass
 
     # - save changes
         if save_changes:
@@ -1410,8 +1415,10 @@ def create_corrector_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_lvlbase
 
 
 def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None):
-    # --- create list of all correctors of this school, or  PR2023-02-19
-    logging_on = False  # s.LOGGING_ON
+    # --- create list of all correctors of this school, or  PR2023-02-19 PR2023-05-13
+    # when a school opens this recordset, only users with uc of the school must be schown
+    # when opened by role corrector: show all users, also without uc
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_usercompensation_rows ============= ')
         logger.debug('    request.user.role: ' + str(request.user.role))
@@ -1420,13 +1427,20 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
     userapproval_rows = []
     if sel_examyear:
         try:
-            usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
+            requsr_usergroup_list = acc_prm.get_usergroup_list_from_user_instance(request.user)
+
+            auth4_in_requsr_usergroups = 'auth4' in requsr_usergroup_list if requsr_usergroup_list else False
+            auth1_or_auth2_in_requsr_usergroups = 'auth1' in requsr_usergroup_list or 'auth2' in requsr_usergroup_list if requsr_usergroup_list else False
+            # when role = school:
+            #  - when uergroup has auth1 or auth2: show all usercompensaations from this school
+            #  - when uergroup has auth4: schow only usercompensaations from this user
+            # when role = corrector:
+            #  - when uergroup has auth1 or auth2: show all usercompensaations from all schools
+            #  - when uergroup has auth4: schow only usercompensaations from this user, from all schools
 
             if logging_on:
-                logger.debug('    usergroup_list ' + str(usergroup_list) + ' ' + str(type(usergroup_list)))
-
-            auth4_in_usergroups = 'auth4' in usergroup_list if usergroup_list else False
-            auth1_or_auth2_in_usergroups = 'auth1' in usergroup_list or 'auth2' in usergroup_list if usergroup_list else False
+                logger.debug('    auth4_in_requsr_usergroups ' + str(auth4_in_requsr_usergroups))
+                logger.debug('    auth1_or_auth2_in_requsr_usergroups: ' + str(auth1_or_auth2_in_requsr_usergroups))
 
             sql_auth = "SELECT u.id, u.last_name FROM accounts_user AS u"
 
@@ -1434,7 +1448,7 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                         "SELECT uc.id, uc.user_id,",
                         "CONCAT('usercomp_', uc.id::TEXT) AS mapid,",
 
-                        "school.abbrev AS uc_school_abbrev, schoolbase.code AS sb_code,",
+                        "uc_school.base_id AS uc_schoolbase_id, uc_school.abbrev AS uc_school_abbrev, uc_schoolbase.code AS sb_code,",
                         "depbase.code AS uc_depbase_code, lvlbase.code AS uc_lvlbase_code,",
                         "exam.version AS exam_version, exam.examperiod AS examperiod,",
 
@@ -1457,8 +1471,8 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                         "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
                         "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
-                        "INNER JOIN schools_school AS school ON (school.id = uc.school_id)",
-                        "INNER JOIN schools_schoolbase AS schoolbase ON (schoolbase.id = school.base_id)",
+                        "INNER JOIN schools_school AS uc_school ON (uc_school.id = uc.school_id)",
+                        "INNER JOIN schools_schoolbase AS uc_schoolbase ON (uc_schoolbase.id = uc_school.base_id)",
 
                         "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
                         "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
@@ -1469,11 +1483,17 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                         "LEFT JOIN auth1 ON (auth1.id = uc.auth1by_id)",
                         "LEFT JOIN auth2 ON (auth2.id = uc.auth2by_id)",
 
-                        ''.join(("WHERE school.examyear_id=", str(sel_examyear.pk), "::INT"))
+                        ''.join(("WHERE uc_school.examyear_id=", str(sel_examyear.pk), "::INT"))
                         ]
+            # only show correctors  of this uc_school when role = school
+            if request.user.role == c.ROLE_008_SCHOOL:
+                sql_sub_list.append(''.join(("AND uc_school.base_id=", str(request.user.schoolbase.pk), "::INT")))
+
             sub_sql = ' '.join(sql_sub_list)
 
-
+            sql_join_uc = "LEFT JOIN" if request.user.role == c.ROLE_008_SCHOOL else "LEFT JOIN"
+            if logging_on:
+                logger.debug('    sql_join_uc ' + str(sql_join_uc))
 
             sql_list = ["WITH uc_sub AS (", sub_sql, ")",
                         "SELECT u.id AS u_id, uc_sub.id AS uc_id,",
@@ -1484,7 +1504,7 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                        # "ual.examyear_id, ual.allowed_sections,",
 
                         "user_sb.code AS user_sb_code,",
-                        "uc_sub.uc_school_abbrev, uc_sub.sb_code, uc_sub.uc_depbase_code, uc_sub.uc_lvlbase_code,",
+                        "uc_sub.uc_schoolbase_id, uc_sub.uc_school_abbrev, uc_sub.sb_code, uc_sub.uc_depbase_code, uc_sub.uc_lvlbase_code,",
                         "uc_sub.exam_version, uc_sub.examperiod,",
                         "uc_sub.subj_name_nl, uc_sub.subjbase_code,",
 
@@ -1498,7 +1518,7 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
                         "INNER JOIN accounts_userallowed AS ual ON (ual.user_id = u.id)",
                         "INNER JOIN schools_schoolbase AS user_sb ON (user_sb.id = u.schoolbase_id)",
 
-                        "LEFT JOIN uc_sub ON (uc_sub.user_id = u.id)",
+                        sql_join_uc, "uc_sub ON (uc_sub.user_id = u.id)",
 
                         "WHERE u.is_active",
                         ''.join(("AND ual.examyear_id=", str(sel_examyear.pk), "::INT")),
@@ -1518,35 +1538,29 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
             #       - req_usr.role = corrector and usergroups countains auth1 or auth2: show usercomp rows of all schools / this req_usr.role = correcor
 
             if request.user.role == c.ROLE_008_SCHOOL:
-                req_usr_schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
-                sql_list.append(''.join(("AND u.schoolbase_id=", str(req_usr_schoolbase_pk), "::INT")))
-
+                # filter is set by inner join on uc_sub and filter uc_school.base_id
+                pass
             elif request.user.role == c.ROLE_016_CORR:
+                # only show correctors with role=correctors (schools can also appoint correcteord, they are not included)
                 sql_list.append(''.join(("AND u.role=", str(c.ROLE_016_CORR), "::INT")))
             else:
                 sql_list.append("AND FALSE")
 
-            if auth4_in_usergroups:
-                sql_list.append(''.join(("AND u.id=", str(request.user.pk), "::INT")))
-            elif not auth1_or_auth2_in_usergroups:
-                sql_list.append("AND FALSE")
+            if not auth1_or_auth2_in_requsr_usergroups:
+                if auth4_in_requsr_usergroups:
+                    sql_list.append(''.join(("AND u.id=", str(request.user.pk), "::INT")))
+                else:
+                    sql_list.append("AND FALSE")
 
-
-            sql = ' '.join(sql_list)
-
-            if logging_on:
-                if sql_list:
-                    for sql_txt in sql_list:
-                        logger.debug(' > ' + str(sql_txt))
-
-            if logging_on:
-                logger.debug('    request.user.roleL ' + str(request.user.role))
-                logger.debug('    auth4_in_usergroups ' + str(auth4_in_usergroups))
-                logger.debug('    auth1_or_auth2_in_usergroups ' + str(auth1_or_auth2_in_usergroups))
+            sql = ' '.join(sql_sub_list)
 
             with connection.cursor() as cursor:
                 cursor.execute(sql)
+
                 userapproval_rows = af.dictfetchall(cursor)
+            if logging_on :
+                for row in userapproval_rows:
+                    logger.debug(' > uc_amount: ' + str(row.get('uc_amount')))
 
         except Exception as e:
             logger.error(getattr(e, 'message', str(e)))
@@ -1605,10 +1619,10 @@ def create_usercomp_agg_rows(sel_examyear, request):
                             "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
 
                             "INNER JOIN schools_department AS dep ON (dep.id = exam.department_id)",
-                            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)"
+                            "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
 
                             "LEFT JOIN subjects_level AS lvl ON (lvl.id = exam.level_id)",
-                            "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)"
+                            "LEFT JOIN subjects_levelbase AS lvlbase ON (lvlbase.id = lvl.base_id)",
 
                             "WHERE school.examyear_id=" + str(sel_examyear.pk) + "::INT",
 
@@ -1676,22 +1690,26 @@ def calc_compensation(approvals_sum, meetings_sum, approvals_sum_correction, mee
 
 
 def update_usercompensation(sel_examyear, request):
-    # --- create list of all correctors,pprovals and return dict with key (eser_pk, exam_pk, school_pk) and count PR2023-02-24
-    logging_on = False  # s.LOGGING_ON
+    # --- create list of all correctors, approvals
+    # and return dict with key (user_pk, exam_pk, school_pk) and count PR2023-02-24 PR2023-05-14
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- update_usercompensation ----- ')
 
     # ++++++++++++++++++++++++++++++++++++++
     def get_approval_count_dict():
         # --- create list of all grades, that are approved by correctors
-        # return dict with key (user_pk, exam_pk, school_pk) and value = count PR2023-02-24
+        # return dict with key (user_id, exam_id, school_id) and value = count PR2023-02-24
+
         # NOTE: grades that are approved by corrector, but have no exam, are NOT included!
         # NOTE: sxm may use exams of ETE, therefore don't filter on examyear of exam,
-        #       this filter is ok: grd.studsubj.stud.school.examyear_id
+        #       filter by examyear_id of grade is ok (correctrs only approve grade of own country): grd.studsubj.stud.school.examyear_id
+        # NOTE: it includes approval of deleted students and subjects
 
         approval_count_dict = {}
         sql_list = [
             "SELECT u.id AS user_id, exam.id AS exam_id, school.id AS school_id, count(*) AS count ",
+
             "FROM students_grade AS grd",
             "INNER JOIN accounts_user AS u ON (u.id = grd.ce_auth4by_id)",
             "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
@@ -1701,15 +1719,20 @@ def update_usercompensation(sel_examyear, request):
             "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
 
             "WHERE school.examyear_id=" + str(sel_examyear.pk) + "::INT",
-            # "AND (POSITION('" + c.USERGROUP_AUTH4_CORR + "' IN ual.usergroups) > 0)",
+            # dont filter on auth4, usergroup may have been removed after approving grade, so dont add:
+            #  "AND (POSITION('" + c.USERGROUP_AUTH4_CORR + "' IN ual.usergroups) > 0)",
 
             # include approval of deleted students and subjects, so dont add:
             #   "AND NOT stud.deleted AND NOT studsubj.deleted AND NOT grd.deleted",
         ]
 
-        if request.user.role < c.ROLE_016_CORR:
-            schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
-            sql_list.append(''.join(('AND u.schoolbase_id=', str(schoolbase_pk), '::INT')))
+        if request.user.role == c.ROLE_008_SCHOOL:
+            requsr_schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
+
+            # PR2023-05-14 debug: filter by u.schoolbase_id is not correct,
+            # instead must filter bij grd.studsubj.stud.school.base_id
+            # was: sql_list.append(''.join(('AND u.schoolbase_id=', str(schoolbase_pk), '::INT')))
+            sql_list.append(''.join(('AND school.base_id=', str(requsr_schoolbase_pk), '::INT')))
 
         sql_list.append("GROUP BY u.id, exam.id, school.id")
 
@@ -1727,14 +1750,15 @@ def update_usercompensation(sel_examyear, request):
     # - end of get_approval_count_dict
 
     def get_usercompensation_dict():
-        # get rows from usercompensation, create dict with key (user_pk, exam_pk, school_pk) and value = tuple (uc.amount, uc.id) PR2023-02-24
+        # get rows from usercompensation,
+        # create dict with key (user_pk, exam_pk, school_pk) and value = tuple (uc.amount, uc.id) PR2023-02-24
 
         # ATTENTION: sxm may use exams of ETE, therefore don't filter on examyear of exam,
         # this filter is ok: school.examyear_id
 
         usercompensation_dict = {}
         sql_list = [
-            "SELECT uc.user_id AS user_id, uc.exam_id AS exam_id, uc.school_id AS school_id,",
+            "SELECT uc.user_id, uc.exam_id, uc.school_id,",
             "uc.id, uc.amount, uc.meetings, uc.correction_amount, uc.correction_meetings",
 
             "FROM accounts_usercompensation AS uc",
@@ -1743,7 +1767,7 @@ def update_usercompensation(sel_examyear, request):
             "WHERE school.examyear_id=" + str(sel_examyear.pk) + "::INT",
         ]
 
-        if request.user.role < c.ROLE_016_CORR:
+        if request.user.role == c.ROLE_008_SCHOOL:
             schoolbase_pk = request.user.schoolbase.pk if request.user.schoolbase.pk else 0
             sql_list.append(''.join(('AND school.base_id=', str(schoolbase_pk), '::INT')))
 
@@ -1762,6 +1786,9 @@ def update_usercompensation(sel_examyear, request):
                     # value is tuple of (uc_id, uc.amount, uc.meetings, uc.correction_amount, uc.correction_meetings)
                     usercompensation_dict[(row[0], row[1], row[2])] = (row[3], row[4], row[5], row[6], row[7])
 
+        if logging_on:
+            logger.debug('    usercompensation_dict: ' + str(usercompensation_dict))
+
         return usercompensation_dict
     # - end of get_usercompensation
 
@@ -1772,7 +1799,7 @@ def update_usercompensation(sel_examyear, request):
         if approval_count_dict:
             for key_tuple, count_int in approval_count_dict.items():
 
-                # check if recrd already exists in usercompensation_dict:
+                # check if record already exists in usercompensation_dict:
                 if usercompensation_dict and key_tuple in usercompensation_dict:
                     # usercompensation_dict value is tuple: (uc_id, uc.amount, uc.meetings, uc.correction_amount, uc.correction_meetings)
 
@@ -1787,6 +1814,10 @@ def update_usercompensation(sel_examyear, request):
                         uc_corr_meetings = uc_item[4]
 
                         # calculate compensation
+
+                        # note: when uc_corr_amount or uc_meetings or uc_corr_meetings changes, the new compensation will be stored.
+                        # so here yoy only have to recalculate when uc_amount changes
+
                         total_amount = count_int + uc_corr_amount
                         total_meetings = uc_meetings + uc_corr_meetings
                         if total_meetings > max_meetings:
@@ -1960,10 +1991,11 @@ def update_usercompensation(sel_examyear, request):
                 # - get dict with approval_count and dict with usercompensations
                 approval_count_dict = get_approval_count_dict()
                 if logging_on:
-                    logger.debug('    len approval_count_dict: ' + str(len(approval_count_dict)))
+                    logger.debug('    approval_count_dict: ' + str(approval_count_dict))
+
                 usercompensation_dict = get_usercompensation_dict()
                 if logging_on:
-                    logger.debug('    len usercompensation_dict: ' + str(len(usercompensation_dict)))
+                    logger.debug('    usercompensation_dict: ' + str(usercompensation_dict))
 
                 tobe_updated_list, tobe_added_list = create_tobe_lists()
 

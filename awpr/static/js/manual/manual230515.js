@@ -42,8 +42,7 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
 
 })  // document.addEventListener('DOMContentLoaded', function()
 
-
-//========= LoadPage  ============= PR2021-07-30 PR2021-10-30 PR2023-01-27
+//========= LoadPage  ============= PR2021-07-30 PR2021-10-30 PR2023-01-27 PR2023-05-13
     function LoadPage(page, paragraph_id){
         console.log( "===== LoadPage  ========= ");
         console.log( "    page", page);
@@ -57,18 +56,20 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
         console.log( "is_en", is_en);
         const html_dict = (page === "home") ? man_home :
                         (page === "user") ? man_user :
+                        (page === "corrector") ? man_corrector :
                         (page === "upload") ? man_upload :
                         (page === "student") ? man_student :
                         (page === "studsubj") ? man_studsubj :
                         (page === "cluster") ? man_cluster :
                         (page === "exemption") ? man_exemption :
-                        (page === "exams") ? man_exams :
+                        (page === "wolf") ? man_wolf :
                         (page === "approve") ? man_approve :
                         (page === "mailbox") ? man_mailbox : null;
         console.log( "html_dict", html_dict);
 
         const html_list = (html_dict) ? (user_lang === 'en' && html_dict.en) ?  html_dict.en :  html_dict.nl : null;
-        //console.log( "html_list", html_list);
+
+    console.log( "html_list", html_list);
 
         const html_str = (html_list && html_list.length) ? html_list.join('') : (is_en) ? "<h4 class='p-5'> This page is not available yet.</h4>" : "<h4 class='p-5'> Deze pagina is nog niet beschikbaar.</h4>";
 
@@ -156,6 +157,10 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
             ["id_user_examiners", "Examinatoren en gecommitteerden"],
             ]),
 
+        //get_dropdown_button("corrector", "id_intro", "Gecommitteerden", [
+        //    ["id_corr_account", "Gebruikersaccount"],
+        //    ]),
+
         get_dropdown_button("upload", "id_intro", "Gegevens uploaden", [
              ["id_upload_step01", "Selecteer een Excel bestand"],
              ["id_upload_step02a", "Selecteer het soort examencijfer"],
@@ -185,7 +190,7 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
             ["id_cluster_student", "Kandidaten toevoegen of verwijderen"]
             ]),
 
-        get_dropdown_button("exemption", "id_intro_exemption", "Vrijstellingen", [
+        get_dropdown_button("exemption", "id_intro", "Vrijstellingen", [
             ["id_exem_lookup", "Vrijstellingen opzoeken"],
             ["id_exem_enter", "Vrijstellingen invoeren"],
             ["id_exem_upload", "Vrijstelling cijfers uploaden"],
@@ -193,7 +198,7 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
             ["id_exem_exemption_year", "Jaar van de vrijstelling"]
             ]),
 
-        get_dropdown_button("exams", "id_intro_exams", "Examens (voormalige WOLF programma)", [
+        get_dropdown_button("wolf", "id_intro", "Wolf", [
             ["id_link_exams", "Examen koppelen aan een vak"],
             ["id_enter_exams", "Antwoorden invoeren"],
             ["id_download_exams", "Overzicht antwoorden downloaden"],
@@ -240,6 +245,10 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
              ["id_user_examiners", "Examiners en correctors"],
              ]),
 
+        //get_dropdown_button("corrector", "id_intro", "Second correctors", [
+        //    ["id_corr_account", "User account"],
+        //    ]),
+
         get_dropdown_button("upload", "id_intro", "Upload data", [
              ["id_upload_step01", "Select an Excel file"],
              ["id_upload_step02a", "Select type of exam grade"],
@@ -269,7 +278,7 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
             ["id_cluster_student", "Kandidaten toevoegen of verwijderen"]
             ]),
 
-        get_dropdown_button("exemption", "id_intro_exemption", "Exemptions", [
+        get_dropdown_button("exemption", "id_intro", "Exemptions", [
             ["id_exem_lookup", "Look up exemptions"],
             ["id_exem_enter", "Enter exemptions"],
             ["id_exem_upload", "Upload exemption grades"],
@@ -277,7 +286,7 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
             ["id_exem_exemption_year", "Year of the exemption"]
             ]),
 
-        get_dropdown_button("exams", "id_intro_exams", "Exams (former WOLF program)", [
+        get_dropdown_button("wolf", "id_intro", "Wolf)", [
              ["id_link_exams", "Link exam to a subject"],
              ["id_enter_exams", "Enter answers"],
              ["id_download_exams", "Download overview answers"],

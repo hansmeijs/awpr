@@ -6,7 +6,7 @@ const man_exemption = {
 
 /////////  NEDERLANDS //////////////////////////////
     nl: [
-        write_paragraph_header("id_intro_exemption", "Vrijstellingen"),
+        write_paragraph_header("id_intro", "Vrijstellingen"),
         write_paragraph_body("",
         ["<p class='pb-0'>Vrijstellingen kunnen voortaan op drie manieren worden ingevoerd in AWP:</p>",
             "<ul class='manual_bullet'><li>Laat AWP de vrijstellingen van vorige examenjaren opzoeken;</li> ",
@@ -194,7 +194,7 @@ const man_exemption = {
 
 /////////  ENGLISH //////////////////////////////
 en:  [
-        write_paragraph_header("id_intro_exemption", "Exemptions"),
+        write_paragraph_header("id_intro", "Exemptions"),
          write_paragraph_body("",
          ["<p class='pb-0'>Exemptions can now be entered in three ways in AWP:</p>",
              "<ul class='manual_bullet'><li>Let AWP look up the exemptions of previous exam years;</li> ",

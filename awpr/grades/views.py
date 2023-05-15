@@ -1720,13 +1720,13 @@ def create_ex2_ex2a_msg_html(sel_department, sel_level, sel_examtype, count_dict
                 level_txt = ''.join((
                     gettext('The selection contains only candidates of the learning path: %(lvl_abbrev)s.') % {'lvl_abbrev': abbrev},
                     '<br>',
-                    gettext("Select 'All learning paths' in the vertical grey bar on the left to submit all learning paths.")
+                    gettext("Select 'All learning paths' in the vertical gray bar on the left to submit all learning paths.")
                 ))
             else:
                 level_txt = ''.join((
                         '<b>', gettext('ATTENTION'), '</b>: ',
                         gettext('The selection contains the candidates of all learning paths.'), '<br>',
-                        gettext('Select a learning path in the vertical grey bar on the left to submit one learning path.')
+                        gettext('Select a learning path in the vertical gray bar on the left to submit one learning path.')
                 ))
             msg_list.append(''.join(("<p class='pb-2'>", level_txt, '</p>')))
 

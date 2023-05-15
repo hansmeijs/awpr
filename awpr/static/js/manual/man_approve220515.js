@@ -86,7 +86,7 @@ const man_approve = {
                         "</div>",
                         "<div class='mfc'>",
                             "<div class='mfl'><p class='diamond_2_0'></p></div>",
-                            "<div class='mfr'>Dit cijfer is goedgekeurd door de gecommiteerde.</div>",
+                            "<div class='mfr'>Dit cijfer is goedgekeurd door de gecommitteerde.</div>",
                         "</div>",
                         "<div class='mfc'>",
                             "<div class='mfl'><p class='diamond_3_3'></p></div>",

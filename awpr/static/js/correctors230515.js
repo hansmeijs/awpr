@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
         subj_name_nl:  "Subject", exam_version: "Version",
         uc_amount: "Number_approvals", uc_meetings: "Number_meetings"
     };
-    mod_MCOL_dict.columns.btn_approval = {sb_code: "School_code", uc_school_abbrev: "School"};
-    mod_MCOL_dict.columns.btn_compensation = { compensation: "Compensation"};
+    mod_MCOL_dict.columns.btn_usercompensation = {sb_code: "School_code", uc_school_abbrev: "School"};
+    mod_MCOL_dict.columns.btn_usercomp_agg = { compensation: "Compensation"};
 
 
 // --- get field_settings
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     field_width:  ["032", "180", "180", "180", "180", "180"],
                     field_align: ["c", "l", "l", "l", "l",  "l", "l", "l"]};
 
-    field_settings.btn_approval = {
+    field_settings.btn_usercompensation = {
                     field_caption: ["", "Organization_twolines", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
                                     "School_code", "School", "Number_approvals_2lines",  "Number_meetings_2lines",  "",
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     "c", "c", "c", "l",  "l", "c",
                                     "l", "l", "c",  "c", "c", "c", "c", "c"]};
 
-    field_settings.btn_compensation = {
+    field_settings.btn_usercomp_agg = {
                     field_caption: ["", "Organization_twolines", "Name",
                                     "Department", "Learning_path", "Subjectcode_2lines", "Subject", "Version", "Exam_period",
                                     "Number_approvals_2lines",  "Number_meetings_2lines", "Compensation_2lines"],
@@ -403,18 +403,20 @@ document.addEventListener('DOMContentLoaded', function() {
 //=========  HandleBtnSelect  ================ PR2020-09-19 PR2021-08-01
     function HandleBtnSelect(data_btn, skip_upload) {
         console.log( "===== HandleBtnSelect ========= ");
-        console.log( "skip_upload", skip_upload);
+        console.log( "    data_btn", data_btn);
+        console.log( "    skip_upload", skip_upload);
 
 // ---  get  selected_btn
-        // set to default "btn_approval" when there is no selected_btn
+        // set to default "btn_usercompensation" when there is no selected_btn
         // this happens when user visits page for the first time
         // includes is to catch saved btn names that are no longer in use
-        if (data_btn && ["btn_correctors", "btn_approval", "btn_compensation"].includes(data_btn)){
+        if (data_btn && ["btn_correctors", "btn_usercompensation", "btn_usercomp_agg"].includes(data_btn)){
             selected_btn = data_btn;
-        } else if (!selected_btn) {
-            selected_btn = (permit_dict.requsr_same_school) ? "btn_correctors" : "btn_approval";
+        } else if (!["btn_correctors", "btn_usercompensation", "btn_usercomp_agg"].includes(data_btn)) {
+            selected_btn = (permit_dict.requsr_same_school) ? "btn_correctors" : "btn_usercompensation";
         };
 
+        console.log( "    selected_btn", selected_btn);
 // ---  upload new selected_btn, not after loading page (then skip_upload = true)
         if(!skip_upload){
             const upload_dict = {page_corrector: {sel_btn: selected_btn}};
@@ -577,8 +579,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-02-26
     function CreateTblRow(tblName, field_setting, data_dict, col_hidden) {
-        console.log("=========  CreateTblRow =========", tblName);
-        console.log("    data_dict", data_dict);
+        //console.log("=========  CreateTblRow =========", tblName);
+        //console.log("    data_dict", data_dict);
 
         const field_names = field_setting.field_names;
         const field_tags = field_setting.field_tags;
@@ -684,10 +686,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             add_hover(td);
                         };
                     };
-
 // --- put value in field
                 UpdateField(el, data_dict)
-
             };
         };
         return tblRow;
@@ -821,15 +821,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 //========= get_tblName_from_selectedBtn  ======== // PR2023-02-26
     function get_tblName_from_selectedBtn() {
-        return (selected_btn === "btn_approval") ? "userapproval" :
-                        (selected_btn === "btn_compensation") ? "usercompensation" : null;
+        return (selected_btn === "btn_usercompensation") ? "userapproval" :
+                        (selected_btn === "btn_usercomp_agg") ? "usercompensation" : null;
     }  // get_tblName_from_selectedBtn
 
 //========= get_datadicts_from_selectedBtn  ======== // PR2023-02-26
     function get_datadicts_from_selectedBtn() {
         return (selected_btn === "btn_correctors") ? corrector_dicts :
-                (selected_btn === "btn_approval") ? usercompensation_dicts :
-                (selected_btn === "btn_compensation") ? usercomp_agg_dicts : null;
+                (selected_btn === "btn_usercompensation") ? usercompensation_dicts :
+                (selected_btn === "btn_usercomp_agg") ? usercomp_agg_dicts : null;
     } // get_datadicts_from_selectedBtn
 
 //========= get_column_is_hidden  ====== PR2023-02-26
@@ -1134,7 +1134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("    pk_int", pk_int)
         console.log("    map_id", map_id)
 
-        if (selected_btn === "btn_compensation"){
+        if (selected_btn === "btn_usercomp_agg"){
             // reset el_input.value to saved value
             const data_dict = usercomp_agg_dicts[map_id];
             el_input.value = (data_dict && data_dict.uc_meetings) ? data_dict.uc_meetings : null

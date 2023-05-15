@@ -57,7 +57,7 @@ const man_user = {
             "Vul de gebruikersnaam, volledige naam van de gebruiker en het e-mail adres in.</p>",
             "<p>De gebruikersnaam wordt gebruikt om in te loggen. De volledige naam wordt gebruikt in officiële documenten zoals het diploma, cijferlijst en Ex-formulieren. ",
             " De gebruikersnaam, volledige naam en e-mail-adres moeten uniek zijn binnen de organisatie. ",
-             "Dezelfde gebruikersnaam en e-mail adres mogen wel gebruikt worden bij een andere organisatie, bijvoorbeeld wanneer een gebruiker tevens gecommiteerde is bij een andere school.</p>",
+             "Dezelfde gebruikersnaam en e-mail adres mogen wel gebruikt worden bij een andere organisatie, bijvoorbeeld wanneer een gebruiker tevens gecommitteerde is bij een andere school.</p>",
 
             "<p><b>Gebruikersnamen uploaden</b><br>Klik in de menubalk op <i>Gebruikersnamen uploaden</i>. Het venster <i>Gebruikersnamen uploaden</i> verschijnt. ",
             "Klik <a href='#' class='awp_href' onclick='LoadPage(&#39upload&#39)'>hier</a> om naar de handleiding hiervan te gaan.<br>",
@@ -84,6 +84,17 @@ const man_user = {
 
              "<p><b>Niet-actieve gebruikersaccounts tonen</b><br>Klik in de kolom <i>Niet actief</i> op het icoontje met het oog onder 'Niet actief'. Nu worden alleen de niet-actieve accounts weergegeven. ",
              "Nog een keer klikken en alle accounts worden weergegeven. Nog een keer klikken en alleen de actieve accounts worden weergegeven.</p>",
+
+             "<p><b>Gebruikersaccounts van vorige jaren kopiëren naar dit jaar</b><br>",
+             "De accounts van gebruikers die vorig jaar alleen de functie Gecommitteerde hadden, zijn niet automatisch gekopieerd naar dit examenjaar. ",
+             "Je kunt deze gebruikers alsnog toevoegen aan dit examenjaar. Dat gaat als volgt:</p>",
+
+             "<ul><li>Klik in de verticale grijze balk links op de knop <i>Gebruikers van alle examenjaren weergeven</i>. ",
+             "De gebruikers van vorige jaren worden nu weergegeven met een dubbele rode streep door de naam.</li>",
+             "<li>Selecteer een of meerdere gebruikers door op het lege veld voor de gebruikersnaam te klikken.</li>",
+             "<li>Klik in de menubalk op de knop <i>Gebruikers van vorige examenjaren toevoegen</i>.</li>",
+             "<li>Klik op <i>OK</i> in het venster dat verschijnt.</li></ul>",
+             "<p>De geselecteerde gebruikers worden nu toegevoegd aan dit examenjaar.</p>"
         ]),
 
         write_paragraph_header("id_user_usergroups", "Gebruikersgroepen"),
@@ -218,7 +229,7 @@ const man_user = {
             "<li>Als de examinator ook cijfers invoert zet je ook een vinkje in de kolom <i>Wijzigen</i>.</li></ul>",
 
             "<p class='mb-0 pb-0'><b>Stap 3: Toegestane secties instellen</b><br>",
-            "De examinator en gecommiteerden kunnen nu alle vakken van alle kandidaten goedkeuren. ",
+            "De examinator en gecommitteerden kunnen nu alle vakken van alle kandidaten goedkeuren. ",
             "Dat is niet altijd gewenst. ",
             "In de tab <i>Toegestane secties</i> kun je als volgt beperkingen instellen welke vakken hij/zij kan goedkeuren:",
             "<ul class='manual_bullet'><li>Klik in de horizontale zwarte balk op de tab <i>Toegestane secties</i></li>",
@@ -340,8 +351,19 @@ const man_user = {
               "The icon now turns black. The user can no longer log in. ",
               "Click on the black icon to make a user active again.</p>",
 
-             "<p><b>Show inactive user accounts</b><br>In the <i>Inactive</i> column, click on the icon with the eye under 'Inactive'. Now only the inactive active accounts are shown. ",
+              "<p><b>Show inactive user accounts</b><br>In the <i>Inactive</i> column, click on the icon with the eye under 'Inactive'. Now only the inactive active accounts are shown. ",
              "Click again and all accounts will be displayed. Click again and only the active accounts will be displayed.</p>",
+
+              "<p><b>Copy user accounts from previous years to this year</b><br>",
+              "The accounts of users, who had only the Second Corrector position last year, were not automatically copied to this exam year. ",
+              "You can still add these users to this exam year. You can do this as follows:</p>",
+             "<ul><li>Click the button <i>Show users from all exam years</i> in the vertical gray bar on the left. ",
+              "The users from previous years are now shown with a double red line through the name.</li>",
+              "<li>Select one or more users by clicking on the empty field in front of the username.</li>",
+              "<li>Click the <i>Add users from previous exam years</i> in the menu bar.</li>",
+              "<li>Click <i>OK</i> in the window that appears.</li></ul>",
+              "<p>The selected users will now be added to this exam year.</p>"
+
         ]),
         write_paragraph_header("id_user_usergroups", "Usergroups"),
         write_paragraph_body("",[

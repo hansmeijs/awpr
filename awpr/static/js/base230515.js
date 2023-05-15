@@ -1976,12 +1976,13 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         const page = setting_dict.sel_page;
         const html_dict = (page === "home") ? man_home :
                         (page === "user") ? man_user :
+                        (page === "corrector") ? man_corrector :
                         (page === "upload") ? man_upload :
                         (page === "student") ? man_student :
                         (page === "studsubj") ? man_studsubj :
                         (page === "cluster") ? man_cluster :
                         (page === "exemption") ? man_exemption :
-                        (page === "exams") ? man_exams :
+                        (page === "wolf") ? man_wolf :
                         (page === "approve") ? man_approve :
                         (page === "mailbox") ? man_mailbox : man_home;
         console.log( "    html_dict", html_dict);

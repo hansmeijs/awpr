@@ -3745,13 +3745,13 @@ class StudentsubjectApproveOrSubmitEx1Ex4View(View):  # PR2021-07-26 PR2022-05-3
                         'lvl_abbrev': abbrev},
                     '<br>',
                     gettext(
-                        "Select 'All learning paths' in the vertical grey bar on the left to submit all learning paths.")
+                        "Select 'All learning paths' in the vertical gray bar on the left to submit all learning paths.")
                 ))
             else:
                 level_txt = ''.join((
                     '<b>', gettext('ATTENTION'), '</b>: ',
                     gettext('The selection contains the candidates of all learning paths.'), '<br>',
-                    gettext('Select a learning path in the vertical grey bar on the left to submit one learning path.')
+                    gettext('Select a learning path in the vertical gray bar on the left to submit one learning path.')
                 ))
             msg_list.append(''.join(("<p class='pb-2'>", level_txt, '</p>')))
 

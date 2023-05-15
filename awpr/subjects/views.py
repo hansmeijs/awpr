@@ -4462,7 +4462,7 @@ def link_exam_to_grades(exam_instance, requsr_examyear_pk, requsr_depbase_pk, ex
                                         depbase_code=row[5], # row[5] = depbase.code,
                                         lvl_abbrev=(row[7] if row[7] else '-'), # row[7] = lvlbase.code
                                         examperiod=examperiod,
-                                        examyear=exam_instance.examyear,
+                                        examyear=exam_instance.subject.examyear,
                                         version=row[8], # row[8] = exam.version,
                                         ntb_omschrijving=row[9] # row[9] = ntb.omschrijving"
                                     )

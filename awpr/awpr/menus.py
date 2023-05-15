@@ -121,7 +121,7 @@ def get_headerbar_param(request, sel_page, param=None, display_requsrschool=Fals
     headerbar_param = {}
     _class_bg_color = 'awp_bg_blue'
     _class_has_mail = 'envelope_0_0'
-    no_access = False
+
     req_usr = request.user
     if req_usr.is_authenticated and req_usr.country and req_usr.schoolbase:
 
@@ -490,7 +490,7 @@ def get_saved_page_url(sel_page, request):  # PR2018-12-25 PR2020-10-22  PR2020-
 def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
     # function is called by get_headerbar_param, creates template tags menu_buttons and submenus
     # setting: {'menu': 'mn_schl', 'mn_schl': 'schllst'}
-    logging_on = False  # s.LOGGING_ON
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug('===== set_menu_buttons ===== ')
         logger.debug('    sel_page: ' + str(sel_page))
@@ -505,6 +505,7 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
             show_btn = False
             if request.user.role == c.ROLE_016_CORR or request.user.role == c.ROLE_064_ADMIN:
                 show_btn = True
+
             elif request.user.role == c.ROLE_008_SCHOOL:
                 if 'auth1' in usergroup_list or 'auth2' in usergroup_list or 'auth4' in usergroup_list:
                     show_btn = True
@@ -551,6 +552,16 @@ def set_menu_buttons(sel_page, _class_bg_color, usergroup_list, request):
             caption = menu_item.get('caption', '-')
             if logging_on:
                 logger.debug('caption: ' + str(caption))
+
+            # PR2023-06-15 diplay 'Compensation'  when corrector role opens page
+            if key_str == 'page_corrector':
+                caption = _('Second correctors')  if request.user.role == c.ROLE_008_SCHOOL else _('Compensation')
+
+            if logging_on:
+                logger.debug('    key_str: ' + str(key_str))
+                logger.debug('    menu_item: ' + str(menu_item))
+                logger.debug('    caption: ' + str(caption))
+                logger.debug('    caption: ' + str(caption))
 
             h_ref_reverse = ''
             if menu_href:
@@ -646,7 +657,7 @@ def get_svg_arrow(width, height, indent_left, indent_right):
     return points
 
 
-def get_menu_keys_from_GET(request):
+def get_menu_keys_from_GET_NIU(request):
     # get selected menu_key and selected_button_key from request.GET  # PR2018-12-25 PR2020-10-05
     # look for 'page_' in key 'setting'
     # setting: {page_examyear: {mode: "get"}, },

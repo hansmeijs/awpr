@@ -367,7 +367,7 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Calc_compensation'] = _('Calculate compensation')
 
         dict['There_are_no_users_of_prev_ey'] = _('There are no users of previous exam years selected.')
-        dict['Click_show_all_users'] = _("Click 'Show users of all exam years' in the vertical grey bar on the left ")
+        dict['Click_show_all_users'] = _("Click 'Show users from all exam years' in the vertical gray bar on the left ")
         dict['to_show_users_of_prev_years'] = _("to show the users of previous exam years.")
         dict['There_is_1_user_selected'] = _('There is 1 user of previous exam years selected.')
         dict['There_are'] = _('There are ')
@@ -1042,9 +1042,9 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['willbe_added_to_Ex1form'] = _(' will be added to the %(cpt)s form.') % {'cpt': 'Ex1'}
         dict['willbe_added_to_Ex4form'] = _(' will be added to the %(cpt)s form.') % {'cpt': 'Ex4'}
 
-        dict['Select_all_learningpaths'] = _("Select 'All learning paths' in the vertical grey bar on the left to include all learning paths.")
+        dict['Select_all_learningpaths'] = _("Select 'All learning paths' in the vertical gray bar on the left to include all learning paths.")
 
-        dict['Select_a_learningpath'] = _('Select a learning path in the vertical grey bar on the left to include one learning path.')
+        dict['Select_a_learningpath'] = _('Select a learning path in the vertical gray bar on the left to include one learning path.')
 
 
         dict['MASS_info'] = {
@@ -1109,8 +1109,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['No_examperiods_found'] = TXT_No_examperiods_found
         dict['No_learningpaths_found'] = _("No learning paths found")
 
-        dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical grey bar at the left.')
-        dict['Please_select_level_sbr'] = _('Please select a learning path in the vertical grey bar at the left.')
+        dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical gray bar at the left.')
+        dict['Please_select_level_sbr'] = _('Please select a learning path in the vertical gray bar at the left.')
 
         dict['no_CVTE_exams'] = _("There are no %(cpt)s exams") % {'cpt': _('CVTE')}
         dict['no_ETE_exams'] = _("There are no %(cpt)s exams") % {'cpt': _('ETE')}
@@ -1379,8 +1379,8 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['from_available_list'] = _('from the list of available subjects.')
 
         #dict['Please_select_examperiod'] = _('Please select the first, second or third exam period in the horizontal black bar.')
-        dict['Please_select_examperiod_first'] = _('Please select an exam period in the vertical grey bar at the left first.')
-        dict['Please_select_examperiod'] = _('Please select one exam period in the vertical grey bar at the left.')
+        dict['Please_select_examperiod_first'] = _('Please select an exam period in the vertical gray bar at the left first.')
+        dict['Please_select_examperiod'] = _('Please select one exam period in the vertical gray bar at the left.')
 
         dict['This_subject_ismarked_fordeletion'] = _('This subject is marked for deletion.')
         dict['You_cannot_make_changes'] = _('You cannot make changes.')
@@ -1878,7 +1878,7 @@ def get_locale_dict(table_dict, user_lang, request):
 # ====== PAGE ORDERLIST =========================
     if 'page_orderlist' in page_list:
 
-        dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical grey bar at the left.')
+        dict['Please_select_examperiod_sbr'] = _('Please select an exam period in the vertical gray bar at the left.')
         dict['options_examperiod_exam'] = c.EXAMPERIOD_OPTIONS_123ONLY
 
         dict['School_code'] = TXT_School_code

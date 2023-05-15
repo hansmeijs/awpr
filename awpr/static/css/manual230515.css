@@ -511,7 +511,7 @@
 
 .img_exclamationsign {
     background-position: -120px -40px;
-    background-image: url('/static/img/notes230124.png');
+    background-image: url('/static/img/notes230403.png');
     background-size: 360px 120px;
 
     background-repeat: no-repeat;
@@ -751,3 +751,22 @@
     width: 790px; height: 540px; background-size: 790px 540px;}
 .img_exams_result_ne {background-image: url('/static/manual/exams_result_ne.png');}
 .img_exams_result_en {background-image: url('/static/manual/exams_result_en.png');}
+
+/* ---------------------------------------------------
+    IMAGES - CORRECTOR PAGE
+----------------------------------------------------- */
+
+.img_user_email_activate_ne, .img_user_email_activate_en {
+    width: 672px; height: 384px; background-size: 672px 384px;}
+.img_user_email_activate_ne {background-image: url('/static/manual/user_email_activate_ne.png');}
+.img_user_email_activate_en {background-image: url('/static/manual/user_email_activate_en.png');}
+
+.img_user_activate_account_ne, .img_user_activate_account_en {
+    width: 710px; height: 536px; background-size: 710px 536px;}
+.img_user_activate_account_ne {background-image: url('/static/manual/user_activate_account_ne.png');}
+.img_user_activate_account_en {background-image: url('/static/manual/user_activate_account_en.png');}
+
+.img_user_activate_succes_ne, .img_user_activate_succes_en {
+    width: 710px; height: 287px; background-size: 710px 287px;}
+.img_user_activate_succes_ne {background-image: url('/static/manual/user_activate_succes_ne.png');}
+.img_user_activate_succes_en {background-image: url('/static/manual/user_activate_succes_en.png');}

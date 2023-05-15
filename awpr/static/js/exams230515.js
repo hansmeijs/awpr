@@ -726,17 +726,17 @@ document.addEventListener("DOMContentLoaded", function() {
             AddSubmenuButton(el_submenu, loc.Link_exam_to_grades, function() {ModConfirm_link_exam_to_grades_Open()}, ["tab_show", "tab_btn_ete_exams", "tab_btn_duo_exams"]);
          }
         if (permit_dict.requsr_role_admin){
-            if (permit_dict.permit_approve_exam ){
+            if (permit_dict.permit_approve_exam && permit_dict.requsr_country_is_cur){
                 AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_admin")}, ["tab_show", "tab_btn_ete_exams"]);
             };
-            if (permit_dict.permit_publish_exam ){
+            if (permit_dict.permit_publish_exam && permit_dict.requsr_country_is_cur){
                 AddSubmenuButton(el_submenu, loc.Publish_exams, function() {MASE_Open("submit_admin")}, ["tab_show", "tab_btn_ete_exams"]);
                 AddSubmenuButton(el_submenu, loc.Undo_published, function() {ModConfirmOpen("ete_exam", "undo_published")}, ["tab_show", "tab_btn_ete_exams"]);
             };
-        } else if (permit_dict.requsr_role_school){
-            if (permit_dict.permit_approve_exam ){
-                AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
-            };
+       // } else if (permit_dict.requsr_role_school){
+       //     if (permit_dict.permit_approve_exam ){
+       //         AddSubmenuButton(el_submenu, loc.Approve_exams, function() {MASE_Open("approve_school")}, ["tab_showXX", "tab_btn_ete_exams"]);
+       //     };
         };
 
         if(permit_dict.permit_crud && permit_dict.requsr_role_admin){

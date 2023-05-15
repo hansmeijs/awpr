@@ -5344,10 +5344,6 @@ document.addEventListener("DOMContentLoaded", function() {
                                     (setting_dict.sel_examperiod === 2) ? loc.Re_examination :
                                     (setting_dict.sel_examperiod === 3) ? loc.Re_examination_3rd_period : null;
 
-    console.log("is_approve_mode", is_approve_mode) ;
-    console.log("is_submit_mode", is_submit_mode) ;
-    console.log("permit_dict.usergroup_list", permit_dict.usergroup_list) ;
-
 // get list of auth_index of requsr
             const requsr_auth_list = [];
             if (permit_dict.usergroup_list.includes("auth1")){requsr_auth_list.push(1)};
@@ -5357,7 +5353,6 @@ document.addEventListener("DOMContentLoaded", function() {
             if (is_approve_mode){
                 if (permit_dict.usergroup_list.includes("auth3")){requsr_auth_list.push(3)};
             };
-            console.log("requsr_auth_list", requsr_auth_list) ;
 
 // get selected auth_index (user can be pres / secr and examiner at the same time)
             if (requsr_auth_list.length) {
@@ -5498,10 +5493,6 @@ document.addEventListener("DOMContentLoaded", function() {
             mod_MASE_dict.is_reset = (save_mode === "delete");
 
             mod_MASE_dict.step += 1;
-
-    console.log("mod_MASE_dict.is_approve_mode", mod_MASE_dict.is_approve_mode) ;
-    console.log("mod_MASE_dict.is_submit_mode", mod_MASE_dict.is_submit_mode) ;
-    console.log("mod_MASE_dict.step", mod_MASE_dict.step) ;
 
             //  upload_dict.modes are: 'approve_test', 'approve_save', 'approve_reset', 'submit_test', 'submit_save'
             let url_str = urls.url_approve_submit_wolf;
