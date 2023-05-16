@@ -497,7 +497,7 @@
         //console.log( " ==== f_get_status_auth123_iconclass ====");
         //console.log("publ", publ, "blocked", blocked, "auth1", auth1, "auth2", auth2, "auth3", auth3);
 
-        // auth1, auth2, auth3 must approve school exam
+        // auth1, auth2, auth3 must approve school grades and wolf exam
 
         const prefix = (blocked) ? "blocked_" : "diamond_";
         let img_class = prefix + icon_auth_0; // empty diamond

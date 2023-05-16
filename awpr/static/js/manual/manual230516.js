@@ -286,7 +286,7 @@ console.log("+++++++ script 'manual' after DOMContentLoaded")
             ["id_exem_exemption_year", "Year of the exemption"]
             ]),
 
-        get_dropdown_button("wolf", "id_intro", "Wolf)", [
+        get_dropdown_button("wolf", "id_intro", "Wolf", [
              ["id_link_exams", "Link exam to a subject"],
              ["id_enter_exams", "Enter answers"],
              ["id_download_exams", "Download overview answers"],

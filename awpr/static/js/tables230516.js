@@ -3078,6 +3078,8 @@ const mod_MCOL_dict = {
         setting_dict.sel_student_name = null;
         setting_dict.sel_student_name_init = null;
 
+        setting_dict.sel_exam_pk = null;
+
         //const el_SBR_select_department = document.getElementById("id_SBR_select_department");
         const el_SBR_select_level = document.getElementById("id_SBR_select_level");
         const el_SBR_select_sector = document.getElementById("id_SBR_select_sector");

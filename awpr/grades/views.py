@@ -2084,15 +2084,15 @@ def create_published_instance(sel_examyear, sel_school, sel_department, sel_leve
 
 
 def get_score_text(count):
-    return str(_('no scores')) if not count else str(_('1 score')) if count == 1 else str(count) + str(_(' scores'))
+    return str(_('no scores')) if not count else str(_('1 score')) if count == 1 else ' '.join((str(count), gettext('scores')))
 
 
 def get_grade_text(count):
-    return str(_('no grades')) if not count else str(_('1 grade')) if count == 1 else str(count) + str(_(' grades'))
+    return str(_('no grades')) if not count else str(_('1 grade')) if count == 1 else ' '.join((str(count), gettext('grades')))
 
 
 def get_grades_are_text(count):
-    return str(_('no grades are')) if not count else str(_('1 grade is')) if count == 1 else str(count) + str(_(' grades are'))
+    return str(_('no grades are')) if not count else str(_('1 grade is')) if count == 1 else ' '.join((str(count), gettext('grades are')))
 
 
 def get_subjects_are_text(examperiod, count):
@@ -2583,8 +2583,8 @@ class GradeUploadView(View):
             has_permit = 'permit_crud' in permit_list
 
             if logging_on:
-                logger.debug('permit_list: ' + str(permit_list))
-                logger.debug('has_permit: ' + str(has_permit))
+                logger.debug('    permit_list: ' + str(permit_list))
+                logger.debug('    has_permit: ' + str(has_permit))
 
         if not has_permit:
             msg_list.append(str(_("You don't have permission to perform this action.")))
@@ -2597,7 +2597,7 @@ class GradeUploadView(View):
             if upload_json:
                 upload_dict = json.loads(upload_json)
                 if logging_on:
-                    logger.debug('upload_dict: ' + str(upload_dict))
+                    logger.debug('    upload_dict: ' + str(upload_dict))
                 """
                 upload_dict: {'mode': 'update', 'mapid': 'grade_22958', 'examperiod': 1, 
                 'grade_pk': 22958, 'student_pk': 3935, 'studsubj_pk': 21706, 'examgradetype': 'segrade', 'segrade': '44'}
@@ -2762,7 +2762,7 @@ class GradeUploadView(View):
                                 sel_examyear=sel_examyear,
                                 sel_schoolbase=sel_school.base,
                                 sel_depbase=sel_department.base if sel_department else None,
-                                sel_lvlbase=None,
+                                sel_lvlbase=sel_level.base if sel_level else None,
                                 sel_examperiod=grade.examperiod,
                                 request=request,
                                 append_dict=append_dict,
@@ -2780,6 +2780,10 @@ class GradeUploadView(View):
 
                         if grade_rows:
                             update_wrap['updated_grade_rows'] = grade_rows
+
+        if logging_on:
+            logger.debug('    msg_list: ' + str(msg_list))
+
         if msg_list:
             #msg_html = '<br>'.join(msg_list)
             #update_wrap['msg_html'] = msg_html
@@ -2801,7 +2805,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- update_grade_instance -------')
-        logger.debug('upload_dict: ' + str(upload_dict))
+        logger.debug('    upload_dict: ' + str(upload_dict))
 
     """
     upload_dict: {'mode': 'update', 'mapid': 'grade_67275', 'examperiod': 1, 
@@ -2826,6 +2830,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
             validated_value, err_lst = grad_val.validate_grade_input_value(grade_instance, field, new_value, sel_examyear, si_dict)
             if logging_on:
                 logger.debug('    validated_value: ' + str(validated_value) + ' ' + str(type(validated_value)))
+                logger.debug('    err_lst: ' + str(err_lst))
 
             if err_lst:
                 err_list.extend(err_lst)
@@ -2861,7 +2866,7 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
     # ----- save changes in field 'exam'
         elif field == 'exam_pk':
 
-            if logging_on:
+            if logging_on and False:
                 logger.debug('....field: ' + str(field))
                 logger.debug('    new_value: ' + str(new_value))
 
@@ -3005,10 +3010,15 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
             setattr(grade_instance, 'ce_exam_auth3by', None)
             save_changes = True
 
-        # - save changes in fields 'ce_exam_auth1by' and 'ce_exam_auth2by'
+        # - save changes in fields 'ce_exam_auth1by' and 'ce_exam_auth2by' and 'ce_exam_auth3by'
         elif field == 'auth_index':
             auth_index = upload_dict.get(field)
             auth_bool_at_index = upload_dict.get('auth_bool_at_index', False)
+            if logging_on:
+                logger.debug('....field: ' + str(field))
+                logger.debug('    auth_index: ' + str(auth_index))
+                logger.debug('    auth_bool_at_index: ' + str(auth_bool_at_index))
+
             if auth_index == 1:
                 fldName = 'ce_exam_auth1by'
             elif auth_index == 2:
@@ -3062,6 +3072,9 @@ def update_grade_instance(grade_instance, upload_dict, sel_examyear, sel_departm
                 # must make sure that values in reex_grade are updated when update them in ep 1
 
                 recalc_finalgrade_in_reex_reex03_grade_and_save(grade_instance, si_dict)
+
+    if logging_on:
+        logger.debug('....err_list:  ' + str(err_list))
 
     return err_list
 # --- end of update_grade_instance
@@ -3814,7 +3827,7 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
     #   they may not be downloaded by schools,
     #   to be 100% sure that the answers cannot be retrieved by a school.
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_with_exam_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))

@@ -373,6 +373,7 @@ urlpatterns = [
 # ===== WOLF ========================== PR2022-12-16
     path('wolf/', include([
         path('wolf', subject_views.WolfListView.as_view(), name='wolf_url'),
+        # approval of single wolf exams is done in GradeUploadView
         path('approve_submit_wolf', subject_views.ExamApproveOrSubmitWolfView.as_view(), name='url_approve_submit_wolf'),
         path('download_wolf_pdf/<list>/', subject_views.ExamDownloadWolfView.as_view(), name='url_download_wolf_pdf'),
     ])),

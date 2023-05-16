@@ -2843,8 +2843,8 @@ class ExamApproveOrSubmitWolfView(View):
             has_permit_approve = acc_prm.get_permit_of_this_page('page_wolf', 'approve_exam', request)
             has_permit_submit = acc_prm.get_permit_of_this_page('page_wolf', 'submit_exam', request)
             if logging_on:
-                logger.debug('    has_permit_approve: ' + str(has_permit_approve))
-                logger.debug('    has_permit_submit: ' + str(has_permit_submit))
+                logger.debug('     has_permit_approve: ' + str(has_permit_approve))
+                logger.debug('     has_permit_submit: ' + str(has_permit_submit))
 
             if not has_permit_approve and not has_permit_submit:
                 border_class = c.HTMLCLASS_border_bg_invalid
@@ -2909,6 +2909,7 @@ class ExamApproveOrSubmitWolfView(View):
                         sel_department=sel_department,
                         sel_level=sel_level,
                         sel_examperiod=sel_examperiod,
+                        is_submit=is_submit,
                         request=request,
                         sel_subjbase_pk=sel_subjbase_pk,
                         sel_cluster_pk=sel_cluster_pk
@@ -2922,6 +2923,8 @@ class ExamApproveOrSubmitWolfView(View):
                         if row_count and False:
                             for row in grade_exam_rows:
                                 logger.debug('row:      ' + str(row))
+
+                    # grade_exams_tobe_updated_list contains list of tuples with (grade_pk, exam_pk)
 
                     grade_exams_tobe_updated_list = []
                     count_dict, total_dict = {}, {}
@@ -2997,6 +3000,7 @@ class ExamApproveOrSubmitWolfView(View):
                                 committed = exam_dict.get('committed', 0) or 0
                                 tobesaved = exam_dict.get('tobesaved', 0) or 0
                                 already_submitted = exam_dict.get('already_submitted', 0) or 0
+                                not_fully_approved = exam_dict.get('not_fully_approved', 0) or 0
 
                                 if logging_on:
                                     logger.debug('  >> exam_dict: ' + str(exam_dict))
@@ -3004,8 +3008,17 @@ class ExamApproveOrSubmitWolfView(View):
                                     logger.debug('     committed: ' + str(committed))
                                     logger.debug('     tobesaved: ' + str(tobesaved))
                                     logger.debug('     already_submitted: ' + str(already_submitted))
+                                    logger.debug('     not_fully_approved: ' + str(not_fully_approved))
 
-                                if committed and committed + already_submitted == count:
+                                is_tobe_submitted = False
+                                if is_test:
+                                    if committed and committed + already_submitted == count:
+                                        is_tobe_submitted = True
+                                else:
+                                    if tobesaved and tobesaved + already_submitted == count:
+                                        is_tobe_submitted = True
+
+                                if is_tobe_submitted:
                                     if exam_id and exam_dict not in tobe_submitted_ete_exams:
                                         tobe_submitted_ete_exams.append(exam_id)
                                         exam_dict['tobe_submitted'] = True
@@ -3038,7 +3051,8 @@ class ExamApproveOrSubmitWolfView(View):
                                req_usr=req_usr,
                                is_reset=is_reset,
                                 published_pk=published_pk,
-                                grade_exams_tobe_updated_list=grade_exams_tobe_updated_list
+                                grade_exams_tobe_updated_list=grade_exams_tobe_updated_list,
+                                tobe_submitted_ete_exams=tobe_submitted_ete_exams
                             )
                             if err_html:
                                 has_error = True
@@ -3130,7 +3144,7 @@ class ExamApproveOrSubmitWolfView(View):
 
 
 def batch_approve_grade_exam_rows(request, requsr_auth, is_reset, grade_exams_tobe_updated_list):
-    #PR2020-04-25
+    #PR2020-04-25 PR2023-05-16
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_approve_grade_exam_rows -----')
@@ -3139,15 +3153,21 @@ def batch_approve_grade_exam_rows(request, requsr_auth, is_reset, grade_exams_to
         logger.debug('    is_reset:    ' + str(is_reset))
         # grade_exams_tobe_updated_list: [[22961, 146], [21701, 146], [22980, 146]]
 
+    # grade_exams_tobe_updated_list contains list of tuples with (grade_pk, exam_pk)
+    grade_exam_pk_tobe_updated = []
+    if grade_exams_tobe_updated_list:
+        for row in grade_exams_tobe_updated_list:
+            grade_exam_pk_tobe_updated.append(row[0])
+
     updated_grade_exam_pk_list = []
     err_html = None
 
-    if grade_exams_tobe_updated_list and requsr_auth and request.user:
+    if grade_exam_pk_tobe_updated and requsr_auth and request.user:
         # sql_keys = {'ey_id': school.examyear.pk, 'sch_id': school.pk, 'dep_id': department.pk}
 
         # dont update modified field when approving.
 
-        # grade_exams_tobe_updated_list: [22961, 21701, 22980, ...]
+        # grade_exam_pk_tobe_updated: [22961, 21701, 22980, ...]
 
         try:
             new_auth_id = 'NULL' if is_reset else str(request.user.pk)
@@ -3156,7 +3176,7 @@ def batch_approve_grade_exam_rows(request, requsr_auth, is_reset, grade_exams_to
             sql = ''.join((
                 "UPDATE students_grade",
                 " SET ", auth_field, "=", new_auth_id,
-                " WHERE id IN (SELECT UNNEST(ARRAY", str(grade_exams_tobe_updated_list), "::INT[]))",
+                " WHERE id IN (SELECT UNNEST(ARRAY", str(grade_exam_pk_tobe_updated), "::INT[]))",
                 " RETURNING id, studentsubject_id;"
             ))
 
@@ -3180,17 +3200,32 @@ def batch_approve_grade_exam_rows(request, requsr_auth, is_reset, grade_exams_to
 # - end of batch_approve_grade_exam_rows
 
 
-def batch_submit_grade_exam_rows(req_usr, published_pk, is_reset, grade_exams_tobe_updated_list):
-    #PR2020-05-06
+def batch_submit_grade_exam_rows(req_usr, published_pk, is_reset, grade_exams_tobe_updated_list, tobe_submitted_ete_exams):
+    #PR2020-05-06 PR2023-05-16
     # GOES WRONG WHEN SCHOOL HAVE ENTERED ce-grades already:
     # PR2022-06-07 >>>>>> DON'T copy Wolf scores to grade score !!! <<<<<<<<
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- batch_submit_grade_exam_rows -----')
-        logger.debug('grade_exams_tobe_updated_list:    ' + str(grade_exams_tobe_updated_list))
-        # grade_exams_tobe_updated_list: [22961, 21701, 22980, ...]
+        logger.debug('    grade_exams_tobe_updated_list:    ' + str(grade_exams_tobe_updated_list))
+        logger.debug('    tobe_submitted_ete_exams:    ' + str(tobe_submitted_ete_exams))
 
+        # grade_exams_tobe_updated_list: [[22961, 146], [21701, 146], [22980, 146]]
+
+
+    # grade_exams_tobe_updated_list contains list of tuples with (grade_pk, exam_pk)
+    # skip garde_exams when exam_pk not in tobe_submitted_ete_exams
+
+    grade_exams_tobe_updated = []
+    if grade_exams_tobe_updated_list:
+        for row in grade_exams_tobe_updated_list:
+            if row[1] in tobe_submitted_ete_exams:
+                grade_exams_tobe_updated.append(row[0])
+
+    if logging_on:
+        logger.debug(' ----- batch_submit_grade_exam_rows -----')
+        logger.debug('    grade_exams_tobe_updated:    ' + str(grade_exams_tobe_updated))
     updated_grade_exam_pk_list = []
 
     # tobe_submitted_ete_exams: [[22961, 146], [21701, 146], [22980, 146]]
@@ -3211,7 +3246,7 @@ def batch_submit_grade_exam_rows(req_usr, published_pk, is_reset, grade_exams_to
         sql = ''.join((
             "UPDATE students_grade",
             " SET ce_exam_published_id=", published_pk_str, "::INT",
-            " WHERE id IN (SELECT UNNEST(ARRAY", str(grade_exams_tobe_updated_list), "::INT[]))",
+            " WHERE id IN (SELECT UNNEST(ARRAY", str(grade_exams_tobe_updated), "::INT[]))",
             " RETURNING id, studentsubject_id;"
         ))
 
@@ -3513,6 +3548,20 @@ def create_grade_exam_approve_submit_msg_list(req_usr, requsr_auth, count_list, 
                                                          'count': get_exam_count_text(grade_blanks_count)}),
                                                      '</div>')))
 
+                        not_fully_approved_count = count_dict.get('not_fully_approved')
+                        if logging_on:
+                            logger.debug('  >>>>>>>   count_dict: ' + str(count_dict))
+                            logger.debug('     not_fully_approved_count: ' + str(not_fully_approved_count))
+
+                        if not_fully_approved_count:
+                            msg_list.append(''.join(("<div class='pl-2'>",
+                                                     str(_("%(count)s %(is_are)s not fully approved.") % {
+                                                         'is_are': get_is_are_txt(not_fully_approved_count),
+                                                         'count': get_exam_count_text(not_fully_approved_count)}),
+                                                     '</div>')))
+
+
+
         # count exams double_approved
                         grade_double_approved_count = count_dict.get('double_approved')
                         if grade_double_approved_count:
@@ -3724,9 +3773,9 @@ def approve_exam(exam, requsr_auth, is_test, is_reset, count_dict, updated_exam_
 
 # def get_approve_grade_exam_rows(examyear, school, department, examperiod, request):  #PR2022-03-11
 
-def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_level, sel_examperiod, request,
+def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_level, sel_examperiod, is_submit, request,
                                   sel_subjbase_pk=None, sel_cluster_pk=None):
-    # PR2022-04-25 PR2022-06-01 PR2023-04-30
+    # PR2022-04-25 PR2022-06-01 PR2023-04-30 PR2023-05-16
     # approving single grade_exam happens in UploadGrade
     logging_on = False  #s.LOGGING_ON
     if logging_on:
@@ -3785,16 +3834,20 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
                     "WHERE school.id = %(school_id)s::INT AND dep.id = %(dep_id)s::INT",
                     "AND ey.id = %(ey_id)s::INT",
                     "AND ce_exam.ete_exam AND grd.examperiod = %(experiod)s::INT",
-                    "AND NOT grd.tobedeleted AND NOT grd.deleted AND NOT studsubj.tobedeleted AND NOT stud.tobedeleted"
+                    "AND NOT grd.tobedeleted AND NOT grd.deleted",
+                    "AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
+                    "AND NOT stud.tobedeleted AND NOT stud.deleted",
                     ]
 
         if sel_subjbase_pk:
             sql_keys['subjbase_pk'] = sel_subjbase_pk
             sql_list.append("AND subj.base_id = %(subjbase_pk)s::INT")
 
-        if sel_cluster_pk:
-            sql_keys['cluster_pk'] = sel_cluster_pk
-            sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
+        # PR2023-05-16 debug. don't filter on cluster when submitting exams
+        if not is_submit:
+            if sel_cluster_pk:
+                sql_keys['cluster_pk'] = sel_cluster_pk
+                sql_list.append("AND studsubj.cluster_id = %(cluster_pk)s::INT")
 
 # - get allowed_sections_dict from request
         userallowed_instance = acc_prm.get_userallowed_instance_from_request(request)
@@ -3811,6 +3864,11 @@ def get_approve_grade_exam_rows(sel_examyear, sel_school, sel_department, sel_le
 
         if sql_clause:
             sql_list.append(sql_clause)
+
+        userallowed_cluster_pk_list = acc_prm.get_userallowed_cluster_pk_list(userallowed_instance)
+        sqlclause_allowed_clusters = acc_prm.get_sqlclause_allowed_clusters("studsubj", userallowed_cluster_pk_list)
+        if sqlclause_allowed_clusters:
+            sql_list.append(sqlclause_allowed_clusters)
 
         sql = ' '.join(sql_list)
 
@@ -3939,6 +3997,10 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
                     auth1by_id = grade_exam_dict.get('ce_exam_auth1by_id')
                     auth2by_id = grade_exam_dict.get('ce_exam_auth2by_id')
                     auth3by_id = grade_exam_dict.get('ce_exam_auth3by_id')
+                    if logging_on:
+                        logger.debug('     auth1by_id:     ' + str(auth1by_id))
+                        logger.debug('     auth2by_id:     ' + str(auth2by_id))
+                        logger.debug('     auth3by_id:     ' + str(auth3by_id))
 
         # - skip if this grade_exam is double_approved
             # double_approved means: this auth has already approved other auth - is not allowed to approve as auth1 and auth2
@@ -3952,7 +4014,7 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
                     if double_approved:
                         af.add_one_to_count_dict(exam_dict, 'double_approved')
                     else:
-                        is_fully_approved = auth2by_id is not None and auth2by_id is not None and auth3by_id is not None
+                        is_fully_approved = auth1by_id is not None and auth2by_id is not None and auth3by_id is not None
 
                         if logging_on:
                             logger.debug('     fully_approved:     ' + str(is_fully_approved))
@@ -3970,13 +4032,16 @@ def approve_grade_exam(request, grade_exam_dict, requsr_auth, is_submit, is_rese
                         else:
                             save_changes = True
 
+                        if logging_on:
+                            logger.debug('  ????   is_submit and not is_fully_approved:     ' + str(is_submit and not is_fully_approved))
 # - if no errors found: add grade_pk and new_auth_id to grade_exams_tobe_updated_list
         if save_changes:
             grade_pk = grade_exam_dict.get('grade_id')
+            exam_pk = grade_exam_dict.get('ceex_exam_id')
             if grade_pk not in grade_exams_tobe_updated_list:
 
 # - add grade_pk to tobe_updated_list
-                grade_exams_tobe_updated_list.append(grade_pk)
+                grade_exams_tobe_updated_list.append((grade_pk, exam_pk))
 
 # - if save_changes: add to 'committed' if is_test, to 'tobesaved' if is_save
                 key_str = 'committed' if is_test else 'tobesaved'

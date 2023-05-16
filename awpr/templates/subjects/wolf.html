@@ -5,7 +5,7 @@
 {% block title %}Wolf{% endblock %}
 
 {% block script %}
-    <script src="{% static 'js/wolf230515.js' %}"></script>
+    <script src="{% static 'js/wolf230516.js' %}"></script>
     <script src="{% static 'js/download220105.js' %}"></script>
 {% endblock %}
 
@@ -36,19 +36,18 @@
                     class="tw_200 border_none pointer_show px-2" readonly>
             </div>
 
-            {% if is_requsr_same_school %}
-                <div class="tw_200 m-2 display_hide">
-                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
-                   <input id="id_SBR_select_cluster" type="text"
-                        class="tw_200 border_none pointer_show px-2" readonly>
-                </div>
+            <div class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Cluster' %}:</h6>
+               <input id="id_SBR_select_cluster" type="text"
+                    class="tw_200 border_none pointer_show px-2" readonly>
+            </div>
 
-                <div class="tw_200 m-2 display_hide">
-                    <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
-                    <input id="id_SBR_select_student" type="text"
-                        class="tw_200 border_none pointer_show px-1" readonly>
-                </div>
-            {% endif %}
+            <div class="tw_200 m-2 display_hide">
+                <h6 class="tw_200 line_height_normal px-2">{% trans 'Candidate' %}:</h6>
+                <input id="id_SBR_select_student" type="text"
+                    class="tw_200 border_none pointer_show px-1" readonly>
+            </div>
+
             <div id="id_SBR_container_showall" class="tw_200 m-2 display_hide">
                 <h6 id="id_SBR_select_showall" class="tw_200 pointer_show line_height_normal px-2 py-1">{% trans 'Show all from this period' %}</h6>
             </div>
@@ -112,15 +111,10 @@
 
     <!-- BUTTON GROUP -->
             <div id="id_btn_container" class="btn-group btn-block pl-2 pr-4 my-2" role="group" aria-label="Choose option" >
-                {% if is_requsr_admin %}
-                    <button data-btn="btn_ete_exams" class="btn btn-secondary ">{% trans 'ETE exams' %}</button>
-                    <button data-btn="btn_duo_exams" class="btn btn-secondary ">{% trans 'CVTE exams' %}</button>
-                    <button data-btn="btn_ntermen" class="btn btn-secondary ">{% trans 'N-termen table' %}</button>
-                {% else %}
-                    <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
-                    {% if not no_centralexam %}
-                        <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
-                    {% endif %}
+
+                <button data-btn="btn_ep_01" class="btn btn-secondary ">{% trans 'First exam period' %}</button>
+                {% if not no_centralexam %}
+                    <button data-btn="btn_reex" class="btn btn-secondary ">{% trans 'Second exam period' %}</button>
                 {% endif %}
 
                 <button data-btn="btn_results" class="btn btn-secondary ">{% trans 'Overview exams' %}</button>

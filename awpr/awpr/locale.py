@@ -305,7 +305,6 @@ def get_locale_dict(table_dict, user_lang, request):
         dict['Chairperson'] = TXT_Chairperson
         dict['Secretary'] = TXT_Secretary
         dict['Corrector'] = TXT_Corrector
-        dict['Corrector_2lines'] = pgettext_lazy('2 lines', 'Corrector')
         dict['Second_corrector'] = _('Second corrector')
         dict['Second_corrector_2lines'] = pgettext_lazy('2 lines', 'Second\ncorrector')
 
@@ -1369,7 +1368,13 @@ def get_locale_dict(table_dict, user_lang, request):
             'submitting_exams_ok': _("The exams are succesfully submitted."),
         }
 
-# ====== PAGE GRADES ========================= PR2020-10-27
+        dict['corrector_cannot_approve_wolf'] = _("As second corrector you don't have to approve %(cpt)s.") \
+                                     % {'cpt': _('Wolf exams')}
+
+        dict['subject_not_in_allowed_clusters'] = _("This subject does not belong to %(cpt)s.") % {'cpt': _('the allowed clusters')}
+        dict['no_permission_to_edit_wolf'] = _("You don't have permission %(edit)s %(score)s.") % {'edit': _('to approve'), 'score': _('Wolf exams')}
+
+    # ====== PAGE GRADES ========================= PR2020-10-27
     if 'page_grade' in page_list:
 
         dict['No_candidate_selected'] = _('No candidate selected')
@@ -1503,8 +1508,7 @@ def get_locale_dict(table_dict, user_lang, request):
             'subheader_submit_ex2a_2': _('<b>ATTENTION:</b> From now on, the Ex2A form contains the scores of all subjects.'),
             'subheader_submit_ex2a_3': _('Instead of submitting an Ex2A form per subject, you can submit it once at the end of each exam period.'),
 
-            'corrector_cannot_approve_exem': _("As corrector you don't have to approve %(et)s grades.") \
-                                                % {'et': str(_('Exemption')).lower()},
+            'corrector_cannot_approve_exem': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('exemption grades')},
 
             'submit_0': _("Click 'Check grades' to check the selected grades before submitting."),
             'submit_1': _("If the check is OK, click 'Request verification code' to submit the selected grades."),
@@ -1698,8 +1702,9 @@ def get_locale_dict(table_dict, user_lang, request):
                                'Dont_haveto_approve_blank_scores': _("You don't have to approve blank scores."),
                                'Dont_haveto_approve_blank_grades': _("You don't have to approve blank grades."),
                                'You_cannot_approve_again': _('You cannot approve this grade again.'),
-                               'Corrector_cannot_approve_se': _("As corrector you don't have to approve school exam grades."),
-                               'Corrector_cannot_approve_exem': _("As corrector you don't have to approve exemptions."),
+                               'Corrector_cannot_approve_se': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('school exam grades')},
+                               'Corrector_cannot_approve_exem': _("As second corrector you don't have to approve %(cpt)s.") % {'cpt': _('exemption grades')},
+
                                'Examiner_cannot_approve_exem': _("As examiner you don't have to approve exemptions."),
                                'Cannot_approve_secret_exam': '<br>'.join((str(_('This is a designated exam.')),  str(_("Designated exams don't have to be approved.")))),
                                'Secret_exam_dont_enter_score': '<br>'.join((str(_('This is a designated exam.')),  str(_("You don't have to enter the score of designated exams.")))),
@@ -2044,7 +2049,7 @@ TXT_will_be_removed= pgettext_lazy('singular', 'will be removed.')
 TXT_Function = _('Function')
 TXT_Chairperson = _('Chairperson')
 TXT_Secretary = _('Secretary')
-TXT_Corrector = _('Corrector')
+TXT_Corrector = _('Second Corrector')
 TXT_Examiner = _('Examiner')
 
 TXT__of_ = _(' of ')

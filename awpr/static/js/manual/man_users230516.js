@@ -380,7 +380,7 @@ const man_user = {
             "<li><b>Chairperson</b>. The chairperson can approve data and submit diplomas, lists of marks and Ex forms.</li>",
             "<li><b>Secretary</b>. The secretary can approve data and submit diplomas, lists of marks and Ex forms.</li>",
             "<li><b>Examiner</b>. The examiner can approve scores and grades.</li>",
-            "<li><b>Corrector</b>. The corrector can approve scores and grades.</li>",
+            "<li><b>Second Corrector</b>. The second corrector can approve scores and grades.</li>",
             "<li><b>Receive messages</b>. This user group can access the messaging service and receive messages.</li>",
              "<li><b>Send messages</b>. This user group can send messages of the messaging service.</li>",
              "<li><b>Access Archive</b>. This user group can access the <i>Archive</i> page.</li>",
@@ -417,7 +417,7 @@ const man_user = {
              "<p>Example: ",
              "<ul class='manual_bullet'><li>A user belongs to the user groups 'Modify' and 'Examiner' and has the cluster 'wk -2' of the Mathematics subject as allowed clusters. ",
              "This user can view all data of all candidates, but can only change and approve the grades of the Mathematics subject of the candidates in the cluster 'wk -2'.</li>",
-             "<li>A user only belongs to the user group 'Corrector' and has the allowed department 'Vsbo', the allowed subject 'Mathematics' and the cluster 'wk -2' as allowed clusters. ",
+             "<li>A user only belongs to the user group 'Second Corrector' and has the allowed department 'Vsbo', the allowed subject 'Mathematics' and the cluster 'wk -2' as allowed clusters. ",
              "This user can see the Mathematics data of all Vbso candidates, but can only approve the Mathematics grades of the candidates in the cluster 'wk -2'.</li></ul></p>" ,
 
              "<p class='mb-0 pb-0'>How to <b>set allowed sections</b> is as follows: ",

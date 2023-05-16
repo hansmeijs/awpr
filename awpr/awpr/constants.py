@@ -545,7 +545,7 @@ USERGROUP_CAPTION = {
     USERGROUP_AUTH1_PRES: _('Chairperson'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
     USERGROUP_AUTH3_EXAM: _('Examiner'),
-    USERGROUP_AUTH4_CORR: _('Corrector'),
+    USERGROUP_AUTH4_CORR: _('Second corrector'),
     USERGROUP_DOWNLOAD: _('Download'),
     USERGROUP_ARCHIVE: _('Access to archive'),
     USERGROUP_MSGWRITE: _('Send messages'),
@@ -559,7 +559,7 @@ MAILBOX_USERGROUPS = {
     USERGROUP_AUTH1_PRES: _('Chairperson'),
     USERGROUP_AUTH2_SECR: _('Secretary'),
     USERGROUP_AUTH3_EXAM: _('Examiner'),
-    USERGROUP_AUTH4_CORR: _('Corrector'),
+    USERGROUP_AUTH4_CORR: _('Second corrector'),
     USERGROUP_ADMIN: _('System administrator')
 }
 # PR2023-04-15 compensation for correctors

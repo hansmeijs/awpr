@@ -1679,7 +1679,7 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
 
 //========= b_get_multiple_auth_index_of_requsr  ======== PR2022-02-22
     function b_get_multiple_auth_index_of_requsr(permit_dict){
-        // function returns list of booleans, key = auth_index, val 0 = false, 1 = true
+        // function returns list of 0/1 values, key = auth_index, val 0 = false, 1 = true
         // USERGROUP_AUTH1_PRES, USERGROUP_AUTH2_SECR, USERGROUP_AUTH3_EXAM, USERGROUP_AUTH4_CORR
 
     //console.log( "-----  b_get_multiple_auth_index_of_requsr  -----");
@@ -1726,9 +1726,10 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         return auth_index;
     };  // b_get_auth_index_pres_secr_of_requsr
 
-//========= b_get_auth_index_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18
+//========= b_get_auth_index_of_requsr  ======== // PR2021-03-26 PR2021-07-26 PR2021-12-18 PR2023-05-16
     function b_get_auth_index_of_requsr(loc, permit_dict){
         // function returns auth_index of auth user, returns 0 when user has none or multiple auth usergroups
+        //
         // gives err messages when multiple found.
         // STATUS_01_AUTH1 = 2,  STATUS_02_AUTH2 = 4, STATUS_03_AUTH3 = 8, STATUS_04_AUTH3 = 16
 
@@ -1747,7 +1748,7 @@ console.log(" --- end of add_or_remove_class_with_qsAll --- ")
         //console.log( "permit_auth", permit_auth);
 
 // skip if user has no auth usergroup
-        if ( (permit_auth[1] && permit_auth[2]) || (permit_auth[1] && permit_auth[2]) ){
+        if ( (permit_auth[1] && permit_auth[2]) || (permit_auth[3] && permit_auth[4]) ){
             auth_index = 0;
 // show msg error if user has multiple auth usergroups
             const functions = (permit_auth[1] && permit_auth[2]) ? loc.Chairperson + loc.and + loc.Secretary :
