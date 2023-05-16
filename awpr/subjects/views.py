@@ -2542,7 +2542,7 @@ def validate_exam_has_grades(exam_instance): # PR2022-04-09
 
 
 @method_decorator([login_required], name='dispatch')
-class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23
+class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02-23  PR2023-04-16
 
     def post(self, request):
         logging_on = s.LOGGING_ON
@@ -2654,7 +2654,11 @@ class ExamApproveOrPublishExamView(View):  # PR2021-04-04 PR2022-01-31 PR2022-02
                         #if sel_examperiod in (1, 2, 3):
                         #    crit.add(Q(examperiod=sel_examperiod), crit.connector)
 
-                        if sel_lvlbase_pk:
+                        # PR2023-05-16 debug call Pien van Dijk: cannot publish vwo exam
+                        # cause: sel_lvlbase_pk has stil value
+                        # solved by adding if requsr_department.level_req
+                        # was: if sel_lvlbase_pk:
+                        if requsr_department.level_req and sel_lvlbase_pk:
                             crit.add(Q(level__base_id=sel_lvlbase_pk), crit.connector)
                         if sel_subject_pk:
                             crit.add(Q(subject_id=sel_subject_pk), crit.connector)
