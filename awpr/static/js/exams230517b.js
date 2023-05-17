@@ -685,7 +685,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     b_fill_datadicts("subject", "id", null, response.ete_subject_rows, ete_subject_dicts);
                 };
                 if ("grade_exam_result_rows" in response) {
-                    b_fill_datadicts("gradeexamresult", "id", null, response.grade_exam_result_rows, grade_exam_result_dicts);
+                    b_fill_datadicts("gradeexamresult", "exam_id", "school_id", response.grade_exam_result_rows, grade_exam_result_dicts);
                 };
                 if ("ntermentable_rows" in response) {
                     b_fill_datadicts("ntermentable", "id", null, response.ntermentable_rows, ntermentable_dicts);

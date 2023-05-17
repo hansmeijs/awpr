@@ -532,11 +532,11 @@ console.log("user_dicts",user_dicts)
 
 //=========  CreateTblHeader  === PR2020-07-31 PR2021-03-23  PR2021-08-01
     function CreateTblHeader(field_setting) {
-        console.log("===  CreateTblHeader ===== ");
+        //console.log("===  CreateTblHeader ===== ");
         //console.log("field_setting", field_setting);
         const column_count = field_setting.field_names.length;
 
-        console.log("filter_dict", filter_dict);
+        //console.log("filter_dict", filter_dict);
 
 // +++  insert header and filter row ++++++++++++++++++++++++++++++++
         let tblRow_header = tblHead_datatable.insertRow (-1);
@@ -628,10 +628,10 @@ console.log("user_dicts",user_dicts)
                     th_filter.classList.add(class_width, class_align);
 
                     el_filter.classList.add(class_width, class_align, "tsa_color_darkgrey", "tsa_transparent");
-                th_filter.appendChild(el_filter)
+                th_filter.appendChild(el_filter);
                 tblRow_filter.appendChild(th_filter);
-            }  // if (!columns_hidden.includes(field_name))
-        }  // for (let j = 0; j < column_count; j++)
+            };  // if (!columns_hidden.includes(field_name))
+        };  // for (let j = 0; j < column_count; j++)
     };  //  CreateTblHeader
 
 //=========  CreateTblRow  ================ PR2020-06-09 PR2021-08-01 PR2023-04-04
@@ -1154,14 +1154,15 @@ console.log( "upload_dict", upload_dict);
 
 // +++++++++ MOD USER ADD ++++++++++++++++ PR2020-09-18
     function MUA_Open(mode, el_input){
-        //console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
+        console.log(" -----  MUA_Open   ---- mode: ", mode)  // modes are: addnew, update
         //console.log("permit_dict: ", permit_dict)
         //console.log("permit_dict.permit_crud_sameschool: ", permit_dict.permit_crud_sameschool)
         //console.log("permit_dict.permit_crud_otherschool: ", permit_dict.permit_crud_otherschool)
+        //console.log("permit_dict.permit_addto_otherschool: ", permit_dict.permit_addto_otherschool)
         // mode = 'addnew' when called by SubmenuButton
         // mode = 'update' when called by tblRow event
 
-        if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool){
+        if (permit_dict.permit_crud_sameschool || permit_dict.permit_crud_otherschool || permit_dict.permit_addto_otherschool){
             let data_dict = {}, user_pk = null;
             let user_schoolbase_pk = null, user_schoolbase_code = null, user_mapid = null, user_name = null,
             user_lastname = null, user_email = null;
@@ -1171,10 +1172,12 @@ console.log( "upload_dict", upload_dict);
             const is_addnew = (mode === "addnew");
 
         //console.log("fldName: ", fldName)
+
+// --- get existing data_dict from data_rows
             if(el_input){
                 const tblRow = t_get_tablerow_selected(el_input);
                 const data_dict = get_datadict_from_tblRow(tblRow);
-// --- get existing data_dict from data_rows
+    console.log("    data_dict: ", data_dict)
 
     //console.log("data_dict", data_dict)
                 if(!isEmpty(data_dict)){
@@ -1190,7 +1193,7 @@ console.log( "upload_dict", upload_dict);
                 };
 
         // when el_input is not defined: function is mode 'addnew'
-            } else if (!permit_dict.permit_crud_otherschool){
+            } else if (!permit_dict.permit_crud_otherschool && !permit_dict.permit_addto_otherschool){
                 // when new user and not role_admin or role_system: : get user_schoolbase_pk from request_user
                 user_schoolbase_pk = permit_dict.requsr_schoolbase_pk;
                 user_schoolbase_code = permit_dict.requsr_schoolbase_code;
@@ -1206,6 +1209,8 @@ console.log( "upload_dict", upload_dict);
                             break;
             }}}};
 
+    console.log("    user_schoolbase_code: ", user_schoolbase_code)
+    console.log("    user_schoolname: ", user_schoolname)
             mod_MUA_dict = {
                 mode: mode, // modes are: addnew, update
                 //skip_validate_username: is_addnew,
@@ -1224,8 +1229,10 @@ console.log( "upload_dict", upload_dict);
 
     // ---  show only the elements that are used in this tab
             const container_element = document.getElementById("id_mod_user");
-            let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "mua_addnew_may_select_school" : "mua_addnew_noschool" : "mua_update";
+            //PR2023-05-17 was: let tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool) ? "mua_addnew_may_select_school" : "mua_addnew_noschool" : "mua_update";
+            const tab_str = (is_addnew) ? (permit_dict.permit_crud_otherschool || permit_dict.permit_addto_otherschool) ? "mua_addnew_may_select_school" : "mua_addnew_noschool" : "mua_update";
             b_show_hide_selected_elements_byClass("mua_show", tab_str, container_element)
+    console.log("    tab_str: ", tab_str)
 
     // ---  set header text
             const header_text = (is_addnew) ? loc.Add_user : loc.User + ":  " + mod_MUA_dict.username;
@@ -1236,7 +1243,8 @@ console.log( "upload_dict", upload_dict);
             el_MUA_msg_modified.innerText = (!is_addnew) ? f_format_last_modified_txt(loc.Last_modified, modifiedat, modby_name) : null;
 
     // ---  fill selecttable
-            if(permit_dict.permit_crud_otherschool){
+            //PR2023-05-17 was: if(permit_dict.permit_crud_otherschool || permit_dict.permit_addto_otherschool){
+            if(permit_dict.permit_addto_otherschool){
                 MUA_FillSelectTableSchool();
             }
 
@@ -1251,8 +1259,12 @@ console.log( "upload_dict", upload_dict);
                 el_MUA_email.value = mod_MUA_dict.email;
             }
     // ---  set focus to next el
-            const el_focus = (is_addnew && permit_dict.permit_crud_otherschool) ? el_MUA_schoolname :
-                             ( (is_addnew && !permit_dict.permit_crud_otherschool) || (fldName === "username") ) ? el_MUA_username :
+            //PR2023-05-17 was:
+            //const el_focus = (is_addnew && permit_dict.permit_crud_otherschool) ? el_MUA_schoolname :
+            //                 ( (is_addnew && !permit_dict.permit_crud_otherschool) || (fldName === "username") ) ? el_MUA_username:
+            const el_focus = (is_addnew && (permit_dict.permit_crud_otherschool || permit_dict.permit_addto_otherschool)) ? el_MUA_schoolname :
+                             (is_addnew || fldName === "username") ? el_MUA_username:
+
                              (fldName === "last_name") ? el_MUA_last_name :
                              (fldName === "email") ? el_MUA_email : null;
             if(el_focus){setTimeout(function (){el_focus.focus()}, 50)};
@@ -1456,7 +1468,7 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUA_FillSelectTableSchool  ============= PR2020--09-17
     function MUA_FillSelectTableSchool() {
-        //console.log("===== MUA_FillSelectTableSchool ===== ");
+        console.log("===== MUA_FillSelectTableSchool ===== ");
 
         const data_rows = school_rows;
         const tblBody_select = document.getElementById("id_MUA_tbody_select");
@@ -1468,8 +1480,12 @@ console.log( "upload_dict", upload_dict);
         if(data_rows && data_rows.length){
             const tblName = "school";
             for (let i = 0, data_dict; data_dict = data_rows[i]; i++) {
+
+        console.log("    data_dict", data_dict);
                 if (!isEmpty(data_dict)) {
                     const defaultrole = (data_dict.defaultrole) ? data_dict.defaultrole : 0;
+        console.log("    defaultrole", defaultrole);
+        console.log("    permit_dict.requsr_role", permit_dict.requsr_role);
     // only add schools to list whith sme or lower role
                     if (defaultrole <= permit_dict.requsr_role){
         // ---  get info from data_dict
@@ -1477,6 +1493,7 @@ console.log( "upload_dict", upload_dict);
                         const country_id = data_dict.country_id;
                         const code = (data_dict.sb_code) ? data_dict.sb_code : "";
                         const abbrev = (data_dict.abbrev) ? data_dict.abbrev : "";
+        console.log("    abbrev", abbrev);
 
 // ---  lookup index where this row must be inserted
                         let ob1 = "", row_index = -1;
@@ -1835,9 +1852,9 @@ console.log( "upload_dict", upload_dict);
             // only users of the same organization and permit_crud may edit
             const may_edit = (permit_dict.permit_crud && permit_dict.requsr_schoolbase_pk === user_schoolbase_pk);
 
-        //console.log("  permit_dict.requsr_schoolbase_pk: ", permit_dict.requsr_schoolbase_pk);
-        //console.log("  user_schoolbase_pk: ", user_schoolbase_pk);
-        //console.log("  may_edit: ", may_edit);
+        console.log("  permit_dict.requsr_schoolbase_pk: ", permit_dict.requsr_schoolbase_pk);
+        console.log("  user_schoolbase_pk: ", user_schoolbase_pk);
+        console.log("  may_edit: ", may_edit);
 
             add_or_remove_class(el_MUPS_btn_save, cls_hide, !may_edit);
             if (el_MUPS_btn_cancel){
@@ -1993,9 +2010,6 @@ console.log( "upload_dict", upload_dict);
             // PR2022-11-04
             mod_MUPS_dict.sorted_department_list.sort((a, b) => a.sequence - b.sequence);
         };
-    console.log(" ??????????   department_rows", department_rows);
-
-    console.log("    mod_MUPS_dict.sorted_department_list", mod_MUPS_dict.sorted_department_list);
 
 // ---  loop through level_rows
         mod_MUPS_dict.sorted_level_list = [];
@@ -2044,7 +2058,7 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUPS_FillSelectTable  ============= PR2022-10-24 PR2023-01-06
     function MUPS_FillSelectTable() {
-        console.log("===== MUPS_FillSelectTable ===== ");
+        //console.log("===== MUPS_FillSelectTable ===== ");
 
         const data_rows = school_rows;
 
@@ -2108,7 +2122,7 @@ console.log( "upload_dict", upload_dict);
     }; // MUPS_FillSelectTable
 
     function MUPS_CreateTblrowSchool(school_dict) {
-        console.log("-----  MUPS_CreateTblrowSchool   ----");
+        //console.log("-----  MUPS_CreateTblrowSchool   ----");
         //console.log("    school_dict", school_dict);
         // PR2022-11-05
 
@@ -2243,10 +2257,10 @@ console.log( "upload_dict", upload_dict);
     };  // MUPS_CreateTableDepartment
 
     function MUPS_CreateTblrowDep(department_dict, schoolbase_pk, sb_depbases, allow_delete) {
-        console.log("===== MUPS_CreateTblrowDep ===== ");
-        console.log("    department_dict", department_dict);
-        console.log("    schoolbase_pk", schoolbase_pk);
-        console.log("    sb_depbases", sb_depbases);
+        //console.log("===== MUPS_CreateTblrowDep ===== ");
+        //console.log("    department_dict", department_dict);
+        //console.log("    schoolbase_pk", schoolbase_pk);
+        //console.log("    sb_depbases", sb_depbases);
         // PR2022-11-05
 
 // ---  get info from department_dict
@@ -2254,7 +2268,7 @@ console.log( "upload_dict", upload_dict);
         const name = (department_dict.name) ? department_dict.name : "";
         const lvl_req = (department_dict.lvl_req) ? department_dict.lvl_req : false;
         const class_bg_color = "bg_medium_blue";
-        console.log("lvl_req", lvl_req);
+        //console.log("lvl_req", lvl_req);
 
 //--------- insert tblBody_select row at end
         const tblRow = el_MUPS_tbody_select.insertRow(-1);
@@ -2305,7 +2319,7 @@ console.log( "upload_dict", upload_dict);
             td.appendChild(el_div);
         };
 
-        console.log("  ?? depbase_pk", depbase_pk);
+    //console.log("   depbase_pk", depbase_pk);
 // ---  add level rows
         if (depbase_pk !== -1){
             let is_expanded = false;
@@ -2316,7 +2330,7 @@ console.log( "upload_dict", upload_dict);
                     is_expanded = expanded_depbase_dict.expanded;
             }};
 
-        console.log("  ?? is_expanded", is_expanded);
+    //console.log("   is_expanded", is_expanded);
             if (is_expanded) {
                 if (lvl_req) {
                     MUPS_CreateTableLevel(department_dict, schoolbase_pk);
@@ -2330,8 +2344,8 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUPS_CreateTableLevel  =============
     function MUPS_CreateTableLevel(dep_dict, schoolbase_pk) { // PR2022-11-06
-        console.log("===== MUPS_CreateTableLevel ===== ");
-        console.log("    dep_dict", dep_dict);
+        //console.log("===== MUPS_CreateTableLevel ===== ");
+        //console.log("    dep_dict", dep_dict);
 
 // ---  get info from dep_dict
         const schoolbase_pk_str = schoolbase_pk.toString();
@@ -2372,8 +2386,8 @@ console.log( "upload_dict", upload_dict);
 
 //========= MUPS_CreateTblrowLvl  =============
     function MUPS_CreateTblrowLvl(level_dict, depbase_pk, schoolbase_pk, allow_delete) { // PR2022-11-05
-        console.log("===== MUPS_CreateTblrowLvl ===== ");
-        console.log("  level_dict", level_dict);
+        //console.log("===== MUPS_CreateTblrowLvl ===== ");
+        //console.log("  level_dict", level_dict);
 
 // ---  get info from level_dict
         const lvlbase_pk = level_dict.base_id;
@@ -2468,7 +2482,7 @@ console.log( "upload_dict", upload_dict);
             MUPS_CreateTblrowSubject(addnew_dict, lvlbase_pk, depbase_pk, schoolbase_pk);
         };
 // ---  loop through mod_MUPS_dict.sorted_subject_list
-        console.log("    mod_MUPS_dict.sorted_subject_list", mod_MUPS_dict.sorted_subject_list);
+        //console.log("    mod_MUPS_dict.sorted_subject_list", mod_MUPS_dict.sorted_subject_list);
         if(mod_MUPS_dict.sorted_subject_list.length ){
             for (let i = 0, subject_dict; subject_dict = mod_MUPS_dict.sorted_subject_list[i]; i++) {
                 if (subject_dict.depbase_id_arr.includes(depbase_pk) || depbase_pk === -9 ){
@@ -4323,8 +4337,8 @@ console.log( "new_value", new_value);
 
 //========= Filter_TableRows  ====================================
     function Filter_TableRows(set_filter_isactive) {  // PR2019-06-09 PR2020-08-31 PR2022-03-03
-        console.log( "===== Filter_TableRows=== ");
-        console.log( "filter_dict", filter_dict);
+        //console.log( "===== Filter_TableRows=== ");
+        //console.log( "filter_dict", filter_dict);
 
         // function filters by inactive and substring of fields
         //  - iterates through cells of tblRow

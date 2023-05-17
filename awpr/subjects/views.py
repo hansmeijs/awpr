@@ -7243,6 +7243,7 @@ class ExamDownloadConversionView(View):  # PR2022-05-08
                 logger.debug('sel_school: ' + str(sel_school))
                 logger.debug('sel_department: ' + str(sel_department))
                 logger.debug('exam_pk: ' + str(exam_pk))
+                logger.debug('sel_examyear.code: ' + str(sel_examyear.code))
 
             if sel_examyear and exam_pk:
                 sel_exam_instance = subj_mod.Exam.objects.get_or_none(

@@ -4119,7 +4119,7 @@ def create_grade_with_exam_rows(sel_examyear, sel_schoolbase, sel_depbase, sel_l
 # --- end of create_grade_with_exam_rows
 
 
-def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, sel_examperiod,
+def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, sel_department, sel_examperiod,
                                   setting_dict, ete_exams_only, request):
     # --- create grade exam rows of all students with results, also SXM of this examyear PR2022-04-27
 
@@ -4128,14 +4128,13 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
 
     # when ETE: show all CUR exams + ETE exams of SXM
     # when DOE: show all SXM exams
-    # when school: show all school exams
+    # when school: show all exams of this school
 
     logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ----- create_grade_exam_result_rows -----')
         logger.debug('    setting_dict: ' + str(setting_dict))
         logger.debug('    ete_exams_only: ' + str(ete_exams_only))
-
 
     req_usr = request.user
     # PR2022-05-25 debug: no records were showing because ep = exemption, set to default if not in [1,2]
@@ -4144,89 +4143,92 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
     sql_keys = {'ey_pk': sel_examyear.pk if sel_examyear else None,
                 'depbase_id': sel_depbase.pk if sel_depbase else None,
                 'experiod': sel_examperiod}
+    sel_examyear_pk = sel_examyear.pk if sel_examyear else None
+    sel_depbase_pk = sel_depbase.pk if sel_depbase else None
 
     # sub_grd_result calculates score_frac and score_count
-    sub_list = ["SELECT grd.id AS grd_id,",
+    sub_list = ["SELECT grd.id AS grd_id, ",
 
-                "(grd.ce_exam_score::FLOAT / exam.scalelength::FLOAT) AS score_frac,",
-                "grd.ce_exam_score, exam.scalelength,"
-                "1 AS score_count",
+                "(grd.ce_exam_score::FLOAT / exam.scalelength::FLOAT) AS score_frac, ",
+                "grd.ce_exam_score, exam.scalelength, "
+                "1 AS score_count ",
 
-                "FROM students_grade AS grd",
-                "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
+                "FROM students_grade AS grd ",
+                "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id) ",
 
-                "WHERE grd.examperiod = %(experiod)s::INT",
-                #"AND exam.ete_exam",
+                "WHERE grd.examperiod = ", str(sel_examperiod) , "::INT ",
+                #"AND exam.ete_exam ",
 
                 # - when ETE exam: only published exams are calculated, not applicable for DUO exams
-                "AND (exam.published_id IS NOT NULL OR not exam.ete_exam)",
-                "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0",
+                "AND (exam.published_id IS NOT NULL OR not exam.ete_exam) ",
+                "AND exam.scalelength IS NOT NULL AND exam.scalelength > 0 ",
 
                 # - only submitted exams are calculated
-                "AND grd.ce_exam_published_id IS NOT NULL",
-                # - garde_exams with total score = null are skipped, total score = 0 is not skipped
-                "AND grd.ce_exam_score IS NOT NULL"
+                "AND grd.ce_exam_published_id IS NOT NULL ",
+                # - grade_exams with total score = null are skipped, total score = 0 is not skipped
+                "AND grd.ce_exam_score IS NOT NULL "
                 ]
 
     # - when role other than school: only submitted exams are calulated in avg, when school: also exams that are not submitted are calculated
     if req_usr.role != c.ROLE_008_SCHOOL:
-        sub_list.append("AND grd.ce_exam_published_id IS NOT NULL")
+        sub_list.append("AND grd.ce_exam_published_id IS NOT NULL ")
 
-    sub_grd_result = ' '.join(sub_list)
+    sub_grd_result = ''.join(sub_list)
 
-    sql_list = ["WITH grd_result AS (" + sub_grd_result + ")",
+    sql_list = ["WITH grd_result AS (" + sub_grd_result + ") ",
 
-                "SELECT exam.id AS exam_id, ",
-                "school.id AS school_id, schoolbase.code AS schoolbase_code, school.name AS school_name,",
-                "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev,",
-                "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl,",
-                "exam.version, exam.examperiod,",
+                "SELECT exam.id AS exam_id, ey.code AS ey_code, ",
+                "school.id AS school_id, schoolbase.code AS schoolbase_code, school.name AS school_name, ",
+                "depbase.code AS depbase_code, lvl.abbrev AS lvl_abbrev, ",
+                "subjbase.code AS subj_code, subj.name_nl AS subj_name_nl, ",
+                "exam.version, exam.examperiod, ",
 
-                "CONCAT(subj.name_nl,",
-                "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-                "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name,",
+                #"CONCAT(subj.name_nl, ",
+                #"CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END, ",
+                #"CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END ) AS exam_name, ",
 
                 "CASE WHEN exam.ete_exam THEN ",
-                    "CONCAT(subj.name_nl,",
-                    "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' - ', lvl.abbrev) END,",
-                    "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' - ', exam.version) END )",
-                "ELSE CASE WHEN ntt.id IS NOT NULL THEN ntt.omschrijving ELSE '---' END",
-                "END AS exam_name,"
+                    "CONCAT(subj.name_nl, ",
+                    "CASE WHEN lvl.abbrev IS NULL THEN NULL ELSE CONCAT(' ', lvl.abbrev) END, ",
+                    "CASE WHEN exam.version IS NULL OR exam.version = '' THEN NULL ELSE CONCAT(' ', exam.version) END ) ",
+                "ELSE CASE WHEN ntt.id IS NOT NULL THEN ntt.omschrijving ELSE '---' END ",
+                "END AS exam_name, "
 
-                "COUNT(grd.id) AS grd_count,",
-                "COUNT(grd_result.score_frac) AS result_count,",
-                "AVG(grd_result.score_frac) AS result_avg",
+                "COUNT(grd.id) AS grd_count, ",
+                "COUNT(grd_result.score_frac) AS result_count, ",
+                "AVG(grd_result.score_frac) AS result_avg ",
 
-                "FROM students_grade AS grd",
-                "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id)",
-                "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id)",
-                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id)",
+                "FROM students_grade AS grd ",
+                "INNER JOIN subjects_exam AS exam ON (exam.id = grd.ce_exam_id) ",
+                "INNER JOIN subjects_subject AS subj ON (subj.id = exam.subject_id) ",
+                "INNER JOIN subjects_subjectbase AS subjbase ON (subjbase.id = subj.base_id) ",
 
-                "LEFT JOIN grd_result ON (grd_result.grd_id = grd.id)",
+                "LEFT JOIN grd_result ON (grd_result.grd_id = grd.id) ",
 
-                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id)",
-                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id)",
-                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id)",
+                "INNER JOIN students_studentsubject AS studsubj ON (studsubj.id = grd.studentsubject_id) ",
+                "INNER JOIN students_student AS stud ON (stud.id = studsubj.student_id) ",
+                "LEFT JOIN subjects_level AS lvl ON (lvl.id = stud.level_id) ",
 
-                "LEFT JOIN subjects_ntermentable AS ntt ON (ntt.id = exam.ntermentable_id)",
+                "LEFT JOIN subjects_ntermentable AS ntt ON (ntt.id = exam.ntermentable_id) ",
 
-                "INNER JOIN schools_school AS school ON (school.id = stud.school_id)",
-                "INNER JOIN schools_schoolbase AS schoolbase ON (school.base_id = schoolbase.id)",
-                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id)",
-                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id)",
-                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id)",
+                "INNER JOIN schools_school AS school ON (school.id = stud.school_id) ",
+                "INNER JOIN schools_schoolbase AS schoolbase ON (school.base_id = schoolbase.id) ",
+                "INNER JOIN schools_examyear AS ey ON (ey.id = school.examyear_id) ",
+                "INNER JOIN schools_department AS dep ON (dep.id = stud.department_id) ",
+                "INNER JOIN schools_departmentbase AS depbase ON (depbase.id = dep.base_id) ",
 
-                "WHERE grd.examperiod = %(experiod)s::INT",
-                "AND dep.base_id = %(depbase_id)s::INT",
+                "WHERE grd.examperiod = ", str(sel_examperiod), "::INT ",
+                "AND ey.code = ", str(sel_examyear.code), "::INT ",
+                "AND dep.base_id = ", str(sel_depbase_pk), "::INT ",
 
                 # PR2023-01-16 deleted added:
-                #"AND NOT stud.tobedeleted AND NOT stud.deleted",
-                #"AND NOT studsubj.tobedeleted AND NOT studsubj.deleted",
-                #"AND NOT grd.tobedeleted AND NOT grd.deleted"
+                #"AND NOT stud.tobedeleted AND NOT stud.deleted ",
+                #"AND NOT studsubj.tobedeleted AND NOT studsubj.deleted ",
+                #"AND NOT grd.tobedeleted AND NOT grd.deleted "
 
-                "AND NOT stud.deleted",
-                "AND NOT studsubj.deleted",
-                "AND NOT grd.deleted"
+                "AND NOT stud.deleted ",
+                "AND NOT studsubj.deleted ",
+                "AND NOT grd.deleted "
 
                 ]
 # - schools can only view their own exams
@@ -4234,20 +4236,17 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
         # when DOE: show all SXM exams
         # when school: show all school exams
     if req_usr.role == c.ROLE_008_SCHOOL:
-        sql_keys['schoolbase_pk'] = sel_schoolbase_pk
-        sql_list.append("AND school.base_id = %(schoolbase_pk)s::INT")
-        sql_list.append("AND ey.id = %(ey_pk)s::INT")
+        sql_list.extend(("AND school.base_id = ", str(sel_schoolbase_pk), "::INT AND ey.id = ", str(sel_examyear_pk), "::INT "))
     else:
         if sel_examyear.country.abbrev == 'Sxm':
-            sql_list.append("AND ey.id = %(ey_pk)s::INT")
+            sql_list.extend(("AND ey.id = ", str(sel_examyear_pk), "::INT"))
         elif sel_examyear.country.abbrev == 'Cur':
-            sql_list.append("AND (exam.ete_exam OR ey.id = %(ey_pk)s::INT)")
+            sql_list.extend(("AND (exam.ete_exam OR ey.id = ", str(sel_examyear_pk), "::INT) "))
 
     if setting_dict:
         sel_lvlbase_pk = setting_dict.get(c.KEY_SEL_LVLBASE_PK)
-        if sel_lvlbase_pk:
-            sql_keys['lvlbase_pk'] = sel_lvlbase_pk
-            sql_list.append("AND lvl.base_id = %(lvlbase_pk)s::INT")
+        if sel_department.level_req and sel_lvlbase_pk:
+            sql_list.extend(("AND lvl.base_id = ", str(sel_lvlbase_pk), "::INT "))
 
         sel_subjbase_pk = None
         # get sel_subjbase_pk from sel_subject_pk TODO deprecate, replace filter on sel_subject_pk by sel_subjbase_pk
@@ -4261,12 +4260,12 @@ def create_grade_exam_result_rows(sel_examyear, sel_schoolbase_pk, sel_depbase, 
 
         if sel_subjbase_pk :
             sql_keys['sjb_pk'] = sel_subjbase_pk
-            sql_list.append("AND subj.base_id = %(sjb_pk)s::INT")
+            sql_list.append("AND subj.base_id = %(sjb_pk)s::INT ")
 
-    sql_list.append("GROUP BY exam.id, ntt.id, school.id, schoolbase.code, school.name, depbase.code, lvl.abbrev, subjbase.code, subj.name_nl, exam.version, exam.examperiod")
-    sql_list.append('ORDER BY exam.id, school.id')
+    sql_list.append("GROUP BY exam.id, ey.code, ntt.id, school.id, schoolbase.code, school.name, depbase.code, lvl.abbrev, subjbase.code, subj.name_nl, exam.version, exam.examperiod ")
+    sql_list.append("ORDER BY exam.id, school.id;")
 
-    sql = ' '.join(sql_list)
+    sql = ''.join(sql_list)
 
     with connection.cursor() as cursor:
         cursor.execute(sql, sql_keys)

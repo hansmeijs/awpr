@@ -75,7 +75,8 @@ class DatalistDownloadView(View):  # PR2019-05-23
                 if logging_on:
                     logger.debug('request_item_setting: ' + str(request_item_setting) + ' ' + str(type(request_item_setting)))
 
-                new_setting_dict, permit_dict, sel_examyear, sel_schoolbase, sel_school, sel_depbase, sel_lvlbase, \
+                new_setting_dict, permit_dict, sel_examyear, sel_schoolbase, sel_school, \
+                    sel_depbase, sel_department, sel_lvlbase, \
                     sel_examperiod, sel_examtype, msg_list = \
                         download_setting(request_item_setting, user_lang, request)
                 if msg_list:
@@ -397,6 +398,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
                             sel_examyear=sel_examyear,
                             sel_schoolbase_pk=sel_schoolbase.pk if sel_schoolbase else None,
                             sel_depbase=sel_depbase,
+                            sel_department=sel_department,
                             sel_examperiod=sel_examperiod,
                             setting_dict=new_setting_dict,
                             ete_exams_only=ete_exams_only,
@@ -566,7 +568,7 @@ class DatalistDownloadView(View):  # PR2019-05-23
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 def download_setting(request_item_setting, user_lang, request):
-    # PR2020-07-01 PR2020-1-14 PR2021-08-12 PR2021-12-03 PR2022-12-10
+    # PR2020-07-01 PR2020-1-14 PR2021-08-12 PR2021-12-03 PR2022-12-10 PR2023-05-17
 
     if request_item_setting is None:
         request_item_setting = {}
@@ -640,9 +642,7 @@ def download_setting(request_item_setting, user_lang, request):
     if requsr_allowed_cluster_list:
         permit_dict['allowed_clusters'] = requsr_allowed_cluster_list
 
-    permit_list, requsr_usergroups_arrXX, requsr_allowed_sections_dictXX, requsr_allowed_clusters_arrXX = \
-        acc_prm.get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page)
-
+    permit_list = acc_prm.get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroup_list)
     if permit_list:
         for prm in permit_list:
             # PR2023-04-05 'write_message' is not in use any more, use usergroup msgsend instead
@@ -697,7 +697,7 @@ def download_setting(request_item_setting, user_lang, request):
     if sel_examyear_tobesaved:
         selected_pk_dict_has_changed = True
 
-# ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-04
+# ===== SCHOOLBASE ======================= PR2020-12-18 PR2022-12-04  PR2023-05-17
     sel_schoolbase_instance, sel_schoolbase_tobesaved, sel_school_instance = \
         acc_view.get_settings_schoolbase(
             request=request,
@@ -908,7 +908,7 @@ def download_setting(request_item_setting, user_lang, request):
         logger.debug('......................... ')
 
     return setting_dict, permit_dict, sel_examyear_instance, sel_schoolbase_instance, \
-           sel_school_instance, sel_depbase_instance, sel_lvlbase_instance, \
+           sel_school_instance, sel_depbase_instance, sel_department_instance, sel_lvlbase_instance, \
             sel_examperiod, sel_examtype, msg_list
 # - end of download_setting
 

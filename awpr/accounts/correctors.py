@@ -1418,7 +1418,7 @@ def create_usercompensation_rows(sel_examyear, request, usercompensation_pk=None
     # --- create list of all correctors of this school, or  PR2023-02-19 PR2023-05-13
     # when a school opens this recordset, only users with uc of the school must be schown
     # when opened by role corrector: show all users, also without uc
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' =============== create_usercompensation_rows ============= ')
         logger.debug('    request.user.role: ' + str(request.user.role))

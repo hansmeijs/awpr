@@ -4421,32 +4421,111 @@ def get_settings_examyear(request, request_item_setting, page, permit_dict, sett
 def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance, allowed_sections_dict, page,
                             permit_dict, setting_dict, selected_pk_dict, msg_list):
     # PR2022-12-10
-    logging_on = False  # s.LOGGING_ON
+    # PR2023-05-17 debug: when corrector logs in first time grades don't show,
+    # because selected school is SXMCOR or CURCOM
+    # and in page school btn select school is not working
+    # must check if sel_schoolbase is in allowed_schools, and if not: make first allowed school the selected school
+
+    logging_on = s.LOGGING_ON
     if logging_on:
         logger.debug(' ------- get_settings_schoolbase -------')
-
-    # - get schoolbase from settings / request when role is corr, insp, admin or system, from req_usr when role is school
+    # when requsr.role = school: make requsr.schoolbase the selected school
+    # otherwise: get schoolbase from usersettings
     # req_usr.schoolbase cannot be changed
     # Selected schoolbase is stored in {selected_pk: {sel_schoolbase_pk: val}}.
     # Note: key 'selected_pk' is not used in request_item, format is: datalist_request: {'setting': {'page': 'page_studsubj', 'sel_lvlbase_pk': 14}}
+
+# +++ get sel_schoolbase_instance
+    # - when role = school: sel_schoolbase = requsr_schoolbase
+    # - else[ check if request_item_schoolbase_pk exists: check if is allowed
+    # - if requestitem_saved schoolbase is None or not allowed: check if saved schoolbase exists and is allowed
+    # - if saved schoolbase is None or not allowed: use requsr_schoolbase
+
+    sel_schoolbase_instance = None
+    sel_schoolbase_tobesaved = False
+    requsr_same_school = False
 
 # - get requsr_schoolbase
     requsr_schoolbase = request.user.schoolbase
     permit_dict['requsr_schoolbase_pk'] = requsr_schoolbase.pk if requsr_schoolbase else None
     permit_dict['requsr_schoolbase_code'] = requsr_schoolbase.code if requsr_schoolbase else None
 
-# - get sel_schoolbase_instance
-    # - when role = school: sel_schoolbase = requsr_schoolbase
-    # - else[ check if request_item_schoolbase_pk exists: check if is allowed
-    # - if requestitem_saved schoolbase is None or not allowed: check if saved schoolbase exists and is allowed
-    # - if saved schoolbase is None or not allowed: use requsr_schoolbase
+    saved_schoolbase_pk = selected_pk_dict.get(c.KEY_SEL_SCHOOLBASE_PK)
+    if logging_on:
+        logger.debug('    saved_schoolbase_pk: ' + str(saved_schoolbase_pk))
+        logger.debug('    request.user.role: ' + str(request.user.role))
 
-    sel_schoolbase_instance, sel_schoolbase_tobesaved = \
-        get_sel_schoolbase_instance(
-            request=request,
-            request_item_schoolbase_pk=request_item_setting.get(c.KEY_SEL_SCHOOLBASE_PK),
-            allowed_sections_dict=allowed_sections_dict
-        )
+# - if requsr is school:  sel_schoolbase = requsr.schoolbase
+    if request.user.role == c.ROLE_008_SCHOOL:
+        sel_schoolbase_instance = requsr_schoolbase
+        requsr_same_school = True
+        if sel_schoolbase_instance.pk != saved_schoolbase_pk:
+            sel_schoolbase_tobesaved = True
+    else:
+
+# - get sel_schoolbase from request_item_schoolbase
+        request_item_schoolbase_pk = request_item_setting.get(c.KEY_SEL_SCHOOLBASE_PK)
+        if request_item_schoolbase_pk:
+            sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(
+                pk=request_item_schoolbase_pk,
+                country=request.user.country
+            )
+            if sel_schoolbase_instance and sel_schoolbase_instance.pk != saved_schoolbase_pk:
+                sel_schoolbase_tobesaved = True
+
+        if logging_on:
+            logger.debug('    request_item_schoolbase_pk: ' + str(request_item_schoolbase_pk))
+            logger.debug('    request_item_schoolbase_instance: ' + str(sel_schoolbase_instance))
+
+# - if no request_item_schoolbase: get saved schoolbase
+        if sel_schoolbase_instance is None:
+            sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(
+                pk=saved_schoolbase_pk,
+                country=request.user.country
+            )
+            if logging_on:
+                logger.debug('    saved_schoolbase_instance: ' + str(sel_schoolbase_instance))
+
+        if sel_schoolbase_instance:
+
+# - check if sel_schoolbase is in allowed_sections
+            # schoolbase is allowed when allowed_sections_dict is empty or when 'all schools' (-9) in allowed_sections_dict
+
+# schoolbase is allowed when request_item_schoolbase in allowed_sections_dict
+            sel_schoolbase_is_allowed = (not allowed_sections_dict) or \
+                                        ('-9' in allowed_sections_dict) or \
+                                        (str(sel_schoolbase_instance.pk) in allowed_sections_dict)
+
+
+            if logging_on:
+                logger.debug('    sel_schoolbase_is_allowed: ' + str(sel_schoolbase_is_allowed))
+
+# get first allowed schholbase if sel_schoolbase is not allowed:
+            if not sel_schoolbase_is_allowed:
+                sel_schoolbase_instance = None
+
+    if logging_on:
+        logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
+
+    if sel_schoolbase_instance is None:
+        if allowed_sections_dict:
+            for allowed_schoolbase_pk in allowed_sections_dict:
+                if logging_on:
+                    logger.debug('    allowed_schoolbase_pk: ' + str(allowed_schoolbase_pk))
+                sel_schoolbase_instance = sch_mod.Schoolbase.objects.get_or_none(
+                    pk=allowed_schoolbase_pk,
+                    country=request.user.country
+                )
+                if logging_on:
+                    logger.debug('    sel_schoolbase_instance: ' + str(sel_schoolbase_instance))
+                if sel_schoolbase_instance:
+                    sel_schoolbase_tobesaved = True
+                    break
+
+            if sel_schoolbase_instance is None:
+                sel_schoolbase_instance = request.user.schoolbase
+                sel_schoolbase_tobesaved = True
+
     if sel_schoolbase_tobesaved:
         # when sel_schoolbase_tobesaved=True, there is always a sel_schoolbase_instance
         selected_pk_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
@@ -4455,19 +4534,20 @@ def get_settings_schoolbase(request, request_item_setting, sel_examyear_instance
         setting_dict[c.KEY_SEL_SCHOOLBASE_PK] = sel_schoolbase_instance.pk
         setting_dict['sel_schoolbase_code'] = sel_schoolbase_instance.code
 
+        if logging_on:
+            logger.debug('    sel_schoolbase_instance.code: ' + str(sel_schoolbase_instance.code))
     # requsr_same_school = True when requsr.role = school and selected school is same as requsr_school PR2021-04-27
     # used on entering grades. Users can only enter grades of their own school. Syst, Adm and Insp, Corrector can not neter grades
-    requsr_same_school = (request.user.role == c.ROLE_008_SCHOOL and
-                          sel_schoolbase_instance and requsr_schoolbase.pk == sel_schoolbase_instance.pk)
+
     permit_dict['requsr_same_school'] = requsr_same_school
+
     # this one is used in create_studentsubject_rows and create_grade_rows, to block view of non-submitted subjects and grades
     setting_dict['requsr_same_school'] = requsr_same_school
 
 # ===== SCHOOL =======================
     # - only roles corr, insp, admin and system may select other schools
     # these are use in b_UpdateHeaderbar
-    may_select_school = (request.user.role > c.ROLE_008_SCHOOL)
-    permit_dict['may_select_school'] = may_select_school
+    permit_dict['may_select_school'] = (request.user.role > c.ROLE_008_SCHOOL)
 
     if page in ('page_examyear', 'page_user'):
         display_school = (request.user.role <= c.ROLE_008_SCHOOL)
@@ -5469,8 +5549,7 @@ def get_sel_schoolbase_instance(request, request_item_schoolbase_pk, allowed_sec
         requsr_country = req_usr.country
 
 # - get req_usr.schoolbase if role = school
-        may_select_schoolbase = (req_usr.role > c.ROLE_008_SCHOOL)
-        if not may_select_schoolbase:
+        if req_usr.role == c.ROLE_008_SCHOOL:
             sel_schoolbase_instance = req_usr.schoolbase
         else:
 

@@ -700,23 +700,21 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
     # - create lvlbase_clause
         lvlbase_clause = get_base_clause('lvl.base_id', lvlbase_pk_str)
-        logger.debug('    lvlbase_clause: ' + str(lvlbase_clause))
 
     # - create subjbase_clause
         subjbase_clause = None
         if allowed_subjbase_list:
-
             if len(allowed_subjbase_list) == 1:
                 subjbase_clause = ''.join((subjbase_id_fld, "=", str(allowed_subjbase_list[0]), "::INT"))
             else:
                 subjbase_clause = ''.join(
                     (subjbase_id_fld, " IN (SELECT UNNEST(ARRAY", str(allowed_subjbase_list), "::INT[]))"))
-
         else:
 
             # when user is inspectorate: 'all subjects' is not possible
             if return_false_when_no_allowedsubjects:
                 subjbase_clause = 'FALSE'
+
     # - join lvlbase_clause AND subjbase_clause
         lvl_subjbase_clause = get_AND_joined(lvlbase_clause, subjbase_clause, has_subjbases)
 
@@ -724,7 +722,7 @@ def get_sqlclause_allowed_NEW(table, sel_schoolbase_pk, sel_depbase_pk, sel_lvlb
 
 #############################################
 
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug(' ')
         logger.debug(' +++++ get_sqlclause_allowed_NEW +++++')
@@ -1458,10 +1456,57 @@ def get_permit_list(page, req_usr):
 # - end of get_permit_list
 
 
+
+def get_requsr_permitlist_from_usergrouplist(request, page, requsr_usergroups_list):
+    # --- create list of all permits and usergroups of req_usr PR2021-03-19
+    # - usergroups are now stored per examyear in usergroup_allowed PR2022-12-09
+    # PR2023-05-17
+    logging_on = False  # s.LOGGING_ON
+    if logging_on:
+        logger.debug('')
+        logger.debug('----- get_requsr_permitlist_from_usergrouplist ----- ')
+        logger.debug('    page:                   ' + str(page) + ' ' + str(type(page)))
+        logger.debug('    requsr_usergroups_list: ' + str(requsr_usergroups_list) + ' ' + str(type(requsr_usergroups_list)))
+
+    permit_list = []
+    if request.user.role and page and requsr_usergroups_list:
+        sql_filter = ""
+        for usergroup in requsr_usergroups_list:
+            sql_filter += " OR (POSITION('" + usergroup + "' IN p.usergroups) > 0)"
+
+        if sql_filter:
+            sql_filter = "AND (" + sql_filter[4:] + ")"
+
+            sql_list = ["SELECT p.action FROM accounts_userpermit AS p ",
+                        "WHERE (p.page = '", page, "' OR p.page = 'page_all') ",
+                        "AND p.role = ", str(request.user.role), "::INT ",
+                        sql_filter
+                        ]
+            sql = ''.join(sql_list)
+
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                for row in cursor.fetchall():
+
+                    # PR2023-04-05 permit 'write_message' is not in use any more, use usergroup msgsend instead
+
+                    if row[0]:
+                        permit = 'permit_' + row[0]
+                        if permit not in permit_list:
+                            permit_list.append(permit)
+
+    if logging_on:
+        logger.debug('    permit_list: ' + str(permit_list) + ' ' + str(type(permit_list)))
+
+    return permit_list
+# - end of get_requsr_permitlist_from_usergrouplist
+
+
+
 def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, page):
     # --- create list of all permits and usergroups of req_usr PR2021-03-19
     # - usergroups are now stored per examyear in usergroup_allowed PR2022-12-09
-    # PR2023-01-13
+    # PR2023-01-13 PR2023-05-17
     logging_on = False  # s.LOGGING_ON
 
 # - get requsr_usergroups_list, requsr_allowed_clusters_list and  sel_examyear
@@ -1485,15 +1530,15 @@ def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, pa
         if sql_filter:
             sql_filter = "AND (" + sql_filter[4:] + ")"
 
-            sql_keys = {'page': page, 'role': request.user.role}
-            sql_list = ["SELECT p.action FROM accounts_userpermit AS p",
-                        "WHERE (p.page = %(page)s OR p.page = 'page_all') AND p.role = %(role)s::INT",
+            sql_list = ["SELECT p.action FROM accounts_userpermit AS p ",
+                        "WHERE (p.page = '", page, "' OR p.page = 'page_all') ",
+                        "AND p.role = ", str(request.user.role), "::INT ",
                         sql_filter
                         ]
-            sql = ' '.join(sql_list)
+            sql = ''.join(sql_list)
 
             with connection.cursor() as cursor:
-                cursor.execute(sql, sql_keys)
+                cursor.execute(sql)
                 for row in cursor.fetchall():
 
                     # PR2023-04-05 permit 'write_message' is not in use any more, use usergroup msgsend instead
@@ -1513,7 +1558,7 @@ def get_requsr_permitlist_usergroups_allowedsections_allowedclusters(request, pa
 def get_permit_of_this_page(page, permit_txt_or_arr, request):
     # --- get permit for this page # PR2021-07-18 PR2021-09-05 PR2022-07-05 PR2023-01-13 PR2023-04-30
     # has_permit = True if one or more items in permit_arr are in permit_list
-    logging_on = s.LOGGING_ON
+    logging_on = False  # s.LOGGING_ON
     if logging_on:
         logger.debug('----- get_permit_of_this_page  -------')
 
