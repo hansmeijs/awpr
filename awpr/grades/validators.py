@@ -173,7 +173,7 @@ def validate_grade_multiple_is_allowed(request, requsr_auth, userallowed_cluster
 
 
 def validate_grade_input_value(grade_instance, examgradetype, input_value, sel_examyear, si_dict, request):
-    # PR2021-01-18 PR2021-09-19 PR2021-12-15 PR2021-12-25 PR2022-02-09 PR2022-04-16
+    # PR2021-01-18 PR2021-09-19 PR2021-12-15 PR2021-12-25 PR2022-02-09 PR2022-04-16 PR2023-05-22
     logging_on = s.LOGGING_ON
     # values of examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'
     #  ('sesrgrade', 'pecegrade', 'finalgrade' are calculated fields)
@@ -647,49 +647,50 @@ def validate_grade_examgradetype_in_examyear(sel_examyear, examgradetype):  # PR
 def validate_score_has_ceexam(grade_instance, examgradetype, request):
     # PR2023-05-21
     # functions checks if garde has ce_exam,
-    #  eneterin scores only allowed when grade has ce_exam
+    #  enetering scores only allowed when grade has ce_exam
     #  necessary to check if it is a secret exam (entering by school not allowed when secret exam
 
     # values of examgradetypes are:  'pescore', 'cescore', 'segrade', 'srgrade', 'pegrade', 'cegrade'
 
     err_list = []
-    if grade_instance.examperiod in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
-        no_exam = False
-        exam = None
-        if examgradetype == 'cescore':
-            exam = grade_instance.ce_exam
-        elif examgradetype == 'pescore':
-            exam = grade_instance.pe_exam
+    if examgradetype in ('pescore', 'cescore'):
+        if grade_instance.examperiod in (c.EXAMPERIOD_FIRST, c.EXAMPERIOD_SECOND, c.EXAMPERIOD_THIRD):
+            no_exam = False
+            exam = None
+            if examgradetype == 'cescore':
+                exam = grade_instance.ce_exam
+            elif examgradetype == 'pescore':
+                exam = grade_instance.pe_exam
 
-        if exam is None:
-            caption = None
-            if grade_instance.examperiod == c.EXAMPERIOD_FIRST:
-                caption = gettext('an exam')
-            elif grade_instance.examperiod == c.EXAMPERIOD_SECOND:
-                caption = gettext(' a re-examination')
-            elif grade_instance.examperiod == c.EXAMPERIOD_THIRD:
-                caption = gettext(' a re-examination 3rd period')
-            if caption:
-                err_list.extend((
-                        gettext("This subject is not linked to (cpt)s.") % {'cpt': caption},
-                        gettext("Click in the column 'Exam' to link this subject to %(cpt)s.") % {'cpt': caption}
-                ))
-        else:
-            requsr_role = request.user.role
-            if exam.secret_exam:
-                if requsr_role != c.ROLE_064_ADMIN:
+            if exam is None:
+                caption = None
+                if grade_instance.examperiod == c.EXAMPERIOD_FIRST:
+                    caption = gettext('an exam')
+                elif grade_instance.examperiod == c.EXAMPERIOD_SECOND:
+                    caption = gettext(' a re-examination')
+                elif grade_instance.examperiod == c.EXAMPERIOD_THIRD:
+                    caption = gettext(' a re-examination 3rd period')
+                if caption:
                     err_list.extend((
-                        gettext("This is a designated exam."),
-                        gettext("The Division of Examinations will enter the score of this exam.")
+                            gettext("This subject is not linked to (cpt)s.") % {'cpt': caption},
+                            gettext("Click in the column 'Exam' to link this subject to %(cpt)s.") % {'cpt': caption}
                     ))
             else:
-                if requsr_role != c.ROLE_008_SCHOOL:
-                    err_list.extend((
-                        gettext("This is a designated exam."),
-                        acc_prm.err_txt_no_permit("to enter the score of this exam")
-                    ))
+                requsr_role = request.user.role
+                if exam.secret_exam:
+                    if requsr_role != c.ROLE_064_ADMIN:
+                        err_list.extend((
+                            gettext("This is a designated exam."),
+                            gettext("The Division of Examinations will enter the score of this exam.")
+                        ))
+                else:
+                    if requsr_role != c.ROLE_008_SCHOOL:
+                        err_list.extend((
+                            gettext("This is a designated exam."),
+                            acc_prm.err_txt_no_permit("to enter the score of this exam")
+                        ))
 
-            # check if is secret exam
+                # check if is secret exam
 
     return err_list
 # - end of validate_score_has_ceexam
